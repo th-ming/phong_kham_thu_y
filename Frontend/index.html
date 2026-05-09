@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <!-- Meta Tags -->
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    
+    <!-- SEO Meta Tags -->
+    <title>Rexi – Phòng Khám Thú Y Chuyên Nghiệp | Đặt Lịch Hẹn Online</title>
+    <meta name="description" content="Phòng khám thú y Rexi cung cấp dịch vụ khám, điều trị, phẫu thuật cho thú cưng. Đặt lịch hẹn online, bác sĩ chuyên nghiệp, giá cả hợp lý." />
+    <meta name="keywords" content="phòng khám thú y, khám chó mèo, dịch vụ thú y, đặt lịch hẹn thú y, phẫu thuật thú y" />
+    <meta name="author" content="Rexi Veterinary Clinic" />
+    <meta name="robots" content="index, follow" />
+    <meta name="language" content="Vietnamese" />
+    <meta name="revisit-after" content="7 days" />
+    <meta name="theme-color" content="#0f9d8a" />
+    
+    <!-- OpenGraph Meta Tags (Social Media) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://rexi-clinic.com/" />
+    <meta property="og:title" content="Rexi – Phòng Khám Thú Y Chuyên Nghiệp" />
+    <meta property="og:description" content="Dịch vụ khám, điều trị, và phẫu thuật thú y chuyên nghiệp. Đặt lịch hẹn online ngay." />
+    <meta property="og:image" content="https://rexi-clinic.com/og-image.png" />
+    <meta property="og:site_name" content="Rexi Veterinary Clinic" />
+    <meta property="og:locale" content="vi_VN" />
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Rexi – Phòng Khám Thú Y Chuyên Nghiệp" />
+    <meta name="twitter:description" content="Dịch vụ khám thú y chuyên nghiệp. Đặt lịch hẹn online ngay." />
+    <meta name="twitter:image" content="https://rexi-clinic.com/og-image.png" />
+    
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Rexi" />
+    <link rel="apple-touch-icon" href="/img/icon-192.png" />
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=Lora:ital,wght@0,500;0,600;1,400;1,500&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="shortcut icon" href="/favicon.ico" />
+    
+    <!-- Google Sign-In -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    
+    <!-- Structured Data (Schema.org) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "LocalBusiness",
+      "name": "Phòng Khám Thú Y Rexi",
+      "image": "https://rexi-clinic.com/logo.png",
+      "description": "Phòng khám thú y chuyên nghiệp cung cấp dịch vụ khám, điều trị, và phẫu thuật cho thú cưng",
+      "url": "https://rexi-clinic.com",
+      "telephone": "+84-24-1234-5678",
+      "email": "contact@rexi-clinic.com",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "123 Đường XYZ, Quận Gia Lâm",
+        "addressLocality": "Hà Nội",
+        "addressRegion": "Hà Nội",
+        "postalCode": "100000",
+        "addressCountry": "VN"
+      },
+      "areaServed": "Hà Nội",
+      "priceRange": "$$",
+      "openingHoursSpecification": [
+        {
+          "@type": "OpeningHoursSpecification",
+          "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+          "opens": "08:00",
+          "closes": "18:00"
+        }
+      ],
+      "sameAs": [
+        "https://www.facebook.com/rexiclinic",
+        "https://www.instagram.com/rexiclinic"
+      ]
+    }
+    </script>
+
+    <!-- Preconnect to External Resources -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module">
+      import RefreshRuntime from "/@react-refresh"
+      RefreshRuntime.injectIntoGlobalHook(window)
+      window.$RefreshReg$ = () => {}
+      window.$RefreshSig$ = () => (type) => type
+      window.__vite_plugin_react_preamble_installed__ = true
+    </script>
+    <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- Service Worker Registration -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/service-worker.js')
+            .then(reg => console.log('Service Worker registered:', reg))
+            .catch(err => console.log('Service Worker registration failed:', err));
+        });
+      }
+    </script>
+  </body>
+</html>

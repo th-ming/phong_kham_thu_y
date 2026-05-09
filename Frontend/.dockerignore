@@ -1,0 +1,11 @@
+.git
+.gitignore
+.env.local
+.env
+README.md
+.idea
+.vscode
+node_modules
+dist
+build
+.DS_Store
