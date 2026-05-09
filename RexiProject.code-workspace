@@ -1,0 +1,21 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"files.exclude": {
+			"**/.git": true,
+			"**/.DS_Store": true,
+			"**/node_modules": false,
+			"**/target": false,
+			"BackendPKTY": true,
+			".idea": true
+		},
+		"workbench.colorCustomizations": {
+			"activityBar.background": "#1e1e2e",
+			"titleBar.activeBackground": "#181825"
+		}
+	}
+}

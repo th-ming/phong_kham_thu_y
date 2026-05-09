@@ -1,0 +1,1122 @@
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800;900&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
+
+/* Tùy chỉnh thanh cuộn (Scrollbar) chuẩn Luxury Premium */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 4px 0;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(13, 148, 136, 0.2);
+  border-radius: 20px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+  transition: all 0.3s;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
+  border: 1px solid transparent;
+}
+
+[data-theme='dark'] ::-webkit-scrollbar-thumb {
+  background: rgba(34, 211, 238, 0.2);
+}
+
+[data-theme='dark'] ::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
+}
+
+:root,
+[data-theme='light'] {
+  /* Bảng màu chủ đạo (Chế độ Sáng - Premium Light) */
+  --primary: #0d9488;
+  --primary-light: rgba(13, 148, 136, 0.08);
+  --primary-gradient: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
+  --secondary: #0f172a;
+  --secondary-gradient: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
+  --accent: #f59e0b;
+  --danger: #ff4d4d;
+  --success: #10b981;
+  --background: #f8fafc;
+  --surface: rgba(255, 255, 255, 0.9);
+  --ink: #0f172a;
+
+  --gray-50: #f8fafc;
+  --gray-100: #f1f5f9;
+  --gray-200: #e2e8f0;
+  --gray-300: #cbd5e1;
+  --gray-400: #94a3b8;
+  --gray-500: #64748b;
+  --gray-600: #475569;
+
+  /* Hệ thống nhận diện thương hiệu (Logo) */
+  .logo-container {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    line-height: 1;
+  }
+
+  .logo-rexi {
+    font-size: 1.8rem;
+    font-weight: 950;
+    letter-spacing: -1.5px;
+    line-height: 1;
+  }
+
+  .logo-sub {
+    font-size: 0.7rem;
+    font-weight: 850;
+    color: var(--primary);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    line-height: 1;
+  }
+
+  /* Thông số cho Hiệu ứng kính mờ (Glassmorphism) ở chế độ sáng */
+  --glass: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.4);
+  --glass-blur: blur(16px);
+}
+
+/* Bảng màu chủ đạo (Chế độ Tối - Luxury Aura Midnight) */
+[data-theme='dark'] {
+  --background: #020617;
+  --surface: rgba(15, 23, 42, 0.7);
+  --ink: #f8fafc;
+  --secondary: #1e293b;
+  --secondary-gradient: linear-gradient(135deg, #1e293b 0%, #020617 100%);
+  --primary: #22d3ee;
+  --primary-gradient: linear-gradient(135deg, #06b6d4 0%, #8b5cf6 100%); /* Cyan to Violet */
+  --accent: #f43f5e;
+  --accent-gradient: linear-gradient(135deg, #f43f5e 0%, #fb7185 100%);
+
+  --gray-50: #0f172a;
+  --gray-100: #1e293b;
+  --gray-200: #334155;
+  --gray-300: #475569;
+  --gray-400: #94a3b8;
+  --gray-500: #cbd5e1;
+  --gray-600: #f8fafc;
+
+  /* Thông số cho Hiệu ứng kính mờ Ultra-Premium */
+  --glass: rgba(15, 23, 42, 0.6);
+  --glass-border: rgba(255, 255, 255, 0.05);
+  --glass-blur: blur(32px);
+
+  /* Hiệu ứng Aura Glow */
+  --card-glow: 0 0 40px rgba(6, 182, 212, 0.05), 0 0 80px rgba(139, 92, 246, 0.02);
+  --primary-light: rgba(6, 182, 212, 0.1);
+  --primary-shadow: rgba(6, 182, 212, 0.2);
+  color-scheme: dark;
+}
+
+:root {
+  /* Đổ bóng & Chiều sâu nổi 3D cao cấp */
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.02);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+  --shadow-2xl: 0 35px 70px -15px rgba(0, 0, 0, 0.25);
+
+  /* Bảng màu mở rộng (Màu thông báo, màu nhấn) */
+  --green-50: rgba(16, 185, 129, 0.08);
+  --green-600: #16a34a;
+  --orange-50: rgba(245, 158, 11, 0.08);
+  --orange-600: #ea580c;
+  --blue-50: rgba(37, 99, 235, 0.08);
+  --blue-600: #2563eb;
+  --rose-400: #fb7185;
+  --rose-500: #f43f5e;
+  --rose-shadow: rgba(244, 63, 94, 0.25);
+  --primary-shadow: rgba(15, 157, 138, 0.25);
+  --white: #ffffff;
+
+  /* Bố cục & Kích thước chuẩn cho độ bo góc */
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-xl: 40px;
+  --sidebar-width: 280px;
+
+  /* Thang đo Z-Index (Quản lý lớp hiển thị trước/sau của các phần tử) */
+  --z-back: -1;
+  --z-base: 1;
+  --z-nav: 1000;
+  --z-sticky: 1100;
+  --z-floating: 2000;
+  --z-overlay: 3000;
+  --z-modal: 4000;
+  --z-toast: 5000;
+  --z-cursor: 99999;
+}
+
+/* Đặt lại CSS cơ bản (Reset CSS) */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Cài đặt cấu hình chung cho toàn bộ thân trang web */
+body {
+  font-family: 'Be Vietnam Pro', sans-serif;
+  background: var(--background);
+  color: var(--ink);
+  line-height: 1.6;
+  min-height: 100vh;
+  overflow-x: hidden;
+  transition: background 0.5s ease;
+}
+
+[data-theme='dark'] body {
+  background-image:
+    radial-gradient(at 0% 0%, rgba(6, 182, 212, 0.1) 0px, transparent 40%),
+    radial-gradient(at 100% 0%, rgba(139, 92, 246, 0.08) 0px, transparent 40%),
+    radial-gradient(at 50% 100%, rgba(244, 63, 94, 0.05) 0px, transparent 40%),
+    radial-gradient(at 80% 50%, rgba(15, 23, 42, 1) 0px, transparent 80%);
+}
+
+/* Sửa lỗi icon lịch bị đen trong Dark Mode */
+[data-theme='dark'] input[type="date"]::-webkit-calendar-picker-indicator,
+[data-theme='dark'] input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+[data-theme='dark'] input[type="month"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(1.5);
+  cursor: pointer;
+}
+
+/* Sửa lỗi Dropdown bị trắng trong Dark Mode */
+[data-theme='dark'] select {
+  background-color: var(--gray-100);
+  color: var(--ink);
+}
+
+[data-theme='dark'] select option {
+  background-color: #0f172a; /* Màu Navy đậm */
+  color: #f8fafc;
+}
+
+/* Khung chứa nội dung luôn căn giữa màn hình */
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* Định dạng chung cho các thẻ Tiêu đề */
+h1,
+h2,
+h3,
+h4 {
+  font-family: 'Lora', serif;
+  font-weight: 800;
+}
+
+/* Chữ tự động co giãn kích thước theo độ rộng màn hình */
+h1 {
+  font-size: clamp(2.5rem, 8vw, 5rem);
+}
+
+h2 {
+  font-size: clamp(2rem, 6vw, 3.5rem);
+}
+
+/* ============================================================ */
+/* CÁC THÀNH PHẦN GIAO DIỆN DÙNG CHUNG BỞI TOÀN BỘ TRANG WEB    */
+/* ============================================================ */
+
+/* Chữ Gradient nghệ thuật (Chỉ dành cho Dark Mode) */
+[data-theme='dark'] .text-gradient {
+  background: var(--primary-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  display: inline-block;
+}
+
+/* Thẻ Glass cao cấp với Aura (Dark Mode) */
+[data-theme='dark'] .glass-card {
+  background: var(--glass);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--card-glow);
+}
+
+[data-theme='dark'] .glass-card:hover {
+  border-color: rgba(6, 182, 212, 0.3);
+  box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.5), 0 0 20px rgba(6, 182, 212, 0.1);
+}
+
+/* Thẻ Glass tiêu chuẩn cho Light Mode */
+.glass-card {
+  background: var(--glass);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-xl);
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.glass-card:hover {
+  transform: translateY(-8px) scale(1.01);
+  box-shadow: var(--shadow-2xl);
+}
+
+.glass-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), transparent 50%, rgba(255, 255, 255, 0.05));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Khung nút bấm chuẩn mực */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 16px 32px;
+  border-radius: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  border: none;
+  font-size: 1rem;
+  white-space: nowrap;
+  letter-spacing: 0.5px;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn:active {
+  transform: scale(0.95);
+}
+
+/* Nút bấm nổi bật (Màu chính) */
+.btn-primary {
+  background: var(--primary-gradient);
+  color: white;
+  box-shadow: 0 10px 20px -10px rgba(6, 182, 212, 0.4);
+}
+
+.btn-primary:hover {
+  box-shadow: 0 20px 40px -10px rgba(6, 182, 212, 0.6);
+  transform: translateY(-3px) scale(1.02);
+}
+
+/* Nút bấm viền trong suốt */
+.btn-outline {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--ink);
+  border: 1.5px solid var(--primary);
+}
+
+.btn-outline:hover {
+  background: var(--primary);
+  color: white;
+}
+
+.hero-cta-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 32px;
+}
+
+.hero-cta-grid .btn {
+  min-width: 180px;
+}
+
+/* Hộp hiển thị tính năng/tiện ích */
+.feature-item {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 24px;
+  padding: 20px 18px;
+  transition: transform 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.feature-item:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 22px 40px rgba(15, 23, 42, 0.12);
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+.feature-icon-box {
+  width: 52px;
+  height: 52px;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  transition: transform 0.35s ease, background 0.35s ease, border-color 0.35s ease;
+}
+
+.feature-item:hover .feature-icon-box {
+  transform: scale(1.08);
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.hero-section .hero-content p,
+.hero-section .hero-content h1 {
+  position: relative;
+  z-index: 1;
+}
+
+.hero-section {
+  color: #0f172a;
+}
+
+.hero-hero-background {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at top left, rgba(6, 182, 212, 0.12), transparent 35%), radial-gradient(circle at bottom right, rgba(15, 157, 138, 0.08), transparent 30%);
+  pointer-events: none;
+}
+
+.hero-trust-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 28px;
+}
+
+/* ============================================================ */
+/* CÁC PHẦN TỬ FORM (INPUT, SELECT, TEXTAREA)                   */
+/* ============================================================ */
+
+/* Hệ thống Form & Input Cao cấp */
+input, select, textarea {
+  border: 1px solid var(--gray-200);
+  border-radius: 14px;
+  padding: 12px 18px;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  outline: none;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px var(--primary-light), 0 10px 20px -10px var(--primary-shadow);
+  transform: translateY(-2px);
+}
+
+[data-theme='dark'] input, [data-theme='dark'] select, [data-theme='dark'] textarea {
+  border-color: var(--glass-border);
+  background: rgba(255, 255, 255, 0.03);
+  color: #ffffff;
+  color-scheme: dark;
+}
+
+[data-theme='dark'] input:focus, [data-theme='dark'] select:focus, [data-theme='dark'] textarea:focus {
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: 0 0 20px var(--primary-shadow), 0 0 0 1px var(--primary);
+}
+
+::placeholder {
+  color: var(--gray-400);
+  opacity: 0.6;
+}
+
+/* Xử lý icon lịch (calendar icon) cho input type date */
+[data-theme='dark'] input::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(1.5) sepia(1) hue-rotate(140deg) saturate(5); /* Biến icon đen thành màu Cyan */
+  cursor: pointer;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: var(--primary);
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 0 20px var(--primary-shadow);
+  transform: translateY(-2px);
+  outline: none;
+}
+
+label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--gray-400);
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+}
+
+[data-theme='dark'] label {
+  color: var(--primary);
+  opacity: 0.9;
+}
+
+/* Checkbox cao cấp phong cách Neon */
+.custom-checkbox {
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--gray-200);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  cursor: pointer;
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.custom-checkbox:checked {
+  background: var(--primary-gradient);
+  border-color: var(--primary);
+  box-shadow: 0 0 15px var(--primary-shadow);
+}
+
+.custom-checkbox:checked::after {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.custom-checkbox:hover {
+  border-color: var(--primary);
+  transform: scale(1.1);
+}
+
+/* Hệ thống lưới tự động đáp ứng (Responsive Grid System) */
+.responsive-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 32px;
+}
+
+@media (max-width: 768px) {
+  .responsive-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .mobile-hide {
+    display: none !important;
+  }
+
+  .mobile-scroll {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    gap: 20px;
+    padding-bottom: 20px;
+    margin: 0 -20px;
+    padding-left: 20px;
+  }
+
+  .mobile-scroll>* {
+    flex: 0 0 85%;
+    scroll-snap-align: center;
+  }
+}
+
+/* ===== ĐIỀU CHỈNH GIAO DIỆN THEO KÍCH THƯỚC MÀN HÌNH (RESPONSIVE) ===== */
+
+/* Màn hình máy tính lớn (1400px trở lên) */
+@media (min-width: 1400px) {
+  .container {
+    max-width: 1320px;
+  }
+}
+
+/* Máy tính bảng xoay ngang (Từ 900px - 1100px) */
+@media (max-width: 1100px) {
+
+  /* Banner chính: Xếp dọc các khối nội dung */
+  .hero-section .container>div[style*="grid"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  .hero-section [style*="height: \"480px\""] {
+    height: 320px !important;
+  }
+
+  /* Quy trình dịch vụ: Đổi thành lưới 2x2 */
+  .step-card[style*="grid-template-columns: repeat(4"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+/* Máy tính bảng xoay dọc (Từ 600px - 900px) */
+@media (max-width: 900px) {
+  .container {
+    padding: 0 16px;
+  }
+
+  section[style*="padding: \"110px 0\""],
+  section[style*="padding: \"100px 0\""] {
+    padding: 72px 0 !important;
+  }
+
+  /* Giảm cỡ chữ của Banner */
+  .hero-content h1 {
+    font-size: clamp(2rem, 6vw, 3rem) !important;
+  }
+
+  /* Nhãn thống kê nhỏ lại */
+  .hero-stat-pill {
+    padding: 10px 14px !important;
+  }
+
+  /* Bố cục danh sách bác sĩ: Xếp chồng */
+  .doctors-layout {
+    flex-direction: column !important;
+  }
+
+  .doc-featured {
+    width: 100% !important;
+  }
+
+  /* Bố cục dịch vụ: Xếp chồng */
+  .service-layout {
+    flex-direction: column !important;
+  }
+
+  .service-layout>div:first-child {
+    width: 100% !important;
+  }
+
+  /* Bố cục Hỏi đáp: Bỏ ghim dính ở tiêu đề */
+  .faq-sticky-header {
+    position: static !important;
+    width: 100% !important;
+  }
+}
+
+/* Điện thoại di động (Tối đa 600px) */
+@media (max-width: 600px) {
+  .container {
+    padding: 0 14px;
+  }
+
+  h2 {
+    font-size: clamp(1.6rem, 6vw, 2.2rem) !important;
+  }
+
+  /* Banner chính ở điện thoại */
+  .hero-section {
+    padding: 60px 0 50px !important;
+  }
+
+  .hero-content h1 {
+    font-size: clamp(1.8rem, 7vw, 2.6rem) !important;
+  }
+
+  /* Các thanh tiện ích: Tự động xuống dòng thành 2 cột */
+  .feature-item {
+    flex: 1 1 45% !important;
+  }
+
+  /* Nút bấm: Kéo dài toàn màn hình ngang */
+  .hero-section .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Nhãn thống kê: Tự động xuống dòng */
+  .hero-stat-pill {
+    flex: 1 1 auto !important;
+  }
+
+  /* Hàng nút bấm ở banner: Xếp dọc */
+  .hero-content>div[style*="display: \"flex\""][style*="gap: \"16px\""] {
+    flex-direction: column !important;
+  }
+
+  /* Danh sách bác sĩ: 1 Cột */
+  .doc-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Nhãn phân đoạn: Thu nhỏ hơn */
+  .section-label {
+    font-size: 0.7rem !important;
+    padding: 4px 12px !important;
+  }
+
+  /* Phần Quy trình: Xếp thành 2 cột */
+  [style*="gridTemplateColumns: 'repeat(4, 1fr)'"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 16px !important;
+  }
+
+  /* Thu nhỏ lề của thẻ liên hệ */
+  .contact-card-main {
+    padding: 28px 20px !important;
+    border-radius: 24px !important;
+  }
+}
+
+/* ============================================================ */
+/* CÁC HIỆU ỨNG CHUYỂN ĐỘNG (ANIMATIONS) TÙY CHỈNH              */
+/* ============================================================ */
+
+/* Hiệu ứng Mờ dần và trượt lên */
+.animate-fade-in {
+  animation: fadeInUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes blink {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.6;
+  }
+}
+
+/* Hiệu ứng xoay tròn vô tận cho các biểu tượng tải dữ liệu */
+@keyframes spinBtn {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.icon-spin {
+  animation: spinBtn 1.2s linear infinite;
+}
+
+.animate-blink {
+  animation: blink 1s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.shimmer {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Hiệu ứng nhịp đập 3 chấm nhỏ lúc đang Loading */
+.dot-pulse-small {
+  position: relative;
+  left: -9999px;
+  width: 6px;
+  height: 6px;
+  border-radius: 3px;
+  background-color: var(--primary);
+  color: var(--primary);
+  box-shadow: 9999px 0 0 0 var(--primary);
+  animation: dotPulseSmall 1.5s infinite linear;
+}
+
+/* Biến bảng Tóm tắt thành Kính */
+.summary-panel {
+  background: var(--glass);
+  backdrop-filter: var(--glass-blur);
+  border: 1.5px solid var(--glass-border);
+  border-radius: var(--radius-xl);
+  padding: 40px;
+  box-shadow: var(--shadow-2xl);
+  color: var(--ink);
+}
+
+.summary-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.summary-label {
+  color: var(--gray-400);
+  font-weight: 600;
+}
+
+.summary-value {
+  font-weight: 800;
+  color: var(--primary);
+}
+
+@keyframes dotPulseSmall {
+  0% {
+    box-shadow: 9999px 0 0 -5px white;
+  }
+
+  30% {
+    box-shadow: 9999px 0 0 2px white;
+  }
+
+  60%,
+  100% {
+    box-shadow: 9999px 0 0 -5px white;
+  }
+}
+
+/* Hiệu ứng Ánh sáng lướt qua (Skeleton) dùng khi giao diện đang chờ tải Dữ liệu */
+@keyframes skeleton-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.skeleton {
+  background-color: var(--gray-200);
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+}
+
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.2) 20%, rgba(255, 255, 255, 0.5) 50%, rgba(255, 255, 255, 0.2) 80%, transparent 100%);
+  animation: skeleton-shimmer 1.5s infinite;
+}
+
+[data-theme='dark'] .skeleton::after {
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.02) 20%, rgba(255, 255, 255, 0.08) 50%, rgba(255, 255, 255, 0.02) 80%, transparent 100%);
+}
+
+/* Hiệu ứng Hover cho Thẻ Bác Sĩ nhỏ */
+.doctor-card img {
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.doctor-card:hover img {
+  transform: scale(1.08);
+}
+
+/* Họa tiết trôi nổi ở nền */
+@keyframes floatEffect {
+
+  0%,
+  100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+
+  50% {
+    transform: translateY(-20px) rotate(10deg);
+  }
+}
+
+.floating-bg {
+  animation: floatEffect 6s ease-in-out infinite;
+}
+
+/* Hiệu ứng Đối tác trượt ngang (Marquee) */
+.marquee-wrapper {
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%);
+}
+
+.marquee-content {
+  display: flex;
+  width: max-content;
+  animation: marquee 40s linear infinite;
+}
+
+.partner-logo {
+  height: 60px;
+  width: 180px;
+  margin: 0 40px;
+  background-image: url('/rexi_partners_banner.png');
+  background-size: 600% auto;
+  background-repeat: no-repeat;
+  filter: grayscale(1) opacity(0.7);
+  transition: all 0.4s;
+  flex-shrink: 0;
+}
+
+.partner-logo:hover {
+  filter: grayscale(0) opacity(1);
+  transform: scale(1.05);
+}
+
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+/* Hiệu ứng mờ chuyển cảnh cho video chó mèo ở màn hình chính */
+@keyframes superSmoothFade {
+
+  0%,
+  45% {
+    opacity: 1;
+  }
+
+  55%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Kiểu thiết kế của Nhãn phân đoạn (Dùng trên đỉnh của mọi khối nội dung) */
+.section-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--primary);
+  font-weight: 900;
+  font-size: 0.8rem;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  background: var(--primary-light);
+  padding: 8px 20px;
+  border-radius: 50px;
+  border: 1px solid rgba(0, 242, 254, 0.2);
+  margin-bottom: 24px;
+}
+
+/* Thẻ Dịch vụ cao cấp */
+.service-card-select {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1.5px solid rgba(255, 255, 255, 0.05);
+  border-radius: 20px;
+  padding: 24px;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+}
+
+.service-card-select:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--primary);
+  transform: translateY(-5px);
+  box-shadow: 0 10px 30px -10px var(--primary-shadow);
+}
+
+.service-card-select.selected {
+  background: var(--primary-light);
+  border-color: var(--primary);
+  box-shadow: 0 0 20px var(--primary-shadow);
+}
+
+/* Hiệu ứng sóng cho nút Đặt lịch hẹn */
+@keyframes waveEffect {
+  0% {
+    box-shadow: 0 0 0 0 rgba(15, 157, 138, 0.4);
+  }
+
+  70% {
+    box-shadow: 0 0 0 20px rgba(15, 157, 138, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(15, 157, 138, 0);
+  }
+}
+
+.btn-wave {
+  animation: waveEffect 2s infinite;
+}
+
+/* Hiệu ứng trượt xuống khi bấm xem câu hỏi thường gặp (PhanHoiDap) */
+@keyframes slideDownFaq {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Các hiệu ứng chuyển động ở màn hình chờ (Preloader) */
+@keyframes preloader-exit {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(1.1);
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+@keyframes logo-pulse {
+
+  0%,
+  100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 0 rgba(15, 157, 138, 0));
+  }
+
+  50% {
+    transform: scale(1.1);
+    filter: drop-shadow(0 0 20px rgba(15, 157, 138, 0.4));
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Đảm bảo việc chuyển đổi giữa Sáng/Tối diễn ra siêu mượt mà thay vì chuyển đột ngột */
+.theme-transition,
+.theme-transition *,
+.theme-transition *:before,
+.theme-transition *:after {
+  transition: background-color 0.5s ease, color 0.5s ease, border-color 0.5s ease, box-shadow 0.5s ease, backdrop-filter 0.5s ease !important;
+}
+
+/* Màu khi bôi đen văn bản (Selection) */
+::selection {
+  background: var(--primary);
+  color: white;
+}
+
+[data-theme='dark'] ::selection {
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+/* Nâng cấp Skeleton Loading (Dot Pulse) */
+.dot-pulse {
+  position: relative;
+  left: -9999px;
+  width: 10px;
+  height: 10px;
+  border-radius: 5px;
+  background-color: var(--primary);
+  color: var(--primary);
+  box-shadow: 9999px 0 0 -5px var(--primary);
+  animation: dot-pulse 1.5s infinite linear;
+}
+
+@keyframes dot-pulse {
+  0% { box-shadow: 9999px 0 0 -5px var(--primary); }
+  30% { box-shadow: 9999px 0 0 2px var(--primary); }
+  60%, 100% { box-shadow: 9999px 0 0 -5px var(--primary); }
+}
+
+/* ĐỊNH DẠNG CHO THIẾT BỊ DI ĐỘNG (RESPONSIVE) */
+.mobile-show {
+  display: none !important;
+}
+
+@media (max-width: 1024px) {
+  .mobile-show {
+    display: flex !important;
+  }
+  
+  .mobile-hide {
+    display: none !important;
+  }
+
+  :root {
+    --sidebar-width: 0px;
+  }
+  
+  .sidebar {
+    transform: translateX(-100%);
+    position: fixed;
+    z-index: 1000;
+  }
+  
+  .sidebar.active {
+    transform: translateX(0);
+    width: 280px;
+  }
+  
+  .main-content {
+    margin-left: 0 !important;
+    padding: 20px !important;
+  }
+  
+  .glass-card {
+    padding: 24px !important;
+  }
+  
+  h1 {
+    font-size: 2rem !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .grid-2, .grid-3, .grid-4 {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .btn-pill {
+    width: 100%;
+    justify-content: center;
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "name": "Phòng Khám Thú Y Rexi",
+  "short_name": "Rexi",
+  "description": "Hệ thống quản lý phòng khám thú y chuyên nghiệp với đặt lịch hẹn online",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0f9d8a",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/img/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/img/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/img/icon-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/img/screenshot-540.png",
+      "sizes": "540x720",
+      "type": "image/png",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "/img/screenshot-1280.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide"
+    }
+  ],
+  "categories": ["medical", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Đặt lịch hẹn",
+      "short_name": "Đặt lịch",
+      "description": "Nhanh chóng đặt lịch khám cho thú cưng",
+      "url": "/khach-hang/dat-lich-hen",
+      "icons": [
+        {
+          "src": "/img/icon-booking.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Bảng giá",
+      "short_name": "Giá",
+      "description": "Xem bảng giá dịch vụ",
+      "url": "/bang-gia",
+      "icons": [
+        {
+          "src": "/img/icon-price.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ]
+}
