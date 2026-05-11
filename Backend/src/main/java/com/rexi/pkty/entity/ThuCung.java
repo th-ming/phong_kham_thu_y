@@ -14,11 +14,11 @@ public class ThuCung {
     private String id_khach_hang;
     private String ten_thu_cung;
     private String loai;
-    private String giong; // Đồng bộ với frontend
-    private java.time.LocalDate ngay_sinh; // Dùng LocalDate cho chuẩn ngày sinh
+    private String giong; // Äá»“ng bá»™ vá»›i frontend
+    private java.time.LocalDate ngay_sinh; // DÃ¹ng LocalDate cho chuáº©n ngÃ y sinh
     private String gioi_tinh;
     private String mau_sac;
-    private Double trong_luong; // Đồng bộ với frontend
+    private Double trong_luong; // Äá»“ng bá»™ vá»›i frontend
     private String ghi_chu;
     private String hinh_anh;
     private Boolean da_xoa;

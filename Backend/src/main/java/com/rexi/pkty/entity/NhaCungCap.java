@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 public class NhaCungCap {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private String id_ncc;
+    private Long id_ncc;
 
     private String ten_ncc;
     private String dia_chi;

@@ -22,27 +22,27 @@ public class SchedulingService {
     private EmailService emailService;
 
     /**
-     * Tự động quét và hủy các lịch hẹn khách không đến vào cuối ngày (23:59).
-     * Trạng thái 'Đã đặt' sẽ chuyển thành 'Hết hạn'.
+     * Tá»± Ä‘á»™ng quÃ©t vÃ  há»§y cÃ¡c lá»‹ch háº¹n khÃ¡ch khÃ´ng Ä‘áº¿n vÃ o cuá»‘i ngÃ y (23:59).
+     * Tráº¡ng thÃ¡i 'ÄÃ£ Ä‘áº·t' sáº½ chuyá»ƒn thÃ nh 'Háº¿t háº¡n'.
      */
-    // BẢO ĐẢM: Luôn chạy lúc 23:59 theo giờ Việt Nam, tránh bị lệch giờ nếu thuê
-    // Cloud Server nước ngoài
+    // Báº¢O Äáº¢M: LuÃ´n cháº¡y lÃºc 23:59 theo giá» Viá»‡t Nam, trÃ¡nh bá»‹ lá»‡ch giá» náº¿u thuÃª
+    // Cloud Server nÆ°á»›c ngoÃ i
     @Scheduled(cron = "0 59 23 * * *", zone = "Asia/Ho_Chi_Minh")
     public void autoCancelExpiredAppointments() {
         try {
-            String sql = "UPDATE LichHen SET trang_thai = N'Hết hạn' " +
-                    "WHERE ngay_kham <= CAST(GETDATE() AS DATE) AND trang_thai IN (N'Chờ xác nhận', N'Đã xác nhận')";
+            String sql = "UPDATE LichHen SET trang_thai = N'Háº¿t háº¡n' " +
+                    "WHERE ngay_kham <= CAST(GETDATE() AS DATE) AND trang_thai IN (N'Chá» xÃ¡c nháº­n', N'ÄÃ£ xÃ¡c nháº­n')";
             int rows = jdbcTemplate.update(sql);
             if (rows > 0) {
-                logger.info("Đã tự động xử lý " + rows + " lịch hẹn quá hạn.");
+                logger.info("ÄÃ£ tá»± Ä‘á»™ng xá»­ lÃ½ " + rows + " lá»‹ch háº¹n quÃ¡ háº¡n.");
             }
         } catch (Exception e) {
-            logger.severe("Lỗi khi dọn dẹp lịch hẹn: " + e.getMessage());
+            logger.severe("Lá»—i khi dá»n dáº¹p lá»‹ch háº¹n: " + e.getMessage());
         }
     }
 
     /**
-     * Tự động gửi Email nhắc nhở vào lúc 08:00 sáng cho các lịch hẹn vào ngày mai.
+     * Tá»± Ä‘á»™ng gá»­i Email nháº¯c nhá»Ÿ vÃ o lÃºc 08:00 sÃ¡ng cho cÃ¡c lá»‹ch háº¹n vÃ o ngÃ y mai.
      */
     @Scheduled(cron = "0 0 8 * * *", zone = "Asia/Ho_Chi_Minh")
     public void autoSendReminders() {
@@ -55,7 +55,7 @@ public class SchedulingService {
                     "LEFT JOIN ThuCung tc ON lh.id_thu_cung = tc.id_thu_cung " +
                     "LEFT JOIN NhanVien nv ON lh.id_bac_si = nv.id_nhan_vien " +
                     "LEFT JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu " +
-                    "WHERE lh.ngay_kham = ? AND lh.trang_thai IN ('CHO_XAC_NHAN', 'DA_XAC_NHAN', N'Chờ xác nhận', N'Đã xác nhận')";
+                    "WHERE lh.ngay_kham = ? AND lh.trang_thai IN ('CHO_XAC_NHAN', 'DA_XAC_NHAN', N'Chá» xÃ¡c nháº­n', N'ÄÃ£ xÃ¡c nháº­n')";
 
             List<Map<String, Object>> apps = jdbcTemplate.queryForList(sql, java.sql.Date.valueOf(tomorrow));
             int count = 0;
@@ -64,12 +64,12 @@ public class SchedulingService {
                 if (app.get("email") != null && !app.get("email").toString().isEmpty()) {
                     String toEmail = app.get("email").toString();
                     String tenKhachHang = app.get("ten_khach_hang") != null ? app.get("ten_khach_hang").toString()
-                            : "Khách hàng";
+                            : "KhÃ¡ch hÃ ng";
                     String tenThuCung = app.get("ten_thu_cung") != null ? app.get("ten_thu_cung").toString()
-                            : "Thú cưng";
-                    String tenBacSi = app.get("ten_bac_si") != null ? app.get("ten_bac_si").toString() : "Bác sĩ Rexi";
+                            : "ThÃº cÆ°ng";
+                    String tenBacSi = app.get("ten_bac_si") != null ? app.get("ten_bac_si").toString() : "BÃ¡c sÄ© Rexi";
                     String tenDichVu = app.get("ten_dich_vu") != null ? app.get("ten_dich_vu").toString()
-                            : "Dịch vụ Thú y";
+                            : "Dá»‹ch vá»¥ ThÃº y";
                     String gioKham = app.get("gio_kham").toString();
 
                     emailService.sendReminderEmail(toEmail, tenKhachHang, tenThuCung, tenBacSi, tomorrow.toString(),
@@ -77,16 +77,16 @@ public class SchedulingService {
                     count++;
                 }
             }
-            logger.info("Đã tự động gửi " + count + " email nhắc nhở lịch hẹn cho ngày mai.");
+            logger.info("ÄÃ£ tá»± Ä‘á»™ng gá»­i " + count + " email nháº¯c nhá»Ÿ lá»‹ch háº¹n cho ngÃ y mai.");
         } catch (Exception e) {
-            logger.severe("Lỗi khi gửi email nhắc nhở: " + e.getMessage());
+            logger.severe("Lá»—i khi gá»­i email nháº¯c nhá»Ÿ: " + e.getMessage());
         }
     }
 
     /**
-     * Tự động chốt công nợ cuối ngày (23:55)
-     * Thống kê các hóa đơn chưa thanh toán trong ngày và ghi log (hoặc gửi email
-     * báo cáo)
+     * Tá»± Ä‘á»™ng chá»‘t cÃ´ng ná»£ cuá»‘i ngÃ y (23:55)
+     * Thá»‘ng kÃª cÃ¡c hÃ³a Ä‘Æ¡n chÆ°a thanh toÃ¡n trong ngÃ y vÃ  ghi log (hoáº·c gá»­i email
+     * bÃ¡o cÃ¡o)
      */
     @Scheduled(cron = "0 55 23 * * *", zone = "Asia/Ho_Chi_Minh")
     public void autoReportDailyDebt() {
@@ -111,7 +111,7 @@ public class SchedulingService {
                 String email = (String) row.get("email");
                 if (email != null && !email.isEmpty()) {
                     String tenKhach = row.get("ten_khach_hang") != null ? row.get("ten_khach_hang").toString()
-                            : "Khách hàng";
+                            : "KhÃ¡ch hÃ ng";
                     String idHoaDon = row.get("id_hoa_don").toString();
 
                     emailService.sendDebtReminderEmail(email, tenKhach, idHoaDon, amount);
@@ -120,14 +120,14 @@ public class SchedulingService {
             }
 
             if (soLuong > 0) {
-                logger.info("💰 CHỐT CÔNG NỢ CUỐI NGÀY: Hôm nay có " + soLuong + " hóa đơn chưa thu tiền. Tổng nợ: "
-                        + tongNo + " VNĐ");
-                logger.info("📧 Đã gửi " + mailSentCount + " email nhắc nợ tự động cho khách hàng.");
+                logger.info("ðŸ’° CHá»T CÃ”NG Ná»¢ CUá»I NGÃ€Y: HÃ´m nay cÃ³ " + soLuong + " hÃ³a Ä‘Æ¡n chÆ°a thu tiá»n. Tá»•ng ná»£: "
+                        + tongNo + " VNÄ");
+                logger.info("ðŸ“§ ÄÃ£ gá»­i " + mailSentCount + " email nháº¯c ná»£ tá»± Ä‘á»™ng cho khÃ¡ch hÃ ng.");
             } else {
-                logger.info("💰 CHỐT CÔNG NỢ CUỐI NGÀY: Tuyệt vời! Tất cả hóa đơn hôm nay đều đã được thanh toán.");
+                logger.info("ðŸ’° CHá»T CÃ”NG Ná»¢ CUá»I NGÃ€Y: Tuyá»‡t vá»i! Táº¥t cáº£ hÃ³a Ä‘Æ¡n hÃ´m nay Ä‘á»u Ä‘Ã£ Ä‘Æ°á»£c thanh toÃ¡n.");
             }
         } catch (Exception e) {
-            logger.severe("Lỗi khi chốt công nợ cuối ngày: " + e.getMessage());
+            logger.severe("Lá»—i khi chá»‘t cÃ´ng ná»£ cuá»‘i ngÃ y: " + e.getMessage());
         }
     }
 }

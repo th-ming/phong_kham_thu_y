@@ -13,9 +13,9 @@ import java.util.Map;
 @Service
 public class ZaloService {
 
-    // ĐIỀN THÔNG TIN TỪ ZALO DEVELOPER CỦA SẾP VÀO ĐÂY
+    // ÄIá»€N THÃ”NG TIN Tá»ª ZALO DEVELOPER Cá»¦A Sáº¾P VÃ€O ÄÃ‚Y
     private final String ZALO_ACCESS_TOKEN = "YOUR_ZALO_ACCESS_TOKEN";
-    private final String TEMPLATE_ID = "YOUR_TEMPLATE_ID"; // ID mẫu tin nhắn đã duyệt
+    private final String TEMPLATE_ID = "YOUR_TEMPLATE_ID"; // ID máº«u tin nháº¯n Ä‘Ã£ duyá»‡t
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final HttpClient client = HttpClient.newHttpClient();
@@ -23,16 +23,16 @@ public class ZaloService {
     public void sendInvoiceZNS(String phoneNumber, String customerName, BigDecimal totalAmount) {
         CompletableFuture.runAsync(() -> {
             try {
-                // Zalo yêu cầu SĐT theo chuẩn quốc tế (VD: 0912... -> 84912...)
+                // Zalo yÃªu cáº§u SÄT theo chuáº©n quá»‘c táº¿ (VD: 0912... -> 84912...)
                 String formattedPhone = phoneNumber;
                 if (phoneNumber != null && phoneNumber.startsWith("0")) {
                     formattedPhone = "84" + phoneNumber.substring(1);
                 }
 
-                // Dữ liệu truyền vào Mẫu tin nhắn (Phải khớp với biến đã khai báo trên Zalo)
+                // Dá»¯ liá»‡u truyá»n vÃ o Máº«u tin nháº¯n (Pháº£i khá»›p vá»›i biáº¿n Ä‘Ã£ khai bÃ¡o trÃªn Zalo)
                 Map<String, Object> templateData = Map.of(
-                        "name", customerName != null ? customerName : "Khách hàng",
-                        "amount", String.format("%,.0f VNĐ", totalAmount));
+                        "name", customerName != null ? customerName : "KhÃ¡ch hÃ ng",
+                        "amount", String.format("%,.0f VNÄ", totalAmount));
 
                 Map<String, Object> payload = Map.of(
                         "phone", formattedPhone,
@@ -52,7 +52,7 @@ public class ZaloService {
                 System.out.println("Zalo ZNS Response (" + formattedPhone + "): " + response.body());
 
             } catch (Exception e) {
-                System.err.println("Lỗi gửi tin nhắn Zalo ZNS: " + e.getMessage());
+                System.err.println("Lá»—i gá»­i tin nháº¯n Zalo ZNS: " + e.getMessage());
             }
         });
     }

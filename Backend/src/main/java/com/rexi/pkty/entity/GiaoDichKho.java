@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 public class GiaoDichKho {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private String id_giao_dich;
+    private Long id_giao_dich;
 
     private String id_lo;
     private String loai_giao_dich;

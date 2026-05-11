@@ -44,7 +44,9 @@ public class AiMemoryService {
 
     public String getCurrentCustomerId() {
         try {
-            String username = SecurityContextHolder.getContext().getAuthentication().getName();
+            var auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth == null) return null;
+            String username = auth.getName();
             if (username == null || username.equals("anonymousUser")) return null;
             Optional<TaiKhoan> tkOpt = taiKhoanRepository.findByTenDangNhap(username);
             if (tkOpt.isPresent() && tkOpt.get().getKhach_hang() != null) {
@@ -57,14 +59,15 @@ public class AiMemoryService {
     public String getUserContext(String userQuery) {
         try {
             String query = userQuery != null ? userQuery.toLowerCase() : "";
-            String username = SecurityContextHolder.getContext().getAuthentication().getName();
-            if (username == null || username.equals("anonymousUser")) {
+            var auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth == null || auth.getName().equals("anonymousUser")) {
                 if (query.contains("giá") || query.contains("dịch vụ") || query.contains("tiền")) {
                     return getClinicServicesContext();
                 }
                 return "";
             }
 
+            String username = auth.getName();
             Optional<TaiKhoan> tkOpt = taiKhoanRepository.findByTenDangNhap(username);
             if (tkOpt.isEmpty() || tkOpt.get().getKhach_hang() == null) return "";
 
@@ -124,15 +127,15 @@ public class AiMemoryService {
             StringBuilder sb = new StringBuilder("\n[THÔNG TIN PHÒNG KHÁM REXI]\n");
             sb.append("- Địa chỉ: Số 68, Ngõ 10, Đường Ngô Xuân Quảng, Trâu Quỳ, Gia Lâm, Hà Nội.\n");
             sb.append("- Hotline Cấp cứu: ***REMOVED***-VIETQR_ACCOUNT_NO (Phục vụ 24/7).\n");
-            sb.append("- Giờ mở cửa: 08:00 - 20:00 (Tất cả các ngày trong tuần, kể cả ngày lễ).\n");
+            sb.append("- Giờ mở cửa: 08:00 - 20:00 (Tất cả các ngày trong tuần).\n");
             sb.append("- Email hỗ trợ: rexivetsys@gmail.com\n");
-            sb.append("- Triết lý: Chăm sóc thú cưng bằng cả trái tim - Sức khỏe của bé là hạnh phúc của Sen.\n");
+            sb.append("- Triết lý: Chăm sóc thú cưng bằng cả trái tim.\n");
 
             var services = dichVuRepository.findTop8ActiveServices();
             if (services != null && !services.isEmpty()) {
                 sb.append("\n[BẢNG GIÁ DỊCH VỤ CHÍNH]\n");
                 for (var s : services) {
-                    sb.append("- ").append(s.getTen_dich_vu()).append(": Từ ").append(s.getGia()).append(" VNĐ\n");
+                    sb.append("- ").append(s.getTenDichVu()).append(": Từ ").append(s.getGiaTien()).append(" VNĐ\n");
                 }
             }
             return sb.toString();
@@ -147,14 +150,14 @@ public class AiMemoryService {
             var doctors = nhanVienRepository.findAllBacSi();
             if (doctors != null && !doctors.isEmpty()) {
                 for (var d : doctors) {
-                    sb.append("- Bác sĩ: ").append(d.getHo_ten());
-                    if (d.getGioi_thieu() != null && !d.getGioi_thieu().isBlank()) {
-                        sb.append(" (Chuyên môn: ").append(d.getGioi_thieu()).append(")");
+                    sb.append("- Bác sĩ: ").append(d.getHoTen());
+                    if (d.getGioiThieu() != null && !d.getGioiThieu().isBlank()) {
+                        sb.append(" (Chuyên môn: ").append(d.getGioiThieu()).append(")");
                     }
                     sb.append("\n");
                 }
             } else {
-                sb.append("- Hiện tại phòng khám có đội ngũ bác sĩ giàu kinh nghiệm, luôn sẵn sàng phục vụ.\n");
+                sb.append("- Đội ngũ bác sĩ giàu kinh nghiệm, luôn sẵn sàng phục vụ.\n");
             }
             return sb.toString();
         } catch (Exception e) {

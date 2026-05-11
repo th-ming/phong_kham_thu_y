@@ -6,11 +6,12 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "HoaDon") // Kết nối bảng hóa đơn
+@Table(name = "HoaDon") // Káº¿t ná»‘i báº£ng hÃ³a Ä‘Æ¡n
 @Data
 public class HoaDon {
     @Id
-    private String id_hoa_don;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id_hoa_don;
 
     private String id_lich_hen;
     private String id_khach_hang;

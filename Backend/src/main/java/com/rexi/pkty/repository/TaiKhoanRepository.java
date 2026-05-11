@@ -15,16 +15,19 @@ public interface TaiKhoanRepository extends JpaRepository<TaiKhoan, String> {
     @Query("SELECT t FROM TaiKhoan t WHERE t.id_khach_hang = :idKhachHang")
     java.util.Optional<TaiKhoan> findByIdKhachHang(@Param("idKhachHang") String idKhachHang);
 
+    @Query("SELECT t FROM TaiKhoan t WHERE t.id_nhan_vien = :idNhanVien")
+    java.util.Optional<TaiKhoan> findByIdNhanVien(@Param("idNhanVien") String idNhanVien);
+
     
-    // Tìm user theo tên đăng nhập
+    // TÃƒÂ¬m user theo tÃƒÂªn Ã„â€˜Ã„Æ’ng nhÃ¡ÂºÂ­p
     @Query("SELECT t FROM TaiKhoan t WHERE t.ten_dang_nhap = :username")
     Optional<TaiKhoan> findByTenDangNhap(String username);
 
-    // Gọi Stored Procedure Đăng nhập
+    // GÃ¡Â»Âi Stored Procedure Ã„ÂÃ„Æ’ng nhÃ¡ÂºÂ­p
     @Query(value = "EXEC sp_DangNhap :username", nativeQuery = true)
     List<Map<String, Object>> callSpDangNhap(@Param("username") String username);
 
-    // Gọi Stored Procedure Đăng ký
+    // GÃ¡Â»Âi Stored Procedure Ã„ÂÃ„Æ’ng kÃƒÂ½
     @Query(value = "EXEC sp_DangKyKhachHang :username, :password, :name, :email, :phone, :address", nativeQuery = true)
     List<Map<String, Object>> callSpDangKy(
         @Param("username") String username,

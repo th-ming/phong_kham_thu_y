@@ -20,19 +20,19 @@ public class DatabaseBackupService {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    // Tự động chạy ngầm vào lúc 02:00 sáng mỗi ngày
+    // Tá»± Ä‘á»™ng cháº¡y ngáº§m vÃ o lÃºc 02:00 sÃ¡ng má»—i ngÃ y
     @Scheduled(cron = "0 0 2 * * ?")
     public void autoBackup() {
         try {
-            logger.info("Bắt đầu tiến trình sao lưu cơ sở dữ liệu định kỳ...");
+            logger.info("Báº¯t Ä‘áº§u tiáº¿n trÃ¬nh sao lÆ°u cÆ¡ sá»Ÿ dá»¯ liá»‡u Ä‘á»‹nh ká»³...");
             backupDatabaseManual();
             cleanOldBackups();
         } catch (Exception e) {
-            logger.severe("Lỗi khi sao lưu tự động: " + e.getMessage());
+            logger.severe("Lá»—i khi sao lÆ°u tá»± Ä‘á»™ng: " + e.getMessage());
         }
     }
 
-    // Hàm thực thi việc dọn dẹp các file backup cũ hơn 7 ngày
+    // HÃ m thá»±c thi viá»‡c dá»n dáº¹p cÃ¡c file backup cÅ© hÆ¡n 7 ngÃ y
     private void cleanOldBackups() {
         String backupDirPath = System.getProperty("user.dir") + File.separator + "backups";
         File backupDir = new File(backupDirPath);
@@ -40,7 +40,7 @@ public class DatabaseBackupService {
         if (backupDir.exists() && backupDir.isDirectory()) {
             File[] files = backupDir.listFiles((dir, name) -> name.startsWith("PKTY_Backup_") && name.endsWith(".bak"));
             if (files != null) {
-                // Lấy số ngày lưu trữ từ DB
+                // Láº¥y sá»‘ ngÃ y lÆ°u trá»¯ tá»« DB
                 int retentionDays = 7;
                 try {
                     String val = jdbcTemplate.queryForObject(
@@ -50,18 +50,18 @@ public class DatabaseBackupService {
                         retentionDays = Integer.parseInt(val);
                     }
                 } catch (Exception e) {
-                    logger.warning("Không lấy được cấu hình ngày sao lưu, dùng mặc định 7 ngày");
+                    logger.warning("KhÃ´ng láº¥y Ä‘Æ°á»£c cáº¥u hÃ¬nh ngÃ y sao lÆ°u, dÃ¹ng máº·c Ä‘á»‹nh 7 ngÃ y");
                 }
 
-                // Tính toán thời điểm giới hạn (tính bằng milliseconds)
+                // TÃ­nh toÃ¡n thá»i Ä‘iá»ƒm giá»›i háº¡n (tÃ­nh báº±ng milliseconds)
                 long cutoffTime = System.currentTimeMillis() - ((long) retentionDays * 24 * 60 * 60 * 1000);
                 for (File file : files) {
                     if (file.lastModified() < cutoffTime) {
                         if (file.delete()) {
-                            logger.info("🧹 Đã tự động xóa file backup cũ (hơn " + retentionDays + " ngày): "
+                            logger.info("ðŸ§¹ ÄÃ£ tá»± Ä‘á»™ng xÃ³a file backup cÅ© (hÆ¡n " + retentionDays + " ngÃ y): "
                                     + file.getName());
                         } else {
-                            logger.warning("❌ Không thể xóa file backup cũ: " + file.getName());
+                            logger.warning("âŒ KhÃ´ng thá»ƒ xÃ³a file backup cÅ©: " + file.getName());
                         }
                     }
                 }
@@ -69,9 +69,9 @@ public class DatabaseBackupService {
         }
     }
 
-    // Hàm thực thi lệnh Backup SQL Server
+    // HÃ m thá»±c thi lá»‡nh Backup SQL Server
     public String backupDatabaseManual() throws Exception {
-        // Tạo thư mục "backups" nằm ngay trong thư mục chạy project Backend
+        // Táº¡o thÆ° má»¥c "backups" náº±m ngay trong thÆ° má»¥c cháº¡y project Backend
         String backupDirPath = System.getProperty("user.dir") + File.separator + "backups";
         File backupDir = new File(backupDirPath);
         if (!backupDir.exists()) {
@@ -83,7 +83,7 @@ public class DatabaseBackupService {
         String dbName = jdbcTemplate.queryForObject("SELECT DB_NAME()", String.class);
         String sql = "BACKUP DATABASE [" + dbName + "] TO DISK = '" + backupFileName + "' WITH FORMAT, INIT;";
         jdbcTemplate.execute(sql);
-        logger.info("✅ Đã sao lưu CSDL thành công tại: " + backupFileName);
+        logger.info("âœ… ÄÃ£ sao lÆ°u CSDL thÃ nh cÃ´ng táº¡i: " + backupFileName);
         return backupFileName;
     }
 }

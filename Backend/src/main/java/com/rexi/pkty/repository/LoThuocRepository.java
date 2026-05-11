@@ -5,7 +5,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface LoThuocRepository extends JpaRepository<LoThuoc, String> {
+public interface LoThuocRepository extends JpaRepository<LoThuoc, Long> {
 }
+
 
 

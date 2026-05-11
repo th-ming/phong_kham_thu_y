@@ -17,47 +17,47 @@ import java.util.function.Function;
 import java.util.logging.Logger;
 
 /**
- * CÔNG CỤ XỬ LÝ JWT TOKEN
- * - Quản lý việc tạo, trích xuất và xác thực thẻ bài (Token)
- * - Token có thời hạn sử dụng và được mã hóa bảo mật
+ * CÃ”NG Cá»¤ Xá»¬ LÃ JWT TOKEN
+ * - Quáº£n lÃ½ viá»‡c táº¡o, trÃ­ch xuáº¥t vÃ  xÃ¡c thá»±c tháº» bÃ i (Token)
+ * - Token cÃ³ thá»i háº¡n sá»­ dá»¥ng vÃ  Ä‘Æ°á»£c mÃ£ hÃ³a báº£o máº­t
  */
 @Component
 public class JwtUtil {
 
     private static final Logger logger = Logger.getLogger(JwtUtil.class.getName());
 
-    // Khóa bí mật dùng để ký tên lên Token (lấy từ cấu hình hoặc dùng mặc định)
+    // KhÃ³a bÃ­ máº­t dÃ¹ng Ä‘á»ƒ kÃ½ tÃªn lÃªn Token (láº¥y tá»« cáº¥u hÃ¬nh hoáº·c dÃ¹ng máº·c Ä‘á»‹nh)
     @Value("${jwt.secret:RexiVeterinaryClinicManagementSystemSuperSecretKey1234567890!!!}")
     private String secretKey;
 
-    // Thời gian hết hạn của Token (mặc định 7 ngày)
+    // Thá»i gian háº¿t háº¡n cá»§a Token (máº·c Ä‘á»‹nh 7 ngÃ y)
     @Value("${jwt.expiration:604800000}")
     private long expiration;
 
-    // Thời gian hết hạn của Refresh Token (mặc định 30 ngày)
+    // Thá»i gian háº¿t háº¡n cá»§a Refresh Token (máº·c Ä‘á»‹nh 30 ngÃ y)
     @Value("${jwt.refreshExpiration:2592000000}")
     private long refreshExpiration;
 
-    // Lấy khóa ký tên (Đảm bảo độ dài tối thiểu 32 bytes để an toàn)
+    // Láº¥y khÃ³a kÃ½ tÃªn (Äáº£m báº£o Ä‘á»™ dÃ i tá»‘i thiá»ƒu 32 bytes Ä‘á»ƒ an toÃ n)
     private Key getSigningKey() {
         byte[] keyBytes = secretKey.getBytes();
         if (keyBytes.length < 32) {
-            logger.warning("CẢNH BÁO: Khóa bí mật JWT quá ngắn, không an toàn!");
+            logger.warning("Cáº¢NH BÃO: KhÃ³a bÃ­ máº­t JWT quÃ¡ ngáº¯n, khÃ´ng an toÃ n!");
         }
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
     /**
-     * Tạo Token mới kèm theo vai trò (Role) của người dùng
+     * Táº¡o Token má»›i kÃ¨m theo vai trÃ² (Role) cá»§a ngÆ°á»i dÃ¹ng
      */
     public String generateToken(String username, String role) {
         Map<String, Object> claims = new HashMap<>();
-        claims.put("role", role); // Gắn chức danh vào Token
+        claims.put("role", role); // Gáº¯n chá»©c danh vÃ o Token
         return createToken(claims, username);
     }
 
     /**
-     * Tạo Refresh Token dài hạn (Chỉ chứa username)
+     * Táº¡o Refresh Token dÃ i háº¡n (Chá»‰ chá»©a username)
      */
     public String generateRefreshToken(String username) {
         Instant now = Instant.now();
@@ -66,7 +66,7 @@ public class JwtUtil {
                 .setExpiration(Date.from(expiresAt)).signWith(getSigningKey(), SignatureAlgorithm.HS256).compact();
     }
 
-    // Khởi tạo các thông số kỹ thuật cho Token
+    // Khá»Ÿi táº¡o cÃ¡c thÃ´ng sá»‘ ká»¹ thuáº­t cho Token
     private String createToken(Map<String, Object> claims, String subject) {
         Instant now = Instant.now();
         Instant expiresAt = now.plus(expiration, ChronoUnit.MILLIS);
@@ -81,33 +81,33 @@ public class JwtUtil {
     }
 
     /**
-     * Kiểm tra xem Token còn hiệu lực và đúng người dùng không
+     * Kiá»ƒm tra xem Token cÃ²n hiá»‡u lá»±c vÃ  Ä‘Ãºng ngÆ°á»i dÃ¹ng khÃ´ng
      */
     public Boolean validateToken(String token, String username) {
         try {
             final String extractedUsername = extractUsername(token);
             return (extractedUsername.equals(username) && !isTokenExpired(token));
         } catch (Exception e) {
-            logger.warning("Xác thực Token thất bại: " + e.getMessage());
+            logger.warning("XÃ¡c thá»±c Token tháº¥t báº¡i: " + e.getMessage());
             return false;
         }
     }
 
     /**
-     * Lấy Tên đăng nhập từ Token
+     * Láº¥y TÃªn Ä‘Äƒng nháº­p tá»« Token
      */
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
     }
 
     /**
-     * Lấy Vai trò (Role) từ Token
+     * Láº¥y Vai trÃ² (Role) tá»« Token
      */
     public String extractRole(String token) {
         return extractAllClaims(token).get("role", String.class);
     }
 
-    // Kiểm tra thời hạn của Token
+    // Kiá»ƒm tra thá»i háº¡n cá»§a Token
     public Date extractExpiration(String token) {
         return extractClaim(token, Claims::getExpiration);
     }
@@ -117,7 +117,7 @@ public class JwtUtil {
         return claimsResolver.apply(claims);
     }
 
-    // Đọc toàn bộ nội dung bên trong Token
+    // Äá»c toÃ n bá»™ ná»™i dung bÃªn trong Token
     private Claims extractAllClaims(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(getSigningKey())
@@ -126,7 +126,7 @@ public class JwtUtil {
                 .getBody();
     }
 
-    // Kiểm tra xem Token đã hết hạn chưa
+    // Kiá»ƒm tra xem Token Ä‘Ã£ háº¿t háº¡n chÆ°a
     private Boolean isTokenExpired(String token) {
         return extractExpiration(token).before(new Date());
     }

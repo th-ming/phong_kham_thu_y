@@ -131,16 +131,16 @@ const Header: React.FC<{ hideMenu?: boolean }> = ({ hideMenu }) => {
 
           {user ? (
             <Link to={getDashboardLink()} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'var(--gray-100)', padding: '12px', borderRadius: '20px', border: '1px solid var(--gray-200)', textDecoration: 'none', color: 'var(--ink)', fontWeight: 700 }}>
-              <div style={{ 
-                width: '44px', height: '44px', borderRadius: '12px', overflow: 'hidden', 
-                border: '2px solid var(--background)', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', 
-                background: user?.hinh_anh ? 'transparent' : 'var(--primary)',
+              <div style={{
+                width: '44px', height: '44px', borderRadius: '12px', overflow: 'hidden',
+                border: '2px solid var(--background)', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+                background: (user?.hinh_anh || user?.avatar) ? 'transparent' : 'var(--primary)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center'
               }}>
                 {/* avatar người dùng: Ưu tiên ảnh Google, nếu không có dùng icon hình người chuyên nghiệp */}
-                {user?.hinh_anh ? (
+                {user?.hinh_anh || user?.avatar ? (
                   <img
-                    src={user.hinh_anh}
+                    src={user.hinh_anh || user.avatar}
                     alt={user?.displayName || "Avatar"}
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     onError={(e) => {

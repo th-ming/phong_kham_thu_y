@@ -1,41 +1,42 @@
 
-# OptimizeVideos.ps1 - Cỗ máy phẫu thuật Video của Sếp
-# HƯỚNG DẪN: 
-# Tải FFmpeg tại: https://www.gyan.dev/ffmpeg/builds/ffmpeg-git-full.7z
-# Giải nén và thêm thư mục 'bin' vào PATH của Windows (hoặc chép file ffmpeg.exe vào thư mục dự án này).
-# Chạy script này để gọt giũa toàn bộ video.
+# OptimizeVideos.ps1 - Co may phau thuat Video cua Sep
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+# HUONG DAN: 
+# Tai FFmpeg tai: https://www.gyan.dev/ffmpeg/builds/ffmpeg-git-full.7z
+# Giai nen va them thu muc 'bin' vao PATH cua Windows (hoac chep file ffmpeg.exe vao thu muc du an nay).
+# Chay script nay de got giua toan bo video.
 
 $PublicImg = "d:\QLy Phòng Khám Thú Y\Frontend\public\img"
 
-Write-Host "🎬 Bắt đầu phẫu thuật video cho Sếp..." -ForegroundColor Cyan
+Write-Host "🎬 Bat dau phau thuat video cho Sep..." -ForegroundColor Cyan
 
-# Hàm gọt video (Cắt 15% trên, 20% dưới, chuyển sang webm)
+# Ham got video (Cat 15% tren, 20% duoi, chuyen sang webm)
 function Optimize-Video($fileName, $startTime, $duration) {
     $input = "$PublicImg\$fileName.mp4"
     $output = "$PublicImg\$fileName.webm"
     
     if (Test-Path $input) {
-        Write-Host "✂️ Đang xử lý: $fileName..." -ForegroundColor Yellow
-        # Lệnh FFmpeg: Cắt thời gian + Gọt cạnh + Nén WebM (VP9)
-        # crop=in_w:in_h*0.65:0:in_h*0.15 (Lấy 65% chiều cao, bắt đầu từ vị trí 15% từ trên xuống)
+        Write-Host "✂️ Dang xu ly: $fileName..." -ForegroundColor Yellow
+        # Lenh FFmpeg: Cat thoi gian + Got canh + Nen WebM (VP9)
+        # crop=in_w:in_h*0.65:0:in_h*0.15 (Lay 65% chieu cao, bat dau tu vi tri 15% tu tren xuong)
         $timeArgs = if ($duration) { "-ss $startTime -t $duration" } else { "" }
         
         $command = "ffmpeg -i `"$input`" $timeArgs -vf `"crop=in_w:in_h*0.65:0:in_h*0.15`" -c:v libvpx-vp9 -crf 30 -b:v 0 -an -y `"$output`""
         Invoke-Expression $command
         
-        Write-Host "✅ Đã xong: $fileName.webm" -ForegroundColor Green
+        Write-Host "✅ Da xong: $fileName.webm" -ForegroundColor Green
     } else {
-        Write-Host "❌ Không tìm thấy file: $input" -ForegroundColor Red
+        Write-Host "❌ Khong tim thay file: $input" -ForegroundColor Red
     }
 }
 
-# Bé mèo chạy (Chỉ lấy 4 giây đầu, gọt trên dưới)
+# Be meo chay (Chi lay 4 giay dau, got tren duoi)
 Optimize-Video "video_meo_chay" "00:00:00.2" "4"
 
-# Bé chó chào (Gọt trên dưới, giữ nguyên độ dài)
+# Be cho chao (Got tren duoi, giu nguyen do dai)
 Optimize-Video "video_cho_chao" $null $null
 
-# Bé mèo chào (Gọt trên dưới, giữ nguyên độ dài)
+# Be meo chao (Got tren duoi, giu nguyen do dai)
 Optimize-Video "video_meo_chao" $null $null
 
-Write-Host "🚀 TẤT CẢ VIDEO ĐÃ ĐƯỢC TỐI ƯU! Sếp hãy vào code và đổi đuôi .mp4 sang .webm nhé!" -ForegroundColor Cyan
+Write-Host "🚀 TAT CA VIDEO DA DUOC TOI UU! Sep hay vao code va doi duoi .mp4 sang .webm nhe!" -ForegroundColor Cyan

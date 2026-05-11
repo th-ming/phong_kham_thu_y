@@ -120,7 +120,7 @@ const App: React.FC = () => {
             <Route element={<AdminLayout />}>
               
               {/* LỚP 1: Các trang nội bộ dùng chung cho mọi nhân viên */}
-              <Route element={<ProtectedRoute allowedRoles={['admin', 'quan-ly', 'bac_si', 'bác sĩ', 'staff', 'nhan-vien', 'kế toán', 'ke_toan']} />}>
+              <Route element={<ProtectedRoute allowedRoles={['admin', 'quan_ly', 'bac_si', 'ke_toan', 'tiep_tan', 'y_ta', 'staff']} />}>
                 <Route path="/quan-ly/dashboard" element={<DashboardQuanLy />} />
                 <Route path="/quan-ly/khach-hang-thu-cung" element={<QuanLyKhachHangThuCung />} />
                 <Route path="/quan-ly/lich-hen" element={<QuanLyLichHen />} />
@@ -132,7 +132,7 @@ const App: React.FC = () => {
               </Route>
 
               {/* LỚP 2: Các trang TÀI CHÍNH - CHỈ KẾ TOÁN & QUẢN LÝ */}
-              <Route element={<ProtectedRoute allowedRoles={['admin', 'quan-ly', 'kế toán', 'ke_toan', 'ketoan']} />}>
+              <Route element={<ProtectedRoute allowedRoles={['admin', 'quan_ly', 'ke_toan']} />}>
                 <Route path="/quan-ly/ke-toan" element={<KeToanDashboard />} />
                 <Route path="/quan-ly/hoa-don" element={<QuanLyHoaDon />} />
                 <Route path="/quan-ly/bao-cao-thong-ke" element={<BaoCaoThongKe />} />
@@ -141,11 +141,15 @@ const App: React.FC = () => {
               </Route>
 
               {/* LỚP 3: Các trang QUẢN TRỊ HỆ THỐNG - CHỈ ADMIN TỐI CAO */}
-              <Route element={<ProtectedRoute allowedRoles={['admin', 'quan-ly']} />}>
+              <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
                 <Route path="/quan-ly/nhan-vien-phan-quyen" element={<QuanLyNhanVienPhanQuyen />} />
                 <Route path="/quan-ly/marketing" element={<QuanLyMarketing />} />
                 <Route path="/quan-ly/cau-hinh" element={<QuanLyCauHinhHeThong />} />
                 <Route path="/quan-ly/chuc-nang" element={<QuanLyChucNang />} />
+              </Route>
+
+              {/* LỚP 4: QUẢN LÝ NGHIỆP VỤ CAO CẤP - ADMIN & QUẢN LÝ */}
+              <Route element={<ProtectedRoute allowedRoles={['admin', 'quan_ly']} />}>
                 <Route path="/quan-ly/dich-vu" element={<QuanLyDichVu />} />
                 <Route path="/quan-ly/xet-nghiem" element={<QuanLyXetNghiem />} />
               </Route>

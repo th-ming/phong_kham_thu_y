@@ -18,8 +18,8 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 /**
- * Quản lý File Đính kèm (Upload / Download / Delete)
- * Lưu file vào thư mục uploads/ trong project
+ * Quáº£n lÃ½ File ÄÃ­nh kÃ¨m (Upload / Download / Delete)
+ * LÆ°u file vÃ o thÆ° má»¥c uploads/ trong project
  */
 @RestController
 @RequestMapping("/api/file-dinh-kem")
@@ -36,7 +36,7 @@ public class FileDinhKemController {
     @Autowired
     private com.rexi.pkty.service.AuditLogService auditLogService;
 
-    // BẢO MẬT: Hàm kiểm tra quyền thao tác với file
+    // Báº¢O Máº¬T: HÃ m kiá»ƒm tra quyá»n thao tÃ¡c vá»›i file
     private boolean hasPermission() {
         org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
                 .getContext().getAuthentication();
@@ -46,41 +46,41 @@ public class FileDinhKemController {
         return role.contains("ADMIN") || role.contains("BAC_SI") || role.contains("STAFF");
     }
 
-    // Lấy danh sách file đã upload
+    // Láº¥y danh sÃ¡ch file Ä‘Ã£ upload
     @GetMapping
     public ResponseEntity<?> getAllFiles() {
         if (!hasPermission()) {
             return ResponseEntity.status(403)
-                    .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền xem tài liệu của hệ thống!"));
+                    .body(Map.of("message", "Cáº£nh bÃ¡o báº£o máº­t: Báº¡n khÃ´ng cÃ³ quyá»n xem tÃ i liá»‡u cá»§a há»‡ thá»‘ng!"));
         }
         try {
-            // Tự động trả về danh sách từ Database
+            // Tá»± Ä‘á»™ng tráº£ vá» danh sÃ¡ch tá»« Database
             return ResponseEntity.ok(fileDinhKemRepository.findAll());
         } catch (Exception e) {
-            logger.severe("Lỗi khi liệt kê danh sách file: " + e.getMessage());
-            return ResponseEntity.status(500).body(Map.of("message", "Lỗi đọc danh sách file: " + e.getMessage()));
+            logger.severe("Lá»—i khi liá»‡t kÃª danh sÃ¡ch file: " + e.getMessage());
+            return ResponseEntity.status(500).body(Map.of("message", "Lá»—i Ä‘á»c danh sÃ¡ch file: " + e.getMessage()));
         }
     }
 
-    // Upload file mới
+    // Upload file má»›i
     @PostMapping("/upload")
     public ResponseEntity<?> uploadFile(
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "id_ho_so_benh_an", required = false) String idHoSoBenhAn) {
         if (!hasPermission()) {
             return ResponseEntity.status(403)
-                    .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền tải tài liệu lên!"));
+                    .body(Map.of("message", "Cáº£nh bÃ¡o báº£o máº­t: Báº¡n khÃ´ng cÃ³ quyá»n táº£i tÃ i liá»‡u lÃªn!"));
         }
         try {
             if (file.isEmpty()) {
-                return ResponseEntity.badRequest().body(Map.of("message", "File trống!"));
+                return ResponseEntity.badRequest().body(Map.of("message", "File trá»‘ng!"));
             }
 
             if (file.getSize() > MAX_FILE_SIZE) {
-                return ResponseEntity.badRequest().body(Map.of("message", "File quá lớn! Tối đa 10MB."));
+                return ResponseEntity.badRequest().body(Map.of("message", "File quÃ¡ lá»›n! Tá»‘i Ä‘a 10MB."));
             }
 
-            // BẢO MẬT: Khai báo Whitelist - Chỉ cho phép các định dạng an toàn
+            // Báº¢O Máº¬T: Khai bÃ¡o Whitelist - Chá»‰ cho phÃ©p cÃ¡c Ä‘á»‹nh dáº¡ng an toÃ n
             String originalFilename = StringUtils
                     .cleanPath(file.getOriginalFilename() != null ? file.getOriginalFilename() : "file");
             String fileExtension = originalFilename.contains(".")
@@ -91,35 +91,35 @@ public class FileDinhKemController {
 
             if (!allowedExtensions.contains(fileExtension)) {
                 return ResponseEntity.badRequest().body(Map.of("message",
-                        "Định dạng file không được phép tải lên! Hệ thống chỉ hỗ trợ Ảnh, Video ngắn và Tài liệu."));
+                        "Äá»‹nh dáº¡ng file khÃ´ng Ä‘Æ°á»£c phÃ©p táº£i lÃªn! Há»‡ thá»‘ng chá»‰ há»— trá»£ áº¢nh, Video ngáº¯n vÃ  TÃ i liá»‡u."));
             }
 
-            // Phân loại thư mục
+            // PhÃ¢n loáº¡i thÆ° má»¥c
             String contentType = file.getContentType();
             String subFolder = "others/";
-            String loaiFile = "Khác";
+            String loaiFile = "KhÃ¡c";
 
             if (contentType != null) {
                 if (contentType.startsWith("image/")) {
                     subFolder = "images/";
-                    loaiFile = "Hình ảnh";
+                    loaiFile = "HÃ¬nh áº£nh";
                 } else if (contentType.startsWith("video/")) {
                     subFolder = "videos/";
                     loaiFile = "Video";
                 } else if (contentType.equals("application/pdf") || contentType.contains("document")
                         || contentType.contains("msword")) {
                     subFolder = "docs/";
-                    loaiFile = "Tài liệu";
+                    loaiFile = "TÃ i liá»‡u";
                 }
             }
 
-            // Tạo thư mục vật lý nếu chưa có
+            // Táº¡o thÆ° má»¥c váº­t lÃ½ náº¿u chÆ°a cÃ³
             Path uploadPath = Paths.get(UPLOAD_DIR + "/" + subFolder);
             if (!Files.exists(uploadPath)) {
                 Files.createDirectories(uploadPath);
             }
 
-            // Xử lý tên file bằng UUID tránh trùng lặp
+            // Xá»­ lÃ½ tÃªn file báº±ng UUID trÃ¡nh trÃ¹ng láº·p
             String newFileName = UUID.randomUUID().toString() + fileExtension;
 
             Path filePath = uploadPath.resolve(newFileName);
@@ -127,7 +127,7 @@ public class FileDinhKemController {
 
             String fileUrl = "/" + UPLOAD_DIR + "/" + subFolder + newFileName;
 
-            // Lưu vào Database
+            // LÆ°u vÃ o Database
             FileDinhKem newFile = new FileDinhKem();
             newFile.setId("FILE-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase());
             newFile.setTenFile(originalFilename);
@@ -140,55 +140,55 @@ public class FileDinhKemController {
             fileDinhKemRepository.save(newFile);
 
             Map<String, Object> result = new HashMap<>();
-            result.put("message", "Upload thành công!");
+            result.put("message", "Upload thÃ nh cÃ´ng!");
             result.put("ten_file", originalFilename);
             result.put("loai", loaiFile);
             result.put("kich_thuoc", file.getSize());
             result.put("duong_dan", fileUrl);
 
-            logger.info("Đã tải lên file: " + newFileName + " (" + file.getSize() + " bytes)");
+            logger.info("ÄÃ£ táº£i lÃªn file: " + newFileName + " (" + file.getSize() + " bytes)");
             // GHI LOG
-            auditLogService.logAction("UPLOAD", "FileDinhKem", "Tải lên file đính kèm: " + originalFilename);
+            auditLogService.logAction("UPLOAD", "FileDinhKem", "Táº£i lÃªn file Ä‘Ã­nh kÃ¨m: " + originalFilename);
 
             return ResponseEntity.ok(result);
         } catch (Exception e) {
-            logger.severe("Lỗi khi tải lên file: " + e.getMessage());
-            return ResponseEntity.status(500).body(Map.of("message", "Lỗi upload file: " + e.getMessage()));
+            logger.severe("Lá»—i khi táº£i lÃªn file: " + e.getMessage());
+            return ResponseEntity.status(500).body(Map.of("message", "Lá»—i upload file: " + e.getMessage()));
         }
     }
 
-    // Xóa file (BẢO MẬT: Chỉ Admin, Bác sĩ hoặc Nhân viên mới được xóa)
+    // XÃ³a file (Báº¢O Máº¬T: Chá»‰ Admin, BÃ¡c sÄ© hoáº·c NhÃ¢n viÃªn má»›i Ä‘Æ°á»£c xÃ³a)
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteFile(@PathVariable String id) {
         if (!hasPermission()) {
             return ResponseEntity.status(403)
-                    .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền xóa tài liệu của hệ thống!"));
+                    .body(Map.of("message", "Cáº£nh bÃ¡o báº£o máº­t: Báº¡n khÃ´ng cÃ³ quyá»n xÃ³a tÃ i liá»‡u cá»§a há»‡ thá»‘ng!"));
         }
         try {
             return fileDinhKemRepository.findById(id).map(file -> {
                 try {
-                    // Lấy đường dẫn và xóa file vật lý
+                    // Láº¥y Ä‘Æ°á»ng dáº«n vÃ  xÃ³a file váº­t lÃ½
                     String filePathStr = file.getDuongDan().replaceFirst("^/", "");
                     Path filePath = Paths.get(filePathStr);
                     Files.deleteIfExists(filePath);
 
-                    // Xóa dòng dữ liệu trong DB
+                    // XÃ³a dÃ²ng dá»¯ liá»‡u trong DB
                     fileDinhKemRepository.delete(file);
                     org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
                             .getContext().getAuthentication();
-                    logger.info("File bị xóa bởi " + (auth != null ? auth.getName() : "Không rõ") + ": "
+                    logger.info("File bá»‹ xÃ³a bá»Ÿi " + (auth != null ? auth.getName() : "KhÃ´ng rÃµ") + ": "
                             + file.getTenFile());
                     // GHI LOG
-                    auditLogService.logAction("XÓA", "FileDinhKem", "Xóa file: " + file.getTenFile());
-                    return ResponseEntity.ok(Map.of("message", "Đã xóa file thành công"));
+                    auditLogService.logAction("XÃ“A", "FileDinhKem", "XÃ³a file: " + file.getTenFile());
+                    return ResponseEntity.ok(Map.of("message", "ÄÃ£ xÃ³a file thÃ nh cÃ´ng"));
                 } catch (IOException e) {
-                    logger.severe("Lỗi khi xóa file vật lý: " + e.getMessage());
-                    return ResponseEntity.status(500).body(Map.of("message", "Lỗi xóa file vật lý: " + e.getMessage()));
+                    logger.severe("Lá»—i khi xÃ³a file váº­t lÃ½: " + e.getMessage());
+                    return ResponseEntity.status(500).body(Map.of("message", "Lá»—i xÃ³a file váº­t lÃ½: " + e.getMessage()));
                 }
-            }).orElse(ResponseEntity.status(404).body(Map.of("message", "Không tìm thấy file cần xóa.")));
+            }).orElse(ResponseEntity.status(404).body(Map.of("message", "KhÃ´ng tÃ¬m tháº¥y file cáº§n xÃ³a.")));
         } catch (Exception e) {
-            logger.severe("Lỗi khi xóa file: " + e.getMessage());
-            return ResponseEntity.status(500).body(Map.of("message", "Lỗi xóa file: " + e.getMessage()));
+            logger.severe("Lá»—i khi xÃ³a file: " + e.getMessage());
+            return ResponseEntity.status(500).body(Map.of("message", "Lá»—i xÃ³a file: " + e.getMessage()));
         }
     }
 }

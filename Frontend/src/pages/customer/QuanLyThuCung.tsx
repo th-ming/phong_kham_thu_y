@@ -265,14 +265,15 @@ const QuanLyThuCung: React.FC = () => {
       {showForm && (
         <div className="glass-card stagger-2" style={{ padding: '48px', borderRadius: 'var(--radius-xl)', marginBottom: '48px', maxWidth: '900px', border: '1.5px solid var(--primary)' }}>
           <h2 style={{ fontSize: '1.8rem', fontWeight: 900, marginBottom: '32px', color: 'var(--primary)' }}>{editingPet ? 'Cập nhật thông tin' : 'Đăng ký bé mới'}</h2>
+
           <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
             <div style={{ display: 'grid', gap: '8px' }}>
-              <label>TÊN BÉ</label>
-              <input required value={formData.ten_thu_cung} onChange={e => setFormData({ ...formData, ten_thu_cung: e.target.value })} />
+              <label>TÊN BÉ <span style={{ color: '#ff4d4f' }}>*</span></label>
+              <input required value={formData.ten_thu_cung} onChange={e => setFormData({ ...formData, ten_thu_cung: e.target.value })} placeholder="VD: Bé Lu, Miu Miu..." />
             </div>
             <div style={{ display: 'grid', gap: '8px' }}>
-              <label>LOÀI</label>
-              <input required value={formData.loai} onChange={e => setFormData({ ...formData, loai: e.target.value })} />
+              <label>LOÀI <span style={{ color: '#ff4d4f' }}>*</span></label>
+              <input required value={formData.loai} onChange={e => setFormData({ ...formData, loai: e.target.value })} placeholder="VD: Chó, Mèo, Thỏ..." />
             </div>
             <div style={{ display: 'grid', gap: '8px' }}>
               <label>GIỐNG</label>

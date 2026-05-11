@@ -27,9 +27,14 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles }) => {
 
     try {
         const user = JSON.parse(userStr);
-        const userRole = (user?.ten_vai_tro?.toLowerCase() || user?.loai_tai_khoan?.toLowerCase() || 'guest');
+        let userRole = (user?.loai_tai_khoan?.toLowerCase() || user?.ten_vai_tro?.toLowerCase() || 'guest');
+        
+        // Chuẩn hóa vai trò tiếng Việt sang mã hệ thống để khớp với App.tsx
+        if (userRole.includes('quản trị')) userRole = 'admin';
+        if (userRole.includes('kế toán')) userRole = 'ke_toan';
+        if (userRole.includes('bác sĩ')) userRole = 'bac_si';
+        if (userRole.includes('nhân viên') || userRole.includes('tiếp tân')) userRole = 'staff';
 
-        // BẢO MẬT: So khớp chính xác Role thay vì dùng includes lỏng lẻo
         const hasPermission = allowedRoles.map(r => r.toLowerCase()).includes(userRole);
 
         if (!hasPermission) {

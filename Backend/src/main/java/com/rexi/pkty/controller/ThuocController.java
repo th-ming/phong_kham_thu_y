@@ -23,7 +23,7 @@ public class ThuocController {
         return thuocRepository.findAll();
     }
 
-    // API Dành cho cơ chế Autocomplete ở Frontend
+    // API DÃ nh cho cÆ¡ cháº¿ Autocomplete á»Ÿ Frontend
     @GetMapping("/search")
     public List<Thuoc> searchThuoc(@RequestParam String keyword) {
         if (keyword == null || keyword.trim().isEmpty())
@@ -34,17 +34,17 @@ public class ThuocController {
     @PostMapping
     public org.springframework.http.ResponseEntity<?> createThuoc(@RequestBody Thuoc thuoc) {
         if (!isAdmin())
-            return org.springframework.http.ResponseEntity.status(403).body("Bạn không có quyền quản lý kho thuốc!");
+            return org.springframework.http.ResponseEntity.status(403).body("Báº¡n khÃ´ng cÃ³ quyá»n quáº£n lÃ½ kho thuá»‘c!");
         Thuoc saved = thuocRepository.save(thuoc);
         // GHI LOG
-        auditLogService.logAction("THÊM MỚI", "Thuoc", "Thêm thuốc: " + saved.getTen_thuoc());
+        auditLogService.logAction("THÃŠM Má»šI", "Thuoc", "ThÃªm thuá»‘c: " + saved.getTen_thuoc());
         return org.springframework.http.ResponseEntity.ok(saved);
     }
 
     @PutMapping("/{id}")
     public org.springframework.http.ResponseEntity<?> updateThuoc(@PathVariable String id, @RequestBody Thuoc thuoc) {
         if (!isAdmin())
-            return org.springframework.http.ResponseEntity.status(403).body("Bạn không có quyền sửa thông tin thuốc!");
+            return org.springframework.http.ResponseEntity.status(403).body("Báº¡n khÃ´ng cÃ³ quyá»n sá»­a thÃ´ng tin thuá»‘c!");
         return thuocRepository.findById(id).map(existing -> {
             String tenCu = existing.getTen_thuoc();
             if (thuoc.getTen_thuoc() != null)
@@ -62,7 +62,7 @@ public class ThuocController {
             
             Thuoc saved = thuocRepository.save(existing);
             // GHI LOG
-            auditLogService.logAction("CẬP NHẬT", "Thuoc", "Sửa thuốc ID " + id + ": " + tenCu 
+            auditLogService.logAction("Cáº¬P NHáº¬T", "Thuoc", "Sá»­a thuá»‘c ID " + id + ": " + tenCu 
                     + " -> " + saved.getTen_thuoc());
             return org.springframework.http.ResponseEntity.ok(saved);
         }).orElse(org.springframework.http.ResponseEntity.notFound().build());
@@ -72,12 +72,12 @@ public class ThuocController {
     public org.springframework.http.ResponseEntity<?> deleteThuoc(@PathVariable String id) {
         if (!isAdmin())
             return org.springframework.http.ResponseEntity.status(403)
-                    .body("Bạn không có quyền xóa thuốc khỏi hệ thống!");
+                    .body("Báº¡n khÃ´ng cÃ³ quyá»n xÃ³a thuá»‘c khá»i há»‡ thá»‘ng!");
         thuocRepository.findById(id).ifPresent(t -> {
-            auditLogService.logAction("XÓA", "Thuoc", "Xóa thuốc: " + t.getTen_thuoc());
+            auditLogService.logAction("XÃ“A", "Thuoc", "XÃ³a thuá»‘c: " + t.getTen_thuoc());
         });
         thuocRepository.deleteById(id);
-        return org.springframework.http.ResponseEntity.ok("Đã xóa thuốc thành công!");
+        return org.springframework.http.ResponseEntity.ok("ÄÃ£ xÃ³a thuá»‘c thÃ nh cÃ´ng!");
     }
 
     private boolean isAdmin() {
@@ -87,3 +87,4 @@ public class ThuocController {
         return role.contains("ADMIN") || role.contains("KETOAN") || role.contains("QUANLY");
     }
 }
+

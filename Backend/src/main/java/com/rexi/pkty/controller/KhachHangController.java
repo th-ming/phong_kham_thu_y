@@ -30,61 +30,61 @@ public class KhachHangController {
     @Autowired
     private com.rexi.pkty.service.AuditLogService auditLogService;
 
-    // BẢO MẬT: Kiểm tra quyền nhân viên nội bộ
+    // Báº¢O Máº¬T: Kiá»ƒm tra quyá»n nhÃ¢n viÃªn ná»™i bá»™
     private boolean isInternalStaff() {
         org.springframework.security.core.Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || auth.getName().equals("anonymousUser"))
             return false;
         String role = auth.getAuthorities().toString().toUpperCase();
-        // Chỉ cho phép nhân viên nội bộ xem danh sách khách
+        // Chá»‰ cho phÃ©p nhÃ¢n viÃªn ná»™i bá»™ xem danh sÃ¡ch khÃ¡ch
         return role.contains("ADMIN") || role.contains("STAFF") || role.contains("BAC_SI") || role.contains("QUANLY")
                 || role.contains("KETOAN");
     }
 
-    // Lấy danh sách khách hàng
+    // Láº¥y danh sÃ¡ch khÃ¡ch hÃ ng
     @GetMapping
     public ResponseEntity<?> getAll() {
         if (!isInternalStaff()) {
             return ResponseEntity.status(403)
-                    .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền xem danh sách khách hàng!"));
+                    .body(Map.of("message", "Cáº£nh bÃ¡o báº£o máº­t: Báº¡n khÃ´ng cÃ³ quyá»n xem danh sÃ¡ch khÃ¡ch hÃ ng!"));
         }
         return ResponseEntity.ok(khachHangService.getAllKhachHang());
     }
 
-    // Đếm tổng số khách hàng (cho Dashboard)
+    // Äáº¿m tá»•ng sá»‘ khÃ¡ch hÃ ng (cho Dashboard)
     @GetMapping("/count")
     public ResponseEntity<?> countAll() {
         if (!isInternalStaff()) {
             return ResponseEntity.status(403)
-                    .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền xem thống kê!"));
+                    .body(Map.of("message", "Cáº£nh bÃ¡o báº£o máº­t: Báº¡n khÃ´ng cÃ³ quyá»n xem thá»‘ng kÃª!"));
         }
         return ResponseEntity.ok(khachHangRepository.count());
     }
 
-    // Tìm kiếm khách hàng theo SĐT (cho form đặt lịch của Admin)
+    // TÃ¬m kiáº¿m khÃ¡ch hÃ ng theo SÄT (cho form Ä‘áº·t lá»‹ch cá»§a Admin)
     @GetMapping("/search")
     public ResponseEntity<?> searchBySdt(@RequestParam String sdt) {
         if (!isInternalStaff()) {
             return ResponseEntity.status(403)
-                    .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền tìm kiếm khách hàng!"));
+                    .body(Map.of("message", "Cáº£nh bÃ¡o báº£o máº­t: Báº¡n khÃ´ng cÃ³ quyá»n tÃ¬m kiáº¿m khÃ¡ch hÃ ng!"));
         }
         return ResponseEntity.ok(khachHangRepository.findBySdtContaining(sdt));
     }
 
-    // Lấy thông tin 1 khách hàng theo ID
+    // Láº¥y thÃ´ng tin 1 khÃ¡ch hÃ ng theo ID
     @GetMapping("/{id}")
     public ResponseEntity<?> getById(@PathVariable String id) {
-        // BẢO MẬT: Kiểm tra IDOR - Ngăn khách hàng xem thông tin của người khác
+        // Báº¢O Máº¬T: Kiá»ƒm tra IDOR - NgÄƒn khÃ¡ch hÃ ng xem thÃ´ng tin cá»§a ngÆ°á»i khÃ¡c
         org.springframework.security.core.Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String username = (auth != null) ? auth.getName() : null;
         if (username != null && !username.equals("anonymousUser")) {
             Optional<TaiKhoan> tkOpt = taiKhoanRepository.findByTenDangNhap(username);
             if (tkOpt.isPresent()) {
                 TaiKhoan tk = tkOpt.get();
-                if (tk.getId_vai_tro() != null && tk.getId_vai_tro().equals("5")) { // Là khách hàng (Sửa từ 1 sang "5")
+                if (tk.getId_vai_tro() != null && tk.getId_vai_tro().equals("VT-KH")) { // Là khách hàng
                     if (!tk.getId_khach_hang().equals(id)) {
                         return ResponseEntity.status(403).body(Map.of("message",
-                                "Cảnh báo bảo mật: Bạn không có quyền xem thông tin của người khác!"));
+                                "Cáº£nh bÃ¡o báº£o máº­t: Báº¡n khÃ´ng cÃ³ quyá»n xem thÃ´ng tin cá»§a ngÆ°á»i khÃ¡c!"));
                     }
                 }
             }
@@ -95,18 +95,18 @@ public class KhachHangController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // Cập nhật thông tin khách hàng (Dùng Stored Procedure)
+    // Cáº­p nháº­t thÃ´ng tin khÃ¡ch hÃ ng (DÃ¹ng Stored Procedure)
     @PutMapping("/{id}")
     public ResponseEntity<?> update(@PathVariable String id, @RequestBody KhachHang kh) {
         try {
-            // BẢO MẬT: Kiểm tra IDOR (Xác minh quyền sở hữu)
+            // Báº¢O Máº¬T: Kiá»ƒm tra IDOR (XÃ¡c minh quyá»n sá»Ÿ há»¯u)
             org.springframework.security.core.Authentication auth = SecurityContextHolder.getContext()
                     .getAuthentication();
             String username = (auth != null) ? auth.getName() : null;
 
             if (username == null || username.equals("anonymousUser")) {
                 return ResponseEntity.status(401)
-                        .body(Map.of("message", "Cảnh báo bảo mật: Yêu cầu không có Token xác thực hợp lệ!"));
+                        .body(Map.of("message", "Cáº£nh bÃ¡o báº£o máº­t: YÃªu cáº§u khÃ´ng cÃ³ Token xÃ¡c thá»±c há»£p lá»‡!"));
             }
 
             Optional<TaiKhoan> tkOpt = taiKhoanRepository.findByTenDangNhap(username);
@@ -115,12 +115,12 @@ public class KhachHangController {
 
             if (tkOpt.isPresent()) {
                 TaiKhoan tk = tkOpt.get();
-                isKhachHang = tk.getId_vai_tro() != null && tk.getId_vai_tro().equals("5");
+                isKhachHang = tk.getId_vai_tro() != null && tk.getId_vai_tro().equals("VT-KH");
                 isOwner = tk.getId_khach_hang() != null && tk.getId_khach_hang().equals(id);
 
                 if (isKhachHang && !isOwner) {
                     return ResponseEntity.status(403).body(Map.of("message",
-                            "Cảnh báo bảo mật: Bạn không có quyền chỉnh sửa thông tin của người khác!"));
+                            "Cáº£nh bÃ¡o báº£o máº­t: Báº¡n khÃ´ng cÃ³ quyá»n chá»‰nh sá»­a thÃ´ng tin cá»§a ngÆ°á»i khÃ¡c!"));
                 }
             }
 
@@ -134,28 +134,28 @@ public class KhachHangController {
             if (result != null && !result.isEmpty()) {
                 // GHI LOG
                 if (!isKhachHang) {
-                    auditLogService.logAction("CẬP NHẬT", "KhachHang", "Cập nhật thông tin khách hàng ID " + id);
+                    auditLogService.logAction("Cáº¬P NHáº¬T", "KhachHang", "Cáº­p nháº­t thÃ´ng tin khÃ¡ch hÃ ng ID " + id);
                 }
                 return ResponseEntity.ok(result.get(0));
             }
-            return ResponseEntity.ok(Map.of("message", "Cập nhật thành công!"));
+            return ResponseEntity.ok(Map.of("message", "Cáº­p nháº­t thÃ nh cÃ´ng!"));
         } catch (Exception e) {
-            return ResponseEntity.status(400).body(Map.of("message", "Lỗi cập nhật: " + e.getMessage()));
+            return ResponseEntity.status(400).body(Map.of("message", "Lá»—i cáº­p nháº­t: " + e.getMessage()));
         }
     }
 
-    // Vô hiệu hóa tài khoản (Vùng nguy hiểm)
+    // VÃ´ hiá»‡u hÃ³a tÃ i khoáº£n (VÃ¹ng nguy hiá»ƒm)
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deactivate(@PathVariable String id) {
         try {
-            // BẢO MẬT: Kiểm tra IDOR (Xác minh quyền sở hữu)
+            // Báº¢O Máº¬T: Kiá»ƒm tra IDOR (XÃ¡c minh quyá»n sá»Ÿ há»¯u)
             org.springframework.security.core.Authentication auth = SecurityContextHolder.getContext()
                     .getAuthentication();
             String username = (auth != null) ? auth.getName() : null;
 
             if (username == null || username.equals("anonymousUser")) {
                 return ResponseEntity.status(401)
-                        .body(Map.of("message", "Cảnh báo bảo mật: Yêu cầu không có Token xác thực hợp lệ!"));
+                        .body(Map.of("message", "Cáº£nh bÃ¡o báº£o máº­t: YÃªu cáº§u khÃ´ng cÃ³ Token xÃ¡c thá»±c há»£p lá»‡!"));
             }
 
             Optional<TaiKhoan> tkOpt = taiKhoanRepository.findByTenDangNhap(username);
@@ -163,41 +163,41 @@ public class KhachHangController {
             boolean isOwner = false;
             if (tkOpt.isPresent()) {
                 TaiKhoan tk = tkOpt.get();
-                isKhachHang = tk.getId_vai_tro() != null && tk.getId_vai_tro().equals("5");
+                isKhachHang = tk.getId_vai_tro() != null && tk.getId_vai_tro().equals("VT-KH");
                 isOwner = tk.getId_khach_hang() != null && tk.getId_khach_hang().equals(id);
                 if (isKhachHang && !isOwner) {
                     return ResponseEntity.status(403).body(Map.of("message",
-                            "Cảnh báo bảo mật: Bạn không có quyền vô hiệu hóa tài khoản của người khác!"));
+                            "Cáº£nh bÃ¡o báº£o máº­t: Báº¡n khÃ´ng cÃ³ quyá»n vÃ´ hiá»‡u hÃ³a tÃ i khoáº£n cá»§a ngÆ°á»i khÃ¡c!"));
                 }
             }
 
             khachHangRepository.deactivateAccountByKhachHangId(id);
 
-            // BẢO MẬT: Khóa luôn tài khoản đăng nhập để ngăn chặn việc khách hàng dùng mật
-            // khẩu cũ đăng nhập lại
+            // Báº¢O Máº¬T: KhÃ³a luÃ´n tÃ i khoáº£n Ä‘Äƒng nháº­p Ä‘á»ƒ ngÄƒn cháº·n viá»‡c khÃ¡ch hÃ ng dÃ¹ng máº­t
+            // kháº©u cÅ© Ä‘Äƒng nháº­p láº¡i
             Optional<TaiKhoan> tkToLock = taiKhoanRepository.findByIdKhachHang(id);
             if (tkToLock.isPresent()) {
                 TaiKhoan tkLocked = tkToLock.get();
-                tkLocked.setTrang_thai("Đã khóa");
+                tkLocked.setTrang_thai("ÄÃ£ khÃ³a");
                 taiKhoanRepository.save(tkLocked);
             }
 
             // GHI LOG
             if (!isKhachHang) {
-                auditLogService.logAction("VÔ HIỆU HÓA", "KhachHang", "Vô hiệu hóa khách hàng ID " + id);
+                auditLogService.logAction("VÃ” HIá»†U HÃ“A", "KhachHang", "VÃ´ hiá»‡u hÃ³a khÃ¡ch hÃ ng ID " + id);
             }
 
-            return ResponseEntity.ok(Map.of("message", "Vô hiệu hóa tài khoản thành công!"));
+            return ResponseEntity.ok(Map.of("message", "VÃ´ hiá»‡u hÃ³a tÃ i khoáº£n thÃ nh cÃ´ng!"));
         } catch (Exception e) {
-            return ResponseEntity.status(400).body(Map.of("message", "Lỗi: " + e.getMessage()));
+            return ResponseEntity.status(400).body(Map.of("message", "Lá»—i: " + e.getMessage()));
         }
     }
 
-    // Phục hồi / Mở khóa tài khoản (Chỉ dành cho Admin)
+    // Phá»¥c há»“i / Má»Ÿ khÃ³a tÃ i khoáº£n (Chá»‰ dÃ nh cho Admin)
     @PutMapping("/{id}/unlock")
     public ResponseEntity<?> unlock(@PathVariable String id) {
         try {
-            // BẢO MẬT: Kiểm tra quyền Admin
+            // Báº¢O Máº¬T: Kiá»ƒm tra quyá»n Admin
             org.springframework.security.core.Authentication auth = SecurityContextHolder.getContext()
                     .getAuthentication();
             String currentRole = (auth != null && auth.getAuthorities() != null) ? auth.getAuthorities().toString()
@@ -205,29 +205,29 @@ public class KhachHangController {
 
             if (!currentRole.toUpperCase().contains("ADMIN")) {
                 return ResponseEntity.status(403)
-                        .body(Map.of("message", "Cảnh báo bảo mật: Chỉ Admin mới có quyền mở khóa tài khoản!"));
+                        .body(Map.of("message", "Cáº£nh bÃ¡o báº£o máº­t: Chá»‰ Admin má»›i cÃ³ quyá»n má»Ÿ khÃ³a tÃ i khoáº£n!"));
             }
 
-            // Mở khóa hồ sơ Khách hàng (Bỏ đánh dấu xóa)
+            // Má»Ÿ khÃ³a há»“ sÆ¡ KhÃ¡ch hÃ ng (Bá» Ä‘Ã¡nh dáº¥u xÃ³a)
             khachHangRepository.findById(id).ifPresent(kh -> {
                 kh.setDa_xoa(false);
                 khachHangRepository.save(kh);
             });
 
-            // Mở khóa quyền đăng nhập
+            // Má»Ÿ khÃ³a quyá»n Ä‘Äƒng nháº­p
             Optional<TaiKhoan> tkToUnlock = taiKhoanRepository.findByIdKhachHang(id);
             if (tkToUnlock.isPresent()) {
                 TaiKhoan tkUnlocked = tkToUnlock.get();
-                tkUnlocked.setTrang_thai("Hoạt động");
+                tkUnlocked.setTrang_thai("Hoáº¡t Ä‘á»™ng");
                 taiKhoanRepository.save(tkUnlocked);
             }
 
             // GHI LOG
-            auditLogService.logAction("MỞ KHÓA", "KhachHang", "Phục hồi và mở khóa khách hàng ID " + id);
+            auditLogService.logAction("Má»ž KHÃ“A", "KhachHang", "Phá»¥c há»“i vÃ  má»Ÿ khÃ³a khÃ¡ch hÃ ng ID " + id);
 
-            return ResponseEntity.ok(Map.of("message", "Đã phục hồi và mở khóa tài khoản thành công!"));
+            return ResponseEntity.ok(Map.of("message", "ÄÃ£ phá»¥c há»“i vÃ  má»Ÿ khÃ³a tÃ i khoáº£n thÃ nh cÃ´ng!"));
         } catch (Exception e) {
-            return ResponseEntity.status(400).body(Map.of("message", "Lỗi: " + e.getMessage()));
+            return ResponseEntity.status(400).body(Map.of("message", "Lá»—i: " + e.getMessage()));
         }
     }
 }
