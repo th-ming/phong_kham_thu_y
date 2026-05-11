@@ -17,6 +17,7 @@ const SidebarKhachHang: React.FC = () => {
     { label: 'Tổng quan', path: '/khach-hang/dashboard', icon: 'dashboard' },
     { label: 'Thú cưng', path: '/khach-hang/quan-ly-thu-cung', icon: 'pets' },
     { label: 'Lịch hẹn', path: '/khach-hang/lich-su-lich-hen', icon: 'calendar_month' },
+    { label: 'Dịch vụ', path: '/bang-gia', icon: 'medical_services' },
     { label: 'Hồ sơ y tế', path: '/khach-hang/ho-so-benh-an', icon: 'medical_information' },
     { label: 'Hóa đơn', path: '/khach-hang/hoa-don-thanh-toan', icon: 'receipt' },
     { label: 'Cá nhân', path: '/khach-hang/thong-tin-ca-nhan', icon: 'person' },
@@ -75,9 +76,9 @@ const SidebarKhachHang: React.FC = () => {
 
           <div className="glass-card" style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '20px', borderRadius: '24px', border: '1px solid var(--glass-border)', boxShadow: '0 10px 30px -5px rgba(0,0,0,0.3)', background: 'rgba(255,255,255,0.02)' }}>
             <div style={{ background: 'var(--primary-gradient)', color: 'white', width: '50px', height: '50px', borderRadius: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', border: '2px solid rgba(255,255,255,0.1)', boxShadow: '0 5px 15px rgba(0,0,0,0.2)' }}>
-              {user?.hinh_anh ? (
+              {user?.hinh_anh || user?.avatar ? (
                 <img
-                  src={user.hinh_anh}
+                  src={user.hinh_anh || user.avatar}
                   alt="Avatar"
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   onError={(e) => {

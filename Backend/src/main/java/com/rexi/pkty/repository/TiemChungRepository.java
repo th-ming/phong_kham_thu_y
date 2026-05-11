@@ -8,11 +8,12 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface TiemChungRepository extends JpaRepository<TiemChung, String> {
+public interface TiemChungRepository extends JpaRepository<TiemChung, Long> {
     
-    // Lấy lịch sử tiêm của 1 thú cưng (Dùng Query để khớp field id_thu_cung)
+    // LÃ¡ÂºÂ¥y lÃ¡Â»â€¹ch sÃ¡Â»Â­ tiÃƒÂªm cÃ¡Â»Â§a 1 thÃƒÂº cÃ†Â°ng (DÃƒÂ¹ng Query Ã„â€˜Ã¡Â»Æ’ khÃ¡Â»â€ºp field id_thu_cung)
     @Query("SELECT t FROM TiemChung t WHERE t.id_thu_cung = :id")
     List<TiemChung> findByIdThuCung(@Param("id") String id);
 }
+
 
 

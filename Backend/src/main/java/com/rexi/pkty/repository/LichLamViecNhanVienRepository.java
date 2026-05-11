@@ -8,11 +8,12 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface LichLamViecNhanVienRepository extends JpaRepository<LichLamViecNhanVien, String> {
+public interface LichLamViecNhanVienRepository extends JpaRepository<LichLamViecNhanVien, Long> {
     
-    // Tìm lịch làm việc theo id nhân viên (Dùng dấu gạch dưới để khớp Entity)
+    // TÃƒÂ¬m lÃ¡Â»â€¹ch lÃƒÂ m viÃ¡Â»â€¡c theo id nhÃƒÂ¢n viÃƒÂªn (DÃƒÂ¹ng dÃ¡ÂºÂ¥u gÃ¡ÂºÂ¡ch dÃ†Â°Ã¡Â»â€ºi Ã„â€˜Ã¡Â»Æ’ khÃ¡Â»â€ºp Entity)
     @Query("SELECT l FROM LichLamViecNhanVien l WHERE l.id_nhan_vien = :id")
     List<LichLamViecNhanVien> findByIdNhanVien(@Param("id") String id);
 }
+
 
 

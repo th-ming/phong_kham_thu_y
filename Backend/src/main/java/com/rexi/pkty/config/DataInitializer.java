@@ -14,6 +14,7 @@ import java.util.List;
  * Dùng JDBC PreparedStatement của Spring (UTF-8) nên đảm bảo tiếng Việt đúng.
  */
 @Component
+@org.springframework.context.annotation.Profile("!test")
 public class DataInitializer implements CommandLineRunner {
 
     @Autowired
@@ -50,11 +51,13 @@ public class DataInitializer implements CommandLineRunner {
 
     private DichVu tao(String ten, String moTa, int gia, int thoiLuong) {
         DichVu dv = new DichVu();
-        dv.setTen_dich_vu(ten);
-        dv.setMo_ta(moTa);
-        dv.setGia(BigDecimal.valueOf(gia));
-        dv.setThoi_luong_phut(thoiLuong);
-        dv.setTrang_thai(true);
+        // Cấp ID tự động để tránh lỗi IdentifierGenerationException
+        dv.setIdDichVu("DV-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+        dv.setTenDichVu(ten);
+        dv.setMoTa(moTa);
+        dv.setGiaTien(BigDecimal.valueOf(gia));
+        dv.setThoiLuongPhut(thoiLuong);
+        dv.setTrangThai(true);
         return dv;
     }
 }

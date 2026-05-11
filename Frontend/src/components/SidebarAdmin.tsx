@@ -17,23 +17,23 @@ const SidebarAdmin: React.FC = () => {
   const userRole = user?.ten_vai_tro?.toLowerCase() || user?.loai_tai_khoan?.toLowerCase() || 'staff';
 
   const allMenuItems = [
-    { path: '/quan-ly/dashboard', icon: 'dashboard', label: 'Tổng quan', roles: ['admin', 'staff', 'bac_si', 'bác sĩ', 'quan-ly', 'nhan-vien', 'y tá', 'y_ta'] },
-    { path: '/quan-ly/lich-hen', icon: 'calendar_month', label: 'Lịch hẹn', roles: ['admin', 'staff', 'bac_si', 'bác sĩ', 'quan-ly', 'nhan-vien', 'y tá', 'y_ta'] },
-    { path: '/quan-ly/lich-lam-viec', icon: 'edit_calendar', label: 'Lịch làm việc nhân sự', roles: ['admin', 'staff', 'bac_si', 'bác sĩ', 'quan-ly', 'nhan-vien', 'tiếp tân', 'lễ tân', 'y tá', 'kế toán'] },
-    { path: '/quan-ly/nhan-vien-phan-quyen', icon: 'badge', label: 'Nhân sự', roles: ['admin', 'quan-ly'] },
-    { path: '/quan-ly/khach-hang-thu-cung', icon: 'groups', label: 'Khách hàng', roles: ['admin', 'staff', 'bac_si', 'bác sĩ', 'quan-ly', 'nhan-vien', 'y tá', 'y_ta'] },
-    { path: '/quan-ly/khach-hang-thu-cung', icon: 'pets', label: 'Thú cưng', roles: ['admin', 'staff', 'bac_si', 'bác sĩ', 'quan-ly', 'nhan-vien', 'y tá', 'y_ta'] },
-    { path: '/quan-ly/dich-vu', icon: 'medical_information', label: 'Dịch vụ', roles: ['admin', 'quan-ly', 'staff', 'nhan-vien', 'tiếp tân', 'lễ tân', 'y tá', 'y_ta'] },
-    { path: '/quan-ly/kho-thuoc', icon: 'medication', label: 'Kho thuốc', roles: ['admin', 'staff', 'bac_si', 'bác sĩ', 'quan-ly', 'nhan-vien', 'y tá', 'y_ta'] },
-    { path: '/quan-ly/ho-so-benh-an', icon: 'clinical_notes', label: 'Bệnh án', roles: ['admin', 'bac_si', 'bác sĩ', 'quan-ly', 'y tá', 'y_ta'] },
-    { path: '/quan-ly/don-thuoc', icon: 'description', label: 'Đơn thuốc', roles: ['admin', 'bac_si', 'bác sĩ', 'quan-ly', 'y tá', 'y_ta'] },
-    { path: '/quan-ly/xet-nghiem', icon: 'biotech', label: 'Xét nghiệm', roles: ['admin', 'bac_si', 'bác sĩ', 'quan-ly', 'y tá', 'y_ta'] },
-    { path: '/quan-ly/hoa-don', icon: 'receipt_long', label: 'Hóa đơn', roles: ['admin', 'staff', 'quan-ly', 'nhan-vien', 'ke_toan', 'kế toán', 'ketoan', 'tiếp tân', 'lễ tân', 'tiep_tan'] },
-    { path: '/quan-ly/ke-toan', icon: 'account_balance', label: 'Tài chính - Kế toán', roles: ['admin', 'quan-ly', 'ke_toan', 'kế toán', 'ketoan'] },
-    { path: '/quan-ly/bao-cao-thong-ke', icon: 'monitoring', label: 'Thống kê', roles: ['admin', 'quan-ly', 'ke_toan', 'kế toán', 'ketoan'] },
-    { path: '/quan-ly/marketing', icon: 'campaign', label: 'Marketing', roles: ['admin', 'quan-ly', 'staff', 'nhan-vien', 'tiếp tân', 'tiep_tan'] },
-    { path: '/quan-ly/file-dinh-kem', icon: 'folder_open', label: 'Tệp đính kèm', roles: ['admin', 'quan-ly', 'bac_si', 'bác sĩ', 'y tá', 'y_ta'] },
-    { path: '/quan-ly/cau-hinh-he-thong', icon: 'settings', label: 'Cấu hình hệ thống', roles: ['admin'] },
+    { path: '/quan-ly/dashboard', icon: 'dashboard', label: 'Tổng quan', roles: ['admin', 'staff', 'bac_si', 'quan_ly', 'tiep_tan', 'y_ta', 'ke_toan'] },
+    { path: '/quan-ly/lich-hen', icon: 'calendar_month', label: 'Lịch hẹn', roles: ['admin', 'staff', 'bac_si', 'quan_ly', 'tiep_tan', 'y_ta'] },
+    { path: '/quan-ly/lich-lam-viec', icon: 'edit_calendar', label: 'Lịch làm việc nhân sự', roles: ['admin', 'staff', 'bac_si', 'quan_ly', 'tiep_tan', 'y_ta', 'ke_toan'] },
+    { path: '/quan-ly/nhan-vien-phan-quyen', icon: 'badge', label: 'Nhân sự & Phân quyền', roles: ['admin'] },
+    { path: '/quan-ly/khach-hang-thu-cung', icon: 'groups', label: 'Khách hàng', roles: ['admin', 'staff', 'bac_si', 'quan_ly', 'tiep_tan', 'y_ta'] },
+    { path: '/quan-ly/khach-hang-thu-cung', icon: 'pets', label: 'Thú cưng', roles: ['admin', 'staff', 'bac_si', 'quan_ly', 'tiep_tan', 'y_ta'] },
+    { path: '/quan-ly/dich-vu', icon: 'medical_information', label: 'Dịch vụ', roles: ['admin', 'quan_ly', 'staff', 'tiep_tan', 'y_ta'] },
+    { path: '/quan-ly/kho-thuoc', icon: 'medication', label: 'Kho thuốc', roles: ['admin', 'staff', 'bac_si', 'quan_ly', 'y_ta', 'ke_toan'] },
+    { path: '/quan-ly/ho-so-benh-an', icon: 'clinical_notes', label: 'Bệnh án', roles: ['admin', 'bac_si', 'quan_ly', 'y_ta'] },
+    { path: '/quan-ly/don-thuoc', icon: 'description', label: 'Đơn thuốc', roles: ['admin', 'bac_si', 'quan_ly', 'y_ta'] },
+    { path: '/quan-ly/xet-nghiem', icon: 'biotech', label: 'Xét nghiệm', roles: ['admin', 'bac_si', 'quan_ly', 'y_ta'] },
+    { path: '/quan-ly/hoa-don', icon: 'receipt_long', label: 'Hóa đơn', roles: ['admin', 'quan_ly', 'ke_toan', 'tiep_tan'] },
+    { path: '/quan-ly/ke-toan', icon: 'account_balance', label: 'Tài chính - Kế toán', roles: ['admin', 'quan_ly', 'ke_toan'] },
+    { path: '/quan-ly/bao-cao-thong-ke', icon: 'monitoring', label: 'Thống kê', roles: ['admin', 'quan_ly', 'ke_toan'] },
+    { path: '/quan-ly/marketing', icon: 'campaign', label: 'Marketing', roles: ['admin', 'quan_ly', 'tiep_tan'] },
+    { path: '/quan-ly/file-dinh-kem', icon: 'folder_open', label: 'Tệp đính kèm', roles: ['admin', 'quan_ly', 'bac_si', 'y_ta'] },
+    { path: '/quan-ly/cau-hinh', icon: 'settings', label: 'Cấu hình hệ thống', roles: ['admin'] },
     { path: '/quan-ly/chuc-nang', icon: 'extension', label: 'Phân hệ chức năng', roles: ['admin'] },
   ];
 
@@ -75,11 +75,12 @@ const SidebarAdmin: React.FC = () => {
         <div style={{ background: 'var(--primary-gradient)', color: 'white', width: '42px', height: '42px', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 5px 15px var(--primary-shadow)' }}>
           <span className="material-symbols-outlined" style={{ fontSize: '24px' }}>
             {
-              (userRole.includes('bác sĩ') || userRole.includes('bac_si')) ? 'medical_services' :
-                (userRole.includes('admin') || userRole.includes('quan-ly')) ? 'shield_person' :
-                  (userRole.includes('lễ tân') || userRole.includes('tiếp tân') || userRole.includes('tiep_tan')) ? 'concierge' :
-                    (userRole.includes('kế toán') || userRole.includes('ke_toan') || userRole.includes('ketoan')) ? 'account_balance' :
-                      (userRole.includes('y tá') || userRole.includes('y_ta')) ? 'health_and_safety' : 'badge'
+              userRole.includes('bac_si') ? 'medical_services' :
+                userRole.includes('admin') ? 'shield_person' :
+                  userRole.includes('quan_ly') ? 'manage_accounts' :
+                    userRole.includes('tiep_tan') ? 'concierge' :
+                      userRole.includes('ke_toan') ? 'account_balance' :
+                        userRole.includes('y_ta') ? 'health_and_safety' : 'badge'
             }
           </span>
         </div>
@@ -87,11 +88,12 @@ const SidebarAdmin: React.FC = () => {
           <p style={{ fontWeight: 900, fontSize: '0.9rem', color: 'var(--ink)', margin: 0, whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{cleanName(user.ho_ten || user.displayName || 'Nhân viên')}</p>
           <p style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--primary)', margin: 0, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
             {
-              (userRole.includes('bác sĩ') || userRole.includes('bac_si')) ? 'Bác sĩ chuyên khoa' :
-                (userRole.includes('admin') || userRole.includes('quan-ly')) ? 'Quản trị viên' :
-                  (userRole.includes('lễ tân') || userRole.includes('tiếp tân') || userRole.includes('tiep_tan')) ? 'Lễ tân chuyên môn' :
-                    (userRole.includes('kế toán') || userRole.includes('ke_toan') || userRole.includes('ketoan')) ? 'Kế toán viên' :
-                      (userRole.includes('y tá') || userRole.includes('y_ta')) ? 'Điều dưỡng viên' : 'Nhân viên hệ thống'
+              userRole.includes('bac_si') ? 'Bác sĩ chuyên khoa' :
+                userRole.includes('admin') ? 'Quản trị tối cao' :
+                  userRole.includes('quan_ly') ? 'Quản lý điều hành' :
+                    userRole.includes('tiep_tan') ? 'Tiếp tân chuyên nghiệp' :
+                      userRole.includes('ke_toan') ? 'Kế toán viên' :
+                        userRole.includes('y_ta') ? 'Điều dưỡng viên' : 'Nhân viên hệ thống'
             }
           </p>
         </div>

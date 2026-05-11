@@ -15,7 +15,7 @@ public interface KhachHangRepository extends JpaRepository<KhachHang, String> {
     java.util.Optional<KhachHang> findByEmail(String email);
     List<KhachHang> findBySdtContaining(String sdt);
 
-    // Gọi Stored Procedure cập nhật thông tin khách hàng
+    // GÃ¡Â»Âi Stored Procedure cÃ¡ÂºÂ­p nhÃ¡ÂºÂ­t thÃƒÂ´ng tin khÃƒÂ¡ch hÃƒÂ ng
     @Query(value = "EXEC sp_CapNhatThongTinKhachHang :id, :name, :email, :phone, :address", nativeQuery = true)
     List<Map<String, Object>> callSpUpdateKhachHang(
         @Param("id") String id,

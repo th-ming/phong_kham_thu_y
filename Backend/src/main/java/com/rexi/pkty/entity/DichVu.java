@@ -9,19 +9,22 @@ import java.math.BigDecimal;
 @Data
 public class DichVu {
     @Id
-    private String id_dich_vu;
+    @Column(name = "id_dich_vu")
+    private String idDichVu;
 
-    @Column(nullable = false)
-    private String ten_dich_vu;
+    @Column(name = "ten_dich_vu", nullable = false, columnDefinition = "NVARCHAR(255)")
+    private String tenDichVu;
 
-    private String mo_ta;
+    @Column(name = "mo_ta", columnDefinition = "NVARCHAR(MAX)")
+    private String moTa;
 
-    @Column(nullable = false)
-    private BigDecimal gia;
+    @Column(name = "gia")
+    private BigDecimal giaTien;
 
-    private Integer thoi_luong_phut;
+    @Column(name = "thoi_luong_phut")
+    private Integer thoiLuongPhut;
 
-    @Column(nullable = false)
-    private Boolean trang_thai = true;
+    @Column(name = "trang_thai", nullable = false)
+    private Boolean trangThai = true;
 }
 

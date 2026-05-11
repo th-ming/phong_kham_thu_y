@@ -16,11 +16,21 @@ const DashboardQuanLy: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        // Gọi từng API riêng lẻ để nếu 1 cái lỗi thì mấy cái khác vẫn hiện
+        const fetchSafety = async (url: string) => {
+          try {
+            return await axiosInstance.get(url);
+          } catch (e) {
+            console.warn(`Lỗi gọi API ${url}:`, e);
+            return { data: null };
+          }
+        };
+
         const [customers, apps, inventory, revData] = await Promise.all([
-          axiosInstance.get("/api/khach-hang/count"), // Đã tối ưu bằng cách lấy đếm thay vì toàn bộ danh sách
-          axiosInstance.get("/api/lich-hen/hom-nay"),
-          axiosInstance.get("/api/kho/thuoc-sap-het-han"),
-          axiosInstance.get("/api/bao-cao/doanh-thu-thang")
+          fetchSafety("/api/khach-hang/count"),
+          fetchSafety("/api/lich-hen/hom-nay"),
+          fetchSafety("/api/kho/thuoc-sap-het-han"),
+          fetchSafety("/api/bao-cao/doanh-thu-thang")
         ]);
 
         const extractArray = (data: any): any[] => {
@@ -35,17 +45,24 @@ const DashboardQuanLy: React.FC = () => {
           return [];
         };
 
-        setCustomerCount(typeof customers.data === 'number' ? customers.data : (customers.data || 0));
-        setAppointments(extractArray(apps.data));
-        setInventoryAlerts(extractArray(inventory.data));
+        if (customers.data !== null) {
+          setCustomerCount(typeof customers.data === 'number' ? customers.data : (customers.data.count || customers.data.data || 0));
+        }
+        
+        if (apps.data !== null) setAppointments(extractArray(apps.data));
+        if (inventory.data !== null) setInventoryAlerts(extractArray(inventory.data));
 
-        const revArray = extractArray(revData.data);
-        if (revArray.length > 0) {
-          const currentMonth = new Date().getMonth() + 1;
-          const currentYear = new Date().getFullYear();
-          // Sửa lại thuộc tính cho khớp với JSON trả về từ API giống bên BaoCaoThongKe
-          const currentData = revArray.find((d: any) => (Number(d.Thang) === currentMonth || Number(d.thang) === currentMonth) && (Number(d.Nam) === currentYear || Number(d.nam) === currentYear));
-          if (currentData) setRevenue(currentData.TongDoanhThu || currentData.doanh_thu || currentData.tong_doanh_thu || 0);
+        if (revData.data !== null) {
+          const revArray = extractArray(revData.data);
+          if (revArray.length > 0) {
+            const currentMonth = new Date().getMonth() + 1;
+            const currentYear = new Date().getFullYear();
+            const currentData = revArray.find((d: any) => 
+              (Number(d.Thang) === currentMonth || Number(d.thang) === currentMonth) && 
+              (Number(d.Nam) === currentYear || Number(d.nam) === currentYear)
+            );
+            if (currentData) setRevenue(currentData.TongDoanhThu || currentData.doanh_thu || currentData.tong_doanh_thu || 0);
+          }
         }
       } catch (err) {
         console.error("Lỗi đồng bộ dữ liệu Dashboard:", err);

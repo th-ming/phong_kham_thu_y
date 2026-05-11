@@ -10,7 +10,7 @@ import java.math.BigDecimal;
 public class HoaDonChiTiet {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private String id_chi_tiet;
+    private Long id_chi_tiet;
 
     private String id_hoa_don;
     private String ten_muc;

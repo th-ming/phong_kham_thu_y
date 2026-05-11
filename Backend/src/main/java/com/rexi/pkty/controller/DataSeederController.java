@@ -32,17 +32,17 @@ public class DataSeederController {
                 .getContext().getAuthentication();
         String role = (auth != null) ? auth.getAuthorities().toString().toUpperCase() : "";
         if (!role.contains("ADMIN")) {
-            return "❌ Cảnh báo bảo mật: Chỉ Admin gốc mới có quyền chạy công cụ giả lập dữ liệu!";
+            return "âŒ Cáº£nh bÃ¡o báº£o máº­t: Chá»‰ Admin gá»‘c má»›i cÃ³ quyá»n cháº¡y cÃ´ng cá»¥ giáº£ láº­p dá»¯ liá»‡u!";
         }
 
         List<String> doctorIds = nhanVienRepository.findAll()
                 .stream()
-                .filter(nv -> nv.getChuyen_mon() != null && !nv.getChuyen_mon().isEmpty())
-                .map(nv -> nv.getId_nhan_vien())
+                .filter(nv -> nv.getChuyenMon() != null && !nv.getChuyenMon().isEmpty())
+                .map(nv -> nv.getIdNhanVien())
                 .toList();
 
         if (doctorIds.isEmpty())
-            return "Không tìm thấy bác sĩ nào sếp ơi!";
+            return "KhÃ´ng tÃ¬m tháº¥y bÃ¡c sÄ© nÃ o sáº¿p Æ¡i!";
 
         List<String> timeSlots = List.of(
                 "08:00", "08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
@@ -57,21 +57,21 @@ public class DataSeederController {
             sampleDvId = jdbcTemplate.queryForObject("SELECT TOP 1 id_dich_vu FROM DichVu", String.class);
         } catch (Exception e) {
             jdbcTemplate.update(
-                    "IF NOT EXISTS (SELECT 1 FROM KhachHang) INSERT INTO KhachHang (id_khach_hang, ten_khach_hang, sdt, email, mat_khau, trang_thai) VALUES ('KH-SEED', N'Khách Hàng Test', '0912345678', 'test@rexi.com', '123456', 'ACTIVE')");
+                    "IF NOT EXISTS (SELECT 1 FROM KhachHang) INSERT INTO KhachHang (id_khach_hang, ten_khach_hang, sdt, email, ngay_tao, da_xoa) VALUES ('KH-SEED', N'Khách Hàng Test', '0912345678', 'test@rexi.com', GETDATE(), 0)");
             sampleKhId = jdbcTemplate.queryForObject("SELECT TOP 1 id_khach_hang FROM KhachHang", String.class);
 
             jdbcTemplate.update(
-                    "IF NOT EXISTS (SELECT 1 FROM ThuCung) INSERT INTO ThuCung (id_thu_cung, ten_thu_cung, loai, giong, id_khach_hang) VALUES ('TC-SEED', N'Boss Test', N'Mèo', N'Anh lông ngắn', ?)",
+                    "IF NOT EXISTS (SELECT 1 FROM ThuCung) INSERT INTO ThuCung (id_thu_cung, ten_thu_cung, loai, giong, id_khach_hang) VALUES ('TC-SEED', N'Boss Test', N'MÃ¨o', N'Anh lÃ´ng ngáº¯n', ?)",
                     sampleKhId);
             sampleTcId = jdbcTemplate.queryForObject("SELECT TOP 1 id_thu_cung FROM ThuCung", String.class);
 
             jdbcTemplate.update(
-                    "IF NOT EXISTS (SELECT 1 FROM DichVu) INSERT INTO DichVu (id_dich_vu, ten_dich_vu, gia, thoi_luong_phut, mo_ta) VALUES ('DV-SEED', N'Khám tổng quát', 150000, 30, N'Dịch vụ test')");
+                    "IF NOT EXISTS (SELECT 1 FROM DichVu) INSERT INTO DichVu (id_dich_vu, ten_dich_vu, gia, thoi_luong_phut, mo_ta) VALUES ('DV-SEED', N'KhÃ¡m tá»•ng quÃ¡t', 150000, 30, N'Dá»‹ch vá»¥ test')");
             sampleDvId = jdbcTemplate.queryForObject("SELECT TOP 1 id_dich_vu FROM DichVu", String.class);
         }
 
         List<Object[]> batchArgs = new ArrayList<>();
-        String sql = "INSERT INTO LichHen (ngay_kham, gio_kham, id_bac_si, id_khach_hang, id_thu_cung, id_dich_vu, ly_do, trang_thai, ngay_tao, id_nguoi_dat) VALUES (?, ?, ?, ?, ?, ?, N'Lịch test', 'CHO_XAC_NHAN', GETDATE(), ?)";
+        String sql = "INSERT INTO LichHen (ngay_kham, gio_kham, id_bac_si, id_khach_hang, id_thu_cung, id_dich_vu, ly_do, trang_thai, ngay_tao, id_nguoi_dat) VALUES (?, ?, ?, ?, ?, ?, N'Lá»‹ch test', 'CHO_XAC_NHAN', GETDATE(), ?)";
 
         for (int i = 0; i < 14; i++) {
             LocalDate date = today.plusDays(i);
@@ -85,11 +85,11 @@ public class DataSeederController {
             }
         }
 
-        System.out.println("🚀 Đang bơm " + batchArgs.size() + " lịch hẹn bằng Batch Update...");
+        System.out.println("ðŸš€ Äang bÆ¡m " + batchArgs.size() + " lá»‹ch háº¹n báº±ng Batch Update...");
         int[] results = jdbcTemplate.batchUpdate(sql, batchArgs);
 
-        return "✅ Đã bơm thành công " + results.length
-                + " lịch hẹn ảo! Hệ thống chạy 'mượt như nhung' rồi sếp nhé! 🐾🚀";
+        return "âœ… ÄÃ£ bÆ¡m thÃ nh cÃ´ng " + results.length
+                + " lá»‹ch háº¹n áº£o! Há»‡ thá»‘ng cháº¡y 'mÆ°á»£t nhÆ° nhung' rá»“i sáº¿p nhÃ©! ðŸ¾ðŸš€";
     }
 
     @GetMapping("/seed-accounts")
@@ -98,33 +98,33 @@ public class DataSeederController {
                 .getContext().getAuthentication();
         String role = (auth != null) ? auth.getAuthorities().toString().toUpperCase() : "";
         if (!role.contains("ADMIN")) {
-            return "❌ Cảnh báo bảo mật: Tuyệt đối không có quyền truy cập vào backdoor này!";
+            return "âŒ Cáº£nh bÃ¡o báº£o máº­t: Tuyá»‡t Ä‘á»‘i khÃ´ng cÃ³ quyá»n truy cáº­p vÃ o backdoor nÃ y!";
         }
 
         try {
             String hash123456 = "$2a$10$8.06q71brGLqc9PzEwM0zuux1VlvJreG9pOWXWQHqByvM9SihS39m";
 
-            jdbcTemplate.update("IF NOT EXISTS (SELECT 1 FROM VaiTroHeThong WHERE ten_vai_tro = N'Kế toán') " +
-                    "INSERT INTO VaiTroHeThong (id_vai_tro, ten_vai_tro, mo_ta) VALUES ('3', N'Kế toán', N'Kế toán viên')");
+            jdbcTemplate.update("IF NOT EXISTS (SELECT 1 FROM VaiTroHeThong WHERE ten_vai_tro = N'Káº¿ toÃ¡n') " +
+                    "INSERT INTO VaiTroHeThong (id_vai_tro, ten_vai_tro, mo_ta) VALUES ('VT-KT', N'Kế toán', N'Kế toán viên')");
             String roleKetoan = jdbcTemplate.queryForObject(
-                    "SELECT id_vai_tro FROM VaiTroHeThong WHERE ten_vai_tro = N'Kế toán'", String.class);
-            String roleAdmin = "4"; 
+                    "SELECT id_vai_tro FROM VaiTroHeThong WHERE ten_vai_tro = N'Káº¿ toÃ¡n'", String.class);
+            String roleAdmin = "VT-ADMIN"; 
 
             jdbcTemplate.update("IF NOT EXISTS (SELECT 1 FROM TaiKhoan WHERE ten_dang_nhap = 'admin') " +
                     "INSERT INTO TaiKhoan (id_tai_khoan, ten_dang_nhap, mat_khau, mat_khau_hash, id_vai_tro, trang_thai, ngay_tao) " +
-                    "VALUES ('TK-ADMIN', 'admin', '123456', ?, ?, 'Hoạt động', GETDATE()) " +
-                    "ELSE UPDATE TaiKhoan SET mat_khau = '123456', mat_khau_hash = ?, id_vai_tro = ?, trang_thai = 'Hoạt động' WHERE ten_dang_nhap = 'admin'",
+                    "VALUES ('TK-ADMIN', 'admin', '123456', ?, ?, 'Hoáº¡t Ä‘á»™ng', GETDATE()) " +
+                    "ELSE UPDATE TaiKhoan SET mat_khau = '123456', mat_khau_hash = ?, id_vai_tro = ?, trang_thai = 'Hoáº¡t Ä‘á»™ng' WHERE ten_dang_nhap = 'admin'",
                     hash123456, roleAdmin, hash123456, roleAdmin);
 
             jdbcTemplate.update("IF NOT EXISTS (SELECT 1 FROM TaiKhoan WHERE ten_dang_nhap = 'ketoan') " +
                     "INSERT INTO TaiKhoan (id_tai_khoan, ten_dang_nhap, mat_khau, mat_khau_hash, id_vai_tro, trang_thai, ngay_tao) " +
-                    "VALUES ('TK-KETOAN', 'ketoan', '123456', ?, ?, 'Hoạt động', GETDATE()) " +
-                    "ELSE UPDATE TaiKhoan SET mat_khau = '123456', mat_khau_hash = ?, id_vai_tro = ?, trang_thai = 'Hoạt động' WHERE ten_dang_nhap = 'ketoan'",
+                    "VALUES ('TK-KETOAN', 'ketoan', '123456', ?, ?, 'Hoáº¡t Ä‘á»™ng', GETDATE()) " +
+                    "ELSE UPDATE TaiKhoan SET mat_khau = '123456', mat_khau_hash = ?, id_vai_tro = ?, trang_thai = 'Hoáº¡t Ä‘á»™ng' WHERE ten_dang_nhap = 'ketoan'",
                     hash123456, roleKetoan, hash123456, roleKetoan);
 
-            return "✅ Đã reset tài khoản admin và ketoan về mật khẩu 123456 thành công sếp nhé!";
+            return "âœ… ÄÃ£ reset tÃ i khoáº£n admin vÃ  ketoan vá» máº­t kháº©u 123456 thÃ nh cÃ´ng sáº¿p nhÃ©!";
         } catch (Exception e) {
-            return "❌ Lỗi khi reset tài khoản: " + e.getMessage();
+            return "âŒ Lá»—i khi reset tÃ i khoáº£n: " + e.getMessage();
         }
     }
 }

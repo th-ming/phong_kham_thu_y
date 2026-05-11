@@ -138,7 +138,9 @@ const QuanLyNhanVienPhanQuyen: React.FC = () => {
             <option value="Bác sĩ">Bác sĩ</option>
             <option value="Y tá">Y tá</option>
             <option value="Tiếp tân">Tiếp tân</option>
+            <option value="Kế toán">Kế toán</option>
             <option value="Quản lý">Quản lý</option>
+            <option value="Chăm sóc khách hàng">Chăm sóc khách hàng</option>
           </select>
           <button className="btn btn-primary btn-pill" onClick={() => { setEditingId(null); setShowModal(true); }}>
             <span className="material-symbols-outlined">person_add</span>
@@ -162,7 +164,9 @@ const QuanLyNhanVienPhanQuyen: React.FC = () => {
                   <option value="Bác sĩ">Bác sĩ</option>
                   <option value="Y tá">Y tá</option>
                   <option value="Tiếp tân">Tiếp tân</option>
+                  <option value="Kế toán">Kế toán</option>
                   <option value="Quản lý">Quản lý</option>
+                  <option value="Chăm sóc khách hàng">Chăm sóc khách hàng</option>
                 </select>
               </div>
               <div style={{ display: 'grid', gap: '8px' }}>

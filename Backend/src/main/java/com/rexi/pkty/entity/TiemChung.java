@@ -5,12 +5,12 @@ import lombok.Data;
 import java.time.LocalDate;
 
 @Entity
-@Table(name = "TiemChung") // Kết nối bảng tiêm chủng
+@Table(name = "TiemChung") // Káº¿t ná»‘i báº£ng tiÃªm chá»§ng
 @Data
 public class TiemChung {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private String id_tiem_chung;
+    private Long id_tiem_chung;
 
     private String id_thu_cung;
     private String ten_vaccine;

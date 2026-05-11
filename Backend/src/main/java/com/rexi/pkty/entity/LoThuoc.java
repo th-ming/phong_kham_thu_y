@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 public class LoThuoc {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private String id_lo;
+    private Long id_lo;
 
     private String id_thuoc;
     private String so_lo;

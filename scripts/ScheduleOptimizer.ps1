@@ -1,15 +1,17 @@
-# Thiết lập cho Vệ sĩ RAM chạy tự động khi bật máy
-$Action = New-ScheduledTaskAction -Execute 'PowerShell.exe' `
-    -Argument '-ExecutionPolicy Bypass -WindowStyle Hidden -File "d:\QLy Phòng Khám Thú Y\UltimateOptimizer.ps1"'
+# Thiet lap cho Ve si RAM chay tu dong khi bat may
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
-# Trigger: Chạy ngay khi người dùng đăng nhập (Logon)
+$Action = New-ScheduledTaskAction -Execute 'PowerShell.exe' `
+    -Argument '-ExecutionPolicy Bypass -WindowStyle Hidden -File "d:\QLy Phòng Khám Thú Y\scripts\UltimateOptimizer.ps1"'
+
+# Trigger: Chay ngay khi nguoi dung dang nhap (Logon)
 $Trigger = New-ScheduledTaskTrigger -AtLogOn
 
-# Cài đặt: Chạy với quyền cao nhất, không dừng khi dùng pin
+# Cai dat: Chay voi quyen cao nhat, khong dung khi dung pin
 $Settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -Priority 1
 
-# Đăng ký Task
+# Dang ky Task
 Register-ScheduledTask -TaskName "Rexi_RAM_Optimizer" -Action $Action -Trigger $Trigger -Settings $Settings -Force
 
-Write-Host "--- VỆ SĨ RAM ĐÃ ĐƯỢC CÀI ĐẶT TỰ ĐỘNG ---" -ForegroundColor Magenta
-Write-Host "Từ giờ, cứ mỗi khi sếp bật máy, hệ thống dọn RAM sẽ tự động chạy ngầm để bảo vệ máy sếp! 😎"
+Write-Host "--- VE SI RAM DA DUOC CAI DAT TU DONG ---" -ForegroundColor Magenta
+Write-Host "Tu gio, moi khi sep bat may, he thong se tu dong chay ngam de bao ve may sep! sep cu yen tam lam viec nhe! 😎"

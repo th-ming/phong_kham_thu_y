@@ -5,28 +5,61 @@ import lombok.Data;
 import java.time.LocalDate;
 
 @Entity
-@Table(name = "NhanVien") // Kết nối bảng NhanVien
+@Table(name = "NhanVien")
 @Data
 public class NhanVien {
     @Id
-    private String id_nhan_vien;
+    @Column(name = "id_nhan_vien")
+    private String idNhanVien;
 
-    private String id_tai_khoan;
-    private String ho_ten;
-    private LocalDate ngay_sinh;
-    private String gioi_tinh;
-    private String dia_chi;
-    private String so_dien_thoai;
+    @Column(name = "id_tai_khoan")
+    private String idTaiKhoan;
+
+    @Column(name = "ho_ten", length = 100)
+    private String hoTen;
+
+    @Column(name = "ngay_sinh")
+    private LocalDate ngaySinh;
+
+    @Column(name = "gioi_tinh", length = 10)
+    private String gioiTinh;
+
+    @Column(name = "dia_chi", length = 255)
+    private String diaChi;
+
+    @Column(name = "so_dien_thoai", length = 255)
+    private String soDienThoai;
+
+    @Column(name = "email", length = 100)
     private String email;
-    private String so_cccd;
-    private LocalDate ngay_vao_lam;
-    private LocalDate ngay_nghi_viec;
-    private String trang_thai;
-    private String hinh_anh;
-    private String gioi_thieu;
-    private String chuyen_mon;
-    private Boolean nhan_email;
-    private Boolean nhan_sms;
-    private Boolean da_xoa;
-}
 
+    @Column(name = "so_cccd", length = 20)
+    private String soCccd;
+
+    @Column(name = "ngay_vao_lam", nullable = false)
+    private LocalDate ngayVaoLam;
+
+    @Column(name = "ngay_nghi_viec")
+    private LocalDate ngayNghiViec;
+
+    @Column(name = "trang_thai", length = 50)
+    private String trangThai;
+
+    @Column(name = "hinh_anh", columnDefinition = "NVARCHAR(MAX)")
+    private String hinhAnh;
+
+    @Column(name = "gioi_thieu", columnDefinition = "NVARCHAR(MAX)")
+    private String gioiThieu;
+
+    @Column(name = "chuyen_mon", columnDefinition = "NVARCHAR(255)")
+    private String chuyenMon;
+
+    @Column(name = "nhan_email")
+    private Boolean nhanEmail;
+
+    @Column(name = "nhan_sms")
+    private Boolean nhanSms;
+
+    @Column(name = "da_xoa", nullable = false)
+    private Boolean daXoa;
+}

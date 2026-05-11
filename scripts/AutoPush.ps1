@@ -1,4 +1,5 @@
 # Di chuyen vao thu muc du an
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 Set-Location 'd:\QLy Phòng Khám Thú Y'
 
 Write-Host 'Dang chuan bi cap nhat toan bo he thong... [BACKUP MODE]'
@@ -21,7 +22,7 @@ try {
     Write-Host 'Canh bao: mssql-scripter gap loi!'
 }
 
-# Cap nhat cau truc thu mục vao README.md tu dong
+# Cap nhat cau truc thu muc vao README.md tu dong
 Write-Host 'Dang cap nhat cau truc vao README.md...'
 $folders = Get-ChildItem -Directory | Where-Object { $_.Name -notmatch 'node_modules|\.git|\.idea|\.agent|\.mvn|logs|target|brain|scratch' }
 $files = Get-ChildItem -File | Where-Object { $_.Name -match '\.sql$|\.yml$|\.conf$' }

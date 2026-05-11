@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 public class BenhAn_XetNghiem {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private String id_ba_xn;
+    private Long id_ba_xn;
 
     private String id_benh_an;
     private String id_loai_xet_nghiem;

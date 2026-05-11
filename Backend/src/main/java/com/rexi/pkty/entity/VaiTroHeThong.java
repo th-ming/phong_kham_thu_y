@@ -4,9 +4,9 @@ import jakarta.persistence.*;
 import lombok.Data;
 
 /**
- * ENTITY: Vai trò hệ thống
- * MỤC ĐÍCH: Định nghĩa các vai trò (Admin, Bác sĩ, Khách hàng...) để phân quyền người dùng.
- * KẾT NỐI: Bảng [VaiTroNhanVien] trong SQL Server.
+ * ENTITY: Vai trÃ² há»‡ thá»‘ng
+ * Má»¤C ÄÃCH: Äá»‹nh nghÄ©a cÃ¡c vai trÃ² (Admin, BÃ¡c sÄ©, KhÃ¡ch hÃ ng...) Ä‘á»ƒ phÃ¢n quyá»n ngÆ°á»i dÃ¹ng.
+ * Káº¾T Ná»I: Báº£ng [VaiTroNhanVien] trong SQL Server.
  */
 @Entity
 @Table(name = "VaiTroHeThong")

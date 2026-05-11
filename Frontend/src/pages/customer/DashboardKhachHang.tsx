@@ -136,8 +136,21 @@ const DashboardKhachHang: React.FC = () => {
       <div className="stagger-1" style={{ marginBottom: '40px', padding: '48px', borderRadius: 'var(--radius-xl)', background: 'var(--secondary-gradient)', color: 'white', position: 'relative', overflow: 'hidden', boxShadow: '0 15px 35px rgba(13, 148, 136, 0.2)' }}>
         <div style={{ position: 'absolute', top: '-10%', right: '-5%', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }}></div>
         <div style={{ position: 'absolute', bottom: '-20%', left: '0%', width: '250px', height: '250px', background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none', opacity: 0.5 }}></div>
-        <h1 className="header-title" style={{ fontSize: '3.5rem', fontWeight: 950, letterSpacing: '-2px', position: 'relative', zIndex: 1, margin: '0 0 12px 0', textShadow: '0 4px 15px rgba(0,0,0,0.2)', color: 'white' }}>Xin chào! 👋</h1>
-        <p style={{ fontWeight: 700, color: 'rgba(255,255,255,0.95)', position: 'relative', zIndex: 1, margin: 0, fontSize: '1.2rem', textShadow: '0 1px 4px rgba(0,0,0,0.1)' }}>Cùng theo dõi và chăm sóc sức khỏe cho các bạn nhỏ nhà mình nhé.</p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '24px', position: 'relative', zIndex: 1 }}>
+          <div style={{ width: '80px', height: '80px', borderRadius: '24px', overflow: 'hidden', border: '3px solid rgba(255,255,255,0.3)', boxShadow: '0 10px 20px rgba(0,0,0,0.2)' }}>
+            {getUserProfile()?.hinh_anh || getUserProfile()?.avatar ? (
+              <img src={getUserProfile()?.hinh_anh || getUserProfile()?.avatar} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            ) : (
+              <div style={{ width: '100%', height: '100%', background: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span className="material-symbols-outlined" style={{ fontSize: '40px', color: 'white' }}>person</span>
+              </div>
+            )}
+          </div>
+          <div>
+            <h1 className="header-title" style={{ fontSize: '3.5rem', fontWeight: 950, letterSpacing: '-2px', margin: '0 0 8px 0', textShadow: '0 4px 15px rgba(0,0,0,0.2)', color: 'white' }}>Xin chào! 👋</h1>
+            <p style={{ fontWeight: 700, color: 'rgba(255,255,255,0.95)', margin: 0, fontSize: '1.2rem', textShadow: '0 1px 4px rgba(0,0,0,0.1)' }}>Cùng theo dõi và chăm sóc sức khỏe cho các bạn nhỏ nhà mình nhé.</p>
+          </div>
+        </div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '32px', marginBottom: '40px' }}>

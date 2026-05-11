@@ -12,9 +12,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * BỘ LỌC CHỐNG SPAM & RATE LIMITING TOÀN CỤC
- * Giới hạn số lượng request từ một IP trong một khoảng thời gian nhất định (ví
- * dụ: 100 requests / 1 phút)
+ * Bá»˜ Lá»ŒC CHá»NG SPAM & RATE LIMITING TOÃ€N Cá»¤C
+ * Giá»›i háº¡n sá»‘ lÆ°á»£ng request tá»« má»™t IP trong má»™t khoáº£ng thá»i gian nháº¥t Ä‘á»‹nh (vÃ­
+ * dá»¥: 100 requests / 1 phÃºt)
  */
 @Component
 public class RateLimitFilter extends OncePerRequestFilter {
@@ -23,7 +23,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
 
     private final ConcurrentHashMap<String, RequestData> requestCounts = new ConcurrentHashMap<>();
-    private static final int MAX_REQUESTS_PER_MINUTE = 200; // Ngưỡng chặn an toàn
+    private static final int MAX_REQUESTS_PER_MINUTE = 200; // NgÆ°á»¡ng cháº·n an toÃ n
 
     private java.util.Set<String> blockedIps = new java.util.HashSet<>();
     private long lastCheckTime = 0;
@@ -40,20 +40,20 @@ public class RateLimitFilter extends OncePerRequestFilter {
         String ip = getClientIP(request);
         long currentTime = System.currentTimeMillis();
 
-        // BẢO MẬT: Kiểm tra Blacklist IP (Cập nhật từ DB mỗi phút 1 lần để không làm
-        // chậm hệ thống)
+        // Báº¢O Máº¬T: Kiá»ƒm tra Blacklist IP (Cáº­p nháº­t tá»« DB má»—i phÃºt 1 láº§n Ä‘á»ƒ khÃ´ng lÃ m
+        // cháº­m há»‡ thá»‘ng)
         if (currentTime - lastCheckTime > 60000) {
             try {
                 String ips = jdbcTemplate.queryForObject(
                         "SELECT gia_tri FROM CauHinhHeThong WHERE ten_cau_hinh = 'blocked_ips'", String.class);
                 if (ips != null && !ips.trim().isEmpty()) {
-                    // Loại bỏ khoảng trắng thừa và cắt chuỗi theo dấu phẩy
+                    // Loáº¡i bá» khoáº£ng tráº¯ng thá»«a vÃ  cáº¯t chuá»—i theo dáº¥u pháº©y
                     blockedIps = new java.util.HashSet<>(java.util.Arrays.asList(ips.replace(" ", "").split(",")));
                 } else {
                     blockedIps.clear();
                 }
             } catch (Exception e) {
-                // Bỏ qua nếu bảng chưa tạo
+                // Bá» qua náº¿u báº£ng chÆ°a táº¡o
             }
             lastCheckTime = currentTime;
         }
@@ -62,13 +62,13 @@ public class RateLimitFilter extends OncePerRequestFilter {
             response.setStatus(403);
             response.setContentType("application/json;charset=UTF-8");
             response.getWriter().write(
-                    "{\"message\": \"Truy cập bị từ chối: Địa chỉ IP của bạn đã bị đưa vào danh sách đen (Blacklist)!\"}");
+                    "{\"message\": \"Truy cáº­p bá»‹ tá»« chá»‘i: Äá»‹a chá»‰ IP cá»§a báº¡n Ä‘Ã£ bá»‹ Ä‘Æ°a vÃ o danh sÃ¡ch Ä‘en (Blacklist)!\"}");
             return;
         }
 
         requestCounts.compute(ip, (key, data) -> {
             if (data == null || (currentTime - data.timestamp) > 60000) {
-                // Reset sau mỗi phút
+                // Reset sau má»—i phÃºt
                 RequestData newData = new RequestData();
                 newData.timestamp = currentTime;
                 return newData;
@@ -83,7 +83,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
             response.setStatus(429); // 429 Too Many Requests
             response.setContentType("application/json;charset=UTF-8");
             response.getWriter().write(
-                    "{\"message\": \"Cảnh báo bảo mật: Phát hiện dấu hiệu Spam/DDoS. IP của bạn đã bị tạm khóa. Vui lòng thử lại sau 1 phút!\"}");
+                    "{\"message\": \"Cáº£nh bÃ¡o báº£o máº­t: PhÃ¡t hiá»‡n dáº¥u hiá»‡u Spam/DDoS. IP cá»§a báº¡n Ä‘Ã£ bá»‹ táº¡m khÃ³a. Vui lÃ²ng thá»­ láº¡i sau 1 phÃºt!\"}");
             return;
         }
 

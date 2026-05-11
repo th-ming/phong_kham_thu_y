@@ -15,6 +15,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.util.concurrent.ConcurrentHashMap;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 
 @RestController
 @RequestMapping("/api/chat")
@@ -52,8 +53,7 @@ public class ChatController {
             @RequestBody List<ChatMessage> history,
             HttpServletRequest request) {
 
-        // BẢO MẬT LỚP 1: Rate Limiting chống Spam dựa trên Username thực tế (Token)
-        // hoặc IP
+        // BẢO MẬT LỚP 1: Rate Limiting chống Spam dựa trên Username thực tế (Token) hoặc IP
         String clientIp = request.getRemoteAddr();
         org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
                 .getContext().getAuthentication();
@@ -80,13 +80,18 @@ public class ChatController {
 
         try {
             if (history == null || history.isEmpty()) {
-                return Map.of("reply", "Xin chào Sen! 🐾 Rexi có thể giúp gì cho bé nhà mình ạ?");
+                String welcomeMessage = "Xin chào Sen! 🐾 Chào mừng Sen đã đến với **Phòng khám Thú y Rexi** - Nơi yêu thương và chăm sóc các Boss tận tình nhất! 🏥✨\n\n" +
+                                        "Rexi là trợ lý AI siêu cấp thông minh của phòng khám. Tại đây, Sen có thể yêu cầu Rexi:\n" +
+                                        "📅 **Đặt lịch khám bệnh** nhanh chóng không cần chờ đợi.\n" +
+                                        "🐶 **Tạo hồ sơ thú cưng** để theo dõi sức khỏe dễ dàng.\n" +
+                                        "🩺 **Tư vấn y tế, sơ cứu** cho các bé mọi lúc mọi nơi.\n\n" +
+                                        "Hôm nay Sen cần Rexi hỗ trợ gì cho bé nhà mình ạ? Cứ nhắn tự nhiên nhé!";
+                return Map.of("reply", welcomeMessage);
             }
 
-            // BẢO MẬT: Giới hạn mảng lịch sử (Chỉ nhớ 10 tin nhắn gần nhất) để tránh cạn
-            // kiệt Token / Tràn RAM
+            // BẢO MẬT: Giới hạn mảng lịch sử (Chỉ nhớ 10 tin nhắn gần nhất) để tránh cạn kiệt Token / Tràn RAM
             if (history.size() > 10) {
-                history = new java.util.ArrayList<>(history.subList(history.size() - 10, history.size()));
+                history = new ArrayList<>(history.subList(history.size() - 10, history.size()));
             }
 
             // Lấy nội dung câu hỏi cuối cùng của khách hàng
@@ -104,19 +109,13 @@ public class ChatController {
 
             // Tạo chỉ thị hệ thống tổng hợp
             String systemPrompt = "Bạn là Bác sĩ Thú y Rexi - Siêu trợ lý hóm hỉnh và thông minh. Hãy trò chuyện như một con người có khiếu hài hước.\n"
-                    +
-                    "1. TƯ DUY LINH HOẠT: Biết phân biệt khi nào Sen đang lo lắng thực sự (cần tư vấn y khoa) và khi nào Sen đang trêu đùa/nói đùa (cần đối đáp hóm hỉnh). Đừng 'nghiêm túc quá đà' khi Sen đang troll.\n"
-                    +
-                    "2. PHONG CÁCH: Gọi khách là 'Sen', gọi thú cưng là 'Bé/Boss'. Nếu Sen đùa, hãy biết đùa lại hoặc 'bắt thóp' cái sự lầy lội của Sen một cách dễ thương.\n"
-                    +
-                    "3. KIẾN THỨC: Vẫn là một chuyên gia sơ cứu khi cần, nhưng phải biết 'nhảy số' theo ngữ cảnh. Đừng tư vấn y khoa cho con đom đóm phát sáng!\n"
-                    +
-                    "4. KHẨN CẤP: Chỉ dùng tag [EMERGENCY] cho các ca bệnh thật sự nguy kịch.\n" +
-                    "5. ĐẶT LỊCH TRỰC TIẾP: Thay vì bảo khách chuyển trang, HÃY TỰ ĐỘNG HỎI khách 5 thông tin: Ngày khám (Định dạng YYYY-MM-DD), Giờ khám (Định dạng HH:MM), Tên thú cưng, Dịch vụ muốn làm, và Bác sĩ mong muốn (Nếu khách không yêu cầu, ghi 'Bất kỳ'). Khi có đủ 5 thông tin, BẮT BUỘC trả về định dạng: [AUTO_BOOK:Ngày|Giờ|Tên bé|Dịch vụ|Tên bác sĩ] (VD: [AUTO_BOOK:2026-05-15|14:30|Miu|Tiêm phòng|BS. Minh Anh]). Tuyệt đối KHÔNG trả về [LINK ĐẶT LỊCH] nữa.\n"
-                    +
-                    "6. THÊM THÚ CƯNG TỰ ĐỘNG: Nếu khách yêu cầu thêm hồ sơ thú cưng, hãy tự động hỏi 5 thông tin: Tên bé, Loài (Chó/Mèo/Khác), Giống, Cân nặng (kg), Giới tính. Khi có đủ 5 thông tin, BẮT BUỘC trả về cú pháp: [ADD_PET:Tên|Loài|Giống|Cân nặng|Giới tính] (VD: [ADD_PET:Milo|Chó|Corgi|5|Đực]).\n"
-                    +
-                    userContext;
+                    + "1. TƯ DUY LINH HOẠT: Biết phân biệt khi nào Sen đang lo lắng thực sự (cần tư vấn y khoa) và khi nào Sen đang trêu đùa/nói đùa (cần đối đáp hóm hỉnh). Đừng 'nghiêm túc quá đà' khi Sen đang troll.\n"
+                    + "2. PHONG CÁCH: Gọi khách là 'Sen', gọi thú cưng là 'Bé/Boss'. Nếu Sen đùa, hãy biết đùa lại hoặc 'bắt thóp' cái sự lầy lội của Sen một cách dễ thương.\n"
+                    + "3. KIẾN THỨC: Vẫn là một chuyên gia sơ cứu khi cần, nhưng phải biết 'nhảy số' theo ngữ cảnh. Đừng tư vấn y khoa cho con đom đóm phát sáng!\n"
+                    + "4. KHẨN CẤP: Chỉ dùng tag [EMERGENCY] cho các ca bệnh thật sự nguy kịch.\n"
+                    + "5. ĐẶT LỊCH TRỰC TIẾP: Thay vì bảo khách chuyển trang, HÃY TỰ ĐỘNG HỎI khách 5 thông tin: Ngày khám (Định dạng YYYY-MM-DD), Giờ khám (Định dạng HH:MM), Tên thú cưng, Dịch vụ muốn làm, và Bác sĩ mong muốn (Nếu khách không yêu cầu, ghi 'Bất kỳ'). Khi có đủ 5 thông tin, BẮT BUỘC trả về định dạng: [AUTO_BOOK:Ngày|Giờ|Tên bé|Dịch vụ|Tên bác sĩ] (VD: [AUTO_BOOK:2026-05-15|14:30|Miu|Tiêm phòng|BS. Minh Anh]). Tuyệt đối KHÔNG trả về [LINK ĐẶT LỊCH] nữa.\n"
+                    + "6. THÊM THÚ CƯNG TỰ ĐỘNG: Nếu khách yêu cầu thêm hồ sơ thú cưng, hãy tự động hỏi 5 thông tin: Tên bé, Loài (Chó/Mèo/Khác), Giống, Cân nặng (kg), Giới tính. Khi có đủ 5 thông tin, BẮT BUỘC trả về cú pháp: [ADD_PET:Tên|Loài|Giống|Cân nặng|Giới tính] (VD: [ADD_PET:Milo|Chó|Corgi|5|Đực]).\n"
+                    + userContext;
 
             // Chèn vào đầu lịch sử hội thoại để AI luôn nhớ
             ChatMessage systemMsg = new ChatMessage();
@@ -161,10 +160,8 @@ public class ChatController {
             return Map.of("reply", reply);
         } catch (Exception e) {
             logger.severe("Chat API error: " + e.getMessage());
-            // Không lộ chi tiết Exception cho Client (bảo mật)
             return Map.of("reply",
                     "Sen ơi, não bộ của Rexi đang được bảo trì nâng cấp xíu nên hơi lác. Sen đợi một chút rồi thử lại nha! 🛠️🐾");
         }
     }
 }
-

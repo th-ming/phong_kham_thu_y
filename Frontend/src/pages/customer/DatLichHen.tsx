@@ -144,7 +144,7 @@ const DatLichHen: React.FC = () => {
       <div className="stagger-2" style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: '32px', alignItems: 'start' }}>
         <form className="glass-card" style={{ padding: '40px', borderRadius: 'var(--radius-xl)', display: 'grid', gap: '32px' }} onSubmit={handleBooking}>
           <div style={{ display: 'grid', gap: '12px' }}>
-            <label style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gray-400)', letterSpacing: '1px' }}>1. CHỌN THÚ CƯNG</label>
+            <label style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gray-400)', letterSpacing: '1px' }}>1. CHỌN THÚ CƯNG <span style={{ color: '#ff4d4f' }}>*</span></label>
             {pets.length === 0 ? (
               <div style={{ padding: '24px', background: 'rgba(245, 158, 11, 0.05)', borderRadius: '20px', border: '1px dashed var(--accent)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <span style={{ fontSize: '1rem', fontWeight: 700 }}>Bạn chưa có hồ sơ thú cưng nào.</span>
@@ -159,7 +159,7 @@ const DatLichHen: React.FC = () => {
           </div>
 
           <div style={{ display: 'grid', gap: '12px' }}>
-            <label>2. CHỌN DỊCH VỤ</label>
+            <label>2. CHỌN DỊCH VỤ <span style={{ color: '#ff4d4f' }}>*</span></label>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
               {services.map(s => (
                 <div key={s.id_dich_vu} className={`service-card-select ${idDichVu === String(s.id_dich_vu) ? 'selected' : ''}`} onClick={() => setIdDichVu(String(s.id_dich_vu))}>
@@ -177,12 +177,14 @@ const DatLichHen: React.FC = () => {
                 <option value="">-- Bác sĩ khám (Tùy chọn) --</option>
                 {doctors.map(d => <option key={d.id_nhan_vien} value={d.id_nhan_vien}>{d.ho_ten} ({d.chuyen_mon})</option>)}
               </select>
-              <input required type="date" value={date} onChange={e => setDate(e.target.value)} min={new Date().toISOString().split("T")[0]} />
+              <div style={{ display: 'grid', gap: '8px' }}>
+                <input required type="date" value={date} onChange={e => setDate(e.target.value)} min={new Date().toISOString().split("T")[0]} />
+              </div>
             </div>
           </div>
 
           <div style={{ display: 'grid', gap: '16px' }}>
-            <label style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gray-400)', letterSpacing: '1px' }}>4. CHỌN KHUNG GIỜ</label>
+            <label style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gray-400)', letterSpacing: '1px' }}>4. CHỌN KHUNG GIỜ <span style={{ color: '#ff4d4f' }}>*</span></label>
             {!date || !idDichVu ? (
               <div style={{ padding: '24px', background: 'var(--gray-50)', borderRadius: '20px', border: '1px dashed var(--gray-200)', color: 'var(--gray-400)', textAlign: 'center', fontWeight: 600 }}>
                 Vui lòng chọn Dịch vụ và Ngày để xem giờ rảnh.

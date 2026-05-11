@@ -5,7 +5,7 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "TaiKhoan") // Kết nối bảng TaiKhoan
+@Table(name = "TaiKhoan") // Káº¿t ná»‘i báº£ng TaiKhoan
 @Data
 public class TaiKhoan {
     @Id
@@ -19,6 +19,7 @@ public class TaiKhoan {
     private String id_khach_hang;
     private String id_nhan_vien;
     private String mat_khau_hash;
+    private Boolean welcome_email_sent;
 
     @ManyToOne
     @JoinColumn(name = "id_khach_hang", insertable = false, updatable = false)
