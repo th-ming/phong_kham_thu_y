@@ -88,6 +88,15 @@ const BaoCaoThongKe: React.FC = () => {
   const totalRevenue = useMemo(() => revenueData.reduce((sum, d) => sum + (d.TongDoanhThu || d.doanh_thu || d.tong_doanh_thu || 0), 0), [revenueData]);
   const totalApps = useMemo(() => doctorStats.reduce((sum, d) => sum + (d.SoHoSo || d.so_ho_so || 0), 0), [doctorStats]);
 
+  // Lọc và sắp xếp để đảm bảo biểu đồ chỉ lấy đúng 7 ngày gần nhất theo thứ tự tăng dần
+  const sortedDailyData = useMemo(() => {
+    return [...dailyRevenueData].sort((a, b) => {
+      const dateA = new Date(a.Ngay || a.ngay).getTime();
+      const dateB = new Date(b.Ngay || b.ngay).getTime();
+      return dateA - dateB;
+    }).slice(-7);
+  }, [dailyRevenueData]);
+
   // Chart Options & Data
   const commonOptions = {
     responsive: true,
@@ -103,11 +112,28 @@ const BaoCaoThongKe: React.FC = () => {
         padding: 12,
         boxPadding: 6,
         usePointStyle: true,
+        callbacks: {
+          label: (context: any) => {
+            let label = context.dataset.label || '';
+            if (label) label += ': ';
+            let val = context.parsed;
+            if (typeof val === 'object' && val !== null) {
+              val = context.chart.options.indexAxis === 'y' ? context.parsed.x : context.parsed.y;
+            }
+            label += val;
+            if (context.chart.config.type === 'doughnut') {
+              label += ' bé';
+            } else {
+              label += ' Triệu VNĐ';
+            }
+            return label;
+          }
+        }
       }
     },
     scales: {
       y: { beginAtZero: true, display: false },
-      x: { grid: { display: false }, ticks: { font: { weight: '800', size: 11 }, color: '#94a3b8' } }
+      x: { grid: { display: false }, ticks: { font: { weight: 'bold' }, color: '#94a3b8' } }
     }
   };
 
@@ -115,7 +141,7 @@ const BaoCaoThongKe: React.FC = () => {
     labels: revenueData.map(d => `T${d.Thang || d.thang}`),
     datasets: [{
       label: 'Doanh thu (Triệu)',
-      data: revenueData.map(d => (d.TongDoanhThu || d.doanh_thu || 0) / 1000000),
+      data: revenueData.map(d => (d.TongDoanhThu || d.doanh_thu || d.tong_doanh_thu || 0) / 1000000),
       backgroundColor: 'rgba(15, 157, 138, 0.8)',
       borderRadius: 8,
       hoverBackgroundColor: '#0f9d8a',
@@ -123,13 +149,13 @@ const BaoCaoThongKe: React.FC = () => {
   };
 
   const dailyChartData = {
-    labels: dailyRevenueData.map(d => {
+    labels: sortedDailyData.map(d => {
       const date = new Date(d.Ngay || d.ngay);
       return `${date.getDate()}/${date.getMonth() + 1}`;
     }),
     datasets: [{
       label: 'Doanh thu (Triệu)',
-      data: dailyRevenueData.map(d => (d.TongDoanhThu || d.doanh_thu || 0) / 1000000),
+      data: sortedDailyData.map(d => (d.TongDoanhThu || d.doanh_thu || d.tong_doanh_thu || 0) / 1000000),
       backgroundColor: 'rgba(245, 158, 11, 0.8)',
       borderRadius: 8,
       hoverBackgroundColor: '#f59e0b',
@@ -139,6 +165,7 @@ const BaoCaoThongKe: React.FC = () => {
   const petChartData = {
     labels: petStats.map(s => s.LoaiThuCung || s.loai_thu_cung || 'Khác'),
     datasets: [{
+      label: 'Số lượng',
       data: petStats.map(s => s.SoLuong || s.so_luong || 0),
       backgroundColor: ['#0ea5e9', '#f59e0b', '#8b5cf6', '#10b981', '#ec4899'],
       borderWidth: 0,
@@ -150,10 +177,9 @@ const BaoCaoThongKe: React.FC = () => {
     labels: serviceStats.map(s => s.TenDichVu || s.ten_dich_vu),
     datasets: [{
       label: 'Doanh thu',
-      data: serviceStats.map(s => (s.DoanhThu || s.doanh_thu || 0) / 1000000),
+      data: serviceStats.map(s => (s.DoanhThu || s.doanh_thu || s.tong_doanh_thu || 0) / 1000000),
       backgroundColor: 'rgba(234, 88, 12, 0.8)',
       borderRadius: 8,
-      indexAxis: 'y' as const,
     }]
   };
 
@@ -183,7 +209,7 @@ const BaoCaoThongKe: React.FC = () => {
 
   const handleExportExcel = () => {
     try {
-      let csvContent = "\uFEFF"; 
+      let csvContent = "\uFEFF";
       csvContent += "BÁO CÁO DOANH THU\nMonth,Year,Revenue (VNĐ)\n";
       revenueData.forEach(item => csvContent += `${item.Thang},${item.Nam},${item.TongDoanhThu}\n`);
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -250,14 +276,14 @@ const BaoCaoThongKe: React.FC = () => {
           <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '24px', color: 'var(--ink)' }}>Tỷ lệ thú cưng</h3>
           <div style={{ display: 'flex', alignItems: 'center', height: '300px' }}>
             <div style={{ flex: 1, height: '100%' }}>
-              <Doughnut 
-                data={petChartData} 
+              <Doughnut
+                data={petChartData}
                 options={{
                   ...commonOptions,
                   scales: undefined,
                   cutout: '70%',
-                  plugins: { ...commonOptions.plugins, legend: { display: true, position: 'right', labels: { usePointStyle: true, font: { weight: '700' } } } }
-                }} 
+                  plugins: { ...commonOptions.plugins, legend: { display: true, position: 'right', labels: { usePointStyle: true, font: { weight: 'bold' } } } }
+                }}
               />
             </div>
           </div>
@@ -289,16 +315,16 @@ const BaoCaoThongKe: React.FC = () => {
         <div className="glass-card" style={{ padding: '32px', borderRadius: 'var(--radius-xl)', gridColumn: 'span 2' }}>
           <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '24px', color: 'var(--ink)' }}>Phân bổ doanh thu dịch vụ</h3>
           <div style={{ height: '400px' }}>
-            <Bar 
+            <Bar
               options={{
                 ...commonOptions,
                 indexAxis: 'y' as const,
                 scales: {
-                  x: { beginAtZero: true, grid: { display: false }, ticks: { font: { weight: '800' } } },
-                  y: { grid: { display: false }, ticks: { font: { weight: '800' } } }
+                  x: { beginAtZero: true, grid: { display: false }, ticks: { font: { weight: 'bold' } } },
+                  y: { grid: { display: false }, ticks: { font: { weight: 'bold' } } }
                 }
-              }} 
-              data={serviceChartData} 
+              }}
+              data={serviceChartData}
             />
           </div>
         </div>
@@ -339,4 +365,3 @@ const BaoCaoThongKe: React.FC = () => {
 };
 
 export default React.memo(BaoCaoThongKe);
-

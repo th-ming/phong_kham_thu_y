@@ -2,7 +2,6 @@ package com.rexi.pkty.service;
 
 import com.rexi.pkty.entity.TaiKhoan;
 import com.rexi.pkty.repository.HoSoBenhAnRepository;
-import com.rexi.pkty.repository.LichHenRepository;
 import com.rexi.pkty.repository.TaiKhoanRepository;
 import com.rexi.pkty.repository.ThuCungRepository;
 import com.rexi.pkty.repository.TiemChungRepository;
@@ -12,7 +11,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -29,9 +27,6 @@ public class AiMemoryService {
 
     @Autowired
     private HoSoBenhAnRepository hoSoBenhAnRepository;
-
-    @Autowired
-    private LichHenRepository lichHenRepository;
 
     @Autowired
     private TiemChungRepository tiemChungRepository;

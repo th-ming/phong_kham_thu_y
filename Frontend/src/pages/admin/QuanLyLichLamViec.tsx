@@ -46,7 +46,7 @@ const QuanLyLichLamViec: React.FC = () => {
     const [selectedStaffId, setSelectedStaffId] = useState<string>('');
     const [viewMode, setViewMode] = useState<'all' | 'personal'>(isAdmin ? 'all' : 'personal');
 
-    const [hoveredStaffId, setHoveredStaffId] = useState<number | null>(null);
+    const [hoveredStaffId, setHoveredStaffId] = useState<string | null>(null);
     const [draggedShift, setDraggedShift] = useState<any>(null);
     const [dragOverSlot, setDragOverSlot] = useState<string | null>(null);
     useEffect(() => {
@@ -57,7 +57,7 @@ const QuanLyLichLamViec: React.FC = () => {
         try {
             const [staffRes, scheduleRes] = await Promise.all([
                 axiosInstance.get('/api/nhan-vien'),
-                axiosInstance.get('/api/lich-truc')
+                axiosInstance.get('/api/nhan-vien/lich-lam-viec')
             ]);
             setStaffs(staffRes.data);
             setSchedules(scheduleRes.data);
@@ -117,13 +117,14 @@ const QuanLyLichLamViec: React.FC = () => {
     const staffWorkingHours = useMemo(() => {
         if (!isAdmin) return [];
         const weekDateStrs = weekDates.map(d => d.dateStr);
-        const shiftsThisWeek = schedules.filter(s => weekDateStrs.includes(s.ngay_lam_viec));
+        const shiftsThisWeek = schedules.filter(s => weekDateStrs.includes(s.ngay_lam));
 
-        const stats: Record<string, { id_nhan_vien: number, ho_ten: string, chuc_vu: string, hours: number }> = {};
+        const stats: Record<string, { id_nhan_vien: string, ho_ten: string, chuc_vu: string, hours: number }> = {};
 
         shiftsThisWeek.forEach(s => {
             if (!stats[s.id_nhan_vien]) {
-                stats[s.id_nhan_vien] = { id_nhan_vien: s.id_nhan_vien, ho_ten: s.ho_ten, chuc_vu: s.chuc_vu, hours: 0 };
+                const staffInfo = staffs.find(st => String(st.id_nhan_vien) === String(s.id_nhan_vien));
+                stats[s.id_nhan_vien] = { id_nhan_vien: s.id_nhan_vien, ho_ten: staffInfo ? staffInfo.ho_ten : 'Nhân viên', chuc_vu: staffInfo ? (staffInfo.chuyen_mon || staffInfo.chuc_vu) : 'Nhân viên', hours: 0 };
             }
             stats[s.id_nhan_vien].hours += 0.5; // Mỗi ca 30 phút = 0.5 giờ
         });
@@ -147,14 +148,14 @@ const QuanLyLichLamViec: React.FC = () => {
 
         try {
             const payload = {
-                id_nhan_vien: parseInt(selectedStaffId),
-                ngay_lam_viec: selectedSlot.day.dateStr,
-                ca_lam_viec: `${String(selectedSlot.hour).padStart(2, '0')}:00:00`,
+                id_nhan_vien: selectedStaffId,
+                ngay_lam: selectedSlot.day.dateStr,
+                gio_bat_dau: `${String(selectedSlot.hour).padStart(2, '0')}:00:00`,
                 ghi_chu: "Đăng ký lịch trực"
             };
 
             const headers = { Role: userRole };
-            await axiosInstance.post('/api/lich-truc', payload, { headers });
+            await axiosInstance.post('/api/nhan-vien/lich-lam-viec', payload, { headers });
             toast.success("Đã đăng ký ca trực thành công!");
             setShowAddModal(false);
             fetchData();
@@ -173,19 +174,20 @@ const QuanLyLichLamViec: React.FC = () => {
 
             // Lọc ra các ca trực trong tuần hiện tại đang xem
             const weekDateStrs = weekDates.map(d => d.dateStr);
-            const shiftsToExport = visibleSchedules.filter(s => weekDateStrs.includes(s.ngay_lam_viec));
+            const shiftsToExport = visibleSchedules.filter(s => weekDateStrs.includes(s.ngay_lam));
 
             // Sắp xếp theo ngày -> giờ -> tên
             shiftsToExport.sort((a, b) => {
-                if (a.ngay_lam_viec !== b.ngay_lam_viec) return a.ngay_lam_viec.localeCompare(b.ngay_lam_viec);
-                if (a.ca_lam_viec !== b.ca_lam_viec) return a.ca_lam_viec.localeCompare(b.ca_lam_viec);
-                return a.ho_ten.localeCompare(b.ho_ten);
+                if (a.ngay_lam !== b.ngay_lam) return a.ngay_lam.localeCompare(b.ngay_lam);
+                if (a.gio_bat_dau !== b.gio_bat_dau) return a.gio_bat_dau.localeCompare(b.gio_bat_dau);
+                return a.id_nhan_vien.localeCompare(b.id_nhan_vien);
             });
 
             shiftsToExport.forEach(shift => {
-                const dayObj = weekDates.find(d => d.dateStr === shift.ngay_lam_viec);
+                const dayObj = weekDates.find(d => d.dateStr === shift.ngay_lam);
                 const dayLabel = dayObj ? dayObj.label : "";
-                csvContent += `${shift.ngay_lam_viec},${dayLabel},${shift.ca_lam_viec?.substring(0, 5)},"${shift.ho_ten}","${shift.chuc_vu}"\n`;
+                const staffInfo = staffs.find(st => String(st.id_nhan_vien) === String(shift.id_nhan_vien));
+                csvContent += `${shift.ngay_lam},${dayLabel},${shift.gio_bat_dau?.substring(0, 5)},"${staffInfo?.ho_ten || 'Nhân viên'}","${staffInfo?.chuyen_mon || 'Nhân viên'}"\n`;
             });
 
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -202,11 +204,11 @@ const QuanLyLichLamViec: React.FC = () => {
         }
     };
 
-    const handleCopyScheduleToNextWeek = async (staffId: number) => {
+    const handleCopyScheduleToNextWeek = async (staffId: string) => {
         if (!window.confirm("Bạn có chắc chắn muốn sao chép toàn bộ lịch trực của nhân viên này sang tuần tiếp theo không?")) return;
 
         const weekDateStrs = weekDates.map(d => d.dateStr);
-        const shiftsToCopy = schedules.filter(s => s.id_nhan_vien === staffId && weekDateStrs.includes(s.ngay_lam_viec));
+        const shiftsToCopy = schedules.filter(s => String(s.id_nhan_vien) === String(staffId) && weekDateStrs.includes(s.ngay_lam));
 
         if (shiftsToCopy.length === 0) {
             toast.info("Nhân viên này không có ca trực nào trong tuần hiện tại để sao chép!");
@@ -219,17 +221,17 @@ const QuanLyLichLamViec: React.FC = () => {
 
         for (const shift of shiftsToCopy) {
             try {
-                const date = new Date(`${shift.ngay_lam_viec}T00:00:00`);
+                const date = new Date(`${shift.ngay_lam}T00:00:00`);
                 date.setDate(date.getDate() + 7);
                 const nextWeekDateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 
                 const payload = {
                     id_nhan_vien: shift.id_nhan_vien,
-                    ngay_lam_viec: nextWeekDateStr,
-                    ca_lam_viec: shift.ca_lam_viec,
+                    ngay_lam: nextWeekDateStr,
+                    gio_bat_dau: shift.gio_bat_dau,
                     ghi_chu: shift.ghi_chu || "Sao chép lịch trực từ tuần trước"
                 };
-                await axiosInstance.post('/api/lich-truc', payload, { headers });
+                await axiosInstance.post('/api/nhan-vien/lich-lam-viec', payload, { headers });
                 successCount++;
             } catch (error) {
                 // Bỏ qua lỗi trùng lịch
@@ -248,7 +250,7 @@ const QuanLyLichLamViec: React.FC = () => {
         if (!window.confirm("Bạn có chắc chắn muốn sao chép toàn bộ lịch trực của TẤT CẢ nhân viên trong tuần này sang tuần tiếp theo không?")) return;
 
         const weekDateStrs = weekDates.map(d => d.dateStr);
-        const shiftsToCopy = schedules.filter(s => weekDateStrs.includes(s.ngay_lam_viec));
+        const shiftsToCopy = schedules.filter(s => weekDateStrs.includes(s.ngay_lam));
 
         if (shiftsToCopy.length === 0) {
             toast.info("Không có ca trực nào trong tuần hiện tại để sao chép!");
@@ -261,17 +263,17 @@ const QuanLyLichLamViec: React.FC = () => {
 
         for (const shift of shiftsToCopy) {
             try {
-                const date = new Date(`${shift.ngay_lam_viec}T00:00:00`);
+                const date = new Date(`${shift.ngay_lam}T00:00:00`);
                 date.setDate(date.getDate() + 7);
                 const nextWeekDateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 
                 const payload = {
                     id_nhan_vien: shift.id_nhan_vien,
-                    ngay_lam_viec: nextWeekDateStr,
-                    ca_lam_viec: shift.ca_lam_viec,
+                    ngay_lam: nextWeekDateStr,
+                    gio_bat_dau: shift.gio_bat_dau,
                     ghi_chu: shift.ghi_chu || "Sao chép lịch trực từ tuần trước"
                 };
-                await axiosInstance.post('/api/lich-truc', payload, { headers });
+                await axiosInstance.post('/api/nhan-vien/lich-lam-viec', payload, { headers });
                 successCount++;
             } catch (error) {
                 // Bỏ qua lỗi trùng lịch hoặc lỗi khác để tiếp tục xử lý các ca còn lại
@@ -291,7 +293,7 @@ const QuanLyLichLamViec: React.FC = () => {
         const newDateStr = targetDay.dateStr;
         const newTimeStr = `${String(targetHour).padStart(2, '0')}:00:00`;
 
-        if (shift.ngay_lam_viec === newDateStr && shift.ca_lam_viec?.startsWith(String(targetHour).padStart(2, '0'))) {
+        if (shift.ngay_lam === newDateStr && shift.gio_bat_dau?.startsWith(String(targetHour).padStart(2, '0'))) {
             return; // Đã ở đúng vị trí
         }
 
@@ -299,16 +301,16 @@ const QuanLyLichLamViec: React.FC = () => {
             const headers = { Role: userRole };
 
             // Xóa lịch cũ trước
-            await axiosInstance.delete(`/api/lich-truc/${shift.id_lich_lam_viec}`, { headers });
+            await axiosInstance.delete(`/api/nhan-vien/lich-lam-viec/${shift.id_lich_lam_viec}`, { headers });
 
             // Thêm lịch mới
             const payload = {
                 id_nhan_vien: shift.id_nhan_vien,
-                ngay_lam_viec: newDateStr,
-                ca_lam_viec: newTimeStr,
+                ngay_lam: newDateStr,
+                gio_bat_dau: newTimeStr,
                 ghi_chu: shift.ghi_chu || "Chuyển lịch trực"
             };
-            await axiosInstance.post('/api/lich-truc', payload, { headers });
+            await axiosInstance.post('/api/nhan-vien/lich-lam-viec', payload, { headers });
 
             toast.success("Đã chuyển ca trực thành công!");
             fetchData();
@@ -329,7 +331,7 @@ const QuanLyLichLamViec: React.FC = () => {
 
         try {
             const headers = { Role: userRole };
-            await axiosInstance.delete(`/api/lich-truc/${id}`, { headers });
+            await axiosInstance.delete(`/api/nhan-vien/lich-lam-viec/${id}`, { headers });
             toast.success("Đã hủy ca trực");
             fetchData();
         } catch (error: any) {
@@ -338,10 +340,10 @@ const QuanLyLichLamViec: React.FC = () => {
     };
 
 
-    const getShiftColor = (id: number, role: string) => {
+    const getShiftColor = (id: string, role: string) => {
         const r = role?.toLowerCase() || '';
         if (r.includes('bác sĩ') || r.includes('bac si')) {
-            return DOCTOR_COLORS[(id || 0) % DOCTOR_COLORS.length];
+            return DOCTOR_COLORS[id.length % DOCTOR_COLORS.length];
         }
         if (r.includes('y tá') || r.includes('y ta')) return { bg: 'rgba(59, 130, 246, 0.1)', border: '#3b82f6', text: '#3b82f6' };
         if (r.includes('tiếp tân') || r.includes('tiep tan')) return { bg: 'rgba(245, 158, 11, 0.1)', border: '#f59e0b', text: '#f59e0b' };
@@ -580,7 +582,7 @@ const QuanLyLichLamViec: React.FC = () => {
                                                 const isLockedSlot = isPastDay || (!isAdmin && weekOffset < 1);
 
                                                 const shiftsInSlot = visibleSchedules.filter(s => {
-                                                    return s.ngay_lam_viec === day.dateStr && parseInt(s.ca_lam_viec?.split(':')[0]) === hour;
+                                                    return s.ngay_lam === day.dateStr && parseInt(s.gio_bat_dau?.split(':')[0]) === hour;
                                                 });
 
                                                 const isShortStaffed = !isPastDay && shiftsInSlot.length > 0 && shiftsInSlot.length < 2;
@@ -622,8 +624,8 @@ const QuanLyLichLamViec: React.FC = () => {
                                                         )}
                                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                                             {shiftsInSlot.map(shift => {
-                                                                const colors = getShiftColor(shift.id_nhan_vien, shift.chuc_vu || 'staff');
                                                                 const staffInfo = staffs.find(s => s.id_nhan_vien === shift.id_nhan_vien);
+                                                                const colors = getShiftColor(shift.id_nhan_vien, staffInfo?.chuyen_mon || 'staff');
                                                                 const avatar = staffInfo?.hinh_anh || "/img/avtpkty.png";
                                                                 return (
                                                                     <div
@@ -678,8 +680,8 @@ const QuanLyLichLamViec: React.FC = () => {
                                                                             )}
                                                                         </div>
                                                                         <div style={{ flex: 1, minWidth: 0, textAlign: 'left', paddingRight: '12px' }}>
-                                                                            <div style={{ textTransform: 'uppercase', marginBottom: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{shift.ho_ten}</div>
-                                                                            <div style={{ opacity: 0.7, fontSize: '0.65rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{shift.chuc_vu}</div>
+                                                                            <div style={{ textTransform: 'uppercase', marginBottom: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{staffInfo ? staffInfo.ho_ten : shift.id_nhan_vien}</div>
+                                                                            <div style={{ opacity: 0.7, fontSize: '0.65rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{staffInfo ? (staffInfo.chuyen_mon || staffInfo.chuc_vu) : 'Nhân viên'}</div>
                                                                         </div>
 
                                                                         {!isPastDay && (

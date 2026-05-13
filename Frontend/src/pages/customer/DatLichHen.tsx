@@ -76,8 +76,23 @@ const DatLichHen: React.FC = () => {
       return;
     }
 
+    if (!idThuCung) {
+      toast.info("Vui lòng chọn thú cưng cần khám!");
+      return;
+    }
+
     if (!idDichVu) {
       toast.info("Vui lòng chọn một dịch vụ cho bé nhé!");
+      return;
+    }
+
+    if (!date) {
+      toast.info("Vui lòng chọn ngày khám!");
+      return;
+    }
+
+    if (!time) {
+      toast.info("Vui lòng chọn khung giờ khám!");
       return;
     }
 

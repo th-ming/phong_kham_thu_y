@@ -85,11 +85,22 @@ const ThongTinCaNhan: React.FC = () => {
     try {
       const user = getUserProfile();
       const userId = user?.id_khach_hang || user?.id || user?.id_nhan_vien;
-      const endpoint = userId
-        ? user?.id_khach_hang || user?.id
-          ? `/api/khach-hang/${userId}`
-          : `/api/nhan-vien/${userId}`
-        : '/api/profile';
+
+      if (!userId) {
+        toast.error("Không tìm thấy thông tin tài khoản. Vui lòng đăng nhập lại!");
+        return;
+      }
+
+      const tenHienTai = formData.ten_khach_hang || formData.ho_ten || '';
+      if (!tenHienTai.trim()) {
+        toast.error("Họ và tên không được để trống!");
+        return;
+      }
+
+      const isCustomerUser = !!(user?.id_khach_hang || user?.id);
+      const endpoint = isCustomerUser
+        ? `/api/khach-hang/${userId}`
+        : `/api/nhan-vien/${userId}`;
 
       axiosInstance.put(endpoint, formData)
         .then(() => {

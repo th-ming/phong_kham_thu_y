@@ -1,10 +1,8 @@
 import React from "react";
-import { useTheme } from "../../contexts/ThemeContext";
 import { RevealSection } from "@components/SpecialEffects";
 
 
 const PhanQuyTrinh: React.FC = () => {
-    const { theme } = useTheme();
 
     return (
         <RevealSection>

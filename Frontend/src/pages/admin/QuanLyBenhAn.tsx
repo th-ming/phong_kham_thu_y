@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axiosInstance from "@services/axios";
 import { toast } from "@components/Toast";
-import { getUserProfile } from "@utils/index";
 
 const QuanLyBenhAn: React.FC = () => {
     const [lichHens, setLichHens] = useState<any[]>([]);

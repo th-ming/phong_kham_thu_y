@@ -1,7 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import Header from "@components/Header";
-import Footer from "@components/Footer";
 import { ChatBot } from "@components/ChatBot";
 import { MemeCat, ScrollToTop } from "@components/SpecialEffects";
 import axiosInstance from "@services/axios";
@@ -28,9 +26,9 @@ const ChiTietDichVu: React.FC = () => {
       try {
         const response = await axiosInstance.get('/api/dich-vu');
         const data: any[] = response.data || [];
-        
-        const found = data.find(s => 
-          String(s.id_dich_vu) === slug || 
+
+        const found = data.find(s =>
+          String(s.id_dich_vu) === slug ||
           generateSlug(s.ten_dich_vu) === slug
         );
         setService(found || null);

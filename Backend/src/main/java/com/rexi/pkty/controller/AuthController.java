@@ -94,6 +94,7 @@ public class AuthController {
             return ResponseEntity.badRequest().body(Map.of("message", "Dữ liệu không hợp lệ"));
         }
 
+        com.rexi.pkty.entity.TaiKhoan tk = null;
         try {
             // SỬA LỖI: Tìm trực tiếp bằng Repository thay vì gọi qua Stored Procedure để tránh lỗi logic bên trong SQL
             Optional<com.rexi.pkty.entity.TaiKhoan> tkOpt = taiKhoanRepository.findByTenDangNhap(username);
@@ -105,7 +106,7 @@ public class AuthController {
                 return ResponseEntity.status(401).body(Map.of("message", "Sai tài khoản hoặc mật khẩu!"));
             }
 
-            com.rexi.pkty.entity.TaiKhoan tk = tkOpt.get();
+            tk = tkOpt.get();
 
                 // BẢO MẬT: Chặn đăng nhập nếu tài khoản đã bị khóa hoặc vô hiệu hóa
                 String status = tk.getTrang_thai();
@@ -146,7 +147,6 @@ public class AuthController {
                             "Đăng nhập thất bại (Sai mật khẩu)");
                     return ResponseEntity.status(401).body(Map.of("message", "Sai tài khoản hoặc mật khẩu!"));
                 }
-            }
 
             // Đăng nhập thành công -> Xóa bộ đếm
             loginAttempts.remove(lockoutKey);
@@ -227,13 +227,10 @@ public class AuthController {
                     "refreshToken", refreshToken,
                     "user", userData,
                     "message", "Đăng nhập thành công!"));
-        }catch(
-
-    Exception e)
-    {
-        logger.severe("Login error: " + e.getMessage());
-        return ResponseEntity.status(500).body(Map.of("message", "Lỗi hệ thống. Vui lòng thử lại sau."));
-    }
+        } catch (Exception e) {
+            logger.severe("Login error: " + e.getMessage());
+            return ResponseEntity.status(500).body(Map.of("message", "Lỗi hệ thống. Vui lòng thử lại sau."));
+        }
     }
 
     private void handleFailedAttempt(String lockoutKey) {
