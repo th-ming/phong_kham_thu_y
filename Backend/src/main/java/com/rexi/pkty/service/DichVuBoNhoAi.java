@@ -31,9 +31,6 @@ public class DichVuBoNhoAi {
     private HoSoBenhAnRepository hoSoBenhAnRepository;
 
     @Autowired
-    private LichHenRepository lichHenRepository;
-
-    @Autowired
     private TiemChungRepository tiemChungRepository;
 
     @Autowired
@@ -98,7 +95,7 @@ public class DichVuBoNhoAi {
             context.append("\n[BỐI CẢNH HIỆN TẠI]\n");
             context.append("- Khách hàng: ").append(customerName).append("\n");
 
-            var pets = thuCungRepository.findPetsByKhachHangId(customerId);
+            var pets = thuCungRepository.findByKhachHang(customerId);
             if (!pets.isEmpty()) {
                 String petNames = pets.stream().map(p -> p.getTen_thu_cung() + " (" + p.getLoai() + ")").collect(Collectors.joining(", "));
                 context.append("- Thú cưng: ").append(petNames).append("\n");
@@ -107,7 +104,7 @@ public class DichVuBoNhoAi {
             if (query.contains("tiêm") || query.contains("lịch") || query.contains("vắc") || query.contains("hẹn")) {
                 context.append("- Dữ liệu tiêm chủng/lịch hẹn: ");
                 for (var p : pets) {
-                    var vaccinations = tiemChungRepository.findVaccinationsForSpecificPet(p.getId_thu_cung());
+                    var vaccinations = tiemChungRepository.findByIdThuCung(p.getId_thu_cung());
                     if (!vaccinations.isEmpty()) {
                         String vax = vaccinations.stream().map(v -> v.getTen_vaccine() + " (" + v.getNgay_tiem() + ")").collect(Collectors.joining("; "));
                         context.append("[").append(p.getTen_thu_cung()).append(": ").append(vax).append("] ");
@@ -117,13 +114,13 @@ public class DichVuBoNhoAi {
             }
 
             if (query.contains("lần trước") || query.contains("khám") || query.contains("bệnh") || query.contains("sức khỏe")) {
-                var history = hoSoBenhAnRepository.findHistoryByKhachHangId(customerId);
+                var history = hoSoBenhAnRepository.findByCustomerId(customerId);
                 if (!history.isEmpty()) {
                     context.append("- Bệnh án gần đây: ");
                     int count = 0;
                     for (var h : history) {
                         if (count++ >= 2) break; 
-                        context.append("Bé tại ngày ").append(h.getNgay_kham()).append(" chẩn đoán: ").append(h.getChan_doan()).append("\n");
+                        context.append("Bé tại ngày ").append(h.get("ngay_kham")).append(" chẩn đoán: ").append(h.get("chan_doan")).append("\n");
                     }
                 }
             }
@@ -155,8 +152,8 @@ public class DichVuBoNhoAi {
             if (services != null && !services.isEmpty()) {
                 sb.append("\n[BẢNG GIÁ DỊCH VỤ CHÍNH]\n");
                 for (var s : services) {
-                    if (s.getTen_dich_vu() != null) {
-                        sb.append("- ").append(s.getTen_dich_vu()).append(": Từ ").append(s.getGia()).append(" VNĐ\n");
+                    if (s.getTenDichVu() != null) {
+                        sb.append("- ").append(s.getTenDichVu()).append(": Từ ").append(s.getGiaTien()).append(" VNĐ\n");
                     }
                 }
             }
@@ -172,9 +169,9 @@ public class DichVuBoNhoAi {
             var doctors = nhanVienRepository.findAllBacSi();
             if (doctors != null && !doctors.isEmpty()) {
                 for (var d : doctors) {
-                    sb.append("- Bác sĩ: ").append(d.getHo_ten());
-                    if (d.getChuyen_mon() != null && !d.getChuyen_mon().isBlank()) {
-                        sb.append(" (Chuyên môn: ").append(d.getChuyen_mon()).append(")");
+                    sb.append("- Bác sĩ: ").append(d.getHoTen());
+                    if (d.getChuyenMon() != null && !d.getChuyenMon().isBlank()) {
+                        sb.append(" (Chuyên môn: ").append(d.getChuyenMon()).append(")");
                     }
                     sb.append("\n");
                 }

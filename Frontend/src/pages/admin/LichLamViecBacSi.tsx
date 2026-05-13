@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import axiosInstance from '@services/axios';
-import { toast } from '@components/Toast';
+import { toast } from '@components/ThongBaoNhanh';
 import { getUserProfile } from '@utils/index';
 
 interface LichLamViec {
-    id_lich_lam_viec?: number;
-    id_nhan_vien: number;
-    ngay_lam_viec: string;
-    ca_lam_viec: string;
+    id_lich_lam_viec?: string;
+    id_nhan_vien: string;
+    ngay_lam: string;
+    gio_bat_dau: string;
 }
 
 const LichLamViecBacSi: React.FC = () => {
@@ -61,6 +61,66 @@ const LichLamViecBacSi: React.FC = () => {
         setWeekStart(prev);
     };
 
+    // UX: Nhảy nhanh đến tuần hiện tại
+    const jumpToCurrentWeek = () => {
+        setWeekStart(currentWeekStart);
+    };
+
+    // UX: Nhảy nhanh đến tuần tới
+    const jumpToNextWeek = () => {
+        const next = new Date(currentWeekStart);
+        next.setDate(next.getDate() + 7);
+        setWeekStart(next);
+    };
+
+    // UX: Sao chép nhanh lịch từ tuần trước sang tuần đang xem
+    const handleCopyFromPrevWeek = async () => {
+        if (!window.confirm("Bạn có muốn sao chép lịch trực của tuần trước sang tuần này không?")) return;
+
+        const prevWeekStart = new Date(weekStart);
+        prevWeekStart.setDate(prevWeekStart.getDate() - 7);
+        const prevDates = Array.from({ length: 7 }).map((_, i) => {
+            const d = new Date(prevWeekStart);
+            d.setDate(d.getDate() + i);
+            return formatDate(d);
+        });
+
+        const prevSchedules = schedules.filter(s => prevDates.includes(s.ngay_lam));
+        if (prevSchedules.length === 0) {
+            toast.info("Tuần trước bạn không có ca trực nào để sao chép!");
+            return;
+        }
+
+        const headers = { Role: user?.ten_vai_tro || user?.loai_tai_khoan || 'bac_si' };
+        let successCount = 0;
+
+        for (const shift of prevSchedules) {
+            try {
+                const date = new Date(`${shift.ngay_lam}T00:00:00`);
+                date.setDate(date.getDate() + 7); // Chuyển sang tuần đang xem
+                const newDateStr = formatDate(date);
+
+                const payload = {
+                    id_nhan_vien: user?.id_nhan_vien,
+                    ngay_lam: newDateStr,
+                    gio_bat_dau: shift.gio_bat_dau,
+                    ghi_chu: "Sao chép từ tuần trước"
+                };
+                await axiosInstance.post('/api/nhan-vien/lich-lam-viec', payload, { headers });
+                successCount++;
+            } catch (err) {
+                // Bỏ qua lỗi nếu ca này đã được đăng ký từ trước
+            }
+        }
+
+        if (successCount > 0) {
+            toast.success(`Tuyệt vời! Đã chép thành công ${successCount} ca trực sang tuần này!`);
+            fetchSchedules();
+        } else {
+            toast.error("Không thể sao chép (có thể bạn đã đăng ký trùng các ca này rồi).");
+        }
+    };
+
     const formatDate = (d: Date) => {
         const offset = d.getTimezoneOffset() * 60000;
         const localISOTime = (new Date(d.getTime() - offset)).toISOString().split('T')[0];
@@ -68,7 +128,7 @@ const LichLamViecBacSi: React.FC = () => {
     };
 
     const getSchedule = (dateStr: string, timeSlot: string) => {
-        return schedules.find(s => s.ngay_lam_viec === dateStr && s.ca_lam_viec?.startsWith(timeSlot));
+        return schedules.find(s => s.ngay_lam === dateStr && s.gio_bat_dau?.startsWith(timeSlot));
     };
 
     const handleToggleSlot = async (date: Date, timeSlot: string) => {
@@ -80,7 +140,7 @@ const LichLamViecBacSi: React.FC = () => {
         if (existing) {
             try {
                 if (existing.id_lich_lam_viec) {
-                    await axiosInstance.delete(`/api/lich-truc/${existing.id_lich_lam_viec}`, { headers });
+                    await axiosInstance.delete(`/api/nhan-vien/lich-lam-viec/${existing.id_lich_lam_viec}`, { headers });
                     fetchSchedules(); // Reset lại bảng để đồng bộ 100% với DB
                     toast.success("Đã hủy ca trực!");
                 }
@@ -91,11 +151,11 @@ const LichLamViecBacSi: React.FC = () => {
             try {
                 const payload = {
                     id_nhan_vien: user?.id_nhan_vien,
-                    ngay_lam_viec: dateStr,
-                    ca_lam_viec: timeSlot,
+                    ngay_lam: dateStr,
+                    gio_bat_dau: timeSlot,
                     ghi_chu: "Đăng ký lịch trực cá nhân"
                 };
-                await axiosInstance.post('/api/lich-truc', payload, { headers });
+                await axiosInstance.post('/api/nhan-vien/lich-lam-viec', payload, { headers });
                 fetchSchedules(); // Gọi lại list sau khi thêm
                 toast.success(`Đã mở lịch lúc ${timeSlot}`);
             } catch (err: any) {
@@ -133,7 +193,7 @@ const LichLamViecBacSi: React.FC = () => {
             const offset = d.getTimezoneOffset() * 60000;
             return (new Date(d.getTime() - offset)).toISOString().split('T')[0];
         });
-        return schedules.filter(s => weekDateStrs.includes(s.ngay_lam_viec));
+        return schedules.filter(s => weekDateStrs.includes(s.ngay_lam));
     }, [schedules, dates]);
 
     const totalHoursInWeek = schedulesInWeek.length * 0.5;
@@ -155,10 +215,22 @@ const LichLamViecBacSi: React.FC = () => {
                     <h1 style={{ fontSize: '2.5rem', fontWeight: 950, letterSpacing: '-1px', margin: '0 0 8px 0' }}>Lịch Làm Việc Của Tôi 🗓️</h1>
                     <p style={{ fontWeight: 600, color: '#cbd5e1', margin: 0, fontSize: '1.05rem' }}>Tự do chọn khung giờ rảnh. Nhấp vào các nút giờ để mở hoặc đóng ca.</p>
                 </div>
-                <div style={{ display: 'flex', gap: '16px', alignItems: 'center', background: 'rgba(255,255,255,0.1)', padding: '10px 24px', borderRadius: '50px', border: '1px solid rgba(255,255,255,0.2)', boxShadow: '0 4px 15px rgba(0,0,0,0.1)', position: 'relative', zIndex: 1 }}>
-                    <button onClick={prevWeek} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', color: 'white' }}><span className="material-symbols-outlined">chevron_left</span></button>
-                    <span style={{ fontWeight: 800, color: '#2dd4bf', fontSize: '1rem' }}>{weekStart.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })} - {dates[6].toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })}</span>
-                    <button onClick={nextWeek} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', color: 'white' }}><span className="material-symbols-outlined">chevron_right</span></button>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', position: 'relative', zIndex: 1, alignItems: 'flex-end' }}>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                        <button onClick={jumpToCurrentWeek} style={{ background: weekStart.getTime() === currentWeekStart.getTime() ? 'var(--primary)' : 'rgba(255,255,255,0.1)', color: 'white', border: 'none', padding: '6px 16px', borderRadius: '50px', fontSize: '0.8rem', fontWeight: 800, cursor: 'pointer', transition: 'all 0.3s' }}>Tuần này</button>
+                        <button onClick={jumpToNextWeek} style={{ background: weekStart.getTime() === currentWeekStart.getTime() + 7 * 24 * 60 * 60 * 1000 ? 'var(--primary)' : 'rgba(255,255,255,0.1)', color: 'white', border: 'none', padding: '6px 16px', borderRadius: '50px', fontSize: '0.8rem', fontWeight: 800, cursor: 'pointer', transition: 'all 0.3s' }}>Tuần tới</button>
+                    </div>
+                    <div style={{ display: 'flex', gap: '16px', alignItems: 'center', background: 'rgba(255,255,255,0.1)', padding: '10px 24px', borderRadius: '50px', border: '1px solid rgba(255,255,255,0.2)', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}>
+                        <button onClick={prevWeek} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', color: 'white', transition: 'transform 0.2s' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.2)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>
+                            <span className="material-symbols-outlined">chevron_left</span>
+                        </button>
+                        <span style={{ fontWeight: 800, color: '#2dd4bf', fontSize: '1rem', minWidth: '120px', textAlign: 'center' }}>
+                            {weekStart.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })} - {dates[6].toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })}
+                        </span>
+                        <button onClick={nextWeek} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', color: 'white', transition: 'transform 0.2s' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.2)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>
+                            <span className="material-symbols-outlined">chevron_right</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -181,6 +253,15 @@ const LichLamViecBacSi: React.FC = () => {
                 <div style={{ padding: '100px', textAlign: 'center' }}><div className="dot-pulse" style={{ margin: '0 auto' }}></div></div>
             ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    {/* Nút Copy Lịch xuất hiện nếu tuần này chưa bị khóa (Tức là bác sĩ được quyền đăng ký) */}
+                    {!isLocked(dates[6]) && (
+                        <div className="animate-fade-in" style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '-10px' }}>
+                            <button onClick={handleCopyFromPrevWeek} className="btn btn-pill" style={{ background: 'var(--primary-light)', color: 'var(--primary)', padding: '10px 20px', fontSize: '0.85rem' }}>
+                                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>content_copy</span>
+                                Nhấp vào đây để chép lịch từ tuần trước
+                            </button>
+                        </div>
+                    )}
                     {dates.map((d, i) => {
                         const locked = isLocked(d);
                         return (

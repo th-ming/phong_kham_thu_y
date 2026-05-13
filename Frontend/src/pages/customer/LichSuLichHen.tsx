@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import axiosInstance from "@services/axios";
 import { getUserProfile } from "@utils/index";
 import { toast } from "@components/Toast";
@@ -23,7 +24,14 @@ const hienThiTrangThaiLich = (status: string) => {
   }
 };
 
-const AppointmentCard: React.FC<{ item: any, thuCungs: any[] }> = ({ item, thuCungs }) => {
+interface AppointmentCardProps {
+  item: any;
+  thuCungs: any[];
+  onCancel: (id: number) => void;
+  onRebook: (item: any) => void;
+}
+
+const AppointmentCard: React.FC<AppointmentCardProps> = ({ item, thuCungs, onCancel, onRebook }) => {
   const [showDetails, setShowDetails] = useState(false);
 
   return (
@@ -95,7 +103,7 @@ const AppointmentCard: React.FC<{ item: any, thuCungs: any[] }> = ({ item, thuCu
               <button
                 className="btn btn-outline"
                 style={{ flex: 1, padding: '10px', color: 'var(--danger)', borderColor: 'var(--danger-light)' }}
-                onClick={() => (window as any).handleCancelAppointment(item.id_lich_hen)}
+                onClick={() => onCancel(item.id_lich_hen)}
               >
                 Hủy lịch hẹn
               </button>
@@ -106,7 +114,7 @@ const AppointmentCard: React.FC<{ item: any, thuCungs: any[] }> = ({ item, thuCu
               <button
                 className="btn btn-primary"
                 style={{ flex: 1, padding: '10px' }}
-                onClick={() => (window as any).handleRebook(item)}
+                onClick={() => onRebook(item)}
               >
                 Đặt lại lịch này
               </button>
@@ -119,6 +127,7 @@ const AppointmentCard: React.FC<{ item: any, thuCungs: any[] }> = ({ item, thuCu
 };
 
 const LichSuLichHen: React.FC = () => {
+  const navigate = useNavigate();
   const [petId, setPetId] = useState("all");
   const [status, setStatus] = useState("all");
   const [lichHens, setLichHens] = useState<any[]>([]);
@@ -158,29 +167,27 @@ const LichSuLichHen: React.FC = () => {
     fetchLichHen();
   }, [currentPage, status, petId]);
 
-  // Đăng ký hàm global để AppointmentCard gọi được (tránh truyền props sâu)
-  useEffect(() => {
-    (window as any).handleCancelAppointment = async (id: number) => {
-      if (window.confirm("Sếp chắc chắn muốn hủy lịch hẹn này chứ? Bé cưng sẽ buồn lắm đấy... 😿")) {
-        try {
-          await axiosInstance.put(`/api/lich-hen/${id}/status`, { trang_thai: "DA_HUY" });
-          toast.success("Đã hủy lịch hẹn thành công!");
-          fetchLichHen();
-        } catch (err) {
-          toast.error("Không thể hủy lịch lúc này, sếp thử lại sau nhé!");
-        }
+  const handleCancelAppointment = async (id: number) => {
+    if (window.confirm("Sếp chắc chắn muốn hủy lịch hẹn này chứ? Bé cưng sẽ buồn lắm đấy... 😿")) {
+      try {
+        await axiosInstance.put(`/api/lich-hen/${id}/status`, { trang_thai: "DA_HUY" });
+        toast.success("Đã hủy lịch hẹn thành công!");
+        fetchLichHen();
+      } catch (err) {
+        toast.error("Không thể hủy lịch lúc này, sếp thử lại sau nhé!");
       }
-    };
-    (window as any).handleRebook = (item: any) => {
-      // Chuyển hướng sang trang đặt lịch kèm theo thông tin cũ
-      const query = new URLSearchParams({
-        id_thu_cung: item.id_thu_cung,
-        id_dich_vu: item.id_dich_vu,
-        id_bac_si: item.id_bac_si
-      }).toString();
-      window.location.href = `/dat-lich?${query}`;
-    };
-  }, []);
+    }
+  };
+
+  const handleRebook = (item: any) => {
+    // FIX: Đúng route /khach-hang/dat-lich-hen (trước đây sai là /dat-lich)
+    const params = new URLSearchParams({
+      id_thu_cung: item.id_thu_cung,
+      id_dich_vu: item.id_dich_vu,
+      ...(item.id_bac_si && { id_bac_si: item.id_bac_si })
+    }).toString();
+    navigate(`/khach-hang/dat-lich-hen?${params}`);
+  };
 
   // Reset về trang 1 mỗi khi đổi bộ lọc
   useEffect(() => {
@@ -248,7 +255,7 @@ const LichSuLichHen: React.FC = () => {
             <p style={{ fontSize: '1.05rem', color: 'var(--gray-400)', fontWeight: 600, maxWidth: '400px', margin: '0 auto' }}>Dường như các bé nhà mình đang rất khỏe mạnh! Đừng quên đặt lịch khám định kỳ nhé.</p>
           </div>
         ) : currentRows.map((item) => (
-          <AppointmentCard key={item.id_lich_hen} item={item} thuCungs={thuCungs} />
+          <AppointmentCard key={item.id_lich_hen} item={item} thuCungs={thuCungs} onCancel={handleCancelAppointment} onRebook={handleRebook} />
         ))}
 
         {/* BỘ NÚT ĐIỀU HƯỚNG PHÂN TRANG */}

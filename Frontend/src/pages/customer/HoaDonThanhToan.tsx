@@ -127,9 +127,11 @@ const HoaDonThanhToan: React.FC = () => {
   }, [hoaDons]);
 
   const handleExportExcel = () => {
-    if (hoaDons.length === 0) return;
+    if (filteredList.length === 0) {
+      return;
+    }
     const headers = ["Mã HĐ", "Ngày lập", "Thành tiền", "Trạng thái"];
-    const rows = hoaDons.map(h => [
+    const rows = filteredList.map(h => [
       `HD-${h.id_hoa_don}`,
       h.ngay_lap_hoa_don?.split('T')[0] || "",
       h.tong_tien_cuoi || h.tongTienCuoi,

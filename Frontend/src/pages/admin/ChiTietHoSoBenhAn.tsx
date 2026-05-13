@@ -17,9 +17,10 @@ const ChiTietHoSoBenhAn: React.FC = () => {
         .then(res => {
           setRecord(res.data);
           setLoading(false);
-          if (res.data?.id_thu_cung) {
+          // BUG FIX: Lịch sử tư vấn (Chatbot AI) được lưu theo Khách hàng, không phải Thú cưng
+          if (res.data?.id_khach_hang) {
             setLoadingConsult(true);
-            axiosInstance.get(`/api/lich-su-tu-van/thu-cung/${res.data.id_thu_cung}`)
+            axiosInstance.get(`/api/lich-su-tu-van/khach-hang/${res.data.id_khach_hang}`)
               .then(cRes => setConsultations(cRes.data || []))
               .catch(e => console.error("Lỗi lấy lịch sử tư vấn:", e))
               .finally(() => setLoadingConsult(false));
@@ -29,6 +30,8 @@ const ChiTietHoSoBenhAn: React.FC = () => {
           console.error("Lỗi lấy chi tiết hồ sơ:", err);
           setLoading(false);
         });
+    } else {
+      setLoading(false);
     }
   }, [id]);
 
@@ -68,15 +71,27 @@ const ChiTietHoSoBenhAn: React.FC = () => {
   if (!record) return <div style={{ padding: '40px', textAlign: 'center' }}>Không tìm thấy hồ sơ bệnh án.</div>;
 
   return (
-    <div className="animate-fade-in">
+    <div className="animate-fade-in" id="print-medical-record">
+      <style>{`
+        @media print {
+          body * { visibility: hidden; }
+          #print-medical-record, #print-medical-record * { visibility: visible; }
+          #print-medical-record { position: absolute; left: 0; top: 0; width: 100%; padding: 0; margin: 0; }
+          .no-print { display: none !important; }
+          .glass-card { box-shadow: none !important; border: 1px solid #ccc !important; break-inside: avoid; }
+        }
+      `}</style>
       <div style={{ marginBottom: '40px', display: 'flex', alignItems: 'center', gap: '20px' }}>
-        <Link to="/quan-ly/ho-so-benh-an" className="btn btn-pill" style={{ background: 'var(--surface)', border: '1px solid var(--gray-200)', padding: '12px' }}>
+        <Link to="/quan-ly/ho-so-benh-an" className="btn btn-pill no-print" style={{ background: 'var(--surface)', border: '1px solid var(--gray-200)', padding: '12px' }}>
           <span className="material-symbols-outlined">arrow_back</span>
         </Link>
-        <div>
+        <div style={{ flex: 1 }}>
           <h1 style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--ink)', letterSpacing: '-1px' }}>Chi tiết bệnh án</h1>
           <p style={{ color: 'var(--gray-500)', fontWeight: 600 }}>Mã hồ sơ điện tử: #HS-{id}</p>
         </div>
+        <button className="btn btn-primary btn-pill no-print" onClick={() => window.print()} style={{ padding: '12px 24px' }}>
+          <span className="material-symbols-outlined">print</span> In Bệnh Án
+        </button>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.2fr', gap: '32px' }}>
@@ -124,11 +139,11 @@ const ChiTietHoSoBenhAn: React.FC = () => {
                     }}>
                       <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: 'var(--primary)' }}></div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                        <span style={{ fontWeight: 900, color: 'var(--ink)' }}>Hỏi về: {c.cau_hoi}</span>
-                        <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)' }}>{c.ngay_tu_van?.split('T')[0].split('-').reverse().join('/') || "---"}</span>
+                        <span style={{ fontWeight: 900, color: 'var(--ink)' }}>Hỏi về: {c.cau_hoi || c.noi_dung_khach || "Câu hỏi"}</span>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)' }}>{(c.ngay_tu_van || c.ngay_tao)?.split('T')[0].split('-').reverse().join('/') || "---"}</span>
                       </div>
                       <div style={{ fontSize: '0.9rem', color: 'var(--gray-600)', lineHeight: '1.6' }}>
-                        <b style={{ color: 'var(--primary)' }}>💡 Phản hồi:</b> {c.tra_loi}
+                        <b style={{ color: 'var(--primary)' }}>💡 Phản hồi:</b> {c.tra_loi || c.noi_dung_rexi || ""}
                       </div>
                       {c.ghi_chu && (
                         <div style={{ marginTop: '12px', padding: '10px', background: 'var(--warning-light, rgba(245, 158, 11, 0.15))', borderRadius: '10px', fontSize: '0.8rem', color: 'var(--warning, #d97706)', fontWeight: 600 }}>

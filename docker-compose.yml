@@ -89,8 +89,6 @@ services:
       replicas: 1
       restart_policy:
         condition: on-failure
-    depends_on:
-      - backend
     healthcheck:
       test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000" ]
       interval: 30s
