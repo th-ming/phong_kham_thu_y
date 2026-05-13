@@ -208,6 +208,29 @@ Gioi han cua lan kiem thu nay:
 - Day la kiem thu hop den o tang UI voi API mock. No xac nhan cac nut/form/bo loc/modal/luong request cua frontend hoat dong, nhung chua xac nhan backend that co luu DB dung hay khong.
 - De ket luan “them/sua/xoa that su duoc trong he thong”, can sua backend compile, khoi dong DB, sau do chay lai cung bo test voi API that va doi chieu du lieu trong DB.
 
+## 2.3. Kiem tra lai toan du an sau yeu cau xac nhan
+
+Ngay chay: 2026-05-13
+
+Ket qua:
+
+| Hang muc | Lenh | Ket qua | Loi chinh |
+| --- | --- | --- | --- |
+| Frontend unit test | `npm.cmd test -- --runInBand` | Fail | Thieu `jest-environment-jsdom`; `jest.config.js` dung sai option `moduleNameMapping` |
+| Frontend production build | `npm.cmd run build` | Fail | `tsconfig.json`: `Invalid value for '--ignoreDeprecations'` |
+| Docker Compose config | `docker compose config` | Fail | Sai interpolation `${DB_PASSWORD:123456}` trong healthcheck, can dung format compose hop le |
+| Backend compile/test | `mvn.cmd test` | Fail | 39 loi compile: controller/repository/entity khong khop method |
+| Customer functional Playwright | `node scratch/customer-functional-blackbox.cjs` | Blocked lan chay lai | Playwright Chromium bi thieu; cai lai browser fail vi may het dung luong `ENOSPC` |
+
+Loi backend compile dang con:
+
+- `KhoiTaoDuLieuMau.java`: goi setter `DichVu` khong ton tai nhu `setId_dich_vu`, `setTen_dich_vu`, `setGia`.
+- `AuthController.java`: goi `TaiKhoan.getEmail()` khong ton tai.
+- `TaiChinhController.java`: goi cac method repository chua co nhu `calculateRevenueByService`, `calculateRevenueByDay`, `findFullInvoices`.
+- `XacThucController.java`: goi nhieu method repository/entity khong ton tai nhu `findAccountByKhachHangId`, `findAccountByNhanVienId`, `NhanVien.setHo_ten`, `KhachHang.setNgay_dang_ky`.
+
+Ket luan cap nhat: khong the ket luan du an da het loi. Phan UI khach hang da pass o lan kiem thu mock truoc do, nhung build/test/deploy/backend hien van fail.
+
 ## 3. Bo ca kiem thu hop den de chay khi moi truong san sang
 
 ### Nhom A - Trang cong khai

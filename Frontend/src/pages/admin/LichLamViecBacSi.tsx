@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import axiosInstance from '@services/axios';
-import { toast } from '@components/ThongBaoNhanh';
+import { toast } from '@components/Toast';
 import { getUserProfile } from '@utils/index';
 
 interface LichLamViec {

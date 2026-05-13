@@ -17,8 +17,8 @@ const CustomerLayout: React.FC = () => {
     try {
       const user = JSON.parse(userStr);
       const role = user.loai_tai_khoan?.toLowerCase() || "";
-      // Nếu không phải khách hàng, tự động chuyển sang trang quản lý
-      if (role !== "khach_hang") {
+      // FIX: Backend trả về "CUSTOMER" (không phải "khach_hang")
+      if (role !== "customer") {
         navigate("/quan-ly/dashboard", { replace: true });
       }
     } catch (e) {

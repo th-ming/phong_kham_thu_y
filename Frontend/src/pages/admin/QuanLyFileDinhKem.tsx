@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axiosInstance from "@services/axios";
 import { Modal } from "@components/CommonUI";
+import { toast } from "@components/Toast";
 
 interface FileDinhKem {
   id: number;
@@ -45,7 +46,7 @@ const QuanLyFileDinhKem: React.FC = () => {
 
   const executeUpload = async () => {
     if (!selectedFile || !uploadHoSoId.trim()) {
-      alert("Vui lòng nhập Mã Hồ Sơ!");
+      toast.error("Vui lòng chọn tệp và nhập Mã Hồ Sơ Bệnh Án!");
       return;
     }
     const formData = new FormData();
@@ -56,14 +57,14 @@ const QuanLyFileDinhKem: React.FC = () => {
       await axiosInstance.post("/api/file-dinh-kem/upload", formData, {
         headers: { "Content-Type": "multipart/form-data" }
       });
-      alert("Tải tệp lên thành công!");
+      toast.success("Tải tệp lên thành công!");
       setShowUploadModal(false);
       setSelectedFile(null);
       setUploadHoSoId("");
       fetchFiles();
     } catch (err) {
       console.error(err);
-      alert("Tải tệp lên thất bại. Vui lòng thử lại!");
+      toast.error("Tải tệp lên thất bại. Vui lòng thử lại!");
     }
   };
 
@@ -73,7 +74,7 @@ const QuanLyFileDinhKem: React.FC = () => {
         await axiosInstance.delete(`/api/file-dinh-kem/${id}`);
         fetchFiles();
       } catch (err) {
-        alert("Xóa tệp tin thất bại.");
+        toast.error("Xóa tệp tin thất bại. Vui lòng thử lại!");
       }
     }
   };
