@@ -17,7 +17,8 @@ const AdminLayout: React.FC = () => {
     try {
       const user = JSON.parse(userStr);
       const role = user.loai_tai_khoan?.toLowerCase() || "";
-      if (role === "khach_hang") {
+      // FIX: Backend trả về "CUSTOMER" (không phải "khach_hang")
+      if (role === "customer") {
         navigate("/khach-hang/dashboard", { replace: true });
       }
     } catch (e) {

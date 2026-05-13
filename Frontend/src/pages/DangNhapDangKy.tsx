@@ -75,11 +75,11 @@ const DangNhapDangKy: React.FC = () => {
         localStorage.setItem("user", JSON.stringify(res.data.user));
 
         const role = (res.data.user.loai_tai_khoan || res.data.user.ten_vai_tro || '').toLowerCase();
-        if (role.includes('admin') || role.includes('staff') || role.includes('bac_si') || role.includes('bác sĩ') || 
-            role.includes('quan-ly') || role.includes('quản trị') || role.includes('nhan-vien') || role.includes('kế toán') || role.includes('ke-toan')) {
-          navigate("/quan-ly/dashboard");
+        // FIX: Kiểm tra đúng định dạng role: "customer", "admin", "bac_si", "ke_toan" (gạch dưới)
+        if (role === 'customer') {
+          navigate("/khach-hang/dashboard");
         } else {
-          navigate("/");
+          navigate("/quan-ly/dashboard");
         }
       }
     } catch (err: any) {
@@ -130,11 +130,11 @@ const DangNhapDangKy: React.FC = () => {
         }
 
         const role = (res.data.user.loai_tai_khoan || res.data.user.ten_vai_tro || '').toLowerCase();
-        if (role.includes('admin') || role.includes('staff') || role.includes('bac_si') || role.includes('bác sĩ') || 
-            role.includes('quan-ly') || role.includes('quản trị') || role.includes('nhan-vien') || role.includes('kế toán') || role.includes('ke-toan')) {
-          navigate("/quan-ly/dashboard");
+        // FIX: Kiểm tra đúng định dạng role: "customer", "admin", "bac_si", "ke_toan" (gạch dưới)
+        if (role === 'customer') {
+          navigate("/khach-hang/dashboard");
         } else {
-          navigate("/");
+          navigate("/quan-ly/dashboard");
         }
       } else if (!isLogin) {
         setIsLogin(true);
