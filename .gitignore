@@ -1,0 +1,42 @@
+# ==========================================
+# REXI CLINIC - TIÊU CHUẨN .GITIGNORE
+# ==========================================
+
+# 1. Thư mục Build & Package (Không push file đã biên dịch)
+/Backend/target/
+/Frontend/node_modules/
+/Frontend/dist/
+/Frontend/build/
+.mvn/
+*.class
+*.jar
+
+# 2. Thư mục Logs và các file rác sinh ra trong lúc chạy
+/logs/
+/Backend/logs/
+*.log
+npm-debug.log*
+yarn-error.log*
+
+# 3. Dữ liệu hệ thống (Uploads, Backups, CSDL tạm)
+/uploads/
+/Backend/uploads/
+/backups/
+PKTY_Temp.sql
+
+# 4. Thư mục nháp, Thư mục rác của Dev & AI Agent
+/scratch/
+/brain/
+/.agent/
+
+# 5. Biến môi trường & Thông tin nhạy cảm
+.env
+.env.*
+!.env.example
+
+# 6. Cấu hình IDE & Hệ điều hành
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
