@@ -2,19 +2,20 @@ package com.rexi.pkty.controller;
 
 import com.rexi.pkty.service.EmailService;
 import com.rexi.pkty.service.DatabaseBackupService;
+import com.rexi.pkty.service.AuditLogService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PathVariable;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
-import java.time.LocalDateTime;
 
 @RestController
 @RequestMapping("/api/system")
-@CrossOrigin(origins = "${cors.allowed-origins:http://localhost:3000}")
+@CrossOrigin(origins = "*")
 public class SystemController {
 
     @Autowired
@@ -27,128 +28,118 @@ public class SystemController {
     private DatabaseBackupService databaseBackupService;
 
     @Autowired
-    private com.rexi.pkty.service.AuditLogService auditLogService;
+    private AuditLogService auditLogService;
 
-    public static final java.util.Map<String, String> verifiedEmails = new java.util.concurrent.ConcurrentHashMap<>();
+    // Các biến dùng chung cho AuthController (Duy trì tính tương thích)
+    public static final Map<String, String> verifiedEmails = new ConcurrentHashMap<>();
     private final Map<String, String> otpStorage = new ConcurrentHashMap<>();
     private final Map<String, Long> otpExpiry = new ConcurrentHashMap<>();
     private static final long OTP_TTL_MS = 5 * 60 * 1000;
 
-    @Autowired
-    public SystemController(JdbcTemplate jdbcTemplate) {
-        this.jdbcTemplate = jdbcTemplate;
-        init();
-    }
-
+    @jakarta.annotation.PostConstruct
     public void init() {
         try {
-            // Tạo bảng Đăng ký nhận tin (Newsletter) - Phiên bản chuẩn tiếng Việt
-            jdbcTemplate.execute("IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='DangKyNhanTin' AND xtype='U') " +
-                    "CREATE TABLE DangKyNhanTin (id INT IDENTITY(1,1) PRIMARY KEY, Email NVARCHAR(255) UNIQUE NOT NULL, NgayDangKy DATETIME DEFAULT GETDATE())");
+            // Tạo bảng Nhật ký hệ thống (Audit Log)
+            jdbcTemplate.execute("IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='NhatKyHeThong' AND xtype='U') " +
+                    "CREATE TABLE NhatKyHeThong (id INT IDENTITY(1,1) PRIMARY KEY, nguoi_thao_tac NVARCHAR(100), hanh_dong NVARCHAR(50), bang_du_lieu NVARCHAR(100), chi_tiet NVARCHAR(MAX), ip_address NVARCHAR(100), device_info NVARCHAR(500), ngay_tao DATETIME DEFAULT GETDATE())");
 
-            // Tạo bảng Cấu hình hệ thống
+            // Nâng cấp Schema (Đảm bảo có cột trang_thai trong DichVu)
+            try {
+                jdbcTemplate.execute("IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('DichVu') AND name = 'trang_thai') ALTER TABLE DichVu ADD trang_thai BIT DEFAULT 1");
+            } catch (Exception ignored) {}
+            
+            // Các bảng khác
             jdbcTemplate.execute("IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='CauHinhHeThong' AND xtype='U') " +
                     "CREATE TABLE CauHinhHeThong (id_cau_hinh INT IDENTITY(1,1) PRIMARY KEY, ten_cau_hinh VARCHAR(100) UNIQUE, gia_tri NVARCHAR(500), mo_ta NVARCHAR(500))");
-
-            jdbcTemplate.execute("IF NOT EXISTS (SELECT * FROM CauHinhHeThong WHERE ten_cau_hinh='maintenance_mode') " +
-                    "INSERT INTO CauHinhHeThong (ten_cau_hinh, gia_tri, mo_ta) VALUES ('maintenance_mode', 'false', N'Bật/Tắt chế độ bảo trì toàn hệ thống.')");
-
-            // Nâng cấp Schema
-            try {
-                jdbcTemplate.execute(
-                        "IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('NhanVien') AND name = 'gioi_thieu') ALTER TABLE NhanVien ADD gioi_thieu NVARCHAR(MAX)");
-                jdbcTemplate.execute(
-                        "IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('NhanVien') AND name = 'hinh_anh') ALTER TABLE NhanVien ADD hinh_anh NVARCHAR(MAX)");
-                jdbcTemplate.execute(
-                        "IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('NhanVien') AND name = 'da_xoa') ALTER TABLE NhanVien ADD da_xoa BIT DEFAULT 0");
-                jdbcTemplate.execute(
-                        "IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('ThuCung') AND name = 'ghi_chu') ALTER TABLE ThuCung ADD ghi_chu NVARCHAR(MAX)");
-                jdbcTemplate.execute(
-                        "IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('DichVu') AND name = 'trang_thai') ALTER TABLE DichVu ADD trang_thai BIT DEFAULT 1");
-                jdbcTemplate.execute("UPDATE DichVu SET trang_thai = 1 WHERE trang_thai IS NULL");
-            } catch (Exception ignored) {
-            }
-
-            seedData();
         } catch (Exception e) {
-            System.err.println("Lỗi khởi tạo hệ thống: " + e.getMessage());
+            System.err.println("Lỗi khởi tạo SystemController: " + e.getMessage());
         }
-    }
-
-    private void seedData() {
-        try {
-            Integer existing = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM LichHen", Integer.class);
-            if (existing != null && existing > 10)
-                return;
-
-            System.out.println("Bắt đầu tự động Seeding dữ liệu Rexi...");
-
-            // Seeding Khách hàng
-            String sampleKhId = null;
-            try {
-                sampleKhId = jdbcTemplate.queryForObject("SELECT TOP 1 id_khach_hang FROM KhachHang", String.class);
-            } catch (Exception e) {
-                jdbcTemplate.update(
-                        "INSERT INTO KhachHang (id_khach_hang, ten_khach_hang, sdt, email, ngay_tao, da_xoa) VALUES ('KH001', N'Khách Hàng Test', '0912345678', 'test@rexi.com', GETDATE(), 0)");
-                sampleKhId = "KH001";
-            }
-
-            // Seeding Thú cưng
-            String sampleTcId = null;
-            try {
-                sampleTcId = jdbcTemplate.queryForObject("SELECT TOP 1 id_thu_cung FROM ThuCung", String.class);
-            } catch (Exception e) {
-                jdbcTemplate.update(
-                        "INSERT INTO ThuCung (id_thu_cung, ten_thu_cung, loai, giong, id_khach_hang) VALUES ('TC001', N'Mèo Mướp', N'Mèo', N'Ta', ?)",
-                        sampleKhId);
-                sampleTcId = "TC001";
-            }
-
-            // Seeding Dịch vụ
-            try {
-                Integer dvCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM DichVu", Integer.class);
-                if (dvCount == 0) {
-                    jdbcTemplate.update(
-                            "INSERT INTO DichVu (ten_dich_vu, gia, thoi_luong_phut, mo_ta, trang_thai) VALUES (N'Khám tổng quát', 150000, 30, N'Kiểm tra sức khỏe định kỳ', 1)");
-                    jdbcTemplate.update(
-                            "INSERT INTO DichVu (ten_dich_vu, gia, thoi_luong_phut, mo_ta, trang_thai) VALUES (N'Siêu âm', 350000, 30, N'Chẩn đoán hình ảnh', 1)");
-                }
-            } catch (Exception ignored) {
-            }
-
-        } catch (Exception e) {
-            System.err.println("Lỗi Seeding: " + e.getMessage());
-        }
-    }
-
-    @GetMapping("/debug-data")
-    public ResponseEntity<?> getDebugData() {
-        Map<String, Object> data = new HashMap<>();
-        data.put("doctors", jdbcTemplate.queryForList("SELECT ho_ten, chuyen_mon, email, id_tai_khoan FROM NhanVien"));
-        data.put("all_nhan_vien", jdbcTemplate.queryForList("SELECT * FROM NhanVien"));
-        data.put("services", jdbcTemplate.queryForList("SELECT ten_dich_vu, gia, trang_thai FROM DichVu"));
-        data.put("accounts", jdbcTemplate.queryForList("SELECT ten_dang_nhap, id_vai_tro FROM TaiKhoan"));
-        data.put("roles", jdbcTemplate.queryForList("SELECT * FROM VaiTroHeThong"));
-        data.put("stats", Map.of(
-                "appointments", jdbcTemplate.queryForObject("SELECT COUNT(*) FROM LichHen", Integer.class),
-                "pets", jdbcTemplate.queryForObject("SELECT COUNT(*) FROM ThuCung", Integer.class),
-                "customers", jdbcTemplate.queryForObject("SELECT COUNT(*) FROM KhachHang", Integer.class),
-                "schedules", jdbcTemplate.queryForObject("SELECT COUNT(*) FROM LichLamViecNhanVien", Integer.class)));
-        data.put("recent_schedules",
-                jdbcTemplate.queryForList("SELECT TOP 5 * FROM LichLamViecNhanVien ORDER BY ngay DESC"));
-        return ResponseEntity.ok(data);
     }
 
     @GetMapping("/cau-hinh")
     public ResponseEntity<?> getCauHinh() {
-        return ResponseEntity.ok(jdbcTemplate.queryForList("SELECT * FROM CauHinhHeThong"));
+        try {
+            List<Map<String, Object>> rows = jdbcTemplate.queryForList("SELECT ten_cau_hinh, gia_tri FROM CauHinhHeThong");
+            Map<String, String> configs = new HashMap<>();
+            for (Map<String, Object> row : rows) {
+                configs.put((String) row.get("ten_cau_hinh"), (String) row.get("gia_tri"));
+            }
+            return ResponseEntity.ok(configs);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("message", "Lỗi tải cấu hình"));
+        }
+    }
+
+    @PostMapping("/cau-hinh")
+    public ResponseEntity<?> saveCauHinh(@RequestBody Map<String, String> payload) {
+        try {
+            for (Map.Entry<String, String> entry : payload.entrySet()) {
+                jdbcTemplate.update("UPDATE CauHinhHeThong SET gia_tri = ? WHERE ten_cau_hinh = ?", entry.getValue(), entry.getKey());
+            }
+            auditLogService.logAction("UPDATE", "CauHinhHeThong", "Cập nhật cấu hình hệ thống");
+            return ResponseEntity.ok(Map.of("message", "Cập nhật thành công"));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("message", "Lỗi lưu cấu hình"));
+        }
+    }
+
+    @GetMapping("/nhat-ky")
+    public ResponseEntity<?> getNhatKy() {
+        try {
+            List<Map<String, Object>> logs = jdbcTemplate.queryForList("SELECT TOP 100 * FROM NhatKyHeThong ORDER BY ngay_tao DESC");
+            return ResponseEntity.ok(logs);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("message", "Lỗi tải nhật ký"));
+        }
+    }
+
+    @DeleteMapping("/nhat-ky")
+    public ResponseEntity<?> clearNhatKy() {
+        try {
+            jdbcTemplate.execute("DELETE FROM NhatKyHeThong");
+            auditLogService.logAction("DELETE", "NhatKyHeThong", "Xóa sạch nhật ký hệ thống");
+            return ResponseEntity.ok(Map.of("message", "Đã xóa sạch nhật ký hệ thống!"));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("message", "Lỗi xóa nhật ký"));
+        }
+    }
+
+    @DeleteMapping("/nhat-ky/{id}")
+    public ResponseEntity<?> deleteNhatKyById(@PathVariable Integer id) {
+        try {
+            jdbcTemplate.update("DELETE FROM NhatKyHeThong WHERE id = ?", id);
+            return ResponseEntity.ok(Map.of("message", "Đã xóa bản ghi nhật ký!"));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("message", "Lỗi xóa bản ghi: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/chuc-nang")
+    public ResponseEntity<?> getChucNang() {
+        List<Map<String, Object>> features = List.of(
+            Map.of("id_chuc_nang", "1", "ma_chuc_nang", "DAT_LICH", "ten_chuc_nang", "Quản lý lịch hẹn", "mo_ta", "Hỗ trợ khách hàng đặt lịch trực tuyến"),
+            Map.of("id_chuc_nang", "2", "ma_chuc_nang", "KHAM_BENH", "ten_chuc_nang", "Khám bệnh & Kê đơn", "mo_ta", "Ghi nhận bệnh lý và đơn thuốc"),
+            Map.of("id_chuc_nang", "3", "ma_chuc_nang", "KHO_HANG", "ten_chuc_nang", "Quản lý kho thuốc", "mo_ta", "Kiểm soát nhập xuất tồn kho"),
+            Map.of("id_chuc_nang", "4", "ma_chuc_nang", "KE_TOAN", "ten_chuc_nang", "Hóa đơn & Thanh toán", "mo_ta", "Thu ngân và báo cáo doanh thu")
+        );
+        return ResponseEntity.ok(features);
+    }
+
+    @PostMapping("/backup")
+    public ResponseEntity<?> backupDatabase() {
+        try {
+            String backupFile = databaseBackupService.backupDatabaseManual();
+            auditLogService.logAction("BACKUP", "DATABASE", "Sao lưu dữ liệu: " + backupFile);
+            return ResponseEntity.ok(Map.of("message", "Sao lưu thành công! File: " + backupFile));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("message", "Lỗi sao lưu: " + e.getMessage()));
+        }
     }
 
     @PostMapping("/send-otp")
     public ResponseEntity<?> sendOtp(@RequestBody Map<String, String> payload) {
         String email = payload.get("email");
-        if (email == null || email.isEmpty())
-            return ResponseEntity.badRequest().body("Email trống");
+        if (email == null || email.isEmpty()) return ResponseEntity.badRequest().body("Email trống");
         String otp = String.format("%06d", (int) (Math.random() * 1000000));
         otpStorage.put(email, otp);
         otpExpiry.put(email, System.currentTimeMillis() + OTP_TTL_MS);
@@ -160,24 +151,16 @@ public class SystemController {
     public ResponseEntity<?> verifyOtp(@RequestBody Map<String, String> payload) {
         String email = payload.get("email");
         String otp = payload.get("otp");
-
-        if (email == null || otp == null || email.isEmpty() || otp.isEmpty()) {
-            return ResponseEntity.badRequest().body(Map.of("message", "Thiếu email hoặc mã OTP"));
-        }
-
+        if (email == null || otp == null) return ResponseEntity.badRequest().body(Map.of("message", "Thiếu email hoặc mã OTP"));
         Long expiry = otpExpiry.get(email);
-        if (expiry == null || System.currentTimeMillis() > expiry) {
-            return ResponseEntity.status(400).body(Map.of("message", "Mã OTP đã hết hạn"));
-        }
-
+        if (expiry == null || System.currentTimeMillis() > expiry) return ResponseEntity.status(400).body(Map.of("message", "Mã OTP đã hết hạn"));
         String storedOtp = otpStorage.get(email);
         if (storedOtp != null && storedOtp.equals(otp)) {
             verifiedEmails.put(email, "VERIFIED");
-            otpStorage.remove(email); // Xóa OTP sau khi xác minh thành công
+            otpStorage.remove(email);
             otpExpiry.remove(email);
-            return ResponseEntity.ok(Map.of("message", "Xác minh OTP thành công", "success", true));
+            return ResponseEntity.ok(Map.of("message", "Xác minh thành công", "success", true));
         }
-
         return ResponseEntity.status(400).body(Map.of("message", "Mã OTP không chính xác"));
     }
 }

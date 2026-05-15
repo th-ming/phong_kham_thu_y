@@ -41,178 +41,182 @@ public class LichHenController {
     @PostMapping
     @Transactional
     public ResponseEntity<?> createLichHen(@RequestBody LichHen lichHen) {
-        lichHen.setId_lich_hen(null);
+        try {
+            lichHen.setId_lich_hen(null);
 
-        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
-                .getContext().getAuthentication();
-        String username = (auth != null) ? auth.getName() : null;
+            org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
+                    .getContext().getAuthentication();
+            String username = (auth != null) ? auth.getName() : null;
 
-        if (username != null && !username.equals("anonymousUser")) {
-            taiKhoanRepository.findByTenDangNhap(username).ifPresent(tk -> {
-                // Náº¿u lÃ  khÃ¡ch hÃ ng, tá»± Äá»ng Äiá»n id_khach_hang náº¿u thiáº¿u, hoáº·c kiá»m tra quyá»n
-                if (tk.getId_vai_tro() != null && tk.getId_vai_tro().equals("VT-5")) { 
-                    if (lichHen.getId_khach_hang() == null || lichHen.getId_khach_hang().isEmpty()) {
-                        lichHen.setId_khach_hang(tk.getId_khach_hang());
-                    } else if (!tk.getId_khach_hang().equals(lichHen.getId_khach_hang())) {
-                        throw new RuntimeException("Cáº£nh bÃ¡o báº£o máº­t: Báº¡n khÃ´ng thá» Äáº·t lá»ch cho khÃ¡ch hÃ ng khÃ¡c!");
+            if (username != null && !username.equals("anonymousUser")) {
+                taiKhoanRepository.findByTenDangNhap(username).ifPresent(tk -> {
+                    // Nếu là khách hàng, tự động điền id_khach_hang nếu thiếu, hoặc kiểm tra quyền
+                    if (tk.getId_vai_tro() != null && "VT-5".equals(tk.getId_vai_tro())) { 
+                        if (lichHen.getId_khach_hang() == null || lichHen.getId_khach_hang().isEmpty()) {
+                            lichHen.setId_khach_hang(tk.getId_khach_hang());
+                        } else if (!lichHen.getId_khach_hang().equals(tk.getId_khach_hang())) {
+                            throw new RuntimeException("Cảnh báo bảo mật: Bạn không thể đặt lịch cho khách hàng khác!");
+                        }
                     }
-                }
-            });
-        }
-
-        if (lichHen.getId_khach_hang() == null || lichHen.getId_khach_hang().isEmpty()) {
-            throw new RuntimeException(
-                    "TÃ i khoáº£n ná»i bá» (Admin/NhÃ¢n viÃªn) vui lÃ²ng chá»n khÃ¡ch hÃ ng Äá» Äáº·t lá»ch. Náº¿u sáº¿p lÃ  khÃ¡ch hÃ ng, vui lÃ²ng dÃ¹ng tÃ i khoáº£n KhÃ¡ch hÃ ng!");
-        }
-        Integer thoiLuongMoi = 30;
-        if (lichHen.getId_dich_vu() != null) {
-            try {
-                thoiLuongMoi = jdbcTemplate.queryForObject("SELECT thoi_luong_phut FROM DichVu WHERE id_dich_vu = ?",
-                        Integer.class, lichHen.getId_dich_vu());
-                if (thoiLuongMoi == null)
-                    thoiLuongMoi = 30;
-            } catch (Exception ignored) {
+                });
             }
-        }
 
-        LocalTime newStart = lichHen.getGio_kham();
-        if (newStart == null) {
-            throw new RuntimeException("GiÃ¡Â»Â khÃÂ¡m khÃÂ´ng ÃâÃÂ°Ã¡Â»Â£c ÃâÃ¡Â»Æ trÃ¡Â»âng sÃ¡ÂºÂ¿p ÃÂ¡i!");
-        }
-
-        ZoneId vnZone = ZoneId.of("Asia/Ho_Chi_Minh");
-        java.time.LocalDate today = java.time.LocalDate.now(vnZone);
-        if (lichHen.getNgay_kham().isBefore(today)) {
-            throw new RuntimeException("Sếp ơi, ngày khám không được ở quá khứ đâu ạ!");
-        }
-        LocalTime newEnd = newStart.plusMinutes(thoiLuongMoi);
-
-        if (lichHen.getId_bac_si() == null || lichHen.getId_bac_si().isEmpty() || lichHen.getId_bac_si().equals("0")) {
-            String findDocQuery = "SELECT TOP 1 l.id_nhan_vien FROM LichLamViecNhanVien l " +
-                    "WHERE l.ngay_lam = ? AND l.gio_bat_dau = ? " +
-                    "AND NOT EXISTS (SELECT 1 FROM LichHen h " +
-                    "  LEFT JOIN DichVu d ON h.id_dich_vu = d.id_dich_vu " +
-                    "  WHERE h.id_bac_si = l.id_nhan_vien AND h.ngay_kham = l.ngay_lam " +
-                    "  AND h.gio_kham < ? AND DATEADD(minute, ISNULL(d.thoi_luong_phut, 30), h.gio_kham) > ? " +
-                    "  AND h.trang_thai NOT IN (N'ÃÂÃÂ£ hÃ¡Â»Â§y', 'DA_HUY', 'da_huy', 'TU_CHOI', N'HÃ¡ÂºÂ¿t hÃ¡ÂºÂ¡n')" +
-                    ")";
-            try {
-                String autoDocId = jdbcTemplate.queryForObject(findDocQuery, String.class,
-                        lichHen.getNgay_kham(), newStart, newEnd, newStart);
-                lichHen.setId_bac_si(autoDocId);
-            } catch (Exception e) {
+            if (lichHen.getId_khach_hang() == null || lichHen.getId_khach_hang().isEmpty()) {
                 throw new RuntimeException(
-                        "RÃ¡ÂºÂ¥t tiÃ¡ÂºÂ¿c! KhÃÂ´ng cÃÂ²n bÃÂ¡c sÃÂ© nÃÂ o rÃ¡ÂºÂ£nh vÃÂ o khung giÃ¡Â»Â nÃÂ y sÃ¡ÂºÂ¿p ÃÂ¡i. SÃ¡ÂºÂ¿p chÃ¡Â»Ân giÃ¡Â»Â khÃÂ¡c nhÃÂ©! Ã°Å¸ÂÂ¾");
+                        "Tài khoản nội bộ (Admin/Nhân viên) vui lòng chọn khách hàng để đặt lịch. Nếu sếp là khách hàng, vui lòng dùng tài khoản Khách hàng!");
             }
-        }
-
-        int requiredSlots = (int) Math.ceil(thoiLuongMoi / 30.0);
-        List<Map<String, Object>> gioBacSiMoList = jdbcTemplate.queryForList(
-                "SELECT gio_bat_dau FROM LichLamViecNhanVien WHERE id_nhan_vien = ? AND ngay_lam = ?",
-                lichHen.getId_bac_si(), lichHen.getNgay_kham());
-
-        List<LocalTime> caTrucList = new java.util.ArrayList<>();
-        for (Map<String, Object> map : gioBacSiMoList) {
-            Object obj = map.get("gio_bat_dau");
-            if (obj instanceof java.sql.Time) {
-                caTrucList.add(((java.sql.Time) obj).toLocalTime());
-            } else if (obj != null) {
-                String[] p = obj.toString().split(":");
-                caTrucList.add(LocalTime.of(Integer.parseInt(p[0]), Integer.parseInt(p[1])));
-            }
-        }
-
-        for (int i = 0; i < requiredSlots; i++) {
-            LocalTime requiredSlot = newStart.plusMinutes((long) i * 30);
-            if (!caTrucList.contains(requiredSlot)) {
-                throw new RuntimeException("DÃ¡Â»â¹ch vÃ¡Â»Â¥ nÃÂ y cÃ¡ÂºÂ§n " + thoiLuongMoi
-                        + " phÃÂºt nhÃÂ°ng bÃÂ¡c sÃÂ© chÃÂ°a mÃ¡Â»Å¸ ÃâÃ¡Â»Â§ ca trÃ¡Â»Â±c liÃÂªn tiÃ¡ÂºÂ¿p. Vui lÃÂ²ng chÃ¡Â»Ân giÃ¡Â»Â sÃ¡Â»âºm hÃÂ¡n hoÃ¡ÂºÂ·c khung giÃ¡Â»Â khÃÂ¡c!");
-            }
-        }
-
-        boolean isConflict = false;
-        List<Map<String, Object>> existingApps = jdbcTemplate.queryForList(
-                "SELECT lh.gio_kham, dv.thoi_luong_phut FROM LichHen lh LEFT JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu WHERE lh.id_bac_si = ? AND lh.ngay_kham = ? AND lh.trang_thai NOT IN (N'ÃÂÃÂ£ hÃ¡Â»Â§y', 'DA_HUY', 'da_huy', 'TU_CHOI', N'HÃ¡ÂºÂ¿t hÃ¡ÂºÂ¡n')",
-                lichHen.getId_bac_si(), lichHen.getNgay_kham());
-
-        for (Map<String, Object> app : existingApps) {
-            Object existingGioObj = app.get("gio_kham");
-            LocalTime existingStart;
-            if (existingGioObj instanceof java.sql.Time) {
-                existingStart = ((java.sql.Time) existingGioObj).toLocalTime();
-            } else {
-                String existingGioStr = existingGioObj.toString();
-                String[] eParts = existingGioStr.split(":");
-                existingStart = LocalTime.of(Integer.parseInt(eParts[0]), Integer.parseInt(eParts[1]));
-            }
-
-            Integer duration = app.get("thoi_luong_phut") != null ? ((Number) app.get("thoi_luong_phut")).intValue()
-                    : 30;
-            LocalTime existingEnd = existingStart.plusMinutes(duration);
-
-            if (newStart.isBefore(existingEnd) && newEnd.isAfter(existingStart)) {
-                isConflict = true;
-                break;
-            }
-        }
-
-        if (isConflict) {
-            throw new RuntimeException("RÃ¡ÂºÂ¥t tiÃ¡ÂºÂ¿c! LÃ¡Â»â¹ch khÃÂ¡m nÃÂ y sÃ¡ÂºÂ½ bÃ¡Â»â¹ trÃÂ¹ng thÃ¡Â»Âi gian (" + thoiLuongMoi
-                    + " phÃÂºt) vÃ¡Â»âºi mÃ¡Â»â¢t khÃÂ¡ch hÃÂ ng khÃÂ¡c. Vui lÃÂ²ng chÃ¡Â»Ân khung giÃ¡Â»Â rÃ¡Â»â¢ng hÃÂ¡n nhÃÂ©!");
-        }
-
-        if (lichHen.getLy_do() != null)
-            lichHen.setLy_do(org.springframework.web.util.HtmlUtils.htmlEscape(lichHen.getLy_do()));
-        if (lichHen.getGhi_chu_noi_bo() != null)
-            lichHen.setGhi_chu_noi_bo(org.springframework.web.util.HtmlUtils.htmlEscape(lichHen.getGhi_chu_noi_bo()));
-
-        if (lichHen.getNgay_tao() == null) {
-            lichHen.setNgay_tao(LocalDateTime.now());
-        }
-
-        boolean isInternal = auth != null && auth.getAuthorities() != null &&
-                (auth.getAuthorities().toString().toUpperCase().contains("ADMIN") ||
-                        auth.getAuthorities().toString().toUpperCase().contains("QUANLY") ||
-                        auth.getAuthorities().toString().toUpperCase().contains("BAC_SI") ||
-                        auth.getAuthorities().toString().toUpperCase().contains("STAFF"));
-
-        if (!isInternal || lichHen.getTrang_thai() == null || lichHen.getTrang_thai().isEmpty()) {
-            lichHen.setTrang_thai("CHO_XAC_NHAN");
-        }
-
-        LichHen saved = lichHenRepository.save(lichHen);
-
-        if (isInternal) {
-            try {
-                String emailQuery = "SELECT kh.email, kh.ten_khach_hang, tc.ten_thu_cung, nv.ho_ten as ten_bac_si, dv.ten_dich_vu " +
-                        "FROM KhachHang kh " +
-                        "LEFT JOIN ThuCung tc ON tc.id_thu_cung = ? " +
-                        "LEFT JOIN NhanVien nv ON nv.id_nhan_vien = ? " +
-                        "LEFT JOIN DichVu dv ON dv.id_dich_vu = ? " +
-                        "WHERE kh.id_khach_hang = ?";
-                List<Map<String, Object>> info = jdbcTemplate.queryForList(emailQuery,
-                        saved.getId_thu_cung(), saved.getId_bac_si(), saved.getId_dich_vu(), saved.getId_khach_hang());
-
-                if (!info.isEmpty() && info.get(0).get("email") != null && !info.get(0).get("email").toString().isEmpty()) {
-                    String toEmail = info.get(0).get("email").toString();
-                    String tenKhachHang = info.get(0).get("ten_khach_hang") != null
-                            ? info.get(0).get("ten_khach_hang").toString()
-                            : "Khách hàng";
-                    String tenThuCung = info.get(0).get("ten_thu_cung") != null ? info.get(0).get("ten_thu_cung").toString()
-                            : "Thú cưng";
-                    String tenBacSi = info.get(0).get("ten_bac_si") != null ? info.get(0).get("ten_bac_si").toString()
-                            : "Bác sĩ Rexi";
-                    String tenDichVu = info.get(0).get("ten_dich_vu") != null ? info.get(0).get("ten_dich_vu").toString()
-                            : "Dịch vụ Thú y";
-
-                    emailService.sendBookingConfirmation(toEmail, tenKhachHang, tenThuCung, tenBacSi,
-                            saved.getNgay_kham().toString(), saved.getGio_kham().toString(), tenDichVu);
+            Integer thoiLuongMoi = 30;
+            if (lichHen.getId_dich_vu() != null) {
+                try {
+                    thoiLuongMoi = jdbcTemplate.queryForObject("SELECT thoi_luong_phut FROM DichVu WHERE id_dich_vu = ?",
+                            Integer.class, lichHen.getId_dich_vu());
+                    if (thoiLuongMoi == null)
+                        thoiLuongMoi = 30;
+                } catch (Exception ignored) {
                 }
-            } catch (Exception e) {
-                System.err.println("Lỗi gửi email confirmation: " + e.getMessage());
             }
+
+            LocalTime newStart = lichHen.getGio_kham();
+            if (newStart == null) {
+                throw new RuntimeException("Giờ khám không được để trống sếp ơi!");
+            }
+
+            ZoneId vnZone = ZoneId.of("Asia/Ho_Chi_Minh");
+            java.time.LocalDate today = java.time.LocalDate.now(vnZone);
+            if (lichHen.getNgay_kham().isBefore(today)) {
+                throw new RuntimeException("Sếp ơi, ngày khám không được ở quá khứ đâu ạ!");
+            }
+            LocalTime newEnd = newStart.plusMinutes(thoiLuongMoi);
+
+            if (lichHen.getId_bac_si() == null || lichHen.getId_bac_si().isEmpty() || lichHen.getId_bac_si().equals("0")) {
+                String findDocQuery = "SELECT TOP 1 l.id_nhan_vien FROM LichLamViecNhanVien l " +
+                        "WHERE l.ngay_lam = ? AND l.gio_bat_dau = ? " +
+                        "AND NOT EXISTS (SELECT 1 FROM LichHen h " +
+                        "  LEFT JOIN DichVu d ON h.id_dich_vu = d.id_dich_vu " +
+                        "  WHERE h.id_bac_si = l.id_nhan_vien AND h.ngay_kham = l.ngay_lam " +
+                        "  AND h.gio_kham < ? AND DATEADD(minute, ISNULL(d.thoi_luong_phut, 30), h.gio_kham) > ? " +
+                        "  AND h.trang_thai NOT IN (N'Đã hủy', 'DA_HUY', 'da_huy', 'TU_CHOI', N'Hết hạn')" +
+                        ")";
+                try {
+                    String autoDocId = jdbcTemplate.queryForObject(findDocQuery, String.class,
+                            lichHen.getNgay_kham(), newStart, newEnd, newStart);
+                    lichHen.setId_bac_si(autoDocId);
+                } catch (Exception e) {
+                    throw new RuntimeException(
+                            "Rất tiếc! Không còn bác sĩ nào rảnh vào khung giờ này sếp ơi. Sếp chọn giờ khác nhé! 🐾");
+                }
+            }
+
+            int requiredSlots = (int) Math.ceil(thoiLuongMoi / 30.0);
+            List<Map<String, Object>> gioBacSiMoList = jdbcTemplate.queryForList(
+                    "SELECT gio_bat_dau FROM LichLamViecNhanVien WHERE id_nhan_vien = ? AND ngay_lam = ?",
+                    lichHen.getId_bac_si(), lichHen.getNgay_kham());
+
+            List<LocalTime> caTrucList = new java.util.ArrayList<>();
+            for (Map<String, Object> map : gioBacSiMoList) {
+                Object obj = map.get("gio_bat_dau");
+                if (obj instanceof java.sql.Time) {
+                    caTrucList.add(((java.sql.Time) obj).toLocalTime());
+                } else if (obj != null) {
+                    String[] p = obj.toString().split(":");
+                    caTrucList.add(LocalTime.of(Integer.parseInt(p[0]), Integer.parseInt(p[1])));
+                }
+            }
+
+            for (int i = 0; i < requiredSlots; i++) {
+                LocalTime requiredSlot = newStart.plusMinutes((long) i * 30);
+                if (!caTrucList.contains(requiredSlot)) {
+                    throw new RuntimeException("Dịch vụ này cần " + thoiLuongMoi
+                            + " phút nhưng bác sĩ chưa mở đủ ca trực liên tiếp. Vui lòng chọn giờ sớm hơn hoặc khung giờ khác!");
+                }
+            }
+
+            boolean isConflict = false;
+            List<Map<String, Object>> existingApps = jdbcTemplate.queryForList(
+                    "SELECT lh.gio_kham, dv.thoi_luong_phut FROM LichHen lh LEFT JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu WHERE lh.id_bac_si = ? AND lh.ngay_kham = ? AND lh.trang_thai NOT IN (N'Đã hủy', 'DA_HUY', 'da_huy', 'TU_CHOI', N'Hết hạn')",
+                    lichHen.getId_bac_si(), lichHen.getNgay_kham());
+
+            for (Map<String, Object> app : existingApps) {
+                Object existingGioObj = app.get("gio_kham");
+                LocalTime existingStart;
+                if (existingGioObj instanceof java.sql.Time) {
+                    existingStart = ((java.sql.Time) existingGioObj).toLocalTime();
+                } else {
+                    String existingGioStr = existingGioObj.toString();
+                    String[] eParts = existingGioStr.split(":");
+                    existingStart = LocalTime.of(Integer.parseInt(eParts[0]), Integer.parseInt(eParts[1]));
+                }
+
+                Integer duration = app.get("thoi_luong_phut") != null ? ((Number) app.get("thoi_luong_phut")).intValue()
+                        : 30;
+                LocalTime existingEnd = existingStart.plusMinutes(duration);
+
+                if (newStart.isBefore(existingEnd) && newEnd.isAfter(existingStart)) {
+                    isConflict = true;
+                    break;
+                }
+            }
+
+            if (isConflict) {
+                throw new RuntimeException("Rất tiếc! Lịch khám này sẽ bị trùng thời gian (" + thoiLuongMoi
+                        + " phút) với một khách hàng khác. Vui lòng chọn khung giờ rộng hơn nhé!");
+            }
+
+            if (lichHen.getLy_do() != null)
+                lichHen.setLy_do(org.springframework.web.util.HtmlUtils.htmlEscape(lichHen.getLy_do()));
+            if (lichHen.getGhi_chu_noi_bo() != null)
+                lichHen.setGhi_chu_noi_bo(org.springframework.web.util.HtmlUtils.htmlEscape(lichHen.getGhi_chu_noi_bo()));
+
+            if (lichHen.getNgay_tao() == null) {
+                lichHen.setNgay_tao(LocalDateTime.now());
+            }
+
+            boolean isInternal = auth != null && auth.getAuthorities() != null &&
+                    (auth.getAuthorities().toString().toUpperCase().contains("ADMIN") ||
+                            auth.getAuthorities().toString().toUpperCase().contains("QUAN_LY") ||
+                            auth.getAuthorities().toString().toUpperCase().contains("BAC_SI") ||
+                            auth.getAuthorities().toString().toUpperCase().contains("STAFF"));
+
+            if (!isInternal || lichHen.getTrang_thai() == null || lichHen.getTrang_thai().isEmpty()) {
+                lichHen.setTrang_thai("CHO_XAC_NHAN");
+            }
+
+            LichHen saved = lichHenRepository.save(lichHen);
+
+            if (isInternal) {
+                try {
+                    String emailQuery = "SELECT kh.email, kh.ten_khach_hang, tc.ten_thu_cung, nv.ho_ten as ten_bac_si, dv.ten_dich_vu " +
+                            "FROM KhachHang kh " +
+                            "LEFT JOIN ThuCung tc ON tc.id_thu_cung = ? " +
+                            "LEFT JOIN NhanVien nv ON nv.id_nhan_vien = ? " +
+                            "LEFT JOIN DichVu dv ON dv.id_dich_vu = ? " +
+                            "WHERE kh.id_khach_hang = ?";
+                    List<Map<String, Object>> info = jdbcTemplate.queryForList(emailQuery,
+                            saved.getId_thu_cung(), saved.getId_bac_si(), saved.getId_dich_vu(), saved.getId_khach_hang());
+
+                    if (!info.isEmpty() && info.get(0).get("email") != null && !info.get(0).get("email").toString().isEmpty()) {
+                        String toEmail = info.get(0).get("email").toString();
+                        String tenKhachHang = info.get(0).get("ten_khach_hang") != null
+                                ? info.get(0).get("ten_khach_hang").toString()
+                                : "Khách hàng";
+                        String tenThuCung = info.get(0).get("ten_thu_cung") != null ? info.get(0).get("ten_thu_cung").toString()
+                                : "Thú cưng";
+                        String tenBacSi = info.get(0).get("ten_bac_si") != null ? info.get(0).get("ten_bac_si").toString()
+                                : "Bác sĩ Rexi";
+                        String tenDichVu = info.get(0).get("ten_dich_vu") != null ? info.get(0).get("ten_dich_vu").toString()
+                                : "Dịch vụ Thú y";
+
+                        emailService.sendBookingConfirmation(toEmail, tenKhachHang, tenThuCung, tenBacSi,
+                                saved.getNgay_kham().toString(), saved.getGio_kham().toString(), tenDichVu);
+                    }
+                } catch (Exception e) {
+                    System.err.println("Lỗi gửi email confirmation: " + e.getMessage());
+                }
+            }
+            return ResponseEntity.ok(saved);
+        } catch (Exception e) {
+            return ResponseEntity.status(400).body(Map.of("message", e.getMessage()));
         }
-        return ResponseEntity.ok(saved);
     }
 
     @PostMapping("/dat-lich-nhanh")
@@ -239,7 +243,7 @@ public class LichHenController {
 
                 jdbcTemplate.update(
                         "INSERT INTO TaiKhoan (id_tai_khoan, ten_dang_nhap, mat_khau, mat_khau_hash, id_vai_tro, trang_thai, ngay_tao) VALUES (?, ?, ?, ?, 'VT-5', N'Hoạt động', GETDATE())",
-                        idTaiKhoan, (email != null && !email.isEmpty() ? email : sdt + "@rexi.vn"), generatedPass, passwordEncoder.encode(generatedPass));
+                        idTaiKhoan, (email != null && !email.isEmpty() ? email : sdt + "@rexi.vn"), "[ENCRYPTED]", passwordEncoder.encode(generatedPass));
 
                 if (email != null && !email.isEmpty()) {
                     emailService.sendPasswordEmail(email, kh.get("ten_khach_hang"), generatedPass);
@@ -313,13 +317,13 @@ public class LichHenController {
         String username = (auth != null) ? auth.getName() : null;
         if (username == null || username.equals("anonymousUser")) {
             return ResponseEntity.status(401)
-                    .body(Map.of("message", "CÃ¡ÂºÂ£nh bÃÂ¡o bÃ¡ÂºÂ£o mÃ¡ÂºÂ­t: YÃÂªu cÃ¡ÂºÂ§u khÃÂ´ng cÃÂ³ Token xÃÂ¡c thÃ¡Â»Â±c hÃ¡Â»Â£p lÃ¡Â»â¡!"));
+                    .body(Map.of("message", "Cảnh báo bảo mật: Yêu cầu không có Token xác thực hợp lệ!"));
         }
         com.rexi.pkty.entity.TaiKhoan tk = taiKhoanRepository.findByTenDangNhap(username).orElse(null);
-        if (tk != null && tk.getId_vai_tro() != null && tk.getId_vai_tro().equals("1")) { // LÃÂ  khÃÂ¡ch hÃÂ ng
-            if (!tk.getId_khach_hang().equals(idKhachHang)) {
+        if (tk != null && "VT-5".equals(tk.getId_vai_tro())) { // Là khách hàng
+            if (tk.getId_khach_hang() == null || !tk.getId_khach_hang().equals(idKhachHang)) {
                 return ResponseEntity.status(403)
-                        .body(Map.of("message", "CÃ¡ÂºÂ£nh bÃÂ¡o bÃ¡ÂºÂ£o mÃ¡ÂºÂ­t: BÃ¡ÂºÂ¡n khÃÂ´ng cÃÂ³ quyÃ¡Â»Ân xem dÃ¡Â»Â¯ liÃ¡Â»â¡u cÃ¡Â»Â§a ngÃÂ°Ã¡Â»Âi khÃÂ¡c!"));
+                        .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền xem dữ liệu của người khác!"));
             }
         }
 
@@ -348,13 +352,13 @@ public class LichHenController {
         String username = (auth != null) ? auth.getName() : null;
         if (username == null || username.equals("anonymousUser")) {
             return ResponseEntity.status(401)
-                    .body(Map.of("message", "CÃ¡ÂºÂ£nh bÃÂ¡o bÃ¡ÂºÂ£o mÃ¡ÂºÂ­t: YÃÂªu cÃ¡ÂºÂ§u khÃÂ´ng cÃÂ³ Token xÃÂ¡c thÃ¡Â»Â±c hÃ¡Â»Â£p lÃ¡Â»â¡!"));
+                    .body(Map.of("message", "Cảnh báo bảo mật: Yêu cầu không có Token xác thực hợp lệ!"));
         }
         com.rexi.pkty.entity.TaiKhoan tk = taiKhoanRepository.findByTenDangNhap(username).orElse(null);
-        if (tk != null && tk.getId_vai_tro() != null && tk.getId_vai_tro().equals("1")) { // LÃÂ  khÃÂ¡ch hÃÂ ng
-            if (!tk.getId_khach_hang().equals(idKhachHang)) {
+        if (tk != null && "VT-5".equals(tk.getId_vai_tro())) { // Là khách hàng
+            if (tk.getId_khach_hang() == null || !tk.getId_khach_hang().equals(idKhachHang)) {
                 return ResponseEntity.status(403)
-                        .body(Map.of("message", "CÃ¡ÂºÂ£nh bÃÂ¡o bÃ¡ÂºÂ£o mÃ¡ÂºÂ­t: BÃ¡ÂºÂ¡n khÃÂ´ng cÃÂ³ quyÃ¡Â»Ân xem dÃ¡Â»Â¯ liÃ¡Â»â¡u cÃ¡Â»Â§a ngÃÂ°Ã¡Â»Âi khÃÂ¡c!"));
+                        .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền xem dữ liệu của người khác!"));
             }
         }
 
@@ -375,34 +379,56 @@ public class LichHenController {
             params.add(petId);
         }
 
-        Integer total = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM LichHen lh " + where, Integer.class, params.toArray());
-        int totalPages = (int) Math.ceil((double) (total != null ? total : 0) / size);
+        try {
+            Integer total = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM LichHen lh " + where, Integer.class, params.toArray());
+            int totalPages = (int) Math.ceil((double) (total != null ? total : 0) / size);
 
-        java.util.List<Object> dataParams = new java.util.ArrayList<>(params);
-        dataParams.add(page * size);
-        dataParams.add(size);
-        List<Map<String, Object>> content = jdbcTemplate.queryForList(
-                "SELECT lh.*, tc.ten_thu_cung, nv.ho_ten as ten_bac_si, dv.ten_dich_vu " +
-                        "FROM LichHen lh " +
-                        "LEFT JOIN ThuCung tc ON lh.id_thu_cung = tc.id_thu_cung " +
-                        "LEFT JOIN NhanVien nv ON lh.id_bac_si = nv.id_nhan_vien " +
-                        "LEFT JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu " +
-                        where + " ORDER BY lh.ngay_tao DESC " +
-                        "OFFSET ? ROWS FETCH NEXT ? ROWS ONLY",
-                dataParams.toArray());
+            java.util.List<Object> dataParams = new java.util.ArrayList<>(params);
+            
+            String sql;
+            if (size > 500) {
+                sql = "SELECT lh.*, tc.ten_thu_cung, nv.ho_ten as ten_bac_si, dv.ten_dich_vu " +
+                      "FROM LichHen lh " +
+                      "LEFT JOIN ThuCung tc ON lh.id_thu_cung = tc.id_thu_cung " +
+                      "LEFT JOIN NhanVien nv ON lh.id_bac_si = nv.id_nhan_vien " +
+                      "LEFT JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu " +
+                      where + " ORDER BY lh.ngay_tao DESC";
+            } else {
+                dataParams.add(page * size);
+                dataParams.add(size);
+                sql = "SELECT lh.*, tc.ten_thu_cung, nv.ho_ten as ten_bac_si, dv.ten_dich_vu " +
+                      "FROM LichHen lh " +
+                      "LEFT JOIN ThuCung tc ON lh.id_thu_cung = tc.id_thu_cung " +
+                      "LEFT JOIN NhanVien nv ON lh.id_bac_si = nv.id_nhan_vien " +
+                      "LEFT JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu " +
+                      where + " ORDER BY lh.ngay_tao DESC " +
+                      "OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
+            }
+            
+            List<Map<String, Object>> content = jdbcTemplate.queryForList(sql, dataParams.toArray());
 
-        return ResponseEntity.ok(Map.of(
-                "content", content,
-                "totalPages", totalPages,
-                "totalElements", total != null ? total : 0,
-                "currentPage", page));
+            return ResponseEntity.ok(Map.of(
+                    "content", content,
+                    "totalPages", totalPages,
+                    "totalElements", total != null ? total : 0,
+                    "currentPage", page
+            ));
+        } catch (Exception e) {
+            System.err.println("Lỗi lấy lịch hẹn: " + e.getMessage());
+            return ResponseEntity.ok(Map.of(
+                    "content", new java.util.ArrayList<>(),
+                    "totalPages", 0,
+                    "totalElements", 0,
+                    "currentPage", page
+            ));
+        }
     }
 
     @PutMapping("/{id}/status")
     public ResponseEntity<?> updateStatus(@PathVariable String id, @RequestBody Map<String, String> body) {
         LichHen lh = lichHenRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("KhÃÂ´ng tÃÂ¬m thÃ¡ÂºÂ¥y lÃ¡Â»â¹ch hÃ¡ÂºÂ¹n"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy lịch hẹn"));
 
         org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
                 .getContext().getAuthentication();
@@ -411,19 +437,19 @@ public class LichHenController {
 
         if (username == null || username.equals("anonymousUser")) {
             return ResponseEntity.status(401)
-                    .body(Map.of("message", "CÃ¡ÂºÂ£nh bÃÂ¡o bÃ¡ÂºÂ£o mÃ¡ÂºÂ­t: YÃÂªu cÃ¡ÂºÂ§u khÃÂ´ng cÃÂ³ Token xÃÂ¡c thÃ¡Â»Â±c hÃ¡Â»Â£p lÃ¡Â»â¡!"));
+                    .body(Map.of("message", "Cảnh báo bảo mật: Yêu cầu không có Token xác thực hợp lệ!"));
         } else {
             com.rexi.pkty.entity.TaiKhoan tk = taiKhoanRepository.findByTenDangNhap(username).orElse(null);
-            if (tk != null && tk.getId_vai_tro() != null && tk.getId_vai_tro().equals("1")) {
+            if (tk != null && tk.getId_vai_tro() != null && tk.getId_vai_tro().equals("VT-5")) {
                 isCustomer = true;
                 if (!tk.getId_khach_hang().equals(lh.getId_khach_hang())) {
                     return ResponseEntity.status(403).body(
-                            Map.of("message", "CÃ¡ÂºÂ£nh bÃÂ¡o bÃ¡ÂºÂ£o mÃ¡ÂºÂ­t: BÃ¡ÂºÂ¡n khÃÂ´ng cÃÂ³ quyÃ¡Â»Ân thao tÃÂ¡c trÃÂªn lÃ¡Â»â¹ch hÃ¡ÂºÂ¹n nÃÂ y!"));
+                            Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền thao tác trên lịch hẹn này!"));
                 }
                 String status = body.get("trang_thai");
-                if (status != null && !status.equalsIgnoreCase("DA_HUY") && !status.equalsIgnoreCase("ÃÂÃÂ£ hÃ¡Â»Â§y")) {
+                if (status != null && !status.equalsIgnoreCase("DA_HUY") && !status.equalsIgnoreCase("Đã hủy")) {
                     return ResponseEntity.status(403)
-                            .body(Map.of("message", "CÃ¡ÂºÂ£nh bÃÂ¡o bÃ¡ÂºÂ£o mÃ¡ÂºÂ­t: KhÃÂ¡ch hÃÂ ng chÃ¡Â»â° cÃÂ³ quyÃ¡Â»Ân HÃ¡Â»Â§y lÃ¡Â»â¹ch hÃ¡ÂºÂ¹n!"));
+                            .body(Map.of("message", "Cảnh báo bảo mật: Khách hàng chỉ có quyền Hủy lịch hẹn!"));
                 }
             }
         }
@@ -438,8 +464,8 @@ public class LichHenController {
 
         LichHen saved = lichHenRepository.save(lh);
         if (!isCustomer) {
-            auditLogService.logAction("ÃÂÃ¡Â»âI TRÃ¡ÂºÂ NG THÃÂI", "LichHen",
-                    "CÃ¡ÂºÂ­p nhÃ¡ÂºÂ­t trÃ¡ÂºÂ¡ng thÃÂ¡i lÃ¡Â»â¹ch hÃ¡ÂºÂ¹n ID " + id + " thÃÂ nh " + status);
+            auditLogService.logAction("ĐỔI TRẠNG THÁI", "LichHen",
+                    "Cập nhật trạng thái lịch hẹn ID " + id + " thành " + status);
         }
         return ResponseEntity.ok(saved);
     }
@@ -455,25 +481,25 @@ public class LichHenController {
 
             if (username == null || username.equals("anonymousUser")) {
                 return ResponseEntity.status(401)
-                        .body(Map.of("message", "CÃ¡ÂºÂ£nh bÃÂ¡o bÃ¡ÂºÂ£o mÃ¡ÂºÂ­t: YÃÂªu cÃ¡ÂºÂ§u khÃÂ´ng cÃÂ³ Token xÃÂ¡c thÃ¡Â»Â±c hÃ¡Â»Â£p lÃ¡Â»â¡!"));
+                        .body(Map.of("message", "Cảnh báo bảo mật: Yêu cầu không có Token xác thực hợp lệ!"));
             } else {
                 com.rexi.pkty.entity.TaiKhoan tk = taiKhoanRepository.findByTenDangNhap(username).orElse(null);
-                if (tk != null && tk.getId_vai_tro() != null && tk.getId_vai_tro().equals("1")) {
+                if (tk != null && tk.getId_vai_tro() != null && tk.getId_vai_tro().equals("VT-5")) {
                     isCustomer = true;
                     if (!tk.getId_khach_hang().equals(lh.getId_khach_hang())) {
                         return ResponseEntity.status(403)
-                                .body(Map.of("message", "CÃ¡ÂºÂ£nh bÃÂ¡o bÃ¡ÂºÂ£o mÃ¡ÂºÂ­t: BÃ¡ÂºÂ¡n khÃÂ´ng cÃÂ³ quyÃ¡Â»Ân xÃÂ³a lÃ¡Â»â¹ch hÃ¡ÂºÂ¹n nÃÂ y!"));
+                                .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền xóa lịch hẹn này!"));
                     }
                 }
             }
             lichHenRepository.deleteById(id);
 
             if (!isCustomer) {
-                auditLogService.logAction("XÃâA", "LichHen", "XÃÂ³a lÃ¡Â»â¹ch hÃ¡ÂºÂ¹n ID " + id);
+                auditLogService.logAction("XÓA", "LichHen", "Xóa lịch hẹn ID " + id);
             }
-            return ResponseEntity.ok(Map.of("message", "XÃÂ³a lÃ¡Â»â¹ch hÃ¡ÂºÂ¹n thÃÂ nh cÃÂ´ng"));
+            return ResponseEntity.ok(Map.of("message", "Xóa lịch hẹn thành công"));
         }
-        return ResponseEntity.status(404).body(Map.of("message", "KhÃÂ´ng tÃÂ¬m thÃ¡ÂºÂ¥y lÃ¡Â»â¹ch hÃ¡ÂºÂ¹n"));
+        return ResponseEntity.status(404).body(Map.of("message", "Không tìm thấy lịch hẹn"));
     }
 
     @GetMapping("/gio-ranh")
@@ -497,7 +523,7 @@ public class LichHenController {
                     caTrucList.add(LocalTime.parse(obj.toString()));
             }
             existingApps = jdbcTemplate.queryForList(
-                    "SELECT lh.gio_kham, dv.thoi_luong_phut FROM LichHen lh LEFT JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu WHERE lh.id_bac_si = ? AND lh.ngay_kham = ? AND lh.trang_thai NOT IN (N'ÃÂÃÂ£ hÃ¡Â»Â§y', 'DA_HUY', 'da_huy', 'TU_CHOI', N'HÃ¡ÂºÂ¿t hÃ¡ÂºÂ¡n')",
+                    "SELECT lh.gio_kham, dv.thoi_luong_phut FROM LichHen lh LEFT JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu WHERE lh.id_bac_si = ? AND lh.ngay_kham = ? AND lh.trang_thai NOT IN (N'Đã hủy', 'DA_HUY', 'da_huy', 'TU_CHOI', N'Hết hạn')",
                     id_nhan_vien, ngay);
         } else {
             List<Map<String, Object>> allShifts = jdbcTemplate.queryForList(
@@ -506,7 +532,7 @@ public class LichHenController {
             List<Map<String, Object>> allBusy = jdbcTemplate.queryForList(
                     "SELECT lh.id_bac_si, lh.gio_kham, dv.thoi_luong_phut " +
                             "FROM LichHen lh LEFT JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu " +
-                            "WHERE lh.ngay_kham = ? AND lh.trang_thai NOT IN (N'ÃÂÃÂ£ hÃ¡Â»Â§y', 'DA_HUY', 'da_huy', 'TU_CHOI', N'HÃ¡ÂºÂ¿t hÃ¡ÂºÂ¡n')",
+                            "WHERE lh.ngay_kham = ? AND lh.trang_thai NOT IN (N'Đã hủy', 'DA_HUY', 'da_huy', 'TU_CHOI', N'Hết hạn')",
                     ngay);
 
             Map<String, List<Map<String, Object>>> parsedBusyByDoctor = new java.util.HashMap<>();

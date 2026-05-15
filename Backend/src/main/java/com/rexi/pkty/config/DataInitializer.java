@@ -52,12 +52,12 @@ public class DataInitializer implements CommandLineRunner {
     private DichVu tao(String ten, String moTa, int gia, int thoiLuong) {
         DichVu dv = new DichVu();
         // Cấp ID tự động để tránh lỗi IdentifierGenerationException
-        dv.setIdDichVu("DV-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase());
-        dv.setTenDichVu(ten);
-        dv.setMoTa(moTa);
-        dv.setGiaTien(BigDecimal.valueOf(gia));
-        dv.setThoiLuongPhut(thoiLuong);
-        dv.setTrangThai(true);
+        dv.setId_dich_vu("DV-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+        dv.setTen_dich_vu(ten);
+        dv.setMo_ta(moTa);
+        dv.setGia(BigDecimal.valueOf(gia));
+        dv.setThoi_luong_phut(thoiLuong);
+        dv.setTrang_thai(true);
         return dv;
     }
 }

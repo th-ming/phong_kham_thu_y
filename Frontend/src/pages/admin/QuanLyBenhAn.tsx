@@ -118,7 +118,7 @@ const QuanLyBenhAn: React.FC = () => {
             });
 
             // Đổi trạng thái lịch hẹn thành Đã Hoàn Thành
-            await axiosInstance.put(`/api/lich-hen/${selectedLich.id_lich_hen}/trang-thai`, { trang_thai: 'HOAN_THANH' });
+            await axiosInstance.put(`/api/lich-hen/${selectedLich.id_lich_hen}/status`, { trang_thai: 'HOAN_THANH' });
 
             toast.success("Đã lưu Bệnh án, Kê đơn & Xuất Hóa đơn thành công!");
             setSelectedLich(null);

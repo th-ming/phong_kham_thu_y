@@ -26,9 +26,9 @@ public class GeminiService {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    // Sá»­ dá»¥ng chung 1 HttpClient cho toÃ n bá»™ service Ä‘á»ƒ tÄƒng hiá»‡u suáº¥t
+    // Sử dụng chung 1 HttpClient cho toàn bộ service để tăng hiệu suất
     private final HttpClient client = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(180)) // Cho phÃ©p káº¿t ná»‘i tá»‘i Ä‘a 3 phÃºt
+            .connectTimeout(Duration.ofSeconds(180)) // Cho phép kết nối tối đa 3 phút
             .build();
 
     public String chat(List<ChatMessage> history) throws Exception {
@@ -37,7 +37,7 @@ public class GeminiService {
 
         Map<String, Object> requestBodyMap = new HashMap<>();
 
-        // TÃ¡ch riÃªng prompt há»‡ thá»‘ng vÃ  lá»‹ch sá»­ chat
+        // Tách riêng prompt hệ thống và lịch sử chat
         String dynamicSystemPrompt = "";
         List<ChatMessage> userModelHistory = new ArrayList<>();
         for (ChatMessage msg : history) {
@@ -61,7 +61,7 @@ public class GeminiService {
         for (ChatMessage msg : userModelHistory) {
             Map<String, Object> contentItem = new HashMap<>();
 
-            // Chuyá»ƒn role sang chuáº©n cá»§a Gemini (user / model)
+            // Chuyển role sang chuẩn của Gemini (user / model)
             String role = (msg.getRole() != null && msg.getRole().equals("assistant")) ? "model" : "user";
             contentItem.put("role", role);
 
@@ -71,20 +71,20 @@ public class GeminiService {
 
             if (msg.getImage() != null && !msg.getImage().isEmpty()) {
                 if (textContent.isBlank())
-                    textContent = "PhÃ¢n tÃ­ch áº£nh nÃ y giÃºp tÃ´i.";
+                    textContent = "Phân tích ảnh này giúp tôi.";
                 parts.add(Map.of("text", textContent));
                 parts.add(Map.of("inlineData", Map.of(
                         "mimeType", "image/jpeg",
                         "data", msg.getImage())));
             } else if (msg.getVideo() != null && !msg.getVideo().isEmpty()) {
                 if (textContent.isBlank())
-                    textContent = "PhÃ¢n tÃ­ch video nÃ y giÃºp tÃ´i.";
+                    textContent = "Phân tích video này giúp tôi.";
                 parts.add(Map.of("text", textContent));
 
                 String mimeType = "video/mp4";
                 String base64Data = msg.getVideo();
 
-                // TrÃ­ch xuáº¥t chÃ­nh xÃ¡c mimeType tá»« chuá»—i data URL
+                // Trích xuất chính xác mimeType từ chuỗi data URL
                 if (base64Data.startsWith("data:")) {
                     int semicolonIdx = base64Data.indexOf(";");
                     if (semicolonIdx != -1) {
@@ -119,25 +119,24 @@ public class GeminiService {
                 .uri(URI.create(apiUrl))
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(requestBody, StandardCharsets.UTF_8))
-                .timeout(Duration.ofMinutes(3)) // Gemini xá»­ lÃ½ video cÃ³ thá»ƒ lÃ¢u, cho phÃ©p tá»‘i Ä‘a 3 phÃºt
+                .timeout(Duration.ofMinutes(3)) // Gemini xử lý video có thể lâu, cho phép tối đa 3 phút
                 .build();
 
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
         if (response.statusCode() != 200) {
-            System.err.println("=== Lá»–I Káº¾T Ná»I GEMINI API ===");
-            System.err.println("Tráº¡ng thÃ¡i: " + response.statusCode());
-            System.err.println("Ná»™i dung lá»—i: " + response.body());
-            throw new RuntimeException("Gemini API gáº·p lá»—i " + response.statusCode() + ": " + response.body());
+            System.err.println("=== LỖI KẾT NỐI GEMINI API ===");
+            System.err.println("Trạng thái: " + response.statusCode());
+            System.err.println("Nội dung lỗi: " + response.body());
+            throw new RuntimeException("Gemini API gặp lỗi " + response.statusCode() + ": " + response.body());
         }
 
         JsonNode rootNode = objectMapper.readTree(response.body());
         try {
             return rootNode.path("candidates").get(0).path("content").path("parts").get(0).path("text").asText();
         } catch (Exception e) {
-            System.err.println("Lá»—i phÃ¢n tÃ­ch pháº£n há»“i tá»« Gemini. Ná»™i dung: " + response.body());
-            throw new RuntimeException("Lá»—i Parse Gemini: " + response.body());
+            System.err.println("Lỗi phân tích phản hồi từ Gemini. Nội dung: " + response.body());
+            throw new RuntimeException("Lỗi Parse Gemini: " + response.body());
         }
     }
 }
-

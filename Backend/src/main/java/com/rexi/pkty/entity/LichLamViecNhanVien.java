@@ -6,7 +6,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 
 @Entity
-@Table(name = "LichLamViecNhanVien") // Káº¿t ná»‘i báº£ng lá»‹ch lÃ m viá»‡c
+@Table(name = "LichLamViecNhanVien") // Kết nối bảng lịch làm việc
 @Data
 public class LichLamViecNhanVien {
     @Id

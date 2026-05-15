@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useTheme } from '../contexts/ThemeContext';
+import { useTheme } from '../contexts/ThemeContextV2';
 import { TransparentVideo, MemeCat } from '../components/SpecialEffects';
 
 const Loi404: React.FC = () => {

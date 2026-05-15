@@ -9,15 +9,13 @@ const SidebarKhachHang: React.FC = () => {
 
   const [isMobileOpen, setIsMobileOpen] = useState(false)
 
-  const user = useMemo(() => {
-    return getUserProfile();
-  }, []);
+  const user = getUserProfile();
 
   const sidebarItems = [
     { label: 'Tổng quan', path: '/khach-hang/dashboard', icon: 'dashboard' },
     { label: 'Thú cưng', path: '/khach-hang/quan-ly-thu-cung', icon: 'pets' },
-    { label: 'Lịch hẹn', path: '/khach-hang/lich-su-lich-hen', icon: 'calendar_month' },
-    { label: 'Dịch vụ', path: '/bang-gia', icon: 'medical_services' },
+    { label: 'Đặt lịch hẹn', path: '/khach-hang/dat-lich-hen', icon: 'edit_calendar' },
+    { label: 'Xem lịch hẹn', path: '/khach-hang/lich-su-lich-hen', icon: 'calendar_month' },
     { label: 'Hồ sơ y tế', path: '/khach-hang/ho-so-benh-an', icon: 'medical_information' },
     { label: 'Hóa đơn', path: '/khach-hang/hoa-don-thanh-toan', icon: 'receipt' },
     { label: 'Cá nhân', path: '/khach-hang/thong-tin-ca-nhan', icon: 'person' },
@@ -30,7 +28,11 @@ const SidebarKhachHang: React.FC = () => {
   }
 
   // Hàm xóa số thứ tự ở đầu tên (Ví dụ: "1. Nguyễn Văn A" -> "Nguyễn Văn A")
-  const cleanName = (name: string) => name ? name.replace(/^\d+\.\s*/, '').trim() : '';
+  const cleanName = (name: string) => {
+    if (!name) return '';
+    const cleaned = name.replace(/^\d+\.\s*/, '').trim();
+    return cleaned.toLowerCase() === 'admin' ? 'Quản trị viên' : cleaned;
+  };
 
   return (
     <>
@@ -91,7 +93,7 @@ const SidebarKhachHang: React.FC = () => {
             </div>
             <div style={{ overflow: 'hidden' }}>
               <p style={{ fontWeight: 950, fontSize: '1rem', color: 'var(--ink)', margin: 0, whiteSpace: 'nowrap', textOverflow: 'ellipsis', letterSpacing: '-0.5px' }}>
-                {cleanName(user?.ten_khach_hang || user?.ho_ten || user?.ten_dang_nhap || "Thành viên")}
+                {cleanName(user?.display_name || user?.displayName || user?.ho_ten || user?.hoTen || user?.fullName || user?.ten_khach_hang || user?.ten_dang_nhap || user?.username || "Thành viên")}
               </p>
               <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: '2px' }}>
                 <span className="material-symbols-outlined" style={{ fontSize: '12px', color: 'var(--primary)' }}>stars</span>

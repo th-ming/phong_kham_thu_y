@@ -21,7 +21,7 @@ const DangNhapDangKy: React.FC = () => {
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
 
-  const GOOGLE_CLIENT_ID = (import.meta as any).env.VITE_GOOGLE_CLIENT_ID;
+  const GOOGLE_CLIENT_ID = "334761445329-iog83fgqrdlo0iavo68pkv17modc85du.apps.googleusercontent.com";
 
   useEffect(() => {
     const savedUsername = localStorage.getItem("rememberedUsername");
@@ -37,16 +37,20 @@ const DangNhapDangKy: React.FC = () => {
     const initGoogle = () => {
       if ((window as any).google) {
         if (GOOGLE_CLIENT_ID) {
-          (window as any).google.accounts.id.initialize({
-            client_id: GOOGLE_CLIENT_ID,
-            callback: handleGoogleResponse
-          });
+          // Tránh gọi initialize nhiều lần gây lỗi origin
+          if (!(window as any).google_initialized) {
+            (window as any).google.accounts.id.initialize({
+              client_id: GOOGLE_CLIENT_ID,
+              callback: handleGoogleResponse
+            });
+            (window as any).google_initialized = true;
+          }
           const googleBtnEl = document.getElementById("googleBtn");
           if (googleBtnEl) {
             googleBtnEl.replaceChildren();
             (window as any).google.accounts.id.renderButton(
               googleBtnEl,
-              { theme: "outline", size: "large", width: "100%", shape: "pill" }
+              { theme: "outline", size: "large", shape: "pill", width: 350 }
             );
           }
         }
@@ -269,7 +273,7 @@ const DangNhapDangKy: React.FC = () => {
         <Link to="/" style={{ background: 'white', color: '#1e293b', padding: '12px 24px', borderRadius: '50px', textDecoration: 'none', fontWeight: 800, border: '1px solid #e2e8f0' }}>Về trang chủ</Link>
       </header>
 
-      <main style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '40px 20px', overflowY: 'auto' }}>
         <div className="auth-card">
           <div className="auth-sidebar">
             <div style={{ position: 'relative', zIndex: 1 }}>
@@ -327,10 +331,12 @@ const DangNhapDangKy: React.FC = () => {
                   <div className="input-group">
                     <span className="material-symbols-outlined" style={{ color: '#0d9488', opacity: 0.7, fontSize: '18px' }}>lock</span>
                     <input type={showPassword ? "text" : "password"} placeholder="Mật khẩu" value={password} onChange={e => setPassword(e.target.value)} required />
+                    <span className="material-symbols-outlined" onClick={() => setShowPassword(!showPassword)} style={{ cursor: 'pointer', color: '#94a3b8', fontSize: '18px' }}>{showPassword ? 'visibility_off' : 'visibility'}</span>
                   </div>
                   <div className="input-group" style={{ gridColumn: 'span 2' }}>
                     <span className="material-symbols-outlined" style={{ color: '#0d9488', opacity: 0.7, fontSize: '18px' }}>lock_reset</span>
                     <input type={showPassword ? "text" : "password"} placeholder="Xác nhận mật khẩu" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required />
+                    <span className="material-symbols-outlined" onClick={() => setShowPassword(!showPassword)} style={{ cursor: 'pointer', color: '#94a3b8', fontSize: '18px' }}>{showPassword ? 'visibility_off' : 'visibility'}</span>
                   </div>
                 </div>
               ) : (
@@ -355,7 +361,7 @@ const DangNhapDangKy: React.FC = () => {
                   </div>
                 </>
               )}
-              <button type="submit" className="btn-auth" style={{ background: '#0d9488', color: 'white', border: 'none', borderRadius: '50px', padding: '16px', fontWeight: 800, cursor: 'pointer', marginTop: '10px' }}>{loading ? 'Đang xử lý...' : (isLogin ? 'Đăng nhập ngay' : 'Đăng ký')}</button>
+              <button type="submit" disabled={loading} className="btn-auth" style={{ background: loading ? '#94a3b8' : '#0d9488', color: 'white', border: 'none', borderRadius: '50px', padding: '16px', fontWeight: 800, cursor: loading ? 'not-allowed' : 'pointer', marginTop: '10px' }}>{loading ? 'Đang xử lý...' : (isLogin ? 'Đăng nhập ngay' : 'Đăng ký')}</button>
             </form>
 
             <div style={{ marginTop: '20px', textAlign: 'center' }}>
@@ -374,7 +380,7 @@ const DangNhapDangKy: React.FC = () => {
               <div style={{ position: 'absolute', top: '50%', left: 0, width: '100%', height: '1px', background: '#e2e8f0', zIndex: 0 }}></div>
               <span style={{ position: 'relative', zIndex: 1, background: 'white', padding: '0 15px', fontSize: '0.75rem', color: '#94a3b8', fontWeight: 900 }}>HOẶC</span>
             </div>
-            <div id="googleBtn" style={{ width: '100%' }}></div>
+            <div id="googleBtn" style={{ display: 'flex', justifyContent: 'center', width: '100%', minHeight: '48px', paddingBottom: '20px' }}></div>
           </div>
         </div>
       </main>

@@ -16,9 +16,9 @@ const CustomerLayout: React.FC = () => {
 
     try {
       const user = JSON.parse(userStr);
-      const role = user.loai_tai_khoan?.toLowerCase() || "";
-      // FIX: Backend trả về "CUSTOMER" (không phải "khach_hang")
-      if (role !== "customer") {
+      const role = (user.loai_tai_khoan || user.ten_vai_tro || "").toLowerCase();
+      // Nếu không phải "customer" và cũng không phải "khach_hang" thì mới đẩy sang Admin
+      if (role !== "customer" && role !== "khach_hang") {
         navigate("/quan-ly/dashboard", { replace: true });
       }
     } catch (e) {
@@ -27,11 +27,17 @@ const CustomerLayout: React.FC = () => {
   }, [navigate]);
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", background: "var(--background)" }}>
+    <div style={{ display: "flex", height: "100vh", overflow: "hidden", background: "var(--background)" }}>
       <SidebarKhachHang />
-      <main style={{ flex: 1, padding: "40px", overflowY: "auto", position: 'relative' }}>
+      <main className="main-content" style={{ flex: 1, padding: "40px", overflowY: "auto", position: 'relative' }}>
         <div className="animate-fade-in">
-          <Outlet />
+          <React.Suspense fallback={
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
+              <div className="dot-pulse"></div>
+            </div>
+          }>
+            <Outlet />
+          </React.Suspense>
         </div>
       </main>
       <ScrollToTop />

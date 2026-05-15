@@ -14,6 +14,6 @@ public class LoaiXetNghiem {
 
     private String ten_xet_nghiem;
     private String mo_ta;
-    private BigDecimal gia_tien;
+    private BigDecimal gia;
 }
 

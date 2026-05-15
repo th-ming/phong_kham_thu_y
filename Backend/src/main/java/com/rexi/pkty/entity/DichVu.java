@@ -10,21 +10,20 @@ import java.math.BigDecimal;
 public class DichVu {
     @Id
     @Column(name = "id_dich_vu")
-    private String idDichVu;
+    private String id_dich_vu;
 
     @Column(name = "ten_dich_vu", nullable = false, columnDefinition = "NVARCHAR(255)")
-    private String tenDichVu;
+    private String ten_dich_vu;
 
     @Column(name = "mo_ta", columnDefinition = "NVARCHAR(MAX)")
-    private String moTa;
+    private String mo_ta;
 
     @Column(name = "gia")
-    private BigDecimal giaTien;
+    private BigDecimal gia;
 
     @Column(name = "thoi_luong_phut")
-    private Integer thoiLuongPhut;
+    private Integer thoi_luong_phut;
 
     @Column(name = "trang_thai", nullable = false)
-    private Boolean trangThai = true;
+    private Boolean trang_thai = true;
 }
-

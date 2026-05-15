@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import axiosInstance from "@services/axios";
+import { getUserProfile } from "@utils/index";
 
 const chuyenNgayISO_SangVN = (dateString: string) => {
   if (!dateString) return "—";
@@ -30,6 +31,10 @@ const QuanLyKhoThuoc: React.FC = () => {
       });
   }, []);
 
+  const user = getUserProfile();
+  const userRoleRaw = (user?.loai_tai_khoan || user?.ten_vai_tro || 'staff').toLowerCase();
+  const canManageInventory = userRoleRaw.includes('admin') || userRoleRaw.includes('quản lý') || userRoleRaw.includes('kế toán') || userRoleRaw.includes('manager') || userRoleRaw.includes('accountant');
+
   if (loading) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
       <div className="dot-pulse"></div>
@@ -43,10 +48,12 @@ const QuanLyKhoThuoc: React.FC = () => {
           <h1 style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--ink)', letterSpacing: '-1px' }}>Quản lý Kho thuốc</h1>
           <p style={{ color: 'var(--gray-500)', fontWeight: 600 }}>Theo dõi tồn kho, hạn sử dụng và phân phối dược phẩm.</p>
         </div>
-        <Link to="/quan-ly/nhap-kho" className="btn btn-primary btn-pill" style={{ textDecoration: 'none' }}>
-          <span className="material-symbols-outlined">add_box</span>
-          Nhập thuốc mới
-        </Link>
+        {canManageInventory && (
+          <Link to="/quan-ly/nhap-kho" className="btn btn-primary btn-pill" style={{ textDecoration: 'none' }}>
+            <span className="material-symbols-outlined">add_box</span>
+            Nhập thuốc mới
+          </Link>
+        )}
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '32px' }}>

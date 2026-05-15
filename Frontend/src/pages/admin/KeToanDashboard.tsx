@@ -275,7 +275,7 @@ const KeToanDashboard: React.FC = () => {
                 <div style={{ padding: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--gray-100)', flexWrap: 'wrap', gap: '16px' }}>
                     <h2 style={{ fontSize: '1.2rem', margin: 0, fontWeight: 800 }}>Danh sách Hóa đơn</h2>
                     <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                        <button onClick={handleExportExcel} className="btn btn-pill" style={{ background: '#10b981', color: 'white', padding: '10px 16px', fontSize: '0.85rem' }}>
+                        <button onClick={handleExportExcel} className="btn btn-pill hover-lift" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '10px 16px', fontSize: '0.85rem', fontWeight: 800 }}>
                             <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>download</span>
                             Xuất Excel
                         </button>

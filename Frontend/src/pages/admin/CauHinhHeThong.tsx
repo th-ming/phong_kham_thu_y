@@ -45,6 +45,7 @@ const CauHinhHeThong: React.FC = () => {
         try {
             await axiosInstance.post('/api/system/cau-hinh', configs);
             toast.success('Đã lưu cấu hình thành công!');
+            fetchLogs(); // Cập nhật nhật ký ngay lập tức
         } catch (error: any) {
             toast.error(error.response?.data?.message || 'Lỗi khi lưu cấu hình');
         } finally {
@@ -53,14 +54,20 @@ const CauHinhHeThong: React.FC = () => {
     };
 
     const handleBackup = async () => {
-        if (!window.confirm('Quá trình sao lưu có thể mất vài giây. Bạn có chắc chắn muốn tiến hành sao lưu ngay bây giờ?')) {
-            return;
-        }
-        setBackingUp(true);
+        console.log('--- DEBUG: handleBackup clicked ---');
         try {
+            const confirm = window.confirm('Quá trình sao lưu có thể mất vài giây. Bạn có chắc chắn muốn tiến hành sao lưu ngay bây giờ?');
+            console.log('--- DEBUG: confirm result:', confirm);
+            if (!confirm) return;
+            
+            setBackingUp(true);
+            console.log('--- DEBUG: sending POST /api/system/backup ---');
             const res = await axiosInstance.post('/api/system/backup');
+            console.log('--- DEBUG: backup response:', res.data);
             toast.success(res.data.message || 'Sao lưu thành công!');
+            fetchLogs(); // Cập nhật lại nhật ký ngay lập tức
         } catch (error: any) {
+            console.error('--- DEBUG: backup error:', error);
             toast.error(error.response?.data?.message || 'Lỗi khi sao lưu dữ liệu');
         } finally {
             setBackingUp(false);
@@ -116,25 +123,50 @@ const CauHinhHeThong: React.FC = () => {
                 </div>
 
                 <div className="glass-card" style={{ padding: '30px', borderRadius: 'var(--radius-xl)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-                        <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: 'var(--warning-light, rgba(245, 158, 11, 0.15))', color: 'var(--warning, #d97706)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <span className="material-symbols-outlined" style={{ fontSize: '28px' }}>history</span>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: 'var(--warning-light, rgba(245, 158, 11, 0.15))', color: 'var(--warning, #d97706)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <span className="material-symbols-outlined" style={{ fontSize: '28px' }}>history</span>
+                            </div>
+                            <div>
+                                <h2 style={{ fontSize: '1.2rem', fontWeight: 800 }}>Nhật ký hoạt động (Audit Log)</h2>
+                                <p style={{ fontSize: '0.85rem', color: 'var(--gray-500)', margin: 0 }}>Theo dõi thao tác sửa/xóa của nhân viên</p>
+                            </div>
                         </div>
-                        <div>
-                            <h2 style={{ fontSize: '1.2rem', fontWeight: 800 }}>Nhật ký hoạt động (Audit Log)</h2>
-                            <p style={{ fontSize: '0.85rem', color: 'var(--gray-500)', margin: 0 }}>Theo dõi thao tác sửa/xóa của nhân viên</p>
-                        </div>
+                        <button 
+                            className="btn btn-outline" 
+                            style={{ padding: '8px 16px', fontSize: '0.8rem', borderColor: 'var(--gray-200)', color: 'var(--gray-500)' }}
+                            onClick={async () => {
+                                if (window.confirm('Bạn có chắc chắn muốn xóa sạch toàn bộ nhật ký hệ thống? Thao tác này không thể hoàn tác.')) {
+                                    try {
+                                        await axiosInstance.delete('/api/system/nhat-ky');
+                                        toast.success('Đã xóa sạch nhật ký!');
+                                        fetchLogs();
+                                    } catch (err: any) {
+                                        toast.error('Lỗi khi xóa nhật ký: ' + err.message);
+                                    }
+                                }
+                            }}
+                        >
+                            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>delete_sweep</span>
+                            Xóa nhật ký
+                        </button>
                     </div>
 
                     <div style={{ maxHeight: '400px', overflowY: 'auto', border: '1px solid var(--gray-200)', borderRadius: '12px', padding: '10px', background: 'var(--surface)' }}>
-                        {logs.length === 0 ? <p style={{ textAlign: 'center', color: 'var(--gray-400)' }}>Chưa có ghi nhận nào.</p> : (
+                        {logs.length === 0 ? <p style={{ textAlign: 'center', color: 'var(--gray-400)', padding: '40px' }}>Chưa có ghi nhận nào.</p> : (
                             <table style={{ width: '100%', fontSize: '0.85rem', borderCollapse: 'collapse' }}>
                                 <tbody>
                                     {logs.map((log) => (
-                                        <tr key={log.id} style={{ borderBottom: '1px solid var(--gray-100)' }}>
+                                        <tr key={log.id} style={{ borderBottom: '1px solid var(--gray-100)', transition: 'background 0.2s' }}>
                                             <td style={{ padding: '8px', color: 'var(--gray-400)', whiteSpace: 'nowrap' }}>{chuyenNgayGioISO_SangVN(log.ngay_tao)}</td>
                                             <td style={{ padding: '8px', fontWeight: 800, color: 'var(--primary)' }}>{log.nguoi_thao_tac}</td>
-                                            <td style={{ padding: '8px', fontWeight: 700 }}>[{log.hanh_dong}] {log.bang_du_lieu}</td>
+                                            <td style={{ padding: '8px', fontWeight: 700 }}>
+                                                <span style={{ padding: '2px 8px', borderRadius: '4px', background: log.hanh_dong === 'DELETE' ? 'var(--danger-light)' : (log.hanh_dong === 'BACKUP' ? 'var(--success-light)' : 'var(--gray-100)'), color: log.hanh_dong === 'DELETE' ? 'var(--danger)' : (log.hanh_dong === 'BACKUP' ? 'var(--success)' : 'var(--gray-600)'), fontSize: '0.7rem', marginRight: '8px' }}>
+                                                    {log.hanh_dong}
+                                                </span>
+                                                {log.bang_du_lieu}
+                                            </td>
                                             <td style={{ padding: '8px', color: 'var(--gray-500)' }}>
                                                 {log.chi_tiet}
                                                 {(log.ip_address || log.device_info) && (
@@ -143,6 +175,27 @@ const CauHinhHeThong: React.FC = () => {
                                                         {log.device_info && <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '300px' }} title={log.device_info}>💻 Thiết bị: {log.device_info}</span>}
                                                     </div>
                                                 )}
+                                            </td>
+                                            <td style={{ padding: '8px', textAlign: 'right' }}>
+                                                <button 
+                                                    style={{ background: 'none', border: 'none', color: 'var(--gray-300)', cursor: 'pointer', padding: '4px', borderRadius: '4px', transition: 'all 0.2s' }}
+                                                    onMouseOver={(e) => e.currentTarget.style.color = 'var(--danger)'}
+                                                    onMouseOut={(e) => e.currentTarget.style.color = 'var(--gray-300)'}
+                                                    onClick={async () => {
+                                                        if (window.confirm('Bạn có chắc chắn muốn xóa bản ghi nhật ký này?')) {
+                                                            try {
+                                                                await axiosInstance.delete(`/api/system/nhat-ky/${log.id}`);
+                                                                toast.success('Đã xóa bản ghi!');
+                                                                fetchLogs();
+                                                            } catch (err: any) {
+                                                                toast.error('Lỗi: ' + err.message);
+                                                            }
+                                                        }
+                                                    }}
+                                                    title="Xóa bản ghi này"
+                                                >
+                                                    <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>delete</span>
+                                                </button>
                                             </td>
                                         </tr>
                                     ))}

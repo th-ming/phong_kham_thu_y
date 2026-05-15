@@ -34,6 +34,7 @@ const QuanLyThuCung: React.FC = () => {
     ten_thu_cung: "", loai: "", giong: "", gioi_tinh: "Đực", ngay_sinh: "", mau_sac: "", trong_luong: ""
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const fetchUserData = useCallback(async () => {
     const user = getUserProfile();
@@ -158,19 +159,23 @@ const QuanLyThuCung: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     if (!id) {
       toast.error("Lỗi: Không tìm thấy mã thú cưng!");
       return;
     }
-    if (window.confirm("Bạn có chắc chắn muốn xóa thú cưng này?")) {
+    if (window.confirm("Bạn có chắc chắn muốn xóa bé cưng này không? Thao tác này không thể hoàn tác.")) {
+      setDeletingId(id);
       try {
         await axiosInstance.delete(`/api/thu-cung/${id}`);
-        toast.success("Xóa thú cưng thành công!");
-        fetchUserData();
+        toast.success("Đã xóa bé cưng thành công!", { duration: 3000 });
+        
+        // Optimistic UI update: remove immediately from state
+        setThuCung(prev => prev.filter(pet => pet.id_thu_cung !== id));
+        setLichHen(prev => prev.filter(l => l.id_thu_cung !== id));
       } catch (err: any) {
         console.error("Lỗi xóa thú cưng:", err);
-        let errorMessage = "Không thể xóa thú cưng này. Vui lòng thử lại!";
+        let errorMessage = "Không thể xóa bé lúc này. Vui lòng thử lại sau!";
         if (err.response?.data) {
           const d = err.response.data;
           if (typeof d === 'string' && d.trim() !== '' && !d.startsWith('<')) {
@@ -181,9 +186,11 @@ const QuanLyThuCung: React.FC = () => {
         }
         const lowerMsg = errorMessage.toLowerCase();
         if (lowerMsg.includes('constraint') || lowerMsg.includes('foreign key')) {
-          errorMessage = "Không thể xóa vì bé cưng này đã có lịch hẹn hoặc hồ sơ bệnh án trong hệ thống.";
+          errorMessage = "Không thể xóa vì bé đã có lịch hẹn hoặc bệnh án. Bạn hãy kiểm tra lại nhé!";
         }
-        toast.error(errorMessage);
+        toast.error(errorMessage, { duration: 5000 });
+      } finally {
+        setDeletingId(null);
       }
     }
   };
@@ -358,9 +365,25 @@ const QuanLyThuCung: React.FC = () => {
             )}
 
             <div style={{ display: 'flex', gap: '12px', marginTop: 'auto' }}>
-              <button className="btn btn-pill" style={{ flex: 1, background: 'var(--primary-light)', color: 'var(--primary)' }} onClick={() => handleOpenForm(pet)}>Sửa</button>
-              <button className="btn btn-pill" style={{ background: 'var(--danger-light, rgba(239, 68, 68, 0.15))', color: 'var(--danger)' }} onClick={() => handleDelete(pet.id_thu_cung)}>
-                <span className="material-symbols-outlined">delete</span>
+              <button className="btn btn-pill" style={{ flex: 1, background: 'var(--primary-light)', color: 'var(--primary)' }} onClick={() => handleOpenForm(pet)} disabled={!!deletingId}>Sửa</button>
+              <button 
+                className="btn btn-pill" 
+                style={{ 
+                  background: deletingId === pet.id_thu_cung ? 'var(--gray-100)' : 'var(--danger-light, rgba(239, 68, 68, 0.15))', 
+                  color: deletingId === pet.id_thu_cung ? 'var(--gray-400)' : 'var(--danger)',
+                  minWidth: '48px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }} 
+                onClick={() => handleDelete(pet.id_thu_cung)}
+                disabled={!!deletingId}
+              >
+                {deletingId === pet.id_thu_cung ? (
+                  <div className="spinner-small" style={{ width: '20px', height: '20px', border: '2px solid var(--gray-300)', borderTopColor: 'var(--danger)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }}></div>
+                ) : (
+                  <span className="material-symbols-outlined">delete</span>
+                )}
               </button>
             </div>
           </div>

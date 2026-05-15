@@ -1,5 +1,5 @@
 import React from 'react';
-import { useTheme } from '@contexts/ThemeContext';
+import { useTheme } from '@contexts/ThemeContextV2';
 
 interface LoadingSpinnerProps {
   size?: 'small' | 'medium' | 'large';

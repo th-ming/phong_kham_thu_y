@@ -43,7 +43,7 @@ const VirtualPets: React.FC<{ containerRef: React.RefObject<HTMLElement> }> = ({
     useEffect(() => {
         let rafId: number;
         const update = () => {
-            if (!containerRef.current) { rafId = requestAnimationFrame(update); return; }
+            if (!containerRef.current) return; // FIX: Stop if no container
             const w = containerRef.current.clientWidth;
             const h = containerRef.current.clientHeight;
             let needsFoodRender = false;
@@ -230,8 +230,8 @@ const Footer: React.FC<{ isSimple?: boolean }> = ({ isSimple }) => {
                         <div>
                             <h4 style={{ color: 'white', fontWeight: 800, marginBottom: '32px', letterSpacing: '1px', fontSize: '0.9rem' }}>DỊCH VỤ</h4>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                {displayServices.map(name => (
-                                    <Link key={name} to={`/dich-vu/${generateSlug(name)}`} className="footer-link">
+                                {displayServices.map((name, index) => (
+                                    <Link key={index} to={`/dich-vu/${generateSlug(name)}`} className="footer-link">
                                         {name}
                                     </Link>
                                 ))}

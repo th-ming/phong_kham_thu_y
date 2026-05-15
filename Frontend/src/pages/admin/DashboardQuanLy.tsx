@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import axiosInstance from "@services/axios";
+import { getUserProfile } from "@utils/index";
 import CanhBaoThuoc from "@components/admin/CanhBaoThuoc";
 
 const formatTienVND = (tien: number) => {
@@ -26,11 +27,15 @@ const DashboardQuanLy: React.FC = () => {
           }
         };
 
-        const [customers, apps, inventory, revData] = await Promise.all([
-          fetchSafety("/api/khach-hang/count"),
-          fetchSafety("/api/lich-hen/hom-nay"),
-          fetchSafety("/api/kho/thuoc-sap-het-han"),
-          fetchSafety("/api/bao-cao/doanh-thu-thang")
+        // Lấy ngày hôm nay theo múi giờ Việt Nam
+        const todayStr = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
+
+        const [customers, apps, loThuocs, thuocs, invoices] = await Promise.all([
+          fetchSafety("/api/khach-hang"),
+          fetchSafety("/api/lich-hen?page=0&size=999"),
+          fetchSafety("/api/kho/lo-thuoc"),
+          fetchSafety("/api/kho/thuoc"),
+          fetchSafety("/api/hoa-don")
         ]);
 
         const extractArray = (data: any): any[] => {
@@ -46,23 +51,45 @@ const DashboardQuanLy: React.FC = () => {
         };
 
         if (customers.data !== null) {
-          setCustomerCount(typeof customers.data === 'number' ? customers.data : (customers.data.count || customers.data.data || 0));
+          const arr = extractArray(customers.data);
+          setCustomerCount(arr.length);
         }
         
-        if (apps.data !== null) setAppointments(extractArray(apps.data));
-        if (inventory.data !== null) setInventoryAlerts(extractArray(inventory.data));
+        if (apps.data !== null) {
+          const arr = extractArray(apps.data);
+          const homNay = arr.filter((l: any) => l.ngay_kham === todayStr);
+          setAppointments(homNay);
+        }
+        
+        if (loThuocs.data !== null && thuocs.data !== null) {
+          const arrLo = extractArray(loThuocs.data);
+          const arrThuoc = extractArray(thuocs.data);
+          // Cảnh báo nếu lô thuốc nào tồn kho dưới 10
+          const canhBao = arrLo.filter((l: any) => l.so_luong_ton < 10).map((l: any) => {
+              const thuocInfo = arrThuoc.find((t: any) => String(t.id_thuoc) === String(l.id_thuoc));
+              return {
+                  ten_thuoc: thuocInfo ? thuocInfo.ten_thuoc : `Lô ${l.so_lo}`,
+                  so_luong_ton: l.so_luong_ton,
+                  han_dung: l.han_su_dung || l.han_dung
+              };
+          });
+          setInventoryAlerts(canhBao);
+        }
 
-        if (revData.data !== null) {
-          const revArray = extractArray(revData.data);
-          if (revArray.length > 0) {
-            const currentMonth = new Date().getMonth() + 1;
-            const currentYear = new Date().getFullYear();
-            const currentData = revArray.find((d: any) => 
-              (Number(d.Thang) === currentMonth || Number(d.thang) === currentMonth) && 
-              (Number(d.Nam) === currentYear || Number(d.nam) === currentYear)
-            );
-            if (currentData) setRevenue(currentData.TongDoanhThu || currentData.doanh_thu || currentData.tong_doanh_thu || 0);
-          }
+        if (invoices.data !== null) {
+          const invArray = extractArray(invoices.data);
+          const currentMonth = new Date().getMonth() + 1;
+          const currentYear = new Date().getFullYear();
+          let totalRev = 0;
+          invArray.forEach((inv: any) => {
+              if ((inv.trang_thai || inv.trangThai)?.toLowerCase() === 'da_thanh_toan') {
+                  const date = new Date(inv.ngay_lap_hoa_don);
+                  if (date.getMonth() + 1 === currentMonth && date.getFullYear() === currentYear) {
+                      totalRev += (inv.tong_tien_cuoi || inv.tongTienCuoi || 0);
+                  }
+              }
+          });
+          setRevenue(totalRev);
         }
       } catch (err) {
         console.error("Lỗi đồng bộ dữ liệu Dashboard:", err);
@@ -78,9 +105,13 @@ const DashboardQuanLy: React.FC = () => {
     { label: "Kho Thuốc", value: inventoryAlerts.length, icon: "inventory_2", color: "#ef4444" },
   ], [customerCount, appointments.length, revenue, inventoryAlerts.length]);
 
-  return (
-    <div className="animate-fade-in">
-      <style>{`
+    const user = useMemo(() => getUserProfile() || {}, []);
+    const cleanName = (name: string) => name ? name.replace(/^\d+\.\s*/, '').trim() : '';
+    const currentName = cleanName(user.ho_ten || user.displayName || user.display_name || 'Admin Rexi');
+
+    return (
+        <div className="animate-fade-in">
+            <style>{`
         @keyframes slideUpFade {
           from { opacity: 0; transform: translateY(30px); }
           to { opacity: 1; transform: translateY(0); }
@@ -92,12 +123,15 @@ const DashboardQuanLy: React.FC = () => {
         .hover-lift:hover { transform: translateY(-8px); box-shadow: 0 25px 50px rgba(0,0,0,0.08); }
         .table-row:hover { background-color: var(--gray-50) !important; }
       `}</style>
-      <div className="stagger-1" style={{ marginBottom: '40px', padding: '48px', borderRadius: 'var(--radius-xl)', background: 'var(--secondary-gradient)', color: 'white', position: 'relative', overflow: 'hidden', boxShadow: 'var(--shadow-2xl)' }}>
-        <div style={{ position: 'absolute', top: '-10%', right: '-5%', width: '300px', height: '300px', background: 'radial-gradient(circle, var(--primary-light) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }}></div>
-        <div style={{ position: 'absolute', bottom: '-20%', left: '0%', width: '250px', height: '250px', background: 'radial-gradient(circle, var(--primary-light) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none', opacity: 0.5 }}></div>
-        <h1 className="text-gradient" style={{ fontSize: '3.5rem', fontWeight: 950, letterSpacing: '-2px', position: 'relative', zIndex: 1, margin: '0 0 12px 0' }}>Tổng quan hệ thống 📊</h1>
-        <p style={{ fontWeight: 600, color: 'rgba(255,255,255,0.7)', position: 'relative', zIndex: 1, margin: 0, fontSize: '1.1rem' }}>Xin chào Admin, đây là báo cáo hoạt động và vận hành hôm nay.</p>
-      </div>
+            <div className="stagger-1" style={{ marginBottom: '40px', padding: '48px', borderRadius: 'var(--radius-xl)', background: 'var(--secondary-gradient)', color: 'white', position: 'relative', overflow: 'hidden', boxShadow: 'var(--shadow-2xl)' }}>
+                <div style={{ position: 'absolute', top: '-10%', right: '-5%', width: '300px', height: '300px', background: 'radial-gradient(circle, var(--primary-light) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }}></div>
+                <div style={{ position: 'absolute', bottom: '-20%', left: '0%', width: '250px', height: '250px', background: 'radial-gradient(circle, var(--primary-light) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none', opacity: 0.5 }}></div>
+                <h1 style={{ fontSize: '3.5rem', fontWeight: 950, letterSpacing: '-2px', position: 'relative', zIndex: 1, margin: '0 0 12px 0', display: 'flex', alignItems: 'center', gap: '15px' }}>
+                  <span className="text-gradient">Tổng quan hệ thống</span> 
+                  <span style={{ filter: 'drop-shadow(0 5px 15px rgba(0,0,0,0.2))' }}>📊</span>
+                </h1>
+                <p style={{ fontWeight: 600, color: 'rgba(255,255,255,0.7)', position: 'relative', zIndex: 1, margin: 0, fontSize: '1.1rem' }}>Xin chào {currentName}, đây là báo cáo hoạt động và vận hành hôm nay.</p>
+            </div>
 
       <CanhBaoThuoc />
 

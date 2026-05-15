@@ -70,7 +70,7 @@ public class HoSoBenhAnController {
                     "SELECT id_khach_hang FROM TaiKhoan WHERE ten_dang_nhap = ?", String.class, username);
             if (!userKhIds.isEmpty() && !userKhIds.get(0).equals(recordKhachHangId)) {
                 return org.springframework.http.ResponseEntity.status(403)
-                        .body(Map.of("message", "Cáº£nh bÃ¡o báº£o máº­t: Báº¡n khÃ´ng cÃ³ quyá»n xem bá»‡nh Ã¡n cá»§a ngÆ°á»i khÃ¡c!"));
+                        .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền xem bệnh án của người khác!"));
             }
         }
 
@@ -84,7 +84,7 @@ public class HoSoBenhAnController {
         String username = (auth != null) ? auth.getName() : null;
         if (username == null || username.equals("anonymousUser")) {
             return org.springframework.http.ResponseEntity.status(401)
-                    .body(Map.of("message", "Cáº£nh bÃ¡o báº£o máº­t: YÃªu cáº§u khÃ´ng cÃ³ Token xÃ¡c thá»±c há»£p lá»‡!"));
+                    .body(Map.of("message", "Cảnh báo bảo mật: Yêu cầu không có Token xác thực hợp lệ!"));
         }
 
         boolean isCustomer = auth.getAuthorities().stream()
@@ -94,7 +94,7 @@ public class HoSoBenhAnController {
                     "SELECT id_khach_hang FROM TaiKhoan WHERE ten_dang_nhap = ?", String.class, username);
             if (!userKhIds.isEmpty() && !userKhIds.get(0).equals(id)) {
                 return org.springframework.http.ResponseEntity.status(403)
-                        .body(Map.of("message", "Cáº£nh bÃ¡o báº£o máº­t: Báº¡n khÃ´ng cÃ³ quyá»n xem bá»‡nh Ã¡n cá»§a ngÆ°á»i khÃ¡c!"));
+                        .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền xem bệnh án của người khác!"));
             }
         }
 
@@ -115,7 +115,7 @@ public class HoSoBenhAnController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         if (!hasMedicalPermission()) {
-            return List.of(Map.of("message", "Cáº£nh bÃ¡o báº£o máº­t: Báº¡n khÃ´ng cÃ³ quyá»n xem danh sÃ¡ch Ä‘Æ¡n thuá»‘c!"));
+            return List.of(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền xem danh sách đơn thuốc!"));
         }
         int offset = page * size;
         String sql = "SELECT dt.id_don_thuoc, dt.id_benh_an as id_ho_so_benh_an, tc.ten_thu_cung, " +
@@ -138,7 +138,7 @@ public class HoSoBenhAnController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         if (!hasMedicalPermission()) {
-            return List.of(Map.of("message", "Cáº£nh bÃ¡o báº£o máº­t: Báº¡n khÃ´ng cÃ³ quyá»n xem danh sÃ¡ch xÃ©t nghiá»‡m!"));
+            return List.of(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền xem danh sách xét nghiệm!"));
         }
         int offset = page * size;
         String sql = "SELECT baxn.id_ba_xn as id_xet_nghiem_benh_an, lxn.ten_xet_nghiem, " +
@@ -176,14 +176,14 @@ public class HoSoBenhAnController {
 
             String idHoSo = jdbcTemplate.queryForObject(sql, String.class, idThuCung, idBacSi, idLichHen, trieuChung, chanDoan);
 
-            auditLogService.logAction("THÃŠM Má»šI", "HoSoBenhAn",
-                    "Táº¡o há»“ sÆ¡ bá»‡nh Ã¡n má»›i ID " + idHoSo + " cho lá»‹ch háº¹n " + idLichHen);
+            auditLogService.logAction("THÊM MỚI", "HoSoBenhAn",
+                    "Tạo hồ sơ bệnh án mới ID " + idHoSo + " cho lịch hẹn " + idLichHen);
 
             return org.springframework.http.ResponseEntity
-                    .ok(Map.of("message", "LÆ°u bá»‡nh Ã¡n thÃ nh cÃ´ng!", "id_ho_so_benh_an", idHoSo));
+                    .ok(Map.of("message", "Lưu bệnh án thành công!", "id_ho_so_benh_an", idHoSo));
         } catch (Exception e) {
             return org.springframework.http.ResponseEntity.status(500)
-                    .body(Map.of("message", "Lá»—i lÆ°u bá»‡nh Ã¡n: " + e.getMessage()));
+                    .body(Map.of("message", "Lỗi lưu bệnh án: " + e.getMessage()));
         }
     }
 
@@ -208,23 +208,23 @@ public class HoSoBenhAnController {
                 String lieuDung = (String) item.get("lieu_dung");
 
                 if (soLuong == null || soLuong <= 0) {
-                    throw new RuntimeException("Cáº£nh bÃ¡o báº£o máº­t: Sá»‘ lÆ°á»£ng thuá»‘c kÃª Ä‘Æ¡n pháº£i lá»›n hÆ¡n 0!");
+                    throw new RuntimeException("Cảnh báo bảo mật: Số lượng thuốc kê đơn phải lớn hơn 0!");
                 }
 
                 int updated = jdbcTemplate.update(sqlTruKho, soLuong, idThuoc, soLuong);
                 if (updated == 0) {
-                    throw new RuntimeException("Thuá»‘c cÃ³ ID " + idThuoc + " khÃ´ng Ä‘á»§ sá»‘ lÆ°á»£ng tá»“n kho!");
+                    throw new RuntimeException("Thuốc có ID " + idThuoc + " không đủ số lượng tồn kho!");
                 }
                 jdbcTemplate.update(sqlChiTiet, idDonThuoc, idThuoc, soLuong, lieuDung);
             }
 
-            auditLogService.logAction("KÃŠ ÄÆ N", "DonThuoc", "KÃª Ä‘Æ¡n thuá»‘c má»›i cho bá»‡nh Ã¡n ID " + idBenhAn);
+            auditLogService.logAction("KÊ ĐƠN", "DonThuoc", "Kê đơn thuốc mới cho bệnh án ID " + idBenhAn);
 
             return org.springframework.http.ResponseEntity
-                    .ok(Map.of("message", "ÄÃ£ kÃª Ä‘Æ¡n vÃ  trá»« tá»“n kho thÃ nh cÃ´ng!"));
+                    .ok(Map.of("message", "Đã kê đơn và trừ tồn kho thành công!"));
         } catch (Exception e) {
             return org.springframework.http.ResponseEntity.status(400)
-                    .body(Map.of("message", "Lá»—i kÃª Ä‘Æ¡n: " + e.getMessage()));
+                    .body(Map.of("message", "Lỗi kê đơn: " + e.getMessage()));
         }
     }
 
@@ -242,7 +242,7 @@ public class HoSoBenhAnController {
                     "WHERE lh.id_lich_hen = ?";
             List<Map<String, Object>> infoList = jdbcTemplate.queryForList(sqlInfo, idLichHen);
             if (infoList.isEmpty())
-                throw new RuntimeException("KhÃ´ng tÃ¬m tháº¥y thÃ´ng tin lá»‹ch háº¹n");
+                throw new RuntimeException("Không tìm thấy thông tin lịch hẹn");
 
             Map<String, Object> info = infoList.get(0);
             String idKhachHang = String.valueOf(info.get("id_khach_hang"));
@@ -271,13 +271,12 @@ public class HoSoBenhAnController {
                 zaloService.sendInvoiceZNS(sdt, tenKhachHang, tongTien);
             }
 
-            auditLogService.logAction("CHá»T HÃ“A ÄÆ N", "HoaDon", "Chá»‘t hÃ³a Ä‘Æ¡n tá»± Ä‘á»™ng tá»« bá»‡nh Ã¡n ID " + idBenhAn);
+            auditLogService.logAction("CHỐT HÓA ĐƠN", "HoaDon", "Chốt hóa đơn tự động từ bệnh án ID " + idBenhAn);
 
-            return org.springframework.http.ResponseEntity.ok(Map.of("message", "ÄÃ£ tá»± Ä‘á»™ng láº­p hÃ³a Ä‘Æ¡n thÃ nh cÃ´ng!"));
+            return org.springframework.http.ResponseEntity.ok(Map.of("message", "Đã tự động lập hóa đơn thành công!"));
         } catch (Exception e) {
             return org.springframework.http.ResponseEntity.status(500)
-                    .body(Map.of("message", "Lá»—i táº¡o hÃ³a Ä‘Æ¡n: " + e.getMessage()));
+                    .body(Map.of("message", "Lỗi tạo hóa đơn: " + e.getMessage()));
         }
     }
 }
-

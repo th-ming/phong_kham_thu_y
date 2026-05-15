@@ -75,17 +75,17 @@ public class AiMemoryService {
 
             var pets = thuCungRepository.findByKhachHang(customerId);
             if (!pets.isEmpty()) {
-                String petNames = pets.stream().map(p -> p.getTen_thu_cung() + " (" + p.getLoai() + ")").collect(Collectors.joining(", "));
+                String petNames = pets.stream().map(p -> p.get("ten_thu_cung") + " (" + p.get("loai") + ")").collect(Collectors.joining(", "));
                 context.append("- Thú cưng: ").append(petNames).append("\n");
             }
 
             if (query.contains("tiêm") || query.contains("lịch") || query.contains("vắc") || query.contains("hẹn")) {
                 context.append("- Dữ liệu tiêm chủng/lịch hẹn: ");
                 for (var p : pets) {
-                    var vaccinations = tiemChungRepository.findByIdThuCung(p.getId_thu_cung());
+                    var vaccinations = tiemChungRepository.findByIdThuCung(p.get("id_thu_cung").toString());
                     if (!vaccinations.isEmpty()) {
                         String vax = vaccinations.stream().map(v -> v.getTen_vaccine() + " (" + v.getNgay_tiem() + ")").collect(Collectors.joining("; "));
-                        context.append("[").append(p.getTen_thu_cung()).append(": ").append(vax).append("] ");
+                        context.append("[").append(p.get("ten_thu_cung")).append(": ").append(vax).append("] ");
                     }
                 }
                 context.append("\n");
@@ -130,7 +130,7 @@ public class AiMemoryService {
             if (services != null && !services.isEmpty()) {
                 sb.append("\n[BẢNG GIÁ DỊCH VỤ CHÍNH]\n");
                 for (var s : services) {
-                    sb.append("- ").append(s.getTenDichVu()).append(": Từ ").append(s.getGiaTien()).append(" VNĐ\n");
+                    sb.append("- ").append(s.getTen_dich_vu()).append(": Từ ").append(s.getGia()).append(" VNĐ\n");
                 }
             }
             return sb.toString();
@@ -145,9 +145,9 @@ public class AiMemoryService {
             var doctors = nhanVienRepository.findAllBacSi();
             if (doctors != null && !doctors.isEmpty()) {
                 for (var d : doctors) {
-                    sb.append("- Bác sĩ: ").append(d.getHoTen());
-                    if (d.getGioiThieu() != null && !d.getGioiThieu().isBlank()) {
-                        sb.append(" (Chuyên môn: ").append(d.getGioiThieu()).append(")");
+                    sb.append("- Bác sĩ: ").append(d.getHo_ten());
+                    if (d.getGioi_thieu() != null && !d.getGioi_thieu().isBlank()) {
+                        sb.append(" (Chuyên môn: ").append(d.getGioi_thieu()).append(")");
                     }
                     sb.append("\n");
                 }

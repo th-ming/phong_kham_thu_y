@@ -45,10 +45,10 @@ public class HeThongIntegrationTest {
         thuCungRepository.save(thuCung);
 
         // BƯỚC 2: Truy vấn từ DB ra — xác minh dữ liệu không bị mất/sai
-        List<ThuCung> ds = thuCungRepository.findByKhachHang("KH-TEST-001");
+        List<java.util.Map<String, Object>> ds = thuCungRepository.findByKhachHang("KH-TEST-001");
         assertFalse(ds.isEmpty(), "Dữ liệu phải được lưu vào Database!");
-        assertEquals("Gau Map", ds.get(0).getTen_thu_cung(), "Tên thú cưng phải khớp!");
-        assertEquals("Cho", ds.get(0).getLoai(), "Loài phải khớp!");
+        assertEquals("Gau Map", ds.get(0).get("ten_thu_cung"), "Tên thú cưng phải khớp!");
+        assertEquals("Cho", ds.get(0).get("loai"), "Loài phải khớp!");
 
         System.out.println("--- TEST TICH HOP DATABASE (H2 REPOSITORY): THANH CONG! ---");
     }

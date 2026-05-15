@@ -59,7 +59,7 @@ const QuanLyLichHen: React.FC = () => {
   const handleUpdateStatus = async (id: number, newStatus: string) => {
     setUpdating(true);
     try {
-      await axiosInstance.put(`/api/lich-hen/${id}/trang-thai`, { trang_thai: newStatus });
+      await axiosInstance.put(`/api/lich-hen/${id}/status`, { trang_thai: newStatus });
       setEditingLichHen(null);
       toast.success("Đã cập nhật trạng thái lịch hẹn!");
       fetchData();

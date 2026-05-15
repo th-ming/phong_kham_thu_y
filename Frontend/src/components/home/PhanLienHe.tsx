@@ -1,6 +1,6 @@
 import React from "react";
 import { RevealSection } from "@components/SpecialEffects";
-import { useTheme } from "../../contexts/ThemeContext";
+import { useTheme } from "../../contexts/ThemeContextV2";
 
 /**
  * PHẦN LIÊN HỆ (CONTACT SECTION)

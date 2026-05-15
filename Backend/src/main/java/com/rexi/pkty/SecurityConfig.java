@@ -1,6 +1,7 @@
 package com.rexi.pkty;
 
 import com.rexi.pkty.security.JwtFilter;
+import com.rexi.pkty.security.RateLimitFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -22,6 +23,9 @@ public class SecurityConfig {
     @Autowired
     private JwtFilter jwtFilter;
 
+    @Autowired
+    private RateLimitFilter rateLimitFilter;
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
@@ -32,7 +36,7 @@ public class SecurityConfig {
                 .requestMatchers(
                     "/api/auth/**", "/api/system/**", "/api/chat/**",
                     "/api/payment/**", "/api/lich-hen/gio-ranh",
-                    "/api/lich-hen/khach-vang-lai",
+                    "/api/lich-hen/khach-vang-lai", "/api/dich-vu/**", "/api/bac-si/**",
                     "/public/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html"
                 ).permitAll()
                 .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
@@ -40,14 +44,22 @@ public class SecurityConfig {
             )
             .httpBasic(b -> b.disable())
             .formLogin(f -> f.disable())
-            .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+            .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
+            .addFilterAfter(jwtFilter, RateLimitFilter.class);
         return http.build();
     }
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(Arrays.asList("http://localhost:3000", "http://localhost:3001", "https://accounts.google.com"));
+        config.setAllowedOrigins(Arrays.asList(
+            "http://localhost:3000", 
+            "http://localhost:3001", 
+            "http://localhost:3005", 
+            "http://localhost:5173", 
+            "http://localhost:5174", 
+            "https://accounts.google.com"
+        ));
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         config.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept", "Origin"));
         config.setAllowCredentials(true);

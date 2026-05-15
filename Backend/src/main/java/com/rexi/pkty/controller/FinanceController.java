@@ -26,38 +26,51 @@ public class FinanceController {
     @Autowired
     private com.rexi.pkty.service.AuditLogService auditLogService;
 
-    // Báº¢O Máº¬T: HÃ m kiá»ƒm tra quyá»n truy cáº­p dá»¯ liá»‡u TÃ i chÃ­nh
+    // BẢO MẬT: Hàm kiểm tra quyền truy cập dữ liệu Tài chính
     private boolean hasFinancePermission() {
         org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
                 .getContext().getAuthentication();
         if (auth == null || auth.getName().equals("anonymousUser"))
             return false;
 
-        com.rexi.pkty.entity.TaiKhoan tk = taiKhoanRepository.findByTenDangNhap(auth.getName()).orElse(null);
-        if (tk == null || tk.getId_vai_tro() == null)
-            return false;
+        // Kiểm tra nhanh qua Spring Security authorities (role code)
+        String authorities = auth.getAuthorities().toString().toUpperCase();
+        if (authorities.contains("ADMIN") || authorities.contains("QUAN_LY") || authorities.contains("KE_TOAN")
+                || authorities.contains("STAFF") || authorities.contains("BAC_SI")) {
+            return true;
+        }
 
-        String roleQuery = "SELECT ten_vai_tro FROM VaiTroHeThong WHERE id_vai_tro = ?";
-        List<String> roles = jdbcTemplate.queryForList(roleQuery, String.class, tk.getId_vai_tro());
-        if (roles.isEmpty())
-            return false;
+        // Fallback: Kiểm tra qua DB nếu authority không khớp
+        try {
+            com.rexi.pkty.entity.TaiKhoan tk = taiKhoanRepository.findByTenDangNhap(auth.getName()).orElse(null);
+            if (tk == null || tk.getId_vai_tro() == null)
+                return false;
 
-        String roleName = roles.get(0).toLowerCase();
-        return roleName.contains("admin") || roleName.contains("quáº£n lÃ½") || roleName.contains("káº¿ toÃ¡n");
+            String roleQuery = "SELECT ten_vai_tro FROM VaiTroHeThong WHERE id_vai_tro = ?";
+            List<String> roles = jdbcTemplate.queryForList(roleQuery, String.class, tk.getId_vai_tro());
+            if (roles.isEmpty())
+                return false;
+
+            String roleName = roles.get(0).toLowerCase();
+            return roleName.contains("admin") || roleName.contains("quản lý") || roleName.contains("kế toán")
+                    || roleName.contains("quản trị") || roleName.contains("nhân viên") || roleName.contains("bác sĩ");
+        } catch (Exception e) {
+            return false;
+        }
     }
 
-    // Láº­p hÃ³a Ä‘Æ¡n má»›i (DÃ¹ng SP)
+    // Lập hóa đơn mới (Dùng SP)
     @PostMapping("/hoa-don")
     public ResponseEntity<?> addInvoice(@RequestBody HoaDon hd) {
         org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
                 .getContext().getAuthentication();
         String role = (auth != null) ? auth.getAuthorities().toString().toUpperCase() : "";
 
-        // Báº¢O Máº¬T: Cháº·n khÃ¡ch hÃ ng tá»± láº­p hÃ³a Ä‘Æ¡n áº£o
-        if (!role.contains("ADMIN") && !role.contains("QUANLY") && !role.contains("KETOAN")
+        // BẢO MẬT: Chặn khách hàng tự lập hóa đơn ảo
+        if (!role.contains("ADMIN") && !role.contains("QUAN_LY") && !role.contains("KETOAN")
                 && !role.contains("STAFF")) {
             return ResponseEntity.status(403)
-                    .body(Map.of("message", "Cáº£nh bÃ¡o báº£o máº­t: Báº¡n khÃ´ng cÃ³ quyá»n láº­p hÃ³a Ä‘Æ¡n!"));
+                    .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền lập hóa đơn!"));
         }
         try {
             List<Map<String, Object>> result = hoaDonRepository.callSpLapHoaDon(
@@ -68,101 +81,101 @@ public class FinanceController {
                     hd.getGhi_chu());
             return ResponseEntity.ok(result.get(0));
         } catch (Exception e) {
-            return ResponseEntity.status(400).body(Map.of("message", "Lá»—i láº­p hÃ³a Ä‘Æ¡n: " + e.getMessage()));
+            return ResponseEntity.status(400).body(Map.of("message", "Lỗi lập hóa đơn: " + e.getMessage()));
         }
     }
 
-    // Láº¥y danh sÃ¡ch thuá»‘c sáº¯p háº¿t háº¡n (tá»« View)
+    // Lấy danh sách thuốc sắp hết hạn (từ View)
     @GetMapping("/kho/thuoc-sap-het-han")
     public ResponseEntity<?> getThuocSapHetHan() {
         org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
                 .getContext().getAuthentication();
         String role = (auth != null) ? auth.getAuthorities().toString().toUpperCase() : "";
-        // Báº¢O Máº¬T: Cháº·n khÃ¡ch hÃ ng xem thÃ´ng tin cáº£nh bÃ¡o kho thuá»‘c
-        if (!role.contains("ADMIN") && !role.contains("QUANLY") && !role.contains("KETOAN") && !role.contains("STAFF")
+        // BẢO MẬT: Chặn khách hàng xem thông tin cảnh báo kho thuốc
+        if (!role.contains("ADMIN") && !role.contains("QUAN_LY") && !role.contains("KETOAN") && !role.contains("STAFF")
                 && !role.contains("BAC_SI")) {
             return ResponseEntity.status(403)
-                    .body(Map.of("message", "Cáº£nh bÃ¡o báº£o máº­t: Báº¡n khÃ´ng cÃ³ quyá»n xem thÃ´ng tin kho thuá»‘c!"));
+                    .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền xem thông tin kho thuốc!"));
         }
 
         try {
             return ResponseEntity.ok(hoaDonRepository.getThuocSapHetHan());
         } catch (Exception e) {
             return ResponseEntity.status(500)
-                    .body(Map.of("message", "Lá»—i truy xuáº¥t danh sÃ¡ch thuá»‘c sáº¯p háº¿t háº¡n: " + e.getMessage()));
+                    .body(Map.of("message", "Lỗi truy xuất danh sách thuốc sắp hết hạn: " + e.getMessage()));
         }
     }
 
-    // Láº¥y danh sÃ¡ch hÃ³a Ä‘Æ¡n theo ID khÃ¡ch hÃ ng
+    // Lấy danh sách hóa đơn theo ID khách hàng
     @GetMapping("/hoa-don/khach/{id}")
     public ResponseEntity<?> getInvoicesByCustomerId(@PathVariable String id) {
         try {
-            // Báº¢O Máº¬T: Kiá»ƒm tra IDOR - NgÄƒn khÃ¡ch hÃ ng xem hÃ³a Ä‘Æ¡n cá»§a ngÆ°á»i khÃ¡c
+            // BẢO MẬT: Kiểm tra IDOR - Ngăn khách hàng xem hóa đơn của người khác
             org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
                     .getContext().getAuthentication();
             String username = (auth != null) ? auth.getName() : null;
             if (username == null || username.equals("anonymousUser")) {
                 return ResponseEntity.status(401)
-                        .body(Map.of("message", "Cáº£nh bÃ¡o báº£o máº­t: YÃªu cáº§u khÃ´ng cÃ³ Token xÃ¡c thá»±c há»£p lá»‡!"));
+                        .body(Map.of("message", "Cảnh báo bảo mật: Yêu cầu không có Token xác thực hợp lệ!"));
             }
             com.rexi.pkty.entity.TaiKhoan tk = taiKhoanRepository.findByTenDangNhap(username).orElse(null);
-            if (tk != null && tk.getId_vai_tro() != null && tk.getId_vai_tro().equals("5")) { // LÃ  khÃ¡ch hÃ ng
+            if (tk != null && tk.getId_vai_tro() != null && tk.getId_vai_tro().equals("VT-5")) { // Là khách hàng
                 if (!tk.getId_khach_hang().equals(id)) {
                     return ResponseEntity.status(403).body(
-                            Map.of("message", "Cáº£nh bÃ¡o báº£o máº­t: Báº¡n khÃ´ng cÃ³ quyá»n xem hÃ³a Ä‘Æ¡n cá»§a ngÆ°á»i khÃ¡c!"));
+                            Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền xem hóa đơn của người khác!"));
                 }
             }
 
             return ResponseEntity.ok(hoaDonRepository.findByCustomerId(id));
         } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of("message", "Lá»—i truy xuáº¥t hÃ³a Ä‘Æ¡n: " + e.getMessage()));
+            return ResponseEntity.status(500).body(Map.of("message", "Lỗi truy xuất hóa đơn: " + e.getMessage()));
         }
     }
 
-    // Láº¥y táº¥t cáº£ hÃ³a Ä‘Æ¡n (cho Admin)
+    // Lấy tất cả hóa đơn (cho Admin)
     @GetMapping("/hoa-don")
     public ResponseEntity<?> getAllInvoices() {
         org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
                 .getContext().getAuthentication();
         String role = (auth != null) ? auth.getAuthorities().toString().toUpperCase() : "";
 
-        // Báº¢O Máº¬T: Cháº·n khÃ¡ch hÃ ng xem toÃ n bá»™ danh sÃ¡ch hÃ³a Ä‘Æ¡n lÃ m lá»™ doanh thu vÃ 
-        // thÃ´ng tin ngÆ°á»i khÃ¡c
-        if (!role.contains("ADMIN") && !role.contains("QUANLY") && !role.contains("KETOAN")
+        // BẢO MẬT: Chặn khách hàng xem toàn bộ danh sách hóa đơn làm lộ doanh thu và
+        // thông tin người khác
+        if (!role.contains("ADMIN") && !role.contains("QUAN_LY") && !role.contains("KETOAN")
                 && !role.contains("STAFF")) {
             return ResponseEntity.status(403)
-                    .body(Map.of("message", "Cáº£nh bÃ¡o báº£o máº­t: Báº¡n khÃ´ng cÃ³ quyá»n xem toÃ n bá»™ danh sÃ¡ch hÃ³a Ä‘Æ¡n!"));
+                    .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền xem toàn bộ danh sách hóa đơn!"));
         }
         try {
             return ResponseEntity.ok(hoaDonRepository.getAllHoaDon());
         } catch (Exception e) {
             return ResponseEntity.status(500)
-                    .body(Map.of("message", "Lá»—i truy xuáº¥t danh sÃ¡ch hÃ³a Ä‘Æ¡n: " + e.getMessage()));
+                    .body(Map.of("message", "Lỗi truy xuất danh sách hóa đơn: " + e.getMessage()));
         }
     }
 
-    // Láº¥y chi tiáº¿t hÃ³a Ä‘Æ¡n (Gá»™p cáº£ Tiá»n KhÃ¡m vÃ  Tiá»n Thuá»‘c)
+    // Lấy chi tiết hóa đơn (Gộp cả Tiền Khám và Tiền Thuốc)
     @GetMapping("/hoa-don/{id}/chi-tiet")
     public ResponseEntity<?> getInvoiceDetails(@PathVariable String id) {
         try {
-            // Báº¢O Máº¬T: Kiá»ƒm tra IDOR - NgÄƒn khÃ¡ch hÃ ng xem chi tiáº¿t hÃ³a Ä‘Æ¡n cá»§a ngÆ°á»i khÃ¡c
+            // BẢO MẬT: Kiểm tra IDOR - Ngăn khách hàng xem chi tiết hóa đơn của người khác
             org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
                     .getContext().getAuthentication();
             String username = (auth != null) ? auth.getName() : null;
 
             if (username != null && !username.equals("anonymousUser")) {
                 com.rexi.pkty.entity.TaiKhoan tk = taiKhoanRepository.findByTenDangNhap(username).orElse(null);
-                if (tk != null && tk.getId_vai_tro() != null && tk.getId_vai_tro().equals("5")) { // LÃ  KhÃ¡ch hÃ ng
+                if (tk != null && tk.getId_vai_tro() != null && tk.getId_vai_tro().equals("VT-5")) { // Là Khách hàng
                     String sqlCheckOwner = "SELECT id_khach_hang FROM HoaDon WHERE id_hoa_don = ?";
                     List<String> ownerIds = jdbcTemplate.queryForList(sqlCheckOwner, String.class, id);
                     if (!ownerIds.isEmpty() && !ownerIds.get(0).equals(tk.getId_khach_hang())) {
                         return ResponseEntity.status(403)
-                                .body(Map.of("message", "Cáº£nh bÃ¡o báº£o máº­t: Báº¡n khÃ´ng cÃ³ quyá»n xem hÃ³a Ä‘Æ¡n nÃ y!"));
+                                .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền xem hóa đơn này!"));
                     }
                 }
             }
 
-            // Láº¥y chi tiáº¿t dá»‹ch vá»¥ khÃ¡m
+            // Lấy chi tiết dịch vụ khám
             String sqlDv = "SELECT dv.ten_dich_vu as ten_muc, 1 as so_luong, dv.gia as don_gia, dv.gia as thanh_tien " +
                     "FROM HoaDon hd " +
                     "JOIN LichHen lh ON hd.id_lich_hen = lh.id_lich_hen " +
@@ -170,7 +183,7 @@ public class FinanceController {
                     "WHERE hd.id_hoa_don = ?";
             List<Map<String, Object>> dichVu = jdbcTemplate.queryForList(sqlDv, id);
 
-            // Láº¥y chi tiáº¿t tá»«ng mÃ³n thuá»‘c
+            // Lấy chi tiết từng món thuốc
             String sqlThuoc = "SELECT t.ten_thuoc as ten_muc, dtct.so_luong, t.gia_ban as don_gia, (dtct.so_luong * t.gia_ban) as thanh_tien "
                     +
                     "FROM HoaDon hd " +
@@ -181,111 +194,111 @@ public class FinanceController {
                     "WHERE hd.id_hoa_don = ?";
             List<Map<String, Object>> thuoc = jdbcTemplate.queryForList(sqlThuoc, id);
 
-            // Gá»™p cáº£ 2 danh sÃ¡ch láº¡i tráº£ vá» cho Káº¿ toÃ¡n
+            // Gộp cả 2 danh sách lại trả về cho Kế toán
             List<Map<String, Object>> chiTiet = new java.util.ArrayList<>();
             chiTiet.addAll(dichVu);
             chiTiet.addAll(thuoc);
 
             return ResponseEntity.ok(chiTiet);
         } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of("message", "Lá»—i láº¥y chi tiáº¿t hÃ³a Ä‘Æ¡n: " + e.getMessage()));
+            return ResponseEntity.status(500).body(Map.of("message", "Lỗi lấy chi tiết hóa đơn: " + e.getMessage()));
         }
     }
 
-    // Láº¥y táº¥t cáº£ thuá»‘c
+    // Lấy tất cả thuốc
     @GetMapping("/kho/thuoc")
     public ResponseEntity<?> getAllThuoc() {
         org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
                 .getContext().getAuthentication();
         String role = (auth != null) ? auth.getAuthorities().toString().toUpperCase() : "";
-        // Báº¢O Máº¬T: Cháº·n khÃ¡ch hÃ ng láº¥y danh sÃ¡ch toÃ n bá»™ máº·t hÃ ng thuá»‘c
-        if (!role.contains("ADMIN") && !role.contains("QUANLY") && !role.contains("KETOAN") && !role.contains("STAFF")
+        // BẢO MẬT: Chặn khách hàng lấy danh sách toàn bộ mặt hàng thuốc
+        if (!role.contains("ADMIN") && !role.contains("QUAN_LY") && !role.contains("KETOAN") && !role.contains("STAFF")
                 && !role.contains("BAC_SI")) {
             return ResponseEntity.status(403)
-                    .body(Map.of("message", "Cáº£nh bÃ¡o báº£o máº­t: Báº¡n khÃ´ng cÃ³ quyá»n truy cáº­p kho thuá»‘c!"));
+                    .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền truy cập kho thuốc!"));
         }
 
         try {
             return ResponseEntity.ok(hoaDonRepository.getAllThuoc());
         } catch (Exception e) {
             return ResponseEntity.status(500)
-                    .body(Map.of("message", "Lá»—i truy xuáº¥t danh sÃ¡ch thuá»‘c: " + e.getMessage()));
+                    .body(Map.of("message", "Lỗi truy xuất danh sách thuốc: " + e.getMessage()));
         }
     }
 
-    // Láº¥y táº¥t cáº£ lÃ´ thuá»‘c
+    // Lấy tất cả lô thuốc
     @GetMapping("/kho/lo-thuoc")
     public ResponseEntity<?> getAllLoThuoc() {
         org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
                 .getContext().getAuthentication();
         String role = (auth != null) ? auth.getAuthorities().toString().toUpperCase() : "";
-        // Báº¢O Máº¬T: Cháº·n lá»™ giÃ¡ nháº­p (gia_nhap) vÃ  sá»‘ lÆ°á»£ng tá»“n kho cho ngÆ°á»i ngoÃ i
-        if (!role.contains("ADMIN") && !role.contains("QUANLY") && !role.contains("KETOAN") && !role.contains("STAFF")
+        // BẢO MẬT: Chặn lộ giá nhập (gia_nhap) và số lượng tồn kho cho người ngoài
+        if (!role.contains("ADMIN") && !role.contains("QUAN_LY") && !role.contains("KETOAN") && !role.contains("STAFF")
                 && !role.contains("BAC_SI")) {
             return ResponseEntity.status(403)
-                    .body(Map.of("message", "Cáº£nh bÃ¡o báº£o máº­t: Báº¡n khÃ´ng cÃ³ quyá»n truy cáº­p thÃ´ng tin lÃ´ thuá»‘c!"));
+                    .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền truy cập thông tin lô thuốc!"));
         }
 
         try {
             return ResponseEntity.ok(hoaDonRepository.getAllLoThuoc());
         } catch (Exception e) {
             return ResponseEntity.status(500)
-                    .body(Map.of("message", "Lá»—i truy xuáº¥t danh sÃ¡ch lÃ´ thuá»‘c: " + e.getMessage()));
+                    .body(Map.of("message", "Lỗi truy xuất danh sách lô thuốc: " + e.getMessage()));
         }
     }
 
-    // Cáº­p nháº­t tráº¡ng thÃ¡i hÃ³a Ä‘Æ¡n (Lá»… tÃ¢n thu tiá»n máº·t hoáº·c chuyá»ƒn khoáº£n thá»§ cÃ´ng)
+    // Cập nhật trạng thái hóa đơn (Lễ tân thu tiền mặt hoặc chuyển khoản thủ công)
     @PutMapping("/hoa-don/{id}/status")
     public ResponseEntity<?> updateInvoiceStatus(@PathVariable String id, @RequestBody Map<String, String> payload) {
         org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
                 .getContext().getAuthentication();
         String role = (auth != null) ? auth.getAuthorities().toString().toUpperCase() : "";
 
-        // Báº¢O Máº¬T Lá»šP 1: Cháº·n khÃ¡ch hÃ ng tá»± Ã½ Ä‘á»•i tráº¡ng thÃ¡i hÃ³a Ä‘Æ¡n cá»§a mÃ¬nh thÃ nh "ÄÃ£
-        // thanh toÃ¡n"
-        if (!role.contains("ADMIN") && !role.contains("QUANLY") && !role.contains("KETOAN")
+        // BẢO MẬT LỚP 1: Chặn khách hàng tự ý đổi trạng thái hóa đơn của mình thành "Đã
+        // thanh toán"
+        if (!role.contains("ADMIN") && !role.contains("QUAN_LY") && !role.contains("KETOAN")
                 && !role.contains("STAFF")) {
             return ResponseEntity.status(403)
-                    .body(Map.of("message", "Cáº£nh bÃ¡o báº£o máº­t: Báº¡n khÃ´ng cÃ³ quyá»n cáº­p nháº­t tráº¡ng thÃ¡i hÃ³a Ä‘Æ¡n!"));
+                    .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền cập nhật trạng thái hóa đơn!"));
         }
 
         try {
             String status = payload.get("status");
 
-            // Báº¢O Máº¬T Lá»šP 2: Chá»‘ng nhÃ¢n viÃªn "Äƒn cháº·n" tiá»n báº±ng cÃ¡ch há»§y hÃ³a Ä‘Æ¡n Ä‘Ã£ thanh
-            // toÃ¡n
+            // BẢO MẬT LỚP 2: Chống nhân viên "ăn chặn" tiền bằng cách hủy hóa đơn đã thanh
+            // toán
             String currentStatus = jdbcTemplate.queryForObject("SELECT trang_thai FROM HoaDon WHERE id_hoa_don = ?",
                     String.class, id);
             if ("da_thanh_toan".equalsIgnoreCase(currentStatus) && !"da_thanh_toan".equalsIgnoreCase(status)) {
-                if (!role.contains("ADMIN") && !role.contains("QUANLY")) {
+                if (!role.contains("ADMIN") && !role.contains("QUAN_LY")) {
                     return ResponseEntity.status(403).body(Map.of("message",
-                            "Cáº£nh bÃ¡o báº£o máº­t: HÃ³a Ä‘Æ¡n Ä‘Ã£ thu tiá»n, nhÃ¢n viÃªn khÃ´ng Ä‘Æ°á»£c phÃ©p tá»± Ã½ há»§y! Vui lÃ²ng liÃªn há»‡ Quáº£n lÃ½."));
+                            "Cảnh báo bảo mật: Hóa đơn đã thu tiền, nhân viên không được phép tự ý hủy! Vui lòng liên hệ Quản lý."));
                 }
             }
 
             int updated = jdbcTemplate.update("UPDATE HoaDon SET trang_thai = ? WHERE id_hoa_don = ?", status, id);
             if (updated > 0 && "da_thanh_toan".equals(status) && !"da_thanh_toan".equalsIgnoreCase(currentStatus)) {
-                // Ghi nháº­n dÃ²ng tiá»n máº·t vÃ o lá»‹ch sá»­ Ä‘á»ƒ káº¿ toÃ¡n Ä‘á»‘i soÃ¡t
+                // Ghi nhận dòng tiền mặt vào lịch sử để kế toán đối soát
                 jdbcTemplate.update(
-                        "INSERT INTO ThanhToan (id_hoa_don, ngay_thanh_toan, so_tien, phuong_thuc, trang_thai) VALUES (?, GETDATE(), (SELECT tong_tien_cuoi FROM HoaDon WHERE id_hoa_don = ?), 'Tien_mat', N'ThÃ nh cÃ´ng')",
+                        "INSERT INTO ThanhToan (id_hoa_don, ngay_thanh_toan, so_tien, phuong_thuc, trang_thai) VALUES (?, GETDATE(), (SELECT tong_tien_cuoi FROM HoaDon WHERE id_hoa_don = ?), 'Tien_mat', N'Thành công')",
                         id, id);
             }
             // GHI LOG
-            auditLogService.logAction("Äá»”I TRáº NG THÃI", "HoaDon", "Cáº­p nháº­t hÃ³a Ä‘Æ¡n HD-" + id + " thÃ nh " + status);
-            return ResponseEntity.ok(Map.of("message", "ÄÃ£ cáº­p nháº­t tráº¡ng thÃ¡i hÃ³a Ä‘Æ¡n!"));
+            auditLogService.logAction("ĐỔI TRẠNG THÁI", "HoaDon", "Cập nhật hóa đơn HD-" + id + " thành " + status);
+            return ResponseEntity.ok(Map.of("message", "Đã cập nhật trạng thái hóa đơn!"));
         } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of("message", "Lá»—i cáº­p nháº­t hÃ³a Ä‘Æ¡n: " + e.getMessage()));
+            return ResponseEntity.status(500).body(Map.of("message", "Lỗi cập nhật hóa đơn: " + e.getMessage()));
         }
     }
 
-    // Nháº­p lÃ´ thuá»‘c má»›i vÃ  tá»± Ä‘á»™ng cá»™ng dá»“n tá»“n kho
+    // Nhập lô thuốc mới và tự động cộng dồn tồn kho
     @PostMapping("/kho/lo-thuoc")
     @org.springframework.transaction.annotation.Transactional
     public ResponseEntity<?> addLoThuoc(@RequestBody Map<String, Object> payload) {
-        // Báº¢O Máº¬T: Cháº·n má»i Ä‘á»‘i tÆ°á»£ng khÃ´ng cÃ³ quyá»n TÃ i chÃ­nh/Kho truy cáº­p API nÃ y
+        // BẢO MẬT: Chặn mọi đối tượng không có quyền Tài chính/Kho truy cập API này
         if (!hasFinancePermission()) {
             return ResponseEntity.status(403)
-                    .body(Map.of("message", "Cáº£nh bÃ¡o báº£o máº­t: Báº¡n khÃ´ng cÃ³ quyá»n nháº­p kho thuá»‘c!"));
+                    .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền nhập kho thuốc!"));
         }
 
         try {
@@ -296,101 +309,100 @@ public class FinanceController {
             Integer soLuongNhap = Integer.parseInt(payload.get("so_luong_nhap").toString());
             java.math.BigDecimal giaNhap = new java.math.BigDecimal(payload.get("gia_nhap").toString());
 
-            // Báº¢O Máº¬T: Chá»‘ng hack sá»‘ lÆ°á»£ng Ã¢m Ä‘á»ƒ bÃ²n rÃºt kho
+            // BẢO MẬT: Chống hack số lượng âm để bào rút kho
             if (soLuongNhap <= 0) {
                 return ResponseEntity.badRequest()
-                        .body(Map.of("message", "Cáº£nh bÃ¡o báº£o máº­t: Sá»‘ lÆ°á»£ng nháº­p kho pháº£i lá»›n hÆ¡n 0!"));
+                        .body(Map.of("message", "Cảnh báo bảo mật: Số lượng nhập kho phải lớn hơn 0!"));
             }
 
-            // ThÃªm lÃ´ thuá»‘c má»›i
+            // Thêm lô thuốc mới
             String sqlInsertLo = "INSERT INTO LoThuoc (id_thuoc, so_lo, ngay_nhap, han_su_dung, so_luong_nhap, so_luong_ton, gia_nhap) "
                     +
                     "VALUES (?, ?, ?, ?, ?, ?, ?)";
             jdbcTemplate.update(sqlInsertLo, idThuoc, soLo, ngayNhap, hanSuDung, soLuongNhap, soLuongNhap, giaNhap);
 
-            // Cáº­p nháº­t sá»‘ lÆ°á»£ng tá»“n tá»•ng cá»§a Thuá»‘c
+            // Cập nhật số lượng tồn tổng của Thuốc
             String sqlUpdateThuoc = "UPDATE Thuoc SET so_luong_ton = ISNULL(so_luong_ton, 0) + ? WHERE id_thuoc = ?";
             jdbcTemplate.update(sqlUpdateThuoc, soLuongNhap, idThuoc);
 
-            return ResponseEntity.ok(Map.of("message", "Nháº­p kho thÃ nh cÃ´ng!"));
+            return ResponseEntity.ok(Map.of("message", "Nhập kho thành công!"));
         } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of("message", "Lá»—i nháº­p kho: " + e.getMessage()));
+            return ResponseEntity.status(500).body(Map.of("message", "Lỗi nhập kho: " + e.getMessage()));
         }
     }
 
-    // BÃ¡o cÃ¡o doanh thu thÃ¡ng (tá»« View)
+    // Báo cáo doanh thu tháng (từ View)
     @GetMapping("/bao-cao/doanh-thu-thang")
     public ResponseEntity<?> getDoanhThuThang() {
         if (!hasFinancePermission()) {
             return ResponseEntity.status(403)
-                    .body(Map.of("message", "Cáº£nh bÃ¡o báº£o máº­t: Báº¡n khÃ´ng cÃ³ quyá»n xem bÃ¡o cÃ¡o tÃ i chÃ­nh!"));
+                    .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền xem báo cáo tài chính!"));
         }
         try {
             return ResponseEntity.ok(hoaDonRepository.getDoanhThuTheoThang());
         } catch (Exception e) {
             return ResponseEntity.status(500)
-                    .body(Map.of("message", "Lá»—i truy xuáº¥t bÃ¡o cÃ¡o doanh thu: " + e.getMessage()));
+                    .body(Map.of("message", "Lỗi truy xuất báo cáo doanh thu: " + e.getMessage()));
         }
     }
 
-    // Thá»‘ng kÃª bÃ¡c sÄ© (tá»« View)
+    // Thống kê bác sĩ (từ View)
     @GetMapping("/bao-cao/thong-ke-bac-si")
     public ResponseEntity<?> getThongKeBacSi() {
         if (!hasFinancePermission()) {
             return ResponseEntity.status(403)
-                    .body(Map.of("message", "Cáº£nh bÃ¡o báº£o máº­t: Báº¡n khÃ´ng cÃ³ quyá»n xem bÃ¡o cÃ¡o thá»‘ng kÃª!"));
+                    .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền xem báo cáo thống kê!"));
         }
         try {
             return ResponseEntity.ok(hoaDonRepository.getThongKeBacSi());
         } catch (Exception e) {
             return ResponseEntity.status(500)
-                    .body(Map.of("message", "Lá»—i truy xuáº¥t thá»‘ng kÃª bÃ¡c sÄ©: " + e.getMessage()));
+                    .body(Map.of("message", "Lỗi truy xuất thống kê bác sĩ: " + e.getMessage()));
         }
     }
 
-    // BÃ¡o cÃ¡o doanh thu ngÃ y
+    // Báo cáo doanh thu ngày
     @GetMapping("/bao-cao/doanh-thu-ngay")
     public ResponseEntity<?> getDoanhThuNgay() {
         if (!hasFinancePermission()) {
             return ResponseEntity.status(403)
-                    .body(Map.of("message", "Cáº£nh bÃ¡o báº£o máº­t: Báº¡n khÃ´ng cÃ³ quyá»n xem bÃ¡o cÃ¡o tÃ i chÃ­nh!"));
+                    .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền xem báo cáo tài chính!"));
         }
         try {
             return ResponseEntity.ok(hoaDonRepository.getDoanhThuTheoNgay());
         } catch (Exception e) {
             return ResponseEntity.status(500)
-                    .body(Map.of("message", "Lá»—i truy xuáº¥t bÃ¡o cÃ¡o doanh thu ngÃ y: " + e.getMessage()));
+                    .body(Map.of("message", "Lỗi truy xuất báo cáo doanh thu ngày: " + e.getMessage()));
         }
     }
 
-    // Thá»‘ng kÃª tá»· lá»‡ thÃº cÆ°ng
+    // Thống kê tỷ lệ thú cưng
     @GetMapping("/bao-cao/thong-ke-thu-cung")
     public ResponseEntity<?> getThongKeThuCung() {
         if (!hasFinancePermission()) {
             return ResponseEntity.status(403)
-                    .body(Map.of("message", "Cáº£nh bÃ¡o báº£o máº­t: Báº¡n khÃ´ng cÃ³ quyá»n xem bÃ¡o cÃ¡o thá»‘ng kÃª!"));
+                    .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền xem báo cáo thống kê!"));
         }
         try {
             return ResponseEntity.ok(hoaDonRepository.getThongKeThuCung());
         } catch (Exception e) {
             return ResponseEntity.status(500)
-                    .body(Map.of("message", "Lá»—i truy xuáº¥t thá»‘ng kÃª thÃº cÆ°ng: " + e.getMessage()));
+                    .body(Map.of("message", "Lỗi truy xuất thống kê thú cưng: " + e.getMessage()));
         }
     }
 
-    // Thá»‘ng kÃª doanh thu theo dá»‹ch vá»¥
+    // Thống kê doanh thu theo dịch vụ
     @GetMapping("/bao-cao/doanh-thu-dich-vu")
     public ResponseEntity<?> getDoanhThuTheoDichVu() {
         if (!hasFinancePermission()) {
             return ResponseEntity.status(403)
-                    .body(Map.of("message", "Cáº£nh bÃ¡o báº£o máº­t: Báº¡n khÃ´ng cÃ³ quyá»n xem bÃ¡o cÃ¡o tÃ i chÃ­nh!"));
+                    .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền xem báo cáo tài chính!"));
         }
         try {
             return ResponseEntity.ok(hoaDonRepository.getDoanhThuTheoDichVu());
         } catch (Exception e) {
             return ResponseEntity.status(500)
-                    .body(Map.of("message", "Lá»—i truy xuáº¥t bÃ¡o cÃ¡o doanh thu dá»‹ch vá»¥: " + e.getMessage()));
+                    .body(Map.of("message", "Lỗi truy xuất báo cáo doanh thu dịch vụ: " + e.getMessage()));
         }
     }
 }
-
