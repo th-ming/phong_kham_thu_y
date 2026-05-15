@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import axiosInstance from "@services/axios";
-import { useTheme } from "../contexts/ThemeContext";
+import { useTheme } from "../contexts/ThemeContextV2";
 import { getUserProfile } from "../utils/index";
 
 /* component chatbot trợ lý rexi */

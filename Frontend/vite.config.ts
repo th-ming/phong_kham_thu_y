@@ -15,12 +15,20 @@ export default defineConfig({
       "@styles": path.resolve(__dirname, "./src/styles"),
       "@contexts": path.resolve(__dirname, "./src/contexts"),
       "@services": path.resolve(__dirname, "./src/services"),
+      "react": path.resolve(__dirname, "./node_modules/react"),
+      "react-dom": path.resolve(__dirname, "./node_modules/react-dom"),
+      "react-router-dom": path.resolve(__dirname, "./node_modules/react-router-dom"),
     },
   },
+  cacheDir: 'node_modules/.vite_new',
   server: {
-    port: 3001,
+    port: 3005,
     strictPort: true,
+    host: true,
     open: true,
+    hmr: {
+      clientPort: 3005,
+    },
     proxy: {
       '/api': {
         target: 'http://localhost:8081',

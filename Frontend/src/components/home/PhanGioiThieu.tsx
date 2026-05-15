@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { RevealSection, LottiePlayer, Typewriter, TransparentVideo } from "@components/SpecialEffects";
 import { useCountUp } from "@hooks/useCountUp";
-import { useTheme } from "../../contexts/ThemeContext";
+import { useTheme } from "../../contexts/ThemeContextV2";
 
 /* banner giới thiệu trang chủ */
 const PhanGioiThieu: React.FC = () => {

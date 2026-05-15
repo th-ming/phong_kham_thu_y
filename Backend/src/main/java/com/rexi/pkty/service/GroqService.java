@@ -28,13 +28,13 @@ public class GroqService {
     @Value("${groq.model:llama-3.3-70b-versatile}")
     private String modelName;
 
-    // Model Ä‘á»ƒ phÃ¢n tÃ­ch hÃ¬nh áº£nh
+    // Model để phân tích hình ảnh
     @Value("${groq.vision.model:meta-llama/llama-4-scout-17b-16e-instruct}")
     private String visionModelName;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    // Sá»­ dá»¥ng chung 1 HttpClient cho toÃ n bá»™ service Ä‘á»ƒ táº­n dá»¥ng Connection Pooling
+    // Sử dụng chung 1 HttpClient cho toàn bộ service để tận dụng Connection Pooling
     private final HttpClient client = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(20))
             .build();
@@ -44,17 +44,17 @@ public class GroqService {
         String latestContent = latest.getContent() != null ? latest.getContent() : "";
         String latestNormalized = normalizeVietnamese(latestContent.toLowerCase());
 
-        // Hard Filter cho Ä‘á»‹a chá»‰/vá»‹ trÃ­
+        // Hard Filter cho địa chỉ/vị trí
         if (latestNormalized.contains("dia chi") || latestNormalized.contains("o dau") ||
                 latestNormalized.contains("vi tri") || latestNormalized.contains("duong di")) {
-            return "Dáº¡ Sen Æ¡i, PhÃ²ng khÃ¡m Rexi tá»a láº¡c táº¡i: **Sá»‘ 68, NgÃµ 10, ÄÆ°á»ng NgÃ´ XuÃ¢n Quáº£ng, TrÃ¢u Quá»³, Gia LÃ¢m, HÃ  Ná»™i** nha! Sen cÃ³ thá»ƒ xem chá»‰ Ä‘Æ°á»ng chi tiáº¿t táº¡i Ä‘Ã¢y áº¡: [LINK Báº¢N Äá»’] ðŸ¾";
+            return "Dạ Sen ơi, Phòng khám Rexi tọa lạc tại: **Số 68, Ngõ 10, Đường Ngô Xuân Quảng, Trâu Quỳ, Gia Lâm, Hà Nội** nha! Sen có thể xem chỉ đường chi tiết tại đây ạ: [LINK BẢN ĐỒ] 🐾";
         }
 
-        // Kiá»ƒm tra áº£nh â†’ chá»n model phÃ¹ há»£p
+        // Kiểm tra ảnh → chọn model phù hợp
         boolean hasImage = latest.getImage() != null && !latest.getImage().isEmpty();
         String selectedModel = hasImage ? visionModelName : modelName;
 
-        // Chuáº©n bá»‹ danh sÃ¡ch messages cho API
+        // Chuẩn bị danh sách messages cho API
         List<Map<String, Object>> messagesForApi = new ArrayList<>();
 
         for (int i = 0; i < history.size(); i++) {
@@ -64,7 +64,7 @@ public class GroqService {
             boolean isLatest = (i == history.size() - 1);
 
             if (isLatest && msg.getImage() != null && !msg.getImage().isEmpty()) {
-                String textForImage = msgContent.isBlank() ? "PhÃ¢n tÃ­ch áº£nh nÃ y vÃ  nháº­n Ä‘á»‹nh sá»©c khá»e cá»§a bÃ©."
+                String textForImage = msgContent.isBlank() ? "Phân tích ảnh này và nhận định sức khỏe của bé."
                         : msgContent;
                 List<Map<String, Object>> content = new ArrayList<>();
                 content.add(Map.of("type", "text", "text", textForImage));
@@ -77,7 +77,7 @@ public class GroqService {
             }
         }
 
-        // DÃ¹ng model phÃ¹ há»£p: vision cho áº£nh, text cho chat thÆ°á»ng
+        // Dùng model phù hợp: vision cho ảnh, text cho chat thường
         Map<String, Object> requestBodyMap = Map.of(
                 "model", selectedModel,
                 "messages", messagesForApi);
@@ -89,16 +89,16 @@ public class GroqService {
                 .header("Content-Type", "application/json")
                 .header("Authorization", "Bearer " + apiKey)
                 .POST(HttpRequest.BodyPublishers.ofString(requestBody, StandardCharsets.UTF_8))
-                .timeout(Duration.ofSeconds(15)) // Set timeout tá»‘i Ä‘a 15s cho thá»i gian sinh cÃ¢u tráº£ lá»i
+                .timeout(Duration.ofSeconds(15)) // Set timeout tối đa 15s cho thời gian sinh câu trả lời
                 .build();
 
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
-        // Xá»­ lÃ½ lá»—i API - log chi tiáº¿t Ä‘á»ƒ debug
+        // Xử lý lỗi API - log chi tiết để debug
         if (response.statusCode() != 200) {
             logger.severe("Groq API Error - Status: " + response.statusCode() + " Body: " + response.body());
 
-            // NÃ©m lá»—i Ä‘á»ƒ ChatController cÃ³ thá»ƒ thá»±c hiá»‡n Fallback sang Gemini
+            // Ném lỗi để ChatController có thể thực hiện Fallback sang Gemini
             throw new RuntimeException("Groq API Error " + response.statusCode());
         }
 
@@ -106,24 +106,23 @@ public class GroqService {
         try {
             return rootNode.path("choices").get(0).path("message").path("content").asText();
         } catch (Exception e) {
-            return "TÃ´i ráº¥t lo cho bÃ© nhÆ°ng há»‡ thá»‘ng Ä‘ang trá»¥c tráº·c. Báº¡n hÃ£y Ä‘Æ°a bÃ© Ä‘áº¿n Rexi sá»›m Ä‘á»ƒ bÃ¡c sÄ© kiá»ƒm tra cho yÃªn tÃ¢m nhÃ©!";
+            return "Tôi rất lo cho bé nhưng hệ thống đang trục trặc. Bạn hãy đưa bé đến Rexi sớm để bác sĩ kiểm tra cho yên tâm nhé!";
         }
     }
 
     /**
-     * Bá» dáº¥u tiáº¿ng Viá»‡t Ä‘á»ƒ so sÃ¡nh tá»« khÃ³a kháº©n cáº¥p,
-     * giÃºp nháº­n diá»‡n khi user gÃµ khÃ´ng dáº¥u.
+     * Bỏ dấu tiếng Việt để so sánh từ khóa khẩn cấp,
+     * giúp nhận diện khi user gõ không dấu.
      */
     private String normalizeVietnamese(String input) {
         String result = input
-                .replaceAll("[Ã Ã¡áº¡áº£Ã£Ã¢áº§áº¥áº­áº©áº«Äƒáº±áº¯áº·áº³áºµ]", "a")
-                .replaceAll("[Ã¨Ã©áº¹áº»áº½Ãªá»áº¿á»‡á»ƒá»…]", "e")
-                .replaceAll("[Ã¬Ã­á»‹á»‰Ä©]", "i")
-                .replaceAll("[Ã²Ã³á»á»ÃµÃ´á»“á»‘á»™á»•á»—Æ¡á»á»›á»£á»Ÿá»¡]", "o")
-                .replaceAll("[Ã¹Ãºá»¥á»§Å©Æ°á»«á»©á»±á»­á»¯]", "u")
-                .replaceAll("[á»³Ã½á»µá»·á»¹]", "y")
-                .replaceAll("[Ä‘]", "d");
+                .replaceAll("[àáạảãâầấậẩẫăằắặẳẵ]", "a")
+                .replaceAll("[èéẹẻẽêềếệểễ]", "e")
+                .replaceAll("[ìíịỉĩ]", "i")
+                .replaceAll("[òóọỏõôồốộổỗơờớợởỡ]", "o")
+                .replaceAll("[ùúụủũưừứựửữ]", "u")
+                .replaceAll("[ỳýỵỷỹ]", "y")
+                .replaceAll("[đ]", "d");
         return result;
     }
 }
-

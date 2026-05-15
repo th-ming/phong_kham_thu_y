@@ -1,6 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import axios from 'axios'
+import { ThemeProvider } from '@contexts/ThemeContextV2'
 import App from './App'
 import './styles/index.css'
 
@@ -16,7 +17,7 @@ axios.interceptors.request.use((config) => {
 });
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
+  <ThemeProvider>
     <App />
-  </React.StrictMode>,
+  </ThemeProvider>,
 )

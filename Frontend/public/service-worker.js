@@ -72,7 +72,7 @@ self.addEventListener('fetch', (event) => {
     }).catch(() => {
       // Offline fallback
       if (request.destination === 'document') {
-        return caches.match('/index.html') as Promise<Response>;
+        return caches.match('/index.html');
       }
       return new Response('Offline', { status: 503 });
     })

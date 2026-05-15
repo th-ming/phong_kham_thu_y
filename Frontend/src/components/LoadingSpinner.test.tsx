@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import LoadingSpinner from './LoadingSpinner';
-import { ThemeProvider } from '../contexts/ThemeContext';
+import { ThemeProvider } from '../contexts/ThemeContextV2';
 
 const renderWithTheme = (component: React.ReactElement) => {
   return render(

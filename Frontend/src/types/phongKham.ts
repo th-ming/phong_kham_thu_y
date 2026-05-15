@@ -42,15 +42,21 @@ export interface NhanVien {
   id_nhan_vien: string;
   id_tai_khoan: string | null;
   ho_ten: string;
-  so_dien_thoai: string | null;
+  sdt: string | null; // Sửa từ so_dien_thoai
+  email: string | null;
+  chuyen_mon: string | null;
+  hoc_vi: string | null;
+  ngay_vao_lam: string | null;
   trang_thai: string | null;
+  hinh_anh: string | null;
+  da_xoa: boolean;
 }
 
 export interface DichVu {
   id_dich_vu: string;
   ten_dich_vu: string;
   mo_ta: string | null;
-  gia: number;
+  gia_tien: number; // Sửa từ gia
   thoi_luong_phut: number | null;
   trang_thai: boolean;
 }

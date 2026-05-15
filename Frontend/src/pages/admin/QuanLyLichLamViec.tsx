@@ -28,10 +28,24 @@ const DOCTOR_COLORS = [
 
 const QuanLyLichLamViec: React.FC = () => {
     const user = getUserProfile();
-    const userRole = user?.ten_vai_tro?.toLowerCase() || user?.loai_tai_khoan?.toLowerCase() || '';
-    const isAdmin = userRole.includes('admin') || userRole.includes('quan-ly') || userRole.includes('quản lý');
+    const userRoleRaw = (user?.loai_tai_khoan || user?.ten_vai_tro || 'staff').toLowerCase();
     
-    console.log('--- DEBUG SCHEDULE ---', { userRole, isAdmin, userId: user?.id });
+    // Chuẩn hóa quyền giống Sidebar
+    const userRole = useMemo(() => {
+        const r = userRoleRaw.toLowerCase();
+        if (r.includes('quản trị') || r.includes('admin') || r === 'vt-1') return 'admin';
+        if (r.includes('quản lý') || r.includes('manager') || r.includes('quan_ly') || r === 'vt-6') return 'quan_ly';
+        if (r.includes('bác sĩ') || r.includes('doctor') || r.includes('bac_si') || r === 'vt-2') return 'bac_si';
+        if (r.includes('kế toán') || r.includes('accountant') || r.includes('ke_toan') || r === 'vt-4') return 'ke_toan';
+        if (r.includes('tiếp tân') || r.includes('reception') || r.includes('tiep_tan') || r === 'vt-7') return 'tiep_tan';
+        if (r.includes('y tá') || r.includes('điều dưỡng') || r.includes('nurse') || r.includes('y_ta') || r === 'vt-8') return 'y_ta';
+        return 'staff';
+    }, [userRoleRaw]);
+
+    const isAdmin = userRole === 'admin' || userRole === 'quan_ly';
+    const currentUserId = String(user?.id_nhan_vien || user?.id || '');
+    
+    console.log('--- DEBUG SCHEDULE ---', { userRole, isAdmin, currentUserId });
 
     const [staffs, setStaffs] = useState<any[]>([]);
     const [schedules, setSchedules] = useState<any[]>([]);
@@ -49,6 +63,7 @@ const QuanLyLichLamViec: React.FC = () => {
     const [hoveredStaffId, setHoveredStaffId] = useState<string | null>(null);
     const [draggedShift, setDraggedShift] = useState<any>(null);
     const [dragOverSlot, setDragOverSlot] = useState<string | null>(null);
+    const [isCopying, setIsCopying] = useState(false);
     useEffect(() => {
         fetchData();
     }, []);
@@ -108,11 +123,14 @@ const QuanLyLichLamViec: React.FC = () => {
         }
 
         return filtered.filter(s => {
-            const matchRole = filterRole === 'all' || s.chuc_vu?.toLowerCase() === filterRole.toLowerCase();
-            const matchName = s.ho_ten?.toLowerCase().includes(searchName.toLowerCase());
+            const staffInfo = staffs.find(st => String(st.id_nhan_vien) === String(s.id_nhan_vien));
+            const role = staffInfo ? (staffInfo.chuyen_mon || staffInfo.chuc_vu || 'Nhân viên') : 'Nhân viên';
+            const matchRole = filterRole === 'all' || role.toLowerCase() === filterRole.toLowerCase();
+            const hoTen = staffInfo ? staffInfo.ho_ten : (s.ho_ten || '');
+            const matchName = hoTen.toLowerCase().includes(searchName.toLowerCase());
             return matchRole && matchName;
         });
-    }, [schedules, filterRole, searchName, viewMode, user]);
+    }, [schedules, filterRole, searchName, viewMode, user, staffs]);
 
     const staffWorkingHours = useMemo(() => {
         if (!isAdmin) return [];
@@ -124,13 +142,32 @@ const QuanLyLichLamViec: React.FC = () => {
         shiftsThisWeek.forEach(s => {
             if (!stats[s.id_nhan_vien]) {
                 const staffInfo = staffs.find(st => String(st.id_nhan_vien) === String(s.id_nhan_vien));
-                stats[s.id_nhan_vien] = { id_nhan_vien: s.id_nhan_vien, ho_ten: staffInfo ? staffInfo.ho_ten : 'Nhân viên', chuc_vu: staffInfo ? (staffInfo.chuyen_mon || staffInfo.chuc_vu) : 'Nhân viên', hours: 0 };
+                stats[s.id_nhan_vien] = { id_nhan_vien: s.id_nhan_vien, ho_ten: staffInfo ? staffInfo.ho_ten : 'Nhân viên', chuc_vu: staffInfo ? (staffInfo.chuyen_mon || staffInfo.chuc_vu || 'Nhân viên') : 'Nhân viên', hours: 0 };
             }
             stats[s.id_nhan_vien].hours += 0.5; // Mỗi ca 30 phút = 0.5 giờ
         });
 
         return Object.values(stats).sort((a, b) => b.hours - a.hours);
-    }, [schedules, weekDates, isAdmin]);
+    }, [schedules, weekDates, isAdmin, staffs]);
+
+    const allRoles = useMemo(() => {
+        const roles = new Set<string>();
+        staffs.forEach(s => {
+            const r = s.chuyen_mon || s.chuc_vu;
+            if (r) roles.add(r);
+        });
+        return Array.from(roles);
+    }, [staffs]);
+
+    const staffsByRole = useMemo(() => {
+        const grouped: Record<string, any[]> = {};
+        staffs.forEach(s => {
+            const r = s.chuyen_mon || s.chuc_vu || 'Nhân viên';
+            if (!grouped[r]) grouped[r] = [];
+            grouped[r].push(s);
+        });
+        return grouped;
+    }, [staffs]);
 
     const handleAddShift = (day: any, hour: number) => {
         // RÀNG BUỘC: Nhân viên chỉ được đăng ký lịch cho tuần sau (weekOffset >= 1)
@@ -140,6 +177,8 @@ const QuanLyLichLamViec: React.FC = () => {
         }
 
         setSelectedSlot({ day, hour });
+        // Nếu là nhân viên, tự động chọn chính mình
+        if (!isAdmin) setSelectedStaffId(currentUserId);
         setShowAddModal(true);
     };
 
@@ -151,16 +190,17 @@ const QuanLyLichLamViec: React.FC = () => {
                 id_nhan_vien: selectedStaffId,
                 ngay_lam: selectedSlot.day.dateStr,
                 gio_bat_dau: `${String(selectedSlot.hour).padStart(2, '0')}:00:00`,
-                ghi_chu: "Đăng ký lịch trực"
+                ghi_chu: isAdmin ? "Admin sắp xếp lịch" : "Đăng ký lịch trực"
             };
 
-            const headers = { Role: userRole };
+            const headers = { Role: userRoleRaw };
             await axiosInstance.post('/api/nhan-vien/lich-lam-viec', payload, { headers });
-            toast.success("Đã đăng ký ca trực thành công!");
+            toast.success(isAdmin ? "Đã cập nhật ca trực!" : "Đã đăng ký ca trực thành công!");
             setShowAddModal(false);
             fetchData();
         } catch (error: any) {
-            toast.error(error.response?.data?.message || "Lỗi khi đăng ký ca trực");
+            console.error('Server Error Details:', error.response?.data || error.message);
+            toast.error(error.response?.data?.message || "Lỗi khi đăng ký ca trực. Vui lòng kiểm tra lại dữ liệu.");
         }
     };
 
@@ -257,36 +297,52 @@ const QuanLyLichLamViec: React.FC = () => {
             return;
         }
 
+        setIsCopying(true);
         let successCount = 0;
-        const headers = { Role: userRole };
+        let failCount = 0;
+        const headers = { Role: userRoleRaw };
 
+        try {
+            for (const shift of shiftsToCopy) {
+                try {
+                    const date = new Date(`${shift.ngay_lam}T00:00:00`);
+                    date.setDate(date.getDate() + 7);
+                    const nextWeekDateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 
-        for (const shift of shiftsToCopy) {
-            try {
-                const date = new Date(`${shift.ngay_lam}T00:00:00`);
-                date.setDate(date.getDate() + 7);
-                const nextWeekDateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-
-                const payload = {
-                    id_nhan_vien: shift.id_nhan_vien,
-                    ngay_lam: nextWeekDateStr,
-                    gio_bat_dau: shift.gio_bat_dau,
-                    ghi_chu: shift.ghi_chu || "Sao chép lịch trực từ tuần trước"
-                };
-                await axiosInstance.post('/api/nhan-vien/lich-lam-viec', payload, { headers });
-                successCount++;
-            } catch (error) {
-                // Bỏ qua lỗi trùng lịch hoặc lỗi khác để tiếp tục xử lý các ca còn lại
+                    const payload = {
+                        id_nhan_vien: shift.id_nhan_vien,
+                        ngay_lam: nextWeekDateStr,
+                        gio_bat_dau: shift.gio_bat_dau,
+                        ghi_chu: shift.ghi_chu || "Sao chép lịch trực từ tuần trước"
+                    };
+                    await axiosInstance.post('/api/nhan-vien/lich-lam-viec', payload, { headers });
+                    successCount++;
+                } catch (error) {
+                    failCount++;
+                }
             }
+            
+            if (successCount > 0) {
+                toast.success(`Đã sao chép thành công ${successCount} ca trực sang tuần tới!`);
+                if (failCount > 0) toast.info(`Có ${failCount} ca bị trùng hoặc lỗi không thể sao chép.`);
+                fetchData();
+            } else {
+                toast.error("Không thể sao chép ca trực nào. Có thể tất cả các ca đều đã tồn tại ở tuần tới.");
+            }
+        } finally {
+            setIsCopying(false);
         }
-        if (successCount > 0) toast.success(`Đã sao chép thành công ${successCount} ca trực cho toàn bộ nhân sự sang tuần tới!`);
-        else toast.error("Không thể sao chép ca trực nào (Có thể do trùng lịch ở tuần tới hoặc lỗi khác).");
-        fetchData();
     };
 
     const handleMoveShift = async (shift: any, targetDay: any, targetHour: number) => {
+        // KIỂM TRA QUYỀN SỞ HỮU: Nhân viên không được động vào lịch người khác
+        if (!isAdmin && String(shift.id_nhan_vien) !== currentUserId) {
+            toast.error("Bạn không có quyền di chuyển lịch trực của người khác!");
+            return;
+        }
+
         if (!isAdmin && weekOffset < 1) {
-            toast.error("Bạn chỉ có thể điều chỉnh lịch cho các tuần tiếp theo.");
+            toast.error("Bạn chỉ có thể điều chỉnh lịch của chính mình cho các tuần tiếp theo.");
             return;
         }
 
@@ -298,7 +354,7 @@ const QuanLyLichLamViec: React.FC = () => {
         }
 
         try {
-            const headers = { Role: userRole };
+            const headers = { Role: userRoleRaw };
 
             // Xóa lịch cũ trước
             await axiosInstance.delete(`/api/nhan-vien/lich-lam-viec/${shift.id_lich_lam_viec}`, { headers });
@@ -312,15 +368,21 @@ const QuanLyLichLamViec: React.FC = () => {
             };
             await axiosInstance.post('/api/nhan-vien/lich-lam-viec', payload, { headers });
 
-            toast.success("Đã chuyển ca trực thành công!");
+            toast.success("Đã cập nhật ca trực!");
             fetchData();
         } catch (error: any) {
-            toast.error(error.response?.data?.message || "Lỗi khi chuyển ca trực (Ca mới có thể bị trùng lịch)");
+            toast.error(error.response?.data?.message || "Lỗi khi chuyển ca trực");
             fetchData(); // Phục hồi dữ liệu giao diện nếu lỗi
         }
     };
 
-    const handleDeleteShift = async (id: number) => {
+    const handleDeleteShift = async (id: number, shiftStaffId: string) => {
+        // KIỂM TRA QUYỀN SỞ HỮU
+        if (!isAdmin && String(shiftStaffId) !== currentUserId) {
+            toast.error("Bạn không có quyền xóa lịch trực của người khác!");
+            return;
+        }
+
         // RÀNG BUỘC: Tương tự khi xóa
         if (!isAdmin && weekOffset < 1) {
             toast.error("Bạn không thể xóa lịch trực ở tuần hiện tại. Vui lòng liên hệ Admin.");
@@ -330,7 +392,7 @@ const QuanLyLichLamViec: React.FC = () => {
         if (!window.confirm("Bạn có chắc chắn muốn hủy ca trực này?")) return;
 
         try {
-            const headers = { Role: userRole };
+            const headers = { Role: userRoleRaw };
             await axiosInstance.delete(`/api/nhan-vien/lich-lam-viec/${id}`, { headers });
             toast.success("Đã hủy ca trực");
             fetchData();
@@ -340,10 +402,11 @@ const QuanLyLichLamViec: React.FC = () => {
     };
 
 
-    const getShiftColor = (id: string, role: string) => {
+    const getShiftColor = (id: string | number, role: string) => {
         const r = role?.toLowerCase() || '';
+        const safeId = String(id || '');
         if (r.includes('bác sĩ') || r.includes('bac si')) {
-            return DOCTOR_COLORS[id.length % DOCTOR_COLORS.length];
+            return DOCTOR_COLORS[safeId.length % DOCTOR_COLORS.length] || DOCTOR_COLORS[0];
         }
         if (r.includes('y tá') || r.includes('y ta')) return { bg: 'rgba(59, 130, 246, 0.1)', border: '#3b82f6', text: '#3b82f6' };
         if (r.includes('tiếp tân') || r.includes('tiep tan')) return { bg: 'rgba(245, 158, 11, 0.1)', border: '#f59e0b', text: '#f59e0b' };
@@ -431,9 +494,9 @@ const QuanLyLichLamViec: React.FC = () => {
                         <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                             {isAdmin && (
                                 <>
-                                    <button className="btn btn-pill no-print" onClick={handleCopyAllSchedulesToNextWeek} style={{ background: 'var(--gray-100)', color: 'var(--ink)', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 800 }}>
-                                        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>content_paste</span>
-                                        Sao chép tất cả
+                                    <button className="btn btn-pill no-print" disabled={isCopying} onClick={handleCopyAllSchedulesToNextWeek} style={{ background: isCopying ? 'var(--gray-200)' : 'var(--gray-100)', color: 'var(--ink)', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 800 }}>
+                                        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>{isCopying ? 'sync' : 'content_paste'}</span>
+                                        {isCopying ? 'Đang sao chép...' : 'Sao chép tất cả'}
                                     </button>
                                     <button className="btn btn-pill no-print" onClick={handleExportExcel} style={{ background: 'var(--gray-100)', color: 'var(--ink)', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 800 }}>
                                         <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>download</span>
@@ -491,9 +554,9 @@ const QuanLyLichLamViec: React.FC = () => {
                                         style={{ padding: '12px 20px', borderRadius: '16px', border: '1px solid var(--gray-200)', outline: 'none', fontWeight: 800, cursor: 'pointer', background: 'var(--surface)', color: 'var(--ink)' }}
                                     >
                                         <option value="all">Tất cả chức vụ</option>
-                                        <option value="bac si">Bác Sĩ</option>
-                                        <option value="y ta">Y Tá</option>
-                                        <option value="tiep tan">Tiếp Tân</option>
+                                        {allRoles.map(role => (
+                                            <option key={role} value={role}>{role}</option>
+                                        ))}
                                     </select>
                                 </div>
                             )}
@@ -687,7 +750,7 @@ const QuanLyLichLamViec: React.FC = () => {
                                                                         {!isPastDay && (
                                                                             <button
                                                                                 className="no-print"
-                                                                                onClick={() => handleDeleteShift(shift.id_lich_lam_viec)}
+                                                                                onClick={() => handleDeleteShift(shift.id_lich_lam_viec, shift.id_nhan_vien)}
                                                                                 style={{ position: 'absolute', top: '4px', right: '4px', background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: 0 }}
                                                                             >
                                                                                 <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>cancel</span>
@@ -736,8 +799,12 @@ const QuanLyLichLamViec: React.FC = () => {
                                     style={{ width: '100%', padding: '14px', borderRadius: '16px', border: '1px solid var(--gray-200)', outline: 'none', fontWeight: 700 }}
                                 >
                                     <option value="">Chọn nhân viên...</option>
-                                    {staffs.map(s => (
-                                        <option key={s.id_nhan_vien} value={s.id_nhan_vien}>{s.ho_ten} ({s.chuc_vu})</option>
+                                    {Object.entries(staffsByRole).map(([role, list]) => (
+                                        <optgroup key={role} label={role.toUpperCase()}>
+                                            {list.map(s => (
+                                                <option key={s.id_nhan_vien} value={s.id_nhan_vien}>{s.ho_ten}</option>
+                                            ))}
+                                        </optgroup>
                                     ))}
                                 </select>
                             ) : (

@@ -30,8 +30,9 @@ const DashboardKhachHang: React.FC = () => {
 
   const randomTip = useMemo(() => PET_CARE_TIPS[Math.floor(Math.random() * PET_CARE_TIPS.length)], []);
 
+  const user = getUserProfile();
+
   useEffect(() => {
-    const user = getUserProfile();
     if (!user) {
       navigate("/dang-nhap");
       return;
@@ -138,8 +139,9 @@ const DashboardKhachHang: React.FC = () => {
         <div style={{ position: 'absolute', bottom: '-20%', left: '0%', width: '250px', height: '250px', background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none', opacity: 0.5 }}></div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '24px', position: 'relative', zIndex: 1 }}>
           <div style={{ width: '80px', height: '80px', borderRadius: '24px', overflow: 'hidden', border: '3px solid rgba(255,255,255,0.3)', boxShadow: '0 10px 20px rgba(0,0,0,0.2)' }}>
-            {getUserProfile()?.hinh_anh || getUserProfile()?.avatar ? (
-              <img src={getUserProfile()?.hinh_anh || getUserProfile()?.avatar} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+
+            {user?.hinh_anh || user?.avatar ? (
+              <img src={user.hinh_anh || user.avatar} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             ) : (
               <div style={{ width: '100%', height: '100%', background: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <span className="material-symbols-outlined" style={{ fontSize: '40px', color: 'white' }}>person</span>

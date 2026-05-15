@@ -17,7 +17,7 @@ public class AuditLogService {
 
     public void logAction(String hanhDong, String bangDuLieu, String chiTiet) {
         org.springframework.security.core.Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String username = (auth != null && !auth.getName().equals("anonymousUser")) ? auth.getName() : "Há»‡ thá»‘ng";
+        String username = (auth != null && !auth.getName().equals("anonymousUser")) ? auth.getName() : "Hệ thống";
         logActionWithUsername(username, hanhDong, bangDuLieu, chiTiet);
     }
 
@@ -37,7 +37,7 @@ public class AuditLogService {
                 deviceInfo = request.getHeader("User-Agent");
             }
         } catch (Exception e) {
-            // Bá» qua lá»—i náº¿u gá»i tá»« mÃ´i trÆ°á»ng khÃ´ng cÃ³ HTTP Request
+            // Bỏ qua lỗi nếu gọi từ môi trường không có HTTP Request
         }
 
         final String finalIp = ipAddress;
@@ -49,7 +49,7 @@ public class AuditLogService {
                         "INSERT INTO NhatKyHeThong (nguoi_thao_tac, hanh_dong, bang_du_lieu, chi_tiet, ip_address, device_info) VALUES (?, ?, ?, ?, ?, ?)",
                         username, hanhDong, bangDuLieu, chiTiet, finalIp, finalDevice);
             } catch (Exception e) {
-                System.err.println("Lá»—i ghi log há»‡ thá»‘ng: " + e.getMessage());
+                System.err.println("Lỗi ghi log hệ thống: " + e.getMessage());
             }
         });
     }

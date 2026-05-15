@@ -144,7 +144,7 @@ const QuanLyHoaDon: React.FC = () => {
           <h1 style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--ink)', letterSpacing: '-1px' }}>Quản lý Hóa đơn</h1>
           <p style={{ color: 'var(--gray-500)', fontWeight: 600 }}>Theo dõi dòng tiền và lịch sử thanh toán của khách hàng.</p>
         </div>
-        <button onClick={handleExportExcel} className="btn btn-pill" style={{ background: '#10b981', color: 'white', padding: '10px 20px', fontSize: '0.9rem' }}>
+        <button onClick={handleExportExcel} className="btn btn-pill hover-lift" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '10px 20px', fontSize: '0.9rem', fontWeight: 800 }}>
           <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>download</span> Xuất Excel
         </button>
       </div>

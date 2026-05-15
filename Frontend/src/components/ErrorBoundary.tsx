@@ -1,5 +1,5 @@
 import React from 'react';
-import { useTheme } from '../contexts/ThemeContext';
+import { useTheme } from '../contexts/ThemeContextV2';
 
 /**
  * UPGRADE: Enhanced Error Boundary with retry functionality and error details
@@ -45,7 +45,7 @@ class ErrorBoundary extends React.Component<Props, State> {
 }
 
 const ErrorFallback: React.FC<{ error?: Error; retry: () => void }> = ({ error, retry }) => {
-  useTheme();
+  // REMOVED useTheme() to prevent secondary crash
 
   return (
     <div style={{

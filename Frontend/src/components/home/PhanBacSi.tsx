@@ -2,7 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { RevealSection } from "@components/SpecialEffects";
 
-import { useTheme } from "../../contexts/ThemeContext";
+import { useTheme } from "../../contexts/ThemeContextV2";
 
 const MOCK_DOCTORS = [
     { ho_ten: "BS. Minh Anh", chuyen_mon: "Nội khoa & Bệnh truyền nhiễm", hinh_anh: "/img/bac_si_minh_anh.png", exp: "8 năm kinh nghiệm", mo_ta: "Chuyên gia hàng đầu về nội khoa và bệnh truyền nhiễm ở thú cưng. Tốt nghiệp Học viện Nông nghiệp Việt Nam, tu nghiệp tại Nhật Bản." },

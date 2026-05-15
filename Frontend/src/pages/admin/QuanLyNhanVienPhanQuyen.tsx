@@ -11,12 +11,13 @@ const QuanLyNhanVienPhanQuyen: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [filterRole, setFilterRole] = useState("all");
+  const [showPassword, setShowPassword] = useState(false);
 
   const currentUser = getUserProfile();
 
   const [formData, setFormData] = useState({
     ho_ten: "", so_dien_thoai: "", email: "", chuyen_mon: "Bác sĩ", trang_thai: "Đang làm việc",
-    hinh_anh: "", gioi_thieu: "", ngay_vao_lam: ""
+    hinh_anh: "", gioi_thieu: "", ngay_vao_lam: "", mat_khau: ""
   });
 
   const tinhKinhNghiem = (ngayVaoLam: string) => {
@@ -57,7 +58,8 @@ const QuanLyNhanVienPhanQuyen: React.FC = () => {
       trang_thai: nv.trang_thai || "Đang làm việc",
       hinh_anh: nv.hinh_anh || "",
       gioi_thieu: nv.gioi_thieu || "",
-      ngay_vao_lam: nv.ngay_vao_lam || ""
+      ngay_vao_lam: nv.ngay_vao_lam || "",
+      mat_khau: ""
     });
     setShowModal(true);
   };
@@ -79,7 +81,7 @@ const QuanLyNhanVienPhanQuyen: React.FC = () => {
       }
       setShowModal(false);
       setEditingId(null);
-      setFormData({ ho_ten: "", so_dien_thoai: "", email: "", chuyen_mon: "Bác sĩ", trang_thai: "Đang làm việc", hinh_anh: "", gioi_thieu: "", ngay_vao_lam: "" });
+      setFormData({ ho_ten: "", so_dien_thoai: "", email: "", chuyen_mon: "Bác sĩ", trang_thai: "Đang làm việc", hinh_anh: "", gioi_thieu: "", ngay_vao_lam: "", mat_khau: "" });
       fetchNhanViens();
     } catch (err: any) {
       console.error(err);
@@ -149,18 +151,18 @@ const QuanLyNhanVienPhanQuyen: React.FC = () => {
         </div>
       </div>
 
-      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editingId ? "Cập nhật nhân viên" : "Thêm nhân viên mới"} maxWidth="500px">
+      <Modal isOpen={showModal} onClose={() => { setShowModal(false); setShowPassword(false); }} title={editingId ? "Cập nhật nhân viên" : "Thêm nhân viên mới"} maxWidth="500px">
         <div style={{ display: 'grid', gap: '20px' }}>
           <form onSubmit={handleSave} style={{ display: 'grid', gap: '20px' }}>
             <div style={{ display: 'grid', gap: '8px' }}>
-              <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)' }}>HỌ VÀ TÊN</label>
-              <input required className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left', cursor: 'text' }} value={formData.ho_ten} onChange={e => setFormData({ ...formData, ho_ten: e.target.value })} />
+              <label htmlFor="ho_ten" style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)' }}>HỌ VÀ TÊN</label>
+              <input id="ho_ten" required className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left', cursor: 'text' }} value={formData.ho_ten} onChange={e => setFormData({ ...formData, ho_ten: e.target.value })} />
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
               <div style={{ display: 'grid', gap: '8px' }}>
-                <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)' }}>CHUYÊN MÔN</label>
-                <select className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left' }} value={formData.chuyen_mon} onChange={e => setFormData({ ...formData, chuyen_mon: e.target.value })}>
+                <label htmlFor="chuyen_mon" style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)' }}>CHUYÊN MÔN</label>
+                <select id="chuyen_mon" className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left' }} value={formData.chuyen_mon} onChange={e => setFormData({ ...formData, chuyen_mon: e.target.value })}>
                   <option value="Bác sĩ">Bác sĩ</option>
                   <option value="Y tá">Y tá</option>
                   <option value="Tiếp tân">Tiếp tân</option>
@@ -170,8 +172,8 @@ const QuanLyNhanVienPhanQuyen: React.FC = () => {
                 </select>
               </div>
               <div style={{ display: 'grid', gap: '8px' }}>
-                <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)' }}>TRẠNG THÁI</label>
-                <select className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left' }} value={formData.trang_thai} onChange={e => setFormData({ ...formData, trang_thai: e.target.value })}>
+                <label htmlFor="trang_thai" style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)' }}>TRẠNG THÁI</label>
+                <select id="trang_thai" className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left' }} value={formData.trang_thai} onChange={e => setFormData({ ...formData, trang_thai: e.target.value })}>
                   <option value="Đang làm việc">Đang làm việc</option>
                   <option value="Tạm nghỉ">Tạm nghỉ</option>
                 </select>
@@ -179,13 +181,47 @@ const QuanLyNhanVienPhanQuyen: React.FC = () => {
             </div>
 
             <div style={{ display: 'grid', gap: '8px' }}>
-              <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)' }}>SỐ ĐIỆN THOẠI</label>
-              <input required className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left', cursor: 'text' }} value={formData.so_dien_thoai} onChange={e => setFormData({ ...formData, so_dien_thoai: e.target.value })} />
+              <label htmlFor="so_dien_thoai" style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)' }}>SỐ ĐIỆN THOẠI</label>
+              <input id="so_dien_thoai" required className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left', cursor: 'text' }} value={formData.so_dien_thoai} onChange={e => setFormData({ ...formData, so_dien_thoai: e.target.value })} />
             </div>
             <div style={{ display: 'grid', gap: '8px' }}>
-              <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)' }}>EMAIL</label>
-              <input required type="email" className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left', cursor: 'text' }} value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
+              <label htmlFor="email" style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)' }}>EMAIL (SỬ DỤNG LÀM TÊN ĐĂNG NHẬP)</label>
+              <input id="email" required type="email" className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left', cursor: 'text' }} value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
             </div>
+
+            {!editingId && (
+              <div style={{ display: 'grid', gap: '8px' }}>
+                <label htmlFor="mat_khau" style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)' }}>MẬT KHẨU BAN ĐẦU</label>
+                <div style={{ position: 'relative' }}>
+                  <input 
+                    id="mat_khau"
+                    required 
+                    type={showPassword ? "text" : "password"} 
+                    placeholder="Nhập mật khẩu cho tài khoản mới" 
+                    className="btn" 
+                    style={{ background: 'var(--gray-50)', textAlign: 'left', cursor: 'text', width: '100%', paddingRight: '45px' }} 
+                    value={formData.mat_khau} 
+                    onChange={e => setFormData({ ...formData, mat_khau: e.target.value })} 
+                  />
+                  <span 
+                    className="material-symbols-outlined" 
+                    onClick={() => setShowPassword(!showPassword)}
+                    style={{ 
+                      position: 'absolute', 
+                      right: '15px', 
+                      top: '50%', 
+                      transform: 'translateY(-50%)', 
+                      cursor: 'pointer', 
+                      color: 'var(--gray-400)',
+                      userSelect: 'none',
+                      fontSize: '20px'
+                    }}
+                  >
+                    {showPassword ? 'visibility_off' : 'visibility'}
+                  </span>
+                </div>
+              </div>
+            )}
 
             <div style={{ display: 'grid', gap: '8px' }}>
               <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)' }}>HÌNH ẢNH NHÂN SỰ</label>
@@ -209,8 +245,8 @@ const QuanLyNhanVienPhanQuyen: React.FC = () => {
             </div>
 
             <div style={{ display: 'grid', gap: '8px' }}>
-              <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)' }}>NGÀY VÀO LÀM (ĐỂ TÍNH KINH NGHIỆM)</label>
-              <input type="date" required className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left', cursor: 'text' }} value={formData.ngay_vao_lam} onChange={e => setFormData({ ...formData, ngay_vao_lam: e.target.value })} />
+              <label htmlFor="ngay_vao_lam" style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)' }}>NGÀY VÀO LÀM (ĐỂ TÍNH KINH NGHIỆM)</label>
+              <input id="ngay_vao_lam" type="date" required className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left', cursor: 'text' }} value={formData.ngay_vao_lam} onChange={e => setFormData({ ...formData, ngay_vao_lam: e.target.value })} />
             </div>
 
             <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>

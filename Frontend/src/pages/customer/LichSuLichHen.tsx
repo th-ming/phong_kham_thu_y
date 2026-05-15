@@ -210,49 +210,113 @@ const LichSuLichHen: React.FC = () => {
 
   return (
     <div className="animate-fade-in">
+    <div className="animate-fade-in">
       <style>{`
         @keyframes slideUpFade {
           from { opacity: 0; transform: translateY(30px); }
           to { opacity: 1; transform: translateY(0); }
         }
+        @keyframes float {
+          0% { transform: translateY(0px); }
+          50% { transform: translateY(-10px); }
+          100% { transform: translateY(0px); }
+        }
+        @keyframes pulse-glow {
+          0% { box-shadow: 0 0 20px rgba(20, 184, 166, 0.2); }
+          50% { box-shadow: 0 0 40px rgba(20, 184, 166, 0.4); }
+          100% { box-shadow: 0 0 20px rgba(20, 184, 166, 0.2); }
+        }
         .stagger-1 { animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both; }
         .stagger-2 { animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both; }
-        .item-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); border: 1px solid transparent; background: var(--surface); }
-        .item-card:hover { border-color: var(--primary) !important; background: var(--surface) !important; transform: translateY(-4px) scale(1.01); box-shadow: 0 20px 40px rgba(15, 157, 138, 0.08); z-index: 10; position: relative; }
+        .item-card { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); border: 1.5px solid transparent; background: var(--surface); }
+        .item-card:hover { border-color: var(--primary) !important; transform: translateY(-6px) scale(1.005); box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15); z-index: 10; }
+        .filter-select { transition: all 0.3s; border: 1px solid rgba(255,255,255,0.2) !important; }
+        .filter-select:hover { background: rgba(255,255,255,0.2) !important; border-color: rgba(255,255,255,0.4) !important; }
       `}</style>
-      <div className="stagger-1" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', padding: '48px', borderRadius: 'var(--radius-xl)', background: 'var(--secondary-gradient)', color: 'white', position: 'relative', overflow: 'hidden', boxShadow: '0 15px 35px rgba(13, 148, 136, 0.2)', flexWrap: 'wrap', gap: '20px' }}>
-        <div style={{ position: 'absolute', top: '-10%', right: '-5%', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }}></div>
-        <div style={{ position: 'absolute', bottom: '-20%', left: '0%', width: '250px', height: '250px', background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none', opacity: 0.5 }}></div>
+
+      <div className="stagger-1" style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        marginBottom: '40px', 
+        padding: '56px 48px', 
+        borderRadius: 'var(--radius-xl)', 
+        background: 'linear-gradient(135deg, #0f766e 0%, #115e59 100%)', 
+        color: 'white', 
+        position: 'relative', 
+        overflow: 'hidden', 
+        boxShadow: '0 20px 45px rgba(15, 118, 110, 0.25)', 
+        flexWrap: 'wrap', 
+        gap: '24px',
+        border: '1px solid rgba(255, 255, 255, 0.1)'
+      }}>
+        <div style={{ position: 'absolute', top: '-15%', right: '-5%', width: '400px', height: '400px', background: 'radial-gradient(circle, rgba(45, 212, 191, 0.25) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none', filter: 'blur(40px)' }}></div>
+        <div style={{ position: 'absolute', bottom: '-25%', left: '-5%', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(20, 184, 166, 0.15) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none', filter: 'blur(30px)' }}></div>
+        
         <div style={{ position: 'relative', zIndex: 1 }}>
-          <h1 className="header-title" style={{ fontSize: '3.5rem', fontWeight: 950, letterSpacing: '-2px', margin: '0 0 12px 0', textShadow: '0 2px 10px rgba(0,0,0,0.1)' }}>Lịch sử thăm khám 🏥</h1>
-          <p style={{ fontWeight: 600, color: 'rgba(255,255,255,0.85)', margin: 0, fontSize: '1.1rem' }}>Theo dõi lộ trình chăm sóc và lịch hẹn của các bé.</p>
+          <h1 className="header-title" style={{ fontSize: '3.6rem', fontWeight: 950, letterSpacing: '-2.5px', margin: '0 0 12px 0', textShadow: '0 4px 15px rgba(0,0,0,0.2)' }}>Lịch sử thăm khám <span style={{ filter: 'drop-shadow(0 4px 10px rgba(0,0,0,0.3))' }}>🏥</span></h1>
+          <p style={{ fontWeight: 700, color: 'rgba(255,255,255,0.9)', margin: 0, fontSize: '1.2rem', textShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>Theo dõi lộ trình chăm sóc và nhật ký y tế của các bé cưng.</p>
         </div>
+
         <div style={{ display: 'flex', gap: '16px', position: 'relative', zIndex: 1, flexWrap: 'wrap' }}>
-          <select value={petId} onChange={e => setPetId(e.target.value)} style={{ minWidth: '220px', borderRadius: '16px', padding: '14px 20px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.1)', color: 'white', fontWeight: 700, outline: 'none', cursor: 'pointer', backdropFilter: 'blur(10px)' }}>
-            <option value="all" style={{ color: 'var(--ink)' }}>Tất cả thú cưng</option>
-            {thuCungs.map(pet => (
-              <option key={pet.id_thu_cung} value={String(pet.id_thu_cung)} style={{ color: 'var(--ink)' }}>{pet.ten_thu_cung}</option>
-            ))}
-          </select>
-          <select value={status} onChange={e => setStatus(e.target.value)} style={{ minWidth: '200px', borderRadius: '16px', padding: '14px 20px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.1)', color: 'white', fontWeight: 700, outline: 'none', cursor: 'pointer', backdropFilter: 'blur(10px)' }}>
-            <option value="all" style={{ color: 'var(--ink)' }}>Tất cả trạng thái</option>
-            <option value="CHO_XAC_NHAN" style={{ color: 'var(--ink)' }}>Chờ xác nhận</option>
-            <option value="DA_XAC_NHAN" style={{ color: 'var(--ink)' }}>Đã xác nhận</option>
-            <option value="DA_KHAM" style={{ color: 'var(--ink)' }}>Hoàn tất</option>
-            <option value="DA_HUY" style={{ color: 'var(--ink)' }}>Đã hủy</option>
-            <option value="HET_HAN" style={{ color: 'var(--ink)' }}>Hết hạn</option>
-          </select>
+          <div style={{ position: 'relative' }}>
+            <span className="material-symbols-outlined" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', fontSize: '20px', color: 'rgba(255,255,255,0.6)', pointerEvents: 'none' }}>pets</span>
+            <select className="filter-select" value={petId} onChange={e => setPetId(e.target.value)} style={{ minWidth: '220px', borderRadius: '18px', padding: '14px 20px 14px 48px', background: 'rgba(255,255,255,0.1)', color: 'white', fontWeight: 800, outline: 'none', cursor: 'pointer', backdropFilter: 'blur(12px)', fontSize: '0.9rem' }}>
+              <option value="all" style={{ color: 'var(--ink)' }}>Tất cả thú cưng</option>
+              {thuCungs.map(pet => (
+                <option key={pet.id_thu_cung} value={String(pet.id_thu_cung)} style={{ color: 'var(--ink)' }}>{pet.ten_thu_cung}</option>
+              ))}
+            </select>
+          </div>
+
+          <div style={{ position: 'relative' }}>
+            <span className="material-symbols-outlined" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', fontSize: '20px', color: 'rgba(255,255,255,0.6)', pointerEvents: 'none' }}>label</span>
+            <select className="filter-select" value={status} onChange={e => setStatus(e.target.value)} style={{ minWidth: '200px', borderRadius: '18px', padding: '14px 20px 14px 48px', background: 'rgba(255,255,255,0.1)', color: 'white', fontWeight: 800, outline: 'none', cursor: 'pointer', backdropFilter: 'blur(12px)', fontSize: '0.9rem' }}>
+              <option value="all" style={{ color: 'var(--ink)' }}>Tất cả trạng thái</option>
+              <option value="CHO_XAC_NHAN" style={{ color: 'var(--ink)' }}>Chờ xác nhận</option>
+              <option value="DA_XAC_NHAN" style={{ color: 'var(--ink)' }}>Đã xác nhận</option>
+              <option value="DA_KHAM" style={{ color: 'var(--ink)' }}>Hoàn tất</option>
+              <option value="DA_HUY" style={{ color: 'var(--ink)' }}>Đã hủy</option>
+              <option value="HET_HAN" style={{ color: 'var(--ink)' }}>Hết hạn</option>
+            </select>
+          </div>
         </div>
       </div>
 
-      <div className="stagger-2" style={{ display: 'grid', gap: '24px' }}>
+      <div className="stagger-2" style={{ display: 'grid', gap: '28px' }}>
         {rows.length === 0 ? (
-          <div className="glass-card" style={{ padding: '120px 40px', textAlign: 'center', borderRadius: '40px', background: 'rgba(255,255,255,0.01)', border: '1px dashed rgba(255,255,255,0.1)' }}>
-            <div style={{ width: '120px', height: '120px', background: 'var(--primary-light)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 32px', border: '1px solid var(--primary-light)', boxShadow: '0 0 40px var(--primary-shadow)' }}>
-              <span className="material-symbols-outlined" style={{ fontSize: '64px', color: 'var(--primary)', filter: 'drop-shadow(0 0 10px var(--primary))' }}>calendar_today</span>
+          <div className="glass-card" style={{ 
+            padding: '120px 40px', 
+            textAlign: 'center', 
+            borderRadius: '48px', 
+            background: 'var(--surface)', 
+            border: '2px dashed var(--gray-200)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center'
+          }}>
+            <div style={{ 
+              width: '160px', 
+              height: '160px', 
+              background: 'linear-gradient(135deg, rgba(20, 184, 166, 0.1) 0%, rgba(13, 148, 136, 0.05) 100%)', 
+              borderRadius: '60px', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              margin: '0 auto 40px', 
+              animation: 'float 4s ease-in-out infinite, pulse-glow 3s infinite',
+              border: '1px solid rgba(20, 184, 166, 0.2)'
+            }}>
+              <span className="material-symbols-outlined" style={{ fontSize: '80px', color: 'var(--primary)', filter: 'drop-shadow(0 0 15px var(--primary))' }}>calendar_month</span>
             </div>
-            <h3 style={{ fontSize: '1.8rem', fontWeight: 900, color: 'var(--ink)', marginBottom: '12px' }}>Chưa có lịch khám nào</h3>
-            <p style={{ fontSize: '1.05rem', color: 'var(--gray-400)', fontWeight: 600, maxWidth: '400px', margin: '0 auto' }}>Dường như các bé nhà mình đang rất khỏe mạnh! Đừng quên đặt lịch khám định kỳ nhé.</p>
+            <h3 style={{ fontSize: '2.2rem', fontWeight: 950, color: 'var(--ink)', marginBottom: '16px', letterSpacing: '-1px' }}>Chưa có lịch khám nào</h3>
+            <p style={{ fontSize: '1.15rem', color: 'var(--gray-400)', fontWeight: 600, maxWidth: '450px', margin: '0 auto 32px', lineHeight: 1.6 }}>
+              Dường như các bé nhà mình đang rất khỏe mạnh! <br/> Đừng quên đặt lịch khám định kỳ để bảo vệ sức khỏe cho bé nhé.
+            </p>
+            <button className="btn btn-primary btn-pill" onClick={() => navigate('/khach-hang/dat-lich-hen')} style={{ padding: '16px 48px', fontSize: '1rem' }}>
+              <span className="material-symbols-outlined">add_circle</span>
+              Đặt lịch hẹn ngay
+            </button>
           </div>
         ) : currentRows.map((item) => (
           <AppointmentCard key={item.id_lich_hen} item={item} thuCungs={thuCungs} onCancel={handleCancelAppointment} onRebook={handleRebook} />

@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { BrowserRouter } from 'react-router-dom';
-import { ThemeProvider } from '../contexts/ThemeContext';
+import { ThemeProvider } from '../contexts/ThemeContextV2';
 import Header from './Header';
 
 const renderWithRouter = (component: React.ReactElement) => {

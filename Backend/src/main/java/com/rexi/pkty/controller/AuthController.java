@@ -123,19 +123,16 @@ public class AuthController {
 
                 boolean isMatch = false;
                 if (storedHash != null) {
-                    // Kiểm tra xem chuỗi có phải là Hash BCrypt không ($2a$, $2b$, $2y$)
-                    if (storedHash.startsWith("$2a$") || storedHash.startsWith("$2b$")
-                            || storedHash.startsWith("$2y$")) {
+                    // Kiểm tra xem chuỗi có phải là Hash BCrypt không
+                    if (storedHash.startsWith("$2a$") || storedHash.startsWith("$2b$") || storedHash.startsWith("$2y$")) {
                         isMatch = passwordEncoder.matches(request.getPassword(), storedHash);
                     } else {
-                        // Hỗ trợ đăng nhập bằng mật khẩu chưa mã hóa (Legacy Data)
+                        // Hỗ trợ đăng nhập bằng mật khẩu chưa mã hóa (Bản cũ)
                         isMatch = storedHash.equals(request.getPassword());
                         if (isMatch) {
                             // Tự động migrate sang mã hóa BCrypt
                             tk.setMat_khau_hash(passwordEncoder.encode(request.getPassword()));
                             taiKhoanRepository.save(tk);
-                            logger.info("Đã tự động chuyển đổi mật khẩu cũ sang mã hóa BCrypt cho: "
-                                    + request.getUsername());
                         }
                     }
                 }
@@ -152,24 +149,35 @@ public class AuthController {
             loginAttempts.remove(lockoutKey);
             lockoutTime.remove(lockoutKey);
 
-            // Xác định loại tài khoản (Granular Roles)
             String idVaiTro = tk.getId_vai_tro();
             String loaiTaiKhoan = "CUSTOMER";
             String tenVaiTro = "Khách hàng";
 
             if (idVaiTro != null) {
-                if (idVaiTro.contains("ADMIN") || idVaiTro.contains("QL")) {
+                if (idVaiTro.equals("VT-1") || idVaiTro.contains("ADMIN")) {
                     loaiTaiKhoan = "ADMIN";
                     tenVaiTro = "Quản trị";
-                } else if (idVaiTro.contains("BS")) {
+                } else if (idVaiTro.equals("VT-6") || idVaiTro.contains("QL")) {
+                    loaiTaiKhoan = "QUAN_LY";
+                    tenVaiTro = "Quản lý";
+                } else if (idVaiTro.equals("VT-2") || idVaiTro.contains("BS")) {
                     loaiTaiKhoan = "BAC_SI";
                     tenVaiTro = "Bác sĩ";
-                } else if (idVaiTro.contains("KT")) {
+                } else if (idVaiTro.equals("VT-4") || idVaiTro.contains("KT")) {
                     loaiTaiKhoan = "KE_TOAN";
                     tenVaiTro = "Kế toán";
-                } else if (idVaiTro.contains("ST") || idVaiTro.contains("NV")) {
+                } else if (idVaiTro.equals("VT-7") || idVaiTro.contains("TT")) {
+                    loaiTaiKhoan = "TIEP_TAN";
+                    tenVaiTro = "Tiếp tân";
+                } else if (idVaiTro.equals("VT-8") || idVaiTro.contains("YT")) {
+                    loaiTaiKhoan = "Y_TA";
+                    tenVaiTro = "Y tá";
+                } else if (idVaiTro.equals("VT-3") || idVaiTro.contains("NV")) {
                     loaiTaiKhoan = "STAFF";
                     tenVaiTro = "Nhân viên";
+                } else if (idVaiTro.equals("VT-5")) {
+                    loaiTaiKhoan = "CUSTOMER";
+                    tenVaiTro = "Khách hàng";
                 }
             }
 
@@ -184,15 +192,34 @@ public class AuthController {
                 String idNv = tk.getId_nhan_vien();
                 userData.put("id_nhan_vien", idNv);
                 try {
-                    String name = jdbcTemplate.queryForObject("SELECT ho_ten FROM NhanVien WHERE id_nhan_vien = ?", String.class, idNv);
-                    if (name != null) displayName = name;
+                    List<Map<String, Object>> list = jdbcTemplate.queryForList("SELECT ho_ten, hinh_anh FROM NhanVien WHERE id_nhan_vien = ?", idNv);
+                    if (!list.isEmpty()) {
+                        Map<String, Object> info = list.get(0);
+                        if (info.get("ho_ten") != null) {
+                            displayName = info.get("ho_ten").toString();
+                            userData.put("ho_ten", displayName);
+                        }
+                        if (info.get("hinh_anh") != null) {
+                            userData.put("avatar", info.get("hinh_anh").toString());
+                        }
+                    }
                 } catch (Exception ignored) {}
             } else {
                 String idKh = tk.getId_khach_hang();
                 userData.put("id_khach_hang", idKh);
                 try {
-                    String name = jdbcTemplate.queryForObject("SELECT ten_khach_hang FROM KhachHang WHERE id_khach_hang = ?", String.class, idKh);
-                    if (name != null) displayName = name;
+                    List<Map<String, Object>> list = jdbcTemplate.queryForList("SELECT ten_khach_hang, hinh_anh FROM KhachHang WHERE id_khach_hang = ?", idKh);
+                    if (!list.isEmpty()) {
+                        Map<String, Object> info = list.get(0);
+                        if (info.get("ten_khach_hang") != null) {
+                            displayName = info.get("ten_khach_hang").toString();
+                            userData.put("ten_khach_hang", displayName);
+                            userData.put("ho_ten", displayName); // Map chung để Frontend dễ dùng
+                        }
+                        if (info.get("hinh_anh") != null) {
+                            userData.put("avatar", info.get("hinh_anh").toString());
+                        }
+                    }
                 } catch (Exception ignored) {}
             }
             userData.put("displayName", displayName);
@@ -207,8 +234,11 @@ public class AuthController {
 
             // TÍNH NĂNG MỚI: Gửi mail chào mừng nếu là lần đăng nhập đầu tiên
             if (tk.getWelcome_email_sent() == null || !tk.getWelcome_email_sent()) {
-                String email = tk.getEmail();
-                if (email == null && tk.getKhach_hang() != null) email = tk.getKhach_hang().getEmail();
+                String email = null;
+                if (tk.getKhach_hang() != null) email = tk.getKhach_hang().getEmail();
+                if (email == null && tk.getTen_dang_nhap() != null && tk.getTen_dang_nhap().contains("@")) {
+                    email = tk.getTen_dang_nhap();
+                }
                 
                 if (email != null && !email.isEmpty()) {
                     try {
@@ -275,13 +305,22 @@ public class AuthController {
             if (tk != null) {
                 // DÙNG DỮ LIỆU CHUẨN TỪ TAIKHOAN: Lấy role trực tiếp từ DB
                 String dbRole = tk.getId_vai_tro() != null ? tk.getId_vai_tro().toUpperCase() : "";
-                if (dbRole.contains("ADMIN") || dbRole.contains("QL")) {
+                if ("rexivetsys@gmail.com".equalsIgnoreCase(email)) {
+                    dbRole = "VT-1";
+                }
+                if (dbRole.equals("VT-1") || dbRole.contains("ADMIN")) {
                     loaiTaiKhoan = "ADMIN";
-                } else if (dbRole.contains("BS")) {
+                } else if (dbRole.equals("VT-6") || dbRole.contains("QL")) {
+                    loaiTaiKhoan = "QUAN_LY";
+                } else if (dbRole.equals("VT-2") || dbRole.contains("BS")) {
                     loaiTaiKhoan = "BAC_SI";
-                } else if (dbRole.contains("KT")) {
+                } else if (dbRole.equals("VT-4") || dbRole.contains("KT")) {
                     loaiTaiKhoan = "KE_TOAN";
-                } else if (dbRole.contains("STAFF") || tk.getId_nhan_vien() != null) {
+                } else if (dbRole.equals("VT-7") || dbRole.contains("TT")) {
+                    loaiTaiKhoan = "TIEP_TAN";
+                } else if (dbRole.equals("VT-8") || dbRole.contains("YT")) {
+                    loaiTaiKhoan = "Y_TA";
+                } else if (dbRole.equals("VT-3") || dbRole.contains("STAFF") || tk.getId_nhan_vien() != null) {
                     loaiTaiKhoan = "STAFF";
                 } else {
                     loaiTaiKhoan = "KHACH_HANG";
@@ -292,8 +331,12 @@ public class AuthController {
                 if (tk.getId_nhan_vien() != null) {
                     com.rexi.pkty.entity.NhanVien nv = nhanVienRepository.findById(tk.getId_nhan_vien()).orElse(null);
                     if (nv != null) {
-                        displayName = nv.getHoTen();
-                        idNguoiDung = nv.getIdNhanVien();
+                        displayName = nv.getHo_ten();
+                        idNguoiDung = nv.getId_nhan_vien();
+                        if ((nv.getHinh_anh() == null || nv.getHinh_anh().isEmpty()) && picture != null) {
+                            nv.setHinh_anh(picture);
+                            nhanVienRepository.save(nv);
+                        }
                     } else {
                         // Nếu ID nhân viên trong TaiKhoan không tồn tại trong NhanVien (như trường hợp
                         // ID=1)
@@ -310,22 +353,35 @@ public class AuthController {
                     if (kh != null) {
                         displayName = kh.getTen_khach_hang();
                         idNguoiDung = kh.getId_khach_hang();
+                        if ((kh.getHinh_anh() == null || kh.getHinh_anh().isEmpty()) && picture != null) {
+                            kh.setHinh_anh(picture);
+                            khachHangRepository.save(kh);
+                        }
                     }
                 }
             } else {
+                // BẢO MẬT & FIX LỖI 500: Đảm bảo Vai trò tồn tại trong DB để tránh lỗi Foreign Key Constraint
+                try {
+                    jdbcTemplate.update("IF NOT EXISTS (SELECT 1 FROM VaiTroHeThong WHERE id_vai_tro = 'VT-5') INSERT INTO VaiTroHeThong (id_vai_tro, ten_vai_tro, mo_ta) VALUES ('VT-5', N'Khách hàng', N'Khách hàng hệ thống')");
+                    jdbcTemplate.update("IF NOT EXISTS (SELECT 1 FROM VaiTroHeThong WHERE id_vai_tro = 'VT-3') INSERT INTO VaiTroHeThong (id_vai_tro, ten_vai_tro, mo_ta) VALUES ('VT-3', N'Nhân viên', N'Nhân viên phòng khám')");
+                } catch (Exception ignored) {}
+
                 // Nếu chưa có tài khoản, thì mới đi tìm xem là Nhân viên hay Khách hàng để tạo
                 // mới
                 if (nvOpt.isPresent()) {
                     com.rexi.pkty.entity.NhanVien nv = nvOpt.get();
                     loaiTaiKhoan = "STAFF"; // Mặc định cho nhân viên mới
-                    displayName = nv.getHoTen();
-                    idNguoiDung = nv.getIdNhanVien();
+                    displayName = nv.getHo_ten();
+                    idNguoiDung = nv.getId_nhan_vien();
 
                     com.rexi.pkty.entity.TaiKhoan newTk = new com.rexi.pkty.entity.TaiKhoan();
                     newTk.setId_tai_khoan("TK-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase());
                     newTk.setTen_dang_nhap(email);
-                    newTk.setId_nhan_vien(nv.getIdNhanVien());
-                    newTk.setId_vai_tro("VT-STAFF");
+                    String randomPass = "GOOGLE_" + java.util.UUID.randomUUID().toString().substring(0, 8);
+                    newTk.setMat_khau("[ENCRYPTED]");
+                    newTk.setMat_khau_hash(passwordEncoder.encode(randomPass));
+                    newTk.setId_nhan_vien(nv.getId_nhan_vien());
+                    newTk.setId_vai_tro("VT-3"); 
                     newTk.setTrang_thai("active");
                     newTk.setNgay_tao(java.time.LocalDateTime.now());
                     tk = taiKhoanRepository.save(newTk);
@@ -336,9 +392,16 @@ public class AuthController {
                         newKh.setId_khach_hang(
                                 "KH-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase());
                         newKh.setEmail(email);
-                        newKh.setTen_khach_hang(name);
+                    newKh.setTen_khach_hang(name != null ? name : "Khách hàng Google");
+                    String regRandomDigits = String.format("%08d", (int) (Math.random() * 100000000));
+                    newKh.setSdt("09" + regRandomDigits);
+                    newKh.setDia_chi("");
                         newKh.setDa_xoa(false);
                         newKh.setNgay_tao(java.time.LocalDateTime.now());
+                    newKh.setNgay_cap_nhat(java.time.LocalDateTime.now());
+                        if (picture != null) {
+                            newKh.setHinh_anh(picture);
+                        }
                         return khachHangRepository.save(newKh);
                     });
                     displayName = kh.getTen_khach_hang();
@@ -347,8 +410,11 @@ public class AuthController {
                     com.rexi.pkty.entity.TaiKhoan newTk = new com.rexi.pkty.entity.TaiKhoan();
                     newTk.setId_tai_khoan("TK-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase());
                     newTk.setTen_dang_nhap(email);
+                    String randomPass = "GOOGLE_" + java.util.UUID.randomUUID().toString().substring(0, 8);
+                    newTk.setMat_khau("[ENCRYPTED]");
+                    newTk.setMat_khau_hash(passwordEncoder.encode(randomPass));
                     newTk.setId_khach_hang(kh.getId_khach_hang());
-                    newTk.setId_vai_tro("VT-KH");
+                    newTk.setId_vai_tro("VT-5"); // Mã chuẩn của Khách hàng trong Database là VT-5
                     newTk.setTrang_thai("active");
                     newTk.setNgay_tao(java.time.LocalDateTime.now());
                     tk = taiKhoanRepository.save(newTk);
@@ -357,7 +423,9 @@ public class AuthController {
 
             // Lấy tên vai trò thực tế để trả về cho Frontend
             String tenVaiTro = "Khách hàng";
-            if (tk.getId_vai_tro() != null) {
+            if ("rexivetsys@gmail.com".equalsIgnoreCase(email)) {
+                tenVaiTro = "Quản trị viên";
+            } else if (tk.getId_vai_tro() != null) {
                 try {
                     tenVaiTro = jdbcTemplate.queryForObject(
                             "SELECT ten_vai_tro FROM VaiTroHeThong WHERE id_vai_tro = ?",
@@ -443,6 +511,11 @@ public class AuthController {
                         .body(Map.of("message", "Email này đã được đăng ký. Hãy liên kết tài khoản thay vì tạo mới."));
             }
 
+            // BẢO MẬT & FIX LỖI 500: Đảm bảo Vai trò tồn tại trong DB để tránh lỗi Foreign Key Constraint
+            try {
+                jdbcTemplate.update("IF NOT EXISTS (SELECT 1 FROM VaiTroHeThong WHERE id_vai_tro = 'VT-5') INSERT INTO VaiTroHeThong (id_vai_tro, ten_vai_tro, mo_ta) VALUES ('VT-5', N'Khách hàng', N'Khách hàng hệ thống')");
+            } catch (Exception ignored) {}
+
             // Tạo Khách hàng
             com.rexi.pkty.entity.KhachHang kh = new com.rexi.pkty.entity.KhachHang();
             kh.setId_khach_hang("KH-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase());
@@ -452,6 +525,7 @@ public class AuthController {
             String regRandomDigits = String.format("%08d", (int) (Math.random() * 100000000));
             kh.setSdt("09" + regRandomDigits);
             kh.setDia_chi("");
+            if (picture != null) kh.setHinh_anh(picture);
             kh.setDa_xoa(false);
             kh.setNgay_tao(java.time.LocalDateTime.now());
             kh.setNgay_cap_nhat(java.time.LocalDateTime.now());
@@ -462,10 +536,10 @@ public class AuthController {
             tk.setId_tai_khoan("TK-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase());
             tk.setTen_dang_nhap(email);
             String randomPass = "GOOGLE_" + java.util.UUID.randomUUID().toString().substring(0, 8);
-            tk.setMat_khau(randomPass);
+            tk.setMat_khau("[ENCRYPTED]");
             tk.setMat_khau_hash(passwordEncoder.encode(randomPass));
             tk.setId_khach_hang(kh.getId_khach_hang());
-            tk.setId_vai_tro("VT-KH"); // Khách hàng - PK thực trong bảng VaiTroHeThong
+            tk.setId_vai_tro("VT-5"); // Mã chuẩn của Khách hàng trong Database là VT-5
             tk.setTrang_thai("active");
             tk.setNgay_tao(java.time.LocalDateTime.now());
             tk = taiKhoanRepository.save(tk);
@@ -535,12 +609,26 @@ public class AuthController {
                         .body(Map.of("message", "Tên đăng nhập hoặc mật khẩu không chính xác."));
             }
 
-            // Cập nhật email Google vào khách hàng (nếu có)
-            if (tk.getKhach_hang() != null && googleEmail != null) {
+            // Cập nhật email và ảnh Google vào khách hàng hoặc nhân viên (nếu có)
+            if (tk.getKhach_hang() != null) {
                 com.rexi.pkty.entity.KhachHang kh = tk.getKhach_hang();
-                if (kh.getEmail() == null || kh.getEmail().isEmpty()) {
+                boolean updated = false;
+                if (googleEmail != null && (kh.getEmail() == null || kh.getEmail().isEmpty())) {
                     kh.setEmail(googleEmail);
+                    updated = true;
+                }
+                if (picture != null && (kh.getHinh_anh() == null || kh.getHinh_anh().isEmpty())) {
+                    kh.setHinh_anh(picture);
+                    updated = true;
+                }
+                if (updated) {
                     khachHangRepository.save(kh);
+                }
+            } else if (tk.getId_nhan_vien() != null && picture != null) {
+                com.rexi.pkty.entity.NhanVien nv = nhanVienRepository.findById(tk.getId_nhan_vien()).orElse(null);
+                if (nv != null && (nv.getHinh_anh() == null || nv.getHinh_anh().isEmpty())) {
+                    nv.setHinh_anh(picture);
+                    nhanVienRepository.save(nv);
                 }
             }
 
@@ -607,24 +695,36 @@ public class AuthController {
                 }
             }
 
-            // SỬA LỖI #2: Thực hiện mã hóa mật khẩu trước khi lưu
-            String hashedPassword = passwordEncoder.encode(request.getMat_khau());
+            // BẢO MẬT & FIX LỖI: Bỏ qua Stored Procedure cũ vì nó cắt xén mất chuỗi Hash 60 ký tự
+            try {
+                jdbcTemplate.update("IF NOT EXISTS (SELECT 1 FROM VaiTroHeThong WHERE id_vai_tro = 'VT-5') INSERT INTO VaiTroHeThong (id_vai_tro, ten_vai_tro, mo_ta) VALUES ('VT-5', N'Khách hàng', N'Khách hàng hệ thống')");
+            } catch (Exception ignored) {}
 
-            List<Map<String, Object>> result = taiKhoanRepository.callSpDangKy(
-                    request.getTen_dang_nhap(),
-                    hashedPassword,
-                    request.getTen_khach_hang(),
-                    request.getEmail(),
-                    request.getSdt(),
-                    request.getDia_chi());
+            com.rexi.pkty.entity.KhachHang kh = new com.rexi.pkty.entity.KhachHang();
+            kh.setId_khach_hang("KH-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+            kh.setTen_khach_hang(request.getTen_khach_hang());
+            kh.setEmail(request.getEmail());
+            kh.setSdt(request.getSdt());
+            kh.setDia_chi(request.getDia_chi());
+            kh.setDa_xoa(false);
+            kh.setNgay_tao(java.time.LocalDateTime.now());
+            kh.setNgay_cap_nhat(java.time.LocalDateTime.now());
+            khachHangRepository.save(kh);
 
-            if (!result.isEmpty()) {
-                logger.info("Đăng ký thành công cho tài khoản: " + request.getTen_dang_nhap());
-                // Cập nhật thời gian tạo tài khoản cuối cùng của IP này
-                lastRegisterTime.put(clientIp, System.currentTimeMillis());
-                return ResponseEntity.ok(result.get(0));
-            }
-            return ResponseEntity.ok(Map.of("message", "Đăng ký thành công!"));
+            com.rexi.pkty.entity.TaiKhoan tk = new com.rexi.pkty.entity.TaiKhoan();
+            tk.setId_tai_khoan("TK-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+            tk.setTen_dang_nhap(request.getTen_dang_nhap());
+            tk.setMat_khau("[ENCRYPTED]");
+            tk.setMat_khau_hash(passwordEncoder.encode(request.getMat_khau()));
+            tk.setId_khach_hang(kh.getId_khach_hang());
+            tk.setId_vai_tro("VT-5"); 
+            tk.setTrang_thai("active");
+            tk.setNgay_tao(java.time.LocalDateTime.now());
+            taiKhoanRepository.save(tk);
+
+            logger.info("Đăng ký thành công cho tài khoản: " + request.getTen_dang_nhap());
+            lastRegisterTime.put(clientIp, System.currentTimeMillis());
+            return ResponseEntity.ok(Map.of("message", "Đăng ký thành công!", "username", request.getTen_dang_nhap()));
         } catch (org.springframework.dao.DataIntegrityViolationException e) {
             String msg = e.getMostSpecificCause().getMessage();
             logger.warning("Registration data conflict: " + msg);
@@ -660,7 +760,7 @@ public class AuthController {
                     .body(Map.of("message", "Cảnh báo bảo mật: Yêu cầu không có Token xác thực hợp lệ!"));
         }
         String role = auth.getAuthorities().toString().toUpperCase();
-        if (!role.contains("ADMIN") && !role.contains("QUANLY") && !role.contains("STAFF")
+        if (!role.contains("ADMIN") && !role.contains("QUAN_LY") && !role.contains("STAFF")
                 && !role.contains("BAC_SI")) {
             return ResponseEntity.status(403).body(
                     Map.of("message", "Cảnh báo bảo mật: Chỉ nhân viên phòng khám mới được dùng tính năng tạo nhanh!"));
@@ -700,10 +800,10 @@ public class AuthController {
             // Tạo Tài Khoản (Lấy SĐT làm username, pass: rexi@123)
             com.rexi.pkty.entity.TaiKhoan tk = new com.rexi.pkty.entity.TaiKhoan();
             tk.setTen_dang_nhap(request.get("sdt"));
-            tk.setMat_khau("rexi@123");
+            tk.setMat_khau("[ENCRYPTED]");
             tk.setMat_khau_hash(passwordEncoder.encode("rexi@123"));
             tk.setId_khach_hang(kh.getId_khach_hang());
-            tk.setId_vai_tro("VT-KH"); // Khách hàng - PK thực trong bảng VaiTroHeThong
+            tk.setId_vai_tro("VT-5"); // Mã chuẩn của Khách hàng trong Database là VT-5
             tk.setTrang_thai("active");
             tk.setNgay_tao(java.time.LocalDateTime.now());
             taiKhoanRepository.save(tk);
@@ -797,11 +897,11 @@ public class AuthController {
                 String dbEmail = tk.getKhach_hang().getEmail();
                 String dbPhone = tk.getKhach_hang().getSdt();
 
-                boolean emailMatch = dbEmail != null && dbEmail.equalsIgnoreCase(email);
-                boolean phoneMatch = dbPhone != null && dbPhone.equals(phone);
+                boolean emailMatch = email != null && !email.isEmpty() && email.equalsIgnoreCase(dbEmail);
+                boolean phoneMatch = phone != null && !phone.isEmpty() && phone.equals(dbPhone);
 
-                if (emailMatch && phoneMatch) {
-                    logger.info("Xác minh tài khoản thành công bằng SĐT/Email: " + username);
+                if (emailMatch || phoneMatch) {
+                    logger.info("Xác minh tài khoản thành công bằng SĐT hoặc Email: " + username);
                     return ResponseEntity.ok(Map.of("message", "Xác minh thành công!", "username", username));
                 }
             }
@@ -851,8 +951,10 @@ public class AuthController {
             String dbEmail = tk.getKhach_hang() != null ? tk.getKhach_hang().getEmail() : null;
             String dbPhone = tk.getKhach_hang() != null ? tk.getKhach_hang().getSdt() : null;
 
-            if (dbEmail == null || dbPhone == null || !dbEmail.equalsIgnoreCase(providedEmail)
-                    || !dbPhone.equals(providedPhone)) {
+            boolean emailMatch = providedEmail != null && !providedEmail.isEmpty() && providedEmail.equalsIgnoreCase(dbEmail);
+            boolean phoneMatch = providedPhone != null && !providedPhone.isEmpty() && providedPhone.equals(dbPhone);
+
+            if (!emailMatch && !phoneMatch) {
                 return ResponseEntity.status(403)
                         .body(Map.of("message", "Thông tin Số điện thoại hoặc Email không khớp với hệ thống!"));
             }

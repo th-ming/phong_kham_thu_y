@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { ChatBot } from "@components/ChatBot";
 import { MemeCat, ScrollToTop, RevealSection } from "@components/SpecialEffects";
-import { useTheme } from "../contexts/ThemeContext";
+import { useTheme } from "../contexts/ThemeContextV2";
 
 const LienHe: React.FC = () => {
     const { theme } = useTheme();

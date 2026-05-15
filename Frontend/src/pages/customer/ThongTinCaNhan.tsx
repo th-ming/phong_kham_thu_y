@@ -119,10 +119,11 @@ const ThongTinCaNhan: React.FC = () => {
   };
 
   const handleDeleteAccount = async () => {
-    if (!data || !data.id_khach_hang) return;
     setIsDeleting(true);
     try {
-      await axiosInstance.delete(`/api/khach-hang/${data.id_khach_hang}`);
+      const user = getUserProfile();
+      const userId = user?.id_khach_hang || user?.id || data?.id_khach_hang;
+      await axiosInstance.delete(`/api/khach-hang/${userId}`);
       toast.success("Tài khoản của bạn đã được vô hiệu hóa. Chào tạm biệt!");
       localStorage.clear();
       navigate("/dang-nhap");
@@ -135,15 +136,50 @@ const ThongTinCaNhan: React.FC = () => {
 
   if (loading) return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}><div className="dot-pulse"></div></div>;
 
-  const isCustomer = data && data.id_khach_hang != null;
+  const isCustomer = data && (data.id_khach_hang != null || data.id != null || getUserProfile()?.id_khach_hang != null);
 
   return (
     <div className="animate-fade-in">
-      <div className="stagger-1" style={{ marginBottom: '40px', padding: '48px', borderRadius: 'var(--radius-xl)', background: 'var(--secondary-gradient)', color: 'white', position: 'relative', overflow: 'hidden', boxShadow: '0 15px 35px rgba(13, 148, 136, 0.2)' }}>
-        <div style={{ position: 'absolute', top: '-10%', right: '-5%', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }}></div>
-        <div style={{ position: 'absolute', bottom: '-20%', left: '0%', width: '250px', height: '250px', background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none', opacity: 0.5 }}></div>
-        <h1 style={{ fontSize: '3rem', fontWeight: 950, letterSpacing: '-2px', position: 'relative', zIndex: 1, margin: '0 0 12px 0', textShadow: '0 2px 10px rgba(0,0,0,0.1)' }}>Hồ sơ của tôi 👤</h1>
-        <p style={{ fontWeight: 600, color: 'rgba(255,255,255,0.85)', position: 'relative', zIndex: 1, margin: 0, fontSize: '1.1rem' }}>Quản lý thông tin định danh và cài đặt bảo mật tài khoản.</p>
+      <div className="stagger-1" style={{ 
+        marginBottom: '40px', 
+        padding: '60px 48px', 
+        borderRadius: 'var(--radius-xl)', 
+        background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%)', 
+        color: 'white', 
+        position: 'relative', 
+        overflow: 'hidden', 
+        boxShadow: '0 20px 50px rgba(168, 85, 247, 0.25)',
+        border: '1px solid rgba(255, 255, 255, 0.2)'
+      }}>
+        {/* Decorative elements */}
+        <div style={{ position: 'absolute', top: '-10%', right: '-5%', width: '400px', height: '400px', background: 'radial-gradient(circle, rgba(255,255,255,0.25) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none', filter: 'blur(50px)' }}></div>
+        <div style={{ position: 'absolute', bottom: '-20%', left: '-5%', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(99, 102, 241, 0.4) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none', filter: 'blur(40px)' }}></div>
+        
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          <h1 style={{ 
+            fontSize: '3.6rem', 
+            fontWeight: 950, 
+            letterSpacing: '-2.5px', 
+            margin: '0 0 16px 0', 
+            textShadow: '0 10px 30px rgba(0,0,0,0.2)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '20px'
+          }}>
+            Hồ sơ của tôi <span style={{ fontSize: '3.2rem', filter: 'drop-shadow(0 4px 15px rgba(0,0,0,0.3))' }}>👤</span>
+          </h1>
+          <p style={{ 
+            fontWeight: 700, 
+            color: 'rgba(255,255,255,0.95)', 
+            margin: 0, 
+            fontSize: '1.25rem',
+            maxWidth: '650px',
+            lineHeight: 1.6,
+            textShadow: '0 2px 10px rgba(0,0,0,0.1)'
+          }}>
+            Quản lý thông tin bảo mật và tùy chỉnh trải nghiệm cá nhân của bạn tại Rexi System.
+          </p>
+        </div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '2.4fr 1fr', gap: '32px' }}>
@@ -233,13 +269,23 @@ const ThongTinCaNhan: React.FC = () => {
             </div>
           </div>
 
-          {isCustomer && (
-            <div style={{ padding: '32px', borderRadius: 'var(--radius-xl)', background: 'var(--danger-light, rgba(239,68,68,0.1))', border: '1px solid var(--danger-border, rgba(239,68,68,0.2))' }}>
-              <h4 style={{ color: 'var(--danger)', fontWeight: 900, marginBottom: '12px' }}>Nguy hiểm</h4>
-              <p style={{ fontSize: '0.85rem', color: 'var(--danger)', fontWeight: 600, lineHeight: '1.5', marginBottom: '20px' }}>Hành động này sẽ vô hiệu hóa tài khoản của bạn vĩnh viễn.</p>
-              <button className="btn btn-pill" style={{ background: 'var(--danger)', color: 'white', width: '100%' }} onClick={() => setShowDeleteModal(true)}>Xóa tài khoản</button>
-            </div>
-          )}
+          <div style={{ 
+            padding: '24px', 
+            borderRadius: '24px', 
+            background: 'rgba(239, 68, 68, 0.05)', 
+            border: '1px solid rgba(239, 68, 68, 0.1)',
+            textAlign: 'center'
+          }}>
+            <h4 style={{ color: '#ef4444', fontWeight: 900, fontSize: '0.9rem', marginBottom: '4px' }}>Khu vực nguy hiểm</h4>
+            <p style={{ color: '#ef4444', fontSize: '0.75rem', fontWeight: 600, marginBottom: '16px', opacity: 0.7 }}>Thao tác này không thể khôi phục</p>
+            <button 
+              className="btn btn-pill" 
+              style={{ background: '#ef4444', color: 'white', width: '100%', fontWeight: 800, padding: '12px' }} 
+              onClick={() => setShowDeleteModal(true)}
+            >
+              Xóa tài khoản
+            </button>
+          </div>
         </div>
       </div>
 
@@ -268,18 +314,19 @@ const ThongTinCaNhan: React.FC = () => {
       {/* MODAL XÓA TÀI KHOẢN */}
       <Modal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)} title="Xác nhận xóa tài khoản" maxWidth="450px">
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-          <div style={{ width: '64px', height: '64px', background: 'var(--danger-light, rgba(239,68,68,0.1))', color: 'var(--danger)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+          <div style={{ width: '64px', height: '64px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
             <span className="material-symbols-outlined" style={{ fontSize: '32px' }}>warning</span>
           </div>
-          <h4 style={{ margin: '0 0 12px 0', fontSize: '1.1rem', fontWeight: 900, color: 'var(--ink)' }}>Hành động không thể hoàn tác!</h4>
-          <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--gray-500)', fontWeight: 600, lineHeight: 1.6 }}>
-            Bạn có chắc chắn muốn xóa tài khoản? Mọi dữ liệu về thú cưng và lịch sử khám bệnh sẽ bị vô hiệu hóa.
+          <h4 style={{ margin: '0 0 12px 0', fontSize: '1.2rem', fontWeight: 950, color: 'var(--ink)' }}>XÁC NHẬN XÓA TÀI KHOẢN?</h4>
+          <p style={{ margin: 0, fontSize: '0.95rem', color: 'var(--gray-500)', fontWeight: 600, lineHeight: 1.6 }}>
+            Hành động này <span style={{ color: '#ef4444', fontWeight: 800 }}>KHÔNG THỂ HOÀN TÁC</span>. 
+            Tất cả hồ sơ thú cưng, lịch hẹn và dữ liệu liên quan sẽ bị xóa vĩnh viễn khỏi hệ thống của chúng tôi.
           </p>
         </div>
         <div style={{ display: 'grid', gap: '12px' }}>
           <button
             className="btn btn-pill"
-            style={{ background: 'var(--danger)', color: 'white', width: '100%', padding: '14px', fontWeight: 800 }}
+            style={{ background: '#ef4444', color: 'white', width: '100%', padding: '14px', fontWeight: 800 }}
             onClick={handleDeleteAccount}
             disabled={isDeleting}
           >

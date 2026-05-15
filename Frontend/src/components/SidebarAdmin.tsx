@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { getUserProfile } from '../utils/index';
+import { getUserProfile } from "@utils/index";
 
 import ThemeToggle from './ThemeToggle';
 
@@ -10,34 +10,74 @@ const SidebarAdmin: React.FC = () => {
 
 
 
-  const user = useMemo(() => {
-    return getUserProfile() || {};
-  }, []);
+  const user = getUserProfile() || {};
 
-  const userRole = user?.ten_vai_tro?.toLowerCase() || user?.loai_tai_khoan?.toLowerCase() || 'staff';
+  let userRole = (user?.loai_tai_khoan || user?.ten_vai_tro || 'staff').toLowerCase();
+  
+  // Chuẩn hóa quyền toàn diện từ tiếng Việt sang mã kỹ thuật
+  if (userRole.includes('quản trị') || userRole.includes('admin') || userRole === 'vt-1') userRole = 'admin';
+  else if (userRole.includes('bác sĩ') || userRole.includes('doctor') || userRole.includes('bac_si') || userRole === 'vt-2') userRole = 'bac_si';
+  else if (userRole.includes('nhân viên') || userRole.includes('staff') || userRole === 'vt-3') userRole = 'staff';
+  else if (userRole.includes('kế toán') || userRole.includes('accountant') || userRole.includes('ke_toan') || userRole === 'vt-4') userRole = 'ke_toan';
+  else if (userRole.includes('quản lý') || userRole.includes('manager') || userRole.includes('quan_ly') || userRole === 'vt-6') userRole = 'quan_ly';
+  else if (userRole.includes('tiếp tân') || userRole.includes('reception') || userRole.includes('tiep_tan') || userRole === 'vt-7') userRole = 'tiep_tan';
+  else if (userRole.includes('y tá') || userRole.includes('điều dưỡng') || userRole.includes('nurse') || userRole.includes('y_ta') || userRole === 'vt-8') userRole = 'y_ta';
+  else userRole = 'staff';
 
   const allMenuItems = [
-    { path: '/quan-ly/dashboard', icon: 'dashboard', label: 'Tổng quan', roles: ['admin', 'staff', 'bac_si', 'quan_ly', 'tiep_tan', 'y_ta', 'ke_toan'] },
-    { path: '/quan-ly/lich-hen', icon: 'calendar_month', label: 'Lịch hẹn', roles: ['admin', 'staff', 'bac_si', 'quan_ly', 'tiep_tan', 'y_ta'] },
-    { path: '/quan-ly/lich-lam-viec', icon: 'edit_calendar', label: 'Lịch làm việc nhân sự', roles: ['admin', 'staff', 'bac_si', 'quan_ly', 'tiep_tan', 'y_ta', 'ke_toan'] },
-    { path: '/quan-ly/nhan-vien-phan-quyen', icon: 'badge', label: 'Nhân sự & Phân quyền', roles: ['admin'] },
-    { path: '/quan-ly/khach-hang-thu-cung', icon: 'groups', label: 'Khách hàng', roles: ['admin', 'staff', 'bac_si', 'quan_ly', 'tiep_tan', 'y_ta'] },
-    { path: '/quan-ly/khach-hang-thu-cung', icon: 'pets', label: 'Thú cưng', roles: ['admin', 'staff', 'bac_si', 'quan_ly', 'tiep_tan', 'y_ta'] },
-    { path: '/quan-ly/dich-vu', icon: 'medical_information', label: 'Dịch vụ', roles: ['admin', 'quan_ly', 'staff', 'tiep_tan', 'y_ta'] },
-    { path: '/quan-ly/kho-thuoc', icon: 'medication', label: 'Kho thuốc', roles: ['admin', 'staff', 'bac_si', 'quan_ly', 'y_ta', 'ke_toan'] },
-    { path: '/quan-ly/ho-so-benh-an', icon: 'clinical_notes', label: 'Bệnh án', roles: ['admin', 'bac_si', 'quan_ly', 'y_ta'] },
-    { path: '/quan-ly/don-thuoc', icon: 'description', label: 'Đơn thuốc', roles: ['admin', 'bac_si', 'quan_ly', 'y_ta'] },
-    { path: '/quan-ly/xet-nghiem', icon: 'biotech', label: 'Xét nghiệm', roles: ['admin', 'bac_si', 'quan_ly', 'y_ta'] },
-    { path: '/quan-ly/hoa-don', icon: 'receipt_long', label: 'Hóa đơn', roles: ['admin', 'quan_ly', 'ke_toan', 'tiep_tan'] },
+    { isHeader: true, label: 'TỔNG QUAN', roles: ['admin', 'staff', 'bac_si', 'quan_ly', 'tiep_tan', 'y_ta', 'ke_toan'] },
+    { path: '/quan-ly/dashboard', icon: 'dashboard', label: 'Bảng điều khiển', roles: ['admin', 'staff', 'bac_si', 'quan_ly', 'tiep_tan', 'y_ta', 'ke_toan'] },
+    { path: '/quan-ly/bao-cao-thong-ke', icon: 'monitoring', label: 'Báo cáo & Thống kê', roles: ['admin', 'quan_ly', 'ke_toan'] },
+
+    { isHeader: true, label: 'LỊCH TRÌNH & NHÂN SỰ', roles: ['admin', 'quan_ly', 'staff', 'bac_si', 'tiep_tan', 'y_ta', 'ke_toan'] },
+    { path: '/quan-ly/lich-hen', icon: 'calendar_month', label: 'Quản lý lịch hẹn', roles: ['admin', 'staff', 'bac_si', 'quan_ly', 'tiep_tan', 'y_ta'] },
+    { 
+      path: '/quan-ly/lich-lam-viec', 
+      icon: 'edit_calendar', 
+      label: (userRole === 'admin' || userRole === 'quan_ly') ? 'Điều hành nhân sự' : 'Lịch trực của tôi', 
+      roles: ['admin', 'staff', 'bac_si', 'quan_ly', 'tiep_tan', 'y_ta', 'ke_toan'] 
+    },
+    { path: '/quan-ly/nhan-vien-phan-quyen', icon: 'badge', label: 'Nhân sự & Quyền hạn', roles: ['admin'] },
+
+    { isHeader: true, label: 'KHÁCH HÀNG & DỊCH VỤ', roles: ['admin', 'staff', 'bac_si', 'quan_ly', 'tiep_tan', 'y_ta'] },
+    { path: '/quan-ly/khach-hang-thu-cung', icon: 'groups', label: 'Khách hàng & Thú cưng', roles: ['admin', 'staff', 'bac_si', 'quan_ly', 'tiep_tan', 'y_ta'] },
+    { path: '/quan-ly/dich-vu', icon: 'medical_information', label: 'Danh mục dịch vụ', roles: ['admin', 'quan_ly', 'staff', 'tiep_tan', 'y_ta'] },
+
+    { isHeader: true, label: 'CHUYÊN MÔN LÂM SÀNG', roles: ['admin', 'bac_si', 'quan_ly', 'y_ta'] },
+    { path: '/quan-ly/kham-benh', icon: 'stethoscope', label: 'Khám bệnh & Kê đơn', roles: ['admin', 'bac_si', 'quan_ly'] },
+    { path: '/quan-ly/ho-so-benh-an', icon: 'clinical_notes', label: 'Hồ sơ bệnh án', roles: ['admin', 'bac_si', 'quan_ly', 'y_ta'] },
+    { path: '/quan-ly/don-thuoc', icon: 'description', label: 'Kê đơn & Thuốc', roles: ['admin', 'bac_si', 'quan_ly', 'y_ta'] },    
+    { path: '/quan-ly/xet-nghiem', icon: 'biotech', label: 'Xét nghiệm & Cận lâm sàng', roles: ['admin', 'bac_si', 'quan_ly', 'y_ta'] },
+
+    { isHeader: true, label: 'KHO & TÀI CHÍNH', roles: ['admin', 'quan_ly', 'ke_toan', 'tiep_tan', 'bac_si', 'y_ta', 'staff'] },
+    { path: '/quan-ly/kho-thuoc', icon: 'medication', label: 'Danh mục kho thuốc', roles: ['admin', 'staff', 'bac_si', 'quan_ly', 'y_ta', 'ke_toan'] },
+    { path: '/quan-ly/nhap-kho', icon: 'inventory_2', label: 'Nhập kho & Kiểm kê', roles: ['admin', 'quan_ly', 'ke_toan'] },
+    { path: '/quan-ly/hoa-don', icon: 'receipt_long', label: 'Hóa đơn & Thanh toán', roles: ['admin', 'quan_ly', 'ke_toan', 'tiep_tan'] },
     { path: '/quan-ly/ke-toan', icon: 'account_balance', label: 'Tài chính - Kế toán', roles: ['admin', 'quan_ly', 'ke_toan'] },
-    { path: '/quan-ly/bao-cao-thong-ke', icon: 'monitoring', label: 'Thống kê', roles: ['admin', 'quan_ly', 'ke_toan'] },
-    { path: '/quan-ly/marketing', icon: 'campaign', label: 'Marketing', roles: ['admin', 'quan_ly', 'tiep_tan'] },
-    { path: '/quan-ly/file-dinh-kem', icon: 'folder_open', label: 'Tệp đính kèm', roles: ['admin', 'quan_ly', 'bac_si', 'y_ta'] },
-    { path: '/quan-ly/cau-hinh', icon: 'settings', label: 'Cấu hình hệ thống', roles: ['admin'] },
+
+    { isHeader: true, label: 'MARKETING & TÀI LIỆU', roles: ['admin', 'quan_ly', 'tiep_tan', 'bac_si', 'y_ta'] },
+    { path: '/quan-ly/marketing', icon: 'campaign', label: 'Chiến dịch Marketing', roles: ['admin', 'quan_ly', 'tiep_tan'] },
+    { path: '/quan-ly/file-dinh-kem', icon: 'folder_open', label: 'Quản lý tệp tin', roles: ['admin', 'quan_ly', 'bac_si', 'y_ta'] },
+
+    { isHeader: true, label: 'CẤU HÌNH HỆ THỐNG', roles: ['admin', 'staff', 'bac_si', 'quan_ly', 'tiep_tan', 'y_ta', 'ke_toan'] },
+    { path: '/quan-ly/cau-hinh', icon: 'settings', label: 'Cài đặt chung', roles: ['admin'] },
     { path: '/quan-ly/chuc-nang', icon: 'extension', label: 'Phân hệ chức năng', roles: ['admin'] },
+    { path: '/quan-ly/thong-tin-ca-nhan', icon: 'person', label: 'Hồ sơ cá nhân', roles: ['admin', 'staff', 'bac_si', 'quan_ly', 'tiep_tan', 'y_ta', 'ke_toan'] },
   ];
 
+  // Chỉ lấy những mục mà user có quyền truy cập
   const menuItems = allMenuItems.filter(item => item.roles.some(role => userRole.includes(role)));
+  
+  // Loại bỏ các header liên tiếp hoặc header ở cuối (do các menu con bên trong bị ẩn)
+  const filteredMenuItems = menuItems.filter((item, index, array) => {
+    if (item.isHeader) {
+      // Nếu là phần tử cuối cùng thì ẩn
+      if (index === array.length - 1) return false;
+      // Nếu phần tử tiếp theo cũng là header thì ẩn
+      if (array[index + 1].isHeader) return false;
+    }
+    return true;
+  });
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -47,7 +87,11 @@ const SidebarAdmin: React.FC = () => {
   };
 
   // Hàm xóa số thứ tự ở đầu tên (Ví dụ: "1. Nguyễn Văn A" -> "Nguyễn Văn A")
-  const cleanName = (name: string) => name ? name.replace(/^\d+\.\s*/, '').trim() : '';
+  const cleanName = (name: string) => {
+    if (!name) return '';
+    const cleaned = name.replace(/^\d+\.\s*/, '').trim();
+    return cleaned.toLowerCase() === 'admin' ? 'Quản trị viên' : cleaned;
+  };
 
   return (
     <div className="glass-card" style={{
@@ -84,9 +128,11 @@ const SidebarAdmin: React.FC = () => {
             }
           </span>
         </div>
-        <div style={{ overflow: 'hidden' }}>
-          <p style={{ fontWeight: 900, fontSize: '0.9rem', color: 'var(--ink)', margin: 0, whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{cleanName(user.ho_ten || user.displayName || 'Nhân viên')}</p>
-          <p style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--primary)', margin: 0, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+        <div style={{ overflow: 'hidden', flex: 1 }}>
+          <p style={{ fontWeight: 950, fontSize: '1rem', color: 'var(--ink)', margin: 0, whiteSpace: 'nowrap', textOverflow: 'ellipsis', letterSpacing: '-0.5px' }}>
+            {cleanName(user.display_name || user.displayName || user.ho_ten || user.hoTen || user.fullName || user.ten_khach_hang || user.ten_dang_nhap || user.username || 'Người dùng Rexi')}
+          </p>
+          <p style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--primary)', margin: '2px 0 0 0', textTransform: 'uppercase', letterSpacing: '1px' }}>
             {
               userRole.includes('bac_si') ? 'Bác sĩ chuyên khoa' :
                 userRole.includes('admin') ? 'Quản trị tối cao' :
@@ -100,12 +146,22 @@ const SidebarAdmin: React.FC = () => {
       </div>
 
       <nav style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px', overflowY: 'auto' }}>
-        {menuItems.map((item) => {
+        {filteredMenuItems.map((item, index) => {
+          if (item.isHeader) {
+            return (
+              <div key={`header-${index}`} style={{ marginTop: index === 0 ? '0' : '16px', marginBottom: '4px', padding: '0 12px' }}>
+                <span style={{ fontSize: '0.65rem', fontWeight: 900, color: 'var(--gray-400)', letterSpacing: '1px', textTransform: 'uppercase' }}>
+                  {item.label}
+                </span>
+              </div>
+            );
+          }
+
           const isActive = location.pathname === item.path;
           return (
             <Link
               key={item.path}
-              to={item.path}
+              to={item.path || '#'}
               className="sidebar-link"
               style={{
                 display: 'flex',

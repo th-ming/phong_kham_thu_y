@@ -1,18 +1,19 @@
 import React, { useMemo, useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import axiosInstance from "@services/axios";
 import { formatTienVND, getUserProfile } from "@utils/index";
 import { toast } from "@components/Toast";
 
 const DatLichHen: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [pets, setPets] = useState<any[]>([]);
   const [doctors, setDoctors] = useState<any[]>([]);
   const [services, setServices] = useState<any[]>([]);
 
-  const [idThuCung, setIdThuCung] = useState("");
-  const [idDichVu, setIdDichVu] = useState("");
-  const [idBacSi, setIdBacSi] = useState("");
+  const [idThuCung, setIdThuCung] = useState(searchParams.get("id_thu_cung") || "");
+  const [idDichVu, setIdDichVu] = useState(searchParams.get("id_dich_vu") || "");
+  const [idBacSi, setIdBacSi] = useState(searchParams.get("id_bac_si") || "");
   const [date, setDate] = useState("");
   const [availableSlots, setAvailableSlots] = useState<string[]>([]);
   const [time, setTime] = useState("");
@@ -20,8 +21,10 @@ const DatLichHen: React.FC = () => {
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // CHUYỂN GET USER RA NGOÀI CÙNG COMPONENT ĐỂ KHÔNG VI PHẠM LUẬT HOOK
+  const user = getUserProfile();
+
   useEffect(() => {
-    const user = getUserProfile();
     if (user) {
       const idKhachHang = user?.id_khach_hang || user?.id;
       if (idKhachHang) {
@@ -42,7 +45,8 @@ const DatLichHen: React.FC = () => {
       axiosInstance.get(`/api/lich-hen/gio-ranh?id_nhan_vien=${bacSiParam}&ngay=${date}&id_dich_vu=${idDichVu}`)
         .then(res => {
           const now = new Date();
-          const isToday = date === new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+          const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+          const isToday = date === todayStr;
           let slots = res.data;
 
           if (isToday) {
@@ -70,8 +74,8 @@ const DatLichHen: React.FC = () => {
   const handleBooking = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const u = getUserProfile();
-    if (u?.loai_tai_khoan !== 'khach_hang') {
+    const role = String(user?.loai_tai_khoan || '').toLowerCase();
+    if (role !== 'khach_hang' && role !== 'customer') {
       toast.error("Tài khoản nội bộ (Admin/Nhân viên) không được phép đặt lịch khám. Vui lòng dùng tài khoản Khách hàng!");
       return;
     }
@@ -97,7 +101,7 @@ const DatLichHen: React.FC = () => {
     }
 
     setLoading(true);
-    const idKhachHang = u?.id_khach_hang || u?.id;
+    const idKhachHang = user?.id_khach_hang || user?.id;
     if (!idKhachHang) {
       toast.error("Không tìm thấy thông tin tài khoản. Vui lòng đăng nhập lại!");
       setLoading(false);

@@ -13,12 +13,12 @@ const AdminLayout: React.FC = () => {
       navigate("/dang-nhap", { replace: true });
       return;
     }
-    
+
     try {
       const user = JSON.parse(userStr);
-      const role = user.loai_tai_khoan?.toLowerCase() || "";
-      // FIX: Backend trả về "CUSTOMER" (không phải "khach_hang")
-      if (role === "customer") {
+      const role = (user.loai_tai_khoan || user.ten_vai_tro || "").toLowerCase();
+      // Chặn triệt để cả trường hợp backend trả về "customer" hoặc "khach_hang"
+      if (role === "customer" || role === "khach_hang") {
         navigate("/khach-hang/dashboard", { replace: true });
       }
     } catch (e) {
@@ -27,11 +27,18 @@ const AdminLayout: React.FC = () => {
   }, [navigate]);
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", background: "var(--background)" }}>
+    // Đổi minHeight thành height và chặn cuộn tổng thể để Sidebar được ghim cố định
+    <div style={{ display: "flex", height: "100vh", overflow: "hidden", background: "var(--background)" }}>
       <SidebarAdmin />
-      <main style={{ flex: 1, padding: "40px", overflowY: "auto", position: 'relative' }}>
+      <main className="main-content" style={{ flex: 1, padding: "40px", overflowY: "auto", position: 'relative' }}>
         <div className="animate-fade-in">
-          <Outlet />
+          <React.Suspense fallback={
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
+              <div className="dot-pulse"></div>
+            </div>
+          }>
+            <Outlet />
+          </React.Suspense>
         </div>
       </main>
       <ScrollToTop />

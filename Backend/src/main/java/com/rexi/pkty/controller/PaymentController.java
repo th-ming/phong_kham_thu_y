@@ -19,13 +19,13 @@ public class PaymentController {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    // Báº¢O Máº¬T: Secret dÃ¹ng Ä‘á»ƒ xÃ¡c thá»±c Webhook tá»« SePay/Casso/PayOS
-    // Cáº¥u hÃ¬nh trong application.properties: webhook.secret=YOUR_SECRET
+    // BẢO MẬT: Secret dùng để xác thực Webhook từ SePay/Casso/PayOS
+    // Cấu hình trong application.properties: webhook.secret=YOUR_SECRET
     @org.springframework.beans.factory.annotation.Value("${webhook.secret:rexi_webhook_secret_2026}")
     private String webhookSecret;
 
     // =========================================================================
-    // TÃCH Há»¢P VNPAY
+    // TÍCH HỢP VNPAY
     // =========================================================================
     @org.springframework.beans.factory.annotation.Value("${vnpay.tmn.code:YOUR_VNPAY_TMN_CODE}")
     private String vnp_TmnCode;
@@ -76,7 +76,7 @@ public class PaymentController {
 
             return ResponseEntity.ok(Map.of("url", paymentUrl));
         } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of("message", "Lá»—i táº¡o URL thanh toÃ¡n: " + e.getMessage()));
+            return ResponseEntity.status(500).body(Map.of("message", "Lỗi tạo URL thanh toán: " + e.getMessage()));
         }
     }
 
@@ -85,7 +85,7 @@ public class PaymentController {
         try {
             String vnp_SecureHash = queryParams.get("vnp_SecureHash");
             if (vnp_SecureHash == null)
-                return ResponseEntity.badRequest().body(Map.of("message", "Thiáº¿u chá»¯ kÃ½", "success", false));
+                return ResponseEntity.badRequest().body(Map.of("message", "Thiếu chữ ký", "success", false));
             queryParams.remove("vnp_SecureHash");
             queryParams.remove("vnp_SecureHashType");
             String signValue = VNPayConfig.hashAllFields(queryParams, vnp_HashSecret);
@@ -97,43 +97,43 @@ public class PaymentController {
                     jdbcTemplate.update("UPDATE HoaDon SET trang_thai = 'da_thanh_toan' WHERE id_hoa_don = ?",
                             idHoaDon);
                     jdbcTemplate.update(
-                            "INSERT INTO ThanhToan (id_hoa_don, ngay_thanh_toan, so_tien, phuong_thuc, trang_thai) VALUES (?, GETDATE(), ?, 'VNPay', N'ThÃ nh cÃ´ng')",
+                            "INSERT INTO ThanhToan (id_hoa_don, ngay_thanh_toan, so_tien, phuong_thuc, trang_thai) VALUES (?, GETDATE(), ?, 'VNPay', N'Thành công')",
                             idHoaDon, amountPaid);
-                    return ResponseEntity.ok(Map.of("message", "Thanh toÃ¡n thÃ nh cÃ´ng!", "success", true));
+                    return ResponseEntity.ok(Map.of("message", "Thanh toán thành công!", "success", true));
                 }
-                return ResponseEntity.ok(Map.of("message", "Giao dá»‹ch tháº¥t báº¡i.", "success", false));
+                return ResponseEntity.ok(Map.of("message", "Giao dịch thất bại.", "success", false));
             }
-            return ResponseEntity.status(400).body(Map.of("message", "Chá»¯ kÃ½ sai!", "success", false));
+            return ResponseEntity.status(400).body(Map.of("message", "Chữ ký sai!", "success", false));
         } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of("message", "Lá»—i: " + e.getMessage(), "success", false));
+            return ResponseEntity.status(500).body(Map.of("message", "Lỗi: " + e.getMessage(), "success", false));
         }
     }
 
     // =========================================================================
-    // Cáº¤U HÃŒNH TÃ€I KHOáº¢N NGÃ‚N HÃ€NG NHáº¬N TIá»€N (VIETQR)
+    // CẤU HÌNH TÀI KHOẢN NGÂN HÀNG NHẬN TIỀN (VIETQR)
     // =========================================================================
-    // Sáº¿p hÃ£y thay Ä‘á»•i cÃ¡c thÃ´ng tin bÃªn dÆ°á»›i thÃ nh cá»§a sáº¿p:
-    private static final String BANK_ID = "MB"; // MÃ£ ngÃ¢n hÃ ng (VD: MB, VCB, TCB, ICB...)
-    private static final String ACCOUNT_NO = "***REMOVED***"; // Sá»‘ tÃ i khoáº£n ngÃ¢n hÃ ng cá»§a sáº¿p
-    private static final String ACCOUNT_NAME = "TRAN MINH HOANG"; // TÃªn chá»§ TK khÃ´ng dáº¥u
+    // Sếp hãy thay đổi các thông tin bên dưới thành của sếp:
+    private static final String BANK_ID = "MB"; // Mã ngân hàng (VD: MB, VCB, TCB, ICB...)
+    private static final String ACCOUNT_NO = "***REMOVED***"; // Số tài khoản ngân hàng của sếp
+    private static final String ACCOUNT_NAME = "TRAN MINH HOANG"; // Tên chủ TK không dấu
 
-    // API Táº¡o mÃ£ VietQR Ä‘á»™ng (NhÃºng sáºµn sá»‘ tiá»n vÃ  ná»™i dung)
+    // API Tạo mã VietQR động (Nhúng sẵn số tiền và nội dung)
     @PostMapping("/vietqr/generate")
     public ResponseEntity<?> generateVietQR(@RequestBody Map<String, Object> payload) {
         try {
             if (payload.get("id_hoa_don") == null || payload.get("amount") == null) {
-                return ResponseEntity.badRequest().body(Map.of("message", "Thiáº¿u thÃ´ng tin id_hoa_don hoáº·c amount!"));
+                return ResponseEntity.badRequest().body(Map.of("message", "Thiếu thông tin id_hoa_don hoặc amount!"));
             }
 
             String idHoaDon = payload.get("id_hoa_don").toString();
             String amount = payload.get("amount").toString();
 
-            // Ná»™i dung chuyá»ƒn khoáº£n chuáº©n: REXI HD + ID HÃ³a Ä‘Æ¡n
-            // VÃ­ dá»¥: REXI HD123
+            // Nội dung chuyển khoản chuẩn: REXI HD + ID Hóa đơn
+            // Ví dụ: REXI HD123
             String addInfo = "REXI HD" + idHoaDon;
 
-            // Sá»­ dá»¥ng API vietqr.io (Miá»…n phÃ­) Ä‘á»ƒ sinh URL áº£nh QR
-            // Máº«u compact2 lÃ  máº«u tá»‘i giáº£n, hiá»‡n Ä‘áº¡i
+            // Sử dụng API vietqr.io (Miễn phí) để sinh URL ảnh QR
+            // Mẫu compact2 là mẫu tối giản, hiện đại
             String qrUrl = String.format(
                     "https://img.vietqr.io/image/%s-%s-compact2.png?amount=%s&addInfo=%s&accountName=%s",
                     BANK_ID, ACCOUNT_NO, amount,
@@ -145,51 +145,51 @@ public class PaymentController {
                     "add_info", addInfo,
                     "amount", amount));
         } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of("message", "Lá»—i táº¡o mÃ£ VietQR: " + e.getMessage()));
+            return ResponseEntity.status(500).body(Map.of("message", "Lỗi tạo mã VietQR: " + e.getMessage()));
         }
     }
 
-    // API Webhook - Há»‡ thá»‘ng tá»± Ä‘á»™ng gáº¡ch ná»£ (Há»©ng tá»« PayOS / SePay / Casso)
+    // API Webhook - Hệ thống tự động gạch nợ (Hứng từ PayOS / SePay / Casso)
     @PostMapping("/vietqr/webhook")
     public ResponseEntity<?> vietqrWebhook(
             @RequestBody Map<String, Object> payload,
             @RequestHeader(value = "X-Webhook-Secret", required = false) String receivedSecret) {
         try {
-            // Báº¢O Máº¬T Lá»šP 1: XÃ¡c thá»±c chá»¯ kÃ½ bÃ­ máº­t tá»« SePay/Casso
-            // Náº¿u khÃ´ng khá»›p â†’ tá»« chá»‘i ngay, khÃ´ng xá»­ lÃ½ gÃ¬ cáº£
+            // BẢO MẬT LỚP 1: Xác thực chữ ký bí mật từ SePay/Casso
+            // Nếu không khớp → từ chối ngay, không xử lý gì cả
             if (receivedSecret == null || !receivedSecret.equals(webhookSecret)) {
-                System.err.println("âš ï¸ Webhook bá»‹ tá»« chá»‘i: Sai hoáº·c thiáº¿u X-Webhook-Secret!");
+                System.err.println("⚠️ Webhook bị từ chối: Sai hoặc thiếu X-Webhook-Secret!");
                 return ResponseEntity.status(401).body(Map.of("success", false, "message", "Unauthorized"));
             }
 
-            System.out.println("ðŸ“© Nháº­n Webhook há»£p lá»‡: " + payload);
+            System.out.println("📩 Nhận Webhook hợp lệ: " + payload);
 
-            // BÃ³c tÃ¡ch ná»™i dung chuyá»ƒn khoáº£n linh hoáº¡t (Há»— trá»£ PayOS / SePay / Casso)
+            // Bóc tách nội dung chuyển khoản linh hoạt (Hỗ trợ PayOS / SePay / Casso)
             String content = "";
             java.math.BigDecimal soTien = java.math.BigDecimal.ZERO;
 
-            if (payload.containsKey("data")) { // Cáº¥u trÃºc PayOS
+            if (payload.containsKey("data")) { // Cấu trúc PayOS
                 Map<String, Object> data = (Map<String, Object>) payload.get("data");
                 content = String.valueOf(data.getOrDefault("description", ""));
                 if (data.get("amount") != null) {
                     soTien = new java.math.BigDecimal(data.get("amount").toString());
                 }
-            } else { // Cáº¥u trÃºc SePay / Casso
+            } else { // Cấu trúc SePay / Casso
                 content = payload.containsKey("content") ? String.valueOf(payload.get("content"))
                         : String.valueOf(payload.getOrDefault("transactionContent", ""));
-                // FIX Lá»–I: Láº¥y sá»‘ tiá»n tháº­t thay vÃ¬ hardcode 0
+                // FIX LỖI: Lấy số tiền thật thay vì hardcode 0
                 Object amt = payload.containsKey("transferAmount") ? payload.get("transferAmount")
                         : payload.getOrDefault("amount", "0");
                 if (amt != null) soTien = new java.math.BigDecimal(amt.toString());
             }
 
             if (content == null || content.trim().isEmpty()) {
-                return ResponseEntity.ok(Map.of("success", true, "message", "Bá» qua: khÃ´ng cÃ³ ná»™i dung"));
+                return ResponseEntity.ok(Map.of("success", true, "message", "Bỏ qua: không có nội dung"));
             }
 
             content = content.toUpperCase();
 
-            // Regex báº¯t mÃ£ hÃ³a Ä‘Æ¡n trong ná»™i dung (REXI HD123, REXIHD 123, REXIHD123...)
+            // Regex bắt mã hóa đơn trong nội dung (REXI HD123, REXIHD 123, REXIHD123...)
             java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("REXI\\s*HD\\s*(\\d+)");
             java.util.regex.Matcher matcher = pattern.matcher(content);
 
@@ -200,18 +200,18 @@ public class PaymentController {
                         idHoaDon);
 
                 if (updated > 0) {
-                    // FIX Lá»–I: Ghi sá»‘ tiá»n tháº­t vÃ o lá»‹ch sá»­ thay vÃ¬ hardcode 0
+                    // FIX LỖI: Ghi số tiền thật vào lịch sử thay vì hardcode 0
                     final java.math.BigDecimal finalSoTien = soTien;
                     jdbcTemplate.update(
-                            "INSERT INTO ThanhToan (id_hoa_don, ngay_thanh_toan, so_tien, phuong_thuc, trang_thai) VALUES (?, GETDATE(), ?, 'VietQR', N'ThÃ nh cÃ´ng')",
+                            "INSERT INTO ThanhToan (id_hoa_don, ngay_thanh_toan, so_tien, phuong_thuc, trang_thai) VALUES (?, GETDATE(), ?, 'VietQR', N'Thành công')",
                             idHoaDon, finalSoTien);
-                    System.out.println("âœ… Gáº CH Ná»¢ THÃ€NH CÃ”NG: HÃ³a Ä‘Æ¡n #" + idHoaDon + " | Sá»‘ tiá»n: " + finalSoTien);
+                    System.out.println("✅ GẠCH NỢ THÀNH CÔNG: Hóa đơn #" + idHoaDon + " | Số tiền: " + finalSoTien);
                 }
             }
 
             return ResponseEntity.ok(Map.of("success", true));
         } catch (Exception e) {
-            System.err.println("âŒ Lá»—i xá»­ lÃ½ Webhook: " + e.getMessage());
+            System.err.println("❌ Lỗi xử lý Webhook: " + e.getMessage());
             return ResponseEntity.status(500).body(Map.of("success", false));
         }
     }

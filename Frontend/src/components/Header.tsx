@@ -13,7 +13,9 @@ const Header: React.FC<{ hideMenu?: boolean }> = ({ hideMenu }) => {
 
   // Hàm xóa số thứ tự ở đầu tên (Ví dụ: "1. Nguyễn Văn A" -> "Nguyễn Văn A")
   const cleanName = (name: string) => {
-    return name ? name.replace(/^\d+\.\s*/, '').trim() : '';
+    if (!name) return '';
+    const cleaned = name.replace(/^\d+\.\s*/, '').trim();
+    return cleaned.toLowerCase() === 'admin' ? 'Quản trị viên' : cleaned;
   };
 
   useEffect(() => {
@@ -151,7 +153,9 @@ const Header: React.FC<{ hideMenu?: boolean }> = ({ hideMenu }) => {
                   <span className="material-symbols-outlined" style={{ fontSize: '28px', color: 'white' }}>account_circle</span>
                 )}
               </div>
-              <span className="mobile-hide" style={{ fontSize: '0.85rem' }}>{cleanName(user.ten_khach_hang || user.ho_ten || user.displayName || "Cá nhân")}</span>
+              <span className="mobile-hide" style={{ fontSize: '0.85rem' }}>
+                {cleanName(user.display_name || user.displayName || user.ho_ten || user.hoTen || user.fullName || user.ten_khach_hang || user.ten_dang_nhap || user.username || "Người dùng Rexi")}
+              </span>
             </Link>
           ) : (
             <Link to="/dang-nhap" style={{ textDecoration: 'none', color: 'var(--ink)', fontWeight: 700, border: '1px solid var(--gray-200)', padding: '8px 20px', borderRadius: '50px' }}>Đăng nhập</Link>

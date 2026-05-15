@@ -86,7 +86,7 @@ public class EmailService {
                "      <p>Xin chào <span class='highlight'>" + customerName + "</span>,</p>" +
                "      <p>Chào mừng bạn đã gia nhập cộng đồng yêu thú cưng của <strong>Rexi Vet</strong>.</p>" +
                "      <p>Chúng tôi mang đến tiêu chuẩn y khoa quốc tế kết hợp cùng tình yêu thương vô bờ bến. Bé cưng của bạn sẽ được chăm sóc như chính gia đình chúng tôi.</p>" +
-               "      <a href='http://localhost:3000/khach-hang/dat-lich-hen' class='cta-button'>ĐẶT LỊCH KHÁM NGAY</a>" +
+               "      <a href='http://localhost:3005/khach-hang/dat-lich-hen' class='cta-button'>ĐẶT LỊCH KHÁM NGAY</a>" +
                "    </div>" +
                "    <div class='footer'>" +
                "      <p>Phòng Khám Thú Y Rexi - Đường dây cấp cứu 24/7: 0353 374 156</p>" +
@@ -155,6 +155,26 @@ public class EmailService {
                 mailSender.send(message);
             } catch (Exception e) {
                 System.err.println("Lỗi gửi mail nhắc nợ: " + e.getMessage());
+            }
+        });
+    }
+    /**
+     * Gửi email Marketing / Mass email
+     */
+    public void sendMassEmail(String toEmail, String subject, String htmlContent) {
+        if (mailSender == null) return;
+        CompletableFuture.runAsync(() -> {
+            try {
+                MimeMessage message = mailSender.createMimeMessage();
+                MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+                helper.setTo(toEmail);
+                helper.setSubject(subject);
+                // Convert \n to <br> to support simple text with line breaks as HTML
+                String formattedContent = htmlContent.replace("\n", "<br>");
+                helper.setText(formattedContent, true);
+                mailSender.send(message);
+            } catch (Exception e) {
+                System.err.println("Lỗi gửi mass mail cho " + toEmail + ": " + e.getMessage());
             }
         });
     }

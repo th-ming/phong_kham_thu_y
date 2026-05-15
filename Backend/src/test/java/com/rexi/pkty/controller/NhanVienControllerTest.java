@@ -22,7 +22,7 @@ public class NhanVienControllerTest extends BaseControllerTest {
     @WithMockUser(username = "admin", roles = {"ADMIN"})
     public void testThemNhanVien_Success() throws Exception {
         NhanVien nhanVien = new NhanVien();
-        nhanVien.setHoTen("Bac si Rexi Test");
+        nhanVien.setHo_ten("Bac si Rexi Test");
         nhanVien.setEmail("rexi.test@gmail.com");
 
         when(nhanVienRepository.save(any(NhanVien.class))).thenReturn(nhanVien);

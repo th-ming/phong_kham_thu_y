@@ -6,7 +6,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "HoaDon") // Káº¿t ná»‘i báº£ng hÃ³a Ä‘Æ¡n
+@Table(name = "HoaDon") // Kết nối bảng hóa đơn
 @Data
 public class HoaDon {
     @Id

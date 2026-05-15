@@ -40,7 +40,7 @@ const QuenMatKhau: React.FC = () => {
     setLoading(true);
     try {
       await axiosInstance.post("/api/system/send-otp", { email: accountInfo.email });
-      toast.success(`Đã gửi mã OTP tới ${accountInfo.email}`);
+      toast.success(`Đã gửi mã OTP tới ${accountInfo.email}. Vui lòng kiểm tra hòm thư (bao gồm cả thư rác/Spam)!`, { duration: 6000 });
       setStep(3); // Sang bước nhập OTP
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Lỗi gửi mã OTP!");
@@ -90,13 +90,24 @@ const QuenMatKhau: React.FC = () => {
   return (
     <div className="auth-container">
       <style>{`
-        .auth-container { min-height: 100vh; background: #f0f2f5 !important; display: flex; flex-direction: column; position: relative; overflow: hidden; }
+        .auth-container { min-height: 100vh; background: #f0f2f5 !important; display: flex; flex-direction: column; position: relative; overflow: hidden; transition: background 0.4s ease; }
         .auth-card { background: #ffffff !important; border-radius: 24px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1); overflow: hidden; position: relative; z-index: 10; display: grid; grid-template-columns: 1.1fr 1.2fr; width: 100%; max-width: 1050px; margin: auto; border: 1px solid #f1f5f9; }
         .auth-sidebar { background: #0d9488 !important; padding: 60px; color: white !important; display: flex; flex-direction: column; justify-content: center; text-align: center; }
         .input-group { background: #f8fafc !important; border: 1.5px solid #e2e8f0 !important; border-radius: 12px; padding: 4px 16px; margin-bottom: 12px; }
         .input-group input { background: transparent !important; border: none !important; width: 100%; padding: 14px 0; outline: none !important; font-weight: 600; color: #1e293b !important; }
         .btn-auth { background: #0d9488 !important; color: white !important; border: none !important; border-radius: 50px !important; padding: 16px !important; font-weight: 800 !important; cursor: pointer !important; width: 100% !important; transition: all 0.3s !important; }
         .tab-btn { flex: 1; padding: 12px; border-radius: 12px; border: none; font-weight: 800; cursor: pointer; transition: all 0.3s; }
+
+        /* --- DARK MODE OVERRIDES --- */
+        [data-theme='dark'] .auth-container { background: #020617 !important; }
+        [data-theme='dark'] .auth-card { background: rgba(15, 23, 42, 0.7) !important; border: 1px solid rgba(255,255,255,0.1) !important; }
+        [data-theme='dark'] .auth-sidebar { background: linear-gradient(135deg, #0d9488 0%, #8b5cf6 100%) !important; }
+        [data-theme='dark'] .input-group { background: rgba(255,255,255,0.03) !important; border-color: rgba(255,255,255,0.1) !important; }
+        [data-theme='dark'] .input-group input { color: #fff !important; }
+        [data-theme='dark'] .back-btn { background: rgba(255,255,255,0.1) !important; color: #fff !important; border-color: rgba(255,255,255,0.2) !important; }
+        [data-theme='dark'] .tab-container { background: rgba(0,0,0,0.3) !important; }
+        [data-theme='dark'] .tab-btn.active { background: rgba(255,255,255,0.1) !important; color: #fff !important; }
+        [data-theme='dark'] .tab-btn:not(.active) { color: #94a3b8 !important; }
       `}</style>
 
       <header style={{ padding: '30px 60px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative', zIndex: 10 }}>
@@ -109,7 +120,7 @@ const QuenMatKhau: React.FC = () => {
             <div style={{ fontSize: '0.7rem', fontWeight: 850, color: '#0d9488', opacity: 0.8 }}>Phòng Khám Thú Y</div>
           </div>
         </Link>
-        <Link to="/dang-nhap" style={{ background: 'white', color: '#1e293b', padding: '12px 24px', borderRadius: '50px', textDecoration: 'none', fontWeight: 800, border: '1px solid #e2e8f0' }}>Quay lại đăng nhập</Link>
+        <Link to="/dang-nhap" className="back-btn" style={{ background: 'white', color: '#1e293b', padding: '12px 24px', borderRadius: '50px', textDecoration: 'none', fontWeight: 800, border: '1px solid #e2e8f0', transition: 'all 0.3s' }}>Quay lại đăng nhập</Link>
       </header>
 
       <main style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
@@ -125,9 +136,9 @@ const QuenMatKhau: React.FC = () => {
           <div style={{ padding: '60px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
             {step === 1 && (
               <div>
-                <div style={{ display: 'flex', gap: '10px', marginBottom: '24px', background: '#f1f5f9', padding: '6px', borderRadius: '16px' }}>
-                  <button onClick={() => setMethod('quick')} className="tab-btn" style={{ background: method === 'quick' ? '#fff' : 'transparent', color: method === 'quick' ? '#0d9488' : '#64748b' }}>Xác minh nhanh</button>
-                  <button onClick={() => setMethod('otp')} className="tab-btn" style={{ background: method === 'otp' ? '#fff' : 'transparent', color: method === 'otp' ? '#0d9488' : '#64748b' }}>Dùng mã OTP</button>
+                <div className="tab-container" style={{ display: 'flex', gap: '10px', marginBottom: '24px', background: '#f1f5f9', padding: '6px', borderRadius: '16px' }}>
+                  <button onClick={() => setMethod('quick')} className={`tab-btn ${method === 'quick' ? 'active' : ''}`} style={{ background: method === 'quick' ? '#fff' : 'transparent', color: method === 'quick' ? '#0d9488' : '#64748b' }}>Xác minh nhanh</button>
+                  <button onClick={() => setMethod('otp')} className={`tab-btn ${method === 'otp' ? 'active' : ''}`} style={{ background: method === 'otp' ? '#fff' : 'transparent', color: method === 'otp' ? '#0d9488' : '#64748b' }}>Dùng mã OTP</button>
                 </div>
 
                 {method === 'quick' ? (
