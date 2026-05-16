@@ -281,6 +281,7 @@ public class LichHenController {
             LichHen saved = lichHenRepository.save(lichHen);
             return ResponseEntity.ok(saved);
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.status(500).body(Map.of("message", "Lỗi đặt lịch nhanh: " + e.getMessage()));
         }
     }
@@ -403,7 +404,7 @@ public class LichHenController {
                       "LEFT JOIN NhanVien nv ON lh.id_bac_si = nv.id_nhan_vien " +
                       "LEFT JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu " +
                       where + " ORDER BY lh.ngay_tao DESC " +
-                      "OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
+                      "OFFSET CAST(? AS INT) ROWS FETCH NEXT CAST(? AS INT) ROWS ONLY";
             }
             
             List<Map<String, Object>> content = jdbcTemplate.queryForList(sql, dataParams.toArray());
@@ -415,8 +416,10 @@ public class LichHenController {
                     "currentPage", page
             ));
         } catch (Exception e) {
-            System.err.println("Lỗi lấy lịch hẹn: " + e.getMessage());
-            return ResponseEntity.ok(Map.of(
+            e.printStackTrace();
+            System.err.println("Lỗi lấy lịch hẹn cho khách " + idKhachHang + ": " + e.getMessage());
+            return ResponseEntity.status(500).body(Map.of(
+                    "message", "Lỗi server khi lấy lịch hẹn: " + e.getMessage(),
                     "content", new java.util.ArrayList<>(),
                     "totalPages", 0,
                     "totalElements", 0,

@@ -216,7 +216,7 @@ const ThongTinCaNhanNhanVien: React.FC = () => {
                                 style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} 
                             />
                             {isEditing && (
-                                <label style={{ position: 'absolute', inset: '6px', background: 'rgba(0,0,0,0.5)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', cursor: 'pointer', transition: 'all 0.3s' }}>
+                                <label style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 'calc(100% - 12px)', height: 'calc(100% - 12px)', background: 'rgba(0,0,0,0.5)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', cursor: 'pointer', transition: 'all 0.3s', zIndex: 10 }}>
                                     <input type="file" accept="image/*" onChange={handleImageChange} style={{ display: 'none' }} />
                                     <span className="material-symbols-outlined" style={{ fontSize: '32px' }}>photo_camera</span>
                                 </label>

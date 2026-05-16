@@ -98,7 +98,8 @@ public class ThuCungController {
                 "currentPage", page
             ));
         } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of("message", "Lỗi lấy danh sách thú cưng: " + e.getMessage()));
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(Map.of("message", "Lỗi lấy danh sách thú cưng của khách " + idKhachHang + ": " + e.getMessage()));
         }
     }
  

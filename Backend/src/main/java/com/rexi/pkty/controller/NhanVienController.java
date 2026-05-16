@@ -156,27 +156,38 @@ public class NhanVienController {
             nv.setTrang_thai("ACTIVE");
             nv.setDa_xoa(false);
 
-            // 2. Tự động tạo Tài Khoản Đăng Nhập cho nhân sự mới (Kèm Role tương ứng)
-            if (nv.getEmail() != null && !nv.getEmail().isEmpty()) {
-                String username = nv.getEmail().split("@")[0];
+            // 2. Lưu NhanVien trước để có ID trong DB (Tránh lỗi FK_TaiKhoan_NhanVien)
+            NhanVien savedNv = nhanVienRepository.save(nv);
+
+            // 3. Tự động tạo Tài Khoản Đăng Nhập cho nhân sự mới (Kèm Role tương ứng)
+            if (savedNv.getEmail() != null && !savedNv.getEmail().isEmpty()) {
+                // Đảm bảo tên đăng nhập không bị trùng (tự động thêm số nếu trùng)
+                String baseUsername = savedNv.getEmail().split("@")[0];
+                String username = baseUsername;
+                int suffix = 0;
+                while (!taiKhoanRepository.findByTenDangNhap(username).isEmpty()) {
+                    suffix++;
+                    username = baseUsername + suffix;
+                }
                 if (taiKhoanRepository.findByTenDangNhap(username).isEmpty()) {
+
                     com.rexi.pkty.entity.TaiKhoan tk = new com.rexi.pkty.entity.TaiKhoan();
                     tk.setId_tai_khoan("TK-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase());
                     tk.setTen_dang_nhap(username);
-                    tk.setId_nhan_vien(nv.getId_nhan_vien());
+                    tk.setId_nhan_vien(savedNv.getId_nhan_vien());
 
                     // Phân quyền Role chuẩn dựa theo ID vừa sinh (Đã đồng bộ với DB)
-                    if (nv.getId_nhan_vien().matches("\\d+"))
+                    if (savedNv.getId_nhan_vien().matches("\\d+"))
                         tk.setId_vai_tro("VT-ADMIN"); // Admin
-                    else if (nv.getId_nhan_vien().startsWith("QL-"))
+                    else if (savedNv.getId_nhan_vien().startsWith("QL-"))
                         tk.setId_vai_tro("VT-QL"); // Quản lý
-                    else if (nv.getId_nhan_vien().startsWith("BS-"))
+                    else if (savedNv.getId_nhan_vien().startsWith("BS-"))
                         tk.setId_vai_tro("VT-BS"); // Bác sĩ
-                    else if (nv.getId_nhan_vien().startsWith("KT-"))
+                    else if (savedNv.getId_nhan_vien().startsWith("KT-"))
                         tk.setId_vai_tro("VT-KT"); // Kế toán
-                    else if (nv.getId_nhan_vien().startsWith("TT-"))
+                    else if (savedNv.getId_nhan_vien().startsWith("TT-"))
                         tk.setId_vai_tro("VT-TT"); // Tiếp tân
-                    else if (nv.getId_nhan_vien().startsWith("YT-"))
+                    else if (savedNv.getId_nhan_vien().startsWith("YT-"))
                         tk.setId_vai_tro("VT-YT"); // Y tá
                     else
                         tk.setId_vai_tro("VT-3"); // Nhân viên mặc định (VT-3)
@@ -191,11 +202,14 @@ public class NhanVienController {
                     tk.setMat_khau_hash(encodedPassword);
 
                     taiKhoanRepository.save(tk);
-                    nv.setId_tai_khoan(tk.getId_tai_khoan());
+                    
+                    // Cập nhật ngược lại ID tài khoản cho Nhân viên
+                    savedNv.setId_tai_khoan(tk.getId_tai_khoan());
+                    nhanVienRepository.save(savedNv);
                 }
             }
 
-            return org.springframework.http.ResponseEntity.ok(nhanVienRepository.save(nv));
+            return org.springframework.http.ResponseEntity.ok(savedNv);
         } catch (Exception e) {
             return org.springframework.http.ResponseEntity.status(500)
                     .body(Map.of("message", "Lỗi khi thêm nhân viên: " + e.getMessage()));

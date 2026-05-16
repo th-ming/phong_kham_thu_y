@@ -29,7 +29,7 @@ const SidebarAdmin: React.FC = () => {
     { path: '/quan-ly/dashboard', icon: 'dashboard', label: 'Bảng điều khiển', roles: ['admin', 'staff', 'bac_si', 'quan_ly', 'tiep_tan', 'y_ta', 'ke_toan'] },
     { path: '/quan-ly/bao-cao-thong-ke', icon: 'monitoring', label: 'Báo cáo & Thống kê', roles: ['admin', 'quan_ly', 'ke_toan'] },
 
-    { isHeader: true, label: 'LỊCH TRÌNH & NHÂN SỰ', roles: ['admin', 'quan_ly', 'staff', 'bac_si', 'tiep_tan', 'y_ta', 'ke_toan'] },
+    { isHeader: true, label: 'LỊCH TRÌNH & NHÂN SỰ', roles: ['admin', 'quan_ly', 'staff', 'bac_si', 'tiep_tan', 'y_ta'] },
     { path: '/quan-ly/lich-hen', icon: 'calendar_month', label: 'Quản lý lịch hẹn', roles: ['admin', 'staff', 'bac_si', 'quan_ly', 'tiep_tan', 'y_ta'] },
     { 
       path: '/quan-ly/lich-lam-viec', 
@@ -39,27 +39,27 @@ const SidebarAdmin: React.FC = () => {
     },
     { path: '/quan-ly/nhan-vien-phan-quyen', icon: 'badge', label: 'Nhân sự & Quyền hạn', roles: ['admin'] },
 
-    { isHeader: true, label: 'KHÁCH HÀNG & DỊCH VỤ', roles: ['admin', 'staff', 'bac_si', 'quan_ly', 'tiep_tan', 'y_ta'] },
-    { path: '/quan-ly/khach-hang-thu-cung', icon: 'groups', label: 'Khách hàng & Thú cưng', roles: ['admin', 'staff', 'bac_si', 'quan_ly', 'tiep_tan', 'y_ta'] },
-    { path: '/quan-ly/dich-vu', icon: 'medical_information', label: 'Danh mục dịch vụ', roles: ['admin', 'quan_ly', 'staff', 'tiep_tan', 'y_ta'] },
+    { isHeader: true, label: 'KHÁCH HÀNG & DỊCH VỤ', roles: ['admin', 'quan_ly', 'tiep_tan', 'bac_si', 'y_ta'] },
+    { path: '/quan-ly/khach-hang-thu-cung', icon: 'groups', label: 'Khách hàng & Thú cưng', roles: ['admin', 'quan_ly', 'tiep_tan', 'bac_si', 'y_ta'] },
+    { path: '/quan-ly/dich-vu', icon: 'medical_information', label: 'Danh mục dịch vụ', roles: ['admin', 'quan_ly', 'tiep_tan'] },
 
     { isHeader: true, label: 'CHUYÊN MÔN LÂM SÀNG', roles: ['admin', 'bac_si', 'quan_ly', 'y_ta'] },
-    { path: '/quan-ly/kham-benh', icon: 'stethoscope', label: 'Khám bệnh & Kê đơn', roles: ['admin', 'bac_si', 'quan_ly'] },
+    { path: '/quan-ly/kham-benh', icon: 'stethoscope', label: 'Khám bệnh & Kê đơn', roles: ['admin', 'bac_si'] },
     { path: '/quan-ly/ho-so-benh-an', icon: 'clinical_notes', label: 'Hồ sơ bệnh án', roles: ['admin', 'bac_si', 'quan_ly', 'y_ta'] },
-    { path: '/quan-ly/don-thuoc', icon: 'description', label: 'Kê đơn & Thuốc', roles: ['admin', 'bac_si', 'quan_ly', 'y_ta'] },    
-    { path: '/quan-ly/xet-nghiem', icon: 'biotech', label: 'Xét nghiệm & Cận lâm sàng', roles: ['admin', 'bac_si', 'quan_ly', 'y_ta'] },
+    { path: '/quan-ly/don-thuoc', icon: 'description', label: 'Kê đơn & Thuốc', roles: ['admin', 'bac_si'] },    
+    { path: '/quan-ly/xet-nghiem', icon: 'biotech', label: 'Xét nghiệm & Cận lâm sàng', roles: ['admin', 'bac_si', 'y_ta'] },
 
-    { isHeader: true, label: 'KHO & TÀI CHÍNH', roles: ['admin', 'quan_ly', 'ke_toan', 'tiep_tan', 'bac_si', 'y_ta', 'staff'] },
-    { path: '/quan-ly/kho-thuoc', icon: 'medication', label: 'Danh mục kho thuốc', roles: ['admin', 'staff', 'bac_si', 'quan_ly', 'y_ta', 'ke_toan'] },
+    { isHeader: true, label: 'KHO & TÀI CHÍNH', roles: ['admin', 'quan_ly', 'ke_toan', 'tiep_tan'] },
+    { path: '/quan-ly/kho-thuoc', icon: 'medication', label: 'Danh mục kho thuốc', roles: ['admin', 'quan_ly', 'ke_toan', 'bac_si', 'y_ta'] },
     { path: '/quan-ly/nhap-kho', icon: 'inventory_2', label: 'Nhập kho & Kiểm kê', roles: ['admin', 'quan_ly', 'ke_toan'] },
-    { path: '/quan-ly/hoa-don', icon: 'receipt_long', label: 'Hóa đơn & Thanh toán', roles: ['admin', 'quan_ly', 'ke_toan', 'tiep_tan'] },
+    { path: '/quan-ly/hoa-don', icon: 'receipt_long', label: 'Hóa đơn & Thanh toán', roles: ['admin', 'quan_ly', 'tiep_tan'] },
     { path: '/quan-ly/ke-toan', icon: 'account_balance', label: 'Tài chính - Kế toán', roles: ['admin', 'quan_ly', 'ke_toan'] },
 
-    { isHeader: true, label: 'MARKETING & TÀI LIỆU', roles: ['admin', 'quan_ly', 'tiep_tan', 'bac_si', 'y_ta'] },
+    { isHeader: true, label: 'TIỆN ÍCH & MARKETING', roles: ['admin', 'quan_ly', 'tiep_tan', 'bac_si', 'y_ta'] },
     { path: '/quan-ly/marketing', icon: 'campaign', label: 'Chiến dịch Marketing', roles: ['admin', 'quan_ly', 'tiep_tan'] },
     { path: '/quan-ly/file-dinh-kem', icon: 'folder_open', label: 'Quản lý tệp tin', roles: ['admin', 'quan_ly', 'bac_si', 'y_ta'] },
 
-    { isHeader: true, label: 'CẤU HÌNH HỆ THỐNG', roles: ['admin', 'staff', 'bac_si', 'quan_ly', 'tiep_tan', 'y_ta', 'ke_toan'] },
+    { isHeader: true, label: 'CẤU HÌNH', roles: ['admin', 'staff', 'bac_si', 'quan_ly', 'tiep_tan', 'y_ta', 'ke_toan'] },
     { path: '/quan-ly/cau-hinh', icon: 'settings', label: 'Cài đặt chung', roles: ['admin'] },
     { path: '/quan-ly/chuc-nang', icon: 'extension', label: 'Phân hệ chức năng', roles: ['admin'] },
     { path: '/quan-ly/thong-tin-ca-nhan', icon: 'person', label: 'Hồ sơ cá nhân', roles: ['admin', 'staff', 'bac_si', 'quan_ly', 'tiep_tan', 'y_ta', 'ke_toan'] },
