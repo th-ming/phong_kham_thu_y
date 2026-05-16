@@ -8,6 +8,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.security.access.prepost.PreAuthorize;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
@@ -35,26 +36,6 @@ public class SystemController {
     private final Map<String, String> otpStorage = new ConcurrentHashMap<>();
     private final Map<String, Long> otpExpiry = new ConcurrentHashMap<>();
     private static final long OTP_TTL_MS = 5 * 60 * 1000;
-
-    @jakarta.annotation.PostConstruct
-    public void init() {
-        try {
-            // Tạo bảng Nhật ký hệ thống (Audit Log)
-            jdbcTemplate.execute("IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='NhatKyHeThong' AND xtype='U') " +
-                    "CREATE TABLE NhatKyHeThong (id INT IDENTITY(1,1) PRIMARY KEY, nguoi_thao_tac NVARCHAR(100), hanh_dong NVARCHAR(50), bang_du_lieu NVARCHAR(100), chi_tiet NVARCHAR(MAX), ip_address NVARCHAR(100), device_info NVARCHAR(500), ngay_tao DATETIME DEFAULT GETDATE())");
-
-            // Nâng cấp Schema (Đảm bảo có cột trang_thai trong DichVu)
-            try {
-                jdbcTemplate.execute("IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('DichVu') AND name = 'trang_thai') ALTER TABLE DichVu ADD trang_thai BIT DEFAULT 1");
-            } catch (Exception ignored) {}
-            
-            // Các bảng khác
-            jdbcTemplate.execute("IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='CauHinhHeThong' AND xtype='U') " +
-                    "CREATE TABLE CauHinhHeThong (id_cau_hinh INT IDENTITY(1,1) PRIMARY KEY, ten_cau_hinh VARCHAR(100) UNIQUE, gia_tri NVARCHAR(500), mo_ta NVARCHAR(500))");
-        } catch (Exception e) {
-            System.err.println("Lỗi khởi tạo SystemController: " + e.getMessage());
-        }
-    }
 
     @GetMapping("/cau-hinh")
     public ResponseEntity<?> getCauHinh() {
@@ -93,7 +74,8 @@ public class SystemController {
         }
     }
 
-    @DeleteMapping("/nhat-ky")
+    @DeleteMapping("/nhat-ky/clear")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> clearNhatKy() {
         try {
             jdbcTemplate.execute("DELETE FROM NhatKyHeThong");
@@ -105,6 +87,7 @@ public class SystemController {
     }
 
     @DeleteMapping("/nhat-ky/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> deleteNhatKyById(@PathVariable Integer id) {
         try {
             jdbcTemplate.update("DELETE FROM NhatKyHeThong WHERE id = ?", id);
@@ -126,6 +109,7 @@ public class SystemController {
     }
 
     @PostMapping("/backup")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> backupDatabase() {
         try {
             String backupFile = databaseBackupService.backupDatabaseManual();
@@ -133,6 +117,80 @@ public class SystemController {
             return ResponseEntity.ok(Map.of("message", "Sao lưu thành công! File: " + backupFile));
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of("message", "Lỗi sao lưu: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/backups")
+    public ResponseEntity<?> listBackups() {
+        try {
+            String backupDirPath = System.getProperty("user.dir") + java.io.File.separator + "backups";
+            java.io.File backupDir = new java.io.File(backupDirPath);
+            if (!backupDir.exists()) return ResponseEntity.ok(List.of());
+            
+            java.io.File[] files = backupDir.listFiles((dir, name) -> name.endsWith(".bak"));
+            List<Map<String, Object>> backups = new java.util.ArrayList<>();
+            if (files != null) {
+                for (java.io.File f : files) {
+                    Map<String, Object> info = new HashMap<>();
+                    info.put("filename", f.getName());
+                    info.put("size", f.length());
+                    info.put("lastModified", f.lastModified());
+                    backups.add(info);
+                }
+            }
+            return ResponseEntity.ok(backups);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("message", "Lỗi liệt kê file backup: " + e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/backups/{filename}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> deleteBackup(@PathVariable String filename) {
+        try {
+            // Bảo mật: Chặn Path Traversal
+            if (filename.contains("..") || filename.contains("/") || filename.contains("\\")) {
+                return ResponseEntity.status(400).body(Map.of("message", "Tên file không hợp lệ!"));
+            }
+            String backupDirPath = System.getProperty("user.dir") + java.io.File.separator + "backups";
+            java.io.File file = new java.io.File(backupDirPath, filename);
+            if (file.exists() && file.delete()) {
+                auditLogService.logAction("DELETE", "DATABASE_BACKUP", "Xóa bản sao lưu: " + filename);
+                return ResponseEntity.ok(Map.of("message", "Đã xóa bản sao lưu thành công!"));
+            }
+            return ResponseEntity.status(404).body(Map.of("message", "Không tìm thấy file để xóa!"));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("message", "Lỗi xóa file: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/newsletter/count")
+    public ResponseEntity<?> getNewsletterCount() {
+        try {
+            // Lấy từ bảng KhachHang (những người có email)
+            Integer count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM KhachHang WHERE email IS NOT NULL AND email <> ''", Integer.class);
+            return ResponseEntity.ok(Map.of("count", count != null ? count : 0));
+        } catch (Exception e) {
+            return ResponseEntity.ok(Map.of("count", 0));
+        }
+    }
+
+    @PostMapping("/send-mass-email")
+    @PreAuthorize("hasAnyRole('ADMIN', 'QUAN_LY')")
+    public ResponseEntity<?> sendMassEmail(@RequestBody Map<String, String> payload) {
+        String subject = payload.get("subject");
+        String content = payload.get("content");
+        if (subject == null || content == null) return ResponseEntity.badRequest().body(Map.of("message", "Thiếu tiêu đề hoặc nội dung"));
+
+        try {
+            List<String> emails = jdbcTemplate.queryForList("SELECT email FROM KhachHang WHERE email IS NOT NULL AND email <> ''", String.class);
+            for (String email : emails) {
+                emailService.sendMassEmail(email, subject, content);
+            }
+            auditLogService.logAction("MARKETING", "EMAIL", "Gửi mail marketing tới " + emails.size() + " khách hàng");
+            return ResponseEntity.ok(Map.of("success", true, "message", "Đã bắt đầu tiến trình gửi mail hàng loạt"));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("message", "Lỗi hệ thống: " + e.getMessage()));
         }
     }
 

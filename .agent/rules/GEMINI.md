@@ -100,8 +100,9 @@ When auto-applying an agent, inform the user:
 When user's prompt is NOT in English:
 
 1. **Internally translate** for better comprehension
-2. **Respond in user's language** - match their communication
-3. **Code comments/variables** remain in English
+2. **Respond in Vietnamese (Tiếng Việt)** - Match the user's communication.
+3. **LANGUAGE FLEXIBILITY**: Use Vietnamese primarily, but KEEP universally accepted technical and professional terms (e.g., "Marketing", "Dashboard", "Newsletter", "Backup") that are common in the industry. Do not force-translate these into unnatural Vietnamese.
+4. **Code consistency**: Code comments/variables remain in English, but user-facing communication should be natural and professional.
 
 ### 🧹 Clean Code (Global Mandatory)
 
@@ -143,7 +144,25 @@ When user's prompt is NOT in English:
 2. What PRINCIPLES must I apply?
 3. How does this DIFFER from generic output?
 
+### 🚫 Sample Data Ban (CRITICAL)
+
+**NEVER create sample, test, or placeholder data in the database WITHOUT explicit user permission for EACH specific case.**
+
+- **Forbidden**: Automatically creating test accounts, "dummy" records, or seeding tables during implementation.
+- **Protocol**: If testing requires data, ASK the user to provide it or ask for permission to generate specific records.
+- **Exception**: System-critical configuration (e.g., core roles/permissions) that the app requires to function, nhưng vẫn phải thông báo rõ ràng cho người dùng.
+
+### 🔏 Database Access Rule (READ-ONLY)
+
+**Absolute Ban on modifying the database schema or content without explicit user confirmation for each specific operation.**
+
+- **Default State**: READ-ONLY. You may use `SELECT` to understand the system.
+- **Forbidden**: `INSERT`, `UPDATE`, `DELETE`, `DROP`, `ALTER`, `TRUNCATE` or any DDL/DML operations are strictly forbidden by default.
+- **Protocol**: If an operation requires a database change, you MUST present the SQL command to the user and wait for explicit approval before execution.
+- **Thorough Investigation**: ALWAYS check existing tables, columns, and relationships thoroughly BEFORE assuming something is missing. Most structures are already complete; unnecessary creation of fields or tables is strictly forbidden.
+
 ---
+
 
 ## TIER 1: CODE RULES (When Writing Code)
 

@@ -79,8 +79,8 @@ const DangNhapDangKy: React.FC = () => {
         localStorage.setItem("user", JSON.stringify(res.data.user));
 
         const role = (res.data.user.loai_tai_khoan || res.data.user.ten_vai_tro || '').toLowerCase();
-        // FIX: Kiểm tra đúng định dạng role: "customer", "admin", "bac_si", "ke_toan" (gạch dưới)
-        if (role === 'customer') {
+        // Hỗ trợ cả 'customer' và 'khach_hang' (từ database cũ hoặc mới)
+        if (role === 'customer' || role === 'khach_hang' || role.includes('khách hàng')) {
           navigate("/khach-hang/dashboard");
         } else {
           navigate("/quan-ly/dashboard");

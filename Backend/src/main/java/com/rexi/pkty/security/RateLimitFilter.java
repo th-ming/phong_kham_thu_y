@@ -28,11 +28,6 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private java.util.Set<String> blockedIps = new java.util.HashSet<>();
     private long lastCheckTime = 0;
 
-    private static class RequestData {
-        AtomicInteger count = new AtomicInteger(1);
-        long timestamp = System.currentTimeMillis();
-    }
-
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
@@ -67,18 +62,16 @@ public class RateLimitFilter extends OncePerRequestFilter {
         }
 
         requestCounts.compute(ip, (key, data) -> {
-            if (data == null || (currentTime - data.timestamp) > 60000) {
+            if (data == null || (currentTime - data.getTimestamp()) > 60000) {
                 // Reset sau mỗi phút
-                RequestData newData = new RequestData();
-                newData.timestamp = currentTime;
-                return newData;
+                return new RequestData();
             } else {
-                data.count.incrementAndGet();
+                data.getCount().incrementAndGet();
                 return data;
             }
         });
 
-        int requests = requestCounts.get(ip).count.get();
+        int requests = requestCounts.get(ip).getCount().get();
         if (requests > MAX_REQUESTS_PER_MINUTE) {
             response.setStatus(429); // 429 Too Many Requests
             response.setContentType("application/json;charset=UTF-8");

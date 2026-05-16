@@ -37,7 +37,7 @@ public class HoSoBenhAnController {
                 "LEFT JOIN KhachHang kh ON tc.id_khach_hang = kh.id_khach_hang " +
                 "LEFT JOIN NhanVien nv ON hs.id_bac_si = nv.id_nhan_vien " +
                 "ORDER BY hs.ngay_kham DESC " +
-                "OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
+                "OFFSET CAST(? AS INT) ROWS FETCH NEXT CAST(? AS INT) ROWS ONLY";
         return jdbcTemplate.queryForList(sql, offset, size);
     }
 
@@ -129,7 +129,7 @@ public class HoSoBenhAnController {
                 "JOIN NhanVien nv ON dt.id_bac_si = nv.id_nhan_vien " +
                 "JOIN KhachHang kh ON tc.id_khach_hang = kh.id_khach_hang " +
                 "ORDER BY dt.ngay_ke DESC " +
-                "OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
+                "OFFSET CAST(? AS INT) ROWS FETCH NEXT CAST(? AS INT) ROWS ONLY";
         return jdbcTemplate.queryForList(sql, offset, size);
     }
 
@@ -149,7 +149,7 @@ public class HoSoBenhAnController {
                 "JOIN HoSoBenhAn hs ON baxn.id_benh_an = hs.id_ho_so_benh_an " +
                 "JOIN NhanVien nv ON hs.id_bac_si = nv.id_nhan_vien " +
                 "ORDER BY baxn.ngay_chi_dinh DESC " +
-                "OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
+                "OFFSET CAST(? AS INT) ROWS FETCH NEXT CAST(? AS INT) ROWS ONLY";
         return jdbcTemplate.queryForList(sql, offset, size);
     }
 

@@ -134,19 +134,32 @@ const KeToanDashboard: React.FC = () => {
 
     // Chuẩn bị dữ liệu cho biểu đồ Chart.js
     const chartData = useMemo(() => {
-        // Sắp xếp ngày tăng dần và lấy 7 ngày gần nhất
-        const sortedData = [...revenueData].sort((a, b) => {
-            const dateA = new Date(a.Ngay || a.ngay).getTime();
-            const dateB = new Date(b.Ngay || b.ngay).getTime();
-            return dateA - dateB;
-        }).slice(-7);
+        let labels: string[] = [];
+        let data: number[] = [];
 
-        const labels = sortedData.map(d => {
-            const dateObj = new Date(d.Ngay || d.ngay);
-            return `${dateObj.getDate()}/${dateObj.getMonth() + 1}`;
-        });
+        if (!revenueData || revenueData.length === 0) {
+            // Hiển thị mặc định 7 ngày gần nhất với doanh thu 0 nếu không có dữ liệu
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                labels.push(`${d.getDate()}/${d.getMonth() + 1}`);
+                data.push(0);
+            }
+        } else {
+            // Sắp xếp ngày tăng dần và lấy 7 ngày gần nhất
+            const sortedData = [...revenueData].sort((a, b) => {
+                const dateA = new Date(a.Ngay || a.ngay).getTime();
+                const dateB = new Date(b.Ngay || b.ngay).getTime();
+                return dateA - dateB;
+            }).slice(-7);
 
-        const data = sortedData.map(d => d.TongDoanhThu || d.doanh_thu || d.tong_doanh_thu || 0);
+            labels = sortedData.map(d => {
+                const dateObj = new Date(d.Ngay || d.ngay);
+                return `${dateObj.getDate()}/${dateObj.getMonth() + 1}`;
+            });
+
+            data = sortedData.map(d => d.TongDoanhThu || d.doanh_thu || d.tong_doanh_thu || 0);
+        }
 
         return {
             labels,
@@ -194,8 +207,14 @@ const KeToanDashboard: React.FC = () => {
         scales: {
             y: {
                 beginAtZero: true,
+                suggestedMax: 1000000, // Đảm bảo trục Y không bị co lại quá mức khi doanh thu bằng 0
                 grid: { color: 'rgba(0, 0, 0, 0.05)' },
-                ticks: { callback: (value: any) => (value / 1000000) + ' Tr' }
+                ticks: { 
+                    callback: (value: any) => {
+                        if (value === 0) return '0 Tr';
+                        return (value / 1000000).toLocaleString('vi-VN', { maximumFractionDigits: 1 }) + ' Tr';
+                    }
+                }
             },
             x: { grid: { display: false } }
         },
@@ -241,9 +260,13 @@ const KeToanDashboard: React.FC = () => {
 
     return (
         <div className="animate-fade-in" style={{ paddingBottom: '40px' }}>
-            <div style={{ marginBottom: '40px' }}>
-                <h1 style={{ fontSize: '2.5rem', fontWeight: 950, color: 'var(--ink)' }}>Bảng Điều Khiển <span style={{ color: '#8b5cf6' }}>Kế Toán</span></h1>
-                <p style={{ color: 'var(--gray-500)', fontWeight: 600 }}>Theo dõi dòng tiền, hóa đơn và công nợ của phòng khám.</p>
+            <div className="animate-slide-up" style={{ marginBottom: '40px', padding: '48px', borderRadius: '24px', background: 'var(--primary-gradient)', color: 'white', position: 'relative', overflow: 'hidden', boxShadow: '0 20px 40px var(--primary-shadow)' }}>
+                <div style={{ position: 'absolute', top: '-10%', right: '-5%', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }}></div>
+                <h1 style={{ fontSize: '3rem', fontWeight: 950, letterSpacing: '-1.5px', position: 'relative', zIndex: 1, margin: '0 0 12px 0', display: 'flex', alignItems: 'center', gap: '15px' }}>
+                  <span>Bảng Điều Khiển <span style={{ color: '#c4b5fd' }}>Kế Toán</span></span> 
+                  <span style={{ filter: 'drop-shadow(0 5px 15px rgba(0,0,0,0.2))' }}>📊</span>
+                </h1>
+                <p style={{ fontWeight: 700, color: 'rgba(255,255,255,0.95)', position: 'relative', zIndex: 1, margin: 0, fontSize: '1.2rem', textShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>Theo dõi dòng tiền, hóa đơn và vận hành tài chính hôm nay.</p>
             </div>
 
             {/* Các thẻ thống kê */}

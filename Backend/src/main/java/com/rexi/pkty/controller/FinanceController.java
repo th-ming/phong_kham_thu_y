@@ -141,7 +141,7 @@ public class FinanceController {
 
         // BẢO MẬT: Chặn khách hàng xem toàn bộ danh sách hóa đơn làm lộ doanh thu và
         // thông tin người khác
-        if (!role.contains("ADMIN") && !role.contains("QUAN_LY") && !role.contains("KETOAN")
+        if (!role.contains("ADMIN") && !role.contains("QUAN_LY") && !role.contains("KETOAN") && !role.contains("KE_TOAN")
                 && !role.contains("STAFF")) {
             return ResponseEntity.status(403)
                     .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền xem toàn bộ danh sách hóa đơn!"));
@@ -361,6 +361,16 @@ public class FinanceController {
         }
     }
 
+    // Endpoint test lỗi
+    @GetMapping("/test-doanh-thu")
+    public ResponseEntity<?> testDoanhThu() {
+        try {
+            return ResponseEntity.ok(hoaDonRepository.getDoanhThuTheoNgay());
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Error: " + e.getMessage() + " | Cause: " + e.getCause());
+        }
+    }
+
     // Báo cáo doanh thu ngày
     @GetMapping("/bao-cao/doanh-thu-ngay")
     public ResponseEntity<?> getDoanhThuNgay() {
@@ -371,6 +381,7 @@ public class FinanceController {
         try {
             return ResponseEntity.ok(hoaDonRepository.getDoanhThuTheoNgay());
         } catch (Exception e) {
+            e.printStackTrace(); // Thêm log để bắt lỗi 500
             return ResponseEntity.status(500)
                     .body(Map.of("message", "Lỗi truy xuất báo cáo doanh thu ngày: " + e.getMessage()));
         }

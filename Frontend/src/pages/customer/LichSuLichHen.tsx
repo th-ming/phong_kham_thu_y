@@ -135,6 +135,7 @@ const LichSuLichHen: React.FC = () => {
   // Phân trang
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [serverError, setServerError] = useState<string | null>(null);
   const [totalServerPages, setTotalServerPages] = useState(1);
   const [isServerPaginated, setIsServerPaginated] = useState(false);
   const ITEMS_PER_PAGE = 5;
@@ -144,21 +145,40 @@ const LichSuLichHen: React.FC = () => {
     if (!user) return;
     const id = user?.id_khach_hang;
     setLoading(true);
+    setServerError(null);
     Promise.allSettled([
       axiosInstance.get(`/api/lich-hen/khach/${id}`, {
         params: { page: currentPage - 1, size: ITEMS_PER_PAGE, status: status !== 'all' ? status : undefined, petId: petId !== 'all' ? petId : undefined }
       }),
       axiosInstance.get(`/api/thu-cung/khach/${id}`)
     ]).then(([lichHenRes, thuCungRes]) => {
-      if (lichHenRes.status === 'fulfilled' && lichHenRes.value.data?.content) {
-        setLichHens(lichHenRes.value.data.content);
-        setTotalServerPages(lichHenRes.value.data.totalPages);
-        setIsServerPaginated(true);
-      } else if (lichHenRes.status === 'fulfilled') {
-        setLichHens(lichHenRes.value.data || []);
-        setIsServerPaginated(false);
+      let failed = false;
+
+      if (lichHenRes.status === 'fulfilled') {
+        if (lichHenRes.value.data?.content) {
+          setLichHens(lichHenRes.value.data.content);
+          setTotalServerPages(lichHenRes.value.data.totalPages);
+          setIsServerPaginated(true);
+        } else {
+          setLichHens(lichHenRes.value.data || []);
+          setIsServerPaginated(false);
+        }
+      } else {
+        console.error("Lỗi lấy lịch hẹn:", lichHenRes.reason);
+        failed = true;
       }
-      if (thuCungRes.status === 'fulfilled') setThuCungs(thuCungRes.value.data || []);
+
+      if (thuCungRes.status === 'fulfilled') {
+        setThuCungs(thuCungRes.value.data?.content || thuCungRes.value.data || []);
+      } else {
+        console.error("Lỗi lấy danh sách thú cưng:", thuCungRes.reason);
+        failed = true;
+      }
+
+      if (failed) {
+        setServerError("Rất tiếc! Hệ thống đang gặp chút sự cố khi tải dữ liệu. Sếp thử lại sau nhé! 🐾");
+        toast.error("Lỗi kết nối máy chủ!");
+      }
       setLoading(false);
     });
   };
@@ -209,7 +229,6 @@ const LichSuLichHen: React.FC = () => {
   if (loading) return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}><div className="dot-pulse"></div></div>;
 
   return (
-    <div className="animate-fade-in">
     <div className="animate-fade-in">
       <style>{`
         @keyframes slideUpFade {
@@ -284,7 +303,38 @@ const LichSuLichHen: React.FC = () => {
       </div>
 
       <div className="stagger-2" style={{ display: 'grid', gap: '28px' }}>
-        {rows.length === 0 ? (
+        {serverError ? (
+          <div className="glass-card" style={{ 
+            padding: '80px 40px', 
+            textAlign: 'center', 
+            borderRadius: '48px', 
+            background: 'var(--surface)', 
+            border: '2px solid var(--danger-light, #fee2e2)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center'
+          }}>
+            <div style={{ 
+              width: '120px', 
+              height: '120px', 
+              background: 'var(--danger-light, #fee2e2)', 
+              borderRadius: '60px', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              margin: '0 auto 32px'
+            }}>
+              <span className="material-symbols-outlined" style={{ fontSize: '60px', color: 'var(--danger, #ef4444)' }}>error</span>
+            </div>
+            <h3 style={{ fontSize: '1.8rem', fontWeight: 950, color: 'var(--ink)', marginBottom: '12px' }}>Lỗi kết nối</h3>
+            <p style={{ fontSize: '1.1rem', color: 'var(--gray-400)', fontWeight: 600, maxWidth: '450px', margin: '0 auto 24px' }}>
+              {serverError}
+            </p>
+            <button className="btn btn-pill" onClick={fetchLichHen} style={{ padding: '12px 32px', background: 'var(--gray-100)' }}>
+              Thử lại ngay
+            </button>
+          </div>
+        ) : rows.length === 0 ? (
           <div className="glass-card" style={{ 
             padding: '120px 40px', 
             textAlign: 'center', 
