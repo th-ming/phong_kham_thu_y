@@ -3,6 +3,7 @@
 # ==========================================
 
 # 1. Thư mục Build & Package (Không push file đã biên dịch)
+node_modules/
 /Backend/target/
 /Frontend/node_modules/
 /Frontend/dist/

@@ -10,7 +10,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Bộ xử lý lỗi tập trung cho toàn hệ thống Rexi (Đã đổi tên sang tiếng Việt theo yêu cầu của Sếp)
+ * Bộ xử lý lỗi tập trung cho toàn hệ thống Rexi.
  */
 @RestControllerAdvice
 public class BoXuLyLoiHeThong {

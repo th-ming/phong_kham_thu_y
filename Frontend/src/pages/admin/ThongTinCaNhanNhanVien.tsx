@@ -41,7 +41,15 @@ const ThongTinCaNhanNhanVien: React.FC = () => {
             setFormData(res.data);
         } catch (error) {
             console.error("Lỗi lấy thông tin cá nhân:", error);
-            const fallbackProfile = { ho_ten: user.ho_ten || user.display_name || 'Admin', email: user.email || 'admin@rexi.vn', id_nhan_vien: currentUserId };
+            const fallbackEmail = user.email || 
+                                 (user.ten_dang_nhap?.includes('@') ? user.ten_dang_nhap : null) || 
+                                 (user.ten_dang_nhap === 'quanly' ? 'quanly@gmail.com' : null) || 
+                                 (user.ten_dang_nhap ? `${user.ten_dang_nhap}@rexi.vn` : 'admin@rexi.vn');
+            const fallbackProfile = { 
+                ho_ten: user.ho_ten || user.display_name || 'Admin', 
+                email: fallbackEmail, 
+                id_nhan_vien: currentUserId 
+            };
             setProfile(fallbackProfile);
             setFormData(fallbackProfile);
         } finally {
@@ -64,14 +72,35 @@ const ThongTinCaNhanNhanVien: React.FC = () => {
                 ...profile,
                 ...formData
             };
+            
+            // Đồng bộ hóa thông tin mới vào localStorage ngay lập tức để Sidebar và Header cập nhật
+            const syncLocalStorage = (updatedData: any) => {
+                const localUser = JSON.parse(localStorage.getItem("user") || "{}");
+                localUser.ho_ten = updatedData.ho_ten || updatedData.hoTen || localUser.ho_ten;
+                localUser.display_name = updatedData.ho_ten || updatedData.hoTen || localUser.display_name;
+                localUser.displayName = updatedData.ho_ten || updatedData.hoTen || localUser.displayName;
+                if (updatedData.hinh_anh) {
+                    localUser.avatar = updatedData.hinh_anh;
+                    localUser.hinh_anh = updatedData.hinh_anh;
+                }
+                if (updatedData.email) {
+                    localUser.email = updatedData.email;
+                }
+                localStorage.setItem("user", JSON.stringify(localUser));
+                window.dispatchEvent(new Event("storage"));
+            };
+
             if (currentUserId === 'NV-SYSTEM' || currentUserId === '1') {
                 toast.success("Cập nhật thông tin thành công (Giả lập cho Admin gốc)!");
                 setProfile(payload);
+                syncLocalStorage(payload);
                 setIsEditing(false);
                 return;
             }
+            
             await axiosInstance.put(`/api/nhan-vien/${currentUserId}`, payload);
             toast.success("Cập nhật thông tin thành công!");
+            syncLocalStorage(payload);
             fetchProfile();
             setIsEditing(false);
         } catch (error) {

@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-const FRONTEND_PORT = 3001;
+const FRONTEND_PORT = 3005;
 const BASE_URL = `http://localhost:${FRONTEND_PORT}`;
 
 test.describe('Kiểm thử Trang Bảng điều khiển Admin (Dashboard)', () => {

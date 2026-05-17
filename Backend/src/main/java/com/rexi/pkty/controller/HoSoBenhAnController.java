@@ -23,9 +23,13 @@ public class HoSoBenhAnController {
     private com.rexi.pkty.service.AuditLogService auditLogService;
 
     @GetMapping
-    public List<Map<String, Object>> getAllHoSoBenhAn(
+    public org.springframework.http.ResponseEntity<?> getAllHoSoBenhAn(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "50") int size) {
+        if (!hasMedicalPermission()) {
+            return org.springframework.http.ResponseEntity.status(403)
+                    .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền xem danh sách bệnh án tổng quát!"));
+        }
         int offset = page * size;
         String sql = "SELECT hs.id_ho_so_benh_an as id_ho_so, hs.ngay_kham, hs.trieu_chung, hs.chan_doan, hs.phac_do_dieu_tri, hs.huong_dan_cham_soc, "
                 + "hs.nhiet_do, hs.can_nang, hs.trang_thai_ho_so, " +
@@ -38,7 +42,7 @@ public class HoSoBenhAnController {
                 "LEFT JOIN NhanVien nv ON hs.id_bac_si = nv.id_nhan_vien " +
                 "ORDER BY hs.ngay_kham DESC " +
                 "OFFSET CAST(? AS INT) ROWS FETCH NEXT CAST(? AS INT) ROWS ONLY";
-        return jdbcTemplate.queryForList(sql, offset, size);
+        return org.springframework.http.ResponseEntity.ok(jdbcTemplate.queryForList(sql, offset, size));
     }
 
     @GetMapping("/{id}")
@@ -164,6 +168,10 @@ public class HoSoBenhAnController {
 
     @PostMapping
     public org.springframework.http.ResponseEntity<?> taoHoSoBenhAn(@RequestBody Map<String, Object> payload) {
+        if (!hasMedicalPermission()) {
+            return org.springframework.http.ResponseEntity.status(403)
+                    .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền tạo hồ sơ bệnh án!"));
+        }
         try {
             String idThuCung = String.valueOf(payload.get("id_thu_cung"));
             String idBacSi = String.valueOf(payload.get("id_bac_si"));
@@ -183,7 +191,7 @@ public class HoSoBenhAnController {
                     .ok(Map.of("message", "Lưu bệnh án thành công!", "id_ho_so_benh_an", idHoSo));
         } catch (Exception e) {
             return org.springframework.http.ResponseEntity.status(500)
-                    .body(Map.of("message", "Lỗi lưu bệnh án: " + e.getMessage()));
+                    .body(Map.of("message", "Đã xảy ra lỗi hệ thống khi lưu bệnh án. Vui lòng liên hệ Admin."));
         }
     }
 
@@ -224,7 +232,7 @@ public class HoSoBenhAnController {
                     .ok(Map.of("message", "Đã kê đơn và trừ tồn kho thành công!"));
         } catch (Exception e) {
             return org.springframework.http.ResponseEntity.status(400)
-                    .body(Map.of("message", "Lỗi kê đơn: " + e.getMessage()));
+                    .body(Map.of("message", "Lỗi nghiệp vụ khi kê đơn: " + e.getMessage()));
         }
     }
 
@@ -276,7 +284,7 @@ public class HoSoBenhAnController {
             return org.springframework.http.ResponseEntity.ok(Map.of("message", "Đã tự động lập hóa đơn thành công!"));
         } catch (Exception e) {
             return org.springframework.http.ResponseEntity.status(500)
-                    .body(Map.of("message", "Lỗi tạo hóa đơn: " + e.getMessage()));
+                    .body(Map.of("message", "Đã xảy ra lỗi hệ thống khi tạo hóa đơn."));
         }
     }
 }

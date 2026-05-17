@@ -45,6 +45,7 @@ const PhanDichVu: React.FC = () => {
         if (lower.includes("hình ảnh") || lower.includes("x-quang") || lower.includes("siêu âm")) return { icon: "biotech", img: "/img/chan_doan_hinh_anh.png" };
         if (lower.includes("phẫu thuật") || lower.includes("mổ")) return { icon: "surgical", img: "/img/phau_thuat.png" };
         if (lower.includes("nội trú") || lower.includes("lưu trú")) return { icon: "hotel", img: "/img/noi_tru.png" };
+        if (lower.includes("răng") || lower.includes("nha khoa")) return { icon: "dentistry", img: "/img/nho_rang_nha_khoa.png" };
         if (lower.includes("spa") || lower.includes("tắm") || lower.includes("cắt tỉa") || lower.includes("grooming")) return { icon: "spa", img: "/img/spa_grooming.png" };
         if (lower.includes("xét nghiệm")) return { icon: "science", img: "/img/xet_nghiem_mau.png" };
         return { icon: "medical_services", img: "/img/avtpkty.png" };
@@ -85,14 +86,14 @@ const PhanDichVu: React.FC = () => {
                             <h2 style={{ fontSize: "clamp(2rem, 4vw, 3rem)", fontWeight: 950, color: "var(--ink)", marginBottom: '12px', letterSpacing: '-1px' }}>Chăm Sóc <span style={{ color: "var(--primary)" }}>Toàn Diện</span></h2>
                             <p style={{ color: "var(--gray-500)", fontWeight: 500, fontSize: '1rem', maxWidth: '480px', lineHeight: 1.6 }}>Đầy đủ dịch vụ thú y từ khám tổng quát đến phẫu thuật phức tạp.</p>
                         </div>
-                        <Link to="/khach-hang/dat-lich-hen" className="btn" style={{ padding: '14px 28px', borderRadius: '50px', background: '#0f9d8a', color: 'white', textDecoration: 'none', fontWeight: 800, fontSize: '0.9rem', boxShadow: '0 8px 20px rgba(15,157,138,0.25)', whiteSpace: 'nowrap' }}>Đặt lịch ngay →</Link>
+                        <Link to="/khach-hang/dat-lich-hen" className="btn" style={{ padding: '14px 28px', borderRadius: '50px', background: 'var(--primary)', color: 'white', textDecoration: 'none', fontWeight: 800, fontSize: '0.9rem', boxShadow: '0 8px 20px var(--primary-light)', whiteSpace: 'nowrap' }}>Đặt lịch ngay →</Link>
                     </div>
 
                     {/* bố cục dịch vụ */}
                     <div className="service-layout" style={{ display: 'flex', gap: '40px', alignItems: 'flex-start' }}>
 
                         {/* cột thẻ dịch vụ nổi bật */}
-                        <div className="featured-service-card" style={{ flex: '0 0 auto', width: '48%', minHeight: '460px', borderRadius: '32px', background: 'linear-gradient(145deg, #0f9d8a 0%, #0d7a6d 100%)', padding: '48px', color: 'white', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxShadow: '0 30px 80px rgba(15,157,138,0.25)' }}>
+                        <div className="featured-service-card premium-fluid-gradient" style={{ flex: '0 0 auto', width: '48%', minHeight: '460px', borderRadius: '32px', padding: '48px', color: 'white', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxShadow: '0 30px 80px var(--primary-light)' }}>
                             {/* nền trang trí */}
                             <div style={{ position: 'absolute', top: '-60px', right: '-60px', width: '280px', height: '280px', borderRadius: '50%', background: 'rgba(255,255,255,0.06)', pointerEvents: 'none' }} />
                             <div style={{ position: 'absolute', bottom: '-40px', left: '-40px', width: '200px', height: '200px', borderRadius: '50%', background: 'rgba(255,255,255,0.04)', pointerEvents: 'none' }} />
@@ -115,7 +116,7 @@ const PhanDichVu: React.FC = () => {
                                     <div style={{ fontSize: '0.65rem', opacity: 0.7, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>Chi phí từ</div>
                                     <div style={{ fontSize: '1.6rem', fontWeight: 950 }}>{featured.gia ? formatTienVND(featured.gia) : featured.price}</div>
                                 </div>
-                                <Link to={`/dich-vu/${generateSlug(featured.ten_dich_vu)}`} style={{ background: 'var(--primary-gradient)', color: 'white', padding: '14px 28px', borderRadius: '50px', fontWeight: 900, textDecoration: 'none', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.3s', boxShadow: '0 8px 20px var(--primary-shadow)' }} onMouseEnter={e => (e.currentTarget.style.transform = 'translateY(-2px)')} onMouseLeave={e => (e.currentTarget.style.transform = 'none')}>
+                                <Link to={`/dich-vu/${generateSlug(featured.ten_dich_vu)}`} style={{ background: 'var(--tien-ich-gradient)', color: 'white', padding: '14px 28px', borderRadius: '50px', fontWeight: 900, textDecoration: 'none', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.3s', boxShadow: '0 8px 20px var(--primary-light)' }} onMouseEnter={e => (e.currentTarget.style.transform = 'translateY(-2px)')} onMouseLeave={e => (e.currentTarget.style.transform = 'none')}>
                                     Chi tiết <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>arrow_forward</span>
                                 </Link>
                             </div>
@@ -133,7 +134,7 @@ const PhanDichVu: React.FC = () => {
                                         <div style={{ color: 'var(--gray-400)', fontSize: '0.78rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.gia ? formatTienVND(s.gia) : s.price}</div>
                                     </div>
                                     {s.badge && <div style={{ background: s.badge === 'Mới' ? 'rgba(14, 165, 233, 0.15)' : 'rgba(245, 158, 11, 0.15)', color: s.badge === 'Mới' ? '#0ea5e9' : '#f59e0b', padding: '3px 10px', borderRadius: '50px', fontSize: '0.7rem', fontWeight: 900, flexShrink: 0 }}>{s.badge}</div>}
-                                    <span className="material-symbols-outlined" style={{ fontSize: '18px', color: activeIdx === i ? '#0f9d8a' : '#cbd5e1', transition: 'all 0.3s' }}>chevron_right</span>
+                                    <span className="material-symbols-outlined" style={{ fontSize: '18px', color: activeIdx === i ? 'var(--primary)' : '#cbd5e1', transition: 'all 0.3s' }}>chevron_right</span>
                                 </div>
                             ))}
                         </div>

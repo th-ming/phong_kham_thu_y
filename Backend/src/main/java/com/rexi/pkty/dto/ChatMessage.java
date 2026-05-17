@@ -4,13 +4,15 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 public class ChatMessage {
     private String role;
     private String content;
-    private String image;
-    private String video;
+    private List<String> images;
+    private List<String> videos;
 }
 

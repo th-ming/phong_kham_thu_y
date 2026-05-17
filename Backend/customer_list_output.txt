@@ -1,1 +1,0 @@
-Sqlcmd: Error: Connection failure. SQL Native Client is not installed correctly. To correct this, run SQL Server Setup.

@@ -5,7 +5,10 @@ import React, { useEffect, useState, useRef } from 'react';
  * Khắc phục tỉ lệ khung hình và hướng chạy của mèo để trông tự nhiên nhất.
  */
 export const Preloader: React.FC = () => {
-    const [isVisible, setIsVisible] = useState(true);
+    const [isVisible, setIsVisible] = useState(() => {
+        // Chỉ hiện preloader khi vào trang lần đầu tiên trong phiên làm việc
+        return !sessionStorage.getItem("rexi_preloader_loaded");
+    });
     const [isExiting, setIsExiting] = useState(false);
     const [progress, setProgress] = useState(0);
     const [message, setMessage] = useState("Đang đi mua pate...");
@@ -24,6 +27,15 @@ export const Preloader: React.FC = () => {
     ];
 
     useEffect(() => {
+        const hasLoaded = sessionStorage.getItem("rexi_preloader_loaded");
+        if (hasLoaded) {
+            setIsVisible(false);
+            return;
+        }
+
+        // Đánh dấu đã load lần đầu
+        sessionStorage.setItem("rexi_preloader_loaded", "true");
+
         const msgInterval = setInterval(() => {
             setMessage(messages[Math.floor(Math.random() * messages.length)]);
         }, 1200);
@@ -31,14 +43,14 @@ export const Preloader: React.FC = () => {
         const interval = setInterval(() => {
             setProgress(prev => {
                 if (prev >= 100) return 100;
-                return prev + Math.random() * 3;
+                return prev + Math.random() * 12;
             });
-        }, 100);
+        }, 80);
 
         const timer = setTimeout(() => {
             setIsExiting(true);
-            setTimeout(() => setIsVisible(false), 800);
-        }, 4000);
+            setTimeout(() => setIsVisible(false), 400);
+        }, 1200);
 
         return () => {
             clearInterval(msgInterval);
@@ -110,18 +122,21 @@ export const Preloader: React.FC = () => {
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            animation: isExiting ? 'preloader-exit-cat 0.8s cubic-bezier(0.85, 0, 0.15, 1) forwards' : 'none',
+            animation: isExiting ? 'preloader-exit-cat 0.4s cubic-bezier(0.85, 0, 0.15, 1) forwards' : 'none',
             overflow: 'hidden'
         }}>
             <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', maxWidth: '400px' }}>
                 
                 {/* KHU VỰC MÈO CHẠY */}
-                <div style={{ 
-                    position: 'relative', 
-                    width: '100%', 
-                    height: '160px',
-                    marginBottom: '10px'
-                }}>
+                <div 
+                    className="preloader-cat-container"
+                    style={{ 
+                        position: 'relative', 
+                        width: '100%', 
+                        height: '160px',
+                        marginBottom: '10px'
+                    }}
+                >
                     <video
                         ref={videoRef}
                         src="/img/video_meo_chay.webm"
@@ -133,6 +148,7 @@ export const Preloader: React.FC = () => {
                     
                     <canvas
                         ref={canvasRef}
+                        className="preloader-canvas"
                         style={{
                             height: '150px',
                             width: 'auto',
@@ -148,29 +164,35 @@ export const Preloader: React.FC = () => {
                     />
 
                     {/* Vệt bụi mờ dưới chân */}
-                    <div style={{
-                        position: 'absolute',
-                        left: `calc(${progress}% - 50px)`,
-                        bottom: '15px',
-                        width: '60px',
-                        height: '15px',
-                        background: 'rgba(15, 157, 138, 0.15)',
-                        borderRadius: '50%',
-                        filter: 'blur(8px)',
-                        animation: 'dust-cat 0.3s infinite'
-                    }} />
+                    <div 
+                        className="preloader-dust"
+                        style={{
+                            position: 'absolute',
+                            left: `calc(${progress}% - 50px)`,
+                            bottom: '15px',
+                            width: '60px',
+                            height: '15px',
+                            background: 'rgba(15, 157, 138, 0.15)',
+                            borderRadius: '50%',
+                            filter: 'blur(8px)',
+                            animation: 'dust-cat 0.3s infinite'
+                        }} 
+                    />
                 </div>
 
                 {/* THANH TIẾN TRÌNH (CON ĐƯỜNG) */}
-                <div style={{
-                    width: '320px',
-                    height: '6px',
-                    background: 'var(--gray-100)',
-                    borderRadius: '20px',
-                    overflow: 'hidden',
-                    position: 'relative',
-                    border: '1px solid var(--gray-200)'
-                }}>
+                <div 
+                    className="preloader-road"
+                    style={{
+                        width: '320px',
+                        height: '6px',
+                        background: 'var(--gray-100)',
+                        borderRadius: '20px',
+                        overflow: 'hidden',
+                        position: 'relative',
+                        border: '1px solid var(--gray-200)'
+                    }}
+                >
                     <div style={{
                         position: 'absolute',
                         height: '100%',
@@ -182,21 +204,27 @@ export const Preloader: React.FC = () => {
                 </div>
 
                 <div style={{ marginTop: '25px', textAlign: 'center' }}>
-                    <div style={{ 
-                        fontSize: '1.2rem', 
-                        fontWeight: 950, 
-                        color: 'var(--primary)',
-                        marginBottom: '6px',
-                        fontFamily: "'Inter', sans-serif"
-                    }}>
+                    <div 
+                        className="preloader-message"
+                        style={{ 
+                            fontSize: '1.2rem', 
+                            fontWeight: 950, 
+                            color: 'var(--primary)',
+                            marginBottom: '6px',
+                            fontFamily: "'Inter', sans-serif"
+                        }}
+                    >
                         {message}
                     </div>
-                    <div style={{
-                        fontSize: '0.85rem',
-                        fontWeight: 800,
-                        color: 'var(--gray-400)',
-                        letterSpacing: '1.5px'
-                    }}>
+                    <div 
+                        className="preloader-percentage"
+                        style={{
+                            fontSize: '0.85rem',
+                            fontWeight: 800,
+                            color: 'var(--gray-400)',
+                            letterSpacing: '1.5px'
+                        }}
+                    >
                         {Math.round(progress)}% - LOADING...
                     </div>
                 </div>
@@ -210,6 +238,33 @@ export const Preloader: React.FC = () => {
                 @keyframes dust-cat {
                     0%, 100% { transform: scale(1); opacity: 0.1; }
                     50% { transform: scale(1.3); opacity: 0.3; }
+                }
+                
+                /* TỐI ƯU HÓA PHÂN TỈ LỆ RESPONSIVE CHO ĐIỆN THOẠI NHỎ (DƯỚI 480PX) */
+                @media (max-width: 480px) {
+                    .preloader-cat-container {
+                        height: 110px !important;
+                    }
+                    .preloader-canvas {
+                        height: 95px !important;
+                        left: calc(${progress}% - 48px) !important;
+                    }
+                    .preloader-dust {
+                        left: calc(${progress}% - 35px) !important;
+                        bottom: 8px !important;
+                        width: 40px !important;
+                        height: 10px !important;
+                    }
+                    .preloader-road {
+                        width: 240px !important;
+                        height: 5px !important;
+                    }
+                    .preloader-message {
+                        font-size: 0.95rem !important;
+                    }
+                    .preloader-percentage {
+                        font-size: 0.75rem !important;
+                    }
                 }
             `}</style>
         </div>

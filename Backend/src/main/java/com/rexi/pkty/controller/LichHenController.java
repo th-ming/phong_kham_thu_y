@@ -215,8 +215,17 @@ public class LichHenController {
             }
             return ResponseEntity.ok(saved);
         } catch (Exception e) {
-            return ResponseEntity.status(400).body(Map.of("message", e.getMessage()));
+            return ResponseEntity.status(400).body(Map.of("message", "Đã xảy ra lỗi nghiệp vụ khi tạo lịch hẹn."));
         }
+    }
+
+    private boolean isInternalUser() {
+        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
+                .getContext().getAuthentication();
+        if (auth == null || auth.getName().equals("anonymousUser"))
+            return false;
+        String roles = auth.getAuthorities().toString().toUpperCase();
+        return roles.contains("ADMIN") || roles.contains("QUAN_LY") || roles.contains("BAC_SI") || roles.contains("STAFF") || roles.contains("NHAN_VIEN");
     }
 
     @PostMapping("/dat-lich-nhanh")
@@ -282,25 +291,31 @@ public class LichHenController {
             return ResponseEntity.ok(saved);
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.status(500).body(Map.of("message", "Lỗi đặt lịch nhanh: " + e.getMessage()));
+            return ResponseEntity.status(500).body(Map.of("message", "Đã xảy ra lỗi hệ thống khi đặt lịch nhanh."));
         }
     }
 
     @GetMapping
-    public List<Map<String, Object>> getAll() {
-        return jdbcTemplate.queryForList(
+    public ResponseEntity<?> getAll() {
+        if (!isInternalUser()) {
+            return ResponseEntity.status(403).body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền truy cập danh sách lịch hẹn tổng quát!"));
+        }
+        return ResponseEntity.ok(jdbcTemplate.queryForList(
                 "SELECT lh.*, kh.ten_khach_hang, kh.sdt, tc.ten_thu_cung, nv.ho_ten as ten_bac_si, dv.ten_dich_vu " +
                         "FROM LichHen lh " +
                         "LEFT JOIN KhachHang kh ON lh.id_khach_hang = kh.id_khach_hang " +
                         "LEFT JOIN ThuCung tc ON lh.id_thu_cung = tc.id_thu_cung " +
                         "LEFT JOIN NhanVien nv ON lh.id_bac_si = nv.id_nhan_vien " +
                         "LEFT JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu " +
-                        "ORDER BY lh.ngay_kham DESC, lh.gio_kham DESC");
+                        "ORDER BY lh.ngay_kham DESC, lh.gio_kham DESC"));
     }
 
     @GetMapping("/hom-nay")
-    public List<Map<String, Object>> getTodayAppointments() {
-        return jdbcTemplate.queryForList(
+    public ResponseEntity<?> getTodayAppointments() {
+        if (!isInternalUser()) {
+            return ResponseEntity.status(403).body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền xem lịch hẹn hôm nay!"));
+        }
+        return ResponseEntity.ok(jdbcTemplate.queryForList(
                 "SELECT lh.*, kh.ten_khach_hang, kh.sdt, tc.ten_thu_cung, nv.ho_ten as ten_bac_si, dv.ten_dich_vu " +
                         "FROM LichHen lh " +
                         "LEFT JOIN KhachHang kh ON lh.id_khach_hang = kh.id_khach_hang " +
@@ -308,7 +323,7 @@ public class LichHenController {
                         "LEFT JOIN NhanVien nv ON lh.id_bac_si = nv.id_nhan_vien " +
                         "LEFT JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu " +
                         "WHERE CAST(lh.ngay_kham AS DATE) = CAST(GETDATE() AS DATE) " +
-                        "ORDER BY lh.gio_kham ASC");
+                        "ORDER BY lh.gio_kham ASC"));
     }
 
     @GetMapping("/khach-hang/{idKhachHang}")
@@ -419,7 +434,7 @@ public class LichHenController {
             e.printStackTrace();
             System.err.println("Lỗi lấy lịch hẹn cho khách " + idKhachHang + ": " + e.getMessage());
             return ResponseEntity.status(500).body(Map.of(
-                    "message", "Lỗi server khi lấy lịch hẹn: " + e.getMessage(),
+                    "message", "Đã xảy ra lỗi hệ thống khi truy vấn lịch hẹn.",
                     "content", new java.util.ArrayList<>(),
                     "totalPages", 0,
                     "totalElements", 0,

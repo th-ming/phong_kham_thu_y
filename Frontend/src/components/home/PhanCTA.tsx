@@ -2,13 +2,12 @@ import React from "react";
 import { Link } from "react-router-dom";
 
 /**
- * Call To Action Section
+ * PHẦN KÊU GỌI HÀNH ĐỘNG (CTA)
  */
 const PhanCTA: React.FC = () => {
     return (
-        <section style={{
+        <section className="premium-fluid-gradient" style={{
             padding: "80px 0",
-            background: "linear-gradient(135deg, #0f9d8a 0%, #0a7a6e 40%, #1a8a7d 100%)",
             position: "relative",
             overflow: "hidden"
         }}>
@@ -26,7 +25,7 @@ const PhanCTA: React.FC = () => {
                 }
             `}</style>
 
-            {/* Decorative circles */}
+            {/* Các vòng tròn trang trí nghệ thuật */}
             <div style={{ position: 'absolute', top: '-100px', right: '10%', width: '400px', height: '400px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', animation: 'ctaPulse 6s ease-in-out infinite', pointerEvents: 'none' }} />
             <div style={{ position: 'absolute', bottom: '-80px', left: '5%', width: '300px', height: '300px', borderRadius: '50%', background: 'rgba(255,255,255,0.04)', animation: 'ctaPulse 8s ease-in-out infinite 2s', pointerEvents: 'none' }} />
             <div style={{ position: 'absolute', top: '50%', right: '-50px', transform: 'translateY(-50%)', fontSize: '18rem', fontWeight: 950, color: 'rgba(255,255,255,0.04)', fontFamily: "'Lora', serif", lineHeight: 1, pointerEvents: 'none', letterSpacing: '-8px' }}>REXI</div>
@@ -34,9 +33,9 @@ const PhanCTA: React.FC = () => {
             <div className="container">
                 <div className="cta-layout" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '48px' }}>
 
-                    {/* Left content */}
+                    {/* Nội dung bên trái */}
                     <div style={{ flex: 1 }}>
-                        {/* Trust badges */}
+                        {/* Nhãn chứng nhận uy tín */}
                         <div className="cta-badges" style={{ display: 'flex', gap: '12px', marginBottom: '24px', flexWrap: 'wrap' }}>
                             <div style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)', padding: '6px 16px', borderRadius: '50px', display: 'flex', alignItems: 'center', gap: '6px', border: '1px solid rgba(255,255,255,0.2)' }}>
                                 <span className="material-symbols-outlined" style={{ fontSize: '16px', color: '#fbbf24' }}>star</span>
@@ -61,12 +60,12 @@ const PhanCTA: React.FC = () => {
                         </p>
                     </div>
 
-                    {/* Right: CTA card */}
+                    {/* Bên phải: Thẻ đăng ký trực tuyến */}
                     <div style={{ flex: '0 0 auto', background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(16px)', borderRadius: '32px', padding: '40px 36px', border: '1px solid rgba(255,255,255,0.2)', minWidth: '320px', textAlign: 'center' }}>
-                        {/* Avatar stack */}
+                        {/* Nhóm ảnh đại diện bác sĩ nổi bật */}
                         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
                             {["/img/bac_si_minh_anh.png", "/img/bac_si_khanh_linh.png", "/img/bac_si_hoang_nam.png"].map((src, i) => (
-                                <div key={i} style={{ width: '52px', height: '52px', borderRadius: '50%', border: '3px solid rgba(255,255,255,0.5)', overflow: 'hidden', marginLeft: i === 0 ? 0 : '-16px', position: 'relative', zIndex: 3 - i, background: '#0f9d8a' }}>
+                                <div key={i} style={{ width: '52px', height: '52px', borderRadius: '50%', border: '3px solid rgba(255,255,255,0.5)', overflow: 'hidden', marginLeft: i === 0 ? 0 : '-16px', position: 'relative', zIndex: 3 - i, background: 'var(--primary)' }}>
                                     <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top' }} />
                                 </div>
                             ))}

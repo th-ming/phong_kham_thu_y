@@ -34,19 +34,39 @@ export const LottiePlayer: React.FC<{ url: string, style?: React.CSSProperties }
  * MÈO MEME (BANANA CAT)
  */
 export const MemeCat: React.FC = () => {
+  const [shouldRender, setShouldRender] = useState(true);
+
+  useEffect(() => {
+    // TỐI ƯU THÔNG MINH: Chỉ hiện nếu mạng ngon (4G/5G)
+    const conn = (navigator as any).connection || (navigator as any).mozConnection || (navigator as any).webkitConnection;
+    const isSlowNetwork = conn && (conn.saveData || ['slow-2g', '2g', '3g'].includes(conn.effectiveType));
+    
+    if (isSlowNetwork) setShouldRender(false);
+    else setShouldRender(true);
+  }, []);
+
+  const isMobile = window.innerWidth <= 768;
+
+  if (!shouldRender) return null;
+  return <MemeCatCore isMobile={isMobile} />;
+};
+
+const MemeCatCore: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [active, setActive] = useState(true);
   const videoReadyRef = useRef(false);
   const [showCanvas, setShowCanvas] = useState(false);
-  const [pos, setPos] = useState({ x: -200, y: -200, rotation: 0, size: 150 });
+  const [pos, setPos] = useState({ x: -200, y: -200, rotation: 0, size: isMobile ? 80 : 150 });
   const [message, setMessage] = useState("");
+  const [videoUrl, setVideoUrl] = useState("/img/video_meo_chay.webm");
   const mousePosRef = useRef({ x: -1000, y: -1000 });
   const [isVisible, setIsVisible] = useState(true);
 
   const [trail, setTrail] = useState<{ id: number, x: number, y: number, rotation: number, image: string, age: number, size: number }[]>([]);
   const isSprintingRef = useRef(false);
   const trailIdCounter = useRef(0);
+  const frameCountRef = useRef(0);
 
   // KIỂM TRA TRẠNG THÁI TAB TRÌNH DUYỆT
   useEffect(() => {
@@ -57,7 +77,17 @@ export const MemeCat: React.FC = () => {
 
   // LỜI THOẠI NGẪU NHIÊN CỦA BOSS
   useEffect(() => {
-    const baseMessages = ["Meow~ 🐾", "Rexi số 1 meow! ✨", "Nhớ đặt lịch khám nha!", "Đang chạy bộ nè meow... 🙀", "Pate đâu rồi sen? 🐟", "Cấp cứu gọi ***REMOVED***-VIETQR_ACCOUNT_NO!"];
+    const baseMessages = [
+      "Meow~ 🐾", "Rexi số 1 meow! ✨", "Nhớ đặt lịch khám nha!", "Đang chạy bộ nè meow... 🙀", "Pate đâu rồi sen? 🐟",
+      "Sen ơi, trẫm đói! Đưa pate đây! 😾",
+      "Chạy sút quần để trốn đi tắm nè meow! 🏃‍♂️💨",
+      "Bác sĩ dặn rồi, ngày chỉ ăn 3 cữ súp thưởng thôi! 🩺",
+      "Thấy trẫm chạy lẹ không? Tránh đường cho bổn cung! 🐾",
+      "Trầm cảm vì sen nghèo không có tiền mua bàn cào móng... 😿",
+      "Ủa đang ở đâu đây? Lạc đường mất tiêu rồi meow~ 🧭",
+      "Cấp cứu! Bụng đói cồn cào! Gọi ***REMOVED***-VIETQR_ACCOUNT_NO lẹ! 🚑",
+      "Bế trẫm đi Rexi khám lẹ, dạo này rụng lông quá! 🙀"
+    ];
     const interval = setInterval(() => {
       if (!isVisible) return;
       const randomMsg = baseMessages[Math.floor(Math.random() * baseMessages.length)];
@@ -96,14 +126,18 @@ export const MemeCat: React.FC = () => {
     };
   }, [isVisible]);
 
+  // TỐI ƯU HIỆU NĂNG 1: Tách sự kiện chuột ra riêng để không bị tháo lắp 60 lần/giây
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => { mousePosRef.current = { x: e.clientX, y: e.clientY }; };
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
+
   useEffect(() => {
     const canvas = canvasRef.current;
     const video = videoRef.current;
     if (!canvas || !video) return;
     const ctx = canvas.getContext("2d", { willReadFrequently: true, alpha: true });
-
-    const handleMouseMove = (e: MouseEvent) => { mousePosRef.current = { x: e.clientX, y: e.clientY }; };
-    window.addEventListener('mousemove', handleMouseMove);
 
     const baseSpeed = 4.8;
     let animationId: number;
@@ -169,9 +203,13 @@ export const MemeCat: React.FC = () => {
 
         // CHỤP ẢNH TÀN ẢNH (SNAPSHOT) KHI ĐANG CHẠY NHANH
         if (isSprinting) {
-          const snapshot = canvas.toDataURL('image/webp', 0.5);
-          trailIdCounter.current += 1;
-          setTrail(prev => [{ id: trailIdCounter.current, x, y, rotation, image: snapshot, age: 0, size: intSize }, ...prev.map(t => ({ ...t, age: t.age + 1 })).filter(t => t.age < 6)]);
+          frameCountRef.current += 1;
+          // TỐI ƯU HIỆU NĂNG 2: Giảm tải RAM bằng cách chỉ chụp tàn ảnh mỗi 3 frame
+          if (frameCountRef.current % 3 === 0) {
+            const snapshot = canvas.toDataURL('image/webp', 0.3); // Giảm chất lượng ảnh để tối ưu tốc độ
+            trailIdCounter.current += 1;
+            setTrail(prev => [{ id: trailIdCounter.current, x, y, rotation, image: snapshot, age: 0, size: intSize }, ...prev.map(t => ({ ...t, age: t.age + 1 })).filter(t => t.age < 6)]);
+          }
         } else {
           setTrail(prev => prev.length > 0 ? prev.map(t => ({ ...t, age: t.age + 1 })).filter(t => t.age < 6) : []);
         }
@@ -190,7 +228,6 @@ export const MemeCat: React.FC = () => {
     animationId = requestAnimationFrame(render);
     return () => {
       cancelAnimationFrame(animationId);
-      window.removeEventListener('mousemove', handleMouseMove);
     };
   }, [isVisible, pos]);
 
@@ -200,7 +237,7 @@ export const MemeCat: React.FC = () => {
     <>
       <video
         ref={videoRef}
-        src="/img/video_meo_chay.webm"
+        src={videoUrl}
         autoPlay
         loop
         muted
@@ -211,24 +248,42 @@ export const MemeCat: React.FC = () => {
       {message && (
         <div className="cat-bubble-animate" style={{
           position: 'fixed', zIndex: 999999,
-          top: pos.y < 80 ? pos.y + pos.size + 15 : pos.y - 65,
-          left: `clamp(20px, ${pos.x + pos.size / 2}px, calc(100vw - 280px))`,
-          background: 'rgba(255, 255, 255, 0.85)',
-          backdropFilter: 'blur(10px)',
-          padding: '8px 16px',
-          borderRadius: '20px 20px 20px 5px',
-          border: '1.5px solid rgba(15, 157, 138, 0.4)',
-          color: '#0f9d8a',
+          top: pos.y < 80 ? pos.y + pos.size + (isMobile ? 10 : 15) : pos.y - (isMobile ? 48 : 65),
+          left: isMobile
+            ? `clamp(10px, ${pos.x + pos.size / 2}px, calc(100vw - 150px))`
+            : `clamp(20px, ${pos.x + pos.size / 2}px, calc(100vw - 250px))`,
+          background: 'var(--surface)',
+          backdropFilter: 'blur(12px)',
+          padding: isMobile ? '6px 12px' : '10px 18px',
+          borderRadius: isMobile ? '16px' : '22px',
+          border: '1.5px solid var(--primary)',
+          color: 'var(--primary)',
           fontWeight: 800,
-          fontSize: '0.9rem',
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+          fontSize: isMobile ? '0.7rem' : (message.length > 30 ? '0.8rem' : '0.9rem'),
+          boxShadow: 'var(--shadow-lg)',
           display: 'flex',
+          flexDirection: 'column',
           alignItems: 'center',
-          gap: '6px',
-          whiteSpace: 'nowrap'
+          justifyContent: 'center',
+          gap: '4px',
+          maxWidth: isMobile ? '130px' : '220px',
+          textAlign: 'center',
+          wordBreak: 'break-word',
+          lineHeight: '1.3'
         }}>
-          <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>pets</span>
+          <span className="material-symbols-outlined" style={{ fontSize: isMobile ? '14px' : '18px', opacity: 0.7 }}>pets</span>
           {message}
+          {/* Đuôi bong bóng chat */}
+          <div style={{
+            position: 'absolute',
+            bottom: isMobile ? '-5px' : '-8px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: 0, height: 0,
+            borderLeft: isMobile ? '5px solid transparent' : '8px solid transparent',
+            borderRight: isMobile ? '5px solid transparent' : '8px solid transparent',
+            borderTop: isMobile ? '5px solid var(--primary)' : '8px solid var(--primary)',
+          }} />
         </div>
       )}
 
@@ -341,7 +396,7 @@ export const TransparentVideo: React.FC<{ src: string, style?: React.CSSProperti
           const maxRB = Math.max(r, b), diff = g - maxRB, luma = 0.299 * r + 0.587 * g + 0.114 * b;
           const isTextArea = (py < canvas.height * 0.45) && (px > canvas.width * 0.40);
 
-          // XỬ LÝ ĐẶC BIỆT CHO CHẾ ĐỘ TỐI (LÀM TRẮNG CHỮ)
+          // XỬ LÝ ĐẶC BIỆT CHO CHỮ TRÊN CHẾ ĐỘ TỐI (LÀM TRẮNG CHỮ)
           if (isDark && isTextArea && diff < 15 && luma < 240) {
             data[i] = 255; data[i + 1] = 255; data[i + 2] = 255; data[i + 3] = 255;
           } else if (diff > 20) { data[i + 3] = 0; }

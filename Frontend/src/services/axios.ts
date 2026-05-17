@@ -56,7 +56,7 @@ axiosInstance.interceptors.response.use(
   async (error: AxiosError) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
-    if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
+    if (error.response?.status === 401 && originalRequest && !originalRequest._retry && !originalRequest.url?.includes('/api/auth/')) {
       // Nếu đang trong quá trình refresh token, cho các request khác vào hàng đợi
       if (isRefreshing) {
         return new Promise(function (resolve, reject) {

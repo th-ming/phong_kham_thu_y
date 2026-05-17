@@ -54,9 +54,8 @@ const PhanThongKe: React.FC = () => {
     }, [started]);
 
     return (
-        <section ref={ref} style={{
+        <section ref={ref} className="premium-fluid-gradient" style={{
             padding: "100px 0",
-            background: "linear-gradient(135deg, #0f9d8a 0%, #0d7a6d 100%)",
             position: "relative",
             overflow: "hidden"
         }}>

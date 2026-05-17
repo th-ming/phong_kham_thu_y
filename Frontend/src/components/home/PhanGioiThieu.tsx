@@ -64,7 +64,7 @@ const PhanGioiThieu: React.FC = () => {
                         width: 100%;
                         height: 100%;
                         background: ${isDark
-                        ? 'linear-gradient(180deg, rgba(15, 23, 42, 0.90), rgba(15, 23, 42, 0.75))'
+                        ? 'linear-gradient(180deg, rgba(15, 23, 42, 0.82), rgba(15, 23, 42, 0.70))'
                         : 'linear-gradient(180deg, rgba(255,255,255,0.87), rgba(255,255,255,0.75))'};
                         z-index: 1;
                     }
@@ -106,22 +106,18 @@ const PhanGioiThieu: React.FC = () => {
                         100% { opacity: 0; filter: blur(10px); transform: scale(0.95); }
                     }
                     
-                    /* HIỆU ỨNG PHÁT SÁNG CHO CHỮ TRÊN BANNER (DARK MODE) */
+                    /* HIỆU ỨNG PHÁT SÁNG CHO CHỮ TRÊN BANNER (DARK MODE) - LÀM SẮC NÉT HƠN */
                     [data-theme='dark'] .hero-title {
-                        text-shadow: 0 0 20px rgba(45, 212, 191, 0.2);
+                        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6); /* Đổ bóng tối sắc nét, tăng độ tương phản và chống mỏi mắt */
+                    }
+                    [data-theme='dark'] .hero-light-effect {
+                        mix-blend-mode: soft-light; /* Chuyển sang soft-light để bớt bị nhòe màu */
+                        opacity: 0.8;
                     }
                     [data-theme='dark'] .floating-glass-card {
-                        background: rgba(15, 23, 42, 0.85) !important;
-                        border-color: #2dd4bf !important;
-                        box-shadow: 0 0 20px rgba(45, 212, 191, 0.4), 0 0 40px rgba(45, 212, 191, 0.2) !important;
-                    }
-                    [data-theme='dark'] .glow-text-title {
-                        color: #2dd4bf !important;
-                        text-shadow: 0 0 8px rgba(45, 212, 191, 0.8) !important;
-                    }
-                    [data-theme='dark'] .glow-text-sub {
-                        color: #ccfbf1 !important;
-                        text-shadow: 0 0 5px rgba(45, 212, 191, 0.5) !important;
+                        background: rgba(15, 23, 42, 0.92) !important; /* Đậm hơn để nổi bật */
+                        border-color: rgba(45, 212, 191, 0.5) !important;
+                        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5) !important;
                     }
                 `}</style>
 
@@ -134,7 +130,7 @@ const PhanGioiThieu: React.FC = () => {
                 <div className="floating-bg" style={{ position: 'absolute', top: '10%', left: '3%', width: '220px', opacity: 0.18, pointerEvents: 'none', zIndex: 3 }}>
                     <LottiePlayer url="https://assets3.lottiefiles.com/packages/lf20_syqnfe7c.json" />
                 </div>
-                <span className="material-symbols-outlined floating-bg" style={{ position: 'absolute', bottom: '15%', right: '35%', fontSize: '200px', color: '#0f9d8a', opacity: 0.03, pointerEvents: 'none', animationDelay: '1s', zIndex: 3 }}>pets</span>
+                <span className="material-symbols-outlined floating-bg" style={{ position: 'absolute', bottom: '15%', right: '35%', fontSize: '200px', color: 'var(--primary)', opacity: 0.03, pointerEvents: 'none', animationDelay: '1s', zIndex: 3 }}>pets</span>
 
                 <div style={{ position: 'absolute', top: '-100px', right: '-100px', width: '450px', height: '450px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(15,157,138,0.07) 0%, transparent 70%)', pointerEvents: 'none', zIndex: 3 }} />
                 <div style={{ position: 'absolute', bottom: '-120px', left: '-80px', width: '380px', height: '380px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(45,212,191,0.06) 0%, transparent 70%)', pointerEvents: 'none', zIndex: 3 }} />
@@ -153,7 +149,20 @@ const PhanGioiThieu: React.FC = () => {
                                 Sức Khoẻ <span style={{ color: "var(--primary)" }}>Trọn Vẹn</span><br />
                                 Cho <Typewriter words={["Thú Cưng", "Chó Cưng", "Mèo Cưng", "Người Bạn Nhỏ"]} />
                             </h1>
-                            <p style={{ fontSize: "1.05rem", color: "var(--gray-600)", maxWidth: "520px", marginBottom: "36px", lineHeight: 1.75, fontWeight: 500 }}>
+                            <p className="mission-text" style={{ 
+                                fontSize: "1.15rem", 
+                                color: isDark ? 'rgba(255, 255, 255, 0.85)' : '#4b5563', /* Tăng độ tương phản vượt trội: màu xám đậm trong light mode, trắng dịu trong dark mode */
+                                maxWidth: "580px", 
+                                marginBottom: "42px", 
+                                lineHeight: 1.8, 
+                                fontWeight: 500, 
+                                fontFamily: "'Lora', serif", 
+                                fontStyle: "italic",
+                                position: "relative",
+                                paddingLeft: "25px",
+                                borderLeft: "3px solid var(--primary)"
+                            }}>
+                                <span style={{ position: "absolute", left: "-5px", top: "-15px", fontSize: "3.5rem", color: "var(--primary)", opacity: 0.15, fontFamily: "serif", userSelect: 'none' }}>“</span>
                                 Rexi mang đến tiêu chuẩn y khoa quốc tế kết hợp cùng tình yêu thương vô bờ bến. Chúng tôi cam kết chăm sóc thú cưng của bạn như chính gia đình mình.
                             </p>
                             <div className="hero-cta-grid">
