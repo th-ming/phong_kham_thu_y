@@ -14,15 +14,11 @@ const PhanTienIch: React.FC = () => {
 
     return (
         <>
-            <section style={{
-                background: isDark
-                    ? "linear-gradient(135deg, #0f172a 0%, #0d8a7a 100%)"
-                    : "linear-gradient(135deg, #0d8a7a 0%, #0f9d8a 50%, #1ab8a4 100%)",
+            <section className="premium-fluid-gradient" style={{
                 padding: "22px 0",
                 color: "white",
                 position: 'relative',
-                overflow: 'hidden',
-                transition: 'background 0.5s ease'
+                overflow: 'hidden'
             }}>
                 {/* Hover styles cho feature-item */}
                 <style>{`

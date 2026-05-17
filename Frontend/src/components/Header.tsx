@@ -63,15 +63,39 @@ const Header: React.FC<{ hideMenu?: boolean }> = ({ hideMenu }) => {
       borderBottom: isScrolled ? '1px solid var(--gray-200)' : '1px solid transparent'
     }}>
       {/* đường dây cấp cứu 24/7 trên header */}
-      <div style={{ background: 'var(--primary)', color: 'white', padding: '10px 0', fontSize: '0.85rem', fontWeight: 700 }}>
-        <div className="container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-          <span>Đường dây cấp cứu 24/7 - ***REMOVED***-VIETQR_ACCOUNT_NO - Phục vụ không nghỉ</span>
+      <div style={{ background: 'var(--primary)', color: 'white', padding: '12px 0', fontSize: '0.9rem', fontWeight: 800, position: 'relative', overflow: 'hidden' }}>
+        <div className="container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '25px', position: 'relative', zIndex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span className="material-symbols-outlined animate-pulse" style={{ fontSize: '20px' }}>support_agent</span>
+            <span>Đường dây cấp cứu 24/7: <a href="tel:***REMOVED***-VIETQR_ACCOUNT_NO" style={{ color: 'white', textDecoration: 'none' }}>0353.374.156</a></span>
+          </div>
+          <div className="mobile-hide" style={{ display: 'flex', alignItems: 'center', gap: '8px', opacity: 0.9 }}>
+            <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>schedule</span>
+            <span>Phục vụ không nghỉ lễ</span>
+          </div>
         </div>
+        {/* Hiệu ứng ánh sáng chạy ngang banner */}
+        <div className="shimmer" style={{ position: 'absolute', inset: 0, opacity: 0.1 }}></div>
       </div>
 
       {/* dòng cảnh báo mùa dịch bệnh */}
-      <div style={{ background: '#ef4444', color: 'white', padding: '12px 0', fontSize: '0.85rem', fontWeight: 900, textAlign: 'center', borderBottom: '1px solid #dc2626', boxShadow: '0 4px 10px rgba(239, 68, 68, 0.2)' }}>
-        <span className="text-blink-red">Mùa bệnh dại đang gia tăng — Nhớ tiêm phòng trước 30/06! <Link to="/khach-hang/dat-lich-hen" style={{ color: '#fef08a', textDecoration: 'underline' }}>Đặt lịch ngay →</Link></span>
+      <div style={{ 
+        background: 'var(--alert-bg)', 
+        color: 'var(--alert-text)', 
+        padding: '12px 0', 
+        fontSize: '0.85rem', 
+        fontWeight: 900, 
+        textAlign: 'center', 
+        borderBottom: '1px solid var(--alert-border)', 
+        boxShadow: '0 4px 15px rgba(225, 29, 72, 0.05)',
+        backdropFilter: 'var(--glass-blur)',
+        transition: 'all 0.3s ease'
+      }}>
+        <span className="text-blink-red" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+          <span className="material-symbols-outlined" style={{ fontSize: '18px', color: 'var(--alert-icon-color)' }}>warning</span>
+          Mùa bệnh dại đang gia tăng — Nhớ tiêm phòng trước 30/06! 
+          <Link to="/khach-hang/dat-lich-hen" style={{ color: 'var(--alert-link)', fontWeight: 950, textDecoration: 'underline', marginLeft: '10px' }}>Đặt lịch ngay →</Link>
+        </span>
       </div>
 
       <nav className="container" style={{ height: '80px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -90,15 +114,15 @@ const Header: React.FC<{ hideMenu?: boolean }> = ({ hideMenu }) => {
             {/* logo phòng khám góc trái */}
             <img src="/img/avtpkty.png" alt="Rexi" style={{ width: '65%', filter: 'brightness(0) invert(1)' }} />
           </div>
-          <div className="logo-container">
-            <span className="logo-rexi">Rexi</span>
-            <span className="logo-sub">Phòng Khám Thú Y</span>
+          <div className="logo-container" style={{ display: 'flex', flexDirection: 'column' }}>
+            <span className="logo-rexi" style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--primary)', lineHeight: 1 }}>Rexi</span>
+            <span className="logo-sub" style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--gray-500)', textTransform: 'uppercase', letterSpacing: '1px', marginTop: '2px' }}>Phòng Khám Thú Y</span>
           </div>
         </Link>
 
         {/* menu điều hướng */}
         {!hideMenu && (
-          <div className="mobile-hide" style={{ display: 'flex', gap: '35px' }}>
+          <div className="mobile-hide" style={{ display: 'flex', gap: '45px' }}>
             {navItems.map((item, idx) => (
               <button
                 key={idx}
@@ -193,9 +217,9 @@ const Header: React.FC<{ hideMenu?: boolean }> = ({ hideMenu }) => {
 
       <style>{`
       @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
-      @keyframes textBlinkRed { 0%, 100% { color: white; } 50% { color: #fef08a; } }
+      @keyframes textBlinkRed { 0%, 100% { color: var(--alert-text); } 50% { opacity: 0.8; } }
       .animate-blink { animation: blink 2s infinite; }
-      .text-blink-red { animation: textBlinkRed 1s infinite; }
+      .text-blink-red { animation: textBlinkRed 1.8s infinite ease-in-out; }
       .nav-link-btn:hover { color: var(--primary) !important; }
         .nav-link-btn:hover .material-symbols-outlined { color: var(--primary) !important; }
         .nav-underline { position: absolute; bottom: 0; left: 0; width: 0; height: 2px; background: var(--primary); transition: width 0.3s; }

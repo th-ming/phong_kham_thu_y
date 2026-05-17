@@ -50,6 +50,7 @@ const ChiTietDichVu: React.FC = () => {
     if (lower.includes("x-quang") || lower.includes("siêu âm")) return { icon: "biotech", img: "/img/chan_doan_hinh_anh.png" };
     if (lower.includes("phẫu thuật") || lower.includes("mổ")) return { icon: "surgical", img: "/img/phau_thuat.png" };
     if (lower.includes("nội trú") || lower.includes("lưu trú")) return { icon: "hotel", img: "/img/noi_tru.png" };
+    if (lower.includes("răng") || lower.includes("nha khoa")) return { icon: "dentistry", img: "/img/nho_rang_nha_khoa.png" };
     if (lower.includes("spa") || lower.includes("tắm") || lower.includes("tỉa")) return { icon: "spa", img: "/img/spa_grooming.png" };
     if (lower.includes("xét nghiệm") || lower.includes("sinh hóa")) return { icon: "science", img: "/img/xet_nghiem_sinh_hoa.png" };
     // hình ảnh mặc định avatar dành cho dịch vụ khác

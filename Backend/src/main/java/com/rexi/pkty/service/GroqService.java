@@ -50,8 +50,8 @@ public class GroqService {
             return "Dạ Sen ơi, Phòng khám Rexi tọa lạc tại: **Số 68, Ngõ 10, Đường Ngô Xuân Quảng, Trâu Quỳ, Gia Lâm, Hà Nội** nha! Sen có thể xem chỉ đường chi tiết tại đây ạ: [LINK BẢN ĐỒ] 🐾";
         }
 
-        // Kiểm tra ảnh → chọn model phù hợp
-        boolean hasImage = latest.getImage() != null && !latest.getImage().isEmpty();
+        // Kiểm tra ảnh → chọn model phù hợp (Sử dụng list images mới)
+        boolean hasImage = latest.getImages() != null && !latest.getImages().isEmpty();
         String selectedModel = hasImage ? visionModelName : modelName;
 
         // Chuẩn bị danh sách messages cho API
@@ -63,14 +63,17 @@ public class GroqService {
 
             boolean isLatest = (i == history.size() - 1);
 
-            if (isLatest && msg.getImage() != null && !msg.getImage().isEmpty()) {
-                String textForImage = msgContent.isBlank() ? "Phân tích ảnh này và nhận định sức khỏe của bé."
+            if (isLatest && msg.getImages() != null && !msg.getImages().isEmpty()) {
+                String textForImage = msgContent.isBlank() ? "Phân tích các ảnh này và nhận định sức khỏe của bé."
                         : msgContent;
                 List<Map<String, Object>> content = new ArrayList<>();
                 content.add(Map.of("type", "text", "text", textForImage));
-                content.add(Map.of(
-                        "type", "image_url",
-                        "image_url", Map.of("url", "data:image/jpeg;base64," + msg.getImage())));
+                
+                for (String imgBase64 : msg.getImages()) {
+                    content.add(Map.of(
+                            "type", "image_url",
+                            "image_url", Map.of("url", "data:image/jpeg;base64," + imgBase64)));
+                }
                 messagesForApi.add(Map.of("role", msg.getRole(), "content", content));
             } else if (!msgContent.isBlank()) {
                 messagesForApi.add(Map.of("role", msg.getRole(), "content", msgContent));

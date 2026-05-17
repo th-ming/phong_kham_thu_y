@@ -69,36 +69,40 @@ public class GeminiService {
 
             String textContent = (msg.getContent() != null && !msg.getContent().isBlank()) ? msg.getContent() : "";
 
-            if (msg.getImage() != null && !msg.getImage().isEmpty()) {
+            if (msg.getImages() != null && !msg.getImages().isEmpty()) {
                 if (textContent.isBlank())
-                    textContent = "Phân tích ảnh này giúp tôi.";
+                    textContent = "Phân tích các ảnh này giúp tôi.";
                 parts.add(Map.of("text", textContent));
-                parts.add(Map.of("inlineData", Map.of(
-                        "mimeType", "image/jpeg",
-                        "data", msg.getImage())));
-            } else if (msg.getVideo() != null && !msg.getVideo().isEmpty()) {
+                for (String imgBase64 : msg.getImages()) {
+                    parts.add(Map.of("inlineData", Map.of(
+                            "mimeType", "image/jpeg",
+                            "data", imgBase64)));
+                }
+            } else if (msg.getVideos() != null && !msg.getVideos().isEmpty()) {
                 if (textContent.isBlank())
                     textContent = "Phân tích video này giúp tôi.";
                 parts.add(Map.of("text", textContent));
 
-                String mimeType = "video/mp4";
-                String base64Data = msg.getVideo();
+                for (String vidData : msg.getVideos()) {
+                    String mimeType = "video/mp4";
+                    String base64Data = vidData;
 
-                // Trích xuất chính xác mimeType từ chuỗi data URL
-                if (base64Data.startsWith("data:")) {
-                    int semicolonIdx = base64Data.indexOf(";");
-                    if (semicolonIdx != -1) {
-                        mimeType = base64Data.substring(5, semicolonIdx);
+                    // Trích xuất chính xác mimeType từ chuỗi data URL
+                    if (base64Data.startsWith("data:")) {
+                        int semicolonIdx = base64Data.indexOf(";");
+                        if (semicolonIdx != -1) {
+                            mimeType = base64Data.substring(5, semicolonIdx);
+                        }
+                        int commaIdx = base64Data.indexOf(",");
+                        if (commaIdx != -1) {
+                            base64Data = base64Data.substring(commaIdx + 1);
+                        }
                     }
-                    int commaIdx = base64Data.indexOf(",");
-                    if (commaIdx != -1) {
-                        base64Data = base64Data.substring(commaIdx + 1);
-                    }
+
+                    parts.add(Map.of("inlineData", Map.of(
+                            "mimeType", mimeType,
+                            "data", base64Data)));
                 }
-
-                parts.add(Map.of("inlineData", Map.of(
-                        "mimeType", mimeType,
-                        "data", base64Data)));
             } else {
                 if (!textContent.isBlank()) {
                     parts.add(Map.of("text", textContent));

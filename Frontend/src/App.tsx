@@ -134,7 +134,6 @@ const App: React.FC = () => {
             {/* LỚP 3: Các trang QUẢN TRỊ HỆ THỐNG - CHỈ ADMIN TỐI CAO */}
             <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
               <Route path="/quan-ly/nhan-vien-phan-quyen" element={<QuanLyNhanVienPhanQuyen />} />
-              <Route path="/quan-ly/marketing" element={<QuanLyMarketing />} />
               <Route path="/quan-ly/cau-hinh" element={<CauHinhHeThong />} />
               <Route path="/quan-ly/chuc-nang" element={<QuanLyChucNang />} />
             </Route>
@@ -143,6 +142,7 @@ const App: React.FC = () => {
             <Route element={<ProtectedRoute allowedRoles={['admin', 'quan_ly']} />}>
               <Route path="/quan-ly/dich-vu" element={<QuanLyDichVu />} />
               <Route path="/quan-ly/xet-nghiem" element={<QuanLyXetNghiem />} />
+              <Route path="/quan-ly/marketing" element={<QuanLyMarketing />} />
             </Route>
           </Route>
         </Routes>

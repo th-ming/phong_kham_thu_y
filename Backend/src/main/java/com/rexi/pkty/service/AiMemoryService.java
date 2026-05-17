@@ -1,16 +1,15 @@
 package com.rexi.pkty.service;
 
 import com.rexi.pkty.entity.TaiKhoan;
-import com.rexi.pkty.repository.HoSoBenhAnRepository;
-import com.rexi.pkty.repository.TaiKhoanRepository;
-import com.rexi.pkty.repository.ThuCungRepository;
-import com.rexi.pkty.repository.TiemChungRepository;
-import com.rexi.pkty.repository.DichVuRepository;
-import com.rexi.pkty.repository.NhanVienRepository;
+import com.rexi.pkty.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -21,117 +20,105 @@ public class AiMemoryService {
 
     @Autowired
     private TaiKhoanRepository taiKhoanRepository;
-
     @Autowired
     private ThuCungRepository thuCungRepository;
-
     @Autowired
     private HoSoBenhAnRepository hoSoBenhAnRepository;
-
     @Autowired
     private TiemChungRepository tiemChungRepository;
-
     @Autowired
     private DichVuRepository dichVuRepository;
-
     @Autowired
     private NhanVienRepository nhanVienRepository;
 
     public String getCurrentCustomerId() {
         try {
             var auth = SecurityContextHolder.getContext().getAuthentication();
-            if (auth == null) return null;
-            String username = auth.getName();
-            if (username == null || username.equals("anonymousUser")) return null;
-            Optional<TaiKhoan> tkOpt = taiKhoanRepository.findByTenDangNhap(username);
-            if (tkOpt.isPresent() && tkOpt.get().getKhach_hang() != null) {
-                return tkOpt.get().getKhach_hang().getId_khach_hang();
+            if (auth != null && auth.isAuthenticated()) {
+                Optional<TaiKhoan> tk = taiKhoanRepository.findByTenDangNhap(auth.getName());
+                return tk.map(TaiKhoan::getId_khach_hang).orElse(null);
             }
-        } catch (Exception e) {}
+        } catch (Exception ignored) {}
         return null;
     }
 
-    public String getUserContext(String userQuery) {
+    public String getUserContext(String username) {
+        if (username == null || username.isEmpty()) return "";
         try {
-            String query = userQuery != null ? userQuery.toLowerCase() : "";
-            var auth = SecurityContextHolder.getContext().getAuthentication();
-            if (auth == null || auth.getName().equals("anonymousUser")) {
-                if (query.contains("giá") || query.contains("dịch vụ") || query.contains("tiền")) {
-                    return getClinicServicesContext();
-                }
-                return "";
-            }
-
-            String username = auth.getName();
             Optional<TaiKhoan> tkOpt = taiKhoanRepository.findByTenDangNhap(username);
-            if (tkOpt.isEmpty() || tkOpt.get().getKhach_hang() == null) return "";
-
-            String customerId = tkOpt.get().getKhach_hang().getId_khach_hang();
-            String customerName = tkOpt.get().getKhach_hang().getTen_khach_hang();
-
-            StringBuilder context = new StringBuilder();
-            context.append("\n[BỐI CẢNH HIỆN TẠI]\n");
-            context.append("- Khách hàng: ").append(customerName).append("\n");
-
-            var pets = thuCungRepository.findByKhachHang(customerId);
-            if (!pets.isEmpty()) {
-                String petNames = pets.stream().map(p -> p.get("ten_thu_cung") + " (" + p.get("loai") + ")").collect(Collectors.joining(", "));
-                context.append("- Thú cưng: ").append(petNames).append("\n");
+            if (tkOpt.isEmpty()) return "";
+            
+            TaiKhoan tk = tkOpt.get();
+            StringBuilder sb = new StringBuilder("\n[THÔNG TIN NGƯỜI DÙNG ĐANG CHAT]\n");
+            sb.append("- Tên đăng nhập: ").append(tk.getTen_dang_nhap()).append("\n");
+            
+            if (tk.getId_khach_hang() != null) {
+                sb.append(getPetContext(tk.getId_khach_hang()));
             }
-
-            if (query.contains("tiêm") || query.contains("lịch") || query.contains("vắc") || query.contains("hẹn")) {
-                context.append("- Dữ liệu tiêm chủng/lịch hẹn: ");
-                for (var p : pets) {
-                    var vaccinations = tiemChungRepository.findByIdThuCung(p.get("id_thu_cung").toString());
-                    if (!vaccinations.isEmpty()) {
-                        String vax = vaccinations.stream().map(v -> v.getTen_vaccine() + " (" + v.getNgay_tiem() + ")").collect(Collectors.joining("; "));
-                        context.append("[").append(p.get("ten_thu_cung")).append(": ").append(vax).append("] ");
-                    }
-                }
-                context.append("\n");
-            }
-
-            if (query.contains("lần trước") || query.contains("khám") || query.contains("bệnh") || query.contains("sức khỏe")) {
-                List<Map<String, Object>> history = hoSoBenhAnRepository.findByCustomerId(customerId);
-                if (!history.isEmpty()) {
-                    context.append("- Bệnh án gần đây: ");
-                    int count = 0;
-                    for (Map<String, Object> h : history) {
-                        if (count++ >= 1) break; 
-                        context.append("Bé ").append(h.get("ten_thu_cung")).append(" khám ngày ").append(h.get("ngay_kham")).append(" chẩn đoán: ").append(h.get("chan_doan")).append("\n");
-                    }
-                }
-            }
-
-            if (query.contains("giá") || query.contains("tiền") || query.contains("bao nhiêu") || query.contains("dịch vụ")) {
-                context.append(getClinicServicesContext());
-            }
-
-            if (query.contains("bác sĩ") || query.contains("ai khám") || query.contains("người khám") || query.contains("giỏi")) {
-                context.append(getDoctorsContext());
-            }
-
-            return context.toString();
+            return sb.toString();
         } catch (Exception e) {
-            return ""; 
+            return "";
         }
     }
 
-    private String getClinicServicesContext() {
+    public String getPetContext(String customerId) {
+        if (customerId == null) return "";
         try {
-            StringBuilder sb = new StringBuilder("\n[THÔNG TIN PHÒNG KHÁM REXI]\n");
-            sb.append("- Địa chỉ: Số 68, Ngõ 10, Đường Ngô Xuân Quảng, Trâu Quỳ, Gia Lâm, Hà Nội.\n");
-            sb.append("- Hotline Cấp cứu: ***REMOVED***-VIETQR_ACCOUNT_NO (Phục vụ 24/7).\n");
-            sb.append("- Giờ mở cửa: 08:00 - 20:00 (Tất cả các ngày trong tuần).\n");
-            sb.append("- Email hỗ trợ: rexivetsys@gmail.com\n");
-            sb.append("- Triết lý: Chăm sóc thú cưng bằng cả trái tim.\n");
+            var pets = thuCungRepository.findByKhachHang(customerId);
+            if (pets.isEmpty()) return "\n[KHÁCH HÀNG CHƯA CÓ THÚ CƯNG]\n";
+            
+            StringBuilder sb = new StringBuilder("\n[DANH SÁCH THÚ CƯNG CỦA SEN]\n");
+            for (var pet : pets) {
+                sb.append("- Tên: ").append(pet.get("ten_thu_cung"))
+                  .append(", Loại: ").append(pet.get("chung_loai"))
+                  .append(", Giống: ").append(pet.get("giong"))
+                  .append(", Cân nặng: ").append(pet.get("can_nang")).append("kg\n");
+            }
+            return sb.toString();
+        } catch (Exception e) {
+            return "";
+        }
+    }
 
-            var services = dichVuRepository.findTop8ActiveServices();
-            if (services != null && !services.isEmpty()) {
-                sb.append("\n[BẢNG GIÁ DỊCH VỤ CHÍNH]\n");
-                for (var s : services) {
-                    sb.append("- ").append(s.getTen_dich_vu()).append(": Từ ").append(s.getGia()).append(" VNĐ\n");
+    public String getKnowledgeBaseContext(String query) {
+        try {
+            Path path = Paths.get("src/main/resources/knowledge");
+            File folder = path.toFile();
+            if (!folder.exists() || folder.listFiles() == null) return "";
+
+            String lowerQuery = query.toLowerCase();
+            StringBuilder context = new StringBuilder("\n[KIẾN THỨC CHUYÊN MÔN VNUA]\n");
+            boolean found = false;
+
+            for (File file : folder.listFiles()) {
+                if (file.isFile() && file.getName().endsWith(".md")) {
+                    String content = Files.readString(file.toPath());
+                    // Tìm kiếm đoạn văn chứa từ khóa
+                    if (content.toLowerCase().contains(lowerQuery)) {
+                        context.append(content).append("\n---\n");
+                        found = true;
+                    }
                 }
+            }
+            return found ? context.toString() : "";
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    public String getGlobalContext() {
+        StringBuilder sb = new StringBuilder();
+        sb.append(getDoctorsContext());
+        sb.append(getServicesContext());
+        return sb.toString();
+    }
+
+    private String getServicesContext() {
+        try {
+            StringBuilder sb = new StringBuilder("\n[DỊCH VỤ TẠI PHÒNG KHÁM]\n");
+            var services = dichVuRepository.findAll();
+            for (var s : services) {
+                sb.append("- ").append(s.getTen_dich_vu()).append(": ").append(s.getGia()).append(" VNĐ\n");
             }
             return sb.toString();
         } catch (Exception e) {
@@ -141,18 +128,10 @@ public class AiMemoryService {
 
     private String getDoctorsContext() {
         try {
-            StringBuilder sb = new StringBuilder("\n[DANH SÁCH BÁC SĨ TẠI PHÒNG KHÁM]\n");
+            StringBuilder sb = new StringBuilder("\n[BÁC SĨ TẠI PHÒNG KHÁM]\n");
             var doctors = nhanVienRepository.findAllBacSi();
-            if (doctors != null && !doctors.isEmpty()) {
-                for (var d : doctors) {
-                    sb.append("- Bác sĩ: ").append(d.getHo_ten());
-                    if (d.getGioi_thieu() != null && !d.getGioi_thieu().isBlank()) {
-                        sb.append(" (Chuyên môn: ").append(d.getGioi_thieu()).append(")");
-                    }
-                    sb.append("\n");
-                }
-            } else {
-                sb.append("- Đội ngũ bác sĩ giàu kinh nghiệm, luôn sẵn sàng phục vụ.\n");
+            for (var d : doctors) {
+                sb.append("- BS. ").append(d.getHo_ten()).append(" (").append(d.getGioi_thieu()).append(")\n");
             }
             return sb.toString();
         } catch (Exception e) {

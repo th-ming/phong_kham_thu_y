@@ -21,7 +21,7 @@ test.describe('Kiểm thử nâng cao: Quản lý Nhân sự & Xác minh Phân q
 
         const ts = Date.now();
         const testEmail = `doctor_${ts}@rexi.com`;
-        const testPass = 'Rexi@2024';
+        const testPass = 'Rexi@2026';
         const hoTen = `Bác sĩ Kiểm thử ${ts}`;
 
         await page.getByLabel(/HỌ VÀ TÊN/i).fill(hoTen);

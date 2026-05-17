@@ -5,7 +5,7 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "TaiKhoan") // Kết nối bảng TaiKhoan
+@Table(name = "TaiKhoan")
 @Data
 public class TaiKhoan {
     @Id

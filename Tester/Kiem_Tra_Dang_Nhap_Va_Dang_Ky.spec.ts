@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 // Thay đổi PORT tùy theo cấu hình Frontend hiện tại (3000, 3001 hoặc 5173)
-const FRONTEND_PORT = 3001;
+const FRONTEND_PORT = 3005;
 // Cổng Backend API (Mặc định là 8081)
 const BACKEND_PORT = 8081;
 const BASE_URL = `http://localhost:${FRONTEND_PORT}`;
@@ -9,6 +9,18 @@ const BASE_URL = `http://localhost:${FRONTEND_PORT}`;
 test.describe('Kiểm thử luồng Đăng nhập và Đăng ký hệ thống', () => {
 
     test.beforeEach(async ({ page }) => {
+        // Mock các API ngoài / SMTP để kiểm thử UI mượt mà, độc lập
+        await page.route('**/api/system/send-otp', route => route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({ message: "OTP sent successfully" })
+        }));
+        await page.route('**/api/auth/forgot-password-verify', route => route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({ message: "Verification success" })
+        }));
+
         // Truy cập trang đăng nhập trước mỗi kịch bản test
         await page.goto(`${BASE_URL}/dang-nhap`);
     });
@@ -34,7 +46,7 @@ test.describe('Kiểm thử luồng Đăng nhập và Đăng ký hệ thống', 
     });
 
     test('TC02: Đăng nhập thất bại khi nhập sai mật khẩu', async ({ page }) => {
-        await page.getByPlaceholder('Tên đăng nhập').fill('admin');
+        await page.getByPlaceholder('Tên đăng nhập').fill('wrong_user');
         await page.getByPlaceholder('Mật khẩu').fill('wrong_pass_123');
         await page.getByRole('button', { name: 'Đăng nhập ngay' }).click();
 
@@ -63,8 +75,8 @@ test.describe('Kiểm thử luồng Đăng nhập và Đăng ký hệ thống', 
         await page.getByPlaceholder('Số điện thoại').fill(`09${ts.toString().slice(-8)}`);
         await page.getByPlaceholder('Địa chỉ').fill('123 Testing St, Hanoi');
         await page.getByPlaceholder('Tên đăng nhập').fill(`user_${ts}`);
-        await page.getByPlaceholder('Mật khẩu').fill('Rexi@2024');
-        await page.getByPlaceholder('Xác nhận mật khẩu').fill('Rexi@2024');
+        await page.getByPlaceholder('Mật khẩu', { exact: true }).fill('Rexi@2026');
+        await page.getByPlaceholder('Xác nhận mật khẩu').fill('Rexi@2026');
 
         await page.getByRole('button', { name: 'Đăng ký' }).click();
 

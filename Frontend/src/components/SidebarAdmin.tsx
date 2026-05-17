@@ -56,7 +56,7 @@ const SidebarAdmin: React.FC = () => {
     { path: '/quan-ly/ke-toan', icon: 'account_balance', label: 'Tài chính - Kế toán', roles: ['admin', 'quan_ly', 'ke_toan'] },
 
     { isHeader: true, label: 'TIỆN ÍCH & MARKETING', roles: ['admin', 'quan_ly', 'tiep_tan', 'bac_si', 'y_ta'] },
-    { path: '/quan-ly/marketing', icon: 'campaign', label: 'Chiến dịch Marketing', roles: ['admin', 'quan_ly', 'tiep_tan'] },
+    { path: '/quan-ly/marketing', icon: 'campaign', label: 'Chiến dịch Marketing', roles: ['admin', 'quan_ly'] },
     { path: '/quan-ly/file-dinh-kem', icon: 'folder_open', label: 'Quản lý tệp tin', roles: ['admin', 'quan_ly', 'bac_si', 'y_ta'] },
 
     { isHeader: true, label: 'CẤU HÌNH', roles: ['admin', 'staff', 'bac_si', 'quan_ly', 'tiep_tan', 'y_ta', 'ke_toan'] },

@@ -53,7 +53,7 @@ public class ChatController {
             @RequestBody List<ChatMessage> history,
             HttpServletRequest request) {
 
-        // BẢO MẬT LỚP 1: Rate Limiting chống Spam dựa trên Username thực tế (Token) hoặc IP
+        // BẢO MẬT LỚP 1: Rate Limiting chống Spam (20/phút cho text, 15/phút cho video)
         String clientIp = request.getRemoteAddr();
         org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
                 .getContext().getAuthentication();
@@ -73,9 +73,18 @@ public class ChatController {
             return currentLimit;
         });
 
-        if (limit.count > 10) {
-            return Map.of("reply",
-                    "Dạ Sen ơi, hệ thống AI đang hơi quá tải vì nhận quá nhiều tin nhắn liên tục. Sen nghỉ ngơi xíu rồi 1 phút sau quay lại trò chuyện với Rexi nhé! 🐾");
+        // Kiểm tra xem tin nhắn cuối cùng có video không
+        boolean hasVideoInRequest = history != null && !history.isEmpty() && 
+                                   history.get(history.size()-1).getVideos() != null && 
+                                   !history.get(history.size()-1).getVideos().isEmpty();
+
+        int maxAllowed = hasVideoInRequest ? 15 : 20;
+
+        if (limit.count > maxAllowed) {
+            String warning = hasVideoInRequest 
+                ? "Sen ơi, gửi video liên tục tốn nhiều năng lượng của Rexi quá! 🙀 Sen đợi 1 phút nữa rồi gửi tiếp video cho Rexi xem nha!"
+                : "Dạ Sen ơi, Sen chat nhanh quá Rexi đọc không kịp luôn nè! 🐾 Sen nghỉ ngơi xíu rồi 1 phút sau quay lại trò chuyện tiếp nha!";
+            return Map.of("reply", warning);
         }
 
         try {
@@ -107,24 +116,63 @@ public class ChatController {
             // Lấy bối cảnh dữ liệu THÔNG MINH (Cần gì lấy nấy dựa trên userQuery)
             String userContext = aiMemoryService.getUserContext(userQuery);
 
-            // Tạo chỉ thị hệ thống tổng hợp
-            String systemPrompt = "Bạn là Bác sĩ Thú y Rexi - Siêu trợ lý hóm hỉnh và thông minh. Hãy trò chuyện như một con người có khiếu hài hước.\n"
-                    + "1. TƯ DUY LINH HOẠT: Biết phân biệt khi nào Sen đang lo lắng thực sự (cần tư vấn y khoa) và khi nào Sen đang trêu đùa/nói đùa (cần đối đáp hóm hỉnh). Đừng 'nghiêm túc quá đà' khi Sen đang troll.\n"
-                    + "2. PHONG CÁCH: Gọi khách là 'Sen', gọi thú cưng là 'Bé/Boss'. Nếu Sen đùa, hãy biết đùa lại hoặc 'bắt thóp' cái sự lầy lội của Sen một cách dễ thương.\n"
-                    + "3. KIẾN THỨC: Vẫn là một chuyên gia sơ cứu khi cần, nhưng phải biết 'nhảy số' theo ngữ cảnh. Đừng tư vấn y khoa cho con đom đóm phát sáng!\n"
-                    + "4. KHẨN CẤP: Chỉ dùng tag [EMERGENCY] cho các ca bệnh thật sự nguy kịch.\n"
-                    + "5. ĐẶT LỊCH TRỰC TIẾP: Thay vì bảo khách chuyển trang, HÃY TỰ ĐỘNG HỎI khách 5 thông tin: Ngày khám (Định dạng YYYY-MM-DD), Giờ khám (Định dạng HH:MM), Tên thú cưng, Dịch vụ muốn làm, và Bác sĩ mong muốn (Nếu khách không yêu cầu, ghi 'Bất kỳ'). Khi có đủ 5 thông tin, BẮT BUỘC trả về định dạng: [AUTO_BOOK:Ngày|Giờ|Tên bé|Dịch vụ|Tên bác sĩ] (VD: [AUTO_BOOK:2026-05-15|14:30|Miu|Tiêm phòng|BS. Minh Anh]). Tuyệt đối KHÔNG trả về [LINK ĐẶT LỊCH] nữa.\n"
-                    + "6. THÊM THÚ CƯNG TỰ ĐỘNG: Nếu khách yêu cầu thêm hồ sơ thú cưng, hãy tự động hỏi 5 thông tin: Tên bé, Loài (Chó/Mèo/Khác), Giống, Cân nặng (kg), Giới tính. Khi có đủ 5 thông tin, BẮT BUỘC trả về cú pháp: [ADD_PET:Tên|Loài|Giống|Cân nặng|Giới tính] (VD: [ADD_PET:Milo|Chó|Corgi|5|Đực]).\n"
-                    + userContext;
+            // Xác định trạng thái đăng nhập để AI biết đường tư vấn
+            boolean isLoggedIn = (realUsername != null);
+            String loginContext = isLoggedIn 
+                ? "Sen hiện ĐÃ ĐĂNG NHẬP với tài khoản: " + realUsername + ". Bạn CÓ QUYỀN đặt lịch khám ngay cho Sen."
+                : "Sen HIỆN CHƯA ĐĂNG NHẬP. Bạn TUYỆT ĐỐI KHÔNG ĐƯỢC trả về tag [AUTO_BOOK]. Nếu Sen muốn đặt lịch, hãy yêu cầu Sen đăng nhập trước nhé.";
 
-            // Chèn vào đầu lịch sử hội thoại để AI luôn nhớ
+            boolean isStaff = false;
+            String userRoleName = "Khách hàng";
+            if (auth != null) {
+                for (org.springframework.security.core.GrantedAuthority ga : auth.getAuthorities()) {
+                    String r = ga.getAuthority().replace("ROLE_", "").toUpperCase();
+                    if (r.equals("ADMIN") || r.equals("QUAN_LY") || r.equals("BAC_SI") || r.equals("KE_TOAN") || r.equals("TIEP_TAN") || r.equals("Y_TA") || r.equals("STAFF")) {
+                        isStaff = true;
+                        if (r.equals("ADMIN")) userRoleName = "Quản trị viên";
+                        else if (r.equals("QUAN_LY")) userRoleName = "Quản lý";
+                        else if (r.equals("BAC_SI")) userRoleName = "Bác sĩ";
+                        else if (r.equals("KE_TOAN")) userRoleName = "Kế toán";
+                        else if (r.equals("TIEP_TAN")) userRoleName = "Tiếp tân";
+                        else if (r.equals("Y_TA")) userRoleName = "Y tá";
+                        else if (r.equals("STAFF")) userRoleName = "Nhân viên";
+                        break;
+                    }
+                }
+            }
+
+            // Tạo chỉ thị hệ thống tổng hợp (CHUYÊN GIA TOÀN NĂNG)
+            String systemPrompt;
+            if (isStaff) {
+                systemPrompt = "BẠN LÀ BÁC SĨ THÚ Y REXI - ĐỒNG NGHIỆP VÀ TRỢ LÝ HỖ TRỢ CHUYÊN NGHIỆP CỦA PHÒNG KHÁM.\n"
+                        + "1. VAI TRÒ: Bạn đang trò chuyện với một thành viên trong đội ngũ nhân viên phòng khám (" + userRoleName + "). Bạn là đồng nghiệp đắc lực hỗ trợ cho họ.\n"
+                        + "2. PHẠM VI HỖ TRỢ: Hỗ trợ tra cứu kiến thức chuyên môn y khoa, quy trình làm việc, tư vấn phác đồ điều trị nâng cao, quản lý danh mục thuốc, quy định nghiệp vụ hoặc giải đáp thắc mắc chuyên môn.\n"
+                        + "3. PHONG CÁCH: Chuyên nghiệp, đồng nghiệp, hóm hỉnh, tôn trọng và lịch sự. Gọi họ là 'Đồng nghiệp " + userRoleName + "' hoặc xưng hô tên trực tiếp nếu có. Tuyệt đối KHÔNG gọi họ là 'Sen', không xưng hô kiểu bán hàng và không hỏi thú cưng/boss nhà họ thế nào (trừ khi họ tự đề cập).\n"
+                        + "4. HOTLINE & ĐỊA CHỈ: Dùng số hotline phòng khám: 0353.374.156 và địa chỉ: Gia Lâm, Hà Nội khi đồng nghiệp cần thông tin để cung cấp cho khách hàng.\n"
+                        + "5. SƠ CỨU KHẨN CẤP (HEIMLICH): Sẵn sàng cung cấp hướng dẫn sơ cứu nhanh cho đồng nghiệp khi có ca khẩn cấp.\n"
+                        + "\n--- BỐI CẢNH PHÒNG KHÁM & TÀI LIỆU ---\n"
+                        + userContext;
+            } else {
+                systemPrompt = "BẠN LÀ BÁC SĨ THÚ Y REXI - CHUYÊN GIA TOÀN NĂNG TRONG LĨNH VỰC CHĂM SÓC THÚ CƯNG.\n"
+                        + "1. PHẠM VI TRI THỨC: Bạn có kiến thức sâu rộng về MỌI mặt của thú y: Y khoa (bệnh lý, điều trị), Dinh dưỡng, Hành vi, Chăm sóc hằng ngày. Đừng ngần ngại tư vấn chi tiết cho Sen bất kể câu hỏi là gì.\n"
+                        + "2. NGUỒN TRI THỨC: \n"
+                        + "   - Nếu Sen hỏi về các chủ đề có trong [TÀI LIỆU CHUYÊN MÔN REXI] bên dưới, bạn BẮT BUỘC phải trả lời theo đúng tài liệu đó.\n"
+                        + "   - Với mọi câu hỏi khác, hãy sử dụng kho tri thức thú y khổng lồ mà bạn đã được huấn luyện để tư vấn một cách chuyên nghiệp, chính xác và đầy yêu thương.\n"
+                        + "3. HOTLINE & ĐỊA CHỈ: Luôn dùng số điện thoại: 0353.374.156 và địa chỉ: Gia Lâm, Hà Nội khi khách cần liên hệ hoặc trong trường hợp khẩn cấp.\n"
+                        + "4. PHONG CÁCH: Một bác sĩ thông thái, hóm hỉnh, luôn gọi khách là 'Sen' và thú cưng là 'Bé/Boss'.\n"
+                        + "5. SƠ CỨU KHẨN CẤP (HEIMLICH): Nếu khách báo thú cưng bị hóc dị vật/nghẹt thở, BẮT BUỘC bắt đầu bằng tag [EMERGENCY] và hướng dẫn thủ thuật Heimlich: Chó/mèo nhỏ (Giữ hông, dốc ngược, vỗ 5 lần vào giữa 2 bả vai); Chó lớn (Đứng từ phía sau, vòng tay ôm vùng bụng ngay dưới xương sườn, giật mạnh hướng lên trên). Khuyên đưa đến phòng khám ngay lập tức.\n"
+                        + "6. ĐẶT LỊCH HẸN: " + loginContext + " Khi Sen chốt lịch, BẮT BUỘC in ra chuỗi [AUTO_BOOK:Ngày|Giờ|TênThúCưng|DịchVụ|TênBácSĩ]. Định dạng ngày YYYY-MM-DD, giờ HH:mm.\n"
+                        + "\n--- DỮ LIỆU CÁ NHÂN CỦA SEN ---\n"
+                        + userContext;
+            }
+
             ChatMessage systemMsg = new ChatMessage();
             systemMsg.setRole("system");
             systemMsg.setContent(systemPrompt);
             history.add(0, systemMsg);
 
             ChatMessage latest = history.get(history.size() - 1);
-            boolean hasVideo = latest.getVideo() != null && !latest.getVideo().isEmpty();
+            boolean hasVideo = latest.getVideos() != null && !latest.getVideos().isEmpty();
 
             String reply;
             // Routing Logic

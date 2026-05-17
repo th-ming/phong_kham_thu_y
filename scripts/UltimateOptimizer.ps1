@@ -1,8 +1,8 @@
-# UltimateOptimizer.ps1 - System Optimizer for Rexi Project
+# UltimateOptimizer.ps1 - System Optimizer for Rexi Project (V2 - Turbo)
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
-$Threshold = 90  # Canh bao khi RAM vuot qua 90%
-$SleepTime = 15  # Kiem tra moi 15 giay
+$Threshold = 80  # Ha nguong xuong 80% de may luon muot
+$SleepTime = 10  # Kiem tra nhanh hon (moi 10 giay)
 $LogFile = "d:\QLy Phòng Khám Thú Y\logs\deep_optimize.log"
 
 if (!(Test-Path "d:\QLy Phòng Khám Thú Y\logs")) { 
@@ -13,53 +13,56 @@ if (!(Test-Path "d:\QLy Phòng Khám Thú Y\logs")) {
 $psapi = '[DllImport("psapi.dll")] public static extern bool EmptyWorkingSet(IntPtr hProcess);'
 $type = Add-Type -MemberDefinition $psapi -Name "Win32Utils" -Namespace "Win32" -PassThru -ErrorAction SilentlyContinue
 
-Write-Host "--- HE THONG VE SI RAM REXI DA SAN SANG! ---" -ForegroundColor Magenta
-Write-Host "Nguong kich hoat: $Threshold%" -ForegroundColor Cyan
+Write-Host "--- REXI TURBO OPTIMIZER V2 ACTIVATED ---" -ForegroundColor Magenta
+Write-Host "Monitoring threshold: $Threshold%" -ForegroundColor Cyan
+
+# Ham don dep cac ung dung khong lien quan
+function Clean-UnrelatedProcesses {
+    $junk = @("wpscloudsvr", "CrossDeviceService", "kilo", "OneDrive", "Teams", "Cortana")
+    foreach ($name in $junk) {
+        Get-Process $name -ErrorAction SilentlyContinue | Stop-Process -Force
+    }
+}
 
 while ($true) {
     try {
         $usage = Get-WmiObject Win32_OperatingSystem
         $MemoryUsage = [Math]::Round(($usage.TotalVisibleMemorySize - $usage.FreePhysicalMemory) / $usage.TotalVisibleMemorySize * 100, 2)
 
+        # Luon don dep cac ung dung rac (khong can doi RAM cao)
+        Clean-UnrelatedProcesses
+
         if ($MemoryUsage -gt $Threshold) {
             $time = Get-Date -Format 'HH:mm:ss'
-            $logMsg = "[$time] RAM dang cao ($MemoryUsage%). Dang giai phong bo nho..."
-            Write-Host $logMsg -ForegroundColor Yellow
-            $logMsg | Out-File -FilePath $LogFile -Append
-
-            # 1. Giai phong Working Set cho toan bo tien trinh lon
+            Write-Host "[$time] RAM usage $MemoryUsage%. Deep cleaning..." -ForegroundColor Yellow
+            
+            # 1. Giai phong Working Set
             if ($null -ne $type) {
-                Get-Process | Where-Object { $_.WorkingSet64 -gt 20MB } | ForEach-Object {
+                Get-Process | Where-Object { $_.WorkingSet64 -gt 15MB } | ForEach-Object {
                     try { $type::EmptyWorkingSet($_.Handle) | Out-Null } catch {}
                 }
             }
 
-            # 2. Xu ly cac tien trinh "ngon" RAM dac thu
-            Get-Process Antigravity -ErrorAction SilentlyContinue | Where-Object { $_.WorkingSet64 -gt 800MB } | ForEach-Object {
-                Write-Host "Don dep AI Agent ($($_.Id))..." -ForegroundColor DarkGray
-                try { $type::EmptyWorkingSet($_.Handle) | Out-Null } catch {}
-            }
-
-            # 3. Tim va diet cac tien trinh Java/Node bi treo (Zombie)
+            # 2. Diet Zombie Java/Node (Giu lai cai moi nhat)
             $javaProcesses = Get-Process java -ErrorAction SilentlyContinue
             if ($javaProcesses.Count -gt 1) {
-                Write-Host "Phat hien $($javaProcesses.Count) tien trinh Java. Dang xu ly zombie..." -ForegroundColor Red
                 $javaProcesses | Sort-Object StartTime | Select-Object -First ($javaProcesses.Count - 1) | Stop-Process -Force
             }
-
-            # 4. Don dep Language Server neu no qua nang
-            Get-Process language_server* -ErrorAction SilentlyContinue | Where-Object { $_.WorkingSet64 -gt 400MB } | ForEach-Object {
-                try { $type::EmptyWorkingSet($_.Handle) | Out-Null } catch {}
+            
+            $nodeProcesses = Get-Process node -ErrorAction SilentlyContinue
+            if ($nodeProcesses.Count -gt 2) { # Node thuong co 2-3 process cho 1 app, neu > 3 thi co the la zombie
+                $nodeProcesses | Sort-Object StartTime | Select-Object -First ($nodeProcesses.Count - 2) | Stop-Process -Force
             }
 
-            # 5. Don dep log Backend neu qua nang
-            Get-ChildItem "d:\QLy Phòng Khám Thú Y\Backend\logs\*.log" -ErrorAction SilentlyContinue | Where-Object { $_.Length -gt 20MB } | Remove-Item -Force
+            # 3. Don dep Explorer (Restart neu qua nang)
+            $exp = Get-Process explorer
+            if ($exp.WorkingSet64 -gt 300MB) {
+                Stop-Process -Name explorer -Force
+            }
 
-            Write-Host "Da giai phong xong! RAM hien tai: $([Math]::Round($MemoryUsage, 1))%" -ForegroundColor Green
+            Write-Host "Optimization Complete! Current RAM: $([Math]::Round($MemoryUsage, 1))%" -ForegroundColor Green
         }
-    } catch {
-        # Silent fail to keep the loop running
-    }
-
+    } catch { }
     Start-Sleep -Seconds $SleepTime
 }
+

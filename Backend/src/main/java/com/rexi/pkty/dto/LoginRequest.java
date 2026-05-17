@@ -5,7 +5,7 @@ import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 /**
- * FIX #7: Login Request with Validation
+ * Cấu trúc Dữ liệu yêu cầu Đăng nhập (Có kiểm tra tính hợp lệ)
  */
 @Data
 public class LoginRequest {

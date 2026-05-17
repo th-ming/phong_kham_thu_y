@@ -4,7 +4,7 @@ import jakarta.validation.constraints.*;
 import lombok.Data;
 
 /**
- * FIX #7: Register Request with Validation
+ * Cấu trúc Dữ liệu yêu cầu Đăng ký Tài khoản (Có kiểm tra tính hợp lệ)
  */
 @Data
 public class RegisterRequest {
@@ -14,9 +14,8 @@ public class RegisterRequest {
     private String ten_dang_nhap;
     
     @NotBlank(message = "Mật khẩu không được để trống")
+    @Pattern(regexp = "^(?=.*[!@#$%^&*()_+\\-={}\\[\\]|;:'\",.<>/?]).{6,}$", message = "Mật khẩu phải có ít nhất 6 ký tự và ít nhất một ký tự đặc biệt")
     @Size(min = 6, max = 100, message = "Mật khẩu phải từ 6-100 ký tự")
-    @Pattern(regexp = "^(?=.*[A-Za-z])(?=.*\\d)(?=.*[@$!%*#?&])[A-Za-z\\d@$!%*#?&]*$",
-            message = "Mật khẩu phải chứa ít nhất 1 chữ cái, 1 số, và 1 ký tự đặc biệt")
     private String mat_khau;
     
     @NotBlank(message = "Tên khách hàng không được để trống")

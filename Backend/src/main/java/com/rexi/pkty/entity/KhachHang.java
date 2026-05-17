@@ -5,7 +5,7 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "KhachHang") // Káº¿t ná»‘i báº£ng KhachHang
+@Table(name = "KhachHang")
 @Data
 public class KhachHang {
     @Id
@@ -20,4 +20,3 @@ public class KhachHang {
     private String hinh_anh;
     private Boolean da_xoa;
 }
-

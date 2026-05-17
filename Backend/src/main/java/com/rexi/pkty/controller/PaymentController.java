@@ -42,11 +42,22 @@ public class PaymentController {
     @PostMapping("/vnpay/create-url")
     public ResponseEntity<?> createPaymentUrl(@RequestBody Map<String, Object> payload) {
         try {
+            String idHoaDon = payload.get("id_hoa_don").toString();
+            // BẢO MẬT: Kiểm tra số tiền thật từ Database thay vì tin tưởng Frontend
+            java.math.BigDecimal amountFromDb = jdbcTemplate.queryForObject(
+                "SELECT tong_tien_cuoi FROM HoaDon WHERE id_hoa_don = ?", 
+                java.math.BigDecimal.class, idHoaDon);
+            
+            if (amountFromDb == null) {
+                return ResponseEntity.status(404).body(Map.of("message", "Không tìm thấy hóa đơn!"));
+            }
+
+            long amount = amountFromDb.multiply(new java.math.BigDecimal(100)).longValue();
+            
             String vnp_Version = "2.1.0";
             String vnp_Command = "pay";
             String orderType = "other";
-            long amount = Long.parseLong(payload.get("amount").toString()) * 100;
-            String vnp_TxnRef = payload.get("id_hoa_don").toString() + "_" + System.currentTimeMillis();
+            String vnp_TxnRef = idHoaDon + "_" + System.currentTimeMillis();
             String vnp_IpAddr = "127.0.0.1";
 
             Map<String, String> vnp_Params = new HashMap<>();
@@ -56,7 +67,7 @@ public class PaymentController {
             vnp_Params.put("vnp_Amount", String.valueOf(amount));
             vnp_Params.put("vnp_CurrCode", "VND");
             vnp_Params.put("vnp_TxnRef", vnp_TxnRef);
-            vnp_Params.put("vnp_OrderInfo", "Thanh toan hoa don Rexi Vet HD" + payload.get("id_hoa_don"));
+            vnp_Params.put("vnp_OrderInfo", "Thanh toan hoa don Rexi Vet HD" + idHoaDon);
             vnp_Params.put("vnp_OrderType", orderType);
             vnp_Params.put("vnp_Locale", "vn");
             vnp_Params.put("vnp_ReturnUrl", vnp_ReturnUrl);
@@ -76,7 +87,7 @@ public class PaymentController {
 
             return ResponseEntity.ok(Map.of("url", paymentUrl));
         } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of("message", "Lỗi tạo URL thanh toán: " + e.getMessage()));
+            return ResponseEntity.status(500).body(Map.of("message", "Đã xảy ra lỗi hệ thống khi khởi tạo thanh toán."));
         }
     }
 
@@ -94,6 +105,18 @@ public class PaymentController {
                     String idHoaDon = queryParams.get("vnp_TxnRef").split("_")[0];
                     java.math.BigDecimal amountPaid = new java.math.BigDecimal(queryParams.get("vnp_Amount"))
                             .divide(new java.math.BigDecimal(100));
+
+                    // BẢO MẬT: Kiểm tra số tiền đã trả có khớp với số tiền trong hóa đơn không
+                    java.math.BigDecimal amountExpected = jdbcTemplate.queryForObject(
+                        "SELECT tong_tien_cuoi FROM HoaDon WHERE id_hoa_don = ?", 
+                        java.math.BigDecimal.class, idHoaDon);
+
+                    if (amountExpected == null || amountPaid.compareTo(amountExpected) < 0) {
+                        return ResponseEntity.status(400).body(Map.of(
+                            "message", "Cảnh báo bảo mật: Số tiền thanh toán không khớp với hóa đơn!",
+                            "success", false));
+                    }
+
                     jdbcTemplate.update("UPDATE HoaDon SET trang_thai = 'da_thanh_toan' WHERE id_hoa_don = ?",
                             idHoaDon);
                     jdbcTemplate.update(
@@ -105,17 +128,21 @@ public class PaymentController {
             }
             return ResponseEntity.status(400).body(Map.of("message", "Chữ ký sai!", "success", false));
         } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of("message", "Lỗi: " + e.getMessage(), "success", false));
+            return ResponseEntity.status(500).body(Map.of("message", "Đã xảy ra lỗi hệ thống khi xử lý phản hồi thanh toán.", "success", false));
         }
     }
 
     // =========================================================================
     // CẤU HÌNH TÀI KHOẢN NGÂN HÀNG NHẬN TIỀN (VIETQR)
     // =========================================================================
-    // Sếp hãy thay đổi các thông tin bên dưới thành của sếp:
-    private static final String BANK_ID = "MB"; // Mã ngân hàng (VD: MB, VCB, TCB, ICB...)
-    private static final String ACCOUNT_NO = "***REMOVED***-VIETQR_ACCOUNT_NO"; // Số tài khoản ngân hàng của sếp
-    private static final String ACCOUNT_NAME = "TRAN MINH HOANG"; // Tên chủ TK không dấu
+    @org.springframework.beans.factory.annotation.Value("${vietqr.bank.id:MB}")
+    private String BANK_ID;
+
+    @org.springframework.beans.factory.annotation.Value("${vietqr.account.no:***REMOVED***-VIETQR_ACCOUNT_NO}")
+    private String ACCOUNT_NO;
+
+    @org.springframework.beans.factory.annotation.Value("${vietqr.account.name:TRAN MINH HOANG}")
+    private String ACCOUNT_NAME;
 
     // API Tạo mã VietQR động (Nhúng sẵn số tiền và nội dung)
     @PostMapping("/vietqr/generate")
@@ -145,7 +172,7 @@ public class PaymentController {
                     "add_info", addInfo,
                     "amount", amount));
         } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of("message", "Lỗi tạo mã VietQR: " + e.getMessage()));
+            return ResponseEntity.status(500).body(Map.of("message", "Đã xảy ra lỗi hệ thống khi tạo mã QR."));
         }
     }
 

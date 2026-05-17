@@ -117,7 +117,7 @@ public class NhanVienController {
                 String cm = nv.getChuyen_mon() != null ? nv.getChuyen_mon().toLowerCase() : "";
 
                 if (cm.contains("admin") || cm.contains("tối cao")) {
-                    // Cấp ID từ 1 đến 99 CHỈ dành cho Admin
+                    // Cấp ID từ 1 đến 99 CHỈ dành cho Admin, fallback UUID nếu hết
                     String newAdminId = null;
                     List<String> existingIds = jdbcTemplate.queryForList("SELECT id_nhan_vien FROM NhanVien", String.class);
                     for (int i = 1; i <= 99; i++) {
@@ -127,7 +127,8 @@ public class NhanVienController {
                         }
                     }
                     if (newAdminId == null) {
-                        return org.springframework.http.ResponseEntity.status(400).body(Map.of("message", "Đã hết ID (1-99) dành cho Admin!"));
+                        // Khi không còn số khả dụng, dùng UUID có tiền tố "AD-"
+                        newAdminId = "AD-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase();
                     }
                     nv.setId_nhan_vien(newAdminId);
                 } else {
@@ -146,8 +147,12 @@ public class NhanVienController {
                     } else if (cm.contains("chăm sóc khách hàng") || cm.contains("marketing") || cm.contains("cskh")) {
                         prefix = "CS-";
                     }
-
-                    nv.setId_nhan_vien(prefix + java.util.UUID.randomUUID().toString().substring(0, 6).toUpperCase());
+                    // Đảm bảo ID duy nhất bằng vòng lặp kiểm tra tồn tại
+                    String generatedId;
+                    do {
+                        generatedId = prefix + java.util.UUID.randomUUID().toString().substring(0, 6).toUpperCase();
+                    } while (jdbcTemplate.queryForObject("SELECT COUNT(*) FROM NhanVien WHERE id_nhan_vien = ?", Integer.class, generatedId) > 0);
+                    nv.setId_nhan_vien(generatedId);
                 }
             }
 
