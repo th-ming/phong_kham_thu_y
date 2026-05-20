@@ -1244,3 +1244,361 @@ html {
 [data-theme='dark'] .premium-fluid-gradient::before {
   clip-path: circle(150% at 0% 50%);
 }
+
+/* ============================================================ */
+/* ULTRA PREMIUM UX / ANIMATION SYSTEM                          */
+/* ============================================================ */
+
+:root {
+  --motion-fast: 180ms;
+  --motion-medium: 360ms;
+  --motion-slow: 720ms;
+  --ease-premium: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --spotlight-x: 50%;
+  --spotlight-y: 50%;
+  --tilt-x: 0deg;
+  --tilt-y: 0deg;
+  --magnet-x: 0px;
+  --magnet-y: 0px;
+}
+
+.page-transition-shell {
+  animation: pageCrossFade var(--motion-slow) var(--ease-premium) both;
+  min-height: 100%;
+}
+
+@keyframes pageCrossFade {
+  from {
+    opacity: 0;
+    filter: blur(8px);
+    transform: translateY(18px) scale(0.992);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0) scale(1);
+  }
+}
+
+.premium-spotlight-card {
+  isolation: isolate;
+  transform-style: preserve-3d;
+  transform: perspective(1200px) rotateX(var(--tilt-x)) rotateY(var(--tilt-y)) translateZ(0);
+  transition:
+    transform var(--motion-medium) var(--ease-premium),
+    box-shadow var(--motion-medium) var(--ease-premium),
+    border-color var(--motion-medium) var(--ease-premium);
+}
+
+.premium-spotlight-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    radial-gradient(
+      circle 180px at var(--spotlight-x) var(--spotlight-y),
+      rgba(255, 255, 255, 0.28),
+      rgba(255, 255, 255, 0.08) 35%,
+      transparent 70%
+    );
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--motion-medium) ease;
+  z-index: 1;
+}
+
+.premium-spotlight-card:hover::after {
+  opacity: 1;
+}
+
+[data-theme='dark'] .premium-spotlight-card::after {
+  background:
+    radial-gradient(
+      circle 200px at var(--spotlight-x) var(--spotlight-y),
+      rgba(34, 211, 238, 0.2),
+      rgba(20, 184, 166, 0.08) 40%,
+      transparent 72%
+    );
+}
+
+.magnetic-btn {
+  position: relative;
+  overflow: hidden;
+  transform: translate3d(var(--magnet-x), var(--magnet-y), 0);
+  will-change: transform;
+  transition:
+    transform var(--motion-medium) var(--ease-spring),
+    box-shadow var(--motion-medium) var(--ease-premium),
+    background var(--motion-medium) var(--ease-premium),
+    color var(--motion-medium) var(--ease-premium);
+}
+
+.magnetic-btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 0%, rgba(255, 255, 255, 0.28) 45%, transparent 60%);
+  transform: translateX(-120%);
+  transition: transform 0.7s var(--ease-premium);
+  pointer-events: none;
+}
+
+.magnetic-btn:hover::before {
+  transform: translateX(120%);
+}
+
+.stagger-table-body tr,
+.item-card,
+.appointment-card,
+.service-card-select {
+  animation: staggerRise 0.52s var(--ease-premium) both;
+}
+
+.scroll-reveal {
+  opacity: 0;
+  transform: translateY(22px);
+  transition:
+    opacity 0.68s var(--ease-premium),
+    transform 0.68s var(--ease-premium),
+    filter 0.68s var(--ease-premium);
+  filter: blur(4px);
+}
+
+.scroll-reveal.is-revealed {
+  opacity: 1;
+  transform: translateY(0);
+  filter: blur(0);
+}
+
+.stagger-table-body tr {
+  animation-delay: calc(var(--row-index, 0) * 48ms);
+}
+
+@keyframes staggerRise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+tbody tr {
+  position: relative;
+}
+
+tbody tr:hover {
+  background-image: linear-gradient(90deg, var(--primary-light), transparent) !important;
+}
+
+.row-update-flash,
+tbody tr.flash-updated {
+  animation: updateFlash 1.35s var(--ease-premium) both;
+}
+
+@keyframes updateFlash {
+  0% {
+    background-color: rgba(16, 185, 129, 0);
+    box-shadow: inset 4px 0 0 rgba(16, 185, 129, 0);
+  }
+  18% {
+    background-color: rgba(16, 185, 129, 0.18);
+    box-shadow: inset 4px 0 0 rgba(16, 185, 129, 0.9);
+  }
+  100% {
+    background-color: transparent;
+    box-shadow: inset 4px 0 0 rgba(16, 185, 129, 0);
+  }
+}
+
+.floating-field {
+  position: relative;
+}
+
+.floating-field label {
+  transform-origin: left top;
+  transition: transform var(--motion-medium) var(--ease-premium), color var(--motion-medium) ease;
+}
+
+.floating-field:focus-within label {
+  color: var(--primary);
+  transform: translateY(-3px) scale(0.94);
+}
+
+.custom-checkbox:checked::after {
+  content: "";
+  width: 10px;
+  height: 6px;
+  border-left: 2.5px solid white;
+  border-bottom: 2.5px solid white;
+  transform: translate(-50%, -62%) rotate(-45deg);
+  animation: checkboxDraw 0.24s var(--ease-premium) both;
+}
+
+@keyframes checkboxDraw {
+  from {
+    opacity: 0;
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    opacity: 1;
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+.fluid-progress {
+  position: relative;
+  overflow: hidden;
+}
+
+.fluid-progress::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent);
+  transform: translateX(-100%);
+  animation: progressFlow 1.5s ease-in-out infinite;
+}
+
+@keyframes progressFlow {
+  to { transform: translateX(100%); }
+}
+
+.premium-modal-backdrop {
+  animation: modalBackdropIn 0.28s ease both;
+  backdrop-filter: blur(18px) saturate(1.25) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(1.25) !important;
+}
+
+.premium-modal-panel {
+  animation: modalSpringIn 0.58s var(--ease-spring) both !important;
+  transform-origin: center 58%;
+}
+
+@keyframes modalBackdropIn {
+  from { opacity: 0; backdrop-filter: blur(0); }
+  to { opacity: 1; backdrop-filter: blur(18px); }
+}
+
+@keyframes modalSpringIn {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.92);
+  }
+  70% {
+    opacity: 1;
+    transform: translateY(-4px) scale(1.012);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.toast-premium {
+  animation:
+    toastStackIn 0.55s var(--ease-spring) both,
+    toastStackOut 0.42s var(--ease-premium) 2.58s forwards !important;
+}
+
+@keyframes toastStackIn {
+  from {
+    opacity: 0;
+    transform: translateX(120%) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes toastStackOut {
+  to {
+    opacity: 0;
+    transform: translateX(36px) translateY(-10px) scale(0.88);
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    margin-bottom: -12px;
+  }
+}
+
+.chat-message-user,
+.chat-message-ai {
+  animation: chatBubbleIn 0.34s var(--ease-spring) both;
+}
+
+.chat-message-user {
+  transform-origin: bottom right;
+}
+
+.chat-message-ai {
+  transform-origin: bottom left;
+}
+
+@keyframes chatBubbleIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.wave-bar {
+  width: 4px;
+  min-height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #fb7185, var(--primary));
+  animation: voiceSpring 0.72s var(--ease-spring) infinite alternate;
+}
+
+.wave-bar:nth-child(2) {
+  animation-delay: 0.12s;
+}
+
+.wave-bar:nth-child(3) {
+  animation-delay: 0.24s;
+}
+
+@keyframes voiceSpring {
+  from { height: 6px; transform: scaleY(0.8); }
+  to { height: 24px; transform: scaleY(1.12); }
+}
+
+.premium-loader {
+  width: 64px;
+  height: 64px;
+  border-radius: 24px;
+  background:
+    linear-gradient(var(--surface), var(--surface)) padding-box,
+    conic-gradient(from 0deg, var(--primary), #3b82f6, #f43f5e, var(--primary)) border-box;
+  border: 2px solid transparent;
+  box-shadow: var(--shadow-xl);
+  animation: premiumLoaderSpin 1.15s linear infinite, premiumLoaderPulse 2s ease-in-out infinite;
+}
+
+@keyframes premiumLoaderSpin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes premiumLoaderPulse {
+  50% { filter: drop-shadow(0 0 18px var(--primary-shadow)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.001ms !important;
+  }
+}
