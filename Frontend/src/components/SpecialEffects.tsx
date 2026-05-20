@@ -504,6 +504,122 @@ export const RevealSection: React.FC<{ children: React.ReactNode }> = ({ childre
 };
 
 /**
+ * GLOBAL PREMIUM UX ENGINE
+ * Gắn các hiệu ứng tương tác cao cấp lên DOM hiện tại mà không phải sửa từng màn hình.
+ */
+export const PremiumUXEngine: React.FC = () => {
+  useEffect(() => {
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduceMotion) return;
+
+    const cardSelector = ".glass-card, .stat-card, .stat-card-light, .doctor-card, .item-card, .service-card-select, .feature-item, .partner-card-new, .review-card, .appointment-card, .mission-card";
+    const buttonSelector = "button, .btn, a.btn";
+    const inputSelector = "input:not([type='hidden']):not([type='file']), select, textarea";
+    const revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("is-revealed");
+          revealObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.12, rootMargin: "0px 0px -40px 0px" });
+
+    const enhance = () => {
+      document.querySelectorAll<HTMLElement>(cardSelector).forEach((card) => {
+        card.classList.add("premium-spotlight-card");
+        card.classList.add("scroll-reveal");
+        if (!card.classList.contains("is-revealed")) {
+          revealObserver.observe(card);
+        }
+        if (!card.classList.contains("premium-tilt-ready")) {
+          card.classList.add("premium-tilt-ready");
+        }
+      });
+
+      document.querySelectorAll<HTMLElement>(buttonSelector).forEach((button) => {
+        if (!button.closest("#chatWindow") || button.id === "chatBtn") {
+          button.classList.add("magnetic-btn");
+        }
+      });
+
+      document.querySelectorAll<HTMLElement>("tbody").forEach((tbody) => {
+        tbody.classList.add("stagger-table-body");
+        Array.from(tbody.querySelectorAll<HTMLElement>("tr")).forEach((row, index) => {
+          row.style.setProperty("--row-index", String(Math.min(index, 16)));
+        });
+      });
+
+      document.querySelectorAll<HTMLElement>(inputSelector).forEach((field) => {
+        const parent = field.parentElement;
+        if (parent && parent.querySelector("label") && !parent.classList.contains("floating-field")) {
+          parent.classList.add("floating-field");
+        }
+      });
+    };
+
+    const handleMouseMove = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      const card = target.closest<HTMLElement>(".premium-spotlight-card");
+      if (card) {
+        const rect = card.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+        card.style.setProperty("--spotlight-x", `${x}px`);
+        card.style.setProperty("--spotlight-y", `${y}px`);
+
+        if (card.classList.contains("premium-tilt-ready") && window.innerWidth > 900) {
+          const rotateX = ((y / rect.height) - 0.5) * -7;
+          const rotateY = ((x / rect.width) - 0.5) * 7;
+          card.style.setProperty("--tilt-x", `${rotateX.toFixed(2)}deg`);
+          card.style.setProperty("--tilt-y", `${rotateY.toFixed(2)}deg`);
+        }
+      }
+
+      const button = target.closest<HTMLElement>(".magnetic-btn");
+      if (button && window.innerWidth > 900) {
+        const rect = button.getBoundingClientRect();
+        const range = Math.max(rect.width, rect.height) * 0.9;
+        const dx = event.clientX - (rect.left + rect.width / 2);
+        const dy = event.clientY - (rect.top + rect.height / 2);
+        if (Math.hypot(dx, dy) < range) {
+          button.style.setProperty("--magnet-x", `${dx * 0.16}px`);
+          button.style.setProperty("--magnet-y", `${dy * 0.16}px`);
+        }
+      }
+    };
+
+    const handleMouseOut = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      const card = target.closest<HTMLElement>(".premium-spotlight-card");
+      if (card) {
+        card.style.setProperty("--tilt-x", "0deg");
+        card.style.setProperty("--tilt-y", "0deg");
+      }
+      const button = target.closest<HTMLElement>(".magnetic-btn");
+      if (button) {
+        button.style.setProperty("--magnet-x", "0px");
+        button.style.setProperty("--magnet-y", "0px");
+      }
+    };
+
+    const observer = new MutationObserver(enhance);
+    enhance();
+    observer.observe(document.body, { childList: true, subtree: true });
+    window.addEventListener("mousemove", handleMouseMove, { passive: true });
+    window.addEventListener("mouseout", handleMouseOut, { passive: true });
+
+    return () => {
+      observer.disconnect();
+      revealObserver.disconnect();
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseout", handleMouseOut);
+    };
+  }, []);
+
+  return null;
+};
+
+/**
  * HIỆU ỨNG ĐÁNH MÁY CHỮ (TYPEWRITER)
  */
 export const Typewriter: React.FC<{ words: string[] }> = ({ words }) => {

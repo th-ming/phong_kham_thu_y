@@ -25,6 +25,7 @@ export const Modal: React.FC<{
 
   return createPortal(
     <div
+      className="premium-modal-backdrop"
       style={{
         position: "fixed",
         inset: 0,
@@ -35,7 +36,6 @@ export const Modal: React.FC<{
         padding: "20px",
         background: "rgba(15, 23, 42, 0.4)",
         backdropFilter: "blur(8px)",
-        animation: "fadeIn 0.3s ease",
       }}
       onClick={onClose}
     >
@@ -50,7 +50,7 @@ export const Modal: React.FC<{
       `}</style>
 
       <div
-        className="glass-card"
+        className="glass-card premium-modal-panel"
         style={{
           width: "100%",
           maxWidth: maxWidth,
@@ -61,7 +61,6 @@ export const Modal: React.FC<{
           overflow: "hidden",
           display: "flex",
           flexDirection: "column",
-          animation: "slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
           cursor: "default",
         }}
         onClick={(e) => e.stopPropagation()}

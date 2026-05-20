@@ -4,6 +4,7 @@ import axiosInstance from "@services/axios";
 import { useTheme } from "../contexts/ThemeContextV2";
 import { getUserProfile } from "../utils/index";
 import { executeAction } from "./ActionExecutor";
+import { toast } from "./Toast";
 
 interface SwarmStep {
     agent: string;
@@ -687,7 +688,7 @@ export const ChatBot: React.FC = () => {
     const waveBar2Ref = useRef<HTMLDivElement>(null);
     const waveBar3Ref = useRef<HTMLDivElement>(null);
     const isAiSpeakingRef = useRef<boolean>(false);
-    const micIdleTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const micIdleTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // XÓA TIMEOUT CHỜ MIC
     const clearMicIdleTimeout = () => {

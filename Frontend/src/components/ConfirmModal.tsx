@@ -13,7 +13,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({ open, onConfirm, onC
   if (!open) return null;
 
   return createPortal(
-    <div style={{
+    <div className="premium-modal-backdrop" style={{
       position: 'fixed',
       top: 0,
       left: 0,
@@ -25,15 +25,13 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({ open, onConfirm, onC
       alignItems: 'center',
       justifyContent: 'center',
       zIndex: 'var(--z-modal)' as any,
-      animation: 'fadeIn 0.3s ease'
     }}>
-      <div className="glass-card" style={{
+      <div className="glass-card premium-modal-panel" style={{
         padding: '32px',
         borderRadius: 'var(--radius-lg)',
         minWidth: '320px',
         maxWidth: '400px',
         textAlign: 'center',
-        animation: 'slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
       }}>
         <div style={{
           width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(239, 68, 68, 0.1)',

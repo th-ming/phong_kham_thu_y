@@ -1,5 +1,5 @@
 import React, { lazy, Suspense } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import ErrorBoundary from "@components/ErrorBoundary";
 import PublicLayout from "@layouts/PublicLayout";
 import CustomerLayout from "@layouts/CustomerLayout";
@@ -54,18 +54,18 @@ import LoadingSpinner from "@components/LoadingSpinner";
 import { ToastContainer } from "@components/Toast";
 import ProtectedRoute from "@components/ProtectedRoute";
 import { GlobalConfirmModal } from "@components/ConfirmModal";
+import { PremiumUXEngine } from "@components/SpecialEffects";
 
 /**
  * Xử lý lỗi tập trung bằng Error Boundary
  * Tự động hiển thị chỉ báo khi các trang đang tải
  */
-const App: React.FC = () => {
+const AnimatedRoutes: React.FC = () => {
+  const location = useLocation();
+
   return (
-    <BrowserRouter>
-      <ErrorBoundary>
-        <ToastContainer />
-        <GlobalConfirmModal />
-        <Suspense fallback={
+    <div key={location.pathname} className="page-transition-shell">
+      <Suspense fallback={
           <div style={{
             display: 'flex',
             justifyContent: 'center',
@@ -76,7 +76,7 @@ const App: React.FC = () => {
             <LoadingSpinner size="large" />
           </div>
         }>
-        <Routes>
+        <Routes location={location}>
           <Route element={<PublicLayout />}>
             <Route path="/" element={<TrangChu />} />
             <Route path="/ve-chung-toi" element={<VeChungToi />} />
@@ -149,6 +149,18 @@ const App: React.FC = () => {
           </Route>
         </Routes>
       </Suspense>
+    </div>
+  );
+};
+
+const App: React.FC = () => {
+  return (
+    <BrowserRouter>
+      <ErrorBoundary>
+        <PremiumUXEngine />
+        <ToastContainer />
+        <GlobalConfirmModal />
+        <AnimatedRoutes />
       </ErrorBoundary>
     </BrowserRouter>
   );
