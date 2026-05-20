@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import axiosInstance from '@services/axios';
 import { toast } from '@components/Toast';
 import { RevealSection } from '@components/SpecialEffects';
@@ -45,7 +45,7 @@ const QuanLyLichLamViec: React.FC = () => {
     const isAdmin = userRole === 'admin' || userRole === 'quan_ly';
     const currentUserId = String(user?.id_nhan_vien || user?.id || '');
     
-    console.log('--- DEBUG SCHEDULE ---', { userRole, isAdmin, currentUserId });
+
 
     const [staffs, setStaffs] = useState<any[]>([]);
     const [schedules, setSchedules] = useState<any[]>([]);

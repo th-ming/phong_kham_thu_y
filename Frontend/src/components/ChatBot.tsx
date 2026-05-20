@@ -4,7 +4,7 @@ import axiosInstance from "@services/axios";
 import { useTheme } from "../contexts/ThemeContextV2";
 import { getUserProfile } from "../utils/index";
 import { executeAction } from "./ActionExecutor";
-import { toast } from "./Toast";
+import { toast } from "@components/Toast";
 
 interface SwarmStep {
     agent: string;
