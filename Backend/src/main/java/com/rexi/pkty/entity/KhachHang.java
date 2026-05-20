@@ -19,4 +19,11 @@ public class KhachHang {
     private LocalDateTime ngay_cap_nhat;
     private String hinh_anh;
     private Boolean da_xoa;
+
+    // Cấu hình khách hàng đồng ý nhận email marketing (true/false)
+    private Boolean nhan_email;
+
+    // Cấu hình khách hàng đồng ý nhận thông báo qua SMS (true/false)
+    private Boolean nhan_sms;
 }
+

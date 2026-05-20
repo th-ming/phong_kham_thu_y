@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ChatBot } from "@components/ChatBot";
 import { MemeCat, ScrollToTop } from "@components/SpecialEffects";
 import axiosInstance from "@services/axios";
-import { formatTienVND, generateSlug } from "@utils/index";
+import { formatTienVND, generateSlug, getUserProfile } from "@utils/index";
+import { toast } from "@components/Toast";
 
 interface ServiceData {
   id_dich_vu: number;
@@ -17,8 +17,21 @@ interface ServiceData {
 const ChiTietDichVu: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-  const [service, setService] = useState<any | null>(null);
+  const [service, setService] = useState<ServiceData | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const handleBookingClick = () => {
+    const user = getUserProfile();
+    if (user) {
+      const role = (user.ten_vai_tro || user.loai_tai_khoan || "").toLowerCase();
+      if (role !== "customer" && role !== "khach_hang" && !role.includes("khách hàng")) {
+        toast.info("Bạn đang đăng nhập với tài khoản nhân sự. Hệ thống đang chuyển hướng bạn đến Trang quản lý lịch hẹn nội bộ!");
+        navigate("/quan-ly/lich-hen");
+        return;
+      }
+    }
+    navigate('/khach-hang/dat-lich-hen');
+  };
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -159,7 +172,7 @@ const ChiTietDichVu: React.FC = () => {
                   </div>
                 </div>
 
-                <button className="btn btn-primary btn-pill" style={{ width: '100%', padding: '24px', fontSize: '1.1rem' }} onClick={() => navigate('/khach-hang/dat-lich-hen')}>
+                <button data-ai-id="button-chitietdichvu-wowy" className="btn btn-primary btn-pill" style={{ width: '100%', padding: '24px', fontSize: '1.1rem' }} onClick={handleBookingClick}>
                   ĐẶT LỊCH NGAY
                 </button>
               </div>
@@ -170,7 +183,6 @@ const ChiTietDichVu: React.FC = () => {
 
       <ScrollToTop />
       <MemeCat />
-      <ChatBot />
     </div>
   );
 };

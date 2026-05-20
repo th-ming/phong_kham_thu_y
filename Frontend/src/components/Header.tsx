@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import ThemeToggle from "./ThemeToggle";
 import { getUserProfile } from "../utils/index";
+import { toast } from "@components/Toast";
 
 const Header: React.FC<{ hideMenu?: boolean }> = ({ hideMenu }) => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -10,6 +11,20 @@ const Header: React.FC<{ hideMenu?: boolean }> = ({ hideMenu }) => {
   const navigate = useNavigate();
 
   const user = getUserProfile();
+
+  // Điều hướng đặt lịch thông minh cho Nhân viên / Quản lý / Khách hàng
+  const handleBookingRedirect = (e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+    if (user) {
+      const vaiTro = (user.ten_vai_tro || user.loai_tai_khoan || "").toLowerCase();
+      if (vaiTro !== "customer" && vaiTro !== "khach_hang" && !vaiTro.includes("khách hàng")) {
+        toast.info("Bạn đang đăng nhập với tài khoản nhân sự. Hệ thống đang chuyển hướng bạn đến Trang quản lý lịch hẹn nội bộ!");
+        navigate("/quan-ly/lich-hen");
+        return;
+      }
+    }
+    navigate("/khach-hang/dat-lich-hen");
+  };
 
   // Hàm xóa số thứ tự ở đầu tên (Ví dụ: "1. Nguyễn Văn A" -> "Nguyễn Văn A")
   const cleanName = (name: string) => {
@@ -94,7 +109,7 @@ const Header: React.FC<{ hideMenu?: boolean }> = ({ hideMenu }) => {
         <span className="text-blink-red" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
           <span className="material-symbols-outlined" style={{ fontSize: '18px', color: 'var(--alert-icon-color)' }}>warning</span>
           Mùa bệnh dại đang gia tăng — Nhớ tiêm phòng trước 30/06! 
-          <Link to="/khach-hang/dat-lich-hen" style={{ color: 'var(--alert-link)', fontWeight: 950, textDecoration: 'underline', marginLeft: '10px' }}>Đặt lịch ngay →</Link>
+          <a href="#" onClick={handleBookingRedirect} style={{ color: 'var(--alert-link)', fontWeight: 950, textDecoration: 'underline', marginLeft: '10px' }}>Đặt lịch ngay →</a>
         </span>
       </div>
 
@@ -124,7 +139,7 @@ const Header: React.FC<{ hideMenu?: boolean }> = ({ hideMenu }) => {
         {!hideMenu && (
           <div className="mobile-hide" style={{ display: 'flex', gap: '45px' }}>
             {navItems.map((item, idx) => (
-              <button
+              <button data-ai-id="button-header-5v15"
                 key={idx}
                 onClick={() => handleNavClick(item)}
                 style={{
@@ -184,10 +199,10 @@ const Header: React.FC<{ hideMenu?: boolean }> = ({ hideMenu }) => {
           ) : (
             <Link to="/dang-nhap" style={{ textDecoration: 'none', color: 'var(--ink)', fontWeight: 700, border: '1px solid var(--gray-200)', padding: '8px 20px', borderRadius: '50px' }}>Đăng nhập</Link>
           )}
-          <Link to="/khach-hang/dat-lich-hen" className="mobile-hide" style={{ background: 'var(--primary-gradient)', color: 'white', padding: '10px 24px', borderRadius: '50px', textDecoration: 'none', fontWeight: 800, fontSize: '0.9rem', boxShadow: '0 10px 20px rgba(15, 157, 138, 0.25)', border: 'none', transition: 'all 0.3s' }} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}>Đặt lịch hẹn</Link>
+          <button data-ai-id="button-header-datlich" onClick={handleBookingRedirect} className="mobile-hide" style={{ background: 'var(--primary-gradient)', color: 'white', padding: '10px 24px', borderRadius: '50px', textDecoration: 'none', fontWeight: 800, fontSize: '0.9rem', boxShadow: '0 10px 20px rgba(15, 157, 138, 0.25)', border: 'none', transition: 'all 0.3s', cursor: 'pointer' }} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}>Đặt lịch hẹn</button>
 
           {/* nút mở menu trên điện thoại */}
-          <button
+          <button data-ai-id="button-header-x3hq"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             className="mobile-show"
             aria-expanded={isMenuOpen}
@@ -203,7 +218,7 @@ const Header: React.FC<{ hideMenu?: boolean }> = ({ hideMenu }) => {
       {isMenuOpen && (
         <div style={{ position: 'absolute', top: '100%', left: 0, width: '100%', background: 'var(--background)', padding: '20px', display: 'flex', flexDirection: 'column', gap: '10px', borderBottom: '1px solid var(--gray-200)', zIndex: 10, boxShadow: 'var(--shadow-xl)' }}>
           {navItems.map((item, idx) => (
-            <button
+            <button data-ai-id="button-header-8sdi"
               key={idx}
               onClick={() => handleNavClick(item)}
               style={{ background: 'none', border: 'none', textAlign: 'left', color: 'var(--ink)', fontWeight: 700, padding: '15px', borderRadius: '12px', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '12px' }}

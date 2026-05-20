@@ -68,7 +68,7 @@ public class FinanceController {
 
         // BẢO MẬT: Chặn khách hàng tự lập hóa đơn ảo
         if (!role.contains("ADMIN") && !role.contains("QUAN_LY") && !role.contains("KETOAN")
-                && !role.contains("STAFF")) {
+                && !role.contains("STAFF") && !role.contains("TIEP_TAN")) {
             return ResponseEntity.status(403)
                     .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền lập hóa đơn!"));
         }
@@ -142,7 +142,7 @@ public class FinanceController {
         // BẢO MẬT: Chặn khách hàng xem toàn bộ danh sách hóa đơn làm lộ doanh thu và
         // thông tin người khác
         if (!role.contains("ADMIN") && !role.contains("QUAN_LY") && !role.contains("KETOAN") && !role.contains("KE_TOAN")
-                && !role.contains("STAFF")) {
+                && !role.contains("STAFF") && !role.contains("TIEP_TAN")) {
             return ResponseEntity.status(403)
                     .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền xem toàn bộ danh sách hóa đơn!"));
         }
@@ -257,19 +257,22 @@ public class FinanceController {
         // BẢO MẬT LỚP 1: Chặn khách hàng tự ý đổi trạng thái hóa đơn của mình thành "Đã
         // thanh toán"
         if (!role.contains("ADMIN") && !role.contains("QUAN_LY") && !role.contains("KETOAN")
-                && !role.contains("STAFF")) {
+                && !role.contains("STAFF") && !role.contains("TIEP_TAN")) {
             return ResponseEntity.status(403)
                     .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền cập nhật trạng thái hóa đơn!"));
         }
 
         try {
             String status = payload.get("status");
+            if (status != null) {
+                status = status.toUpperCase(); // CHUẨN HÓA ENUM IN HOA
+            }
 
             // BẢO MẬT LỚP 2: Chống nhân viên "ăn chặn" tiền bằng cách hủy hóa đơn đã thanh
             // toán
             String currentStatus = jdbcTemplate.queryForObject("SELECT trang_thai FROM HoaDon WHERE id_hoa_don = ?",
                     String.class, id);
-            if ("da_thanh_toan".equalsIgnoreCase(currentStatus) && !"da_thanh_toan".equalsIgnoreCase(status)) {
+            if ("DA_THANH_TOAN".equalsIgnoreCase(currentStatus) && !"DA_THANH_TOAN".equalsIgnoreCase(status)) {
                 if (!role.contains("ADMIN") && !role.contains("QUAN_LY")) {
                     return ResponseEntity.status(403).body(Map.of("message",
                             "Cảnh báo bảo mật: Hóa đơn đã thu tiền, nhân viên không được phép tự ý hủy! Vui lòng liên hệ Quản lý."));
@@ -277,7 +280,7 @@ public class FinanceController {
             }
 
             int updated = jdbcTemplate.update("UPDATE HoaDon SET trang_thai = ? WHERE id_hoa_don = ?", status, id);
-            if (updated > 0 && "da_thanh_toan".equals(status) && !"da_thanh_toan".equalsIgnoreCase(currentStatus)) {
+            if (updated > 0 && "DA_THANH_TOAN".equals(status) && !"DA_THANH_TOAN".equalsIgnoreCase(currentStatus)) {
                 // Ghi nhận dòng tiền mặt vào lịch sử để kế toán đối soát
                 jdbcTemplate.update(
                         "INSERT INTO ThanhToan (id_hoa_don, ngay_thanh_toan, so_tien, phuong_thuc, trang_thai) VALUES (?, GETDATE(), (SELECT tong_tien_cuoi FROM HoaDon WHERE id_hoa_don = ?), 'Tien_mat', N'Thành công')",

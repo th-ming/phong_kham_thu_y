@@ -10,6 +10,12 @@ const QuanLyMarketing: React.FC = () => {
 
     // Lấy số lượng người đăng ký thực tế từ Backend
     useEffect(() => {
+        // Cập nhật title trang cho SEO
+        document.title = 'Quản lý Marketing | Rexi – Phòng Khám Thú Y';
+        return () => { document.title = 'Rexi – Phòng Khám Thú Y Chuyên Nghiệp'; };
+    }, []);
+
+    useEffect(() => {
         axiosInstance.get('/api/system/newsletter/count')
             .then(res => {
                 setSubscribersCount(res.data.count || 0);
@@ -75,7 +81,7 @@ const QuanLyMarketing: React.FC = () => {
 
                         <div style={{ marginBottom: '25px' }}>
                             <label style={{ display: 'block', marginBottom: '10px', fontWeight: 700, color: 'var(--gray-500)' }}>Tiêu đề email</label>
-                            <input
+                            <input data-ai-id="input-quanlymarketing-rn49"
                                 type="text"
                                 value={subject}
                                 onChange={(e) => setSubject(e.target.value)}
@@ -86,7 +92,7 @@ const QuanLyMarketing: React.FC = () => {
 
                         <div style={{ marginBottom: '30px' }}>
                             <label style={{ display: 'block', marginBottom: '10px', fontWeight: 700, color: 'var(--gray-500)' }}>Nội dung thông điệp</label>
-                            <textarea
+                            <textarea data-ai-id="textarea-quanlymarketing-content"
                                 rows={8}
                                 value={content}
                                 onChange={(e) => setContent(e.target.value)}
@@ -113,7 +119,7 @@ const QuanLyMarketing: React.FC = () => {
                             </div>
                         )}
 
-                        <button
+                        <button data-ai-id="button-quanlymarketing-1tgo"
                             onClick={handleSend}
                             disabled={loading}
                             className={loading ? "btn" : "btn btn-primary hover-lift"}

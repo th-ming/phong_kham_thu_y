@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ChatBot } from "@components/ChatBot";
-import { MemeCat, ScrollToTop } from "@components/SpecialEffects";
+import { MemeCat, ScrollToTop, RevealSection } from "@components/SpecialEffects";
 import axiosInstance from "@services/axios";
-import { RevealSection } from "@components/SpecialEffects";
+import { useTheme } from "../contexts/ThemeContextV2";
 
 interface DoctorData {
     id_nhan_vien: number;
@@ -15,21 +14,34 @@ interface DoctorData {
 }
 
 const BacSi: React.FC = () => {
+    const { theme } = useTheme();
+    const isDark = theme === 'dark';
     const [doctors, setDoctors] = useState<DoctorData[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         window.scrollTo(0, 0);
 
-        axiosInstance.get("/api/bac-si")
-            .then(res => {
+        const fetchDoctors = async (showLoading = true) => {
+            if (showLoading) setLoading(true);
+            try {
+                const res = await axiosInstance.get("/api/bac-si");
                 setDoctors(res.data || []);
-                setLoading(false);
-            })
-            .catch(err => {
+            } catch (err) {
                 console.error("Lỗi lấy danh sách bác sĩ:", err);
-                setLoading(false);
-            });
+            } finally {
+                if (showLoading) setLoading(false);
+            }
+        };
+
+        fetchDoctors(true);
+
+        // Smart Polling: Lấy danh sách bác sĩ ngầm mỗi 10 giây. Không reload trang, tự động hiển thị bác sĩ mới cực êm!
+        const interval = setInterval(() => {
+            fetchDoctors(false);
+        }, 10000);
+
+        return () => clearInterval(interval);
     }, []);
 
     const calculateExp = (dateStr: string) => {
@@ -43,8 +55,10 @@ const BacSi: React.FC = () => {
 
     return (
         <div style={{ background: 'var(--background)', minHeight: '100vh' }}>
-            <section style={{ padding: '100px 0 80px', background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', color: 'white', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
-                <div style={{ position: 'absolute', top: '-50%', left: '-10%', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(45,212,191,0.15) 0%, transparent 70%)', borderRadius: '50%' }}></div>
+            <section style={{ padding: '100px 0 80px', background: isDark ? 'var(--secondary-gradient)' : 'var(--primary-gradient)', color: 'white', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
+                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: isDark ? 0.05 : 0.1, backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '30px 30px' }}></div>
+                <div style={{ position: 'absolute', top: '-50%', left: '-10%', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(13, 148, 136, 0.25) 0%, transparent 70%)', borderRadius: '50%' }}></div>
+                <div style={{ position: 'absolute', bottom: '-40%', right: '-10%', width: '600px', height: '600px', background: 'radial-gradient(circle, rgba(34, 211, 238, 0.15) 0%, transparent 70%)', borderRadius: '50%' }}></div>
                 <div className="container" style={{ position: 'relative', zIndex: 1 }}>
                     <RevealSection>
                         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.1)', padding: '8px 20px', borderRadius: '50px', fontSize: '0.85rem', fontWeight: 900, marginBottom: '24px', border: '1px solid rgba(255,255,255,0.1)', letterSpacing: '1px' }}>
@@ -115,7 +129,6 @@ const BacSi: React.FC = () => {
 
             <ScrollToTop />
             <MemeCat />
-            <ChatBot />
         </div>
     );
 };

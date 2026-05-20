@@ -38,7 +38,7 @@ public class KhachHangController {
         String role = auth.getAuthorities().toString().toUpperCase();
         // Chỉ cho phép nhân viên nội bộ xem danh sách khách
         return role.contains("ADMIN") || role.contains("STAFF") || role.contains("BAC_SI") || role.contains("QUAN_LY")
-                || role.contains("KETOAN");
+                || role.contains("KETOAN") || role.contains("TIEP_TAN");
     }
 
     // Lấy danh sách khách hàng
@@ -230,4 +230,63 @@ public class KhachHangController {
             return ResponseEntity.status(400).body(Map.of("message", "Lỗi: " + e.getMessage()));
         }
     }
+
+    // Cập nhật tùy chọn nhận email marketing và sms marketing (Tránh lỗ hổng bảo mật IDOR)
+    @PutMapping("/{id}/marketing-preferences")
+    public ResponseEntity<?> updateMarketingPreferences(@PathVariable String id, @RequestBody Map<String, Boolean> payload) {
+        try {
+            // BẢO MẬT: Kiểm tra IDOR - Chỉ cho phép bản thân khách hàng hoặc nhân viên nội bộ cập nhật
+            org.springframework.security.core.Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            String username = (auth != null) ? auth.getName() : null;
+
+            if (username == null || username.equals("anonymousUser")) {
+                return ResponseEntity.status(401)
+                        .body(Map.of("message", "Cảnh báo bảo mật: Yêu cầu không có Token xác thực hợp lệ!"));
+            }
+
+            Optional<TaiKhoan> tkOpt = taiKhoanRepository.findByTenDangNhap(username);
+            boolean isOwner = false;
+            boolean isStaff = false;
+
+            if (tkOpt.isPresent()) {
+                TaiKhoan tk = tkOpt.get();
+                String idVaiTro = tk.getId_vai_tro();
+                
+                // VT-5 là vai trò Khách hàng
+                if (idVaiTro != null && idVaiTro.equals("VT-5")) {
+                    isOwner = tk.getId_khach_hang() != null && tk.getId_khach_hang().equals(id);
+                    if (!isOwner) {
+                        return ResponseEntity.status(403).body(Map.of("message",
+                                "Cảnh báo bảo mật: Bạn không có quyền chỉnh sửa cấu hình của người khác!"));
+                    }
+                } else {
+                    // Nếu là nhân viên nội bộ (Admin, Quản lý, Tiếp tân,...)
+                    isStaff = true;
+                }
+            }
+
+            Optional<KhachHang> khOpt = khachHangRepository.findById(id);
+            if (khOpt.isPresent()) {
+                KhachHang kh = khOpt.get();
+                if (payload.containsKey("nhan_email")) {
+                    kh.setNhan_email(payload.get("nhan_email"));
+                }
+                if (payload.containsKey("nhan_sms")) {
+                    kh.setNhan_sms(payload.get("nhan_sms"));
+                }
+                khachHangRepository.save(kh);
+
+                // Ghi nhận nhật ký hệ thống nếu là nhân viên thay đổi cho khách hàng
+                if (isStaff) {
+                    auditLogService.logAction("CẬP NHẬT MARKETING", "KhachHang", "Nhân viên cập nhật cài đặt marketing cho khách hàng ID " + id);
+                }
+
+                return ResponseEntity.ok(Map.of("success", true, "message", "Cập nhật tùy chọn nhận thông báo thành công!"));
+            }
+            return ResponseEntity.status(404).body(Map.of("message", "Không tìm thấy thông tin khách hàng!"));
+        } catch (Exception e) {
+            return ResponseEntity.status(400).body(Map.of("message", "Lỗi: " + e.getMessage()));
+        }
+    }
 }
+

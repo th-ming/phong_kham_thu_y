@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { RevealSection } from "@components/SpecialEffects";
 import { useTheme } from "../../contexts/ThemeContextV2";
 
@@ -51,7 +51,7 @@ const PhanLienHe: React.FC = () => {
             label: 'Thời gian làm việc',
             value: 'Thứ 2 - CN: 08:00 - 20:00',
             subValue: 'Phục vụ không nghỉ lễ',
-            color: '#8b5cf6',
+            color: '#14b8a6',
             bg: '#f5f3ff'
         }
     ];

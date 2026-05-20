@@ -53,6 +53,7 @@ const ThongTinCaNhanNhanVien = lazy(() => import("@pages/admin/ThongTinCaNhanNha
 import LoadingSpinner from "@components/LoadingSpinner";
 import { ToastContainer } from "@components/Toast";
 import ProtectedRoute from "@components/ProtectedRoute";
+import { GlobalConfirmModal } from "@components/ConfirmModal";
 
 /**
  * Xử lý lỗi tập trung bằng Error Boundary
@@ -63,6 +64,7 @@ const App: React.FC = () => {
     <BrowserRouter>
       <ErrorBoundary>
         <ToastContainer />
+        <GlobalConfirmModal />
         <Suspense fallback={
           <div style={{
             display: 'flex',

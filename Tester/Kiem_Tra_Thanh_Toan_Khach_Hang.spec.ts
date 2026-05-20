@@ -8,8 +8,8 @@ test.describe('Kiểm thử chức năng: Cổng Khách hàng - Hóa đơn & Vie
     test.beforeEach(async ({ page }) => {
         // Đăng nhập tài khoản Khách hàng trước mỗi ca kiểm thử
         await page.goto(`${BASE_URL}/dang-nhap`);
-        await page.getByPlaceholder('Tên đăng nhập').fill('khachhang1');
-        await page.getByPlaceholder('Mật khẩu').fill('khachhang@rexi.com');
+        await page.getByPlaceholder('Tên đăng nhập').fill('testcustomer2');
+        await page.getByPlaceholder('Mật khẩu').fill('Password123!');
         await page.getByRole('button', { name: 'Đăng nhập ngay' }).click();
         await page.waitForURL(/.*\/khach-hang\/dashboard/, { timeout: 15000 });
     });

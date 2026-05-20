@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 @Repository
-public interface HoaDonRepository extends JpaRepository<HoaDon, Long> {
+public interface HoaDonRepository extends JpaRepository<HoaDon, String> {
 
         // Gọi Stored Procedure lập hóa đơn mới
         @Query(value = "EXEC sp_LapHoaDon :apptId, :taxRate, :discount, :staffId, :note", nativeQuery = true)
@@ -51,7 +51,7 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, Long> {
         List<Map<String, Object>> getAllHoaDon();
 
         // Lấy danh sách thuốc
-        @Query(value = "SELECT * FROM Thuoc", nativeQuery = true)
+        @Query(value = "SELECT t.*, ISNULL(SUM(CASE WHEN lt.han_su_dung >= CAST(GETDATE() AS DATE) THEN lt.so_luong_ton ELSE 0 END), 0) AS so_luong_ton FROM Thuoc t LEFT JOIN LoThuoc lt ON t.id_thuoc = lt.id_thuoc GROUP BY t.id_thuoc, t.ten_thuoc, t.thanh_phan, t.dang_bao_che, t.don_vi, t.mo_ta, t.gia_ban, t.trang_thai, t.da_xoa", nativeQuery = true)
         List<Map<String, Object>> getAllThuoc();
 
         // Lấy danh sách lô thuốc

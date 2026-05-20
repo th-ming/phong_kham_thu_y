@@ -6,6 +6,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
     
+    <!-- Polyfill global for StompJS/SockJS -->
+    <script>
+      if (typeof global === 'undefined') {
+        var global = window;
+      }
+    </script>
+
+    <!-- Aggressive Service Worker Unregistration to clear cache and prevent white screen -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(registrations => {
+          let hasUnregistered = false;
+          for (let registration of registrations) {
+            registration.unregister();
+            hasUnregistered = true;
+          }
+          if (hasUnregistered && !sessionStorage.getItem('rexi_sw_cleaned')) {
+            sessionStorage.setItem('rexi_sw_cleaned', 'true');
+            console.log('🐾 Rexi đã tự động dọn sạch Cache Service Worker cũ. Tự động tải lại trang...');
+            window.location.reload();
+          }
+        });
+      }
+    </script>
+
     <!-- SEO Meta Tags -->
     <title>Rexi – Phòng Khám Thú Y Chuyên Nghiệp | Đặt Lịch Hẹn Online</title>
     <meta name="description" content="Phòng khám thú y Rexi cung cấp dịch vụ khám, điều trị, phẫu thuật cho thú cưng. Đặt lịch hẹn online, bác sĩ chuyên nghiệp, giá cả hợp lý." />
@@ -99,16 +124,5 @@
       window.__vite_plugin_react_preamble_installed__ = true
     </script>
     <script type="module" src="/src/main.tsx"></script>
-    
-    <!-- Service Worker Unregistration (To ensure fresh code) -->
-    <script>
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(registrations => {
-          for (let registration of registrations) {
-            registration.unregister();
-          }
-        });
-      }
-    </script>
   </body>
 </html>

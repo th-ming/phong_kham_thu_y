@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+﻿import React, { useState, useEffect, useMemo } from 'react';
 import axiosInstance from '@services/axios';
 import { toast } from '@components/Toast';
 import { RevealSection } from '@components/SpecialEffects';
@@ -19,7 +19,7 @@ const DOCTOR_COLORS = [
     { bg: 'rgba(15, 157, 138, 0.15)', border: '#0f9d8a', text: '#0f9d8a' }, // Teal (Màu chuẩn Rexi)
     { bg: 'rgba(59, 130, 246, 0.15)', border: '#3b82f6', text: '#2563eb' }, // Blue
     { bg: 'rgba(236, 72, 153, 0.15)', border: '#ec4899', text: '#db2777' }, // Pink
-    { bg: 'rgba(139, 92, 246, 0.15)', border: '#8b5cf6', text: '#7c3aed' }, // Purple
+    { bg: 'rgba(139, 92, 246, 0.15)', border: '#14b8a6', text: '#115e59' }, // teal
     { bg: 'rgba(16, 185, 129, 0.15)', border: '#10b981', text: '#059669' }, // Emerald
     { bg: 'rgba(244, 63, 94, 0.15)', border: '#f43f5e', text: '#e11d48' }, // Rose
     { bg: 'rgba(245, 158, 11, 0.15)', border: '#f59e0b', text: '#d97706' }, // Amber
@@ -436,7 +436,7 @@ const QuanLyLichLamViec: React.FC = () => {
                             </h1>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginTop: '12px', flexWrap: 'wrap' }}>
                                 <div style={{ display: 'flex', gap: '8px', background: 'var(--surface)', padding: '6px', borderRadius: '12px', border: '1px solid var(--gray-200)', flexShrink: 0 }}>
-                                    <button
+                                    <button data-ai-id="button-quanlylichlamviec-4q8w"
                                         onClick={() => setWeekOffset(0)}
                                         style={{
                                             background: weekOffset === 0 ? 'var(--primary)' : 'transparent',
@@ -452,7 +452,7 @@ const QuanLyLichLamViec: React.FC = () => {
                                     >
                                         TUẦN NÀY
                                     </button>
-                                    <button
+                                    <button data-ai-id="button-quanlylichlamviec-z8sa"
                                         onClick={() => setWeekOffset(1)}
                                         style={{
                                             background: weekOffset === 1 ? 'var(--primary)' : 'transparent',
@@ -469,7 +469,7 @@ const QuanLyLichLamViec: React.FC = () => {
                                         TUẦN TỚI
                                     </button>
                                     <div style={{ width: '1px', background: 'var(--gray-200)', margin: '4px 8px' }}></div>
-                                    <button
+                                    <button data-ai-id="button-quanlylichlamviec-qxer"
                                         onClick={() => setWeekOffset(prev => prev - 1)}
                                         style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px', display: 'flex' }}
                                     >
@@ -478,7 +478,7 @@ const QuanLyLichLamViec: React.FC = () => {
                                     <span style={{ fontWeight: 800, padding: '0 12px', color: 'var(--ink)', display: 'flex', alignItems: 'center', fontSize: '0.9rem', minWidth: '100px', justifyContent: 'center' }}>
                                         {weekOffset === 0 ? 'Tuần hiện tại' : weekOffset === 1 ? 'Tuần tới' : `Tuần +${weekOffset}`}
                                     </span>
-                                    <button
+                                    <button data-ai-id="button-quanlylichlamviec-xis7"
                                         onClick={() => setWeekOffset(prev => prev + 1)}
                                         style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px', display: 'flex' }}
                                     >
@@ -494,15 +494,15 @@ const QuanLyLichLamViec: React.FC = () => {
                         <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                             {isAdmin && (
                                 <>
-                                    <button className="btn btn-pill no-print" disabled={isCopying} onClick={handleCopyAllSchedulesToNextWeek} style={{ background: isCopying ? 'var(--gray-200)' : 'var(--gray-100)', color: 'var(--ink)', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 800 }}>
+                                    <button data-ai-id="button-quanlylichlamviec-z4n2" className="btn btn-pill no-print" disabled={isCopying} onClick={handleCopyAllSchedulesToNextWeek} style={{ background: isCopying ? 'var(--gray-200)' : 'var(--gray-100)', color: 'var(--ink)', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 800 }}>
                                         <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>{isCopying ? 'sync' : 'content_paste'}</span>
                                         {isCopying ? 'Đang sao chép...' : 'Sao chép tất cả'}
                                     </button>
-                                    <button className="btn btn-pill no-print" onClick={handleExportExcel} style={{ background: 'var(--gray-100)', color: 'var(--ink)', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 800 }}>
+                                    <button data-ai-id="button-quanlylichlamviec-8viu" className="btn btn-pill no-print" onClick={handleExportExcel} style={{ background: 'var(--gray-100)', color: 'var(--ink)', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 800 }}>
                                         <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>download</span>
                                         Xuất Excel
                                     </button>
-                                    <button className="btn btn-pill no-print" onClick={() => window.print()} style={{ background: 'var(--primary-light)', color: 'var(--primary)', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 800 }}>
+                                    <button data-ai-id="button-quanlylichlamviec-juro" className="btn btn-pill no-print" onClick={() => window.print()} style={{ background: 'var(--primary-light)', color: 'var(--primary)', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 800 }}>
                                         <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>print</span>
                                         In lịch trực
                                     </button>
@@ -511,7 +511,7 @@ const QuanLyLichLamViec: React.FC = () => {
 
                             {isAdmin && (
                                 <div style={{ display: 'flex', gap: '4px', background: 'var(--gray-100)', padding: '4px', borderRadius: '12px' }}>
-                                    <button
+                                    <button data-ai-id="button-quanlylichlamviec-4x0m"
                                         onClick={() => setViewMode('all')}
                                         style={{
                                             background: viewMode === 'all' ? 'white' : 'transparent',
@@ -522,7 +522,7 @@ const QuanLyLichLamViec: React.FC = () => {
                                     >
                                         TẤT CẢ
                                     </button>
-                                    <button
+                                    <button data-ai-id="button-quanlylichlamviec-6ewm"
                                         onClick={() => setViewMode('personal')}
                                         style={{
                                             background: viewMode === 'personal' ? 'white' : 'transparent',
@@ -540,7 +540,7 @@ const QuanLyLichLamViec: React.FC = () => {
                                 <div style={{ display: 'flex', gap: '12px' }}>
                                     <div className="glass-card" style={{ display: 'flex', alignItems: 'center', padding: '0 16px', borderRadius: '16px', border: '1px solid var(--gray-200)', background: 'var(--surface)' }}>
                                         <span className="material-symbols-outlined" style={{ color: 'var(--gray-400)', marginRight: '8px' }}>search</span>
-                                        <input
+                                        <input data-ai-id="input-quanlylichlamviec-aiab"
                                             type="text"
                                             placeholder="Tên nhân viên..."
                                             value={searchName}
@@ -548,7 +548,7 @@ const QuanLyLichLamViec: React.FC = () => {
                                             style={{ border: 'none', outline: 'none', background: 'transparent', padding: '12px 0', fontWeight: 600, width: '150px', color: 'var(--ink)' }}
                                         />
                                     </div>
-                                    <select
+                                    <select data-ai-id="select-quanlylichlamviec-xcaz"
                                         value={filterRole}
                                         onChange={(e) => setFilterRole(e.target.value)}
                                         style={{ padding: '12px 20px', borderRadius: '16px', border: '1px solid var(--gray-200)', outline: 'none', fontWeight: 800, cursor: 'pointer', background: 'var(--surface)', color: 'var(--ink)' }}
@@ -588,7 +588,7 @@ const QuanLyLichLamViec: React.FC = () => {
                                             </span>
                                             {staff.ho_ten}: <span style={{ fontWeight: 900, fontSize: '0.9rem' }}>{staff.hours} giờ</span>
                                             {isAdmin && (
-                                                <button
+                                                <button data-ai-id="button-quanlylichlamviec-rjkj"
                                                     onClick={() => handleCopyScheduleToNextWeek(staff.id_nhan_vien)}
                                                     title="Sao chép lịch sang tuần tiếp theo"
                                                     style={{ background: 'var(--primary-light)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', color: 'var(--primary)', padding: '4px', borderRadius: '50%', marginLeft: '4px', transition: 'transform 0.2s' }}
@@ -748,7 +748,7 @@ const QuanLyLichLamViec: React.FC = () => {
                                                                         </div>
 
                                                                         {!isPastDay && (
-                                                                            <button
+                                                                            <button data-ai-id="button-quanlylichlamviec-axos"
                                                                                 className="no-print"
                                                                                 onClick={() => handleDeleteShift(shift.id_lich_lam_viec, shift.id_nhan_vien)}
                                                                                 style={{ position: 'absolute', top: '4px', right: '4px', background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: 0 }}
@@ -762,7 +762,7 @@ const QuanLyLichLamViec: React.FC = () => {
                                                         </div>
 
                                                         {!isPastDay && (
-                                                            <button
+                                                            <button data-ai-id="button-quanlylichlamviec-r0au"
                                                                 className="no-print"
                                                                 data-testid="add-shift-btn"
                                                                 style={{ position: 'absolute', bottom: '6px', right: '6px', background: 'transparent', border: 'none', color: 'var(--gray-300)', cursor: 'pointer', transition: 'color 0.2s' }}
@@ -793,7 +793,7 @@ const QuanLyLichLamViec: React.FC = () => {
                         <div style={{ marginBottom: '24px' }}>
                             <label style={{ display: 'block', fontWeight: 800, marginBottom: '8px', color: 'var(--gray-500)', fontSize: '0.85rem' }}>NHÂN VIÊN</label>
                             {isAdmin ? (
-                                <select
+                                <select data-ai-id="select-quanlylichlamviec-atmu"
                                     value={selectedStaffId}
                                     onChange={(e) => setSelectedStaffId(e.target.value)}
                                     style={{ width: '100%', padding: '14px', borderRadius: '16px', border: '1px solid var(--gray-200)', outline: 'none', fontWeight: 700 }}
@@ -826,8 +826,8 @@ const QuanLyLichLamViec: React.FC = () => {
                         </div>
 
                         <div style={{ display: 'flex', gap: '12px' }}>
-                            <button className="btn btn-outline btn-pill" style={{ flex: 1 }} onClick={() => setShowAddModal(false)}>HỦY</button>
-                            <button className="btn btn-primary btn-pill" style={{ flex: 1, fontWeight: 900 }} onClick={confirmAddShift}>XÁC NHẬN</button>
+                            <button data-ai-id="button-quanlylichlamviec-9xrv" className="btn btn-outline btn-pill" style={{ flex: 1 }} onClick={() => setShowAddModal(false)}>HỦY</button>
+                            <button data-ai-id="button-quanlylichlamviec-76g1" className="btn btn-primary btn-pill" style={{ flex: 1, fontWeight: 900 }} onClick={confirmAddShift}>XÁC NHẬN</button>
                         </div>
                     </div>
                 </div>

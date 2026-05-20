@@ -1,10 +1,11 @@
 
 export type TrangThaiLichHen =
-  | "cho_xac_nhan"
-  | "da_xac_nhan"
-  | "dang_kham"
-  | "hoan_thanh"
-  | "da_huy";
+  | "CHO_XAC_NHAN"
+  | "DA_XAC_NHAN"
+  | "DANG_KHAM"
+  | "HOAN_THANH"
+  | "DA_HUY"
+  | "KHONG_DEN";
 
 export type TrangThaiHoaDon =
   | "cho_thanh_toan"

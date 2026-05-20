@@ -5,18 +5,21 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import io.github.cdimascio.dotenv.Dotenv;
+import java.util.logging.Logger;
 
 @SpringBootApplication(exclude = {UserDetailsServiceAutoConfiguration.class})
 @EnableScheduling
 @org.springframework.context.annotation.Import({SecurityConfig.class, AppConfig.class})
 public class PktyApplication {
 
+	private static final Logger logger = Logger.getLogger(PktyApplication.class.getName());
+
 	public PktyApplication() {
-		System.out.println("DEBUG: PktyApplication INSTANCE CREATED!");
+		logger.info("PktyApplication INSTANCE CREATED!");
 	}
 
 	public static void main(String[] args) {
-		System.out.println("DEBUG: PKTY APPLICATION STARTING...");
+		logger.info("PKTY APPLICATION STARTING...");
 		
 		// NẠP BIẾN MÔI TRƯỜNG TỪ FILE .ENV (BẢO MẬT)
 		try {
@@ -24,9 +27,9 @@ public class PktyApplication {
 			dotenv.entries().forEach(entry -> {
 				System.setProperty(entry.getKey(), entry.getValue());
 			});
-			System.out.println("DEBUG: .env file loaded successfully!");
+			logger.info(".env file loaded successfully!");
 		} catch (Exception e) {
-			System.err.println("WARNING: Could not load .env file: " + e.getMessage());
+			logger.warning("Could not load .env file: " + e.getMessage());
 		}
 
 		SpringApplication.run(PktyApplication.class, args);

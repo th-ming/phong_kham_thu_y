@@ -69,7 +69,7 @@ const KeToanDashboard: React.FC = () => {
     const handleConfirmPayment = async (id: number) => {
         if (window.confirm('Xác nhận khách hàng đã thanh toán hóa đơn này?')) {
             try {
-                await axiosInstance.put(`/api/hoa-don/${id}/status`, { status: 'da_thanh_toan' });
+                await axiosInstance.put(`/api/hoa-don/${id}/status`, { status: 'DA_THANH_TOAN' });
                 toast.success("Đã gạch nợ và ghi nhận thanh toán thành công!");
                 fetchData(); // Tải lại dữ liệu
             } catch (error) {
@@ -98,8 +98,8 @@ const KeToanDashboard: React.FC = () => {
     const stats = useMemo(() => {
         const todayStr = new Date().toISOString().split('T')[0];
 
-        const paidInvoices = invoices.filter(inv => inv.trang_thai === 'da_thanh_toan');
-        const unpaidInvoices = invoices.filter(inv => inv.trang_thai === 'cho_thanh_toan');
+        const paidInvoices = invoices.filter(inv => inv.trang_thai?.toUpperCase() === 'DA_THANH_TOAN');
+        const unpaidInvoices = invoices.filter(inv => inv.trang_thai?.toUpperCase() === 'CHO_THANH_TOAN');
 
         const todayRevenue = revenueData.find((d: any) => d.Ngay?.startsWith(todayStr))?.TongDoanhThu || 0;
         const totalUnpaid = unpaidInvoices.reduce((sum, inv) => sum + (inv.tong_tien_cuoi || 0), 0);
@@ -115,7 +115,7 @@ const KeToanDashboard: React.FC = () => {
     const filteredInvoices = useMemo(() => {
         let result = invoices;
         if (filterStatus !== 'all') {
-            result = result.filter(inv => inv.trang_thai === filterStatus);
+            result = result.filter(inv => inv.trang_thai?.toUpperCase() === filterStatus.toUpperCase());
         }
         if (fromDate) {
             const from = new Date(fromDate);
@@ -234,7 +234,7 @@ const KeToanDashboard: React.FC = () => {
             inv.sdt || '',
             inv.ngay_lap_hoa_don?.split('T')[0].split('-').reverse().join('/') || "",
             inv.tong_tien_cuoi || 0,
-            inv.trang_thai === 'da_thanh_toan' ? 'Đã thu tiền' : 'Chờ thanh toán'
+            inv.trang_thai?.toUpperCase() === 'DA_THANH_TOAN' ? 'Đã thu tiền' : 'Chờ thanh toán'
         ]);
 
         // BẢO MẬT: Chống CSV Injection bằng cách thêm dấu nháy đơn trước các ký tự nhạy cảm
@@ -263,7 +263,7 @@ const KeToanDashboard: React.FC = () => {
             <div className="animate-slide-up" style={{ marginBottom: '40px', padding: '48px', borderRadius: '24px', background: 'var(--primary-gradient)', color: 'white', position: 'relative', overflow: 'hidden', boxShadow: '0 20px 40px var(--primary-shadow)' }}>
                 <div style={{ position: 'absolute', top: '-10%', right: '-5%', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }}></div>
                 <h1 style={{ fontSize: '3rem', fontWeight: 950, letterSpacing: '-1.5px', position: 'relative', zIndex: 1, margin: '0 0 12px 0', display: 'flex', alignItems: 'center', gap: '15px' }}>
-                  <span>Bảng Điều Khiển <span style={{ color: '#c4b5fd' }}>Kế Toán</span></span> 
+                  <span>Bảng Điều Khiển <span style={{ color: '#5eead4' }}>Kế Toán</span></span> 
                   <span style={{ filter: 'drop-shadow(0 5px 15px rgba(0,0,0,0.2))' }}>📊</span>
                 </h1>
                 <p style={{ fontWeight: 700, color: 'rgba(255,255,255,0.95)', position: 'relative', zIndex: 1, margin: 0, fontSize: '1.2rem', textShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>Theo dõi dòng tiền, hóa đơn và vận hành tài chính hôm nay.</p>
@@ -298,31 +298,31 @@ const KeToanDashboard: React.FC = () => {
                 <div style={{ padding: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--gray-100)', flexWrap: 'wrap', gap: '16px' }}>
                     <h2 style={{ fontSize: '1.2rem', margin: 0, fontWeight: 800 }}>Danh sách Hóa đơn</h2>
                     <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                        <button onClick={handleExportExcel} className="btn btn-pill hover-lift" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '10px 16px', fontSize: '0.85rem', fontWeight: 800 }}>
+                        <button data-ai-id="button-ketoandashboard-bjms" onClick={handleExportExcel} className="btn btn-pill hover-lift" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '10px 16px', fontSize: '0.85rem', fontWeight: 800 }}>
                             <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>download</span>
                             Xuất Excel
                         </button>
-                        <input
+                        <input data-ai-id="input-ketoandashboard-ao0k" aria-label="Từ ngày"
                             type="date"
                             value={fromDate}
                             onChange={e => setFromDate(e.target.value)}
                             style={{ padding: '10px 16px', borderRadius: '12px', outline: 'none', border: '1px solid var(--gray-200)', fontWeight: 600, color: 'var(--ink)' }}
                         />
                         <span style={{ display: 'flex', alignItems: 'center', fontWeight: 600, color: 'var(--gray-400)' }}>-</span>
-                        <input
+                        <input data-ai-id="input-ketoandashboard-l5io" aria-label="Đến ngày"
                             type="date"
                             value={toDate}
                             onChange={e => setToDate(e.target.value)}
                             style={{ padding: '10px 16px', borderRadius: '12px', outline: 'none', border: '1px solid var(--gray-200)', fontWeight: 600, color: 'var(--ink)' }}
                         />
-                        <select
+                        <select data-ai-id="select-ketoandashboard-ew74" aria-label="Lọc trạng thái thanh toán"
                             value={filterStatus}
                             onChange={e => setFilterStatus(e.target.value)}
                             style={{ padding: '10px 20px', borderRadius: '12px', outline: 'none', border: '1px solid var(--gray-200)', fontWeight: 700 }}
                         >
                             <option value="all">Tất cả hóa đơn</option>
-                            <option value="cho_thanh_toan">Chờ thanh toán (Nợ)</option>
-                            <option value="da_thanh_toan">Đã thanh toán</option>
+                            <option value="CHO_THANH_TOAN">Chờ thanh toán (Nợ)</option>
+                            <option value="DA_THANH_TOAN">Đã thanh toán</option>
                         </select>
                     </div>
                 </div>
@@ -359,23 +359,23 @@ const KeToanDashboard: React.FC = () => {
                                         <td style={{ padding: '16px 24px' }}>
                                             <span style={{
                                                 padding: '6px 12px', borderRadius: '50px', fontSize: '0.75rem', fontWeight: 800,
-                                                background: inv.trang_thai === 'da_thanh_toan' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)',
-                                                color: inv.trang_thai === 'da_thanh_toan' ? '#10b981' : '#f59e0b'
+                                                background: inv.trang_thai?.toUpperCase() === 'DA_THANH_TOAN' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)',
+                                                color: inv.trang_thai?.toUpperCase() === 'DA_THANH_TOAN' ? '#10b981' : '#f59e0b'
                                             }}>
-                                                {inv.trang_thai === 'da_thanh_toan' ? 'ĐÃ THU TIỀN' : 'CHỜ THANH TOÁN'}
+                                                {inv.trang_thai?.toUpperCase() === 'DA_THANH_TOAN' ? 'ĐÃ THU TIỀN' : 'CHỜ THANH TOÁN'}
                                             </span>
                                         </td>
                                         <td style={{ padding: '16px 24px' }}>
                                             <div style={{ display: 'flex', gap: '8px' }}>
-                                                <button
+                                                <button data-ai-id="button-ketoandashboard-7ut1"
                                                     onClick={() => handleViewDetails(inv)}
                                                     className="btn btn-pill"
                                                     style={{ background: 'var(--gray-50)', color: 'var(--ink)', padding: '8px 16px', fontSize: '0.8rem' }}
                                                 >
                                                     Xem chi tiết
                                                 </button>
-                                                {inv.trang_thai === 'cho_thanh_toan' && (
-                                                    <button
+                                                {inv.trang_thai?.toUpperCase() === 'CHO_THANH_TOAN' && (
+                                                    <button data-ai-id="button-ketoandashboard-nymz"
                                                         onClick={() => handleConfirmPayment(inv.id_hoa_don)}
                                                         className="btn btn-pill"
                                                         style={{ background: 'var(--primary)', color: 'white', padding: '8px 16px', fontSize: '0.8rem' }}
@@ -395,7 +395,7 @@ const KeToanDashboard: React.FC = () => {
                 {/* BỘ NÚT ĐIỀU HƯỚNG PHÂN TRANG */}
                 {totalPages > 1 && (
                     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '16px', padding: '20px', borderTop: '1px solid var(--gray-100)' }}>
-                        <button
+                        <button data-ai-id="button-ketoandashboard-4gli"
                             className="btn btn-pill"
                             disabled={currentPage === 1}
                             onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
@@ -411,7 +411,7 @@ const KeToanDashboard: React.FC = () => {
                         <span style={{ fontWeight: 800, color: 'var(--ink)', fontSize: '0.85rem' }}>
                             Trang {currentPage} / {totalPages}
                         </span>
-                        <button
+                        <button data-ai-id="button-ketoandashboard-r8hi"
                             className="btn btn-pill"
                             disabled={currentPage === totalPages}
                             onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
@@ -487,12 +487,12 @@ const KeToanDashboard: React.FC = () => {
                         </table>
 
                         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }} className="no-print">
-                            <button className="btn btn-pill" onClick={() => setViewingHD(null)} style={{ background: 'var(--gray-100)', color: 'var(--ink)', padding: '10px 20px' }}>Đóng</button>
-                            <button className="btn btn-pill" onClick={() => window.print()} style={{ background: 'var(--primary-light)', color: 'var(--primary)', padding: '10px 20px' }}>
+                            <button data-ai-id="button-ketoandashboard-v1vt" className="btn btn-pill" onClick={() => setViewingHD(null)} style={{ background: 'var(--gray-100)', color: 'var(--ink)', padding: '10px 20px' }}>Đóng</button>
+                            <button data-ai-id="button-ketoandashboard-8440" className="btn btn-pill" onClick={() => window.print()} style={{ background: 'var(--primary-light)', color: 'var(--primary)', padding: '10px 20px' }}>
                                 <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>print</span> In hóa đơn
                             </button>
-                            {viewingHD.trang_thai === 'cho_thanh_toan' && (
-                                <button className="btn btn-primary btn-pill" onClick={() => { handleConfirmPayment(viewingHD.id_hoa_don); setViewingHD(null); }} style={{ padding: '10px 20px' }}>Xác nhận thu tiền</button>
+                            {viewingHD.trang_thai?.toUpperCase() === 'CHO_THANH_TOAN' && (
+                                <button data-ai-id="button-ketoandashboard-76wz" className="btn btn-primary btn-pill" onClick={() => { handleConfirmPayment(viewingHD.id_hoa_don); setViewingHD(null); }} style={{ padding: '10px 20px' }}>Xác nhận thu tiền</button>
                             )}
                         </div>
                     </div>

@@ -1,5 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
-import { Link } from "react-router-dom";
+﻿import React, { useEffect, useState, useMemo } from "react";
 import axiosInstance from "@services/axios";
 import { getUserProfile } from "@utils/index";
 import ModalTaoLichHenAdmin from "./ModalTaoLichHenAdmin";
@@ -29,14 +28,14 @@ const TiepTanDashboard: React.FC = () => {
             };
 
             const allApps = extractArray(appsRes.data);
-            const todaysApps = allApps.filter((l: any) => l.ngay_kham === todayStr);
+            const todaysApps = allApps.filter((l: any) => l.ngay_kham && String(l.ngay_kham).substring(0, 10) === todayStr);
             setAppointments(todaysApps);
 
-            const pendingConfirmation = todaysApps.filter(a => a.trang_thai?.toUpperCase() === 'DA_DAT' || a.trang_thai === 'Chờ xác nhận').length;
+            const pendingConfirmation = todaysApps.filter(a => a.trang_thai?.toUpperCase() === 'CHO_XAC_NHAN').length;
             const checkedIn = todaysApps.filter(a => a.trang_thai?.toUpperCase() === 'DANG_KHAM').length;
 
             const allInvoices = extractArray(invoicesRes.data);
-            const pendingPayment = allInvoices.filter(inv => inv.trang_thai === 'cho_thanh_toan').length;
+            const pendingPayment = allInvoices.filter(inv => inv.trang_thai?.toUpperCase() === 'CHO_THANH_TOAN').length;
 
             setStats({ pendingConfirmation, pendingPayment, checkedIn });
 
@@ -71,18 +70,18 @@ const TiepTanDashboard: React.FC = () => {
         let pending = 0, confirmed = 0, checkingIn = 0, completed = 0, canceled = 0;
         appointments.forEach(a => {
             const status = a.trang_thai?.toUpperCase() || '';
-            if (status === 'DA_DAT' || status === 'CHỜ XÁC NHẬN') pending++;
+            if (status === 'CHO_XAC_NHAN') pending++;
             else if (status === 'DA_XAC_NHAN') confirmed++;
             else if (status === 'DANG_KHAM') checkingIn++;
             else if (status === 'HOAN_THANH') completed++;
-            else if (status === 'DA_HUY' || status === 'HUY') canceled++;
+            else if (status === 'DA_HUY' || status === 'KHONG_DEN') canceled++;
             else pending++;
         });
         const total = appointments.length || 1;
         return {
             pending: { count: pending, pct: (pending / total) * 100, color: '#f59e0b', label: 'Chờ XN' },
             confirmed: { count: confirmed, pct: (confirmed / total) * 100, color: '#3b82f6', label: 'Đã XN' },
-            checkingIn: { count: checkingIn, pct: (checkingIn / total) * 100, color: '#8b5cf6', label: 'Đang Khám' },
+            checkingIn: { count: checkingIn, pct: (checkingIn / total) * 100, color: '#14b8a6', label: 'Đang Khám' },
             completed: { count: completed, pct: (completed / total) * 100, color: '#10b981', label: 'Hoàn Thành' },
             canceled: { count: canceled, pct: (canceled / total) * 100, color: '#ef4444', label: 'Đã Hủy' }
         };
@@ -130,7 +129,7 @@ const TiepTanDashboard: React.FC = () => {
             <div className="animate-slide-up stagger-1" style={{ marginBottom: '40px', padding: '48px', borderRadius: 'var(--radius-xl)', background: 'var(--primary-gradient)', color: 'white', position: 'relative', overflow: 'hidden', boxShadow: 'var(--shadow-2xl)' }}>
                 <div style={{ position: 'absolute', top: '-10%', right: '-5%', width: '300px', height: '300px', background: 'radial-gradient(circle, var(--primary-light) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }}></div>
                 <h1 style={{ fontSize: '3rem', fontWeight: 950, letterSpacing: '-1.5px', position: 'relative', zIndex: 1, margin: '0 0 12px 0', display: 'flex', alignItems: 'center', gap: '15px' }}>
-                    <span>Sảnh Chờ <span style={{ color: '#c4b5fd' }}>Tiếp Tân</span></span>
+                    <span>Sảnh Chờ <span style={{ color: '#5eead4' }}>Tiếp Tân</span></span>
                     <span style={{ filter: 'drop-shadow(0 5px 15px rgba(0,0,0,0.2))' }}>🛎️</span>
                 </h1>
                 <p style={{ fontWeight: 700, color: 'rgba(255,255,255,0.95)', position: 'relative', zIndex: 1, margin: 0, fontSize: '1.2rem', textShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>Chào mừng, {user.ho_ten || 'Lễ tân'}. Quản lý luồng khách hàng và điều phối lịch hẹn hôm nay.</p>
@@ -162,7 +161,7 @@ const TiepTanDashboard: React.FC = () => {
                         <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
                             <div style={{ position: 'relative' }}>
                                 <span className="material-symbols-outlined" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--gray-400)', fontSize: '20px', pointerEvents: 'none' }}>search</span>
-                                <input
+                                <input data-ai-id="input-tieptandashboard-pcmn"
                                     type="text"
                                     placeholder="Tìm theo tên/SĐT chủ..."
                                     value={searchTerm}
@@ -170,7 +169,7 @@ const TiepTanDashboard: React.FC = () => {
                                     style={{ padding: '8px 16px 8px 40px', borderRadius: '12px', border: '1px solid var(--gray-200)', background: 'var(--gray-50)', outline: 'none', fontSize: '0.85rem', minWidth: '220px', fontWeight: 600, color: 'var(--ink)' }}
                                 />
                             </div>
-                            <button className="btn btn-primary btn-pill" onClick={() => setIsModalOpen(true)}>
+                            <button data-ai-id="button-tieptandashboard-b9mf" className="btn btn-primary btn-pill" onClick={() => setIsModalOpen(true)}>
                                 <span className="material-symbols-outlined">add_task</span> Thêm lịch hẹn mới
                             </button>
                         </div>
@@ -205,11 +204,11 @@ const TiepTanDashboard: React.FC = () => {
                                             </td>
                                             <td style={{ padding: '16px 24px' }}>
                                                 <div style={{ display: 'flex', gap: '8px' }}>
-                                                    {(app.trang_thai?.toUpperCase() === 'DA_DAT' || app.trang_thai === 'Chờ xác nhận') &&
-                                                        <button onClick={() => handleUpdateStatus(app.id_lich_hen, 'DA_XAC_NHAN')} className="btn btn-pill" style={{ background: 'var(--primary-light)', color: 'var(--primary)', padding: '8px 16px', fontSize: '0.8rem' }}>Xác nhận</button>
+                                                    {app.trang_thai?.toUpperCase() === 'CHO_XAC_NHAN' &&
+                                                        <button data-ai-id="button-tieptandashboard-wita" onClick={() => handleUpdateStatus(app.id_lich_hen, 'DA_XAC_NHAN')} className="btn btn-pill" style={{ background: 'var(--primary-light)', color: 'var(--primary)', padding: '8px 16px', fontSize: '0.8rem' }}>Xác nhận</button>
                                                     }
                                                     {app.trang_thai?.toUpperCase() === 'DA_XAC_NHAN' &&
-                                                        <button onClick={() => handleUpdateStatus(app.id_lich_hen, 'DANG_KHAM')} className="btn btn-pill" style={{ background: 'var(--blue-50)', color: 'var(--blue-600)', padding: '8px 16px', fontSize: '0.8rem' }}>Check-in</button>
+                                                        <button data-ai-id="button-tieptandashboard-c2d0" onClick={() => handleUpdateStatus(app.id_lich_hen, 'DANG_KHAM')} className="btn btn-pill" style={{ background: 'var(--blue-50)', color: 'var(--blue-600)', padding: '8px 16px', fontSize: '0.8rem' }}>Check-in</button>
                                                     }
                                                 </div>
                                             </td>

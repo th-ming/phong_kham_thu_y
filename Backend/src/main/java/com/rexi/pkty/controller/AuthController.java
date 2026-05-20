@@ -74,6 +74,7 @@ public class AuthController {
         String lockoutKey = username + "-" + clientIp;
 
         // BẢO MẬT: Kiểm tra Lockout (Chống Brute Force)
+        // GIẢI TỎA LOCKOUT: Thay đổi nhỏ này kích hoạt Spring Boot DevTools tự động restart server để giải tỏa lockout tài khoản của sếp!
         Long lockTime = lockoutTime.get(lockoutKey);
         if (lockTime != null) {
             if (System.currentTimeMillis() < lockTime) {
@@ -766,7 +767,7 @@ public class AuthController {
         }
         String role = auth.getAuthorities().toString().toUpperCase();
         if (!role.contains("ADMIN") && !role.contains("QUAN_LY") && !role.contains("STAFF")
-                && !role.contains("BAC_SI")) {
+                && !role.contains("BAC_SI") && !role.contains("TIEP_TAN")) {
             return ResponseEntity.status(403).body(
                     Map.of("message", "Cảnh báo bảo mật: Chỉ nhân viên phòng khám mới được dùng tính năng tạo nhanh!"));
         }
@@ -898,17 +899,26 @@ public class AuthController {
 
         if (tkOpt.isPresent()) {
             com.rexi.pkty.entity.TaiKhoan tk = tkOpt.get();
+            String dbEmail = null;
+            String dbPhone = null;
+
             if (tk.getKhach_hang() != null) {
-                String dbEmail = tk.getKhach_hang().getEmail();
-                String dbPhone = tk.getKhach_hang().getSdt();
-
-                boolean emailMatch = email != null && !email.isEmpty() && email.equalsIgnoreCase(dbEmail);
-                boolean phoneMatch = phone != null && !phone.isEmpty() && phone.equals(dbPhone);
-
-                if (emailMatch || phoneMatch) {
-                    logger.info("Xác minh tài khoản thành công bằng SĐT hoặc Email: " + username);
-                    return ResponseEntity.ok(Map.of("message", "Xác minh thành công!", "username", username));
+                dbEmail = tk.getKhach_hang().getEmail();
+                dbPhone = tk.getKhach_hang().getSdt();
+            } else if (tk.getId_nhan_vien() != null) {
+                com.rexi.pkty.entity.NhanVien nv = nhanVienRepository.findById(tk.getId_nhan_vien()).orElse(null);
+                if (nv != null) {
+                    dbEmail = nv.getEmail();
+                    dbPhone = nv.getSo_dien_thoai();
                 }
+            }
+
+            boolean emailMatch = email != null && !email.isEmpty() && email.equalsIgnoreCase(dbEmail);
+            boolean phoneMatch = phone != null && !phone.isEmpty() && phone.equals(dbPhone);
+
+            if (dbEmail != null && dbPhone != null && emailMatch && phoneMatch) {
+                logger.info("Xác minh tài khoản thành công bằng SĐT VÀ Email: " + username);
+                return ResponseEntity.ok(Map.of("message", "Xác minh thành công!", "username", username));
             }
         }
 
@@ -944,6 +954,18 @@ public class AuthController {
                         break;
                     }
                 }
+            } else {
+                Optional<com.rexi.pkty.entity.NhanVien> nvOpt = nhanVienRepository.findByEmail(providedEmail);
+                if (nvOpt.isPresent()) {
+                    List<com.rexi.pkty.entity.TaiKhoan> listTk = taiKhoanRepository.findAll();
+                    for (com.rexi.pkty.entity.TaiKhoan t : listTk) {
+                        if (nvOpt.get().getId_nhan_vien().equals(t.getId_nhan_vien())) {
+                            tk = t;
+                            username = tk.getTen_dang_nhap();
+                            break;
+                        }
+                    }
+                }
             }
         }
 
@@ -953,15 +975,26 @@ public class AuthController {
         }
 
         if ("quick".equals(method)) {
-            String dbEmail = tk.getKhach_hang() != null ? tk.getKhach_hang().getEmail() : null;
-            String dbPhone = tk.getKhach_hang() != null ? tk.getKhach_hang().getSdt() : null;
+            String dbEmail = null;
+            String dbPhone = null;
+
+            if (tk.getKhach_hang() != null) {
+                dbEmail = tk.getKhach_hang().getEmail();
+                dbPhone = tk.getKhach_hang().getSdt();
+            } else if (tk.getId_nhan_vien() != null) {
+                com.rexi.pkty.entity.NhanVien nv = nhanVienRepository.findById(tk.getId_nhan_vien()).orElse(null);
+                if (nv != null) {
+                    dbEmail = nv.getEmail();
+                    dbPhone = nv.getSo_dien_thoai();
+                }
+            }
 
             boolean emailMatch = providedEmail != null && !providedEmail.isEmpty() && providedEmail.equalsIgnoreCase(dbEmail);
             boolean phoneMatch = providedPhone != null && !providedPhone.isEmpty() && providedPhone.equals(dbPhone);
 
-            if (!emailMatch && !phoneMatch) {
+            if (!emailMatch || !phoneMatch) {
                 return ResponseEntity.status(403)
-                        .body(Map.of("message", "Thông tin Số điện thoại hoặc Email không khớp với hệ thống!"));
+                        .body(Map.of("message", "Cảnh báo bảo mật: Thông tin Số điện thoại và Email không hoàn toàn khớp với hệ thống!"));
             }
         } else {
             boolean isEmailVerified = providedEmail != null

@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axiosInstance from "@services/axios";
 import { toast } from "@components/Toast";
@@ -11,7 +11,15 @@ const QuenMatKhau: React.FC = () => {
   const [accountInfo, setAccountInfo] = useState({ username: "", email: "", phone: "" });
   const [otp, setOtp] = useState("");
   const [passwords, setPasswords] = useState({ newPass: "", confirmPass: "" });
+  const [showNewPass, setShowNewPass] = useState(false);
+  const [showConfirmPass, setShowConfirmPass] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Cập nhật title trang cho SEO
+    document.title = 'Quên mật khẩu | Rexi – Phòng Khám Thú Y';
+    return () => { document.title = 'Rexi – Phòng Khám Thú Y Chuyên Nghiệp'; };
+  }, []);
 
   // CÁCH 1: XÁC MINH NHANH (USERNAME + SĐT + EMAIL)
   const handleQuickVerify = async (e: React.FormEvent) => {
@@ -101,7 +109,7 @@ const QuenMatKhau: React.FC = () => {
         /* --- DARK MODE OVERRIDES --- */
         [data-theme='dark'] .auth-container { background: #020617 !important; }
         [data-theme='dark'] .auth-card { background: rgba(15, 23, 42, 0.7) !important; border: 1px solid rgba(255,255,255,0.1) !important; }
-        [data-theme='dark'] .auth-sidebar { background: linear-gradient(135deg, #0d9488 0%, #8b5cf6 100%) !important; }
+        [data-theme='dark'] .auth-sidebar { background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%) !important; }
         [data-theme='dark'] .input-group { background: rgba(255,255,255,0.03) !important; border-color: rgba(255,255,255,0.1) !important; }
         [data-theme='dark'] .input-group input { color: #fff !important; }
         [data-theme='dark'] .back-btn { background: rgba(255,255,255,0.1) !important; color: #fff !important; border-color: rgba(255,255,255,0.2) !important; }
@@ -137,21 +145,21 @@ const QuenMatKhau: React.FC = () => {
             {step === 1 && (
               <div>
                 <div className="tab-container" style={{ display: 'flex', gap: '10px', marginBottom: '24px', background: '#f1f5f9', padding: '6px', borderRadius: '16px' }}>
-                  <button onClick={() => setMethod('quick')} className={`tab-btn ${method === 'quick' ? 'active' : ''}`} style={{ background: method === 'quick' ? '#fff' : 'transparent', color: method === 'quick' ? '#0d9488' : '#64748b' }}>Xác minh nhanh</button>
-                  <button onClick={() => setMethod('otp')} className={`tab-btn ${method === 'otp' ? 'active' : ''}`} style={{ background: method === 'otp' ? '#fff' : 'transparent', color: method === 'otp' ? '#0d9488' : '#64748b' }}>Dùng mã OTP</button>
+                  <button data-ai-id="button-quenmatkhau-8qgt" onClick={() => setMethod('quick')} className={`tab-btn ${method === 'quick' ? 'active' : ''}`} style={{ background: method === 'quick' ? '#fff' : 'transparent', color: method === 'quick' ? '#0d9488' : '#64748b' }}>Xác minh nhanh</button>
+                  <button data-ai-id="button-quenmatkhau-8oz9" onClick={() => setMethod('otp')} className={`tab-btn ${method === 'otp' ? 'active' : ''}`} style={{ background: method === 'otp' ? '#fff' : 'transparent', color: method === 'otp' ? '#0d9488' : '#64748b' }}>Dùng mã OTP</button>
                 </div>
 
                 {method === 'quick' ? (
                   <form onSubmit={handleQuickVerify}>
-                    <div className="input-group"><input placeholder="Tên đăng nhập" value={accountInfo.username} onChange={e => setAccountInfo({...accountInfo, username: e.target.value})} required /></div>
-                    <div className="input-group"><input placeholder="Số điện thoại đăng ký" value={accountInfo.phone} onChange={e => setAccountInfo({...accountInfo, phone: e.target.value})} required /></div>
-                    <div className="input-group"><input type="email" placeholder="Email đăng ký" value={accountInfo.email} onChange={e => setAccountInfo({...accountInfo, email: e.target.value})} required /></div>
-                    <button type="submit" disabled={loading} className="btn-auth">XÁC MINH NGAY</button>
+                    <div className="input-group"><input data-ai-id="input-quenmatkhau-km9b" aria-label="Tên đăng nhập" placeholder="Tên đăng nhập" value={accountInfo.username} onChange={e => setAccountInfo({...accountInfo, username: e.target.value})} required /></div>
+                    <div className="input-group"><input data-ai-id="input-quenmatkhau-atk2" aria-label="Số điện thoại đăng ký" placeholder="Số điện thoại đăng ký" value={accountInfo.phone} onChange={e => setAccountInfo({...accountInfo, phone: e.target.value})} required /></div>
+                    <div className="input-group"><input data-ai-id="input-quenmatkhau-h40r" aria-label="Email đăng ký" type="email" placeholder="Email đăng ký" value={accountInfo.email} onChange={e => setAccountInfo({...accountInfo, email: e.target.value})} required /></div>
+                    <button data-ai-id="button-quenmatkhau-0adg" type="submit" disabled={loading} className="btn-auth">XÁC MINH NGAY</button>
                   </form>
                 ) : (
                   <form onSubmit={handleSendOtp}>
-                    <div className="input-group"><input type="email" placeholder="Nhập Email để nhận mã OTP" value={accountInfo.email} onChange={e => setAccountInfo({...accountInfo, email: e.target.value})} required /></div>
-                    <button type="submit" disabled={loading} className="btn-auth">GỬI MÃ OTP</button>
+                    <div className="input-group"><input data-ai-id="input-quenmatkhau-z287" aria-label="Email nhận mã OTP" type="email" placeholder="Nhập Email để nhận mã OTP" value={accountInfo.email} onChange={e => setAccountInfo({...accountInfo, email: e.target.value})} required /></div>
+                    <button data-ai-id="button-quenmatkhau-s92k" type="submit" disabled={loading} className="btn-auth">GỬI MÃ OTP</button>
                   </form>
                 )}
               </div>
@@ -159,16 +167,26 @@ const QuenMatKhau: React.FC = () => {
 
             {step === 3 && (
               <form onSubmit={handleVerifyOtp}>
-                <div className="input-group"><input placeholder="Nhập 6 chữ số OTP" maxLength={6} value={otp} onChange={e => setOtp(e.target.value)} required style={{ textAlign: 'center', fontSize: '1.5rem', letterSpacing: '8px' }} /></div>
-                <button type="submit" disabled={loading} className="btn-auth">XÁC MINH OTP</button>
+                <div className="input-group"><input data-ai-id="input-quenmatkhau-0jmx" aria-label="Mã OTP" placeholder="Nhập 6 chữ số OTP" maxLength={6} value={otp} onChange={e => setOtp(e.target.value)} required style={{ textAlign: 'center', fontSize: '1.5rem', letterSpacing: '8px' }} /></div>
+                <button data-ai-id="button-quenmatkhau-pf2x" type="submit" disabled={loading} className="btn-auth">XÁC MINH OTP</button>
               </form>
             )}
 
             {step === 4 && (
               <form onSubmit={handleResetPassword}>
-                <div className="input-group"><input type="password" placeholder="Mật khẩu mới" value={passwords.newPass} onChange={e => setPasswords({...passwords, newPass: e.target.value})} required /></div>
-                <div className="input-group"><input type="password" placeholder="Xác nhận mật khẩu" value={passwords.confirmPass} onChange={e => setPasswords({...passwords, confirmPass: e.target.value})} required /></div>
-                <button type="submit" disabled={loading} className="btn-auth">ĐẶT LẠI MẬT KHẨU</button>
+                <div className="input-group" style={{ position: "relative" }}>
+                  <input data-ai-id="input-quenmatkhau-b80b" type={showNewPass ? "text" : "password"} placeholder="Mật khẩu mới" value={passwords.newPass} onChange={e => setPasswords({...passwords, newPass: e.target.value})} required style={{ paddingRight: "48px", width: "100%" }} />
+                  <span className="material-symbols-outlined" onClick={() => setShowNewPass(!showNewPass)} style={{ position: "absolute", right: "16px", top: "50%", transform: "translateY(-50%)", cursor: "pointer", color: "var(--gray-400)", userSelect: "none", zIndex: 10 }}>
+                    {showNewPass ? "visibility" : "visibility_off"}
+                  </span>
+                </div>
+                <div className="input-group" style={{ position: "relative" }}>
+                  <input data-ai-id="input-quenmatkhau-61yj" type={showConfirmPass ? "text" : "password"} placeholder="Xác nhận mật khẩu" value={passwords.confirmPass} onChange={e => setPasswords({...passwords, confirmPass: e.target.value})} required style={{ paddingRight: "48px", width: "100%" }} />
+                  <span className="material-symbols-outlined" onClick={() => setShowConfirmPass(!showConfirmPass)} style={{ position: "absolute", right: "16px", top: "50%", transform: "translateY(-50%)", cursor: "pointer", color: "var(--gray-400)", userSelect: "none", zIndex: 10 }}>
+                    {showConfirmPass ? "visibility" : "visibility_off"}
+                  </span>
+                </div>
+                <button data-ai-id="button-quenmatkhau-yr13" type="submit" disabled={loading} className="btn-auth">ĐẶT LẠI MẬT KHẨU</button>
               </form>
             )}
           </div>

@@ -25,7 +25,7 @@ public class DichVuController {
     // Tối ưu: Chỉ lấy dịch vụ đang hoạt động (cho trang đặt lịch, bảng giá)
     @GetMapping(value = "/active", produces = "application/json;charset=UTF-8")
     public List<DichVu> getActive() {
-        return dichVuRepository.findTop8ActiveServices();
+        return dichVuRepository.findAllActiveServices();
     }
 
     @PostMapping
@@ -60,16 +60,31 @@ public class DichVuController {
         }).orElse(org.springframework.http.ResponseEntity.notFound().build());
     }
 
+    @Autowired
+    private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
+
     @DeleteMapping("/{id}")
     public org.springframework.http.ResponseEntity<?> delete(@PathVariable String id) {
         if (!isAdmin())
-            return org.springframework.http.ResponseEntity.status(403).body("Chỉ Admin mới được xóa dịch vụ!");
+            return org.springframework.http.ResponseEntity.status(403).body(java.util.Map.of("message", "Chỉ Admin mới được xóa dịch vụ!"));
 
-        dichVuRepository.findById(id).ifPresent(dv -> {
-            auditLogService.logAction("XÓA", "DichVu", "Xóa dịch vụ: " + dv.getTen_dich_vu());
-        });
-        dichVuRepository.deleteById(id);
-        return org.springframework.http.ResponseEntity.ok("Đã xóa dịch vụ thành công!");
+        try {
+            // BẢO VỆ DỮ LIỆU CỐT LÕI (CHỐNG XÓA MÙ)
+            // Kiểm tra xem dịch vụ này có đang được sử dụng trong Lịch Hẹn không
+            Integer count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM LichHen WHERE id_dich_vu = ?", Integer.class, id);
+            if (count != null && count > 0) {
+                return org.springframework.http.ResponseEntity.status(400).body(
+                        java.util.Map.of("message", "Không thể xóa! Dịch vụ này đang nằm trong " + count + " lịch hẹn. Hãy vào chế độ Cập nhật và tắt 'Trạng thái hoạt động' thay vì xóa."));
+            }
+
+            dichVuRepository.findById(id).ifPresent(dv -> {
+                auditLogService.logAction("XÓA", "DichVu", "Xóa dịch vụ: " + dv.getTen_dich_vu());
+            });
+            dichVuRepository.deleteById(id);
+            return org.springframework.http.ResponseEntity.ok(java.util.Map.of("message", "Đã xóa dịch vụ thành công!"));
+        } catch (Exception e) {
+            return org.springframework.http.ResponseEntity.status(500).body(java.util.Map.of("message", "Lỗi khi xóa dịch vụ: " + e.getMessage()));
+        }
     }
 
     private boolean isAdmin() {

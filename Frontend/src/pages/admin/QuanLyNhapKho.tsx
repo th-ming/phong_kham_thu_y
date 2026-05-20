@@ -15,6 +15,7 @@ const QuanLyNhapKho: React.FC = () => {
   const [thuocs, setThuocs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [searchLo, setSearchLo] = useState("");
 
   const [formData, setFormData] = useState({
     id_thuoc: "",
@@ -45,6 +46,16 @@ const QuanLyNhapKho: React.FC = () => {
     fetchData();
   }, []);
 
+  const filteredLoThuocs = React.useMemo(() => {
+    if (!searchLo.trim()) return loThuocs;
+    const s = searchLo.toLowerCase();
+    return loThuocs.filter(l => {
+      const matchBatch = (l.so_lo || "").toLowerCase().includes(s);
+      const matchMedicine = (thuocs.find(t => t.id_thuoc === l.id_thuoc)?.ten_thuoc || "").toLowerCase().includes(s);
+      return matchBatch || matchMedicine;
+    });
+  }, [loThuocs, thuocs, searchLo]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.so_luong_nhap <= 0) {
@@ -70,15 +81,27 @@ const QuanLyNhapKho: React.FC = () => {
 
   return (
     <div className="animate-fade-in">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', flexWrap: 'wrap', gap: '20px' }}>
         <div>
           <h1 style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--ink)', letterSpacing: '-1px' }}>Quản lý Nhập kho</h1>
           <p style={{ color: 'var(--gray-500)', fontWeight: 600 }}>Theo dõi lịch sử nhập hàng và quản lý lô thuốc.</p>
         </div>
-        <button className="btn btn-primary btn-pill" onClick={() => setIsModalOpen(true)}>
-          <span className="material-symbols-outlined">add_business</span>
-          Tạo phiếu nhập mới
-        </button>
+        <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div className="glass-card" style={{ display: 'flex', alignItems: 'center', padding: '0 16px', borderRadius: '16px', border: '1px solid var(--gray-200)', background: 'var(--surface)', width: '260px' }}>
+            <span className="material-symbols-outlined" style={{ color: 'var(--gray-400)', marginRight: '8px' }}>search</span>
+            <input data-ai-id="input-quanlynhapkho-1t1k"
+              type="text"
+              placeholder="Tìm số lô, tên thuốc..."
+              value={searchLo}
+              onChange={(e) => setSearchLo(e.target.value)}
+              style={{ border: 'none', outline: 'none', background: 'transparent', padding: '10px 0', fontWeight: 600, width: '100%', color: 'var(--ink)', fontSize: '0.9rem' }}
+            />
+          </div>
+          <button data-ai-id="button-quanlynhapkho-au1n" className="btn btn-primary btn-pill" onClick={() => setIsModalOpen(true)}>
+            <span className="material-symbols-outlined">add_business</span>
+            Tạo phiếu nhập mới
+          </button>
+        </div>
       </div>
 
       <div className="glass-card" style={{ borderRadius: 'var(--radius-xl)', overflow: 'hidden' }}>
@@ -94,7 +117,7 @@ const QuanLyNhapKho: React.FC = () => {
             </tr>
           </thead>
           <tbody>
-            {loThuocs.map((l) => (
+            {filteredLoThuocs.map((l) => (
               <tr key={l.id_lo} style={{ borderBottom: '1px solid var(--gray-50)', transition: 'all 0.2s' }}>
                 <td style={{ padding: '20px', fontWeight: 800, color: 'var(--gray-400)' }}>#LÔ-{l.id_lo}</td>
                 <td style={{ padding: '20px' }}>
@@ -128,7 +151,7 @@ const QuanLyNhapKho: React.FC = () => {
         <form onSubmit={handleSubmit} style={{ display: 'grid', gap: '20px' }}>
           <div>
             <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '8px', display: 'block' }}>CHỌN THUỐC / VẬT TƯ</label>
-            <select
+            <select data-ai-id="select-quanlynhapkho-v3us"
               className="form-input"
               style={{ width: '100%', background: 'var(--gray-50)' }}
               value={formData.id_thuoc}
@@ -145,28 +168,28 @@ const QuanLyNhapKho: React.FC = () => {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
             <div>
               <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '8px', display: 'block' }}>SỐ LÔ</label>
-              <input type="text" className="form-input" placeholder="Ví Gụ: LOT2024-001" style={{ width: '100%' }} value={formData.so_lo} onChange={e => setFormData({ ...formData, so_lo: e.target.value })} required />
+              <input data-ai-id="input-quanlynhapkho-pc2b" type="text" className="form-input" placeholder="Ví Gụ: LOT2024-001" style={{ width: '100%' }} value={formData.so_lo} onChange={e => setFormData({ ...formData, so_lo: e.target.value })} required />
             </div>
             <div>
               <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '8px', display: 'block' }}>HẠN SỬ DỤNG</label>
-              <input type="date" className="form-input" style={{ width: '100%' }} value={formData.han_su_dung} onChange={e => setFormData({ ...formData, han_su_dung: e.target.value })} required />
+              <input data-ai-id="input-quanlynhapkho-r92a" type="date" className="form-input" style={{ width: '100%' }} value={formData.han_su_dung} onChange={e => setFormData({ ...formData, han_su_dung: e.target.value })} required />
             </div>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
             <div>
               <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '8px', display: 'block' }}>SỐ LƯỢNG NHẬP</label>
-              <input type="number" min="1" className="form-input" style={{ width: '100%' }} value={formData.so_luong_nhap} onChange={e => setFormData({ ...formData, so_luong_nhap: e.target.value === '' ? 0 : parseInt(e.target.value) })} required />
+              <input data-ai-id="input-quanlynhapkho-8lya" type="number" min="1" className="form-input" style={{ width: '100%' }} value={formData.so_luong_nhap} onChange={e => setFormData({ ...formData, so_luong_nhap: e.target.value === '' ? 0 : parseInt(e.target.value) })} required />
             </div>
             <div>
               <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '8px', display: 'block' }}>GIÁ NHẬP (VNĐ/ĐƠN VỊ)</label>
-              <input type="number" min="0" className="form-input" style={{ width: '100%' }} value={formData.gia_nhap} onChange={e => setFormData({ ...formData, gia_nhap: e.target.value === '' ? 0 : parseInt(e.target.value) })} required />
+              <input data-ai-id="input-quanlynhapkho-ex6w" type="number" min="0" className="form-input" style={{ width: '100%' }} value={formData.gia_nhap} onChange={e => setFormData({ ...formData, gia_nhap: e.target.value === '' ? 0 : parseInt(e.target.value) })} required />
             </div>
           </div>
 
           <div style={{ marginTop: '20px', display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-            <button type="button" className="btn btn-pill" onClick={() => setIsModalOpen(false)} style={{ background: 'var(--gray-100)', color: 'var(--ink)' }}>Hủy bỏ</button>
-            <button type="submit" className="btn btn-primary btn-pill">Xác nhận nhập kho</button>
+            <button data-ai-id="button-quanlynhapkho-dnwh" type="button" className="btn btn-pill" onClick={() => setIsModalOpen(false)} style={{ background: 'var(--gray-100)', color: 'var(--ink)' }}>Hủy bỏ</button>
+            <button data-ai-id="button-quanlynhapkho-fth2" type="submit" className="btn btn-primary btn-pill">Xác nhận nhập kho</button>
           </div>
         </form>
       </Modal>

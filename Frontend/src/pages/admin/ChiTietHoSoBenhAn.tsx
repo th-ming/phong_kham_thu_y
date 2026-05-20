@@ -89,7 +89,7 @@ const ChiTietHoSoBenhAn: React.FC = () => {
           <h1 style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--ink)', letterSpacing: '-1px' }}>Chi tiết bệnh án</h1>
           <p style={{ color: 'var(--gray-500)', fontWeight: 600 }}>Mã hồ sơ điện tử: #HS-{id}</p>
         </div>
-        <button className="btn btn-primary btn-pill no-print" onClick={() => window.print()} style={{ padding: '12px 24px' }}>
+        <button data-ai-id="button-chitiethosobenhan-o991" className="btn btn-primary btn-pill no-print" onClick={() => window.print()} style={{ padding: '12px 24px' }}>
           <span className="material-symbols-outlined">print</span> In Bệnh Án
         </button>
       </div>

@@ -22,6 +22,9 @@ const ThongTinCaNhanNhanVien: React.FC = () => {
         confirmPass: ''
     });
     const [isChangingPass, setIsChangingPass] = useState(false);
+    const [showCurrentPass, setShowCurrentPass] = useState(false);
+    const [showNewPass, setShowNewPass] = useState(false);
+    const [showConfirmPass, setShowConfirmPass] = useState(false);
 
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
@@ -221,14 +224,14 @@ const ThongTinCaNhanNhanVien: React.FC = () => {
                         </p>
                     </div>
                     {!isEditing ? (
-                        <button className="btn btn-primary btn-pill hover-lift" onClick={() => setIsEditing(true)}>
+                        <button data-ai-id="button-thongtincanhannhanvien-ro4p" className="btn btn-primary btn-pill hover-lift" onClick={() => setIsEditing(true)}>
                             <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>edit</span>
                             Chỉnh sửa hồ sơ
                         </button>
                     ) : (
                         <div style={{ display: 'flex', gap: '12px' }}>
-                            <button className="btn btn-pill" style={{ background: 'var(--gray-100)', color: 'var(--ink)' }} onClick={() => { setIsEditing(false); setFormData(profile); }}>Hủy</button>
-                            <button className="btn btn-primary btn-pill hover-lift" onClick={handleSave}>Lưu thay đổi</button>
+                            <button data-ai-id="button-thongtincanhannhanvien-18ck" className="btn btn-pill" style={{ background: 'var(--gray-100)', color: 'var(--ink)' }} onClick={() => { setIsEditing(false); setFormData(profile); }}>Hủy</button>
+                            <button data-ai-id="button-thongtincanhannhanvien-ripx" className="btn btn-primary btn-pill hover-lift" onClick={handleSave}>Lưu thay đổi</button>
                         </div>
                     )}
                 </div>
@@ -246,7 +249,7 @@ const ThongTinCaNhanNhanVien: React.FC = () => {
                             />
                             {isEditing && (
                                 <label style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 'calc(100% - 12px)', height: 'calc(100% - 12px)', background: 'rgba(0,0,0,0.5)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', cursor: 'pointer', transition: 'all 0.3s', zIndex: 10 }}>
-                                    <input type="file" accept="image/*" onChange={handleImageChange} style={{ display: 'none' }} />
+                                    <input data-ai-id="input-thongtincanhannhanvien-p2ps" type="file" accept="image/*" onChange={handleImageChange} style={{ display: 'none' }} />
                                     <span className="material-symbols-outlined" style={{ fontSize: '32px' }}>photo_camera</span>
                                 </label>
                             )}
@@ -256,7 +259,7 @@ const ThongTinCaNhanNhanVien: React.FC = () => {
                         </div>
                         
                         {isEditing ? (
-                            <input 
+                            <input data-ai-id="input-thongtincanhannhanvien-59by" 
                                 type="text" 
                                 name="ho_ten" 
                                 value={formData.ho_ten || formData.hoTen || ''} 
@@ -292,7 +295,7 @@ const ThongTinCaNhanNhanVien: React.FC = () => {
                                 <div style={{ flex: 1, minWidth: 0 }}>
                                     <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--gray-400)', letterSpacing: '1px' }}>EMAIL LIÊN HỆ</div>
                                     {isEditing ? (
-                                        <input 
+                                        <input data-ai-id="input-thongtincanhannhanvien-8fb5" 
                                             type="email" 
                                             name="email" 
                                             value={formData.email || ''} 
@@ -312,7 +315,7 @@ const ThongTinCaNhanNhanVien: React.FC = () => {
                                 <div style={{ flex: 1, minWidth: 0 }}>
                                     <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--gray-400)', letterSpacing: '1px' }}>ĐIỆN THOẠI</div>
                                     {isEditing ? (
-                                        <input 
+                                        <input data-ai-id="input-thongtincanhannhanvien-rivm" 
                                             type="tel" 
                                             name="so_dien_thoai" 
                                             value={formData.so_dien_thoai || formData.soDienThoai || ''} 
@@ -377,50 +380,59 @@ const ThongTinCaNhanNhanVien: React.FC = () => {
                                 <div style={{ display: 'grid', gap: '10px' }}>
                                     <label style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gray-500)', letterSpacing: '1px' }}>MẬT KHẨU HIỆN TẠI</label>
                                     <div style={{ position: 'relative' }}>
-                                        <span className="material-symbols-outlined" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--gray-400)' }}>lock</span>
-                                        <input 
-                                            type="password" 
+                                        <span className="material-symbols-outlined" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--gray-400)', pointerEvents: 'none' }}>lock</span>
+                                        <input data-ai-id="input-thongtincanhannhanvien-eegh" 
+                                            type={showCurrentPass ? "text" : "password"} 
                                             required 
                                             value={passwords.currentPass}
                                             onChange={e => setPasswords({...passwords, currentPass: e.target.value})}
                                             placeholder="Nhập mật khẩu đang sử dụng"
-                                            style={{ width: '100%', padding: '14px 14px 14px 48px', borderRadius: '12px', border: '1px solid var(--gray-200)', background: 'var(--background)', outline: 'none' }}
+                                            style={{ width: '100%', padding: '14px 48px 14px 48px', borderRadius: '12px', border: '1px solid var(--gray-200)', background: 'var(--background)', outline: 'none' }}
                                         />
+                                        <span className="material-symbols-outlined" onClick={() => setShowCurrentPass(!showCurrentPass)} style={{ position: "absolute", right: "16px", top: "50%", transform: "translateY(-50%)", cursor: "pointer", color: "var(--gray-400)", userSelect: "none", zIndex: 10 }}>
+                                            {showCurrentPass ? "visibility" : "visibility_off"}
+                                        </span>
                                     </div>
                                 </div>
                                 
                                 <div style={{ display: 'grid', gap: '10px' }}>
                                     <label style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gray-500)', letterSpacing: '1px' }}>MẬT KHẨU MỚI</label>
                                     <div style={{ position: 'relative' }}>
-                                        <span className="material-symbols-outlined" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--primary)' }}>key</span>
-                                        <input 
-                                            type="password" 
+                                        <span className="material-symbols-outlined" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--primary)', pointerEvents: 'none' }}>key</span>
+                                        <input data-ai-id="input-thongtincanhannhanvien-59qv" 
+                                            type={showNewPass ? "text" : "password"} 
                                             required 
                                             value={passwords.newPass}
                                             onChange={e => setPasswords({...passwords, newPass: e.target.value})}
                                             placeholder="Nhập mật khẩu mới (ít nhất 6 ký tự)"
-                                            style={{ width: '100%', padding: '14px 14px 14px 48px', borderRadius: '12px', border: '1px solid var(--gray-200)', background: 'var(--background)', outline: 'none' }}
+                                            style={{ width: '100%', padding: '14px 48px 14px 48px', borderRadius: '12px', border: '1px solid var(--gray-200)', background: 'var(--background)', outline: 'none' }}
                                         />
+                                        <span className="material-symbols-outlined" onClick={() => setShowNewPass(!showNewPass)} style={{ position: "absolute", right: "16px", top: "50%", transform: "translateY(-50%)", cursor: "pointer", color: "var(--gray-400)", userSelect: "none", zIndex: 10 }}>
+                                            {showNewPass ? "visibility" : "visibility_off"}
+                                        </span>
                                     </div>
                                 </div>
                                 
                                 <div style={{ display: 'grid', gap: '10px' }}>
                                     <label style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gray-500)', letterSpacing: '1px' }}>XÁC NHẬN MẬT KHẨU MỚI</label>
                                     <div style={{ position: 'relative' }}>
-                                        <span className="material-symbols-outlined" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--primary)' }}>fact_check</span>
-                                        <input 
-                                            type="password" 
+                                        <span className="material-symbols-outlined" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--primary)', pointerEvents: 'none' }}>fact_check</span>
+                                        <input data-ai-id="input-thongtincanhannhanvien-hgyd" 
+                                            type={showConfirmPass ? "text" : "password"} 
                                             required 
                                             value={passwords.confirmPass}
                                             onChange={e => setPasswords({...passwords, confirmPass: e.target.value})}
                                             placeholder="Nhập lại mật khẩu mới"
-                                            style={{ width: '100%', padding: '14px 14px 14px 48px', borderRadius: '12px', border: '1px solid var(--gray-200)', background: 'var(--background)', outline: 'none' }}
+                                            style={{ width: '100%', padding: '14px 48px 14px 48px', borderRadius: '12px', border: '1px solid var(--gray-200)', background: 'var(--background)', outline: 'none' }}
                                         />
+                                        <span className="material-symbols-outlined" onClick={() => setShowConfirmPass(!showConfirmPass)} style={{ position: "absolute", right: "16px", top: "50%", transform: "translateY(-50%)", cursor: "pointer", color: "var(--gray-400)", userSelect: "none", zIndex: 10 }}>
+                                            {showConfirmPass ? "visibility" : "visibility_off"}
+                                        </span>
                                     </div>
                                 </div>
                                 
                                 <div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: '8px' }}>
-                                    <button 
+                                    <button data-ai-id="button-thongtincanhannhanvien-3flh" 
                                         type="submit" 
                                         disabled={isChangingPass}
                                         className="btn btn-primary btn-pill hover-lift" 
@@ -439,7 +451,7 @@ const ThongTinCaNhanNhanVien: React.FC = () => {
                                 Vùng Nguy Hiểm
                             </h4>
                             <p style={{ fontSize: '0.9rem', color: 'var(--ink)', fontWeight: 600, lineHeight: '1.6', marginBottom: '20px' }}>Hành động này sẽ vô hiệu hóa tài khoản của bạn vĩnh viễn và không thể hoàn tác.</p>
-                            <button className="btn btn-pill hover-lift" style={{ background: '#ef4444', color: 'white', padding: '12px 24px', fontWeight: 800 }} onClick={() => setShowDeleteModal(true)}>
+                            <button data-ai-id="button-thongtincanhannhanvien-66if" className="btn btn-pill hover-lift" style={{ background: '#ef4444', color: 'white', padding: '12px 24px', fontWeight: 800 }} onClick={() => setShowDeleteModal(true)}>
                                 Yêu Cầu Xóa Tài Khoản
                             </button>
                         </div>
@@ -459,7 +471,7 @@ const ThongTinCaNhanNhanVien: React.FC = () => {
                     </p>
                 </div>
                 <div style={{ display: 'grid', gap: '12px' }}>
-                    <button
+                    <button data-ai-id="button-thongtincanhannhanvien-2qks"
                         className="btn btn-pill"
                         style={{ background: '#ef4444', color: 'white', width: '100%', padding: '14px', fontWeight: 800 }}
                         onClick={handleDeleteAccount}
@@ -467,7 +479,7 @@ const ThongTinCaNhanNhanVien: React.FC = () => {
                     >
                         {isDeleting ? "Đang xử lý..." : "Xác nhận xóa vĩnh viễn"}
                     </button>
-                    <button
+                    <button data-ai-id="button-thongtincanhannhanvien-r2p8"
                         className="btn btn-pill"
                         style={{ background: 'var(--gray-100)', color: 'var(--ink)', width: '100%', padding: '14px', fontWeight: 800 }}
                         onClick={() => setShowDeleteModal(false)}

@@ -192,13 +192,13 @@ const Footer: React.FC<{ isSimple?: boolean }> = ({ isSimple }) => {
                             </p>
                             {/* Newsletter Input */}
                             <div style={{ position: 'relative', maxWidth: '420px', marginBottom: '32px' }}>
-                                <input
+                                <input data-ai-id="input-footer-xw4d"
                                     type="email"
                                     placeholder="Email của bạn..."
                                     id="newsletter-email"
                                     style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', padding: '16px 24px', borderRadius: '50px', color: 'white', outline: 'none' }}
                                 />
-                                <button
+                                <button data-ai-id="button-footer-onwp"
                                     onClick={async () => {
                                         const email = (document.getElementById('newsletter-email') as HTMLInputElement).value;
                                         if (!email || !email.includes('@')) {

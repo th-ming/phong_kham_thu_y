@@ -9,10 +9,9 @@ import java.time.LocalDateTime;
 @Data
 public class DonThuoc {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id_don_thuoc;
+    private String id_don_thuoc;
 
-    private String id_benh_an;
+    private String id_ho_so_benh_an;
     private LocalDateTime ngay_ke_don;
     private String id_bac_si;
     private String ghi_chu;

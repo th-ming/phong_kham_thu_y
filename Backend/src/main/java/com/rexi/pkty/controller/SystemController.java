@@ -13,11 +13,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Logger;
 
 @RestController
 @RequestMapping("/api/system")
 @CrossOrigin(origins = "*")
 public class SystemController {
+
+    private static final Logger logger = Logger.getLogger(SystemController.class.getName());
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -55,7 +58,14 @@ public class SystemController {
     public ResponseEntity<?> saveCauHinh(@RequestBody Map<String, String> payload) {
         try {
             for (Map.Entry<String, String> entry : payload.entrySet()) {
-                jdbcTemplate.update("UPDATE CauHinhHeThong SET gia_tri = ? WHERE ten_cau_hinh = ?", entry.getValue(), entry.getKey());
+                int rowsUpdated = jdbcTemplate.update("UPDATE CauHinhHeThong SET gia_tri = ? WHERE ten_cau_hinh = ?", entry.getValue(), entry.getKey());
+                if (rowsUpdated == 0) {
+                    try {
+                        jdbcTemplate.update("INSERT INTO CauHinhHeThong (ten_cau_hinh, gia_tri) VALUES (?, ?)", entry.getKey(), entry.getValue());
+                    } catch (Exception ex) {
+                        logger.warning("Không thể insert cấu hình " + entry.getKey() + ": " + ex.getMessage());
+                    }
+                }
             }
             auditLogService.logAction("UPDATE", "CauHinhHeThong", "Cập nhật cấu hình hệ thống");
             return ResponseEntity.ok(Map.of("message", "Cập nhật thành công"));
@@ -164,11 +174,36 @@ public class SystemController {
         }
     }
 
+    @GetMapping("/backups/download/{filename}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<org.springframework.core.io.Resource> downloadBackup(@PathVariable String filename) {
+        try {
+            // Bảo mật: Chặn Path Traversal
+            if (filename.contains("..") || filename.contains("/") || filename.contains("\\")) {
+                return ResponseEntity.status(400).build();
+            }
+            String backupDirPath = System.getProperty("user.dir") + java.io.File.separator + "backups";
+            java.io.File file = new java.io.File(backupDirPath, filename);
+            if (!file.exists()) {
+                return ResponseEntity.status(404).build();
+            }
+
+            org.springframework.core.io.Resource resource = new org.springframework.core.io.UrlResource(file.toURI());
+            return ResponseEntity.ok()
+                    .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getName() + "\"")
+                    .contentType(org.springframework.http.MediaType.APPLICATION_OCTET_STREAM)
+                    .contentLength(file.length())
+                    .body(resource);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).build();
+        }
+    }
+
     @GetMapping("/newsletter/count")
     public ResponseEntity<?> getNewsletterCount() {
         try {
-            // Lấy từ bảng KhachHang (những người có email)
-            Integer count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM KhachHang WHERE email IS NOT NULL AND email <> ''", Integer.class);
+            // Lấy từ bảng KhachHang (những người có email và đồng ý nhận email marketing, chưa bị xóa)
+            Integer count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM KhachHang WHERE email IS NOT NULL AND email <> '' AND (nhan_email = 1 OR nhan_email IS NULL) AND da_xoa = 0", Integer.class);
             return ResponseEntity.ok(Map.of("count", count != null ? count : 0));
         } catch (Exception e) {
             return ResponseEntity.ok(Map.of("count", 0));
@@ -183,7 +218,8 @@ public class SystemController {
         if (subject == null || content == null) return ResponseEntity.badRequest().body(Map.of("message", "Thiếu tiêu đề hoặc nội dung"));
 
         try {
-            List<String> emails = jdbcTemplate.queryForList("SELECT email FROM KhachHang WHERE email IS NOT NULL AND email <> ''", String.class);
+            // Chỉ lấy email của khách hàng đồng ý nhận email marketing và chưa bị xóa
+            List<String> emails = jdbcTemplate.queryForList("SELECT email FROM KhachHang WHERE email IS NOT NULL AND email <> '' AND (nhan_email = 1 OR nhan_email IS NULL) AND da_xoa = 0", String.class);
             for (String email : emails) {
                 emailService.sendMassEmail(email, subject, content);
             }
@@ -193,15 +229,70 @@ public class SystemController {
             return ResponseEntity.status(500).body(Map.of("message", "Lỗi hệ thống: " + e.getMessage()));
         }
     }
+    
+    @PostMapping("/test-email")
+    @PreAuthorize("hasAnyRole('ADMIN', 'QUAN_LY')")
+    public ResponseEntity<?> testEmailConnection(@RequestBody Map<String, String> payload) {
+        String host = payload.get("mail_host");
+        String portStr = payload.get("mail_port");
+        String username = payload.get("mail_username");
+        String password = payload.get("mail_password");
+        String toEmail = payload.get("toEmail");
+
+        if (host == null || host.trim().isEmpty() ||
+            username == null || username.trim().isEmpty() ||
+            password == null || password.trim().isEmpty() ||
+            toEmail == null || toEmail.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Vui lòng nhập đầy đủ thông tin SMTP và Email nhận test."));
+        }
+
+        try {
+            org.springframework.mail.javamail.JavaMailSenderImpl impl = new org.springframework.mail.javamail.JavaMailSenderImpl();
+            impl.setHost(host.trim());
+            impl.setPort(Integer.parseInt(portStr != null ? portStr.trim() : "587"));
+            impl.setUsername(username.trim());
+            impl.setPassword(password.trim());
+
+            java.util.Properties props = impl.getJavaMailProperties();
+            props.put("mail.smtp.auth", "true");
+            props.put("mail.smtp.starttls.enable", "true");
+            props.put("mail.transport.protocol", "smtp");
+            props.put("mail.smtp.timeout", "5000");
+            props.put("mail.smtp.connectiontimeout", "5000");
+
+            org.springframework.mail.SimpleMailMessage message = new org.springframework.mail.SimpleMailMessage();
+            message.setTo(toEmail.trim());
+            message.setSubject("🐾 Thử nghiệm Kết nối SMTP - Rexi Vet");
+            message.setText("Xin chào sếp,\n\nĐây là email kiểm tra kết nối hệ thống SMTP động từ trang quản trị Rexi Vet.\n\nKết nối SMTP đã HOẠT ĐỘNG HOÀN HẢO! 🎉🐾");
+            
+            impl.send(message);
+            return ResponseEntity.ok(Map.of("success", true, "message", "Gửi email thử nghiệm thành công! Vui lòng kiểm tra hộp thư đến của " + toEmail));
+        } catch (Exception e) {
+            logger.severe("Lỗi kết nối test SMTP: " + e.getMessage());
+            return ResponseEntity.status(500).body(Map.of("success", false, "message", "Kết nối thất bại: " + e.getMessage()));
+        }
+    }
 
     @PostMapping("/send-otp")
     public ResponseEntity<?> sendOtp(@RequestBody Map<String, String> payload) {
         String email = payload.get("email");
         if (email == null || email.isEmpty()) return ResponseEntity.badRequest().body("Email trống");
+        
+        // Kiểm tra xem Email có tồn tại trong hệ thống (nhân viên hoặc khách hàng) không
+        String sql = "SELECT COUNT(*) FROM (SELECT email FROM KhachHang WHERE email = ? UNION SELECT email FROM NhanVien WHERE email = ?) AS tbl";
+        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, email, email);
+        if (count == null || count == 0) {
+            return ResponseEntity.status(400).body(Map.of("message", "Email không tồn tại trên hệ thống!", "success", false));
+        }
+
         String otp = String.format("%06d", (int) (Math.random() * 1000000));
         otpStorage.put(email, otp);
         otpExpiry.put(email, System.currentTimeMillis() + OTP_TTL_MS);
-        System.out.println("OTP cho " + email + " là: " + otp);
+        
+        // Thực tế gửi email OTP cho người dùng
+        emailService.sendOtpEmail(email, otp);
+        
+        logger.info("OTP cho " + email + " đã được sinh và gửi.");
         return ResponseEntity.ok(Map.of("message", "Đã gửi OTP", "success", true));
     }
 

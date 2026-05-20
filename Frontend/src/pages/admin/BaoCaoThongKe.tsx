@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+﻿import React, { useState, useEffect, useMemo } from "react";
 import axiosInstance from "@services/axios";
 import { toast } from "@components/Toast";
 import { Modal } from "@components/CommonUI";
@@ -30,10 +30,6 @@ ChartJS.register(
   LineElement,
   Filler
 );
-
-const formatTienTrieu = (tien: number) => {
-  return (tien / 1000000).toFixed(1);
-};
 
 const BaoCaoThongKe: React.FC = () => {
   const [revenueData, setRevenueData] = useState<any[]>([]);
@@ -88,6 +84,18 @@ const BaoCaoThongKe: React.FC = () => {
   const totalRevenue = useMemo(() => revenueData.reduce((sum, d) => sum + (d.TongDoanhThu || d.doanh_thu || d.tong_doanh_thu || 0), 0), [revenueData]);
   const totalApps = useMemo(() => doctorStats.reduce((sum, d) => sum + (d.SoHoSo || d.so_ho_so || 0), 0), [doctorStats]);
 
+  // Bác sĩ có hiệu suất cao nhất (nhiều ca hoàn thành nhất)
+  const topDoctor = useMemo(() => {
+    if (doctorStats.length === 0) return null;
+    return [...doctorStats].sort((a, b) => (b.SoHoSo || b.so_ho_so || 0) - (a.SoHoSo || a.so_ho_so || 0))[0];
+  }, [doctorStats]);
+
+  // Dịch vụ phổ biến mang lại doanh thu cao nhất
+  const topService = useMemo(() => {
+    if (serviceStats.length === 0) return null;
+    return [...serviceStats].sort((a, b) => (b.DoanhThu || b.doanh_thu || b.tong_doanh_thu || 0) - (a.DoanhThu || a.doanh_thu || a.tong_doanh_thu || 0))[0];
+  }, [serviceStats]);
+
   // Lọc và sắp xếp để đảm bảo biểu đồ chỉ lấy đúng 7 ngày gần nhất theo thứ tự tăng dần
   const sortedDailyData = useMemo(() => {
     return [...dailyRevenueData].sort((a, b) => {
@@ -133,7 +141,7 @@ const BaoCaoThongKe: React.FC = () => {
     },
     scales: {
       y: { beginAtZero: true, display: false },
-      x: { grid: { display: false }, ticks: { font: { weight: 'bold' }, color: '#94a3b8' } }
+      x: { grid: { display: false }, ticks: { font: { weight: 'bold' as const }, color: '#94a3b8' } }
     }
   };
 
@@ -142,8 +150,14 @@ const BaoCaoThongKe: React.FC = () => {
     datasets: [{
       label: 'Doanh thu (Triệu)',
       data: revenueData.map(d => (d.TongDoanhThu || d.doanh_thu || d.tong_doanh_thu || 0) / 1000000),
-      backgroundColor: 'rgba(15, 157, 138, 0.8)',
-      borderRadius: 8,
+      backgroundColor: (context: any) => {
+        const ctx = context.chart.ctx;
+        const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+        gradient.addColorStop(0, 'rgba(15, 157, 138, 1)');
+        gradient.addColorStop(1, 'rgba(20, 184, 166, 0.2)');
+        return gradient;
+      },
+      borderRadius: 12,
       hoverBackgroundColor: '#0f9d8a',
     }]
   };
@@ -167,7 +181,7 @@ const BaoCaoThongKe: React.FC = () => {
     datasets: [{
       label: 'Số lượng',
       data: petStats.map(s => s.SoLuong || s.so_luong || 0),
-      backgroundColor: ['#0ea5e9', '#f59e0b', '#8b5cf6', '#10b981', '#ec4899'],
+      backgroundColor: ['#0ea5e9', '#f59e0b', '#14b8a6', '#10b981', '#ec4899'],
       borderWidth: 0,
       hoverOffset: 15
     }]
@@ -198,7 +212,10 @@ const BaoCaoThongKe: React.FC = () => {
         return [];
       };
       const allPets = extractArray(res.data);
-      const filtered = allPets.filter(p => (p.loai || p.LoaiThuCung || 'Khác') === type);
+      const filtered = allPets.filter(p => {
+        const petType = p.loai || p.LoaiThuCung || 'Khác';
+        return petType.toLowerCase() === type.toLowerCase();
+      });
       setPetDetails(filtered);
     } catch (err) {
       toast.error("Không thể tải danh sách thú cưng!");
@@ -209,19 +226,58 @@ const BaoCaoThongKe: React.FC = () => {
 
   const handleExportExcel = () => {
     try {
-      let csvContent = "\uFEFF";
-      csvContent += "BÁO CÁO DOANH THU\nMonth,Year,Revenue (VNĐ)\n";
-      revenueData.forEach(item => csvContent += `${item.Thang},${item.Nam},${item.TongDoanhThu}\n`);
+      // BẢO MẬT: Chống lỗi CSV Injection bằng cách khử các ký tự nhạy cảm ở đầu dữ liệu
+      const sanitizeCSV = (val: string) => {
+        if (/^[=+\-@]/.test(val)) return `'${val}`;
+        return val;
+      };
+
+      let csvContent = "\uFEFF"; // BOM tiếng Việt
+      
+      // 1. TỔNG QUAN PHÒNG KHÁM
+      csvContent += "=== BÁO CÁO TỔNG HỢP VẬN HÀNH PHÒNG KHÁM THÚ Y REXI ===\n";
+      csvContent += `Tổng doanh thu tích lũy,${totalRevenue} đ\n`;
+      csvContent += `Tổng số ca khám điều trị,${totalApps} ca\n`;
+      csvContent += `Bác sĩ tích cực nhất,${topDoctor ? (topDoctor.TenBacSi || topDoctor.ten_bac_si) : "Chưa có"}\n`;
+      csvContent += `Dịch vụ đắt khách nhất,${topService ? (topService.TenDichVu || topService.ten_dich_vu) : "Chưa có"}\n\n`;
+
+      // 2. DOANH THU 12 THÁNG
+      csvContent += "1. XU HƯỚNG DOANH THU CÁC THÁNG\nTháng,Năm,Doanh thu (VNĐ)\n";
+      revenueData.forEach(item => {
+        csvContent += `${item.Thang || item.thang},${item.Nam || item.nam},${item.TongDoanhThu || item.doanh_thu || 0}\n`;
+      });
+      csvContent += "\n";
+
+      // 3. HIỆU SUẤT CA KHÁM BÁC SĨ
+      csvContent += "2. XẾP HẠNG HIỆU SUẤT BÁC SĨ ĐIỀU TRỊ\nBác sĩ,Số ca khám hoàn thành\n";
+      doctorStats.forEach(item => {
+        csvContent += `"${sanitizeCSV(item.TenBacSi || item.ten_bac_si)}",${item.SoHoSo || item.so_ho_so || 0}\n`;
+      });
+      csvContent += "\n";
+
+      // 4. PHÂN BỔ LOÀI THÚ CƯNG
+      csvContent += "3. PHÂN BỔ CÁC LOÀI THÚ CƯNG ĐĂNG KÝ\nLoài thú cưng,Số lượng bé\n";
+      petStats.forEach(item => {
+        csvContent += `"${sanitizeCSV(item.LoaiThuCung || item.loai_thu_cung || 'Khác')}",${item.SoLuong || item.so_luong || 0}\n`;
+      });
+      csvContent += "\n";
+
+      // 5. DOANH THU THEO CÁC MỤC DỊCH VỤ
+      csvContent += "4. DOANH THU CHI TIẾT THEO MỤC DỊCH VỤ Y TẾ\nTên dịch vụ y tế,Doanh thu (VNĐ)\n";
+      serviceStats.forEach(item => {
+        csvContent += `"${sanitizeCSV(item.TenDichVu || item.ten_dich_vu)}",${item.DoanhThu || item.doanh_thu || item.tong_doanh_thu || 0}\n`;
+      });
+
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
-      link.setAttribute("download", `Rexi_Report_${new Date().toISOString().split('T')[0]}.csv`);
+      link.setAttribute("download", `Rexi_BaoCaoTongHop_${new Date().toISOString().split('T')[0]}.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      toast.success("Đã xuất báo cáo thành công!");
+      toast.success("Đã xuất báo cáo tổng hợp phòng khám thành công!");
     } catch (err) {
-      toast.error("Lỗi khi xuất file!");
+      toast.error("Lỗi khi xuất file báo cáo!");
     }
   };
 
@@ -237,23 +293,72 @@ const BaoCaoThongKe: React.FC = () => {
           .no-print { display: none !important; }
           .glass-card { box-shadow: none !important; border: 1px solid #e2e8f0 !important; break-inside: avoid; }
         }
+        .hover-lift { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: default; }
+        .hover-lift:hover { transform: translateY(-6px); box-shadow: 0 20px 40px rgba(15, 157, 138, 0.08) !important; }
       `}</style>
 
+      {/* TIÊU ĐỀ TRANG */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
         <div>
           <h1 style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--ink)', letterSpacing: '-1px' }}>Phân tích & Báo cáo</h1>
           <p style={{ color: 'var(--gray-500)', fontWeight: 600 }}>Cái nhìn chuyên sâu về hiệu suất và tăng trưởng của phòng khám.</p>
         </div>
         <div style={{ display: 'flex', gap: '12px' }} className="no-print">
-          <button className="btn btn-pill" onClick={() => window.print()} style={{ background: 'var(--primary-light)', color: 'var(--primary)' }}>
+          <button data-ai-id="button-baocaothongke-31pb" className="btn btn-pill" onClick={() => window.print()} style={{ background: 'var(--primary-light)', color: 'var(--primary)' }}>
             <span className="material-symbols-outlined">print</span> In Báo Cáo
           </button>
-          <button className="btn btn-primary btn-pill" onClick={handleExportExcel}>
+          <button data-ai-id="button-baocaothongke-wnuj" className="btn btn-primary btn-pill" onClick={handleExportExcel}>
             <span className="material-symbols-outlined">download</span> Xuất Excel
           </button>
         </div>
       </div>
 
+      {/* HÀNG THẺ KPI KÍNH MỜ CAO CẤP */}
+      <div className="stagger-1 no-print" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '24px', marginBottom: '40px' }}>
+        <div className="glass-card hover-lift" style={{ padding: '24px', borderRadius: '24px', borderLeft: '4px solid var(--primary)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gray-500)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>TỔNG DOANH THU</span>
+            <span className="material-symbols-outlined" style={{ color: 'var(--primary)', fontSize: '24px' }}>payments</span>
+          </div>
+          <h3 style={{ fontSize: '1.8rem', fontWeight: 950, color: 'var(--ink)', margin: 0 }}>{totalRevenue.toLocaleString('vi-VN')} đ</h3>
+        </div>
+
+        <div className="glass-card hover-lift" style={{ padding: '24px', borderRadius: '24px', borderLeft: '4px solid #3b82f6', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gray-500)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>TỔNG CA ĐIỀU TRỊ</span>
+            <span className="material-symbols-outlined" style={{ color: '#3b82f6', fontSize: '24px' }}>medical_services</span>
+          </div>
+          <h3 style={{ fontSize: '1.8rem', fontWeight: 950, color: 'var(--ink)', margin: 0 }}>{totalApps} ca</h3>
+        </div>
+
+        <div className="glass-card hover-lift" style={{ padding: '24px', borderRadius: '24px', borderLeft: '4px solid #f59e0b', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gray-500)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>BÁC SĨ TÍCH CỰC</span>
+            <span className="material-symbols-outlined" style={{ color: '#f59e0b', fontSize: '24px' }}>workspace_premium</span>
+          </div>
+          <h3 style={{ fontSize: '1.3rem', fontWeight: 900, color: 'var(--ink)', margin: 0, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+            {topDoctor ? (topDoctor.TenBacSi || topDoctor.ten_bac_si) : 'Chưa có'}
+          </h3>
+          <span style={{ fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 700 }}>
+            {topDoctor ? `${topDoctor.SoHoSo || topDoctor.so_ho_so || 0} ca hoàn thành` : '—'}
+          </span>
+        </div>
+
+        <div className="glass-card hover-lift" style={{ padding: '24px', borderRadius: '24px', borderLeft: '4px solid #ec4899', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gray-500)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>DỊCH VỤ HÀNG ĐẦU</span>
+            <span className="material-symbols-outlined" style={{ color: '#ec4899', fontSize: '24px' }}>local_activity</span>
+          </div>
+          <h3 style={{ fontSize: '1.3rem', fontWeight: 900, color: 'var(--ink)', margin: 0, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+            {topService ? (topService.TenDichVu || topService.ten_dich_vu) : 'Chưa có'}
+          </h3>
+          <span style={{ fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 700 }}>
+            {topService ? `${((topService.DoanhThu || topService.doanh_thu || 0) / 1000000).toFixed(1)} Tr VNĐ` : '—'}
+          </span>
+        </div>
+      </div>
+
+      {/* KHU VỰC BIỂU ĐỒ CHÍNH */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '32px', marginBottom: '40px' }}>
         {/* Doanh thu 12 tháng */}
         <div className="glass-card" style={{ padding: '32px', borderRadius: 'var(--radius-xl)' }}>
@@ -271,20 +376,53 @@ const BaoCaoThongKe: React.FC = () => {
           </div>
         </div>
 
-        {/* Tỷ lệ thú cưng */}
+        {/* Tỷ lệ thú cưng (Kèm Legend Pills tương tác Drill-down) */}
         <div className="glass-card" style={{ padding: '32px', borderRadius: 'var(--radius-xl)' }}>
-          <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '24px', color: 'var(--ink)' }}>Tỷ lệ thú cưng</h3>
-          <div style={{ display: 'flex', alignItems: 'center', height: '300px' }}>
-            <div style={{ flex: 1, height: '100%' }}>
+          <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '20px', color: 'var(--ink)' }}>Tỷ lệ loài thú cưng</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', height: '300px' }}>
+            <div style={{ flex: 1, height: '180px', minHeight: '180px' }}>
               <Doughnut
                 data={petChartData}
                 options={{
                   ...commonOptions,
                   scales: undefined,
                   cutout: '70%',
-                  plugins: { ...commonOptions.plugins, legend: { display: true, position: 'right', labels: { usePointStyle: true, font: { weight: 'bold' } } } }
+                  plugins: { ...commonOptions.plugins, legend: { display: true, position: 'right', labels: { usePointStyle: true, font: { weight: 'bold' as const } } } }
                 }}
               />
+            </div>
+            
+            {/* Interactive Legend pills drill-down */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center', overflowY: 'auto' }} className="no-print">
+              {petStats.map((s, idx) => {
+                const type = s.LoaiThuCung || s.loai_thu_cung || 'Khác';
+                const count = s.SoLuong || s.so_luong || 0;
+                const colors = ['#0ea5e9', '#f59e0b', '#14b8a6', '#10b981', '#ec4899'];
+                const color = colors[idx % colors.length];
+                return (
+                  <button data-ai-id="button-baocaothongke-tlo0"
+                    key={idx}
+                    onClick={() => handlePetTypeClick(type)}
+                    className="btn btn-pill hover-lift"
+                    title={`Bấm để xem danh sách bé thuộc loài ${type}`}
+                    style={{
+                      background: 'var(--surface)',
+                      border: `1.5px solid ${color}`,
+                      color: 'var(--ink)',
+                      fontSize: '0.75rem',
+                      fontWeight: 800,
+                      padding: '6px 12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      boxShadow: 'var(--shadow-sm)'
+                    }}
+                  >
+                    <span className="material-symbols-outlined" style={{ fontSize: '14px', color: color }}>pets</span>
+                    {type.toUpperCase()}: <span style={{ color: color, fontWeight: 900 }}>{count} bé</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -320,8 +458,8 @@ const BaoCaoThongKe: React.FC = () => {
                 ...commonOptions,
                 indexAxis: 'y' as const,
                 scales: {
-                  x: { beginAtZero: true, grid: { display: false }, ticks: { font: { weight: 'bold' } } },
-                  y: { grid: { display: false }, ticks: { font: { weight: 'bold' } } }
+                  x: { beginAtZero: true, grid: { display: false }, ticks: { font: { weight: 'bold' as const } } },
+                  y: { grid: { display: false }, ticks: { font: { weight: 'bold' as const } } }
                 }
               }}
               data={serviceChartData}
@@ -330,6 +468,7 @@ const BaoCaoThongKe: React.FC = () => {
         </div>
       </div>
 
+      {/* BANNER TỔNG DOANH THU THỰC TẾ DƯỚI CÙNG */}
       <div className="glass-card" style={{ padding: '40px', borderRadius: 'var(--radius-xl)', background: 'var(--secondary-gradient)', color: 'white', display: 'flex', alignItems: 'center', gap: '32px' }}>
         <div style={{ width: '80px', height: '80px', background: 'rgba(255,255,255,0.1)', borderRadius: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <span className="material-symbols-outlined" style={{ fontSize: '40px' }}>trending_up</span>
@@ -340,23 +479,28 @@ const BaoCaoThongKe: React.FC = () => {
         </div>
       </div>
 
-      {/* MODAL DANH SÁCH THÚ CƯNG */}
-      <Modal isOpen={!!selectedPetType} onClose={() => setSelectedPetType(null)} title={`Danh sách ${selectedPetType}`} maxWidth="600px">
+      {/* MODAL DANH SÁCH THÚ CƯNG TRƯỢT DRILLED-DOWN */}
+      <Modal isOpen={!!selectedPetType} onClose={() => setSelectedPetType(null)} title={`Danh sách bé thuộc nhóm: ${selectedPetType}`} maxWidth="600px">
         {loadingDetails ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}><div className="dot-pulse"></div></div>
         ) : (
           <div style={{ display: 'grid', gap: '16px', maxHeight: '60vh', overflowY: 'auto', padding: '8px' }}>
-            {petDetails.map((pet, idx) => (
-              <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '20px', background: 'var(--surface)', borderRadius: '20px', border: '1px solid var(--gray-200)' }}>
-                <div style={{ width: '48px', height: '48px', background: 'var(--primary-light)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
-                  <span className="material-symbols-outlined">pets</span>
+            {petDetails.length === 0 ? (
+              <p style={{ textAlign: 'center', color: 'var(--gray-400)', padding: '20px', fontWeight: 700 }}>Không tìm thấy thú cưng nào thuộc loài này.</p>
+            ) : (
+              petDetails.map((pet, idx) => (
+                <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '20px', background: 'var(--surface)', borderRadius: '20px', border: '1px solid var(--gray-200)' }}>
+                  <div style={{ width: '48px', height: '48px', background: 'var(--primary-light)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
+                    <span className="material-symbols-outlined">pets</span>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 900, color: 'var(--ink)' }}>{pet.ten_thu_cung || pet.TenThuCung}</div>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--gray-500)', fontWeight: 600 }}>{pet.giong || pet.Giong || 'Chưa rõ giống'} • {pet.trong_luong || pet.TrongLuong || '—'} kg</div>
+                  </div>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 800, background: 'var(--gray-100)', color: 'var(--gray-500)', padding: '4px 10px', borderRadius: '8px' }}>{pet.gioi_tinh || '—'}</span>
                 </div>
-                <div>
-                  <div style={{ fontWeight: 900, color: 'var(--ink)' }}>{pet.ten_thu_cung || pet.TenThuCung}</div>
-                  <div style={{ fontSize: '0.85rem', color: 'var(--gray-500)', fontWeight: 600 }}>{pet.giong || pet.Giong} • {pet.trong_luong || pet.TrongLuong}kg</div>
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         )}
       </Modal>

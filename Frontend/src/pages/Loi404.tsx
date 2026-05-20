@@ -117,11 +117,11 @@ const Loi404: React.FC = () => {
                         </p>
 
                         <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
-                            <button className="btn-404-primary" onClick={() => navigate(-1)}>
+                            <button data-ai-id="button-loi404-zek7" className="btn-404-primary" onClick={() => navigate(-1)}>
                                 <span className="material-symbols-outlined">arrow_back</span>
                                 Quay lại trang trước
                             </button>
-                            <button className="btn-404-secondary" onClick={() => navigate('/')}>
+                            <button data-ai-id="button-loi404-imjf" className="btn-404-secondary" onClick={() => navigate('/')}>
                                 <span className="material-symbols-outlined">home</span>
                                 Về Trang chủ
                             </button>

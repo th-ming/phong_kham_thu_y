@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+﻿import React, { useEffect, useState, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axiosInstance from "@services/axios";
 import { Modal } from "@components/CommonUI";
@@ -106,7 +106,7 @@ const DashboardKhachHang: React.FC = () => {
     { label: "BÉ CƯNG", value: pets.length, icon: "pets", color: "var(--primary)" },
     { label: "LỊCH HẸN", value: upcoming.length, icon: "calendar_month", color: "#3b82f6" },
     { label: "ĐÃ KHÁM", value: hoanTat, icon: "verified", color: "#f59e0b" },
-    { label: "CHI TIÊU", value: formatTienVND(totalSpent), icon: "payments", color: "#8b5cf6" },
+    { label: "CHI TIÊU", value: formatTienVND(totalSpent), icon: "payments", color: "#14b8a6" },
   ], [pets, upcoming, hoanTat, totalSpent]);
 
   if (loading) return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}><div className="dot-pulse"></div></div>;
@@ -213,7 +213,7 @@ const DashboardKhachHang: React.FC = () => {
               <h3 style={{ fontSize: '1.5rem', fontWeight: 900, margin: 0 }}>Mẹo chăm sóc</h3>
             </div>
             <p style={{ opacity: 0.95, fontSize: '1.1rem', lineHeight: '1.8', fontWeight: 600, minHeight: '100px', margin: 0 }}>{randomTip.content}</p>
-            <button className="btn btn-pill" onClick={() => setIsTipsModalOpen(true)} style={{ background: 'rgba(255,255,255,0.15)', color: 'white', marginTop: '32px', width: '100%', border: '1.5px solid rgba(255,255,255,0.3)', fontWeight: 800, backdropFilter: 'blur(10px)' }}>Xem tất cả mẹo</button>
+            <button data-ai-id="button-dashboardkhachhang-tppw" className="btn btn-pill" onClick={() => setIsTipsModalOpen(true)} style={{ background: 'rgba(255,255,255,0.15)', color: 'white', marginTop: '32px', width: '100%', border: '1.5px solid rgba(255,255,255,0.3)', fontWeight: 800, backdropFilter: 'blur(10px)' }}>Xem tất cả mẹo</button>
           </div>
 
           <div className="glass-card hover-lift" style={{ padding: '32px', borderRadius: 'var(--radius-xl)', display: 'flex', alignItems: 'center', gap: '20px' }}>

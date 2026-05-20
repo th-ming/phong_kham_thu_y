@@ -6,6 +6,7 @@ const QuanLyDonThuoc: React.FC = () => {
   const [donThuocs, setDonThuocs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewingDT, setViewingDT] = useState<any>(null);
+  const [searchDonThuoc, setSearchDonThuoc] = useState("");
 
   useEffect(() => {
     axiosInstance.get("/api/ho-so-benh-an/don-thuoc")
@@ -18,6 +19,18 @@ const QuanLyDonThuoc: React.FC = () => {
         setLoading(false);
       });
   }, []);
+
+  const filteredDonThuocs = React.useMemo(() => {
+    if (!searchDonThuoc.trim()) return donThuocs;
+    const s = searchDonThuoc.toLowerCase();
+    return donThuocs.filter(dt => 
+      String(dt.id_don_thuoc || "").toLowerCase().includes(s) ||
+      (dt.ten_thu_cung || "").toLowerCase().includes(s) ||
+      (dt.ten_thuoc || "").toLowerCase().includes(s) ||
+      (dt.cach_dung || "").toLowerCase().includes(s) ||
+      (dt.ghi_chu || "").toLowerCase().includes(s)
+    );
+  }, [donThuocs, searchDonThuoc]);
 
   const handlePrint = () => {
     window.print();
@@ -39,9 +52,21 @@ const QuanLyDonThuoc: React.FC = () => {
         }
       `}</style>
 
-      <div style={{ marginBottom: '40px' }}>
-        <h1 style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--ink)', letterSpacing: '-1px' }}>Quản lý Đơn thuốc</h1>
-        <p style={{ color: 'var(--gray-500)', fontWeight: 600 }}>Theo dõi lịch sử cấp phát thuốc và hướng dẫn điều trị tại nhà.</p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', flexWrap: 'wrap', gap: '20px' }}>
+        <div>
+          <h1 style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--ink)', letterSpacing: '-1px' }}>Quản lý Đơn thuốc</h1>
+          <p style={{ color: 'var(--gray-500)', fontWeight: 600 }}>Theo dõi lịch sử cấp phát thuốc và hướng dẫn điều trị tại nhà.</p>
+        </div>
+        <div className="glass-card" style={{ display: 'flex', alignItems: 'center', padding: '0 16px', borderRadius: '16px', border: '1px solid var(--gray-200)', background: 'var(--surface)', width: '300px' }}>
+          <span className="material-symbols-outlined" style={{ color: 'var(--gray-400)', marginRight: '8px' }}>search</span>
+          <input data-ai-id="input-quanlydonthuoc-3bsc"
+            type="text"
+            placeholder="Tìm mã đơn, thú cưng, thuốc..."
+            value={searchDonThuoc}
+            onChange={(e) => setSearchDonThuoc(e.target.value)}
+            style={{ border: 'none', outline: 'none', background: 'transparent', padding: '10px 0', fontWeight: 600, width: '100%', color: 'var(--ink)', fontSize: '0.9rem' }}
+          />
+        </div>
       </div>
 
       <div className="glass-card" style={{ borderRadius: 'var(--radius-xl)', overflow: 'hidden' }}>
@@ -57,7 +82,7 @@ const QuanLyDonThuoc: React.FC = () => {
             </tr>
           </thead>
           <tbody>
-            {donThuocs.map((dt) => (
+            {filteredDonThuocs.map((dt) => (
               <tr key={dt.id_don_thuoc} style={{ borderBottom: '1px solid var(--gray-50)', transition: 'all 0.2s' }}>
                 <td style={{ padding: '20px', fontWeight: 800, color: 'var(--gray-400)' }}>#DT-{dt.id_don_thuoc}</td>
                 <td style={{ padding: '20px' }}>
@@ -78,7 +103,7 @@ const QuanLyDonThuoc: React.FC = () => {
                   <div style={{ fontSize: '0.75rem', color: 'var(--gray-400)', fontStyle: 'italic' }}>{dt.ghi_chu}</div>
                 </td>
                 <td style={{ padding: '20px', textAlign: 'center' }}>
-                  <button className="btn" onClick={() => setViewingDT(dt)} style={{ padding: '8px', background: 'var(--gray-50)', color: 'var(--ink)' }}>
+                  <button data-ai-id="button-quanlydonthuoc-4ivd" className="btn" onClick={() => setViewingDT(dt)} style={{ padding: '8px', background: 'var(--gray-50)', color: 'var(--ink)' }}>
                     <span className="material-symbols-outlined">description</span>
                   </button>
                 </td>
@@ -146,8 +171,8 @@ const QuanLyDonThuoc: React.FC = () => {
              </div>
 
              <div style={{ marginTop: '40px', display: 'flex', gap: '12px', justifyContent: 'flex-end' }} className="no-print">
-               <button className="btn btn-pill" onClick={() => setViewingDT(null)} style={{ background: 'var(--gray-100)' }}>Đóng</button>
-               <button className="btn btn-primary btn-pill" onClick={handlePrint}>
+               <button data-ai-id="button-quanlydonthuoc-oxr6" className="btn btn-pill" onClick={() => setViewingDT(null)} style={{ background: 'var(--gray-100)' }}>Đóng</button>
+               <button data-ai-id="button-quanlydonthuoc-ojcy" className="btn btn-primary btn-pill" onClick={handlePrint}>
                   <span className="material-symbols-outlined">print</span>
                   In đơn thuốc
                </button>

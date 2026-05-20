@@ -1,9 +1,6 @@
 import React from "react";
-import { useTheme } from "../../contexts/ThemeContextV2";
 
 const PhanTienIch: React.FC = () => {
-    const { theme } = useTheme();
-    const isDark = theme === 'dark';
     const features = [
         { icon: "emergency_home", title: "Cấp cứu 24/7", desc: "Luôn sẵn sàng" },
         { icon: "lab_research", title: "Xét nghiệm tại chỗ", desc: "Kết quả trong 30 phút" },

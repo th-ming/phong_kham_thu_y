@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import org.springframework.http.ResponseEntity;
 import java.time.LocalTime;
@@ -14,14 +15,20 @@ import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.logging.Logger;
 
 @RestController
 @RequestMapping("/api/lich-hen")
 @CrossOrigin(origins = "${cors.allowed-origins:http://localhost:3000,http://localhost:5173}")
 public class LichHenController {
 
+    private static final Logger logger = Logger.getLogger(LichHenController.class.getName());
+
     @Autowired
     private LichHenRepository lichHenRepository;
+
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -162,6 +169,38 @@ public class LichHenController {
                         + " phút) với một khách hàng khác. Vui lòng chọn khung giờ rộng hơn nhé!");
             }
 
+            // 4. Kiểm tra trùng lịch khám của chính bé cưng này
+            boolean isPetConflict = false;
+            if (lichHen.getId_thu_cung() != null && !lichHen.getId_thu_cung().isEmpty()) {
+                List<Map<String, Object>> existingPetApps = jdbcTemplate.queryForList(
+                        "SELECT lh.gio_kham, dv.thoi_luong_phut FROM LichHen lh LEFT JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu WHERE lh.id_thu_cung = ? AND lh.ngay_kham = ? AND lh.trang_thai NOT IN (N'Đã hủy', 'DA_HUY', 'da_huy', 'TU_CHOI', N'Hết hạn')",
+                        lichHen.getId_thu_cung(), lichHen.getNgay_kham());
+
+                for (Map<String, Object> app : existingPetApps) {
+                    Object existingGioObj = app.get("gio_kham");
+                    LocalTime existingStart;
+                    if (existingGioObj instanceof java.sql.Time) {
+                        existingStart = ((java.sql.Time) existingGioObj).toLocalTime();
+                    } else {
+                        String existingGioStr = existingGioObj.toString();
+                        String[] eParts = existingGioStr.split(":");
+                        existingStart = LocalTime.of(Integer.parseInt(eParts[0]), Integer.parseInt(eParts[1]));
+                    }
+
+                    Integer duration = app.get("thoi_luong_phut") != null ? ((Number) app.get("thoi_luong_phut")).intValue() : 30;
+                    LocalTime existingEnd = existingStart.plusMinutes(duration);
+
+                    if (newStart.isBefore(existingEnd) && newEnd.isAfter(existingStart)) {
+                        isPetConflict = true;
+                        break;
+                    }
+                }
+            }
+
+            if (isPetConflict) {
+                throw new RuntimeException("Sếp ơi! Bé cưng này đã có một lịch hẹn khám khác trùng vào khung giờ này rồi ạ. Vui lòng chọn khung giờ khác nhé! 🐾");
+            }
+
             if (lichHen.getLy_do() != null)
                 lichHen.setLy_do(org.springframework.web.util.HtmlUtils.htmlEscape(lichHen.getLy_do()));
             if (lichHen.getGhi_chu_noi_bo() != null)
@@ -175,7 +214,8 @@ public class LichHenController {
                     (auth.getAuthorities().toString().toUpperCase().contains("ADMIN") ||
                             auth.getAuthorities().toString().toUpperCase().contains("QUAN_LY") ||
                             auth.getAuthorities().toString().toUpperCase().contains("BAC_SI") ||
-                            auth.getAuthorities().toString().toUpperCase().contains("STAFF"));
+                            auth.getAuthorities().toString().toUpperCase().contains("STAFF") ||
+                            auth.getAuthorities().toString().toUpperCase().contains("TIEP_TAN"));
 
             if (!isInternal || lichHen.getTrang_thai() == null || lichHen.getTrang_thai().isEmpty()) {
                 lichHen.setTrang_thai("CHO_XAC_NHAN");
@@ -210,12 +250,12 @@ public class LichHenController {
                                 saved.getNgay_kham().toString(), saved.getGio_kham().toString(), tenDichVu);
                     }
                 } catch (Exception e) {
-                    System.err.println("Lỗi gửi email confirmation: " + e.getMessage());
+                    logger.severe("Lỗi gửi email confirmation: " + e.getMessage());
                 }
             }
             return ResponseEntity.ok(saved);
         } catch (Exception e) {
-            return ResponseEntity.status(400).body(Map.of("message", "Đã xảy ra lỗi nghiệp vụ khi tạo lịch hẹn."));
+            return ResponseEntity.status(400).body(Map.of("message", e.getMessage() != null ? e.getMessage() : "Đã xảy ra lỗi nghiệp vụ khi tạo lịch hẹn."));
         }
     }
 
@@ -225,7 +265,7 @@ public class LichHenController {
         if (auth == null || auth.getName().equals("anonymousUser"))
             return false;
         String roles = auth.getAuthorities().toString().toUpperCase();
-        return roles.contains("ADMIN") || roles.contains("QUAN_LY") || roles.contains("BAC_SI") || roles.contains("STAFF") || roles.contains("NHAN_VIEN");
+        return roles.contains("ADMIN") || roles.contains("QUAN_LY") || roles.contains("BAC_SI") || roles.contains("STAFF") || roles.contains("NHAN_VIEN") || roles.contains("TIEP_TAN");
     }
 
     @PostMapping("/dat-lich-nhanh")
@@ -296,18 +336,61 @@ public class LichHenController {
     }
 
     @GetMapping
-    public ResponseEntity<?> getAll() {
+    public ResponseEntity<?> getAll(
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size,
+            @RequestParam(required = false) String status) {
         if (!isInternalUser()) {
             return ResponseEntity.status(403).body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền truy cập danh sách lịch hẹn tổng quát!"));
         }
-        return ResponseEntity.ok(jdbcTemplate.queryForList(
-                "SELECT lh.*, kh.ten_khach_hang, kh.sdt, tc.ten_thu_cung, nv.ho_ten as ten_bac_si, dv.ten_dich_vu " +
-                        "FROM LichHen lh " +
-                        "LEFT JOIN KhachHang kh ON lh.id_khach_hang = kh.id_khach_hang " +
-                        "LEFT JOIN ThuCung tc ON lh.id_thu_cung = tc.id_thu_cung " +
-                        "LEFT JOIN NhanVien nv ON lh.id_bac_si = nv.id_nhan_vien " +
-                        "LEFT JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu " +
-                        "ORDER BY lh.ngay_kham DESC, lh.gio_kham DESC"));
+
+        // Xây dựng WHERE clause linh hoạt theo filter status
+        StringBuilder where = new StringBuilder("WHERE 1=1");
+        java.util.List<Object> params = new java.util.ArrayList<>();
+        if (status != null && !status.isEmpty()) {
+            where.append(" AND lh.trang_thai = ?");
+            params.add(status.toUpperCase());
+        }
+
+        String baseSelect = "SELECT lh.*, kh.ten_khach_hang, kh.sdt, tc.ten_thu_cung, nv.ho_ten as ten_bac_si, dv.ten_dich_vu " +
+                "FROM LichHen lh " +
+                "LEFT JOIN KhachHang kh ON lh.id_khach_hang = kh.id_khach_hang " +
+                "LEFT JOIN ThuCung tc ON lh.id_thu_cung = tc.id_thu_cung " +
+                "LEFT JOIN NhanVien nv ON lh.id_bac_si = nv.id_nhan_vien " +
+                "LEFT JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu ";
+
+        // Nếu có params page/size → trả về Page object để frontend phân trang
+        if (page != null && size != null && size > 0) {
+            try {
+                Integer total = jdbcTemplate.queryForObject(
+                        "SELECT COUNT(*) FROM LichHen lh " + where, Integer.class, params.toArray());
+                int totalPages = (int) Math.ceil((double) (total != null ? total : 0) / size);
+
+                java.util.List<Object> dataParams = new java.util.ArrayList<>(params);
+                dataParams.add(page * size);
+                dataParams.add(size);
+
+                String sql = baseSelect + where +
+                        " ORDER BY lh.ngay_kham DESC, lh.gio_kham DESC " +
+                        "OFFSET CAST(? AS INT) ROWS FETCH NEXT CAST(? AS INT) ROWS ONLY";
+
+                java.util.List<Map<String, Object>> content = jdbcTemplate.queryForList(sql, dataParams.toArray());
+                return ResponseEntity.ok(Map.of(
+                        "content", content,
+                        "totalPages", totalPages,
+                        "totalElements", total != null ? total : 0,
+                        "currentPage", page
+                ));
+            } catch (Exception e) {
+                logger.severe("Lỗi phân trang lịch hẹn: " + e.getMessage());
+                return ResponseEntity.status(500).body(Map.of("message", "Lỗi hệ thống khi phân trang."));
+            }
+        }
+
+        // Fallback: Không có page/size → trả toàn bộ (backward-compatible, giới hạn 500)
+        String sql = baseSelect + where + " ORDER BY lh.ngay_kham DESC, lh.gio_kham DESC";
+        java.util.List<Map<String, Object>> all = jdbcTemplate.queryForList(sql, params.toArray());
+        return ResponseEntity.ok(all);
     }
 
     @GetMapping("/hom-nay")
@@ -432,7 +515,7 @@ public class LichHenController {
             ));
         } catch (Exception e) {
             e.printStackTrace();
-            System.err.println("Lỗi lấy lịch hẹn cho khách " + idKhachHang + ": " + e.getMessage());
+            logger.severe("Lỗi lấy lịch hẹn cho khách " + idKhachHang + ": " + e.getMessage());
             return ResponseEntity.status(500).body(Map.of(
                     "message", "Đã xảy ra lỗi hệ thống khi truy vấn lịch hẹn.",
                     "content", new java.util.ArrayList<>(),
@@ -510,6 +593,17 @@ public class LichHenController {
                     }
                 }
             }
+
+            // BẢO MẬT: Kiểm tra xóa mù (Anti-orphan protection)
+            int hsCount = 0;
+            try {
+                hsCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM HoSoBenhAn WHERE id_lich_hen = ?", Integer.class, id);
+            } catch (Exception e) {}
+            
+            if (hsCount > 0) {
+                return ResponseEntity.status(409).body(Map.of("message", "Không thể xóa lịch hẹn vì đã có Hồ sơ Bệnh án liên kết. Vui lòng chuyển trạng thái thành 'Đã hủy' thay vì xóa!"));
+            }
+
             lichHenRepository.deleteById(id);
 
             if (!isCustomer) {

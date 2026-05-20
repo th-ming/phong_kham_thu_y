@@ -21,22 +21,145 @@ const DatLichHen: React.FC = () => {
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // Trạng thái của lái tự động (Autopilot) cho Sếp/Khách hàng
+  const [autopilotStep, setAutopilotStep] = useState(0);
+  const [autopilotMsg, setAutopilotMsg] = useState("");
+  const [isAutopilotRunning, setIsAutopilotRunning] = useState(false);
+
   // CHUYỂN GET USER RA NGOÀI CÙNG COMPONENT ĐỂ KHÔNG VI PHẠM LUẬT HOOK
   const user = getUserProfile();
 
   useEffect(() => {
-    if (user) {
-      const idKhachHang = user?.id_khach_hang || user?.id;
-      if (idKhachHang) {
-        axiosInstance.get(`/api/thu-cung/khach/${idKhachHang}`, { params: { page: 0, size: 999 } }).then(res => {
-          const data = res.data;
-          setPets(Array.isArray(data) ? data : (data.content || data.data || []));
-        }).catch(e => console.error(e));
+    const isAutopilot = searchParams.get("autopilot") === "true";
+    if (!isAutopilot || isAutopilotRunning || pets.length === 0 || services.length === 0) return;
+
+    setIsAutopilotRunning(true);
+    setAutopilotStep(1);
+    setAutopilotMsg("🤖 Rexi Autopilot: Đang khởi động tiến trình đặt lịch trực quan...");
+
+    // Bước 1: Tự động chọn thú cưng sau 1.5 giây
+    setTimeout(() => {
+      const petParam = searchParams.get("id_thu_cung");
+      if (petParam) {
+        setIdThuCung(petParam);
+      } else if (pets.length > 0) {
+        setIdThuCung(String(pets[0].id_thu_cung));
       }
-    }
-    axiosInstance.get("/api/bac-si").then(res => setDoctors(res.data)).catch(e => console.error(e));
-    axiosInstance.get("/api/dich-vu/active").then(res => setServices(res.data)).catch(e => console.error(e));
+      setAutopilotStep(2);
+      setAutopilotMsg("🤖 [1/5] Thú cưng: Đã chọn em bé nhà Sen!");
+
+      // Bước 2: Tự động chọn dịch vụ sau 1.2 giây
+      setTimeout(() => {
+        const dvParam = searchParams.get("id_dich_vu");
+        if (dvParam) {
+          setIdDichVu(dvParam);
+        } else if (services.length > 0) {
+          setIdDichVu(String(services[0].id_dich_vu));
+        }
+        setAutopilotStep(3);
+        setAutopilotMsg("🤖 [2/5] Dịch vụ: Đã tự động kích hoạt thẻ dịch vụ!");
+
+        // Bước 3: Tự động chọn ngày khám (Ngày mai) sau 1.2 giây
+        setTimeout(() => {
+          const tomorrow = new Date();
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          const tomorrowStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
+          setDate(tomorrowStr);
+          setAutopilotStep(4);
+          setAutopilotMsg("🤖 [3/5] Ngày khám: Đã lên lịch hẹn ngày mai (" + tomorrowStr.split('-').reverse().join('/') + ")!");
+
+          // Bước 4: Đợi tải giờ rảnh từ server và tự động chọn khung giờ rảnh đầu tiên
+          let checkSlotsCount = 0;
+          const checkSlotsInterval = setInterval(() => {
+            checkSlotsCount++;
+            if (availableSlots && availableSlots.length > 0) {
+              clearInterval(checkSlotsInterval);
+              const targetTime = availableSlots[0];
+              setTime(targetTime);
+              setAutopilotStep(5);
+              setAutopilotMsg("🤖 [4/5] Khung giờ: Đã chọn khung giờ trống sớm nhất lúc " + targetTime.substring(0, 5) + "!");
+
+              // Bước 5: Giả lập hiệu ứng gõ phím triệu chứng vào textarea
+              setTimeout(() => {
+                const noteText = "Lịch khám sức khỏe định kỳ cho bé cưng, tạo tự động trực quan qua Rexi AI Autopilot.";
+                let charIndex = 0;
+                let typedText = "";
+                const typeInterval = setInterval(() => {
+                  if (charIndex < noteText.length) {
+                    typedText += noteText[charIndex];
+                    setNote(typedText);
+                    charIndex++;
+                  } else {
+                    clearInterval(typeInterval);
+                    setAutopilotStep(6);
+                    setAutopilotMsg("🤖 [5/5] Ghi chú triệu chứng: Đã điền xong! Đang nhấp chuột AI vào nút XÁC NHẬN...");
+
+                    // Bước 6: Highlight và tự động gửi đi sau 1.5 giây
+                    setTimeout(() => {
+                      toast.success("Autopilot hoàn tất! Đang gửi thông tin đặt lịch...");
+                      
+                      // Gọi hàm submit form
+                      const fakeEvent = { preventDefault: () => {} } as React.FormEvent;
+                      handleBooking(fakeEvent);
+                    }, 1500);
+                  }
+                }, 45);
+              }, 1200);
+            } else if (checkSlotsCount > 15) {
+              // Timeout sau 3 giây nếu không lấy được slot
+              clearInterval(checkSlotsInterval);
+              toast.error("Không thể tải giờ rảnh tự động. Sen vui lòng chọn giờ thủ công nhé!");
+              setIsAutopilotRunning(false);
+            }
+          }, 200);
+
+        }, 1200);
+      }, 1200);
+    }, 1500);
+
+  }, [pets, services, availableSlots]);
+
+  useEffect(() => {
+    const fetchBaseData = async () => {
+      const currentUser = getUserProfile();
+      if (currentUser) {
+        const idKhachHang = currentUser.id_khach_hang || currentUser.id_tai_khoan || currentUser.id;
+        if (idKhachHang) {
+          axiosInstance.get(`/api/thu-cung/khach/${idKhachHang}`, { params: { page: 0, size: 999 } }).then(res => {
+            const data = res.data;
+            setPets(Array.isArray(data) ? data : (data.content || data.data || []));
+          }).catch(e => console.error(e));
+        }
+      }
+      axiosInstance.get("/api/dich-vu/active").then(res => setServices(res.data)).catch(e => console.error(e));
+    };
+
+    fetchBaseData();
+
+    // Smart Polling: Cập nhật ngầm mỗi 10 giây để nhận giá/dịch vụ/thú cưng mới
+    const interval = setInterval(() => {
+      fetchBaseData();
+    }, 10000);
+
+    return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (!date) {
+      setDoctors([]);
+      setIdBacSi("");
+      return;
+    }
+    const url = `/api/bac-si?ngay=${date}`;
+    axiosInstance.get(url)
+      .then(res => {
+        setDoctors(res.data);
+        if (idBacSi && !res.data.some((d: any) => String(d.id_nhan_vien) === idBacSi)) {
+          setIdBacSi("");
+        }
+      })
+      .catch(e => console.error("Lỗi lấy danh sách bác sĩ theo ngày:", e));
+  }, [date]);
 
   useEffect(() => {
     if (date && idDichVu) {
@@ -170,7 +293,7 @@ const DatLichHen: React.FC = () => {
                 <Link to="/khach-hang/quan-ly-thu-cung" className="btn btn-primary btn-pill" style={{ padding: '10px 24px', textDecoration: 'none', fontSize: '0.9rem' }}>+ Thêm bé ngay</Link>
               </div>
             ) : (
-              <select required value={idThuCung} onChange={e => setIdThuCung(e.target.value)}>
+              <select data-ai-id="select-datlichhen-688p" required value={idThuCung} onChange={e => setIdThuCung(e.target.value)}>
                 <option value="">-- Danh sách bé nhà mình --</option>
                 {pets.map(p => <option key={p.id_thu_cung} value={p.id_thu_cung}>{p.ten_thu_cung} ({p.loai})</option>)}
               </select>
@@ -181,7 +304,7 @@ const DatLichHen: React.FC = () => {
             <label>2. CHỌN DỊCH VỤ <span style={{ color: '#ff4d4f' }}>*</span></label>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
               {services.map(s => (
-                <div key={s.id_dich_vu} className={`service-card-select ${idDichVu === String(s.id_dich_vu) ? 'selected' : ''}`} onClick={() => setIdDichVu(String(s.id_dich_vu))}>
+                <div key={s.id_dich_vu} data-ai-id={`div-datlichhen-service-${s.id_dich_vu}`} className={`service-card-select ${idDichVu === String(s.id_dich_vu) ? 'selected' : ''}`} onClick={() => setIdDichVu(String(s.id_dich_vu))}>
                   <div style={{ fontWeight: 800, color: idDichVu === String(s.id_dich_vu) ? 'var(--primary)' : 'var(--ink)', fontSize: '1.05rem', marginBottom: '4px' }}>{s.ten_dich_vu}</div>
                   <div style={{ fontSize: '0.85rem', color: 'var(--gray-400)', fontWeight: 700 }}>{s.gia > 0 ? `Từ ${formatTienVND(s.gia)}` : 'Theo thực tế'}</div>
                 </div>
@@ -192,12 +315,12 @@ const DatLichHen: React.FC = () => {
           <div style={{ display: 'grid', gap: '12px' }}>
             <label>3. CHỌN BÁC SĨ & NGÀY KHÁM</label>
             <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '16px' }}>
-              <select value={idBacSi} onChange={e => setIdBacSi(e.target.value)}>
-                <option value="">-- Bác sĩ khám (Tùy chọn) --</option>
+              <select data-ai-id="select-datlichhen-33v9" value={idBacSi} onChange={e => setIdBacSi(e.target.value)} disabled={!date}>
+                <option value="">{date ? "-- Bác sĩ khám (Tùy chọn) --" : "-- Vui lòng chọn ngày khám trước --"}</option>
                 {doctors.map(d => <option key={d.id_nhan_vien} value={d.id_nhan_vien}>{d.ho_ten} ({d.chuyen_mon})</option>)}
               </select>
               <div style={{ display: 'grid', gap: '8px' }}>
-                <input required type="date" value={date} onChange={e => setDate(e.target.value)} min={new Date().toISOString().split("T")[0]} />
+                <input data-ai-id="input-datlichhen-mc0h" required type="date" value={date} onChange={e => setDate(e.target.value)} min={new Date().toISOString().split("T")[0]} />
               </div>
             </div>
           </div>
@@ -206,7 +329,7 @@ const DatLichHen: React.FC = () => {
             <label style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gray-400)', letterSpacing: '1px' }}>4. CHỌN KHUNG GIỜ <span style={{ color: '#ff4d4f' }}>*</span></label>
             {!date || !idDichVu ? (
               <div style={{ padding: '24px', background: 'var(--gray-50)', borderRadius: '20px', border: '1px dashed var(--gray-200)', color: 'var(--gray-400)', textAlign: 'center', fontWeight: 600 }}>
-                Vui lòng chọn Dịch vụ và Ngày để xem giờ rảnh.
+                Vui lòng chọn Dịch vụ and Ngày để xem giờ rảnh.
               </div>
             ) : loadingSlots ? (
               <div style={{ display: 'flex', justifyContent: 'center', padding: '20px' }}><div className="dot-pulse"></div></div>
@@ -214,7 +337,7 @@ const DatLichHen: React.FC = () => {
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
                 {availableSlots.map(t => {
                   return (
-                    <button
+                    <button data-ai-id="button-datlichhen-rvj4"
                       key={t}
                       type="button"
                       onClick={() => setTime(t)}
@@ -244,10 +367,10 @@ const DatLichHen: React.FC = () => {
 
           <div style={{ display: 'grid', gap: '12px' }}>
             <label style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gray-400)' }}>5. TRIỆU CHỨNG / GHI CHÚ</label>
-            <textarea className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left', minHeight: '100px', padding: '16px', lineHeight: '1.6', borderRadius: '16px', border: '1px solid var(--gray-200)', outline: 'none' }} placeholder="Mô tả tình trạng bé hoặc các yêu cầu đặc biệt..." value={note} onChange={e => setNote(e.target.value)} />
+            <textarea data-ai-id="textarea-datlichhen-note" className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left', minHeight: '100px', padding: '16px', lineHeight: '1.6', borderRadius: '16px', border: '1px solid var(--gray-200)', outline: 'none' }} placeholder="Mô tả tình trạng bé hoặc các yêu cầu đặc biệt..." value={note} onChange={e => setNote(e.target.value)} />
           </div>
 
-          <button type="submit" className="btn btn-primary btn-pill" disabled={loading} style={{ padding: '16px', fontSize: '1.1rem' }}>
+          <button data-ai-id="button-datlichhen-66iq" type="submit" className="btn btn-primary btn-pill" disabled={loading} style={{ padding: '16px', fontSize: '1.1rem' }}>
             {loading ? (
               <>
                 <span className="material-symbols-outlined icon-spin">autorenew</span>
@@ -277,7 +400,7 @@ const DatLichHen: React.FC = () => {
                   { label: 'Thú cưng', value: idThuCung ? pets.find(p => String(p.id_thu_cung) === idThuCung)?.ten_thu_cung : 'Chưa chọn', icon: 'pets', color: '#f59e0b' },
                   { label: 'Dịch vụ', value: dv?.ten_dich_vu || 'Chưa chọn', icon: 'medical_services', color: '#10b981' },
                   { label: 'Bác sĩ', value: idBacSi ? doctors.find(d => String(d.id_nhan_vien) === idBacSi)?.ho_ten : 'Bác sĩ bất kỳ', icon: 'stethoscope', color: '#3b82f6' },
-                  { label: 'Thời gian', value: date ? `${date.split('-').reverse().join('/')} ${time ? '• ' + time.substring(0, 5) : ''}` : 'Chưa chọn ngày', icon: 'schedule', color: '#8b5cf6' }
+                  { label: 'Thời gian', value: date ? `${date.split('-').reverse().join('/')} ${time ? '• ' + time.substring(0, 5) : ''}` : 'Chưa chọn ngày', icon: 'schedule', color: '#14b8a6' }
                 ].map((item, idx) => (
                   <div key={idx} style={{ display: 'flex', gap: '20px', position: 'relative', zIndex: 1 }}>
                     <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--surface)', border: `2px solid ${item.color}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: item.color, boxShadow: 'var(--shadow-sm)', flexShrink: 0 }}>
@@ -308,6 +431,56 @@ const DatLichHen: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {isAutopilotRunning && (
+        <div style={{
+          position: 'fixed',
+          bottom: '24px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 9999,
+          background: 'rgba(15, 23, 42, 0.9)',
+          backdropFilter: 'blur(16px)',
+          border: '1px solid rgba(15, 157, 138, 0.5)',
+          borderRadius: '24px',
+          padding: '16px 28px',
+          boxShadow: '0 20px 50px rgba(0,0,0,0.5), inset 0 0 20px rgba(15, 157, 138, 0.2)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '16px',
+          color: 'white',
+          animation: 'slideUpFade 0.5s ease-out',
+          minWidth: '420px'
+        }}>
+          <div style={{
+            width: '12px',
+            height: '12px',
+            borderRadius: '50%',
+            background: '#10b981',
+            boxShadow: '0 0 10px #10b981',
+            animation: 'pulse 1.5s infinite'
+          }}></div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
+            <span style={{ fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', color: 'var(--primary)', letterSpacing: '1px' }}>REXI AI AUTOPILOT ACTIVE (Bước {autopilotStep}/5)</span>
+            <span style={{ fontSize: '0.95rem', fontWeight: 800 }}>{autopilotMsg}</span>
+          </div>
+          <button data-ai-id="button-datlichhen-tr4m" 
+            onClick={() => setIsAutopilotRunning(false)} 
+            style={{
+              background: 'rgba(239, 68, 68, 0.2)',
+              border: 'none',
+              borderRadius: '50px',
+              padding: '6px 12px',
+              color: '#ef4444',
+              fontSize: '0.75rem',
+              fontWeight: 800,
+              cursor: 'pointer'
+            }}
+          >
+            HỦY
+          </button>
+        </div>
+      )}
     </div>
   );
 };

@@ -1,14 +1,22 @@
 import React, { useMemo } from 'react'
-import { Outlet } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
 import Header from '@components/Header'
 import Footer from '@components/Footer'
+import { ChatBot } from '@components/ChatBot'
 
 /**
  * Layout công khai cho trang chủ, đăng nhập, ...
  * Includes: Topbar, Navigation, Emergency Banner, Footer
  */
 const PublicLayout: React.FC = () => {
-  const layoutContent = useMemo(() => (
+  const location = useLocation()
+
+  const shouldShowChatBot = useMemo(() => {
+    const hidePaths = ['/dang-nhap', '/dang-ky', '/error', '/404', '/forgot-password']
+    return !hidePaths.some(p => location.pathname.startsWith(p))
+  }, [location.pathname])
+
+  return (
     <>
       <Header />
       <main style={{ flex: 1 }}>
@@ -21,10 +29,10 @@ const PublicLayout: React.FC = () => {
         </React.Suspense>
       </main>
       <Footer />
+      {shouldShowChatBot && <ChatBot />}
     </>
-  ), [])
-
-  return <>{layoutContent}</>
+  )
 }
 
 export default React.memo(PublicLayout)
+

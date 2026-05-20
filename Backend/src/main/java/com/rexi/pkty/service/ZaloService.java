@@ -9,9 +9,12 @@ import java.net.http.HttpResponse;
 import java.math.BigDecimal;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Map;
+import java.util.logging.Logger;
 
 @Service
 public class ZaloService {
+
+    private static final Logger logger = Logger.getLogger(ZaloService.class.getName());
 
     // ĐIỀN THÔNG TIN TỪ ZALO DEVELOPER CỦA SẾP VÀO ĐÂY
     private final String ZALO_ACCESS_TOKEN = "YOUR_ZALO_ACCESS_TOKEN";
@@ -49,10 +52,10 @@ public class ZaloService {
                         .build();
 
                 HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-                System.out.println("Zalo ZNS Response (" + formattedPhone + "): " + response.body());
+                logger.info("Zalo ZNS Response (" + formattedPhone + "): " + response.body());
 
             } catch (Exception e) {
-                System.err.println("Lỗi gửi tin nhắn Zalo ZNS: " + e.getMessage());
+                logger.severe("Lỗi gửi tin nhắn Zalo ZNS: " + e.getMessage());
             }
         });
     }

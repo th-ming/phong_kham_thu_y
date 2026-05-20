@@ -18,6 +18,7 @@ const GoogleAccountLink: React.FC = () => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -81,8 +82,8 @@ const GoogleAccountLink: React.FC = () => {
       setSuccess(true);
 
       setTimeout(() => {
-        const role = res.data.user.loai_tai_khoan;
-        if (role === 'admin' || role === 'staff' || role === 'bac_si') {
+        const role = (res.data.user.loai_tai_khoan || '').toLowerCase();
+        if (role === 'admin' || role === 'quan_ly' || role === 'bac_si' || role === 'ke_toan' || role === 'tiep_tan' || role === 'y_ta' || role === 'staff') {
           navigate("/quan-ly/dashboard");
         } else {
           navigate("/khach-hang/dashboard");
@@ -144,7 +145,7 @@ const GoogleAccountLink: React.FC = () => {
           </div>
 
           <div style={{ display: "grid", gap: "12px", marginBottom: "20px" }}>
-            <button
+            <button data-ai-id="button-googleaccountlink-6nph"
               onClick={createNewAccount}
               disabled={isLoading || success}
               style={{
@@ -167,7 +168,7 @@ const GoogleAccountLink: React.FC = () => {
             </button>
 
             {!showLinkForm && (
-              <button
+              <button data-ai-id="button-googleaccountlink-ype6"
                 onClick={() => setShowLinkForm(true)}
                 disabled={isLoading || success}
                 style={{
@@ -195,7 +196,7 @@ const GoogleAccountLink: React.FC = () => {
             <form onSubmit={handleLinkExisting} style={{ animation: "slideDown 0.3s ease" }}>
               <div style={{ marginBottom: "16px" }}>
                 <label style={{ display: "block", marginBottom: "8px", fontWeight: 700, fontSize: "0.9rem" }}>👤 Tên đăng nhập</label>
-                <input
+                <input data-ai-id="input-googleaccountlink-148d"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder="VD: nguyenvana"
@@ -214,26 +215,31 @@ const GoogleAccountLink: React.FC = () => {
               </div>
               <div style={{ marginBottom: "16px" }}>
                 <label style={{ display: "block", marginBottom: "8px", fontWeight: 700, fontSize: "0.9rem" }}>🔐 Mật khẩu</label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  disabled={isLoading}
-                  style={{
-                    width: "100%",
-                    padding: "12px 14px",
-                    borderRadius: "12px",
-                    border: "1px solid var(--gray-200)",
-                    fontSize: "0.95rem",
-                    boxSizing: "border-box",
-                    opacity: isLoading ? 0.6 : 1,
-                  }}
-                  required
-                />
+                <div style={{ position: "relative" }}>
+                  <input data-ai-id="input-googleaccountlink-82dm"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    disabled={isLoading}
+                    style={{
+                      width: "100%",
+                      padding: "12px 48px 12px 14px",
+                      borderRadius: "12px",
+                      border: "1px solid var(--gray-200)",
+                      fontSize: "0.95rem",
+                      boxSizing: "border-box",
+                      opacity: isLoading ? 0.6 : 1,
+                    }}
+                    required
+                  />
+                  <span className="material-symbols-outlined" onClick={() => setShowPassword(!showPassword)} style={{ position: "absolute", right: "16px", top: "50%", transform: "translateY(-50%)", cursor: "pointer", color: "var(--gray-400)", userSelect: "none", zIndex: 10 }}>
+                    {showPassword ? "visibility" : "visibility_off"}
+                  </span>
+                </div>
               </div>
               {error && <div style={{ marginBottom: "14px", fontSize: "0.9rem", color: "#c0392b", fontWeight: 600 }}>{error}</div>}
-              <button
+              <button data-ai-id="button-googleaccountlink-psea"
                 type="submit"
                 disabled={isLoading}
                 style={{
@@ -253,7 +259,7 @@ const GoogleAccountLink: React.FC = () => {
               >
                 {isLoading ? "⏳ Đang xác thực..." : "✓ Liên kết tài khoản"}
               </button>
-              <button
+              <button data-ai-id="button-googleaccountlink-rz40"
                 type="button"
                 onClick={() => { setShowLinkForm(false); setError(null); }}
                 style={{

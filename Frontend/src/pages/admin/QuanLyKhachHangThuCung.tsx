@@ -6,11 +6,19 @@ import { toast } from "@components/Toast";
 const QuanLyKhachHangThuCung: React.FC = () => {
   const [thuCung, setThuCung] = useState<any[]>([]);
   const [khachHang, setKhachHang] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [isInitialLoading, setIsInitialLoading] = useState(true); // Tránh giật màn hình khi gõ phím
+  const [scrollTop, setScrollTop] = useState(0);
+
+  const ROW_HEIGHT = 72; // Chiều cao cố định mỗi dòng khách hàng
+  const VISIBLE_HEIGHT = 432; // Hiển thị 6 dòng cùng lúc cùng thanh cuộn mượt mà
   const [showAddKhModal, setShowAddKhModal] = useState(false);
   const [showAddPetModal, setShowAddPetModal] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [editingPetId, setEditingPetId] = useState<number | null>(null);
+  
+  const [searchKhachHang, setSearchKhachHang] = useState("");
+  const [searchThuCungInput, setSearchThuCungInput] = useState(""); // Lưu giá trị ô gõ phím thực tế
+  const [searchThuCung, setSearchThuCung] = useState(""); // Lưu giá trị sau khi đã Debounce 300ms
 
   // State hỗ trợ Phân trang Server-side
   const [totalServerPages, setTotalServerPages] = useState(1);
@@ -25,11 +33,30 @@ const QuanLyKhachHangThuCung: React.FC = () => {
     ten_thu_cung: "", loai: "Chó", giong: "", gioi_tinh: "Đực",
     mau_sac: "", trong_luong: "", ngay_sinh: "", id_khach_hang: ""
   });
+
+  // Hàm chuẩn hóa loại bỏ dấu Tiếng Việt phục vụ tìm kiếm thông minh không dấu / có dấu
+  const removeAccents = (str: string) => {
+    return str
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/đ/g, "d")
+      .replace(/Đ/g, "D");
+  };
+
+  const filteredKhachHang = React.useMemo(() => {
+    const cleanSearch = removeAccents(searchKhachHang.toLowerCase());
+    return khachHang.filter((kh) => {
+      const name = removeAccents((kh.ten_khach_hang || "").toLowerCase());
+      const phone = (kh.sdt || "").toLowerCase();
+      const email = (kh.email || "").toLowerCase();
+      return name.includes(cleanSearch) || phone.includes(cleanSearch) || email.includes(cleanSearch);
+    });
+  }, [khachHang, searchKhachHang]);
+
   const fetchData = () => {
-    setLoading(true);
     Promise.all([
       axiosInstance.get("/api/thu-cung", {
-        params: { page: currentPage - 1, size: ITEMS_PER_PAGE }
+        params: { page: currentPage - 1, size: ITEMS_PER_PAGE, search: searchThuCung }
       }),
       axiosInstance.get("/api/khach-hang")
     ])
@@ -43,17 +70,29 @@ const QuanLyKhachHangThuCung: React.FC = () => {
           setIsServerPaginated(false);
         }
         setKhachHang(khachHangRes.data);
-        setLoading(false);
+        setIsInitialLoading(false);
       })
       .catch(err => {
         console.error("Lỗi tải dữ liệu khách hàng thú cưng:", err);
-        setLoading(false);
+        setIsInitialLoading(false);
       });
   };
 
+  // Debounce tìm kiếm Thú cưng để tránh spam API liên tục khi gõ phím
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setSearchThuCung(searchThuCungInput);
+      setCurrentPage(1);
+    }, 300);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [searchThuCungInput]);
+
   useEffect(() => {
     fetchData();
-  }, [currentPage]);
+  }, [currentPage, searchThuCung]);
 
   const handleAddCustomer = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -207,7 +246,7 @@ const QuanLyKhachHangThuCung: React.FC = () => {
   const totalPages = isServerPaginated ? totalServerPages : Math.ceil(thuCung.length / ITEMS_PER_PAGE);
   const currentRows = isServerPaginated ? thuCung : thuCung.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
-  if (loading) return (
+  if (isInitialLoading) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
       <div className="dot-pulse"></div>
     </div>
@@ -221,86 +260,174 @@ const QuanLyKhachHangThuCung: React.FC = () => {
           <p style={{ color: 'var(--gray-500)', fontWeight: 600 }}>Quản lý thông tin chủ nuôi và các bạn nhỏ trong hệ thống.</p>
         </div>
         <div style={{ display: 'flex', gap: '12px' }}>
-          <button className="btn btn-pill" style={{ background: 'var(--gray-50)', color: 'var(--ink)' }} onClick={() => setShowAddKhModal(true)}>
+          <button data-ai-id="button-quanlykhachhangthucung-pac0" className="btn btn-pill" style={{ background: 'var(--gray-50)', color: 'var(--ink)' }} onClick={() => setShowAddKhModal(true)}>
             <span className="material-symbols-outlined">person_add</span>
             Thêm chủ nuôi
           </button>
-          <button className="btn btn-primary btn-pill" onClick={openAddPetModal}>
+          <button data-ai-id="button-quanlykhachhangthucung-324x" className="btn btn-primary btn-pill" onClick={openAddPetModal}>
             <span className="material-symbols-outlined">pets</span>
             Thêm bé mới
           </button>
         </div>
       </div>
 
-      {/* BẢNG QUẢN LÝ KHÁCH HÀNG */}
+      {/* BẢNG QUẢN LÝ KHÁCH HÀNG (SỬ DỤNG VIRTUAL SCROLLING OPTIMIZATION) */}
       <div className="glass-card" style={{ borderRadius: 'var(--radius-xl)', overflow: 'hidden', marginBottom: '32px' }}>
-        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--gray-100)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 style={{ fontSize: '1.1rem', fontWeight: 900, color: 'var(--ink)', margin: 0 }}>Danh sách khách hàng ({khachHang.length})</h2>
+        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--gray-100)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', background: 'var(--surface)' }}>
+          <h2 style={{ fontSize: '1.1rem', fontWeight: 900, color: 'var(--ink)', margin: 0 }}>
+            Danh sách khách hàng ({filteredKhachHang.length}) <span style={{ fontSize: '0.75rem', background: 'var(--primary-light)', color: 'var(--primary)', padding: '2px 8px', borderRadius: '20px', marginLeft: '6px', fontWeight: 800 }}>Virtual List</span>
+          </h2>
+          <div className="glass-card" style={{ display: 'flex', alignItems: 'center', padding: '0 16px', borderRadius: '16px', border: '1px solid var(--gray-200)', background: 'var(--surface)', width: '300px' }}>
+            <span className="material-symbols-outlined" style={{ color: 'var(--gray-400)', marginRight: '8px' }}>search</span>
+            <input data-ai-id="input-quanlykhachhangthucung-ous7"
+              type="text"
+              placeholder="Tìm khách hàng, số điện thoại..."
+              value={searchKhachHang}
+              onChange={(e) => setSearchKhachHang(e.target.value)}
+              style={{ border: 'none', outline: 'none', background: 'transparent', padding: '10px 0', fontWeight: 600, width: '100%', color: 'var(--ink)', fontSize: '0.9rem' }}
+            />
+          </div>
         </div>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ background: 'var(--gray-50)', textAlign: 'left' }}>
-              <th style={{ padding: '16px 20px', fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800 }}>TÊN KHÁCH HÀNG</th>
-              <th style={{ padding: '16px 20px', fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800 }}>LIÊN HỆ</th>
-              <th style={{ padding: '16px 20px', fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800 }}>TRẠNG THÁI</th>
-              <th style={{ padding: '16px 20px', fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800, textAlign: 'center' }}>THAO TÁC</th>
-            </tr>
-          </thead>
-          <tbody>
-            {khachHang.map((kh: any) => (
-              <tr key={kh.id_khach_hang} style={{ borderBottom: '1px solid var(--gray-50)', transition: 'all 0.2s' }}>
-                <td style={{ padding: '16px 20px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div style={{ width: '36px', height: '36px', background: kh.da_xoa ? 'rgba(239,68,68,0.1)' : 'var(--primary-light)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: kh.da_xoa ? 'var(--danger)' : 'var(--primary)' }}>
-                      <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>{kh.da_xoa ? 'person_off' : 'person'}</span>
+
+        {/* Tiêu đề cột dạng CSS Grid */}
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: '1.5fr 1fr 1fr 1fr', 
+          background: 'var(--gray-50)', 
+          padding: '16px 20px',
+          borderBottom: '1px solid var(--gray-100)',
+          boxSizing: 'border-box'
+        }}>
+          <div style={{ fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800 }}>TÊN KHÁCH HÀNG</div>
+          <div style={{ fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800 }}>LIÊN HỆ</div>
+          <div style={{ fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800 }}>TRẠNG THÁI</div>
+          <div style={{ fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800, textAlign: 'center' }}>THAO TÁC</div>
+        </div>
+
+        {/* Thân danh sách cuộn ảo hiệu năng cao */}
+        <div 
+          onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
+          style={{ 
+            height: `${VISIBLE_HEIGHT}px`, 
+            overflowY: 'auto', 
+            position: 'relative',
+            background: 'var(--surface)'
+          }}
+        >
+          {filteredKhachHang.length === 0 ? (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--gray-400)', fontWeight: 700 }}>
+              Không tìm thấy chủ nuôi nào phù hợp.
+            </div>
+          ) : (
+            <div style={{ height: `${filteredKhachHang.length * ROW_HEIGHT}px`, position: 'relative', width: '100%' }}>
+              {(() => {
+                const startIndex = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - 1);
+                const endIndex = Math.min(filteredKhachHang.length, Math.ceil((scrollTop + VISIBLE_HEIGHT) / ROW_HEIGHT) + 1);
+                const visibleCustomers = filteredKhachHang.slice(startIndex, endIndex);
+
+                return visibleCustomers.map((kh: any, idx: number) => {
+                  const globalIndex = startIndex + idx;
+                  return (
+                    <div 
+                      key={kh.id_khach_hang} 
+                      className="virtual-row-hover"
+                      style={{
+                        position: 'absolute',
+                        top: `${globalIndex * ROW_HEIGHT}px`,
+                        left: 0,
+                        width: '100%',
+                        height: `${ROW_HEIGHT}px`,
+                        display: 'grid',
+                        gridTemplateColumns: '1.5fr 1fr 1fr 1fr',
+                        alignItems: 'center',
+                        borderBottom: '1px solid var(--gray-50)',
+                        padding: '0 20px',
+                        boxSizing: 'border-box'
+                      }}
+                    >
+                      {/* Tên khách hàng */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{ width: '36px', height: '36px', background: kh.da_xoa ? 'rgba(239,68,68,0.1)' : 'var(--primary-light)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: kh.da_xoa ? 'var(--danger)' : 'var(--primary)' }}>
+                          <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>{kh.da_xoa ? 'person_off' : 'person'}</span>
+                        </div>
+                        <span style={{ fontWeight: 800, color: kh.da_xoa ? 'var(--gray-400)' : 'var(--ink)', textDecoration: kh.da_xoa ? 'line-through' : 'none', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {kh.ten_khach_hang}
+                        </span>
+                      </div>
+
+                      {/* Liên hệ */}
+                      <div style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>{kh.sdt || '—'}</div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{kh.email || ''}</div>
+                      </div>
+
+                      {/* Trạng thái */}
+                      <div>
+                        <span style={{
+                          padding: '4px 12px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 900,
+                          background: kh.da_xoa ? 'rgba(239,68,68,0.12)' : 'rgba(34,197,94,0.12)',
+                          color: kh.da_xoa ? 'var(--danger)' : '#16a34a'
+                        }}>
+                          {kh.da_xoa ? 'Đã khóa' : 'Hoạt động'}
+                        </span>
+                      </div>
+
+                      {/* Thao tác */}
+                      <div style={{ textAlign: 'center', display: 'flex', justifyContent: 'center' }}>
+                        {kh.da_xoa ? (
+                          <button data-ai-id="button-quanlykhachhangthucung-6qtm"
+                            className="btn btn-pill"
+                            onClick={() => handleUnlockKhachHang(kh.id_khach_hang)}
+                            style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#16a34a', padding: '6px 14px', fontSize: '0.75rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '4px' }}
+                          >
+                            <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>lock_open</span>
+                            Mở khóa
+                          </button>
+                        ) : (
+                          <button data-ai-id="button-quanlykhachhangthucung-f9k2"
+                            className="btn btn-pill"
+                            onClick={() => handleLockKhachHang(kh.id_khach_hang)}
+                            style={{ background: 'var(--danger-light, rgba(239, 68, 68, 0.15))', color: 'var(--danger)', padding: '6px 14px', fontSize: '0.75rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '4px' }}
+                          >
+                            <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>lock</span>
+                            Khóa
+                          </button>
+                        )}
+                      </div>
                     </div>
-                    <span style={{ fontWeight: 800, color: kh.da_xoa ? 'var(--gray-400)' : 'var(--ink)', textDecoration: kh.da_xoa ? 'line-through' : 'none' }}>{kh.ten_khach_hang}</span>
-                  </div>
-                </td>
-                <td style={{ padding: '16px 20px' }}>
-                  <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>{kh.sdt || '—'}</div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 600 }}>{kh.email || ''}</div>
-                </td>
-                <td style={{ padding: '16px 20px' }}>
-                  <span style={{
-                    padding: '4px 12px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 900,
-                    background: kh.da_xoa ? 'rgba(239,68,68,0.12)' : 'rgba(34,197,94,0.12)',
-                    color: kh.da_xoa ? 'var(--danger)' : '#16a34a'
-                  }}>
-                    {kh.da_xoa ? 'Đã khóa' : 'Hoạt động'}
-                  </span>
-                </td>
-                <td style={{ padding: '16px 20px', textAlign: 'center' }}>
-                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                    {kh.da_xoa ? (
-                      <button
-                        className="btn btn-pill"
-                        onClick={() => handleUnlockKhachHang(kh.id_khach_hang)}
-                        style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#16a34a', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 800 }}
-                      >
-                        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>lock_open</span>
-                        Mở khóa
-                      </button>
-                    ) : (
-                      <button
-                        className="btn btn-pill"
-                        onClick={() => handleLockKhachHang(kh.id_khach_hang)}
-                        style={{ background: 'var(--danger-light, rgba(239, 68, 68, 0.15))', color: 'var(--danger)', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 800 }}
-                      >
-                        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>lock</span>
-                        Khóa
-                      </button>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                  );
+                });
+              })()}
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* STYLES CHO HOVER VIRTUAL LIST DỄ CĂN CHỈNH */}
+      <style>{`
+        .virtual-row-hover {
+          transition: background-color 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .virtual-row-hover:hover {
+          background-color: var(--gray-50) !important;
+        }
+      `}</style>
 
       {/* BẢNG QUẢN LÝ THÚ CƯNG */}
       <div className="glass-card" style={{ borderRadius: 'var(--radius-xl)', overflow: 'hidden' }}>
+        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--gray-100)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', background: 'var(--surface)' }}>
+          <h2 style={{ fontSize: '1.1rem', fontWeight: 900, color: 'var(--ink)', margin: 0 }}>Danh sách thú cưng ({thuCung.length})</h2>
+          <div className="glass-card" style={{ display: 'flex', alignItems: 'center', padding: '0 16px', borderRadius: '16px', border: '1px solid var(--gray-200)', background: 'var(--surface)', width: '300px' }}>
+            <span className="material-symbols-outlined" style={{ color: 'var(--gray-400)', marginRight: '8px' }}>search</span>
+            <input data-ai-id="input-quanlykhachhangthucung-1lnd"
+              type="text"
+              placeholder="Tìm tên bé, loài, giống..."
+              value={searchThuCungInput}
+              onChange={(e) => setSearchThuCungInput(e.target.value)}
+              style={{ border: 'none', outline: 'none', background: 'transparent', padding: '10px 0', fontWeight: 600, width: '100%', color: 'var(--ink)', fontSize: '0.9rem' }}
+            />
+          </div>
+        </div>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ background: 'var(--gray-50)', textAlign: 'left' }}>
@@ -348,10 +475,10 @@ const QuanLyKhachHangThuCung: React.FC = () => {
                 </td>
                 <td style={{ padding: '20px', textAlign: 'center' }}>
                   <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                    <button className="btn" onClick={() => handleEditPetClick(t)} style={{ padding: '8px', background: 'var(--primary-light)', color: 'var(--primary)' }} title="Chỉnh sửa">
+                    <button data-ai-id="button-quanlykhachhangthucung-plw0" className="btn" onClick={() => handleEditPetClick(t)} style={{ padding: '8px', background: 'var(--primary-light)', color: 'var(--primary)' }} title="Chỉnh sửa">
                       <span className="material-symbols-outlined">edit</span>
                     </button>
-                    <button className="btn" onClick={() => handleDeletePet(t.id_thu_cung)} style={{ padding: '8px', background: 'var(--danger-light, rgba(239, 68, 68, 0.15))', color: 'var(--danger)' }} title="Xóa thú cưng">
+                    <button data-ai-id="button-quanlykhachhangthucung-nf2l" className="btn" onClick={() => handleDeletePet(t.id_thu_cung)} style={{ padding: '8px', background: 'var(--danger-light, rgba(239, 68, 68, 0.15))', color: 'var(--danger)' }} title="Xóa thú cưng">
                       <span className="material-symbols-outlined">delete</span>
                     </button>
                   </div>
@@ -365,7 +492,7 @@ const QuanLyKhachHangThuCung: React.FC = () => {
       {/* BỘ NÚT ĐIỀU HƯỚNG PHÂN TRANG */}
       {totalPages > 1 && (
         <div className="stagger-2" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '16px', marginTop: '20px', marginBottom: '20px' }}>
-          <button
+          <button data-ai-id="button-quanlykhachhangthucung-me5f"
             className="btn btn-pill"
             disabled={currentPage === 1}
             onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
@@ -380,7 +507,7 @@ const QuanLyKhachHangThuCung: React.FC = () => {
           <span style={{ fontWeight: 800, color: 'var(--ink)', fontSize: '0.9rem' }}>
             Trang {currentPage} / {totalPages}
           </span>
-          <button
+          <button data-ai-id="button-quanlykhachhangthucung-dom5"
             className="btn btn-pill"
             disabled={currentPage === totalPages}
             onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
@@ -401,19 +528,19 @@ const QuanLyKhachHangThuCung: React.FC = () => {
           <form onSubmit={handleAddCustomer} style={{ display: 'grid', gap: '20px' }}>
             <div style={{ display: 'grid', gap: '8px' }}>
               <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)' }}>TÊN KHÁCH HÀNG</label>
-              <input required className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left', cursor: 'text' }} value={khFormData.ten_khach_hang} onChange={e => setKhFormData({ ...khFormData, ten_khach_hang: e.target.value })} />
+              <input data-ai-id="input-quanlykhachhangthucung-3mat" required className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left', cursor: 'text' }} value={khFormData.ten_khach_hang} onChange={e => setKhFormData({ ...khFormData, ten_khach_hang: e.target.value })} />
             </div>
             <div style={{ display: 'grid', gap: '8px' }}>
               <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)' }}>SỐ ĐIỆN THOẠI</label>
-              <input required className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left', cursor: 'text' }} value={khFormData.sdt} onChange={e => setKhFormData({ ...khFormData, sdt: e.target.value })} />
+              <input data-ai-id="input-quanlykhachhangthucung-3m6n" required className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left', cursor: 'text' }} value={khFormData.sdt} onChange={e => setKhFormData({ ...khFormData, sdt: e.target.value })} />
             </div>
             <div style={{ display: 'grid', gap: '8px' }}>
               <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)' }}>EMAIL (TÙY CHỌN)</label>
-              <input className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left', cursor: 'text' }} value={khFormData.email} onChange={e => setKhFormData({ ...khFormData, email: e.target.value })} />
+              <input data-ai-id="input-quanlykhachhangthucung-j4ng" className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left', cursor: 'text' }} value={khFormData.email} onChange={e => setKhFormData({ ...khFormData, email: e.target.value })} />
             </div>
             <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
-              <button type="submit" disabled={isSaving} className="btn btn-primary btn-pill" style={{ flex: 1 }}>{isSaving ? 'Đang lưu...' : 'Lưu thông tin'}</button>
-              <button type="button" onClick={() => setShowAddKhModal(false)} className="btn btn-pill" style={{ flex: 1, background: 'var(--gray-100)', color: 'var(--ink)' }}>Hủy</button>
+              <button data-ai-id="button-quanlykhachhangthucung-30dl" type="submit" disabled={isSaving} className="btn btn-primary btn-pill" style={{ flex: 1 }}>{isSaving ? 'Đang lưu...' : 'Lưu thông tin'}</button>
+              <button data-ai-id="button-quanlykhachhangthucung-dgrc" type="button" onClick={() => setShowAddKhModal(false)} className="btn btn-pill" style={{ flex: 1, background: 'var(--gray-100)', color: 'var(--ink)' }}>Hủy</button>
             </div>
           </form>
         </div>
@@ -425,7 +552,7 @@ const QuanLyKhachHangThuCung: React.FC = () => {
           <form onSubmit={handleAddPet} style={{ display: 'grid', gap: '16px' }}>
             <div style={{ display: 'grid', gap: '8px' }}>
               <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)' }}>CHỦ SỞ HỮU</label>
-              <select required className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left' }} value={petFormData.id_khach_hang} onChange={e => setPetFormData({ ...petFormData, id_khach_hang: e.target.value })}>
+              <select data-ai-id="select-quanlykhachhangthucung-nqxg" required className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left' }} value={petFormData.id_khach_hang} onChange={e => setPetFormData({ ...petFormData, id_khach_hang: e.target.value })}>
                 <option value="">-- Chọn khách hàng --</option>
                 {khachHang.map(kh => <option key={kh.id_khach_hang} value={kh.id_khach_hang}>{kh.ten_khach_hang} - {kh.sdt}</option>)}
               </select>
@@ -433,11 +560,11 @@ const QuanLyKhachHangThuCung: React.FC = () => {
             <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '12px' }}>
               <div style={{ display: 'grid', gap: '8px' }}>
                 <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)' }}>TÊN BÉ</label>
-                <input required className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left', cursor: 'text' }} value={petFormData.ten_thu_cung} onChange={e => setPetFormData({ ...petFormData, ten_thu_cung: e.target.value })} />
+                <input data-ai-id="input-quanlykhachhangthucung-ub0z" required className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left', cursor: 'text' }} value={petFormData.ten_thu_cung} onChange={e => setPetFormData({ ...petFormData, ten_thu_cung: e.target.value })} />
               </div>
               <div style={{ display: 'grid', gap: '8px' }}>
                 <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)' }}>LOÀI</label>
-                <select className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left' }} value={petFormData.loai} onChange={e => setPetFormData({ ...petFormData, loai: e.target.value })}>
+                <select data-ai-id="select-quanlykhachhangthucung-36r6" className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left' }} value={petFormData.loai} onChange={e => setPetFormData({ ...petFormData, loai: e.target.value })}>
                   <option value="Chó">Chó</option>
                   <option value="Mèo">Mèo</option>
                   <option value="Khác">Khác</option>
@@ -447,17 +574,17 @@ const QuanLyKhachHangThuCung: React.FC = () => {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
               <div style={{ display: 'grid', gap: '8px' }}>
                 <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)' }}>GIỐNG</label>
-                <input className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left', cursor: 'text' }} value={petFormData.giong} onChange={e => setPetFormData({ ...petFormData, giong: e.target.value })} />
+                <input data-ai-id="input-quanlykhachhangthucung-y0af" className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left', cursor: 'text' }} value={petFormData.giong} onChange={e => setPetFormData({ ...petFormData, giong: e.target.value })} />
               </div>
               <div style={{ display: 'grid', gap: '8px' }}>
                 <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)' }}>CÂN NẶNG (KG)</label>
-                <input type="number" step="0.1" className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left', cursor: 'text' }} value={petFormData.trong_luong} onChange={e => setPetFormData({ ...petFormData, trong_luong: e.target.value })} />
+                <input data-ai-id="input-quanlykhachhangthucung-ccuw" type="number" step="0.1" className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left', cursor: 'text' }} value={petFormData.trong_luong} onChange={e => setPetFormData({ ...petFormData, trong_luong: e.target.value })} />
               </div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
               <div style={{ display: 'grid', gap: '8px' }}>
                 <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)' }}>GIỚI TÍNH</label>
-                <select className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left' }} value={petFormData.gioi_tinh} onChange={e => setPetFormData({ ...petFormData, gioi_tinh: e.target.value })}>
+                <select data-ai-id="select-quanlykhachhangthucung-1av9" className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left' }} value={petFormData.gioi_tinh} onChange={e => setPetFormData({ ...petFormData, gioi_tinh: e.target.value })}>
                   <option value="Đực">Đực</option>
                   <option value="Cái">Cái</option>
                   <option value="Không xác định">Không xác định</option>
@@ -465,16 +592,16 @@ const QuanLyKhachHangThuCung: React.FC = () => {
               </div>
               <div style={{ display: 'grid', gap: '8px' }}>
                 <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)' }}>NGÀY SINH</label>
-                <input type="date" className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left', cursor: 'text', padding: '0 12px' }} value={petFormData.ngay_sinh} onChange={e => setPetFormData({ ...petFormData, ngay_sinh: e.target.value })} max={new Date().toISOString().split("T")[0]} />
+                <input data-ai-id="input-quanlykhachhangthucung-guzt" type="date" className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left', cursor: 'text', padding: '0 12px' }} value={petFormData.ngay_sinh} onChange={e => setPetFormData({ ...petFormData, ngay_sinh: e.target.value })} max={new Date().toISOString().split("T")[0]} />
               </div>
               <div style={{ display: 'grid', gap: '8px' }}>
                 <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)' }}>MÀU SẮC</label>
-                <input className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left', cursor: 'text' }} value={petFormData.mau_sac} onChange={e => setPetFormData({ ...petFormData, mau_sac: e.target.value })} />
+                <input data-ai-id="input-quanlykhachhangthucung-h9m1" className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left', cursor: 'text' }} value={petFormData.mau_sac} onChange={e => setPetFormData({ ...petFormData, mau_sac: e.target.value })} />
               </div>
             </div>
             <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
-              <button type="submit" disabled={isSaving} className="btn btn-primary btn-pill" style={{ flex: 1 }}>{isSaving ? 'Đang lưu...' : (editingPetId ? 'Lưu thay đổi' : 'Đăng ký bé')}</button>
-              <button type="button" onClick={() => setShowAddPetModal(false)} className="btn btn-pill" style={{ flex: 1, background: 'var(--gray-100)', color: 'var(--ink)' }}>Hủy</button>
+              <button data-ai-id="button-quanlykhachhangthucung-czfa" type="submit" disabled={isSaving} className="btn btn-primary btn-pill" style={{ flex: 1 }}>{isSaving ? 'Đang lưu...' : (editingPetId ? 'Lưu thay đổi' : 'Đăng ký bé')}</button>
+              <button data-ai-id="button-quanlykhachhangthucung-hkxr" type="button" onClick={() => setShowAddPetModal(false)} className="btn btn-pill" style={{ flex: 1, background: 'var(--gray-100)', color: 'var(--ink)' }}>Hủy</button>
             </div>
           </form>
         </div>

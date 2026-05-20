@@ -10,13 +10,14 @@ import java.time.LocalDateTime;
 @Data
 public class ThanhToan {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id_thanh_toan;
+    private String id_thanh_toan;
 
     private String id_hoa_don;
-    private LocalDateTime ngay_thanh_toan;
     private BigDecimal so_tien;
     private String phuong_thuc;
-    private String trang_thai;
+    private LocalDateTime ngay_tra_tien;
+    private String id_nhan_vien;
+    private String ma_giao_dich_ngan_hang;
+    private String ghi_chu;
 }
 

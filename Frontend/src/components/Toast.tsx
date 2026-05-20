@@ -3,9 +3,9 @@ import { createPortal } from 'react-dom';
 
 // Object tiện ích để gọi toast từ bất kỳ đâu
 export const toast = {
-    success: (message: string) => window.dispatchEvent(new CustomEvent('rexi-toast', { detail: { message, type: 'success' } })),
-    error: (message: string) => window.dispatchEvent(new CustomEvent('rexi-toast', { detail: { message, type: 'error' } })),
-    info: (message: string) => window.dispatchEvent(new CustomEvent('rexi-toast', { detail: { message, type: 'info' } }))
+    success: (message: string, options?: any) => window.dispatchEvent(new CustomEvent('rexi-toast', { detail: { message, type: 'success', ...options } })),
+    error: (message: string, options?: any) => window.dispatchEvent(new CustomEvent('rexi-toast', { detail: { message, type: 'error', ...options } })),
+    info: (message: string, options?: any) => window.dispatchEvent(new CustomEvent('rexi-toast', { detail: { message, type: 'info', ...options } }))
 };
 
 export const ToastContainer: React.FC = () => {

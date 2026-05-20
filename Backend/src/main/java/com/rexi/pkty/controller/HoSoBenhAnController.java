@@ -12,6 +12,36 @@ import java.util.Map;
 @RequestMapping("/api/ho-so-benh-an")
 @CrossOrigin(origins = "${cors.allowed-origins:http://localhost:3000}")
 public class HoSoBenhAnController {
+    @Autowired
+    private com.rexi.pkty.service.GeminiService geminiService;
+
+    @GetMapping("/ai-summary/{idKhachHang}")
+    public org.springframework.http.ResponseEntity<?> getAISummary(@PathVariable String idKhachHang) {
+        try {
+            String sql = "SELECT hs.ngay_kham, hs.trieu_chung, hs.chan_doan, hs.phac_do_dieu_tri, hs.huong_dan_cham_soc " +
+                         "FROM HoSoBenhAn hs " +
+                         "JOIN ThuCung tc ON hs.id_thu_cung = tc.id_thu_cung " +
+                         "WHERE tc.id_khach_hang = ?";
+            List<Map<String, Object>> dsBenhAn = jdbcTemplate.queryForList(sql, idKhachHang);
+            if (dsBenhAn == null || dsBenhAn.isEmpty()) {
+                return org.springframework.http.ResponseEntity.ok(Map.of("summary", "Khách hàng này chưa có hồ sơ bệnh án nào."));
+            }
+            
+            StringBuilder rawData = new StringBuilder();
+            for (Map<String, Object> ba : dsBenhAn) {
+                rawData.append("Ngày khám: ").append(ba.get("ngay_kham")).append("\n");
+                rawData.append("Triệu chứng: ").append(ba.get("trieu_chung")).append("\n");
+                rawData.append("Chẩn đoán: ").append(ba.get("chan_doan")).append("\n");
+                rawData.append("Phác đồ: ").append(ba.get("phac_do_dieu_tri")).append("\n");
+                rawData.append("Hướng dẫn chăm sóc: ").append(ba.get("huong_dan_cham_soc")).append("\n\n");
+            }
+            
+            String summary = geminiService.summarizeMedicalRecords("của khách hàng " + idKhachHang, rawData.toString());
+            return org.springframework.http.ResponseEntity.ok(Map.of("summary", summary));
+        } catch (Exception e) {
+            return org.springframework.http.ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
+        }
+    }
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -122,17 +152,17 @@ public class HoSoBenhAnController {
             return List.of(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền xem danh sách đơn thuốc!"));
         }
         int offset = page * size;
-        String sql = "SELECT dt.id_don_thuoc, dt.id_benh_an as id_ho_so_benh_an, tc.ten_thu_cung, " +
+        String sql = "SELECT dt.id_don_thuoc, dt.id_ho_so_benh_an, tc.ten_thu_cung, " +
                 "t.ten_thuoc, dtct.so_luong, dtct.lieu_dung as cach_dung, dt.ghi_chu, " +
                 "nv.ho_ten as ten_bac_si, kh.ten_khach_hang " +
                 "FROM DonThuoc dt " +
                 "JOIN DonThuocChiTiet dtct ON dt.id_don_thuoc = dtct.id_don_thuoc " +
                 "JOIN Thuoc t ON dtct.id_thuoc = t.id_thuoc " +
-                "JOIN HoSoBenhAn hs ON dt.id_benh_an = hs.id_ho_so_benh_an " +
+                "JOIN HoSoBenhAn hs ON dt.id_ho_so_benh_an = hs.id_ho_so_benh_an " +
                 "JOIN ThuCung tc ON hs.id_thu_cung = tc.id_thu_cung " +
                 "JOIN NhanVien nv ON dt.id_bac_si = nv.id_nhan_vien " +
                 "JOIN KhachHang kh ON tc.id_khach_hang = kh.id_khach_hang " +
-                "ORDER BY dt.ngay_ke DESC " +
+                "ORDER BY dt.ngay_ke_don DESC " +
                 "OFFSET CAST(? AS INT) ROWS FETCH NEXT CAST(? AS INT) ROWS ONLY";
         return jdbcTemplate.queryForList(sql, offset, size);
     }
@@ -179,10 +209,11 @@ public class HoSoBenhAnController {
             String trieuChung = (String) payload.get("trieu_chung");
             String chanDoan = (String) payload.get("chan_doan");
 
-            String sql = "INSERT INTO HoSoBenhAn (id_thu_cung, id_bac_si, id_lich_hen, trieu_chung, chan_doan, ngay_kham) "
-                    + "OUTPUT INSERTED.id_ho_so_benh_an " + "VALUES (?, ?, ?, ?, ?, GETDATE())";
+            String idHoSo = "HS-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+            String sql = "INSERT INTO HoSoBenhAn (id_ho_so_benh_an, id_thu_cung, id_bac_si, id_lich_hen, trieu_chung, chan_doan, ngay_kham, trang_thai_ho_so, id_nguoi_tao, ngay_tao) "
+                    + "VALUES (?, ?, ?, ?, ?, ?, CAST(GETDATE() AS DATE), 'NHAP', ?, GETDATE())";
 
-            String idHoSo = jdbcTemplate.queryForObject(sql, String.class, idThuCung, idBacSi, idLichHen, trieuChung, chanDoan);
+            jdbcTemplate.update(sql, idHoSo, idThuCung, idBacSi, idLichHen, trieuChung, chanDoan, idBacSi);
 
             auditLogService.logAction("THÊM MỚI", "HoSoBenhAn",
                     "Tạo hồ sơ bệnh án mới ID " + idHoSo + " cho lịch hẹn " + idLichHen);
@@ -204,26 +235,54 @@ public class HoSoBenhAnController {
             String ghiChu = (String) payload.get("ghi_chu");
             List<Map<String, Object>> chiTiet = (List<Map<String, Object>>) payload.get("chi_tiet");
 
-            String sqlDonThuoc = "INSERT INTO DonThuoc (id_benh_an, id_bac_si, ngay_ke, ghi_chu) OUTPUT INSERTED.id_don_thuoc VALUES (?, ?, GETDATE(), ?)";
-            String idDonThuoc = jdbcTemplate.queryForObject(sqlDonThuoc, String.class, idBenhAn, idBacSi, ghiChu);
+            String idDonThuoc = "DT-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+            String sqlDonThuoc = "INSERT INTO DonThuoc (id_don_thuoc, id_ho_so_benh_an, id_bac_si, ngay_ke_don, ghi_chu) VALUES (?, ?, ?, GETDATE(), ?)";
+            jdbcTemplate.update(sqlDonThuoc, idDonThuoc, idBenhAn, idBacSi, ghiChu);
 
-            String sqlChiTiet = "INSERT INTO DonThuocChiTiet (id_don_thuoc, id_thuoc, so_luong, lieu_dung) VALUES (?, ?, ?, ?)";
-            String sqlTruKho = "UPDATE Thuoc SET so_luong_ton = ISNULL(so_luong_ton, 0) - ? WHERE id_thuoc = ? AND ISNULL(so_luong_ton, 0) >= ?";
+            String sqlChiTiet = "INSERT INTO DonThuocChiTiet (id_chi_tiet_don_thuoc, id_don_thuoc, id_thuoc, so_luong, lieu_dung) VALUES (?, ?, ?, ?, ?)";
 
             for (Map<String, Object> item : chiTiet) {
                 String idThuoc = String.valueOf(item.get("id_thuoc"));
-                Integer soLuong = (Integer) item.get("so_luong");
+                Integer soLuong = Integer.parseInt(String.valueOf(item.get("so_luong")));
                 String lieuDung = (String) item.get("lieu_dung");
 
                 if (soLuong == null || soLuong <= 0) {
                     throw new RuntimeException("Cảnh báo bảo mật: Số lượng thuốc kê đơn phải lớn hơn 0!");
                 }
 
-                int updated = jdbcTemplate.update(sqlTruKho, soLuong, idThuoc, soLuong);
-                if (updated == 0) {
+                Integer tonKhaDung = jdbcTemplate.queryForObject(
+                        "SELECT ISNULL(SUM(so_luong_ton), 0) FROM LoThuoc WHERE id_thuoc = ? AND so_luong_ton > 0 AND han_su_dung >= CAST(GETDATE() AS DATE)",
+                        Integer.class, idThuoc);
+                if (tonKhaDung == null || tonKhaDung < soLuong) {
                     throw new RuntimeException("Thuốc có ID " + idThuoc + " không đủ số lượng tồn kho!");
                 }
-                jdbcTemplate.update(sqlChiTiet, idDonThuoc, idThuoc, soLuong, lieuDung);
+
+                int conLaiCanXuat = soLuong;
+                List<Map<String, Object>> loXuat = jdbcTemplate.queryForList(
+                        "SELECT id_lo, so_luong_ton, gia_nhap FROM LoThuoc WHERE id_thuoc = ? AND so_luong_ton > 0 AND han_su_dung >= CAST(GETDATE() AS DATE) ORDER BY han_su_dung ASC, ngay_nhap ASC",
+                        idThuoc);
+                for (Map<String, Object> lo : loXuat) {
+                    if (conLaiCanXuat <= 0) break;
+                    String idLo = String.valueOf(lo.get("id_lo"));
+                    int tonLo = ((Number) lo.get("so_luong_ton")).intValue();
+                    int soXuat = Math.min(conLaiCanXuat, tonLo);
+                    jdbcTemplate.update("UPDATE LoThuoc SET so_luong_ton = so_luong_ton - ?, ngay_cap_nhat_ton_kho = GETDATE() WHERE id_lo = ? AND so_luong_ton >= ?",
+                            soXuat, idLo, soXuat);
+                    jdbcTemplate.update(
+                            "INSERT INTO GiaoDichKho (id_giao_dich, id_thuoc, id_lo, loai_giao_dich, so_luong, gia_tri, ngay_giao_dich, id_nhan_vien, ghi_chu) VALUES (?, ?, ?, N'XUAT_DON_THUOC', ?, ?, GETDATE(), ?, ?)",
+                            "GDK-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase(),
+                            idThuoc,
+                            idLo,
+                            soXuat,
+                            lo.get("gia_nhap"),
+                            idBacSi,
+                            "Xuất theo đơn " + idDonThuoc);
+                    conLaiCanXuat -= soXuat;
+                }
+
+                jdbcTemplate.update(sqlChiTiet,
+                        "DTCT-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase(),
+                        idDonThuoc, idThuoc, soLuong, lieuDung);
             }
 
             auditLogService.logAction("KÊ ĐƠN", "DonThuoc", "Kê đơn thuốc mới cho bệnh án ID " + idBenhAn);
@@ -264,16 +323,36 @@ public class HoSoBenhAnController {
                     "FROM DonThuoc dt " +
                     "JOIN DonThuocChiTiet dtct ON dt.id_don_thuoc = dtct.id_don_thuoc " +
                     "JOIN Thuoc t ON dtct.id_thuoc = t.id_thuoc " +
-                    "WHERE dt.id_benh_an = ?";
+                    "WHERE dt.id_ho_so_benh_an = ?";
             java.math.BigDecimal tongTienThuoc = jdbcTemplate.queryForObject(sqlTienThuoc, java.math.BigDecimal.class, idBenhAn);
             if (tongTienThuoc == null)
                 tongTienThuoc = java.math.BigDecimal.ZERO;
 
             java.math.BigDecimal tongTien = giaKham.add(tongTienThuoc);
 
-            String sqlHoaDon = "INSERT INTO HoaDon (id_khach_hang, id_nhan_vien, id_lich_hen, ngay_lap_hoa_don, tong_tien_ban_dau, tong_giam_gia, tong_tien_cuoi, trang_thai) "
-                    + "VALUES (?, ?, ?, GETDATE(), ?, 0, ?, 'cho_thanh_toan')";
-            jdbcTemplate.update(sqlHoaDon, idKhachHang, idBacSi, idLichHen, tongTien, tongTien);
+            String idHoaDon = "HD-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+            String sqlHoaDon = "INSERT INTO HoaDon (id_hoa_don, id_khach_hang, id_nhan_vien, id_lich_hen, ngay_lap, ngay_lap_hoa_don, tong_tien_truoc_giam_gia, tong_tien_sau_giam_gia, tong_tien_ban_dau, tong_giam_gia, tong_tien_cuoi, trang_thai, trang_thai_thanh_toan) "
+                    + "VALUES (?, ?, ?, ?, GETDATE(), GETDATE(), ?, ?, ?, 0, ?, 'CHO_THANH_TOAN', N'Chờ thanh toán')";
+            jdbcTemplate.update(sqlHoaDon, idHoaDon, idKhachHang, idBacSi, idLichHen, tongTien, tongTien, tongTien, tongTien);
+
+            if (giaKham.compareTo(java.math.BigDecimal.ZERO) > 0) {
+                jdbcTemplate.update("INSERT INTO HoaDonChiTiet (id_chi_tiet_hoa_don, id_hoa_don, ten_muc, loai_muc, so_luong, don_gia) VALUES (?, ?, ?, N'DICH_VU', 1, ?)",
+                        "HDCT-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase(),
+                        idHoaDon,
+                        "Tiền khám/dịch vụ",
+                        giaKham);
+            }
+            List<Map<String, Object>> thuocHoaDon = jdbcTemplate.queryForList(
+                    "SELECT t.ten_thuoc, dtct.so_luong, t.gia_ban FROM DonThuoc dt JOIN DonThuocChiTiet dtct ON dt.id_don_thuoc = dtct.id_don_thuoc JOIN Thuoc t ON dtct.id_thuoc = t.id_thuoc WHERE dt.id_ho_so_benh_an = ?",
+                    idBenhAn);
+            for (Map<String, Object> item : thuocHoaDon) {
+                jdbcTemplate.update("INSERT INTO HoaDonChiTiet (id_chi_tiet_hoa_don, id_hoa_don, ten_muc, loai_muc, so_luong, don_gia) VALUES (?, ?, ?, N'THUOC', ?, ?)",
+                        "HDCT-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase(),
+                        idHoaDon,
+                        item.get("ten_thuoc"),
+                        item.get("so_luong"),
+                        item.get("gia_ban"));
+            }
 
             if (sdt != null && !sdt.isEmpty()) {
                 zaloService.sendInvoiceZNS(sdt, tenKhachHang, tongTien);
