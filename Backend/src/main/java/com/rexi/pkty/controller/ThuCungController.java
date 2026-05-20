@@ -31,17 +31,33 @@ public class ThuCungController {
     @GetMapping
     public ResponseEntity<?> getAllThuCung(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String search) {
         try {
             org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
             String role = (auth != null) ? auth.getAuthorities().toString().toUpperCase() : "";
-            if (!role.contains("ADMIN") && !role.contains("STAFF") && !role.contains("QUAN_LY") && !role.contains("KE_TOAN")) {
+            if (!role.contains("ADMIN") && !role.contains("STAFF") && !role.contains("QUAN_LY") && !role.contains("KE_TOAN") && !role.contains("TIEP_TAN")) {
                 return ResponseEntity.status(403).body(Map.of("message", "Từ chối truy cập"));
             }
 
             // Dùng JdbcTemplate để ổn định nhất, tránh lỗi mapping JPA/Serialization
-            String sql = "SELECT * FROM ThuCung WHERE da_xoa = 0 OR da_xoa IS NULL ORDER BY ngay_tao DESC";
-            List<Map<String, Object>> allPets = jdbcTemplate.queryForList(sql);
+            String sql;
+            List<Map<String, Object>> allPets;
+            if (search != null && !search.trim().isEmpty()) {
+                String likePattern = "%" + search.trim() + "%";
+                sql = "SELECT t.*, k.ten_khach_hang FROM ThuCung t " +
+                      "LEFT JOIN KhachHang k ON t.id_khach_hang = k.id_khach_hang " +
+                      "WHERE (t.da_xoa = 0 OR t.da_xoa IS NULL) " +
+                      "AND (t.ten_thu_cung COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI " +
+                      "OR t.loai COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI " +
+                      "OR t.giong COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI " +
+                      "OR k.ten_khach_hang COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI) " +
+                      "ORDER BY t.ngay_tao DESC";
+                allPets = jdbcTemplate.queryForList(sql, likePattern, likePattern, likePattern, likePattern);
+            } else {
+                sql = "SELECT * FROM ThuCung WHERE da_xoa = 0 OR da_xoa IS NULL ORDER BY ngay_tao DESC";
+                allPets = jdbcTemplate.queryForList(sql);
+            }
 
             int start = Math.min(page * size, allPets.size());
             int end = Math.min(start + size, allPets.size());

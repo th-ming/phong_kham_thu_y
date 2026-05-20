@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800;900&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
+﻿@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800;900&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
 
 /* Tùy chỉnh thanh cuộn (Scrollbar) chuẩn Luxury Premium */
 /* TỐI ƯU: Chỉ hiển thị thanh cuộn này trên thiết bị có chuột (Desktop), để native trên Mobile */
@@ -105,7 +105,7 @@ html, body, header, footer, section, div, a, button, h1, h2, h3, h4, h5, h6, p, 
 [data-theme='dark'] {
   --primary: #22d3ee;
   --primary-light: rgba(34, 211, 238, 0.15);
-  --primary-gradient: linear-gradient(135deg, #06b6d4 0%, #8b5cf6 100%);
+  --primary-gradient: linear-gradient(135deg, #06b6d4 0%, #14b8a6 100%);
   --secondary: #1e293b;
   --background: #020617;
   --surface: rgba(15, 23, 42, 0.9);
@@ -120,14 +120,14 @@ html, body, header, footer, section, div, a, button, h1, h2, h3, h4, h5, h6, p, 
   --color-scheme: dark;
   color-scheme: dark;
   --secondary-gradient: linear-gradient(135deg, #06b6d4 0%, #1e293b 100%);
-  --top-header-bg: #7c3aed;
+  --top-header-bg: #115e59;
   
   /* Cảnh báo dịch tễ hiện đại Dark Mode (Glassmorphism) */
-  --alert-bg: rgba(225, 29, 72, 0.15);
-  --alert-text: #fecdd3;
-  --alert-border: rgba(225, 29, 72, 0.25);
-  --alert-link: #fda4af;
-  --alert-icon-color: #fb7185;
+  --alert-bg: rgba(239, 68, 68, 0.08); /* Đỏ ấm dịu, tinh tế và ít chói mắt hơn */
+  --alert-text: #fca5a5; /* Đỏ san hô pastel hài hòa với nền tối */
+  --alert-border: rgba(239, 68, 68, 0.18);
+  --alert-link: #f87171;
+  --alert-icon-color: #f87171;
   --chat-gradient: linear-gradient(135deg, #06b6d4 0%, #0e7490 50%, #0f172a 100%);
   --tien-ich-gradient: linear-gradient(135deg, #06b6d4 0%, #1e293b 100%);
 }

@@ -3,6 +3,7 @@ import axiosInstance from "@services/axios";
 import { getUserProfile } from "@utils/index";
 import { toast } from "@components/Toast";
 import { Skeleton } from "@components/CommonUI";
+import { confirmAction } from "@components/ConfirmModal";
 
 const chuyenNgayISO_SangVN = (dateString: string) => {
   if (!dateString || typeof dateString !== 'string') return "—";
@@ -35,6 +36,7 @@ const QuanLyThuCung: React.FC = () => {
   });
   const [isSaving, setIsSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const fetchUserData = useCallback(async () => {
     const user = getUserProfile();
@@ -164,7 +166,8 @@ const QuanLyThuCung: React.FC = () => {
       toast.error("Lỗi: Không tìm thấy mã thú cưng!");
       return;
     }
-    if (window.confirm("Bạn có chắc chắn muốn xóa bé cưng này không? Thao tác này không thể hoàn tác.")) {
+    const ok = await confirmAction("Bạn có chắc chắn muốn xóa bé cưng này không? Thao tác này không thể hoàn tác.");
+    if (ok) {
       setDeletingId(id);
       try {
         await axiosInstance.delete(`/api/thu-cung/${id}`);
@@ -202,6 +205,16 @@ const QuanLyThuCung: React.FC = () => {
         .sort((a, b) => new Date(b.ngay_kham).getTime() - new Date(a.ngay_kham).getTime())[0]
     }));
   }, [thuCung, lichHen]);
+
+  const filteredPets = useMemo(() => {
+    if (!searchQuery.trim()) return petsWithHistory;
+    const q = searchQuery.toLowerCase();
+    return petsWithHistory.filter(pet => 
+      pet.ten_thu_cung?.toLowerCase().includes(q) || 
+      pet.loai?.toLowerCase().includes(q) || 
+      pet.giong?.toLowerCase().includes(q)
+    );
+  }, [petsWithHistory, searchQuery]);
 
   if (loading) {
     return (
@@ -262,7 +275,7 @@ const QuanLyThuCung: React.FC = () => {
           <p style={{ fontWeight: 600, color: 'rgba(255,255,255,0.7)', margin: 0, fontSize: '1.1rem' }}>Nơi lưu giữ hành trình trưởng thành và chăm sóc sức khỏe cho bé yêu.</p>
         </div>
         {!showForm && (
-          <button className="btn btn-primary btn-pill" style={{ position: 'relative', zIndex: 1 }} onClick={() => handleOpenForm()}>
+          <button data-ai-id="button-quanlythucung-h990" className="btn btn-primary btn-pill" style={{ position: 'relative', zIndex: 1 }} onClick={() => handleOpenForm()}>
             <span className="material-symbols-outlined">add_circle</span>
             Thêm thú cưng
           </button>
@@ -276,23 +289,23 @@ const QuanLyThuCung: React.FC = () => {
           <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
             <div style={{ display: 'grid', gap: '8px' }}>
               <label>TÊN BÉ <span style={{ color: '#ff4d4f' }}>*</span></label>
-              <input required value={formData.ten_thu_cung} onChange={e => setFormData({ ...formData, ten_thu_cung: e.target.value })} placeholder="VD: Bé Lu, Miu Miu..." />
+              <input data-ai-id="input-quanlythucung-u5s4" required value={formData.ten_thu_cung} onChange={e => setFormData({ ...formData, ten_thu_cung: e.target.value })} placeholder="VD: Bé Lu, Miu Miu..." />
             </div>
             <div style={{ display: 'grid', gap: '8px' }}>
               <label>LOÀI <span style={{ color: '#ff4d4f' }}>*</span></label>
-              <input required value={formData.loai} onChange={e => setFormData({ ...formData, loai: e.target.value })} placeholder="VD: Chó, Mèo, Thỏ..." />
+              <input data-ai-id="input-quanlythucung-dk38" required value={formData.loai} onChange={e => setFormData({ ...formData, loai: e.target.value })} placeholder="VD: Chó, Mèo, Thỏ..." />
             </div>
             <div style={{ display: 'grid', gap: '8px' }}>
               <label>GIỐNG</label>
-              <input value={formData.giong} onChange={e => setFormData({ ...formData, giong: e.target.value })} />
+              <input data-ai-id="input-quanlythucung-16e1" value={formData.giong} onChange={e => setFormData({ ...formData, giong: e.target.value })} />
             </div>
             <div style={{ display: 'grid', gap: '8px' }}>
               <label>CÂN NẶNG (KG)</label>
-              <input type="number" step="0.1" min="0.1" value={formData.trong_luong} onChange={e => setFormData({ ...formData, trong_luong: e.target.value })} placeholder="Ví dụ: 5.5" />
+              <input data-ai-id="input-quanlythucung-nrh9" type="number" step="0.1" min="0.1" value={formData.trong_luong} onChange={e => setFormData({ ...formData, trong_luong: e.target.value })} placeholder="Ví dụ: 5.5" />
             </div>
             <div style={{ display: 'grid', gap: '8px' }}>
               <label>GIỚI TÍNH</label>
-              <select required value={formData.gioi_tinh} onChange={e => setFormData({ ...formData, gioi_tinh: e.target.value })}>
+              <select data-ai-id="select-quanlythucung-ewxq" required value={formData.gioi_tinh} onChange={e => setFormData({ ...formData, gioi_tinh: e.target.value })}>
                 <option value="Đực">Đực</option>
                 <option value="Cái">Cái</option>
                 <option value="Không xác định">Không xác định</option>
@@ -300,95 +313,130 @@ const QuanLyThuCung: React.FC = () => {
             </div>
             <div style={{ display: 'grid', gap: '8px' }}>
               <label>NGÀY SINH</label>
-              <input type="date" value={formData.ngay_sinh} max={new Date().toISOString().split("T")[0]} onChange={e => setFormData({ ...formData, ngay_sinh: e.target.value })} />
+              <input data-ai-id="input-quanlythucung-u4k6" type="date" value={formData.ngay_sinh} max={new Date().toISOString().split("T")[0]} onChange={e => setFormData({ ...formData, ngay_sinh: e.target.value })} />
             </div>
             <div style={{ display: 'grid', gap: '8px' }}>
               <label>MÀU SẮC</label>
-              <input value={formData.mau_sac} onChange={e => setFormData({ ...formData, mau_sac: e.target.value })} />
+              <input data-ai-id="input-quanlythucung-cvx3" value={formData.mau_sac} onChange={e => setFormData({ ...formData, mau_sac: e.target.value })} />
             </div>
             <div style={{ gridColumn: '1 / -1', display: 'flex', gap: '16px', marginTop: '24px' }}>
-              <button type="submit" className="btn btn-primary btn-pill" style={{ padding: '14px 60px' }} disabled={isSaving}>
+              <button data-ai-id="button-quanlythucung-gfz2" type="submit" className="btn btn-primary btn-pill" style={{ padding: '14px 60px' }} disabled={isSaving}>
                 {isSaving ? 'Đang lưu...' : 'Lưu thông tin'}
               </button>
-              <button type="button" className="btn btn-outline btn-pill" onClick={() => setShowForm(false)} disabled={isSaving}>Hủy bỏ</button>
+              <button data-ai-id="button-quanlythucung-ri0f" type="button" className="btn btn-outline btn-pill" onClick={() => setShowForm(false)} disabled={isSaving}>Hủy bỏ</button>
             </div>
           </form>
         </div>
       )}
 
-      <div className="stagger-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' }}>
-        {petsWithHistory.map(pet => (
-          <div key={pet.id_thu_cung} className="glass-card item-card" style={{ padding: '32px', borderRadius: 'var(--radius-xl)', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
-              <div style={{ width: '80px', height: '80px', background: 'var(--primary-light)', borderRadius: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
-                <span className="material-symbols-outlined" style={{ fontSize: '40px' }}>pets</span>
-              </div>
-              <div>
-                <h3 style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--ink)', margin: 0 }}>{pet.ten_thu_cung}</h3>
-                <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
-                  <span style={{ fontSize: '0.7rem', fontWeight: 800, background: 'var(--gray-50)', color: 'var(--gray-500)', padding: '4px 10px', borderRadius: '8px' }}>{pet.loai?.toUpperCase()}</span>
+      {/* THANH TÌM KIẾM THÚ CƯNG */}
+      <div className="stagger-2" style={{ marginBottom: '32px', maxWidth: '400px' }}>
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+          <span className="material-symbols-outlined" style={{ position: 'absolute', left: '16px', color: 'var(--gray-400)', pointerEvents: 'none' }}>search</span>
+          <input data-ai-id="input-quanlythucung-search"
+            type="text"
+            placeholder="Tìm kiếm bé cưng (tên, loài, giống)..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '14px 40px 14px 48px',
+              borderRadius: '16px',
+              border: '1px solid var(--gray-200)',
+              background: 'var(--surface)',
+              color: 'var(--ink)',
+              fontWeight: 700,
+              fontSize: '0.95rem',
+              outline: 'none',
+              transition: 'all 0.3s'
+            }}
+          />
+          {searchQuery && (
+            <span className="material-symbols-outlined" onClick={() => setSearchQuery("")} style={{ position: 'absolute', right: '16px', color: 'var(--gray-400)', cursor: 'pointer', userSelect: 'none' }}>close</span>
+          )}
+        </div>
+      </div>
+
+      {filteredPets.length === 0 ? (
+        <div className="glass-card stagger-2" style={{ padding: '60px', textAlign: 'center', borderRadius: 'var(--radius-xl)' }}>
+          <span className="material-symbols-outlined" style={{ fontSize: '48px', color: 'var(--gray-300)', marginBottom: '16px' }}>pets</span>
+          <p style={{ color: 'var(--gray-500)', fontWeight: 700, margin: 0 }}>Không tìm thấy bé cưng nào phù hợp! 😿</p>
+        </div>
+      ) : (
+        <div className="stagger-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' }}>
+          {filteredPets.map(pet => (
+            <div key={pet.id_thu_cung} className="glass-card item-card" style={{ padding: '32px', borderRadius: 'var(--radius-xl)', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+                <div style={{ width: '80px', height: '80px', background: 'var(--primary-light)', borderRadius: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '40px' }}>pets</span>
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--ink)', margin: 0 }}>{pet.ten_thu_cung}</h3>
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                    <span style={{ fontSize: '0.7rem', fontWeight: 800, background: 'var(--gray-50)', color: 'var(--gray-500)', padding: '4px 10px', borderRadius: '8px' }}>{pet.loai?.toUpperCase()}</span>
+                  </div>
                 </div>
               </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', background: 'rgba(255,255,255,0.03)', padding: '20px', borderRadius: '20px', marginBottom: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                <div>
+                  <p style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '4px' }}>GIỚI TÍNH</p>
+                  <p style={{ fontWeight: 800, margin: 0, color: 'var(--ink)' }}>{pet.gioi_tinh || '—'}</p>
+                </div>
+                <div>
+                  <p style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '4px' }}>MÀU SẮC</p>
+                  <p style={{ fontWeight: 800, margin: 0, color: 'var(--ink)' }}>{pet.mau_sac || '—'}</p>
+                </div>
+                <div>
+                  <p style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '4px' }}>GIỐNG</p>
+                  <p style={{ fontWeight: 800, margin: 0, color: 'var(--ink)' }}>{pet.giong || '—'}</p>
+                </div>
+                <div>
+                  <p style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '4px' }}>CÂN NẶNG</p>
+                  <p style={{ fontWeight: 800, margin: 0, color: 'var(--ink)' }}>{pet.trong_luong || '—'} kg</p>
+                </div>
+              </div>
+
+              {pet.ngay_sinh && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', opacity: 0.7 }}>
+                  <span className="material-symbols-outlined" style={{ color: 'var(--primary)', fontSize: '20px' }}>cake</span>
+                  <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>Ngày sinh: {chuyenNgayISO_SangVN(pet.ngay_sinh)} ({tinhTuoi(pet.ngay_sinh)})</span>
+                </div>
+              )}
+
+              {pet.lastVisit && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', opacity: 0.7 }}>
+                  <span className="material-symbols-outlined" style={{ color: 'var(--primary)', fontSize: '20px' }}>history</span>
+                  <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>Lần khám cuối: {chuyenNgayISO_SangVN(pet.lastVisit.ngay_kham)}</span>
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: '12px', marginTop: 'auto' }}>
+                <button data-ai-id="button-quanlythucung-7v0f" className="btn btn-pill" style={{ flex: 1, background: 'var(--primary-light)', color: 'var(--primary)' }} onClick={() => handleOpenForm(pet)} disabled={!!deletingId}>Sửa</button>
+                <button data-ai-id="button-quanlythucung-zykg" 
+                  className="btn btn-pill" 
+                  style={{ 
+                    background: deletingId === pet.id_thu_cung ? 'var(--gray-100)' : 'var(--danger-light, rgba(239, 68, 68, 0.15))', 
+                    color: deletingId === pet.id_thu_cung ? 'var(--gray-400)' : 'var(--danger)',
+                    minWidth: '48px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }} 
+                  onClick={() => handleDelete(pet.id_thu_cung)}
+                  disabled={!!deletingId}
+                >
+                  {deletingId === pet.id_thu_cung ? (
+                    <div className="spinner-small" style={{ width: '20px', height: '20px', border: '2px solid var(--gray-300)', borderTopColor: 'var(--danger)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }}></div>
+                  ) : (
+                    <span className="material-symbols-outlined">delete</span>
+                  )}
+                </button>
+              </div>
             </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', background: 'rgba(255,255,255,0.03)', padding: '20px', borderRadius: '20px', marginBottom: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
-              <div>
-                <p style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '4px' }}>GIỚI TÍNH</p>
-                <p style={{ fontWeight: 800, margin: 0, color: 'var(--ink)' }}>{pet.gioi_tinh || '—'}</p>
-              </div>
-              <div>
-                <p style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '4px' }}>MÀU SẮC</p>
-                <p style={{ fontWeight: 800, margin: 0, color: 'var(--ink)' }}>{pet.mau_sac || '—'}</p>
-              </div>
-              <div>
-                <p style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '4px' }}>GIỐNG</p>
-                <p style={{ fontWeight: 800, margin: 0, color: 'var(--ink)' }}>{pet.giong || '—'}</p>
-              </div>
-              <div>
-                <p style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '4px' }}>CÂN NẶNG</p>
-                <p style={{ fontWeight: 800, margin: 0, color: 'var(--ink)' }}>{pet.trong_luong || '—'} kg</p>
-              </div>
-            </div>
-
-            {pet.ngay_sinh && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', opacity: 0.7 }}>
-                <span className="material-symbols-outlined" style={{ color: 'var(--primary)', fontSize: '20px' }}>cake</span>
-                <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>Ngày sinh: {chuyenNgayISO_SangVN(pet.ngay_sinh)} ({tinhTuoi(pet.ngay_sinh)})</span>
-              </div>
-            )}
-
-            {pet.lastVisit && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', opacity: 0.7 }}>
-                <span className="material-symbols-outlined" style={{ color: 'var(--primary)', fontSize: '20px' }}>history</span>
-                <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>Lần khám cuối: {chuyenNgayISO_SangVN(pet.lastVisit.ngay_kham)}</span>
-              </div>
-            )}
-
-            <div style={{ display: 'flex', gap: '12px', marginTop: 'auto' }}>
-              <button className="btn btn-pill" style={{ flex: 1, background: 'var(--primary-light)', color: 'var(--primary)' }} onClick={() => handleOpenForm(pet)} disabled={!!deletingId}>Sửa</button>
-              <button 
-                className="btn btn-pill" 
-                style={{ 
-                  background: deletingId === pet.id_thu_cung ? 'var(--gray-100)' : 'var(--danger-light, rgba(239, 68, 68, 0.15))', 
-                  color: deletingId === pet.id_thu_cung ? 'var(--gray-400)' : 'var(--danger)',
-                  minWidth: '48px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }} 
-                onClick={() => handleDelete(pet.id_thu_cung)}
-                disabled={!!deletingId}
-              >
-                {deletingId === pet.id_thu_cung ? (
-                  <div className="spinner-small" style={{ width: '20px', height: '20px', border: '2px solid var(--gray-300)', borderTopColor: 'var(--danger)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }}></div>
-                ) : (
-                  <span className="material-symbols-outlined">delete</span>
-                )}
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

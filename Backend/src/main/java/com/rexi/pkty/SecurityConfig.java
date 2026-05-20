@@ -2,6 +2,7 @@ package com.rexi.pkty;
 
 import com.rexi.pkty.security.JwtFilter;
 import com.rexi.pkty.security.RateLimitFilter;
+import com.rexi.pkty.security.ActionAuthFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -26,6 +27,9 @@ public class SecurityConfig {
     private JwtFilter jwtFilter;
 
     @Autowired
+    private ActionAuthFilter actionAuthFilter;
+
+    @Autowired
     private RateLimitFilter rateLimitFilter;
 
     @Bean
@@ -36,7 +40,7 @@ public class SecurityConfig {
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
-                    "/api/auth/**",
+                    "/api/auth/**", "/api/chat", "/api/chat/**",
                     "/api/payment/**", "/api/lich-hen/gio-ranh",
                     "/api/lich-hen/khach-vang-lai", "/api/dich-vu/**", "/api/bac-si/**",
                     "/public/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/api/test-doanh-thu"
@@ -49,7 +53,8 @@ public class SecurityConfig {
             .httpBasic(b -> b.disable())
             .formLogin(f -> f.disable())
             .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
-            .addFilterAfter(jwtFilter, RateLimitFilter.class);
+            .addFilterAfter(jwtFilter, RateLimitFilter.class)
+            .addFilterAfter(actionAuthFilter, JwtFilter.class);
         return http.build();
     }
 

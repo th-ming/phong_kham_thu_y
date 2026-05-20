@@ -14,6 +14,7 @@ const QuanLyKhoThuoc: React.FC = () => {
   const [thuocs, setThuocs] = useState<any[]>([]);
   const [loThuocs, setLoThuocs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchThuoc, setSearchThuoc] = useState("");
 
   useEffect(() => {
     Promise.all([
@@ -35,6 +36,16 @@ const QuanLyKhoThuoc: React.FC = () => {
   const userRoleRaw = (user?.loai_tai_khoan || user?.ten_vai_tro || 'staff').toLowerCase();
   const canManageInventory = userRoleRaw.includes('admin') || userRoleRaw.includes('quản lý') || userRoleRaw.includes('kế toán') || userRoleRaw.includes('manager') || userRoleRaw.includes('accountant');
 
+  const filteredThuocs = React.useMemo(() => {
+    if (!searchThuoc.trim()) return thuocs;
+    const s = searchThuoc.toLowerCase();
+    return thuocs.filter(t => 
+      (t.ten_thuoc || "").toLowerCase().includes(s) || 
+      (t.thanh_phan || "").toLowerCase().includes(s) || 
+      (t.dang_bao_che || "").toLowerCase().includes(s)
+    );
+  }, [thuocs, searchThuoc]);
+
   if (loading) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
       <div className="dot-pulse"></div>
@@ -43,17 +54,29 @@ const QuanLyKhoThuoc: React.FC = () => {
 
   return (
     <div className="animate-fade-in">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', flexWrap: 'wrap', gap: '20px' }}>
         <div>
           <h1 style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--ink)', letterSpacing: '-1px' }}>Quản lý Kho thuốc</h1>
           <p style={{ color: 'var(--gray-500)', fontWeight: 600 }}>Theo dõi tồn kho, hạn sử dụng và phân phối dược phẩm.</p>
         </div>
-        {canManageInventory && (
-          <Link to="/quan-ly/nhap-kho" className="btn btn-primary btn-pill" style={{ textDecoration: 'none' }}>
-            <span className="material-symbols-outlined">add_box</span>
-            Nhập thuốc mới
-          </Link>
-        )}
+        <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div className="glass-card" style={{ display: 'flex', alignItems: 'center', padding: '0 16px', borderRadius: '16px', border: '1px solid var(--gray-200)', background: 'var(--surface)', width: '260px' }}>
+            <span className="material-symbols-outlined" style={{ color: 'var(--gray-400)', marginRight: '8px' }}>search</span>
+            <input data-ai-id="input-quanlykhothuoc-8v88"
+              type="text"
+              placeholder="Tìm tên thuốc, thành phần..."
+              value={searchThuoc}
+              onChange={(e) => setSearchThuoc(e.target.value)}
+              style={{ border: 'none', outline: 'none', background: 'transparent', padding: '10px 0', fontWeight: 600, width: '100%', color: 'var(--ink)', fontSize: '0.9rem' }}
+            />
+          </div>
+          {canManageInventory && (
+            <Link to="/quan-ly/nhap-kho" className="btn btn-primary btn-pill" style={{ textDecoration: 'none' }}>
+              <span className="material-symbols-outlined">add_box</span>
+              Nhập thuốc mới
+            </Link>
+          )}
+        </div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '32px' }}>
@@ -69,7 +92,7 @@ const QuanLyKhoThuoc: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {thuocs.map(t => (
+                {filteredThuocs.map(t => (
                   <tr key={t.id_thuoc} style={{ borderBottom: '1px solid var(--gray-50)' }}>
                     <td style={{ padding: '16px 8px' }}>
                       <div style={{ fontWeight: 800, color: 'var(--ink)' }}>{t.ten_thuoc}</div>

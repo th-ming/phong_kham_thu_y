@@ -26,7 +26,7 @@ public class LichTrucController {
 
         @GetMapping
         public List<Map<String, Object>> getAllLichTruc() {
-                String sql = "SELECT l.id_lich_lam_viec, l.id_nhan_vien, nv.ho_ten, nv.chuc_vu, " +
+                String sql = "SELECT l.id_lich_lam_viec, l.id_nhan_vien, nv.ho_ten, nv.chuyen_mon as chuc_vu, " +
                                 "l.ngay_lam as ngay_lam_viec, l.gio_bat_dau as ca_lam_viec, l.ghi_chu " +
                                 "FROM LichLamViecNhanVien l " +
                                 "JOIN NhanVien nv ON l.id_nhan_vien = nv.id_nhan_vien " +
@@ -78,13 +78,33 @@ public class LichTrucController {
                 LocalTime gioKetThuc = gioBatDau.plusMinutes(30);
 
                 String sqlCheck = "SELECT COUNT(*) FROM LichLamViecNhanVien WHERE id_nhan_vien = ? AND ngay_lam = ? AND gio_bat_dau = ?";
-                Integer count = jdbcTemplate.queryForObject(sqlCheck, Integer.class, targetNhanVienId, ngayLamStr, gioBatDau);
+                Integer count = jdbcTemplate.queryForObject(sqlCheck, Integer.class, targetNhanVienId, ngayLamStr, gioBatDauStr);
                 if (count != null && count > 0) {
                     return ResponseEntity.status(409).body(Map.of("message", "Ca trực này đã được đăng ký rồi, sếp không cần đăng ký lại đâu! 🐾"));
                 }
 
+                // Kiểm tra xem nhân sự đang đăng ký có phải bác sĩ không
+                String roleCheckSql = "SELECT COUNT(*) FROM NhanVien WHERE id_nhan_vien = ? " +
+                                      "AND (chuyen_mon LIKE N'%Bác sĩ%' OR chuyen_mon LIKE N'%Doctor%')";
+                Integer isDoctor = jdbcTemplate.queryForObject(roleCheckSql, Integer.class, targetNhanVienId);
+                
+                if (isDoctor != null && isDoctor > 0) {
+                    // Đếm số bác sĩ đã đăng ký trực trong cùng ngày và giờ bắt đầu này
+                    String countSql = "SELECT COUNT(DISTINCT l.id_nhan_vien) FROM LichLamViecNhanVien l " +
+                                      "JOIN NhanVien n ON l.id_nhan_vien = n.id_nhan_vien " +
+                                      "WHERE l.ngay_lam = ? AND l.gio_bat_dau = ? " +
+                                      "AND (n.chuyen_mon LIKE N'%Bác sĩ%' OR n.chuyen_mon LIKE N'%Doctor%')";
+                    Integer doctorCount = jdbcTemplate.queryForObject(countSql, Integer.class, ngayLamStr, gioBatDauStr);
+                    
+                    if (doctorCount != null && doctorCount >= 3) {
+                        return ResponseEntity.status(409)
+                                .body(Map.of("message", "Đã có tối đa 3 bác sĩ trực trong khung giờ " + 
+                                             gioBatDauStr + " ngày " + ngayLamStr + " rồi sếp ơi! 🐾"));
+                    }
+                }
+
                 String sql = "INSERT INTO LichLamViecNhanVien (id_nhan_vien, ngay_lam, gio_bat_dau, gio_ket_thuc, ghi_chu) VALUES (?, ?, ?, ?, ?)";
-                jdbcTemplate.update(sql, targetNhanVienId, ngayLamStr, gioBatDau, gioKetThuc, payload.get("ghi_chu"));
+                jdbcTemplate.update(sql, targetNhanVienId, ngayLamStr, gioBatDauStr, gioKetThuc.toString(), payload.get("ghi_chu"));
                 return ResponseEntity.ok(Map.of("message", "Đã thêm lịch trực thành công"));
         }
 
@@ -140,7 +160,7 @@ public class LichTrucController {
                         LocalTime shiftEnd = shiftStart.plusMinutes(30);
 
                         List<Map<String, Object>> existingApps = jdbcTemplate.queryForList(
-                                        "SELECT lh.gio_kham, dv.thoi_luong_phut FROM LichHen lh JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu WHERE lh.id_bac_si = ? AND lh.ngay_kham = ? AND lh.trang_thai NOT IN (N'Đã hủy', 'da_huy')",
+                                        "SELECT lh.gio_kham, dv.thoi_luong_phut FROM LichHen lh LEFT JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu WHERE lh.id_bac_si = ? AND lh.ngay_kham = ? AND lh.trang_thai NOT IN (N'Đã hủy', 'DA_HUY', 'da_huy', 'TU_CHOI', N'Hết hạn')",
                                         idNhanVien, sqlDate);
 
                         boolean isConflict = false;

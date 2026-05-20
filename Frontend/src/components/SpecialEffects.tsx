@@ -59,7 +59,7 @@ const MemeCatCore: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
   const [showCanvas, setShowCanvas] = useState(false);
   const [pos, setPos] = useState({ x: -200, y: -200, rotation: 0, size: isMobile ? 80 : 150 });
   const [message, setMessage] = useState("");
-  const [videoUrl, setVideoUrl] = useState("/img/video_meo_chay.webm");
+  const videoUrl = "/img/video_meo_chay.webm";
   const mousePosRef = useRef({ x: -1000, y: -1000 });
   const [isVisible, setIsVisible] = useState(true);
 
@@ -466,7 +466,7 @@ export const ScrollToTop: React.FC = () => {
   }, []);
   if (!show) return null;
   return (
-    <button
+    <button data-ai-id="button-specialeffects-bkru"
       onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
       style={{
         position: "fixed", bottom: "30px", left: "30px", width: "56px", height: "56px", borderRadius: "50%",

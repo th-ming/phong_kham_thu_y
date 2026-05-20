@@ -76,11 +76,6 @@ export const Preloader: React.FC = () => {
             }
 
             if (video.videoWidth > 0) {
-                // Giữ nguyên tỉ lệ khung hình để không bị méo
-                const aspectRatio = video.videoWidth / video.videoHeight;
-                const displayHeight = 150; 
-                const displayWidth = displayHeight * aspectRatio;
-                
                 if (canvas.width !== video.videoWidth) {
                     canvas.width = video.videoWidth;
                     canvas.height = video.videoHeight;

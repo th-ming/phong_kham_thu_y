@@ -57,15 +57,34 @@ export const ModalTaoLichHenAdmin: React.FC<ModalProps> = ({ isOpen, onClose, on
         setIsEmergency(false);
     }, []);
 
-    // Tải danh sách dịch vụ và bác sĩ khi mở modal
+    // Tải danh sách dịch vụ khi mở modal
     useEffect(() => {
         if (isOpen) {
             axiosInstance.get('/api/dich-vu').then(res => setServices(res.data));
-            axiosInstance.get('/api/bac-si').then(res => setDoctors(res.data));
         } else {
             resetState();
         }
     }, [isOpen, resetState]);
+
+    // Tự động tải danh sách bác sĩ có lịch trực vào ngày được chọn
+    useEffect(() => {
+        if (isOpen) {
+            if (!appointmentDate) {
+                setDoctors([]);
+                setSelectedDoctorId('');
+                return;
+            }
+            const url = `/api/bac-si?ngay=${appointmentDate}`;
+            axiosInstance.get(url)
+                .then(res => {
+                    setDoctors(res.data);
+                    if (selectedDoctorId && !res.data.some((d: any) => String(d.id_nhan_vien) === selectedDoctorId)) {
+                        setSelectedDoctorId('');
+                    }
+                })
+                .catch(e => console.error("Lỗi lấy bác sĩ theo ngày:", e));
+        }
+    }, [isOpen, appointmentDate]);
 
     // Tự động tìm kiếm các khung giờ trống của bác sĩ khi các thông tin liên quan thay đổi
     useEffect(() => {
@@ -219,8 +238,8 @@ export const ModalTaoLichHenAdmin: React.FC<ModalProps> = ({ isOpen, onClose, on
                         <label style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '8px', display: 'block' }}>TÌM KHÁCH HÀNG BẰNG SĐT</label>
                         <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                             <span className="material-symbols-outlined" style={{ position: 'absolute', left: '16px', color: 'var(--gray-400)', pointerEvents: 'none' }}>search</span>
-                            <input type="tel" value={phoneQuery} onChange={e => setPhoneQuery(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSearchCustomer()} placeholder="Nhập số điện thoại khách hàng..." style={{ width: '100%', padding: '14px 14px 14px 48px', borderRadius: '18px', border: '1px solid var(--gray-200)', background: 'var(--gray-50)', outline: 'none', fontWeight: 700, color: 'var(--ink)', fontSize: '1rem', transition: 'all 0.3s' }} autoFocus />
-                            <button onClick={handleSearchCustomer} className="btn btn-primary btn-pill" style={{ position: 'absolute', right: '6px', padding: '10px 28px', borderRadius: '14px' }} disabled={isLoading}>{isLoading ? '...' : 'Tìm kiếm'}</button>
+                            <input data-ai-id="input-modaltaolichhenadmin-2bsu" type="tel" value={phoneQuery} onChange={e => setPhoneQuery(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSearchCustomer()} placeholder="Nhập số điện thoại khách hàng..." style={{ width: '100%', padding: '14px 14px 14px 48px', borderRadius: '18px', border: '1px solid var(--gray-200)', background: 'var(--gray-50)', outline: 'none', fontWeight: 700, color: 'var(--ink)', fontSize: '1rem', transition: 'all 0.3s' }} autoFocus />
+                            <button data-ai-id="button-modaltaolichhenadmin-tpay" onClick={handleSearchCustomer} className="btn btn-primary btn-pill" style={{ position: 'absolute', right: '6px', padding: '10px 28px', borderRadius: '14px' }} disabled={isLoading}>{isLoading ? '...' : 'Tìm kiếm'}</button>
                         </div>
 
                         <div style={{ marginTop: '20px', display: 'grid', gap: '12px' }}>
@@ -245,9 +264,9 @@ export const ModalTaoLichHenAdmin: React.FC<ModalProps> = ({ isOpen, onClose, on
                                     <span className="material-symbols-outlined">person_add</span> Khách hàng mới
                                 </p>
                                 <div style={{ display: 'grid', gap: '16px' }}>
-                                    <input value={newCustomerName} onChange={e => setNewCustomerName(e.target.value)} placeholder="Họ và tên khách hàng" style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid rgba(15, 157, 138, 0.3)', outline: 'none', fontWeight: 600 }} autoFocus />
-                                    <input value={newPetName} onChange={e => setNewPetName(e.target.value)} placeholder="Tên thú cưng" style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid rgba(15, 157, 138, 0.3)', outline: 'none', fontWeight: 600 }} onKeyDown={e => { if (e.key === 'Enter') { if (newCustomerName && newPetName) { setSelectedCustomer({ ten_khach_hang: newCustomerName }); setStep(2); } else { toast.error("Sếp vui lòng nhập đầy đủ Tên khách và Tên bé nhé!"); } } }} />
-                                    <button onClick={() => {
+                                    <input data-ai-id="input-modaltaolichhenadmin-1jt8" value={newCustomerName} onChange={e => setNewCustomerName(e.target.value)} placeholder="Họ và tên khách hàng" style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid rgba(15, 157, 138, 0.3)', outline: 'none', fontWeight: 600 }} autoFocus />
+                                    <input data-ai-id="input-modaltaolichhenadmin-bplk" value={newPetName} onChange={e => setNewPetName(e.target.value)} placeholder="Tên thú cưng" style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid rgba(15, 157, 138, 0.3)', outline: 'none', fontWeight: 600 }} onKeyDown={e => { if (e.key === 'Enter') { if (newCustomerName && newPetName) { setSelectedCustomer({ ten_khach_hang: newCustomerName }); setStep(2); } else { toast.error("Sếp vui lòng nhập đầy đủ Tên khách và Tên bé nhé!"); } } }} />
+                                    <button data-ai-id="button-modaltaolichhenadmin-z04y" onClick={() => {
                                         if (newCustomerName && newPetName) {
                                             setSelectedCustomer({ ten_khach_hang: newCustomerName }); setStep(2);
                                         } else {
@@ -274,25 +293,28 @@ export const ModalTaoLichHenAdmin: React.FC<ModalProps> = ({ isOpen, onClose, on
                                     <strong style={{ color: 'var(--ink)', fontSize: '1.1rem', fontWeight: 900 }}>{selectedCustomer?.ten_khach_hang}</strong>
                                 </div>
                             </div>
-                            <button type="button" onClick={() => setStep(1)} className="btn btn-pill" style={{ background: 'var(--surface)', color: 'var(--ink)', padding: '8px 16px', fontSize: '0.85rem', border: '1px solid var(--gray-200)', boxShadow: 'var(--shadow-sm)', fontWeight: 800 }}>Thay đổi</button>
+                            <button data-ai-id="button-modaltaolichhenadmin-sqmt" type="button" onClick={() => setStep(1)} className="btn btn-pill" style={{ background: 'var(--surface)', color: 'var(--ink)', padding: '8px 16px', fontSize: '0.85rem', border: '1px solid var(--gray-200)', boxShadow: 'var(--shadow-sm)', fontWeight: 800 }}>Thay đổi</button>
                         </div>
 
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                             <div>
                                 <label style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '8px', display: 'block' }}>THÚ CƯNG</label>
-                                {isNewCustomer ? <input type="text" style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid var(--gray-200)', background: 'var(--gray-100)', color: 'var(--gray-500)', outline: 'none', fontWeight: 700 }} value={newPetName} disabled /> : <select value={selectedPetId} onChange={e => setSelectedPetId(e.target.value)} style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid var(--gray-200)', background: 'var(--gray-50)', outline: 'none', fontWeight: 700, color: 'var(--ink)' }} required><option value="">-- Chọn thú cưng --</option>{customerPets.map(pet => <option key={pet.id_thu_cung} value={pet.id_thu_cung}>{pet.ten_thu_cung}</option>)}</select>}
+                                {isNewCustomer ? <input data-ai-id="input-modaltaolichhenadmin-iki8" type="text" style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid var(--gray-200)', background: 'var(--gray-100)', color: 'var(--gray-500)', outline: 'none', fontWeight: 700 }} value={newPetName} disabled /> : <select data-ai-id="select-modaltaolichhenadmin-z74y" value={selectedPetId} onChange={e => setSelectedPetId(e.target.value)} style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid var(--gray-200)', background: 'var(--gray-50)', outline: 'none', fontWeight: 700, color: 'var(--ink)' }} required><option value="">-- Chọn thú cưng --</option>{customerPets.map(pet => <option key={pet.id_thu_cung} value={pet.id_thu_cung}>{pet.ten_thu_cung}</option>)}</select>}
                             </div>
                             <div>
                                 <label style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '8px', display: 'block' }}>DỊCH VỤ</label>
-                                <select value={selectedServiceId} onChange={e => setSelectedServiceId(e.target.value)} style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid var(--gray-200)', background: 'var(--gray-50)', outline: 'none', fontWeight: 700, color: 'var(--ink)' }} required><option value="">-- Chọn dịch vụ --</option>{services.map(s => <option key={s.id_dich_vu} value={s.id_dich_vu}>{s.ten_dich_vu}</option>)}</select>
+                                <select data-ai-id="select-modaltaolichhenadmin-lgu8" value={selectedServiceId} onChange={e => setSelectedServiceId(e.target.value)} style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid var(--gray-200)', background: 'var(--gray-50)', outline: 'none', fontWeight: 700, color: 'var(--ink)' }} required><option value="">-- Chọn dịch vụ --</option>{services.map(s => <option key={s.id_dich_vu} value={s.id_dich_vu}>{s.ten_dich_vu}</option>)}</select>
                             </div>
                             <div style={{ gridColumn: '1 / -1' }}>
                                 <label style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '8px', display: 'block' }}>BÁC SĨ PHỤ TRÁCH</label>
-                                <select value={selectedDoctorId} onChange={e => setSelectedDoctorId(e.target.value)} style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid var(--gray-200)', background: 'var(--gray-50)', outline: 'none', fontWeight: 700, color: 'var(--ink)' }} required><option value="">-- Chọn bác sĩ --</option>{doctors.map(d => <option key={d.id_nhan_vien} value={d.id_nhan_vien}>{d.ho_ten} - {d.chuyen_mon}</option>)}</select>
+                                <select data-ai-id="select-modaltaolichhenadmin-3aa3" value={selectedDoctorId} onChange={e => setSelectedDoctorId(e.target.value)} style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid var(--gray-200)', background: 'var(--gray-50)', outline: 'none', fontWeight: 700, color: 'var(--ink)' }} required disabled={!appointmentDate}>
+                                    <option value="">{appointmentDate ? "-- Chọn bác sĩ --" : "-- Vui lòng chọn ngày hẹn trước --"}</option>
+                                    {doctors.map(d => <option key={d.id_nhan_vien} value={d.id_nhan_vien}>{d.ho_ten} - {d.chuyen_mon}</option>)}
+                                </select>
                             </div>
                             <div>
                                 <label style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '8px', display: 'block' }}>NGÀY HẸN</label>
-                                <input
+                                <input data-ai-id="input-modaltaolichhenadmin-h78k"
                                     type="date"
                                     value={appointmentDate}
                                     min={(() => {
@@ -306,7 +328,7 @@ export const ModalTaoLichHenAdmin: React.FC<ModalProps> = ({ isOpen, onClose, on
                             </div>
                             <div>
                                 <label style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '8px', display: 'block' }}>GIỜ HẸN</label>
-                                <select value={appointmentTime} onChange={e => setAppointmentTime(e.target.value)} style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid var(--gray-200)', background: 'var(--gray-50)', outline: 'none', fontWeight: 700, color: 'var(--ink)' }} required disabled={!selectedDoctorId || !appointmentDate || !selectedServiceId || isLoadingSlots}>
+                                <select data-ai-id="select-modaltaolichhenadmin-bdsw" value={appointmentTime} onChange={e => setAppointmentTime(e.target.value)} style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid var(--gray-200)', background: 'var(--gray-50)', outline: 'none', fontWeight: 700, color: 'var(--ink)' }} required disabled={!selectedDoctorId || !appointmentDate || !selectedServiceId || isLoadingSlots}>
                                     <option value="">{isLoadingSlots ? "Đang tải giờ rảnh..." : (!selectedDoctorId || !appointmentDate || !selectedServiceId) ? "-- Chọn thông tin trước --" : "-- Chọn giờ hẹn --"}</option>
                                     {availableSlots.map(slot => (
                                         <option key={slot} value={slot}>{slot}</option>
@@ -325,13 +347,13 @@ export const ModalTaoLichHenAdmin: React.FC<ModalProps> = ({ isOpen, onClose, on
 
                         {/* Tùy chọn đánh dấu ca cấp cứu khẩn cấp */}
                         <div style={{ marginTop: '20px', display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(239, 68, 68, 0.1)', padding: '16px', borderRadius: '16px', border: '1px dashed #ef4444' }}>
-                            <input type="checkbox" id="emergencyCheck" checked={isEmergency} onChange={e => setIsEmergency(e.target.checked)} style={{ width: '20px', height: '20px', accentColor: '#ef4444', cursor: 'pointer', flexShrink: 0 }} />
+                            <input data-ai-id="input-modaltaolichhenadmin-jdoy" type="checkbox" id="emergencyCheck" checked={isEmergency} onChange={e => setIsEmergency(e.target.checked)} style={{ width: '20px', height: '20px', accentColor: '#ef4444', cursor: 'pointer', flexShrink: 0 }} />
                             <label htmlFor="emergencyCheck" style={{ color: '#ef4444', fontWeight: 800, cursor: 'pointer', margin: 0, userSelect: 'none' }}>Đánh dấu KHẨN CẤP / Ưu tiên xếp lịch ngay</label>
                         </div>
 
                         <div style={{ marginTop: '32px', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-                            <button type="button" onClick={onClose} className="btn btn-pill" style={{ background: 'var(--gray-100)', color: 'var(--ink)' }}>Hủy bỏ</button>
-                            <button type="submit" className="btn btn-primary btn-pill" disabled={isLoading}>
+                            <button data-ai-id="button-modaltaolichhenadmin-z187" type="button" onClick={onClose} className="btn btn-pill" style={{ background: 'var(--gray-100)', color: 'var(--ink)' }}>Hủy bỏ</button>
+                            <button data-ai-id="button-modaltaolichhenadmin-q0a4" type="submit" className="btn btn-primary btn-pill" disabled={isLoading}>
                                 {isLoading ? 'Đang xử lý...' : 'Xác nhận Tạo lịch'}
                             </button>
                         </div>

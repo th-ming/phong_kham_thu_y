@@ -39,7 +39,7 @@ const QuanLyBenhAn: React.FC = () => {
                 const today = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0];
                 const pendingLich = extractArray(resLich.data).filter((l: any) =>
                     l.ngay_kham === today &&
-                    (l.trang_thai?.toUpperCase() === 'DA_XAC_NHAN' || l.trang_thai === 'Đã xác nhận')
+                    (l.trang_thai?.toUpperCase() === 'DA_XAC_NHAN' || l.trang_thai?.toUpperCase() === 'DANG_KHAM')
                 );
                 setLichHens(pendingLich);
 
@@ -105,7 +105,7 @@ const QuanLyBenhAn: React.FC = () => {
                     id_bac_si: selectedLich.id_bac_si,
                     ghi_chu: donThuocGhiChu,
                     chi_tiet: chiTietDonThuoc.map(t => ({
-                        id_thuoc: parseInt(t.id_thuoc),
+                        id_thuoc: t.id_thuoc,
                         so_luong: parseInt(t.so_luong),
                         lieu_dung: t.lieu_dung
                     }))
@@ -139,7 +139,7 @@ const QuanLyBenhAn: React.FC = () => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                 <div className="glass-card" style={{ padding: '24px', borderRadius: '24px' }}>
                     <h2 style={{ fontSize: '1.2rem', fontWeight: 900, marginBottom: '16px' }}>1. Chọn Ca Khám (Hôm nay)</h2>
-                    <select
+                    <select data-ai-id="select-quanlybenhan-8wqe"
                         className="form-input"
                         style={{ width: '100%', padding: '14px', borderRadius: '12px', background: 'var(--gray-50)', fontWeight: 700 }}
                         onChange={(e) => setSelectedLich(lichHens.find(l => l.id_lich_hen.toString() === e.target.value))}
@@ -158,10 +158,10 @@ const QuanLyBenhAn: React.FC = () => {
                     <div className="glass-card animate-fade-in" style={{ padding: '24px', borderRadius: '24px', border: '1px solid var(--primary-light)' }}>
                         <h2 style={{ fontSize: '1.2rem', fontWeight: 900, marginBottom: '16px', color: 'var(--primary)' }}>2. Chẩn Đoán Lâm Sàng</h2>
                         <label style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gray-400)', display: 'block', marginBottom: '8px' }}>TRIỆU CHỨNG BAN ĐẦU</label>
-                        <textarea className="form-input" value={trieuChung} onChange={e => setTrieuChung(e.target.value)} style={{ width: '100%', minHeight: '80px', background: 'var(--gray-50)', marginBottom: '16px' }} placeholder="Ghi nhận triệu chứng..." />
+                        <textarea data-ai-id="textarea-quanlybenhan-trieuchung" className="form-input" value={trieuChung} onChange={e => setTrieuChung(e.target.value)} style={{ width: '100%', minHeight: '80px', background: 'var(--gray-50)', marginBottom: '16px' }} placeholder="Ghi nhận triệu chứng..." />
 
                         <label style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gray-400)', display: 'block', marginBottom: '8px' }}>KẾT LUẬN CHẨN ĐOÁN <span style={{ color: 'red' }}>*</span></label>
-                        <textarea className="form-input" value={chanDoan} onChange={e => setChanDoan(e.target.value)} style={{ width: '100%', minHeight: '100px', background: 'var(--gray-50)' }} placeholder="Nhập kết luận bệnh..." />
+                        <textarea data-ai-id="textarea-quanlybenhan-chandoan" className="form-input" value={chanDoan} onChange={e => setChanDoan(e.target.value)} style={{ width: '100%', minHeight: '100px', background: 'var(--gray-50)' }} placeholder="Nhập kết luận bệnh..." />
                     </div>
                 )}
             </div>
@@ -173,27 +173,27 @@ const QuanLyBenhAn: React.FC = () => {
 
                     {chiTietDonThuoc.map((item, index) => (
                         <div key={index} style={{ display: 'grid', gridTemplateColumns: '2fr 80px 2fr 40px', gap: '12px', alignItems: 'center', background: 'var(--gray-50)', padding: '12px', borderRadius: '12px' }}>
-                            <select className="form-input" value={item.id_thuoc} onChange={e => handleThuocChange(index, 'id_thuoc', e.target.value)}>
+                            <select data-ai-id="select-quanlybenhan-dttd" className="form-input" value={item.id_thuoc} onChange={e => handleThuocChange(index, 'id_thuoc', e.target.value)}>
                                 <option value="">-- Chọn thuốc --</option>
                                 {thuocs.map(t => <option key={t.id_thuoc} value={t.id_thuoc}>{t.ten_thuoc} (Tồn: {t.so_luong_ton || 0})</option>)}
                             </select>
-                            <input type="number" min="1" className="form-input" value={item.so_luong} onChange={e => handleThuocChange(index, 'so_luong', e.target.value)} placeholder="SL" />
-                            <input type="text" className="form-input" value={item.lieu_dung} onChange={e => handleThuocChange(index, 'lieu_dung', e.target.value)} placeholder="Liều dùng (VD: Sáng 1 viên)" />
-                            <button onClick={() => handleRemoveThuoc(index)} style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer' }}><span className="material-symbols-outlined">delete</span></button>
+                            <input data-ai-id="input-quanlybenhan-nj8p" type="number" min="1" className="form-input" value={item.so_luong} onChange={e => handleThuocChange(index, 'so_luong', e.target.value)} placeholder="SL" />
+                            <input data-ai-id="input-quanlybenhan-vgla" type="text" className="form-input" value={item.lieu_dung} onChange={e => handleThuocChange(index, 'lieu_dung', e.target.value)} placeholder="Liều dùng (VD: Sáng 1 viên)" />
+                            <button data-ai-id="button-quanlybenhan-47hl" onClick={() => handleRemoveThuoc(index)} style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer' }}><span className="material-symbols-outlined">delete</span></button>
                         </div>
                     ))}
 
-                    <button onClick={handleAddThuoc} className="btn" style={{ background: 'var(--primary-light)', color: 'var(--primary)', width: 'fit-content', padding: '8px 16px', borderRadius: '12px' }}>
+                    <button data-ai-id="button-quanlybenhan-8zw3" onClick={handleAddThuoc} className="btn" style={{ background: 'var(--primary-light)', color: 'var(--primary)', width: 'fit-content', padding: '8px 16px', borderRadius: '12px' }}>
                         <span className="material-symbols-outlined">add</span> Thêm thuốc
                     </button>
 
                     <div style={{ marginTop: '16px' }}>
                         <label style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gray-400)', display: 'block', marginBottom: '8px' }}>LỜI DẶN BÁC SĨ</label>
-                        <textarea className="form-input" value={donThuocGhiChu} onChange={e => setDonThuocGhiChu(e.target.value)} style={{ width: '100%', minHeight: '80px', background: 'var(--gray-50)' }} placeholder="VD: Kiêng ăn mặn, uống nhiều nước..." />
+                        <textarea data-ai-id="textarea-quanlybenhan-loidang" className="form-input" value={donThuocGhiChu} onChange={e => setDonThuocGhiChu(e.target.value)} style={{ width: '100%', minHeight: '80px', background: 'var(--gray-50)' }} placeholder="VD: Kiêng ăn mặn, uống nhiều nước..." />
                     </div>
 
                     <div style={{ marginTop: '30px', display: 'flex', justifyContent: 'flex-end' }}>
-                        <button
+                        <button data-ai-id="button-quanlybenhan-1pce"
                             onClick={handleSaveBenhAn}
                             disabled={isSaving}
                             className="btn btn-primary btn-pill"

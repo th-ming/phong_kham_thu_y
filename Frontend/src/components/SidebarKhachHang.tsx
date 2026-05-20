@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react'
+import React, { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import ThemeToggle from './ThemeToggle'
 import { getUserProfile } from '../utils/index'
@@ -37,7 +37,7 @@ const SidebarKhachHang: React.FC = () => {
   return (
     <>
       {/* Nút Hamburger nổi trên mobile */}
-      <button
+      <button data-ai-id="button-sidebarkhachhang-u7rt"
         className="mobile-show"
         onClick={() => setIsMobileOpen(!isMobileOpen)}
         style={{
@@ -68,10 +68,10 @@ const SidebarKhachHang: React.FC = () => {
         <div style={{ padding: '40px 24px', borderBottom: '1.5px solid var(--glass-border)' }}>
           <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '24px', textDecoration: 'none', padding: '0 10px' }}>
             <div style={{ width: '48px', height: '48px', borderRadius: '16px', overflow: 'hidden', background: 'var(--primary-gradient)', border: '2.5px solid rgba(255,255,255,0.2)', boxShadow: '0 0 30px var(--primary-shadow)' }}>
-              <img src="/img/avtpkty.png" alt="Rexi" style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '8px' }} />
+              <img src="/img/avtpkty.png" alt="Rexi" style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '8px', filter: 'brightness(0) invert(1)' }} />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-              <h2 className="text-gradient" style={{ fontSize: '2.1rem', margin: 0, letterSpacing: '-1.5px', fontWeight: 950, lineHeight: 0.9 }}>REXI</h2>
+              <h2 className="text-gradient" style={{ fontSize: '2.1rem', margin: 0, letterSpacing: '-1.5px', fontWeight: 950, lineHeight: 0.9, color: 'var(--primary)' }}>REXI</h2>
               <p style={{ fontSize: '0.72rem', fontWeight: 950, color: 'var(--primary)', margin: '4px 0 0 0', letterSpacing: '2px', textTransform: 'uppercase', opacity: 0.9, whiteSpace: 'nowrap' }}>GÓC CỦA SEN</p>
             </div>
           </Link>
@@ -141,7 +141,7 @@ const SidebarKhachHang: React.FC = () => {
             </Link>
             <ThemeToggle />
           </div>
-          <button onClick={handleLogout} style={{
+          <button data-ai-id="button-sidebarkhachhang-vked" onClick={handleLogout} style={{
             width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '16px 20px',
             color: 'white', background: 'rgba(255, 77, 77, 0.8)', border: 'none', borderRadius: '18px',
             fontWeight: 900, cursor: 'pointer', fontSize: '0.95rem', transition: 'all 0.4s',

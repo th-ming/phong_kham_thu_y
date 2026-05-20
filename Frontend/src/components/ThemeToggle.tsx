@@ -5,7 +5,7 @@ const ThemeToggle: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
 
   return (
-    <button
+    <button data-ai-id="button-themetoggle-02q1"
       onClick={toggleTheme}
       className="theme-toggle-btn"
       title={theme === 'light' ? 'Chuyển sang chế độ tối' : 'Chuyển sang chế độ sáng'}

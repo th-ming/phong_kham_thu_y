@@ -9,6 +9,12 @@ const chuyenNgayISO_SangVN = (dateString: string) => {
   return dateString;
 };
 
+const extractArray = (data: any) => {
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.content)) return data.content;
+  return [];
+};
+
 const HoSoBenhAn: React.FC = () => {
   const [petFilter, setPetFilter] = useState("all");
   const [searchDoctor, setSearchDoctor] = useState("");
@@ -59,7 +65,7 @@ const HoSoBenhAn: React.FC = () => {
 
       // Xử lý danh sách thú cưng
       if (thuCungRes.status === 'fulfilled') {
-        setThuCungs(Array.isArray(thuCungRes.value.data) ? thuCungRes.value.data : []);
+        setThuCungs(extractArray(thuCungRes.value.data));
       }
 
       setLoading(false);
@@ -126,7 +132,7 @@ const HoSoBenhAn: React.FC = () => {
         </div>
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', position: 'relative', zIndex: 1 }}>
           <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-            <input
+            <input data-ai-id="input-hosobenhan-1g80"
               type="text"
               className="btn"
               placeholder="Tìm tên bác sĩ..."
@@ -145,7 +151,7 @@ const HoSoBenhAn: React.FC = () => {
               </span>
             )}
           </div>
-          <select
+          <select data-ai-id="select-hosobenhan-jt9q"
             className="btn"
             style={{ background: 'white', border: 'none', color: '#2563eb', cursor: 'pointer', textAlign: 'left', fontWeight: 800, boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}
             value={petFilter}
@@ -228,7 +234,7 @@ const HoSoBenhAn: React.FC = () => {
         {/* BỘ NÚT ĐIỀU HƯỚNG PHÂN TRANG */}
         {totalPages > 1 && (
           <div className="stagger-2" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '16px', marginTop: '20px' }}>
-            <button
+            <button data-ai-id="button-hosobenhan-hnwe"
               className="btn btn-pill"
               disabled={currentPage === 1}
               onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
@@ -243,7 +249,7 @@ const HoSoBenhAn: React.FC = () => {
             <span style={{ fontWeight: 800, color: 'var(--ink)', fontSize: '0.9rem' }}>
               Trang {currentPage} / {totalPages}
             </span>
-            <button
+            <button data-ai-id="button-hosobenhan-b589"
               className="btn btn-pill"
               disabled={currentPage === totalPages}
               onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}

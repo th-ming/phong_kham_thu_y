@@ -16,6 +16,7 @@ const QuanLyHoSoBenhAn: React.FC = () => {
   // State hỗ trợ Phân trang Server-side
   const [totalServerPages, setTotalServerPages] = useState(1);
   const [isServerPaginated, setIsServerPaginated] = useState(false);
+  const [searchHoSo, setSearchHoSo] = useState("");
 
   // Phân trang
   const [currentPage, setCurrentPage] = useState(1);
@@ -47,8 +48,19 @@ const QuanLyHoSoBenhAn: React.FC = () => {
     fetchData();
   }, [currentPage]);
 
-  const totalPages = isServerPaginated ? totalServerPages : Math.ceil(hoSos.length / ITEMS_PER_PAGE);
-  const currentRows = isServerPaginated ? hoSos : hoSos.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+  const filteredHoSos = React.useMemo(() => {
+    if (!searchHoSo.trim()) return hoSos;
+    const s = searchHoSo.toLowerCase();
+    return hoSos.filter(h => 
+      String(h.id_ho_so || "").toLowerCase().includes(s) ||
+      (h.ten_thu_cung || "").toLowerCase().includes(s) ||
+      (h.ten_bac_si || "").toLowerCase().includes(s) ||
+      (h.chan_doan || "").toLowerCase().includes(s)
+    );
+  }, [hoSos, searchHoSo]);
+
+  const totalPages = isServerPaginated ? (searchHoSo.trim() ? 1 : totalServerPages) : Math.ceil(filteredHoSos.length / ITEMS_PER_PAGE);
+  const currentRows = searchHoSo.trim() ? filteredHoSos : (isServerPaginated ? hoSos : filteredHoSos.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE));
 
   if (loading && hoSos.length === 0) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
@@ -58,9 +70,21 @@ const QuanLyHoSoBenhAn: React.FC = () => {
 
   return (
     <div className="animate-fade-in">
-      <div style={{ marginBottom: '40px' }}>
-        <h1 className="text-gradient" style={{ fontSize: '2.8rem', fontWeight: 950, letterSpacing: '-2px', margin: '0 0 8px 0' }}>Hồ sơ bệnh án</h1>
-        <p style={{ color: 'var(--gray-500)', fontWeight: 600, fontSize: '1.05rem' }}>Quản lý bệnh án điện tử và lịch sử điều trị của bệnh nhân chuẩn quốc tế.</p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', flexWrap: 'wrap', gap: '20px' }}>
+        <div>
+          <h1 className="text-gradient" style={{ fontSize: '2.8rem', fontWeight: 950, letterSpacing: '-2px', margin: '0 0 8px 0' }}>Hồ sơ bệnh án</h1>
+          <p style={{ color: 'var(--gray-500)', fontWeight: 600, fontSize: '1.05rem' }}>Quản lý bệnh án điện tử và lịch sử điều trị của bệnh nhân chuẩn quốc tế.</p>
+        </div>
+        <div className="glass-card" style={{ display: 'flex', alignItems: 'center', padding: '0 16px', borderRadius: '16px', border: '1px solid var(--gray-200)', background: 'var(--surface)', width: '300px' }}>
+          <span className="material-symbols-outlined" style={{ color: 'var(--gray-400)', marginRight: '8px' }}>search</span>
+          <input data-ai-id="input-quanlyhosobenhan-jfml"
+            type="text"
+            placeholder="Tìm mã HS, thú cưng, bác sĩ, chẩn đoán..."
+            value={searchHoSo}
+            onChange={(e) => setSearchHoSo(e.target.value)}
+            style={{ border: 'none', outline: 'none', background: 'transparent', padding: '10px 0', fontWeight: 600, width: '100%', color: 'var(--ink)', fontSize: '0.9rem' }}
+          />
+        </div>
       </div>
 
       <div className="glass-card" style={{ borderRadius: 'var(--radius-xl)', overflow: 'hidden' }}>
@@ -119,7 +143,7 @@ const QuanLyHoSoBenhAn: React.FC = () => {
       {/* BỘ NÚT ĐIỀU HƯỚNG PHÂN TRANG */}
       {totalPages > 1 && (
         <div className="stagger-2" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '16px', marginTop: '30px', marginBottom: '20px' }}>
-          <button
+          <button data-ai-id="button-quanlyhosobenhan-irfu"
             className="btn btn-pill"
             disabled={currentPage === 1}
             onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
@@ -135,7 +159,7 @@ const QuanLyHoSoBenhAn: React.FC = () => {
           <div style={{ background: 'var(--primary-light)', color: 'var(--primary)', padding: '10px 20px', borderRadius: '12px', fontWeight: 900, fontSize: '0.9rem' }}>
             Trang {currentPage} / {totalPages}
           </div>
-          <button
+          <button data-ai-id="button-quanlyhosobenhan-jw31"
             className="btn btn-pill"
             disabled={currentPage === totalPages}
             onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}

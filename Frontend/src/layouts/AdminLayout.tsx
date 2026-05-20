@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import SidebarAdmin from "@components/SidebarAdmin";
 import { ScrollToTop } from "@components/SpecialEffects";
+import { ChatBot } from "@components/ChatBot";
 
 const AdminLayout: React.FC = () => {
   const navigate = useNavigate();
@@ -42,8 +43,10 @@ const AdminLayout: React.FC = () => {
         </div>
       </main>
       <ScrollToTop />
+      <ChatBot />
     </div>
   );
 };
 
 export default React.memo(AdminLayout);
+

@@ -1,15 +1,32 @@
 import React, { useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { RevealSection, LottiePlayer, Typewriter, TransparentVideo } from "@components/SpecialEffects";
 import { useCountUp } from "@hooks/useCountUp";
 import { useTheme } from "../../contexts/ThemeContextV2";
+import { getUserProfile } from "@utils/index";
+import { toast } from "@components/Toast";
 
 /* banner giới thiệu trang chủ */
 const PhanGioiThieu: React.FC = () => {
+    const navigate = useNavigate();
     const { theme } = useTheme();
     const isDark = theme === 'dark';
     const { count: petCount, elementRef: petRef } = useCountUp(5000);
     const heroRef = useRef<HTMLDivElement>(null);
+
+    const handleBookingClick = (e: React.MouseEvent) => {
+        e.preventDefault();
+        const user = getUserProfile();
+        if (user) {
+            const role = (user.ten_vai_tro || user.loai_tai_khoan || "").toLowerCase();
+            if (role !== "customer" && role !== "khach_hang" && !role.includes("khách hàng")) {
+                toast.info("Bạn đang đăng nhập với tài khoản nhân sự. Hệ thống đang chuyển hướng bạn đến Trang quản lý lịch hẹn nội bộ!");
+                navigate("/quan-ly/lich-hen");
+                return;
+            }
+        }
+        navigate('/khach-hang/dat-lich-hen');
+    };
 
     useEffect(() => {
         document.documentElement.style.setProperty('--mouse-x', '50%');
@@ -169,7 +186,7 @@ const PhanGioiThieu: React.FC = () => {
                                 {/* ========================================================================= */}
                                 {/* ĐÂY LÀ NÚT "ĐẶT LỊCH HẸN NGAY" Ở BANNER CHÍNH TRANG CHỦ                   */}
                                 {/* ========================================================================= */}
-                                <Link to="/khach-hang/dat-lich-hen" className="btn btn-primary btn-wave btn-pill" style={{ fontWeight: 900, boxShadow: '0 12px 30px var(--primary-shadow)' }}>ĐẶT LỊCH HẸN NGAY</Link>
+                                <a href="#" onClick={handleBookingClick} className="btn btn-primary btn-wave btn-pill" style={{ fontWeight: 900, boxShadow: '0 12px 30px var(--primary-shadow)' }}>ĐẶT LỊCH HẸN NGAY</a>
                                 <a href="#services" onClick={(e) => { e.preventDefault(); document.querySelector('#services')?.scrollIntoView({ behavior: 'smooth' }); }} className="btn btn-outline btn-pill" style={{ color: 'var(--ink)', background: 'var(--surface)', borderColor: 'var(--gray-300)', fontWeight: 900 }}>XEM DỊCH VỤ</a>
                             </div>
 

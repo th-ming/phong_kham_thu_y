@@ -26,6 +26,12 @@ axiosInstance.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
+    // Đính kèm tag hành động AI nếu có
+    if ((window as any).__AI_ACTION_TAG__) {
+        config.headers['X-AI-ACTION'] = (window as any).__AI_ACTION_TAG__;
+    }
+    
     return config;
   },
   (error: AxiosError) => {

@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.logging.Logger;
 
 /**
  * Tự động khởi tạo dữ liệu Dịch vụ mẫu nếu bảng DichVu đang trống.
@@ -16,6 +17,8 @@ import java.util.List;
 @Component
 @org.springframework.context.annotation.Profile("!test")
 public class DataInitializer implements CommandLineRunner {
+
+    private static final Logger logger = Logger.getLogger(DataInitializer.class.getName());
 
     @Autowired
     private DichVuRepository dichVuRepository;
@@ -46,7 +49,7 @@ public class DataInitializer implements CommandLineRunner {
                         250000, 45));
 
         dichVuRepository.saveAll(dichVuList);
-        System.out.println("✅ Đã khởi tạo " + dichVuList.size() + " dịch vụ mẫu thành công!");
+        logger.info("Đã khởi tạo " + dichVuList.size() + " dịch vụ mẫu thành công!");
     }
 
     private DichVu tao(String ten, String moTa, int gia, int thoiLuong) {

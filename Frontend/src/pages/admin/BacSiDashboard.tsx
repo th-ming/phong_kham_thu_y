@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+﻿import React, { useEffect, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import axiosInstance from "@services/axios";
 import { getUserProfile } from "@utils/index";
@@ -33,7 +33,12 @@ const BacSiDashboard: React.FC = () => {
                 };
 
                 const allApps = extractArray(appsRes.data);
-                const myTodaysApps = allApps.filter(a => a.ngay_kham === todayStr && String(a.id_bac_si) === String(currentUserId));
+                // BUG FIX #4: Backend có thể trả ISO datetime "2025-05-20T00:00:00"
+                // → phải dùng substring(0,10) thay vì === để tránh lọc trả 0 kết quả
+                const myTodaysApps = allApps.filter(a => {
+                    const ngay = a.ngay_kham ? String(a.ngay_kham).substring(0, 10) : '';
+                    return ngay === todayStr && String(a.id_bac_si) === String(currentUserId);
+                });
                 setMyAppointments(myTodaysApps);
 
                 const last7Days = Array.from({ length: 7 }, (_, i) => {
@@ -43,7 +48,11 @@ const BacSiDashboard: React.FC = () => {
                 }).reverse();
 
                 const weeklyData = last7Days.map(dateStr => {
-                    const count = allApps.filter(a => a.ngay_kham === dateStr && String(a.id_bac_si) === String(currentUserId) && a.trang_thai?.toUpperCase() === 'HOAN_THANH').length;
+                    // BUG FIX #5: Cùng vấn đề substring cho weekly stats
+                    const count = allApps.filter(a => {
+                        const ngay = a.ngay_kham ? String(a.ngay_kham).substring(0, 10) : '';
+                        return ngay === dateStr && String(a.id_bac_si) === String(currentUserId) && a.trang_thai?.toUpperCase() === 'HOAN_THANH';
+                    }).length;
                     const [, month, day] = dateStr.split('-');
                     return { date: `${day}/${month}`, count };
                 });
@@ -91,7 +100,7 @@ const BacSiDashboard: React.FC = () => {
             <div className="animate-slide-up stagger-1" style={{ marginBottom: '40px', padding: '48px', borderRadius: 'var(--radius-xl)', background: 'var(--primary-gradient)', color: 'white', position: 'relative', overflow: 'hidden', boxShadow: 'var(--shadow-2xl)' }}>
                 <div style={{ position: 'absolute', top: '-10%', right: '-5%', width: '300px', height: '300px', background: 'radial-gradient(circle, var(--primary-light) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }}></div>
                 <h1 style={{ fontSize: '3rem', fontWeight: 950, letterSpacing: '-1.5px', position: 'relative', zIndex: 1, margin: '0 0 12px 0', display: 'flex', alignItems: 'center', gap: '15px' }}>
-                    <span>Bảng điều khiển <span style={{ color: '#c4b5fd' }}>Bác sĩ & Y tá</span></span>
+                    <span>Bảng điều khiển <span style={{ color: '#5eead4' }}>Bác sĩ & Y tá</span></span>
                     <span style={{ filter: 'drop-shadow(0 5px 15px rgba(0,0,0,0.2))' }}>🩺</span>
                 </h1>
                 <p style={{ fontWeight: 700, color: 'rgba(255,255,255,0.95)', position: 'relative', zIndex: 1, margin: 0, fontSize: '1.2rem', textShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>Chào mừng trở lại, {user.ho_ten || 'Bác sĩ'}. Dưới đây là lịch trình và công việc của bạn hôm nay.</p>
@@ -105,8 +114,8 @@ const BacSiDashboard: React.FC = () => {
                 </div>
                 <div className="glass-card" style={{ padding: '24px', borderRadius: '24px', borderLeft: '4px solid #f59e0b' }}>
                     <p style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--gray-400)', margin: '0 0 8px 0' }}>BỆNH NHÂN ĐANG CHỜ</p>
-                    <h3 style={{ fontSize: '2rem', fontWeight: 900, color: '#f59e0b', margin: 0 }}>{waitingPatients} bé</h3>
-                    <h3 className={waitingPatients > 0 ? "pulse-text" : ""} style={{ fontSize: '2rem', fontWeight: 900, color: '#f59e0b', margin: 0, display: 'inline-block', transformOrigin: 'left center' }}>
+                    {/* BUG FIX #3: Trước đây render waitingPatients 2 lần trong 2 thẻ h3 riêng biệt */}
+                    <h3 className={waitingPatients > 0 ? 'pulse-text' : ''} style={{ fontSize: '2rem', fontWeight: 900, color: '#f59e0b', margin: 0, display: 'inline-block', transformOrigin: 'left center' }}>
                         {waitingPatients} bé
                     </h3>
                 </div>

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+﻿import React, { useEffect, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import axiosInstance from "@services/axios";
 import { getUserProfile } from "@utils/index";
@@ -88,7 +88,11 @@ const DashboardQuanLy: React.FC = () => {
 
         if (apps.data !== null) {
           const arr = extractArray(apps.data);
-          const homNay = arr.filter((l: any) => l.ngay_kham === todayStr);
+          // BUG FIX: Backend có thể trả "2025-05-20T00:00:00" nên dùng startsWith thay vì ===
+          const homNay = arr.filter((l: any) => {
+            const ngay = l.ngay_kham ? String(l.ngay_kham).substring(0, 10) : '';
+            return ngay === todayStr;
+          });
           setAppointments(homNay);
         }
 
@@ -158,7 +162,7 @@ const DashboardQuanLy: React.FC = () => {
     const s = status?.toUpperCase() || '';
     if (s === 'DA_DAT' || s === 'CHỜ XÁC NHẬN') return '#f59e0b';
     if (s === 'DA_XAC_NHAN') return '#3b82f6';
-    if (s === 'DANG_KHAM') return '#8b5cf6';
+    if (s === 'DANG_KHAM') return '#14b8a6';
     if (s === 'HOAN_THANH') return '#10b981';
     if (s === 'DA_HUY' || s === 'HUY') return '#ef4444';
     return 'var(--gray-400)';

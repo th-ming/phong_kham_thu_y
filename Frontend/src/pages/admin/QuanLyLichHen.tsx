@@ -19,6 +19,7 @@ const gioRutGon = (timeString: string) => {
 const QuanLyLichHen: React.FC = () => {
   const [lichHens, setLichHens] = useState<any[]>([]);
   const [filterStatus, setFilterStatus] = useState("all");
+  const [searchLichHen, setSearchLichHen] = useState("");
 
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -36,8 +37,13 @@ const QuanLyLichHen: React.FC = () => {
 
   const fetchData = () => {
     setLoading(true);
+    // Truyền page/size để backend có thể phân trang nếu hỗ trợ (tránh lấy toàn bộ 10k+ bản ghi)
     axiosInstance.get("/api/lich-hen", {
-      params: { page: currentPage - 1, size: ITEMS_PER_PAGE, status: filterStatus !== 'all' ? filterStatus : undefined }
+      params: {
+        page: currentPage - 1,
+        size: ITEMS_PER_PAGE,
+        status: filterStatus !== 'all' ? filterStatus : undefined
+      }
     })
       .then(res => {
         if (res.data && res.data.content) {
@@ -80,9 +86,23 @@ const QuanLyLichHen: React.FC = () => {
   }, [filterStatus]);
 
   const rows = React.useMemo(() => {
-    if (isServerPaginated) return lichHens;
-    return lichHens.filter(l => filterStatus === 'all' || l.trang_thai?.toLowerCase() === filterStatus.toLowerCase() || (filterStatus === 'da_kham' && l.trang_thai?.toUpperCase() === 'HOAN_THANH'));
-  }, [lichHens, filterStatus, isServerPaginated]);
+    let filtered = lichHens;
+    if (!isServerPaginated) {
+      filtered = lichHens.filter(l => filterStatus === 'all' || l.trang_thai?.toUpperCase() === filterStatus.toUpperCase());
+    }
+    if (searchLichHen.trim() !== "") {
+      const s = searchLichHen.toLowerCase();
+      filtered = filtered.filter(l => {
+        const idStr = String(l.id_lich_hen || "").toLowerCase();
+        const petName = (l.ten_thu_cung || "").toLowerCase();
+        const ownerName = (l.ten_khach_hang || "").toLowerCase();
+        const phone = (l.sdt || "").toLowerCase();
+        const doctorName = (l.ten_bac_si || "").toLowerCase();
+        return idStr.includes(s) || petName.includes(s) || ownerName.includes(s) || phone.includes(s) || doctorName.includes(s);
+      });
+    }
+    return filtered;
+  }, [lichHens, filterStatus, isServerPaginated, searchLichHen]);
 
   const totalPages = isServerPaginated ? totalServerPages : Math.ceil(rows.length / ITEMS_PER_PAGE);
   const currentRows = isServerPaginated ? rows : rows.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
@@ -105,37 +125,50 @@ const QuanLyLichHen: React.FC = () => {
           <h1 style={{ fontSize: '2.5rem', fontWeight: 950, color: 'var(--ink)', letterSpacing: '-1.5px' }}>Điều phối lịch hẹn</h1>
           <p style={{ color: 'var(--gray-500)', fontWeight: 600 }}>Quản lý lộ trình khám và điều phối đội ngũ y bác sĩ.</p>
         </div>
-        <button className="btn btn-primary btn-pill" onClick={() => setIsModalOpen(true)}>
+        <button data-ai-id="button-quanlylichhen-nwji" className="btn btn-primary btn-pill" onClick={() => setIsModalOpen(true)}>
           <span className="material-symbols-outlined">add_task</span>
           Thêm lịch hẹn
         </button>
       </div>
 
-      <div className="stagger-1" style={{ display: 'flex', gap: '12px', marginBottom: '32px', overflowX: 'auto', paddingBottom: '8px' }}>
-        {[
-          { id: 'all', label: 'TẤT CẢ', icon: 'list' },
-          { id: 'da_dat', label: 'CHỜ XÁC NHẬN', icon: 'pending' },
-          { id: 'da_xac_nhan', label: 'ĐÃ XÁC NHẬN', icon: 'check_circle' },
-          { id: 'dang_kham', label: 'ĐANG KHÁM', icon: 'medical_services' },
-          { id: 'da_kham', label: 'HOÀN TẤT', icon: 'verified' },
-          { id: 'da_huy', label: 'ĐÃ HỦY', icon: 'cancel' },
-        ].map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setFilterStatus(tab.id)}
-            style={{
-              padding: '10px 20px', borderRadius: '12px', border: 'none', cursor: 'pointer',
-              display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.75rem', fontWeight: 800,
-              background: filterStatus === tab.id ? 'var(--primary)' : 'var(--surface)',
-              color: filterStatus === tab.id ? 'white' : 'var(--ink)',
-              boxShadow: filterStatus === tab.id ? 'var(--shadow-md)' : 'var(--shadow-sm)',
-              transition: 'all 0.3s'
-            }}
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>{tab.icon}</span>
-            {tab.label}
-          </button>
-        ))}
+      <div className="stagger-1" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px', flexWrap: 'wrap', gap: '16px' }}>
+        <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '4px' }}>
+          {[
+            { id: 'all', label: 'TẤT CẢ', icon: 'list' },
+            { id: 'CHO_XAC_NHAN', label: 'CHỜ XÁC NHẬN', icon: 'pending' },
+            { id: 'DA_XAC_NHAN', label: 'ĐÃ XÁC NHẬN', icon: 'check_circle' },
+            { id: 'DANG_KHAM', label: 'ĐANG KHÁM', icon: 'medical_services' },
+            { id: 'HOAN_THANH', label: 'HOÀN TẤT', icon: 'verified' },
+            { id: 'KHONG_DEN', label: 'KHÔNG ĐẾN', icon: 'event_busy' },
+            { id: 'DA_HUY', label: 'ĐÃ HỦY', icon: 'cancel' },
+          ].map(tab => (
+            <button data-ai-id="button-quanlylichhen-rml0"
+              key={tab.id}
+              onClick={() => setFilterStatus(tab.id)}
+              style={{
+                padding: '10px 20px', borderRadius: '12px', border: 'none', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.75rem', fontWeight: 800,
+                background: filterStatus === tab.id ? 'var(--primary)' : 'var(--surface)',
+                color: filterStatus === tab.id ? 'white' : 'var(--ink)',
+                boxShadow: filterStatus === tab.id ? 'var(--shadow-md)' : 'var(--shadow-sm)',
+                transition: 'all 0.3s'
+              }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>{tab.icon}</span>
+              {tab.label}
+            </button>
+          ))}
+        </div>
+        <div className="glass-card" style={{ display: 'flex', alignItems: 'center', padding: '0 16px', borderRadius: '16px', border: '1px solid var(--gray-200)', background: 'var(--surface)', width: '300px' }}>
+          <span className="material-symbols-outlined" style={{ color: 'var(--gray-400)', marginRight: '8px' }}>search</span>
+          <input data-ai-id="input-quanlylichhen-zzak"
+            type="text"
+            placeholder="Tìm tên bé, chủ, bác sĩ, SĐT..."
+            value={searchLichHen}
+            onChange={(e) => setSearchLichHen(e.target.value)}
+            style={{ border: 'none', outline: 'none', background: 'transparent', padding: '10px 0', fontWeight: 600, width: '100%', color: 'var(--ink)', fontSize: '0.9rem' }}
+          />
+        </div>
       </div>
 
       <div className="glass-card stagger-2" style={{ borderRadius: 'var(--radius-xl)', overflow: 'hidden' }}>
@@ -180,18 +213,18 @@ const QuanLyLichHen: React.FC = () => {
                 <td style={{ padding: '20px' }}>
                   <span style={{
                     padding: '8px 16px', borderRadius: '50px', fontSize: '0.7rem', fontWeight: 900, border: '1px solid transparent',
-                    background: (l.trang_thai?.toLowerCase() === 'da_kham' || l.trang_thai?.toUpperCase() === 'HOAN_THANH') ? 'var(--primary-light)' : (l.trang_thai?.toLowerCase() === 'da_huy' ? 'var(--danger-light, rgba(239, 68, 68, 0.15))' : 'var(--warning-light, rgba(245, 158, 11, 0.15))'),
-                    color: (l.trang_thai?.toLowerCase() === 'da_kham' || l.trang_thai?.toUpperCase() === 'HOAN_THANH') ? 'var(--primary)' : (l.trang_thai?.toLowerCase() === 'da_huy' ? 'var(--danger, #ef4444)' : 'var(--warning, #d97706)')
+                    background: l.trang_thai?.toUpperCase() === 'HOAN_THANH' ? 'var(--primary-light)' : (['DA_HUY', 'KHONG_DEN'].includes(l.trang_thai?.toUpperCase()) ? 'var(--danger-light, rgba(239, 68, 68, 0.15))' : 'var(--warning-light, rgba(245, 158, 11, 0.15))'),
+                    color: l.trang_thai?.toUpperCase() === 'HOAN_THANH' ? 'var(--primary)' : (['DA_HUY', 'KHONG_DEN'].includes(l.trang_thai?.toUpperCase()) ? 'var(--danger, #ef4444)' : 'var(--warning, #d97706)')
                   }}>
                     {l.trang_thai?.toUpperCase() || 'CHO_XAC_NHAN'}
                   </span>
                 </td>
                 <td style={{ padding: '20px', textAlign: 'center', borderTopRightRadius: '16px', borderBottomRightRadius: '16px' }}>
                   <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
-                    <button className="btn" onClick={() => setViewingLichHen(l)} style={{ padding: '10px', background: 'var(--gray-50)', color: 'var(--ink)' }}>
+                    <button data-ai-id="button-quanlylichhen-kp9o" className="btn" onClick={() => setViewingLichHen(l)} style={{ padding: '10px', background: 'var(--gray-50)', color: 'var(--ink)' }}>
                       <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>visibility</span>
                     </button>
-                    <button className="btn" onClick={() => setEditingLichHen(l)} style={{ padding: '10px', background: 'var(--primary-light)', color: 'var(--primary)' }}>
+                    <button data-ai-id="button-quanlylichhen-4icp" className="btn" onClick={() => setEditingLichHen(l)} style={{ padding: '10px', background: 'var(--primary-light)', color: 'var(--primary)' }}>
                       <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>edit_square</span>
                     </button>
                   </div>
@@ -205,7 +238,7 @@ const QuanLyLichHen: React.FC = () => {
       {/* BỘ NÚT ĐIỀU HƯỚNG PHÂN TRANG */}
       {totalPages > 1 && (
         <div className="stagger-2" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '16px', marginTop: '20px', marginBottom: '20px' }}>
-          <button
+          <button data-ai-id="button-quanlylichhen-lq9e"
             className="btn btn-pill"
             disabled={currentPage === 1}
             onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
@@ -220,7 +253,7 @@ const QuanLyLichHen: React.FC = () => {
           <span style={{ fontWeight: 800, color: 'var(--ink)', fontSize: '0.9rem' }}>
             Trang {currentPage} / {totalPages}
           </span>
-          <button
+          <button data-ai-id="button-quanlylichhen-v4lf"
             className="btn btn-pill"
             disabled={currentPage === totalPages}
             onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
@@ -243,7 +276,7 @@ const QuanLyLichHen: React.FC = () => {
               <div style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--gray-400)', letterSpacing: '1px', marginBottom: '8px' }}>TRẠNG THÁI HIỆN TẠI</div>
               <span style={{
                 padding: '10px 24px', borderRadius: '50px', fontSize: '0.85rem', fontWeight: 950, border: '1px solid transparent',
-                background: (viewingLichHen.trang_thai?.toLowerCase() === 'da_kham' || viewingLichHen.trang_thai?.toUpperCase() === 'HOAN_THANH') ? 'var(--primary)' : (viewingLichHen.trang_thai?.toLowerCase() === 'da_huy' ? 'var(--danger)' : 'var(--warning, #f59e0b)'),
+                background: viewingLichHen.trang_thai?.toUpperCase() === 'HOAN_THANH' ? 'var(--primary)' : (['DA_HUY', 'KHONG_DEN'].includes(viewingLichHen.trang_thai?.toUpperCase()) ? 'var(--danger)' : 'var(--warning, #f59e0b)'),
                 color: 'white'
               }}>
                 {viewingLichHen.trang_thai?.toUpperCase()}
@@ -298,29 +331,30 @@ const QuanLyLichHen: React.FC = () => {
           <>
             <div style={{ display: 'grid', gap: '12px' }}>
               {[
-                { id: 'da_dat', label: 'CHỜ XÁC NHẬN', color: 'var(--warning, #d97706)', bg: 'var(--warning-light, rgba(245, 158, 11, 0.15))' },
-                { id: 'da_xac_nhan', label: 'ĐÃ XÁC NHẬN', color: 'var(--primary)', bg: 'var(--primary-light)' },
-                { id: 'dang_kham', label: 'ĐANG KHÁM', color: 'var(--info, #2563eb)', bg: 'var(--info-light, rgba(59, 130, 246, 0.15))' },
-                { id: 'da_kham', label: 'HOÀN THÀNH', color: 'var(--success, #059669)', bg: 'var(--success-light, rgba(16, 185, 129, 0.15))' },
-                { id: 'da_huy', label: 'HỦY LỊCH', color: 'var(--danger)', bg: 'var(--danger-light, rgba(239, 68, 68, 0.15))' },
+                { id: 'CHO_XAC_NHAN', label: 'CHỜ XÁC NHẬN', color: 'var(--warning, #d97706)', bg: 'var(--warning-light, rgba(245, 158, 11, 0.15))' },
+                { id: 'DA_XAC_NHAN', label: 'ĐÃ XÁC NHẬN', color: 'var(--primary)', bg: 'var(--primary-light)' },
+                { id: 'DANG_KHAM', label: 'ĐANG KHÁM', color: 'var(--info, #2563eb)', bg: 'var(--info-light, rgba(59, 130, 246, 0.15))' },
+                { id: 'HOAN_THANH', label: 'HOÀN THÀNH', color: 'var(--success, #059669)', bg: 'var(--success-light, rgba(16, 185, 129, 0.15))' },
+                { id: 'KHONG_DEN', label: 'KHÔNG ĐẾN', color: 'var(--danger)', bg: 'var(--danger-light, rgba(239, 68, 68, 0.15))' },
+                { id: 'DA_HUY', label: 'HỦY LỊCH', color: 'var(--danger)', bg: 'var(--danger-light, rgba(239, 68, 68, 0.15))' },
               ].map(status => (
-                <button
+                <button data-ai-id="button-quanlylichhen-z0vb"
                   key={status.id}
                   disabled={updating}
                   onClick={() => handleUpdateStatus(editingLichHen.id_lich_hen, status.id)}
                   style={{
-                    padding: '16px', borderRadius: '16px', border: (editingLichHen.trang_thai?.toLowerCase() === status.id || (status.id === 'da_kham' && editingLichHen.trang_thai?.toUpperCase() === 'HOAN_THANH')) ? '2px solid ' + status.color : '1px solid var(--gray-100)',
+                    padding: '16px', borderRadius: '16px', border: editingLichHen.trang_thai?.toUpperCase() === status.id ? '2px solid ' + status.color : '1px solid var(--gray-100)',
                     background: status.bg, color: status.color, fontWeight: 800, fontSize: '0.85rem', cursor: 'pointer', textAlign: 'left',
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center', transition: 'all 0.2s'
                   }}
                 >
                   {status.label}
-                  {(editingLichHen.trang_thai?.toLowerCase() === status.id || (status.id === 'da_kham' && editingLichHen.trang_thai?.toUpperCase() === 'HOAN_THANH')) && <span className="material-symbols-outlined">check_circle</span>}
+                  {editingLichHen.trang_thai?.toUpperCase() === status.id && <span className="material-symbols-outlined">check_circle</span>}
                 </button>
               ))}
             </div>
 
-            <button
+            <button data-ai-id="button-quanlylichhen-m2up"
               onClick={() => setEditingLichHen(null)}
               className="btn"
               style={{ width: '100%', marginTop: '24px', padding: '14px', borderRadius: '16px', fontWeight: 800, color: 'var(--gray-500)', background: 'var(--gray-50)' }}

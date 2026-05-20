@@ -10,14 +10,80 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.logging.Logger;
 
 @RestController
 @RequestMapping("/api/payment")
 @CrossOrigin(origins = "${cors.allowed-origins:http://localhost:3000,http://localhost:5173}")
 public class PaymentController {
 
+    private static final Logger logger = Logger.getLogger(PaymentController.class.getName());
+
     @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    private Map<String, Object> getInvoiceForPayment(String idHoaDon) {
+        List<Map<String, Object>> invoices = jdbcTemplate.queryForList(
+                "SELECT id_hoa_don, id_khach_hang, tong_tien_cuoi, trang_thai FROM HoaDon WHERE id_hoa_don = ?",
+                idHoaDon);
+        if (invoices.isEmpty()) {
+            return null;
+        }
+        return invoices.get(0);
+    }
+
+    private ResponseEntity<?> validateInvoiceAccess(String idHoaDon) {
+        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
+                .getContext().getAuthentication();
+        if (auth == null || auth.getName() == null || auth.getName().equals("anonymousUser")) {
+            return ResponseEntity.status(401).body(Map.of("message", "Vui lòng đăng nhập để thanh toán hóa đơn."));
+        }
+
+        String authorities = auth.getAuthorities().toString().toUpperCase();
+        if (authorities.contains("ADMIN") || authorities.contains("QUAN_LY") || authorities.contains("KE_TOAN")
+                || authorities.contains("KETOAN") || authorities.contains("STAFF")) {
+            return null;
+        }
+
+        List<String> customerIds = jdbcTemplate.queryForList(
+                "SELECT id_khach_hang FROM TaiKhoan WHERE ten_dang_nhap = ?", String.class, auth.getName());
+        if (customerIds.isEmpty() || customerIds.get(0) == null) {
+            return ResponseEntity.status(403).body(Map.of("message", "Tài khoản không có quyền thanh toán hóa đơn này."));
+        }
+
+        List<String> ownerIds = jdbcTemplate.queryForList(
+                "SELECT id_khach_hang FROM HoaDon WHERE id_hoa_don = ?", String.class, idHoaDon);
+        if (ownerIds.isEmpty()) {
+            return ResponseEntity.status(404).body(Map.of("message", "Không tìm thấy hóa đơn."));
+        }
+        if (!customerIds.get(0).equals(ownerIds.get(0))) {
+            return ResponseEntity.status(403).body(Map.of("message", "Bạn không có quyền thanh toán hóa đơn của người khác."));
+        }
+        return null;
+    }
+
+    private ResponseEntity<?> validatePayableInvoice(String idHoaDon, java.math.BigDecimal paidAmount) {
+        Map<String, Object> invoice = getInvoiceForPayment(idHoaDon);
+        if (invoice == null) {
+            return ResponseEntity.status(404).body(Map.of("message", "Không tìm thấy hóa đơn.", "success", false));
+        }
+
+        String status = String.valueOf(invoice.get("trang_thai"));
+        if ("DA_THANH_TOAN".equalsIgnoreCase(status)) {
+            return ResponseEntity.ok(Map.of("message", "Hóa đơn đã được thanh toán trước đó.", "success", true));
+        }
+        if (!"CHO_THANH_TOAN".equalsIgnoreCase(status)) {
+            return ResponseEntity.status(400).body(Map.of("message", "Hóa đơn không ở trạng thái chờ thanh toán.", "success", false));
+        }
+
+        java.math.BigDecimal expectedAmount = (java.math.BigDecimal) invoice.get("tong_tien_cuoi");
+        if (expectedAmount == null || paidAmount == null || paidAmount.compareTo(expectedAmount) < 0) {
+            return ResponseEntity.status(400).body(Map.of(
+                    "message", "Số tiền thanh toán không đủ hoặc không khớp với hóa đơn.",
+                    "success", false));
+        }
+        return null;
+    }
 
     // BẢO MẬT: Secret dùng để xác thực Webhook từ SePay/Casso/PayOS
     // Cấu hình trong application.properties: webhook.secret=YOUR_SECRET
@@ -39,10 +105,46 @@ public class PaymentController {
     @org.springframework.beans.factory.annotation.Value("${vnpay.return.url:http://localhost:5173/khach-hang/hoa-don-thanh-toan}")
     private String vnp_ReturnUrl;
 
+    private String getVnpTmnCode() {
+        try {
+            String dbVal = jdbcTemplate.queryForObject("SELECT gia_tri FROM CauHinhHeThong WHERE ten_cau_hinh = 'vnpay_tmn_code'", String.class);
+            if (dbVal != null && !dbVal.trim().isEmpty()) return dbVal.trim();
+        } catch (Exception e) {}
+        return vnp_TmnCode;
+    }
+
+    private String getVnpHashSecret() {
+        try {
+            String dbVal = jdbcTemplate.queryForObject("SELECT gia_tri FROM CauHinhHeThong WHERE ten_cau_hinh = 'vnpay_hash_secret'", String.class);
+            if (dbVal != null && !dbVal.trim().isEmpty()) return dbVal.trim();
+        } catch (Exception e) {}
+        return vnp_HashSecret;
+    }
+
+    private String getVnpUrl() {
+        try {
+            String dbVal = jdbcTemplate.queryForObject("SELECT gia_tri FROM CauHinhHeThong WHERE ten_cau_hinh = 'vnpay_url'", String.class);
+            if (dbVal != null && !dbVal.trim().isEmpty()) return dbVal.trim();
+        } catch (Exception e) {}
+        return vnp_Url;
+    }
+
+    private String getVnpReturnUrl() {
+        try {
+            String dbVal = jdbcTemplate.queryForObject("SELECT gia_tri FROM CauHinhHeThong WHERE ten_cau_hinh = 'vnpay_return_url'", String.class);
+            if (dbVal != null && !dbVal.trim().isEmpty()) return dbVal.trim();
+        } catch (Exception e) {}
+        return vnp_ReturnUrl;
+    }
+
     @PostMapping("/vnpay/create-url")
     public ResponseEntity<?> createPaymentUrl(@RequestBody Map<String, Object> payload) {
         try {
             String idHoaDon = payload.get("id_hoa_don").toString();
+            ResponseEntity<?> accessError = validateInvoiceAccess(idHoaDon);
+            if (accessError != null) {
+                return accessError;
+            }
             // BẢO MẬT: Kiểm tra số tiền thật từ Database thay vì tin tưởng Frontend
             java.math.BigDecimal amountFromDb = jdbcTemplate.queryForObject(
                 "SELECT tong_tien_cuoi FROM HoaDon WHERE id_hoa_don = ?", 
@@ -50,6 +152,11 @@ public class PaymentController {
             
             if (amountFromDb == null) {
                 return ResponseEntity.status(404).body(Map.of("message", "Không tìm thấy hóa đơn!"));
+            }
+
+            ResponseEntity<?> payableError = validatePayableInvoice(idHoaDon, amountFromDb);
+            if (payableError != null) {
+                return payableError;
             }
 
             long amount = amountFromDb.multiply(new java.math.BigDecimal(100)).longValue();
@@ -63,14 +170,14 @@ public class PaymentController {
             Map<String, String> vnp_Params = new HashMap<>();
             vnp_Params.put("vnp_Version", vnp_Version);
             vnp_Params.put("vnp_Command", vnp_Command);
-            vnp_Params.put("vnp_TmnCode", vnp_TmnCode);
+            vnp_Params.put("vnp_TmnCode", getVnpTmnCode());
             vnp_Params.put("vnp_Amount", String.valueOf(amount));
             vnp_Params.put("vnp_CurrCode", "VND");
             vnp_Params.put("vnp_TxnRef", vnp_TxnRef);
             vnp_Params.put("vnp_OrderInfo", "Thanh toan hoa don Rexi Vet HD" + idHoaDon);
             vnp_Params.put("vnp_OrderType", orderType);
             vnp_Params.put("vnp_Locale", "vn");
-            vnp_Params.put("vnp_ReturnUrl", vnp_ReturnUrl);
+            vnp_Params.put("vnp_ReturnUrl", getVnpReturnUrl());
             vnp_Params.put("vnp_IpAddr", vnp_IpAddr);
 
             Calendar cld = Calendar.getInstance(TimeZone.getTimeZone("Etc/GMT+7"));
@@ -82,8 +189,8 @@ public class PaymentController {
             String vnp_ExpireDate = formatter.format(cld.getTime());
             vnp_Params.put("vnp_ExpireDate", vnp_ExpireDate);
 
-            String queryUrl = VNPayConfig.hashAllFields(vnp_Params, vnp_HashSecret);
-            String paymentUrl = vnp_Url + "?" + queryUrl;
+            String queryUrl = VNPayConfig.hashAllFields(vnp_Params, getVnpHashSecret());
+            String paymentUrl = getVnpUrl() + "?" + queryUrl;
 
             return ResponseEntity.ok(Map.of("url", paymentUrl));
         } catch (Exception e) {
@@ -92,6 +199,7 @@ public class PaymentController {
     }
 
     @GetMapping("/vnpay/return")
+    @org.springframework.transaction.annotation.Transactional
     public ResponseEntity<?> paymentReturn(@RequestParam Map<String, String> queryParams) {
         try {
             String vnp_SecureHash = queryParams.get("vnp_SecureHash");
@@ -99,7 +207,7 @@ public class PaymentController {
                 return ResponseEntity.badRequest().body(Map.of("message", "Thiếu chữ ký", "success", false));
             queryParams.remove("vnp_SecureHash");
             queryParams.remove("vnp_SecureHashType");
-            String signValue = VNPayConfig.hashAllFields(queryParams, vnp_HashSecret);
+            String signValue = VNPayConfig.hashAllFields(queryParams, getVnpHashSecret());
             if (signValue.equals(vnp_SecureHash)) {
                 if ("00".equals(queryParams.get("vnp_ResponseCode"))) {
                     String idHoaDon = queryParams.get("vnp_TxnRef").split("_")[0];
@@ -117,11 +225,14 @@ public class PaymentController {
                             "success", false));
                     }
 
-                    jdbcTemplate.update("UPDATE HoaDon SET trang_thai = 'da_thanh_toan' WHERE id_hoa_don = ?",
+                    int updated = jdbcTemplate.update("UPDATE HoaDon SET trang_thai = 'DA_THANH_TOAN' WHERE id_hoa_don = ? AND trang_thai = 'CHO_THANH_TOAN'",
                             idHoaDon);
+                    if (updated == 0) {
+                        return ResponseEntity.ok(Map.of("message", "Hóa đơn đã được xử lý trước đó.", "success", true));
+                    }
                     jdbcTemplate.update(
-                            "INSERT INTO ThanhToan (id_hoa_don, ngay_thanh_toan, so_tien, phuong_thuc, trang_thai) VALUES (?, GETDATE(), ?, 'VNPay', N'Thành công')",
-                            idHoaDon, amountPaid);
+                            "INSERT INTO ThanhToan (id_thanh_toan, id_hoa_don, ngay_tra_tien, so_tien, phuong_thuc, ghi_chu) VALUES (?, ?, GETDATE(), ?, 'VNPay', N'Thanh toán VNPay thành công')",
+                            "TT-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase(), idHoaDon, amountPaid);
                     return ResponseEntity.ok(Map.of("message", "Thanh toán thành công!", "success", true));
                 }
                 return ResponseEntity.ok(Map.of("message", "Giao dịch thất bại.", "success", false));
@@ -144,28 +255,64 @@ public class PaymentController {
     @org.springframework.beans.factory.annotation.Value("${vietqr.account.name:TRAN MINH HOANG}")
     private String ACCOUNT_NAME;
 
+    private String getVietQrBankId() {
+        try {
+            String dbVal = jdbcTemplate.queryForObject("SELECT gia_tri FROM CauHinhHeThong WHERE ten_cau_hinh = 'vietqr_bank_id'", String.class);
+            if (dbVal != null && !dbVal.trim().isEmpty()) return dbVal.trim();
+        } catch (Exception e) {}
+        return BANK_ID;
+    }
+
+    private String getVietQrAccountNo() {
+        try {
+            String dbVal = jdbcTemplate.queryForObject("SELECT gia_tri FROM CauHinhHeThong WHERE ten_cau_hinh = 'vietqr_account_no'", String.class);
+            if (dbVal != null && !dbVal.trim().isEmpty()) return dbVal.trim();
+        } catch (Exception e) {}
+        return ACCOUNT_NO;
+    }
+
+    private String getVietQrAccountName() {
+        try {
+            String dbVal = jdbcTemplate.queryForObject("SELECT gia_tri FROM CauHinhHeThong WHERE ten_cau_hinh = 'vietqr_account_name'", String.class);
+            if (dbVal != null && !dbVal.trim().isEmpty()) return dbVal.trim();
+        } catch (Exception e) {}
+        return ACCOUNT_NAME;
+    }
+
     // API Tạo mã VietQR động (Nhúng sẵn số tiền và nội dung)
     @PostMapping("/vietqr/generate")
     public ResponseEntity<?> generateVietQR(@RequestBody Map<String, Object> payload) {
         try {
-            if (payload.get("id_hoa_don") == null || payload.get("amount") == null) {
+            if (payload.get("id_hoa_don") == null) {
                 return ResponseEntity.badRequest().body(Map.of("message", "Thiếu thông tin id_hoa_don hoặc amount!"));
             }
 
             String idHoaDon = payload.get("id_hoa_don").toString();
-            String amount = payload.get("amount").toString();
+            ResponseEntity<?> accessError = validateInvoiceAccess(idHoaDon);
+            if (accessError != null) {
+                return accessError;
+            }
+            Map<String, Object> invoice = getInvoiceForPayment(idHoaDon);
+            if (invoice == null) {
+                return ResponseEntity.status(404).body(Map.of("message", "Không tìm thấy hóa đơn."));
+            }
+            java.math.BigDecimal amountFromDb = (java.math.BigDecimal) invoice.get("tong_tien_cuoi");
+            ResponseEntity<?> payableError = validatePayableInvoice(idHoaDon, amountFromDb);
+            if (payableError != null) {
+                return payableError;
+            }
+            String amount = amountFromDb.toPlainString();
+
 
             // Nội dung chuyển khoản chuẩn: REXI HD + ID Hóa đơn
             // Ví dụ: REXI HD123
-            String addInfo = "REXI HD" + idHoaDon;
+            String addInfo = "REXI " + idHoaDon;
 
-            // Sử dụng API vietqr.io (Miễn phí) để sinh URL ảnh QR
-            // Mẫu compact2 là mẫu tối giản, hiện đại
             String qrUrl = String.format(
                     "https://img.vietqr.io/image/%s-%s-compact2.png?amount=%s&addInfo=%s&accountName=%s",
-                    BANK_ID, ACCOUNT_NO, amount,
-                    URLEncoder.encode(addInfo, StandardCharsets.UTF_8),
-                    URLEncoder.encode(ACCOUNT_NAME, StandardCharsets.UTF_8));
+                    getVietQrBankId(), getVietQrAccountNo(), amount,
+                    java.net.URLEncoder.encode(addInfo, java.nio.charset.StandardCharsets.UTF_8),
+                    java.net.URLEncoder.encode(getVietQrAccountName(), java.nio.charset.StandardCharsets.UTF_8));
 
             return ResponseEntity.ok(Map.of(
                     "qr_url", qrUrl,
@@ -178,6 +325,7 @@ public class PaymentController {
 
     // API Webhook - Hệ thống tự động gạch nợ (Hứng từ PayOS / SePay / Casso)
     @PostMapping("/vietqr/webhook")
+    @org.springframework.transaction.annotation.Transactional
     public ResponseEntity<?> vietqrWebhook(
             @RequestBody Map<String, Object> payload,
             @RequestHeader(value = "X-Webhook-Secret", required = false) String receivedSecret) {
@@ -185,11 +333,11 @@ public class PaymentController {
             // BẢO MẬT LỚP 1: Xác thực chữ ký bí mật từ SePay/Casso
             // Nếu không khớp → từ chối ngay, không xử lý gì cả
             if (receivedSecret == null || !receivedSecret.equals(webhookSecret)) {
-                System.err.println("⚠️ Webhook bị từ chối: Sai hoặc thiếu X-Webhook-Secret!");
+                logger.warning("Webhook bị từ chối: Sai hoặc thiếu X-Webhook-Secret!");
                 return ResponseEntity.status(401).body(Map.of("success", false, "message", "Unauthorized"));
             }
 
-            System.out.println("📩 Nhận Webhook hợp lệ: " + payload);
+            logger.info("Nhận Webhook hợp lệ: " + payload);
 
             // Bóc tách nội dung chuyển khoản linh hoạt (Hỗ trợ PayOS / SePay / Casso)
             String content = "";
@@ -217,28 +365,32 @@ public class PaymentController {
             content = content.toUpperCase();
 
             // Regex bắt mã hóa đơn trong nội dung (REXI HD123, REXIHD 123, REXIHD123...)
-            java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("REXI\\s*HD\\s*(\\d+)");
+            java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("REXI\\s*(HD-[A-Z0-9]+|[0-9]+)");
             java.util.regex.Matcher matcher = pattern.matcher(content);
 
             if (matcher.find()) {
                 String idHoaDon = matcher.group(1);
+                ResponseEntity<?> payableError = validatePayableInvoice(idHoaDon, soTien);
+                if (payableError != null) {
+                    return payableError;
+                }
                 int updated = jdbcTemplate.update(
-                        "UPDATE HoaDon SET trang_thai = 'da_thanh_toan' WHERE id_hoa_don = ? AND trang_thai = 'cho_thanh_toan'",
+                        "UPDATE HoaDon SET trang_thai = 'DA_THANH_TOAN' WHERE id_hoa_don = ? AND trang_thai = 'CHO_THANH_TOAN'",
                         idHoaDon);
 
                 if (updated > 0) {
                     // FIX LỖI: Ghi số tiền thật vào lịch sử thay vì hardcode 0
                     final java.math.BigDecimal finalSoTien = soTien;
                     jdbcTemplate.update(
-                            "INSERT INTO ThanhToan (id_hoa_don, ngay_thanh_toan, so_tien, phuong_thuc, trang_thai) VALUES (?, GETDATE(), ?, 'VietQR', N'Thành công')",
-                            idHoaDon, finalSoTien);
-                    System.out.println("✅ GẠCH NỢ THÀNH CÔNG: Hóa đơn #" + idHoaDon + " | Số tiền: " + finalSoTien);
+                            "INSERT INTO ThanhToan (id_thanh_toan, id_hoa_don, ngay_tra_tien, so_tien, phuong_thuc, ghi_chu) VALUES (?, ?, GETDATE(), ?, 'VietQR', N'Thanh toán VietQR thành công')",
+                            "TT-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase(), idHoaDon, finalSoTien);
+                    logger.info("GẠCH NỢ THÀNH CÔNG: Hóa đơn #" + idHoaDon + " | Số tiền: " + finalSoTien);
                 }
             }
 
             return ResponseEntity.ok(Map.of("success", true));
         } catch (Exception e) {
-            System.err.println("❌ Lỗi xử lý Webhook: " + e.getMessage());
+            logger.severe("Lỗi xử lý Webhook: " + e.getMessage());
             return ResponseEntity.status(500).body(Map.of("success", false));
         }
     }

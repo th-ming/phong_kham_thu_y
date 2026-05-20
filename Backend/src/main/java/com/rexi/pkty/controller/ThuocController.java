@@ -18,6 +18,9 @@ public class ThuocController {
     @Autowired
     private com.rexi.pkty.service.AuditLogService auditLogService;
 
+    @Autowired
+    private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
+
     @GetMapping
     public List<Thuoc> getAllThuoc() {
         return thuocRepository.findAll();
@@ -72,12 +75,33 @@ public class ThuocController {
     public org.springframework.http.ResponseEntity<?> deleteThuoc(@PathVariable String id) {
         if (!isAdmin())
             return org.springframework.http.ResponseEntity.status(403)
-                    .body("Bạn không có quyền xóa thuốc khỏi hệ thống!");
-        thuocRepository.findById(id).ifPresent(t -> {
-            auditLogService.logAction("XÓA", "Thuoc", "Xóa thuốc: " + t.getTen_thuoc());
-        });
-        thuocRepository.deleteById(id);
-        return org.springframework.http.ResponseEntity.ok("Đã xóa thuốc thành công!");
+                    .body(java.util.Map.of("message", "Bạn không có quyền xóa thuốc khỏi hệ thống!"));
+                    
+        return thuocRepository.findById(id).map(t -> {
+            // Kiểm tra liên kết trong LoThuoc và DonThuocChiTiet
+            int countLoThuoc = 0;
+            int countDonThuoc = 0;
+            try {
+                countLoThuoc = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM LoThuoc WHERE id_thuoc = ?", Integer.class, id);
+            } catch (Exception e) {}
+            try {
+                countDonThuoc = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM DonThuocChiTiet WHERE id_thuoc = ?", Integer.class, id);
+            } catch (Exception e) {}
+            
+            if (countLoThuoc > 0 || countDonThuoc > 0) {
+                // Đã được sử dụng -> Chỉ xóa mềm
+                t.setDa_xoa(true);
+                t.setTrang_thai(false);
+                thuocRepository.save(t);
+                auditLogService.logAction("XÓA MỀM", "Thuoc", "Đã ẩn thuốc do có dữ liệu liên kết: " + t.getTen_thuoc());
+                return org.springframework.http.ResponseEntity.ok(java.util.Map.of("message", "Thuốc đang được sử dụng trong kho hoặc đơn thuốc. Đã tự động chuyển sang trạng thái Ngừng kinh doanh/Xóa mềm để bảo toàn dữ liệu lịch sử!"));
+            } else {
+                // Xóa cứng an toàn
+                auditLogService.logAction("XÓA", "Thuoc", "Xóa thuốc vĩnh viễn: " + t.getTen_thuoc());
+                thuocRepository.deleteById(id);
+                return org.springframework.http.ResponseEntity.ok(java.util.Map.of("message", "Đã xóa thuốc thành công!"));
+            }
+        }).orElse(org.springframework.http.ResponseEntity.status(404).body(java.util.Map.of("message", "Không tìm thấy thuốc!")));
     }
 
     private boolean isAdmin() {

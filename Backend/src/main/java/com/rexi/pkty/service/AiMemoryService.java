@@ -54,6 +54,8 @@ public class AiMemoryService {
             
             if (tk.getId_khach_hang() != null) {
                 sb.append(getPetContext(tk.getId_khach_hang()));
+                sb.append(getMedicalHistoryContext(tk.getId_khach_hang()));
+                sb.append(getImmunizationContext(tk.getId_khach_hang()));
             }
             return sb.toString();
         } catch (Exception e) {
@@ -81,12 +83,21 @@ public class AiMemoryService {
     }
 
     public String getKnowledgeBaseContext(String query) {
+        if (query == null || query.trim().length() < 4) return "";
+        
+        String cleanQuery = query.trim().toLowerCase();
+        // Bỏ qua các từ chào hỏi thông dụng để tránh nạp toàn bộ tài liệu y khoa không cần thiết
+        if (cleanQuery.equals("hi") || cleanQuery.equals("hello") || cleanQuery.equals("helo") || 
+            cleanQuery.equals("alo") || cleanQuery.equals("chào") || cleanQuery.equals("chao") ||
+            cleanQuery.equals("bông") || cleanQuery.equals("cún") || cleanQuery.equals("mèo")) {
+            return "";
+        }
+
         try {
             Path path = Paths.get("src/main/resources/knowledge");
             File folder = path.toFile();
             if (!folder.exists() || folder.listFiles() == null) return "";
 
-            String lowerQuery = query.toLowerCase();
             StringBuilder context = new StringBuilder("\n[KIẾN THỨC CHUYÊN MÔN VNUA]\n");
             boolean found = false;
 
@@ -94,7 +105,16 @@ public class AiMemoryService {
                 if (file.isFile() && file.getName().endsWith(".md")) {
                     String content = Files.readString(file.toPath());
                     // Tìm kiếm đoạn văn chứa từ khóa
-                    if (content.toLowerCase().contains(lowerQuery)) {
+                    if (content.toLowerCase().contains(cleanQuery)) {
+                        // Giới hạn dung lượng context tối đa là 8000 ký tự để tránh quá tải token cho LLM
+                        if (context.length() + content.length() > 8000) {
+                            int remainingSpace = 8000 - context.length();
+                            if (remainingSpace > 500) {
+                                context.append(content, 0, remainingSpace).append("... [ĐÃ RÚT GỌN VÌ QUÁ DÀI] ...\n");
+                                found = true;
+                            }
+                            break;
+                        }
                         context.append(content).append("\n---\n");
                         found = true;
                     }
@@ -134,6 +154,59 @@ public class AiMemoryService {
                 sb.append("- BS. ").append(d.getHo_ten()).append(" (").append(d.getGioi_thieu()).append(")\n");
             }
             return sb.toString();
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    public String getMedicalHistoryContext(String customerId) {
+        if (customerId == null) return "";
+        try {
+            var records = hoSoBenhAnRepository.findByCustomerId(customerId);
+            if (records.isEmpty()) return "\n[KHÁCH HÀNG CHƯA CÓ LỊCH SỬ BỆNH ÁN]\n";
+            
+            StringBuilder sb = new StringBuilder("\n[LỊCH SỬ BỆNH ÁN CỦA BOSS]\n");
+            for (var rec : records) {
+                sb.append("- Ngày khám: ").append(rec.get("ngay_kham"))
+                  .append(", Thú cưng: ").append(rec.get("ten_thu_cung"))
+                  .append(", Triệu chứng: ").append(rec.get("trieu_chung"))
+                  .append(", Chẩn đoán: ").append(rec.get("chan_doan"))
+                  .append(", Phác đồ điều trị: ").append(rec.get("phac_do_dieu_tri"))
+                  .append(", Hướng dẫn chăm sóc: ").append(rec.get("huong_dan_cham_soc"))
+                  .append(", Bác sĩ: ").append(rec.get("ten_bac_si")).append("\n");
+            }
+            return sb.toString();
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    public String getImmunizationContext(String customerId) {
+        if (customerId == null) return "";
+        try {
+            var pets = thuCungRepository.findByKhachHang(customerId);
+            if (pets.isEmpty()) return "";
+            
+            StringBuilder sb = new StringBuilder("\n[LỊCH SỬ TIÊM CHỦNG VACCINE CỦA BOSS]\n");
+            boolean hasData = false;
+            for (var pet : pets) {
+                Object petIdObj = pet.get("id_thu_cung");
+                if (petIdObj == null) continue;
+                String petId = String.valueOf(petIdObj);
+                String petName = (String) pet.get("ten_thu_cung");
+                
+                var shots = tiemChungRepository.findByIdThuCung(petId);
+                for (var shot : shots) {
+                    sb.append("- Pet: ").append(petName)
+                      .append(", Vaccine: ").append(shot.getTen_vaccine())
+                      .append(", Loại: ").append(shot.getLoai_vaccine())
+                      .append(", Ngày tiêm: ").append(shot.getNgay_tiem())
+                      .append(", Ngày nhắc lại: ").append(shot.getNgay_tiem_lai())
+                      .append(", Ghi chú: ").append(shot.getGhi_chu()).append("\n");
+                    hasData = true;
+                }
+            }
+            return hasData ? sb.toString() : "\n[KHÁCH HÀNG CHƯA CÓ LỊCH SỬ TIÊM CHỦNG VACCINE]\n";
         } catch (Exception e) {
             return "";
         }

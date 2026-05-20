@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { getUserProfile } from "@utils/index";
 
@@ -107,10 +107,10 @@ const SidebarAdmin: React.FC = () => {
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '24px', padding: '0 10px' }}>
         <div style={{ width: '42px', height: '42px', borderRadius: '12px', overflow: 'hidden', background: 'var(--primary-gradient)', border: '2px solid rgba(255,255,255,0.2)', boxShadow: '0 0 20px var(--primary-shadow)' }}>
-          <img src="/img/avtpkty.png" alt="Rexi" style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '6px' }} />
+          <img src="/img/avtpkty.png" alt="Rexi" style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '6px', filter: 'brightness(0) invert(1)' }} />
         </div>
         <div>
-          <h2 className="text-gradient" style={{ fontSize: '1.4rem', margin: 0, letterSpacing: '-1.5px', fontWeight: 950 }}>REXI ADMIN</h2>
+          <h2 className="text-gradient" style={{ fontSize: '1.4rem', margin: 0, letterSpacing: '-1.5px', fontWeight: 950, color: 'var(--primary)' }}>REXI ADMIN</h2>
           <p style={{ fontSize: '0.65rem', fontWeight: 900, color: 'var(--primary)', margin: 0, letterSpacing: '2px', textTransform: 'uppercase', opacity: 0.8 }}>HỆ THỐNG QUẢN TRỊ</p>
         </div>
       </div>
@@ -212,7 +212,7 @@ const SidebarAdmin: React.FC = () => {
         <ThemeToggle />
       </div>
 
-      <button
+      <button data-ai-id="button-sidebaradmin-yuhf"
         onClick={handleLogout}
         className="btn"
         style={{

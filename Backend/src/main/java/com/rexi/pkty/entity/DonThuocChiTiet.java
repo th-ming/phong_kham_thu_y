@@ -8,8 +8,7 @@ import lombok.Data;
 @Data
 public class DonThuocChiTiet {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id_chi_tiet;
+    private String id_chi_tiet_don_thuoc;
 
     private String id_don_thuoc;
     private String id_thuoc;

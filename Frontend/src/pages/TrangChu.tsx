@@ -1,5 +1,4 @@
 import React, { useEffect } from "react";
-import { ChatBot } from "@components/ChatBot";
 import { Preloader } from "@components/Preloader";
 import { MemeCat, ScrollToTop } from "@components/SpecialEffects";
 
@@ -61,7 +60,6 @@ const TrangChu: React.FC = () => {
         <PhanLienHe />
       </main>
 
-      <ChatBot />
       <MemeCat />
       <ScrollToTop />
     </>

@@ -24,12 +24,26 @@ const DangNhapDangKy: React.FC = () => {
   const GOOGLE_CLIENT_ID = "334761445329-iog83fgqrdlo0iavo68pkv17modc85du.apps.googleusercontent.com";
 
   useEffect(() => {
+    // Cập nhật title trang để tốt cho SEO theo ngữ cảnh
+    document.title = isLogin
+      ? 'Đăng nhập | Rexi – Phòng Khám Thú Y'
+      : 'Đăng ký tài khoản | Rexi – Phòng Khám Thú Y';
+    // Inject meta description cho SEO
+    let metaDesc = document.querySelector('meta[name="description"]');
+    if (!metaDesc) {
+      metaDesc = document.createElement('meta');
+      (metaDesc as HTMLMetaElement).name = 'description';
+      document.head.appendChild(metaDesc);
+    }
+    (metaDesc as HTMLMetaElement).content = isLogin
+      ? 'Dăng nhập vào tài khoản Rexi để quản lý sức khỏe thú cưng và đặt lịch khám trực tuyến.'
+      : 'Đăng ký tài khoản Rexi – Hệ thống quản lý sức khỏe thú cưng chuyên nghiệp.';
     const savedUsername = localStorage.getItem("rememberedUsername");
     if (savedUsername) {
       setUsername(savedUsername);
       setRememberMe(true);
     }
-  }, []);
+  }, [isLogin]);
 
   useEffect(() => {
     let timer: number;
@@ -233,7 +247,7 @@ const DangNhapDangKy: React.FC = () => {
         /* CHỈ KHI CÓ DATA-THEME DARK THÌ MỚI ĐƯỢC PHÉP TỐI */
         [data-theme='dark'] .auth-container { background: #020617 !important; }
         [data-theme='dark'] .auth-card { background: rgba(15, 23, 42, 0.7) !important; border: 1px solid rgba(255,255,255,0.1) !important; }
-        [data-theme='dark'] .auth-sidebar { background: linear-gradient(135deg, #0d9488 0%, #8b5cf6 100%) !important; }
+        [data-theme='dark'] .auth-sidebar { background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%) !important; }
         [data-theme='dark'] .auth-title { color: #fff !important; }
         [data-theme='dark'] .input-group { background: rgba(255,255,255,0.03) !important; border-color: rgba(255,255,255,0.1) !important; }
         [data-theme='dark'] .input-group input { color: #fff !important; }
@@ -251,7 +265,7 @@ const DangNhapDangKy: React.FC = () => {
           transition: opacity 0.5s ease;
         }
         .blob-1 { top: -150px; left: -150px; background: #0d9488; }
-        .blob-2 { bottom: -150px; right: -150px; background: #8b5cf6; }
+        .blob-2 { bottom: -150px; right: -150px; background: #14b8a6; }
 
         @media (max-width: 900px) {
           .auth-card { grid-template-columns: 1fr; }
@@ -310,32 +324,32 @@ const DangNhapDangKy: React.FC = () => {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   <div className="input-group">
                     <span className="material-symbols-outlined" style={{ color: '#0d9488', opacity: 0.7, fontSize: '18px' }}>badge</span>
-                    <input placeholder="Họ và tên" value={fullname} onChange={e => setFullname(e.target.value)} required />
+                    <input data-ai-id="input-dangnhapdangky-wgtk" placeholder="Họ và tên" value={fullname} onChange={e => setFullname(e.target.value)} required />
                   </div>
                   <div className="input-group">
                     <span className="material-symbols-outlined" style={{ color: '#0d9488', opacity: 0.7, fontSize: '18px' }}>mail</span>
-                    <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} required />
+                    <input data-ai-id="input-dangnhapdangky-mw60" type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} required />
                   </div>
                   <div className="input-group">
                     <span className="material-symbols-outlined" style={{ color: '#0d9488', opacity: 0.7, fontSize: '18px' }}>phone</span>
-                    <input placeholder="Số điện thoại" value={phone} onChange={e => setPhone(e.target.value)} required />
+                    <input data-ai-id="input-dangnhapdangky-v63p" placeholder="Số điện thoại" value={phone} onChange={e => setPhone(e.target.value)} required />
                   </div>
                   <div className="input-group">
                     <span className="material-symbols-outlined" style={{ color: '#0d9488', opacity: 0.7, fontSize: '18px' }}>location_on</span>
-                    <input placeholder="Địa chỉ" value={address} onChange={e => setAddress(e.target.value)} required />
+                    <input data-ai-id="input-dangnhapdangky-gejq" placeholder="Địa chỉ" value={address} onChange={e => setAddress(e.target.value)} required />
                   </div>
                   <div className="input-group">
                     <span className="material-symbols-outlined" style={{ color: '#0d9488', opacity: 0.7, fontSize: '18px' }}>person</span>
-                    <input placeholder="Tên đăng nhập" value={username} onChange={e => setUsername(e.target.value)} required />
+                    <input data-ai-id="input-dangnhapdangky-0l0l" placeholder="Tên đăng nhập" value={username} onChange={e => setUsername(e.target.value)} required />
                   </div>
                   <div className="input-group">
                     <span className="material-symbols-outlined" style={{ color: '#0d9488', opacity: 0.7, fontSize: '18px' }}>lock</span>
-                    <input type={showPassword ? "text" : "password"} placeholder="Mật khẩu" value={password} onChange={e => setPassword(e.target.value)} required />
+                    <input data-ai-id="input-dangnhapdangky-ond4" type={showPassword ? "text" : "password"} placeholder="Mật khẩu" value={password} onChange={e => setPassword(e.target.value)} required />
                     <span className="material-symbols-outlined" onClick={() => setShowPassword(!showPassword)} style={{ cursor: 'pointer', color: '#94a3b8', fontSize: '18px' }}>{showPassword ? 'visibility_off' : 'visibility'}</span>
                   </div>
                   <div className="input-group" style={{ gridColumn: 'span 2' }}>
                     <span className="material-symbols-outlined" style={{ color: '#0d9488', opacity: 0.7, fontSize: '18px' }}>lock_reset</span>
-                    <input type={showPassword ? "text" : "password"} placeholder="Xác nhận mật khẩu" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required />
+                    <input data-ai-id="input-dangnhapdangky-t0t3" type={showPassword ? "text" : "password"} placeholder="Xác nhận mật khẩu" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required />
                     <span className="material-symbols-outlined" onClick={() => setShowPassword(!showPassword)} style={{ cursor: 'pointer', color: '#94a3b8', fontSize: '18px' }}>{showPassword ? 'visibility_off' : 'visibility'}</span>
                   </div>
                 </div>
@@ -343,25 +357,25 @@ const DangNhapDangKy: React.FC = () => {
                 <>
                   <div className="input-group">
                     <span className="material-symbols-outlined" style={{ color: '#0d9488', opacity: 0.7 }}>person</span>
-                    <input placeholder="Tên đăng nhập" value={username} onChange={e => setUsername(e.target.value)} required />
+                    <input data-ai-id="input-dangnhapdangky-8dku" placeholder="Tên đăng nhập" value={username} onChange={e => setUsername(e.target.value)} required />
                   </div>
                   <div className="input-group">
                     <span className="material-symbols-outlined" style={{ color: '#0d9488', opacity: 0.7 }}>lock</span>
-                    <input type={showPassword ? "text" : "password"} placeholder="Mật khẩu" value={password} onChange={e => setPassword(e.target.value)} required />
+                    <input data-ai-id="input-dangnhapdangky-h1ru" type={showPassword ? "text" : "password"} placeholder="Mật khẩu" value={password} onChange={e => setPassword(e.target.value)} required />
                     <span className="material-symbols-outlined" onClick={() => setShowPassword(!showPassword)} style={{ cursor: 'pointer', color: '#94a3b8' }}>{showPassword ? 'visibility_off' : 'visibility'}</span>
                   </div>
                   
                   {/* CHỨC NĂNG GHI NHỚ & QUÊN MẬT KHẨU CỦA SẾP ĐÂY Ạ */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '8px 0' }}>
                     <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', margin: 0, textTransform: 'none', color: '#64748b', fontSize: '0.9rem' }}>
-                      <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} style={{ width: '18px', height: '18px' }} />
+                      <input data-ai-id="input-dangnhapdangky-cyre" type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} style={{ width: '18px', height: '18px' }} />
                       Ghi nhớ đăng nhập
                     </label>
                     <Link to="/quen-mat-khau" style={{ color: '#0d9488', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 800 }}>Quên mật khẩu?</Link>
                   </div>
                 </>
               )}
-              <button type="submit" disabled={loading} className="btn-auth" style={{ background: loading ? '#94a3b8' : '#0d9488', color: 'white', border: 'none', borderRadius: '50px', padding: '16px', fontWeight: 800, cursor: loading ? 'not-allowed' : 'pointer', marginTop: '10px' }}>{loading ? 'Đang xử lý...' : (isLogin ? 'Đăng nhập ngay' : 'Đăng ký')}</button>
+              <button data-ai-id="button-dangnhapdangky-xgfa" type="submit" disabled={loading} className="btn-auth" style={{ background: loading ? '#94a3b8' : '#0d9488', color: 'white', border: 'none', borderRadius: '50px', padding: '16px', fontWeight: 800, cursor: loading ? 'not-allowed' : 'pointer', marginTop: '10px' }}>{loading ? 'Đang xử lý...' : (isLogin ? 'Đăng nhập ngay' : 'Đăng ký')}</button>
             </form>
 
             <div style={{ marginTop: '20px', textAlign: 'center' }}>

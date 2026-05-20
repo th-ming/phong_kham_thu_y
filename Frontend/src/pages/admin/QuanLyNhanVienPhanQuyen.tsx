@@ -12,6 +12,7 @@ const QuanLyNhanVienPhanQuyen: React.FC = () => {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [filterRole, setFilterRole] = useState("all");
   const [showPassword, setShowPassword] = useState(false);
+  const [searchNhanVien, setSearchNhanVien] = useState("");
 
   const currentUser = getUserProfile();
 
@@ -104,9 +105,21 @@ const QuanLyNhanVienPhanQuyen: React.FC = () => {
   };
 
   const filteredNhanViens = useMemo(() => {
-    if (filterRole === "all") return nhanViens;
-    return nhanViens.filter(nv => nv.chuyen_mon?.toLowerCase() === filterRole.toLowerCase());
-  }, [nhanViens, filterRole]);
+    let result = nhanViens;
+    if (filterRole !== "all") {
+      result = nhanViens.filter(nv => nv.chuyen_mon?.toLowerCase() === filterRole.toLowerCase());
+    }
+    if (searchNhanVien.trim() !== "") {
+      const s = searchNhanVien.toLowerCase();
+      result = result.filter(nv => {
+        const hoTen = (nv.ho_ten || "").toLowerCase();
+        const sdt = (nv.so_dien_thoai || "").toLowerCase();
+        const email = (nv.email || "").toLowerCase();
+        return hoTen.includes(s) || sdt.includes(s) || email.includes(s);
+      });
+    }
+    return result;
+  }, [nhanViens, filterRole, searchNhanVien]);
 
   if (loading) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
@@ -131,7 +144,17 @@ const QuanLyNhanVienPhanQuyen: React.FC = () => {
           <p style={{ color: 'var(--gray-500)', fontWeight: 600, marginTop: '8px' }}>Quản lý đội ngũ y bác sĩ và phân cấp quyền truy cập hệ thống.</p>
         </div>
         <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <select
+          <div className="glass-card" style={{ display: 'flex', alignItems: 'center', padding: '0 16px', borderRadius: '16px', border: '1px solid var(--gray-200)', background: 'var(--surface)', width: '260px' }}>
+            <span className="material-symbols-outlined" style={{ color: 'var(--gray-400)', marginRight: '8px' }}>search</span>
+            <input data-ai-id="input-quanlynhanvienphanquyen-14e1"
+              type="text"
+              placeholder="Tìm tên, SĐT, email..."
+              value={searchNhanVien}
+              onChange={(e) => setSearchNhanVien(e.target.value)}
+              style={{ border: 'none', outline: 'none', background: 'transparent', padding: '10px 0', fontWeight: 600, width: '100%', color: 'var(--ink)', fontSize: '0.9rem' }}
+            />
+          </div>
+          <select data-ai-id="select-quanlynhanvienphanquyen-gi4p"
             value={filterRole}
             onChange={(e) => setFilterRole(e.target.value)}
             style={{ padding: '12px 20px', borderRadius: '16px', border: '1px solid var(--gray-200)', outline: 'none', fontWeight: 800, cursor: 'pointer', background: 'var(--surface)', color: 'var(--ink)' }}
@@ -144,7 +167,7 @@ const QuanLyNhanVienPhanQuyen: React.FC = () => {
             <option value="Quản lý">Quản lý</option>
             <option value="Chăm sóc khách hàng">Chăm sóc khách hàng</option>
           </select>
-          <button className="btn btn-primary btn-pill" onClick={() => { setEditingId(null); setShowModal(true); }}>
+          <button data-ai-id="button-quanlynhanvienphanquyen-qia6" className="btn btn-primary btn-pill" onClick={() => { setEditingId(null); setShowModal(true); }}>
             <span className="material-symbols-outlined">person_add</span>
             Thêm nhân sự
           </button>
@@ -156,13 +179,13 @@ const QuanLyNhanVienPhanQuyen: React.FC = () => {
           <form onSubmit={handleSave} style={{ display: 'grid', gap: '20px' }}>
             <div style={{ display: 'grid', gap: '8px' }}>
               <label htmlFor="ho_ten" style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)' }}>HỌ VÀ TÊN</label>
-              <input id="ho_ten" required className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left', cursor: 'text' }} value={formData.ho_ten} onChange={e => setFormData({ ...formData, ho_ten: e.target.value })} />
+              <input data-ai-id="input-quanlynhanvienphanquyen-xxff" id="ho_ten" required className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left', cursor: 'text' }} value={formData.ho_ten} onChange={e => setFormData({ ...formData, ho_ten: e.target.value })} />
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
               <div style={{ display: 'grid', gap: '8px' }}>
                 <label htmlFor="chuyen_mon" style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)' }}>CHUYÊN MÔN</label>
-                <select id="chuyen_mon" className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left' }} value={formData.chuyen_mon} onChange={e => setFormData({ ...formData, chuyen_mon: e.target.value })}>
+                <select data-ai-id="select-quanlynhanvienphanquyen-pl4x" id="chuyen_mon" className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left' }} value={formData.chuyen_mon} onChange={e => setFormData({ ...formData, chuyen_mon: e.target.value })}>
                   <option value="Bác sĩ">Bác sĩ</option>
                   <option value="Y tá">Y tá</option>
                   <option value="Tiếp tân">Tiếp tân</option>
@@ -173,7 +196,7 @@ const QuanLyNhanVienPhanQuyen: React.FC = () => {
               </div>
               <div style={{ display: 'grid', gap: '8px' }}>
                 <label htmlFor="trang_thai" style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)' }}>TRẠNG THÁI</label>
-                <select id="trang_thai" className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left' }} value={formData.trang_thai} onChange={e => setFormData({ ...formData, trang_thai: e.target.value })}>
+                <select data-ai-id="select-quanlynhanvienphanquyen-mpwl" id="trang_thai" className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left' }} value={formData.trang_thai} onChange={e => setFormData({ ...formData, trang_thai: e.target.value })}>
                   <option value="Đang làm việc">Đang làm việc</option>
                   <option value="Tạm nghỉ">Tạm nghỉ</option>
                 </select>
@@ -182,18 +205,18 @@ const QuanLyNhanVienPhanQuyen: React.FC = () => {
 
             <div style={{ display: 'grid', gap: '8px' }}>
               <label htmlFor="so_dien_thoai" style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)' }}>SỐ ĐIỆN THOẠI</label>
-              <input id="so_dien_thoai" required className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left', cursor: 'text' }} value={formData.so_dien_thoai} onChange={e => setFormData({ ...formData, so_dien_thoai: e.target.value })} />
+              <input data-ai-id="input-quanlynhanvienphanquyen-xg0w" id="so_dien_thoai" required className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left', cursor: 'text' }} value={formData.so_dien_thoai} onChange={e => setFormData({ ...formData, so_dien_thoai: e.target.value })} />
             </div>
             <div style={{ display: 'grid', gap: '8px' }}>
               <label htmlFor="email" style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)' }}>EMAIL (SỬ DỤNG LÀM TÊN ĐĂNG NHẬP)</label>
-              <input id="email" required type="email" className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left', cursor: 'text' }} value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
+              <input data-ai-id="input-quanlynhanvienphanquyen-2gk3" id="email" required type="email" className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left', cursor: 'text' }} value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
             </div>
 
             {!editingId && (
               <div style={{ display: 'grid', gap: '8px' }}>
                 <label htmlFor="mat_khau" style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)' }}>MẬT KHẨU BAN ĐẦU</label>
                 <div style={{ position: 'relative' }}>
-                  <input 
+                  <input data-ai-id="input-quanlynhanvienphanquyen-mscf" 
                     id="mat_khau"
                     required 
                     type={showPassword ? "text" : "password"} 
@@ -232,7 +255,7 @@ const QuanLyNhanVienPhanQuyen: React.FC = () => {
                     <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>upload</span>
                     {formData.hinh_anh ? 'Đổi ảnh khác' : 'Tải ảnh lên'}
                   </label>
-                  <input id="upload-avatar" type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => {
+                  <input data-ai-id="input-quanlynhanvienphanquyen-b8cb" id="upload-avatar" type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (file) {
                       const reader = new FileReader();
@@ -246,12 +269,12 @@ const QuanLyNhanVienPhanQuyen: React.FC = () => {
 
             <div style={{ display: 'grid', gap: '8px' }}>
               <label htmlFor="ngay_vao_lam" style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)' }}>NGÀY VÀO LÀM (ĐỂ TÍNH KINH NGHIỆM)</label>
-              <input id="ngay_vao_lam" type="date" required className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left', cursor: 'text' }} value={formData.ngay_vao_lam} onChange={e => setFormData({ ...formData, ngay_vao_lam: e.target.value })} />
+              <input data-ai-id="input-quanlynhanvienphanquyen-1fk6" id="ngay_vao_lam" type="date" required className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left', cursor: 'text' }} value={formData.ngay_vao_lam} onChange={e => setFormData({ ...formData, ngay_vao_lam: e.target.value })} />
             </div>
 
             <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
-              <button type="submit" disabled={isSaving} className="btn btn-primary btn-pill" style={{ flex: 1, fontWeight: 900 }}>{isSaving ? 'ĐANG LƯU...' : 'LƯU THÔNG TIN'}</button>
-              <button type="button" onClick={() => setShowModal(false)} className="btn btn-pill" style={{ flex: 1, background: 'var(--gray-100)', color: 'var(--ink)', fontWeight: 800 }}>HỦY</button>
+              <button data-ai-id="button-quanlynhanvienphanquyen-ep1p" type="submit" disabled={isSaving} className="btn btn-primary btn-pill" style={{ flex: 1, fontWeight: 900 }}>{isSaving ? 'ĐANG LƯU...' : 'LƯU THÔNG TIN'}</button>
+              <button data-ai-id="button-quanlynhanvienphanquyen-0qxq" type="button" onClick={() => setShowModal(false)} className="btn btn-pill" style={{ flex: 1, background: 'var(--gray-100)', color: 'var(--ink)', fontWeight: 800 }}>HỦY</button>
             </div>
           </form>
         </div>
@@ -309,12 +332,12 @@ const QuanLyNhanVienPhanQuyen: React.FC = () => {
                     </div>
                   ) : (
                     <div style={{ display: 'flex', gap: '8px' }}>
-                      <button className="btn btn-pill" onClick={() => handleOpenEdit(b)} style={{ background: 'var(--gray-50)', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 800 }}>
+                      <button data-ai-id="button-quanlynhanvienphanquyen-z9sz" className="btn btn-pill" onClick={() => handleOpenEdit(b)} style={{ background: 'var(--gray-50)', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 800 }}>
                         <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>edit</span>
                         Sửa
                       </button>
                       {currentUser?.id_nhan_vien !== b.id_nhan_vien && (
-                        <button className="btn btn-pill" onClick={() => handleDelete(b.id_nhan_vien)} style={{ background: 'var(--danger-light, rgba(239, 68, 68, 0.15))', color: 'var(--danger)', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 800 }}>
+                        <button data-ai-id="button-quanlynhanvienphanquyen-cjvx" className="btn btn-pill" onClick={() => handleDelete(b.id_nhan_vien)} style={{ background: 'var(--danger-light, rgba(239, 68, 68, 0.15))', color: 'var(--danger)', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 800 }}>
                           <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>delete</span>
                           Xóa
                         </button>

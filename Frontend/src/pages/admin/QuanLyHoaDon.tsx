@@ -17,6 +17,18 @@ const QuanLyHoaDon: React.FC = () => {
   const [hoaDons, setHoaDons] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewingHD, setViewingHD] = useState<any>(null);
+  const [searchHoaDon, setSearchHoaDon] = useState("");
+
+  const filteredHoaDons = React.useMemo(() => {
+    return hoaDons.filter((h) => {
+      const search = searchHoaDon.toLowerCase();
+      const code = `hd-${h.id_hoa_don}`.toLowerCase();
+      const name = (h.ten_khach_hang || "").toLowerCase();
+      const phone = (h.sdt || "").toLowerCase();
+      const status = (h.trang_thai?.toLowerCase() === 'da_thanh_toan' ? 'đã quyết toán' : 'chờ thanh toán').toLowerCase();
+      return code.includes(search) || name.includes(search) || phone.includes(search) || status.includes(search);
+    });
+  }, [hoaDons, searchHoaDon]);
 
 
   const fetchHoaDons = () => {
@@ -34,12 +46,34 @@ const QuanLyHoaDon: React.FC = () => {
 
   useEffect(() => {
     fetchHoaDons();
+    const params = new URLSearchParams(window.location.search);
+    const searchQuery = params.get("search");
+    const isAutopilot = params.get("autopilot") === "true";
+    if (searchQuery) {
+      if (isAutopilot) {
+        // Hiệu ứng gõ phím giả lập của Trợ lý Đồng nghiệp Rexi
+        let currentText = "";
+        let index = 0;
+        const interval = setInterval(() => {
+          if (index < searchQuery.length) {
+            currentText += searchQuery[index];
+            setSearchHoaDon(currentText);
+            index++;
+          } else {
+            clearInterval(interval);
+            toast.success("Trợ lý Rexi đã hoàn thành lọc hóa đơn cho Đồng nghiệp!");
+          }
+        }, 120);
+      } else {
+        setSearchHoaDon(searchQuery);
+      }
+    }
   }, []);
 
   const handleConfirmPayment = async (id: number) => {
     if (!window.confirm(`Xác nhận đã nhận đủ tiền cho hóa đơn #HD-${id}?`)) return;
     try {
-      await axiosInstance.put(`/api/hoa-don/${id}/status`, { status: 'da_thanh_toan' });
+      await axiosInstance.put(`/api/hoa-don/${id}/status`, { status: 'DA_THANH_TOAN' });
       toast.success("Đã quyết toán hóa đơn thành công!");
       fetchHoaDons(); // Tải lại danh sách
       if (viewingHD) setViewingHD(null);
@@ -144,12 +178,25 @@ const QuanLyHoaDon: React.FC = () => {
           <h1 style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--ink)', letterSpacing: '-1px' }}>Quản lý Hóa đơn</h1>
           <p style={{ color: 'var(--gray-500)', fontWeight: 600 }}>Theo dõi dòng tiền và lịch sử thanh toán của khách hàng.</p>
         </div>
-        <button onClick={handleExportExcel} className="btn btn-pill hover-lift" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '10px 20px', fontSize: '0.9rem', fontWeight: 800 }}>
+        <button data-ai-id="button-quanlyhoadon-5wcs" onClick={handleExportExcel} className="btn btn-pill hover-lift" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '10px 20px', fontSize: '0.9rem', fontWeight: 800 }}>
           <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>download</span> Xuất Excel
         </button>
       </div>
 
       <div className="glass-card" style={{ borderRadius: 'var(--radius-xl)', overflow: 'hidden' }}>
+        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--gray-100)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', background: 'var(--surface)' }}>
+          <h2 style={{ fontSize: '1.1rem', fontWeight: 900, color: 'var(--ink)', margin: 0 }}>Danh sách hóa đơn ({filteredHoaDons.length})</h2>
+          <div className="glass-card" style={{ display: 'flex', alignItems: 'center', padding: '0 16px', borderRadius: '16px', border: '1px solid var(--gray-200)', background: 'var(--surface)', width: '300px' }}>
+            <span className="material-symbols-outlined" style={{ color: 'var(--gray-400)', marginRight: '8px' }}>search</span>
+            <input data-ai-id="input-quanlyhoadon-unv9"
+              type="text"
+              placeholder="Tìm mã HĐ, khách hàng, số điện thoại..."
+              value={searchHoaDon}
+              onChange={(e) => setSearchHoaDon(e.target.value)}
+              style={{ border: 'none', outline: 'none', background: 'transparent', padding: '10px 0', fontWeight: 600, width: '100%', color: 'var(--ink)', fontSize: '0.9rem' }}
+            />
+          </div>
+        </div>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ background: 'var(--gray-50)', textAlign: 'left' }}>
@@ -162,7 +209,7 @@ const QuanLyHoaDon: React.FC = () => {
             </tr>
           </thead>
           <tbody>
-            {hoaDons.map((h) => (
+            {filteredHoaDons.map((h) => (
               <tr key={h.id_hoa_don} style={{ borderBottom: '1px solid var(--gray-50)', transition: 'all 0.2s' }}>
                 <td style={{ padding: '20px', fontWeight: 800, color: 'var(--gray-400)' }}>#HD-{h.id_hoa_don}</td>
                 <td style={{ padding: '20px', fontWeight: 700 }}>{chuyenNgayISO_SangVN(h.ngay_lap_hoa_don)}</td>
@@ -186,11 +233,11 @@ const QuanLyHoaDon: React.FC = () => {
                 </td>
                 <td style={{ padding: '20px', textAlign: 'center' }}>
                   <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                    <button className="btn" onClick={() => setViewingHD(h)} style={{ padding: '8px', background: 'var(--gray-50)', color: 'var(--ink)' }} title="Xem chi tiết">
+                    <button data-ai-id="button-quanlyhoadon-1zou" className="btn" onClick={() => setViewingHD(h)} style={{ padding: '8px', background: 'var(--gray-50)', color: 'var(--ink)' }} title="Xem chi tiết">
                       <span className="material-symbols-outlined">visibility</span>
                     </button>
                     {h.trang_thai?.toLowerCase() === 'cho_thanh_toan' && (
-                      <button className="btn" onClick={() => handleConfirmPayment(h.id_hoa_don)} style={{ padding: '8px', background: 'var(--primary-light)', color: 'var(--primary)' }} title="Xác nhận đã nhận tiền">
+                      <button data-ai-id="button-quanlyhoadon-h34e" className="btn" onClick={() => handleConfirmPayment(h.id_hoa_don)} style={{ padding: '8px', background: 'var(--primary-light)', color: 'var(--primary)' }} title="Xác nhận đã nhận tiền">
                         <span className="material-symbols-outlined">check_circle</span>
                       </button>
                     )}
@@ -263,17 +310,17 @@ const QuanLyHoaDon: React.FC = () => {
             </div>
 
             <div style={{ marginTop: '32px', display: 'flex', gap: '12px', justifyContent: 'flex-end' }} className="no-print">
-              <button className="btn btn-pill" onClick={() => setViewingHD(null)} style={{ background: 'var(--gray-100)', color: 'var(--ink)' }}>Đóng</button>
+              <button data-ai-id="button-quanlyhoadon-talh" className="btn btn-pill" onClick={() => setViewingHD(null)} style={{ background: 'var(--gray-100)', color: 'var(--ink)' }}>Đóng</button>
               {viewingHD.trang_thai?.toLowerCase() === 'cho_thanh_toan' && (
-                <button className="btn btn-primary btn-pill" onClick={() => handleConfirmPayment(viewingHD.id_hoa_don)}>
+                <button data-ai-id="button-quanlyhoadon-9rt0" className="btn btn-primary btn-pill" onClick={() => handleConfirmPayment(viewingHD.id_hoa_don)}>
                   <span className="material-symbols-outlined">payments</span> Xác nhận đã nhận tiền
                 </button>
               )}
-              <button className="btn btn-pill" onClick={handleDownloadPDF} style={{ background: 'var(--danger-light, rgba(239, 68, 68, 0.1))', color: 'var(--danger)' }}>
+              <button data-ai-id="button-quanlyhoadon-1v4i" className="btn btn-pill" onClick={handleDownloadPDF} style={{ background: 'var(--danger-light, rgba(239, 68, 68, 0.1))', color: 'var(--danger)' }}>
                 <span className="material-symbols-outlined">picture_as_pdf</span>
                 Tải PDF
               </button>
-              <button className="btn btn-primary btn-pill" onClick={handlePrint}>
+              <button data-ai-id="button-quanlyhoadon-9rwt" className="btn btn-primary btn-pill" onClick={handlePrint}>
                 <span className="material-symbols-outlined">print</span>
                 In hóa đơn
               </button>

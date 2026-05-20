@@ -231,7 +231,7 @@ const HoaDonThanhToan: React.FC = () => {
         </div>
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', position: 'relative', zIndex: 1 }}>
           <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-            <input
+            <input data-ai-id="input-hoadonthanhtoan-z5a1"
               type="text"
               className="btn"
               placeholder="Tìm HĐ, tên khách, thú cưng..."
@@ -250,12 +250,12 @@ const HoaDonThanhToan: React.FC = () => {
               </span>
             )}
           </div>
-          <select className="btn" style={{ background: 'white', border: 'none', color: '#e11d48', fontWeight: 800, boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }} value={status} onChange={e => setStatus(e.target.value)}>
+          <select data-ai-id="select-hoadonthanhtoan-uf4y" className="btn" style={{ background: 'white', border: 'none', color: '#e11d48', fontWeight: 800, boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }} value={status} onChange={e => setStatus(e.target.value)}>
             <option value="all">Tất cả</option>
             <option value="da_thanh_toan">Đã trả</option>
             <option value="cho_thanh_toan">Chưa trả</option>
           </select>
-          <button className="btn btn-pill" style={{ background: '#fecdd3', color: '#be123c', fontWeight: 900, boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }} onClick={handleExportExcel}>
+          <button data-ai-id="button-hoadonthanhtoan-qe5v" className="btn btn-pill" style={{ background: '#fecdd3', color: '#be123c', fontWeight: 900, boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }} onClick={handleExportExcel}>
             <span className="material-symbols-outlined">download</span>
             Xuất báo cáo
           </button>
@@ -313,18 +313,18 @@ const HoaDonThanhToan: React.FC = () => {
               <div style={{ display: 'flex', gap: '8px' }}>
                 {(hd.trang_thai || hd.trangThai)?.toLowerCase() === 'cho_thanh_toan' && (
                   <>
-                    <button className="btn hover-scale" style={{ padding: '12px 20px', background: '#005baa', color: 'white', fontWeight: 800, borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '6px' }} onClick={() => handlePaymentVNPay(hd)} title="Thanh toán qua VNPay">
+                    <button data-ai-id="button-hoadonthanhtoan-9z33" className="btn hover-scale" style={{ padding: '12px 20px', background: '#005baa', color: 'white', fontWeight: 800, borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '6px' }} onClick={() => handlePaymentVNPay(hd)} title="Thanh toán qua VNPay">
                       <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>account_balance_wallet</span> VNPay
                     </button>
-                    <button className="btn hover-scale" style={{ padding: '12px 20px', background: 'var(--success)', color: 'white', fontWeight: 800, borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '6px' }} onClick={() => handlePaymentVietQR(hd)} title="Chuyển khoản VietQR">
+                    <button data-ai-id="button-hoadonthanhtoan-szsp" className="btn hover-scale" style={{ padding: '12px 20px', background: 'var(--success)', color: 'white', fontWeight: 800, borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '6px' }} onClick={() => handlePaymentVietQR(hd)} title="Chuyển khoản VietQR">
                       <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>qr_code_scanner</span> VietQR
                     </button>
                   </>
                 )}
-                <button className="btn" style={{ padding: '12px', background: 'var(--gray-50)', color: 'var(--ink)' }} onClick={() => handleViewDetails(hd)} title="Xem chi tiết">
+                <button data-ai-id="button-hoadonthanhtoan-ik3g" className="btn" style={{ padding: '12px', background: 'var(--gray-50)', color: 'var(--ink)' }} onClick={() => handleViewDetails(hd)} title="Xem chi tiết">
                   <span className="material-symbols-outlined">visibility</span>
                 </button>
-                <button className="btn" style={{ padding: '12px', background: 'var(--gray-50)', color: 'var(--ink)' }} onClick={async () => { await handleViewDetails(hd); window.print(); }} title="In hóa đơn">
+                <button data-ai-id="button-hoadonthanhtoan-xuzd" className="btn" style={{ padding: '12px', background: 'var(--gray-50)', color: 'var(--ink)' }} onClick={async () => { await handleViewDetails(hd); window.print(); }} title="In hóa đơn">
                   <span className="material-symbols-outlined">print</span>
                 </button>
               </div>
@@ -335,7 +335,7 @@ const HoaDonThanhToan: React.FC = () => {
         {/* BỘ NÚT ĐIỀU HƯỚNG PHÂN TRANG */}
         {totalPages > 1 && (
           <div className="stagger-2" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '16px', marginTop: '20px' }}>
-            <button
+            <button data-ai-id="button-hoadonthanhtoan-sxcp"
               className="btn btn-pill"
               disabled={currentPage === 1}
               onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
@@ -350,7 +350,7 @@ const HoaDonThanhToan: React.FC = () => {
             <span style={{ fontWeight: 800, color: 'var(--ink)', fontSize: '0.9rem' }}>
               Trang {currentPage} / {totalPages}
             </span>
-            <button
+            <button data-ai-id="button-hoadonthanhtoan-umxy"
               className="btn btn-pill"
               disabled={currentPage === totalPages}
               onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
@@ -441,8 +441,8 @@ const HoaDonThanhToan: React.FC = () => {
               </div>
 
               <div style={{ marginTop: '32px', display: 'flex', gap: '12px', justifyContent: 'flex-end' }} className="no-print">
-                <button className="btn btn-pill" onClick={() => setViewingHD(null)} style={{ background: 'var(--gray-100)', color: 'var(--ink)' }}>Đóng</button>
-                <button className="btn btn-primary btn-pill" onClick={() => window.print()}>
+                <button data-ai-id="button-hoadonthanhtoan-12y5" className="btn btn-pill" onClick={() => setViewingHD(null)} style={{ background: 'var(--gray-100)', color: 'var(--ink)' }}>Đóng</button>
+                <button data-ai-id="button-hoadonthanhtoan-qkgo" className="btn btn-primary btn-pill" onClick={() => window.print()}>
                   <span className="material-symbols-outlined">print</span> In hóa đơn
                 </button>
               </div>
@@ -465,7 +465,7 @@ const HoaDonThanhToan: React.FC = () => {
                 <div style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--primary)', letterSpacing: '1px' }}>{qrData.info}</div>
               </div>
               <p style={{ color: 'var(--danger)', fontSize: '0.85rem', fontWeight: 700, fontStyle: 'italic', marginBottom: '24px' }}>*Hệ thống sẽ tự động xác nhận hóa đơn sau 1-3 phút kể từ khi nhận được tiền.</p>
-              <button className="btn btn-pill" style={{ background: 'var(--gray-100)', color: 'var(--ink)', width: '100%' }} onClick={() => setShowQRModal(false)}>Đóng</button>
+              <button data-ai-id="button-hoadonthanhtoan-aaj9" className="btn btn-pill" style={{ background: 'var(--gray-100)', color: 'var(--ink)', width: '100%' }} onClick={() => setShowQRModal(false)}>Đóng</button>
             </div>
           )}
         </Modal>

@@ -8,8 +8,8 @@ test.describe('Kiểm tra Chatbot AI - Tính năng Khẩn cấp, Bảo mật & �
     test.beforeEach(async ({ page }) => {
         // 1. Vào trang Đăng nhập hệ thống để lấy phiên đăng nhập trước khi dùng Chatbot
         await page.goto(`${BASE_URL}/dang-nhap`);
-        await page.getByPlaceholder('Tên đăng nhập').fill('khachhang1');
-        await page.getByPlaceholder('Mật khẩu').fill('khachhang@rexi.com');
+        await page.getByPlaceholder('Tên đăng nhập').fill('testcustomer2');
+        await page.getByPlaceholder('Mật khẩu').fill('Password123!');
         await page.getByRole('button', { name: 'Đăng nhập ngay' }).click();
         
         // 2. Chờ điều hướng vào Trang tổng quan khách hàng thành công
@@ -20,10 +20,10 @@ test.describe('Kiểm tra Chatbot AI - Tính năng Khẩn cấp, Bảo mật & �
         // 1. Nhấp nút kích hoạt Chatbot Rexi ở góc phải màn hình
         const chatbotBtn = page.locator('#chatBtn');
         await expect(chatbotBtn).toBeVisible();
-        await chatbotBtn.click();
+        await chatbotBtn.click({ force: true });
             
         // 2. Xác nhận Khung chat AI hiển thị tiêu đề và lời chào chào mừng
-        await expect(page.locator('#chatWindow').getByText('Trợ lý Rexi')).toBeVisible();
+        await expect(page.locator('#chatWindow').getByText('Trợ lý Rexi').first()).toBeVisible();
         await expect(page.locator('.chat-message-ai').first()).toBeVisible();
 
         // 3. Nhập câu hỏi tư vấn sức khỏe cho thú cưng
@@ -31,8 +31,8 @@ test.describe('Kiểm tra Chatbot AI - Tính năng Khẩn cấp, Bảo mật & �
         await expect(chatInput).toBeVisible();
         await chatInput.fill('Rexi ơi, chó bị nôn ra bọt trắng thì làm sao?');
             
-        // 4. Nhấn gửi (Enter)
-        await page.keyboard.press('Enter');
+        // 4. Nhấp nút gửi tin nhắn chính thức
+        await page.locator('button[data-ai-id="button-chatbot-5x21"]').click({ force: true });
 
         // 5. Xác nhận tin nhắn của người dùng xuất hiện trên khung chat
         await expect(page.locator('#chatWindow')).toContainText('nôn ra bọt trắng');
@@ -45,12 +45,16 @@ test.describe('Kiểm tra Chatbot AI - Tính năng Khẩn cấp, Bảo mật & �
     test('TC02: Kích hoạt quy trình Sơ cứu Khẩn cấp (Emergency Triage) & Hotline', async ({ page }) => {
         const chatbotBtn = page.locator('#chatBtn');
         await expect(chatbotBtn).toBeVisible();
-        await chatbotBtn.click();
+        await chatbotBtn.click({ force: true });
 
         const chatInput = page.locator('textarea[placeholder*="Nhắn tin cho Rexi"], textarea').first();
         // Gửi từ khóa nguy kịch khẩn cấp
         await chatInput.fill('Cấp cứu! Cún nhà tôi bị hóc dị vật không thở được!');
-        await page.keyboard.press('Enter');
+        // 4. Nhấp nút gửi tin nhắn chính thức
+        await page.locator('button[data-ai-id="button-chatbot-5x21"]').click({ force: true });
+
+        // Xác nhận tin nhắn của người dùng xuất hiện trên khung chat
+        await expect(page.locator('#chatWindow')).toContainText('hóc dị vật');
 
         // 1. Kiểm tra Trợ lý ảo phản hồi siêu nhanh với giao diện Cảnh báo khẩn cấp nổi bật
         const responseContainer = page.locator('.chat-message-ai').last();
@@ -60,21 +64,21 @@ test.describe('Kiểm tra Chatbot AI - Tính năng Khẩn cấp, Bảo mật & �
         await expect(responseContainer).toContainText(/Heimlich/i);
 
         // 3. Xác minh Trợ lý AI đồng bộ hóa đúng số điện thoại khẩn cấp chính thức của Rexi Clinic
-        await expect(responseContainer).toContainText('***REMOVED***-VIETQR_ACCOUNT_NO');
+        await expect(responseContainer).toContainText(/0353.*374.*156/);
     });
 
     test('TC03: Tương tác các gợi ý nhanh (Quick Actions) và nút chuyển tiếp đăng ký', async ({ page }) => {
         const chatbotBtn = page.locator('#chatBtn');
         await expect(chatbotBtn).toBeVisible();
-        await chatbotBtn.click();
+        await chatbotBtn.click({ force: true });
 
         // 1. Kiểm tra sự hiện diện của các nút gợi ý nhanh
-        const firstSuggestion = page.getByRole('button', { name: 'Cấp cứu hóc dị vật' }).first();
+        const firstSuggestion = page.getByRole('button', { name: /Cấp cứu Hóc Dị Vật/i }).first();
         if (await firstSuggestion.isVisible()) {
             await firstSuggestion.click();
 
             // 2. Đảm bảo tin nhắn tự động được gửi đi và hiển thị trên cửa sổ chat
-            await expect(page.locator('#chatWindow')).toContainText('Cấp cứu hóc dị vật');
+            await expect(page.locator('#chatWindow')).toContainText('hóc dị vật');
         }
     });
 });

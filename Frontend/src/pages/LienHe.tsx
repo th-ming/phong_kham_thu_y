@@ -1,6 +1,5 @@
 import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
-import { ChatBot } from "@components/ChatBot";
 import { MemeCat, ScrollToTop, RevealSection } from "@components/SpecialEffects";
 import { useTheme } from "../contexts/ThemeContextV2";
 
@@ -17,8 +16,10 @@ const LienHe: React.FC = () => {
     return (
         <div style={{ background: 'var(--background)', minHeight: '100vh' }}>
             {/* banner trang liên hệ */}
-            <section style={{ padding: '100px 0 80px', background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', color: 'white', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
-                <div style={{ position: 'absolute', top: '-50%', left: '-10%', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(45,212,191,0.15) 0%, transparent 70%)', borderRadius: '50%' }}></div>
+            <section style={{ padding: '100px 0 80px', background: isDark ? 'var(--secondary-gradient)' : 'var(--primary-gradient)', color: 'white', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
+                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: isDark ? 0.05 : 0.1, backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '30px 30px' }}></div>
+                <div style={{ position: 'absolute', top: '-50%', left: '-10%', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(13, 148, 136, 0.25) 0%, transparent 70%)', borderRadius: '50%' }}></div>
+                <div style={{ position: 'absolute', bottom: '-40%', right: '-10%', width: '600px', height: '600px', background: 'radial-gradient(circle, rgba(34, 211, 238, 0.15) 0%, transparent 70%)', borderRadius: '50%' }}></div>
                 <div className="container" style={{ position: 'relative', zIndex: 1 }}>
                     <RevealSection>
                         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.1)', padding: '8px 20px', borderRadius: '50px', fontSize: '0.85rem', fontWeight: 900, marginBottom: '24px', border: '1px solid rgba(255,255,255,0.1)', letterSpacing: '1px' }}>
@@ -28,7 +29,7 @@ const LienHe: React.FC = () => {
                         <h1 style={{ fontSize: "clamp(2.5rem, 5vw, 4rem)", fontWeight: 950, marginBottom: "24px", letterSpacing: "-1px" }}>
                             Liên Hệ <span style={{ color: "#2dd4bf" }}>Rexi</span>
                         </h1>
-                        <p style={{ fontSize: '1.05rem', color: 'var(--gray-500)', lineHeight: 1.8, marginBottom: '40px', fontWeight: 500 }}>
+                        <p style={{ fontSize: '1.05rem', color: '#cbd5e1', lineHeight: 1.8, marginBottom: '40px', fontWeight: 500 }}>
                             Chúng tôi luôn sẵn lòng lắng nghe và hỗ trợ bạn. Mọi thắc mắc về dịch vụ y tế, đặt lịch hẹn hoặc phản hồi chất lượng, vui lòng liên hệ với Rexi qua các kênh dưới đây.
                         </p>
                     </RevealSection>
@@ -84,12 +85,12 @@ const LienHe: React.FC = () => {
                     {/* bản đồ google maps */}
                     <RevealSection>
                         <div style={{ background: 'var(--surface)', borderRadius: '40px', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.08)', border: '1px solid var(--gray-200)' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '24px 40px', background: isDark ? 'var(--background)' : 'var(--ink)', color: isDark ? 'var(--ink)' : 'var(--surface)', borderBottom: isDark ? '1px solid var(--gray-200)' : 'none' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '24px 40px', background: 'var(--surface)', borderBottom: '1px solid var(--gray-200)' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                    <span className="material-symbols-outlined" style={{ color: isDark ? 'var(--primary)' : '#2dd4bf', fontSize: '28px' }}>map</span>
-                                    <h3 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 900 }}>Bản Đồ Chỉ Đường</h3>
+                                    <span className="material-symbols-outlined" style={{ color: 'var(--primary)', fontSize: '28px' }}>map</span>
+                                    <h3 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 900, color: 'var(--ink)' }}>Bản Đồ Chỉ Đường</h3>
                                 </div>
-                                <a href="https://www.google.com/maps/search/?api=1&query=Phòng+khám+thú+y+Rexi+Gia+Lâm" target="_blank" rel="noreferrer" className="btn-primary" style={{ background: '#0f9d8a', color: 'white', padding: '10px 24px', borderRadius: '50px', textDecoration: 'none', fontWeight: 800, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <a href="https://www.google.com/maps/search/?api=1&query=Phòng+khám+thú+y+Rexi+Gia+Lâm" target="_blank" rel="noreferrer" className="btn-primary" style={{ padding: '10px 24px', borderRadius: '50px', textDecoration: 'none', fontWeight: 800, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                     <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>navigation</span>
                                     Mở Google Maps
                                 </a>
@@ -107,7 +108,6 @@ const LienHe: React.FC = () => {
 
             <ScrollToTop />
             <MemeCat />
-            <ChatBot />
         </div>
     );
 };

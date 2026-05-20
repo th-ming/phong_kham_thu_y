@@ -1,8 +1,8 @@
 import React from 'react';
-import { useTheme } from '../contexts/ThemeContextV2';
+
 
 /**
- * UPGRADE: Enhanced Error Boundary with retry functionality and error details
+ * NÂNG CẤP: Giao diện bắt lỗi (Error Boundary) nâng cao hỗ trợ khôi phục tự động và hiển thị chi tiết lỗi.
  */
 
 interface Props {
@@ -36,7 +36,7 @@ class ErrorBoundary extends React.Component<Props, State> {
 
   render() {
     if (this.state.hasError) {
-      // Show enhanced error UI with retry option
+      // Hiển thị giao diện thông báo lỗi thân thiện kèm nút thử lại
       return <ErrorFallback error={this.state.error} retry={this.retry} />;
     }
 
@@ -45,7 +45,7 @@ class ErrorBoundary extends React.Component<Props, State> {
 }
 
 const ErrorFallback: React.FC<{ error?: Error; retry: () => void }> = ({ error, retry }) => {
-  // REMOVED useTheme() to prevent secondary crash
+  // Đã loại bỏ hook useTheme() để tránh lỗi lặp (secondary crash) khi render giao diện lỗi
 
   return (
     <div style={{
@@ -83,7 +83,7 @@ const ErrorFallback: React.FC<{ error?: Error; retry: () => void }> = ({ error, 
         {error?.message || 'Có lỗi không mong muốn xảy ra trong ứng dụng.'}
       </p>
       <div style={{ display: 'flex', gap: '12px' }}>
-        <button
+        <button data-ai-id="button-errorboundary-nstz"
           onClick={retry}
           style={{
             background: 'var(--primary-gradient)',
@@ -100,7 +100,7 @@ const ErrorFallback: React.FC<{ error?: Error; retry: () => void }> = ({ error, 
         >
           Thử lại
         </button>
-        <button
+        <button data-ai-id="button-errorboundary-f753"
           onClick={() => window.location.href = '/'}
           style={{
             background: 'var(--gray-200)',

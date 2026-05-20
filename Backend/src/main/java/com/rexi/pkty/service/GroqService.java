@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rexi.pkty.dto.ChatMessage;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import java.net.URI;
@@ -17,6 +19,35 @@ import java.util.Map;
 
 @Service
 public class GroqService {
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    private String getModelName() {
+        try {
+            String dbModel = jdbcTemplate.queryForObject(
+                "SELECT gia_tri FROM CauHinhHeThong WHERE ten_cau_hinh = 'groq_model'", 
+                String.class);
+            if (dbModel != null && !dbModel.trim().isEmpty()) {
+                return dbModel.trim();
+            }
+        } catch (Exception e) {
+        }
+        return modelName;
+    }
+
+    private String getVisionModelName() {
+        try {
+            String dbModel = jdbcTemplate.queryForObject(
+                "SELECT gia_tri FROM CauHinhHeThong WHERE ten_cau_hinh = 'groq_vision_model'", 
+                String.class);
+            if (dbModel != null && !dbModel.trim().isEmpty()) {
+                return dbModel.trim();
+            }
+        } catch (Exception e) {
+        }
+        return visionModelName;
+    }
 
     private static final Logger logger = java.util.logging.Logger.getLogger(GroqService.class.getName());
 
@@ -31,6 +62,18 @@ public class GroqService {
     // Model để phân tích hình ảnh
     @Value("${groq.vision.model:meta-llama/llama-4-scout-17b-16e-instruct}")
     private String visionModelName;
+
+    private String getApiKey() {
+        try {
+            String dbKey = jdbcTemplate.queryForObject(
+                "SELECT gia_tri FROM CauHinhHeThong WHERE ten_cau_hinh = 'groq_api_key'", 
+                String.class);
+            if (dbKey != null && !dbKey.trim().isEmpty()) {
+                return dbKey.trim();
+            }
+        } catch (Exception e) {}
+        return apiKey;
+    }
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -52,7 +95,7 @@ public class GroqService {
 
         // Kiểm tra ảnh → chọn model phù hợp (Sử dụng list images mới)
         boolean hasImage = latest.getImages() != null && !latest.getImages().isEmpty();
-        String selectedModel = hasImage ? visionModelName : modelName;
+        String selectedModel = hasImage ? getVisionModelName() : getModelName();
 
         // Chuẩn bị danh sách messages cho API
         List<Map<String, Object>> messagesForApi = new ArrayList<>();
@@ -87,10 +130,15 @@ public class GroqService {
 
         String requestBody = objectMapper.writeValueAsString(requestBodyMap);
 
+        String currentApiKey = getApiKey();
+        if (currentApiKey == null || currentApiKey.trim().isEmpty()) {
+            throw new RuntimeException("Không tìm thấy Groq API Key nào được cấu hình!");
+        }
+
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(GROQ_API_URL))
                 .header("Content-Type", "application/json")
-                .header("Authorization", "Bearer " + apiKey)
+                .header("Authorization", "Bearer " + currentApiKey)
                 .POST(HttpRequest.BodyPublishers.ofString(requestBody, StandardCharsets.UTF_8))
                 .timeout(Duration.ofSeconds(15)) // Set timeout tối đa 15s cho thời gian sinh câu trả lời
                 .build();

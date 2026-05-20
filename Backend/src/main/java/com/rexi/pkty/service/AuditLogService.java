@@ -8,9 +8,12 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.concurrent.CompletableFuture;
+import java.util.logging.Logger;
 
 @Service
 public class AuditLogService {
+
+    private static final Logger logger = Logger.getLogger(AuditLogService.class.getName());
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -49,7 +52,7 @@ public class AuditLogService {
                         "INSERT INTO NhatKyHeThong (nguoi_thao_tac, hanh_dong, bang_du_lieu, chi_tiet, ip_address, device_info) VALUES (?, ?, ?, ?, ?, ?)",
                         username, hanhDong, bangDuLieu, chiTiet, finalIp, finalDevice);
             } catch (Exception e) {
-                System.err.println("Lỗi ghi log hệ thống: " + e.getMessage());
+                logger.severe("Lỗi ghi log hệ thống: " + e.getMessage());
             }
         });
     }

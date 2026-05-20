@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import axiosInstance from "@services/axios";
 import { useNavigate } from "react-router-dom";
 import { Modal } from "@components/CommonUI";
@@ -16,6 +16,9 @@ const ThongTinCaNhan: React.FC = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [passData, setPassData] = useState({ currentPass: "", newPass: "", confirmPass: "" });
+  const [showCurrentPass, setShowCurrentPass] = useState(false);
+  const [showNewPass, setShowNewPass] = useState(false);
+  const [showConfirmPass, setShowConfirmPass] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -36,6 +39,9 @@ const ThongTinCaNhan: React.FC = () => {
           .then(res => {
             setData(res.data);
             setFormData(res.data);
+            // Khởi tạo trạng thái nhận thông báo từ dữ liệu DB (mặc định là true nếu null)
+            setEmailNoti(res.data.nhan_email ?? true);
+            setSmsNoti(res.data.nhan_sms ?? true);
             setLoading(false);
           })
           .catch(err => {
@@ -64,14 +70,14 @@ const ThongTinCaNhan: React.FC = () => {
       toast.error("Mật khẩu xác nhận không khớp!");
       return;
     }
+    if (passData.newPass.length < 6) {
+      toast.error("Mật khẩu mới phải có ít nhất 6 ký tự!");
+      return;
+    }
     try {
-      const user = getUserProfile();
-      const username = user?.ten_dang_nhap || user?.username || user?.email;
-
       await axiosInstance.post("/api/auth/change-password", {
-        username: username,
         currentPass: passData.currentPass,
-        newPassword: passData.newPass
+        newPass: passData.newPass
       });
       toast.success("Đổi mật khẩu thành công! Vui lòng dùng mật khẩu mới cho lần đăng nhập sau.");
       setShowPasswordModal(false);
@@ -134,6 +140,35 @@ const ThongTinCaNhan: React.FC = () => {
     }
   };
 
+  // Cập nhật cài đặt nhận thông báo của khách hàng và đồng bộ xuống DB ngay lập tức
+  const handleToggleMarketing = async (type: "email" | "sms", currentValue: boolean) => {
+    try {
+      const user = getUserProfile();
+      const userId = user?.id_khach_hang || user?.id;
+      if (!userId) {
+        toast.error("Không tìm thấy thông tin tài khoản. Vui lòng đăng nhập lại!");
+        return;
+      }
+
+      const newValue = !currentValue;
+      const payloadKey = type === "email" ? "nhan_email" : "nhan_sms";
+
+      await axiosInstance.put(`/api/khach-hang/${userId}/marketing-preferences`, {
+        [payloadKey]: newValue
+      });
+
+      if (type === "email") {
+        setEmailNoti(newValue);
+      } else {
+        setSmsNoti(newValue);
+      }
+      toast.success("Cập nhật cài đặt nhận thông báo thành công!");
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.response?.data?.message || "Cập nhật cài đặt thất bại, vui lòng thử lại sau!");
+    }
+  };
+
   if (loading) return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}><div className="dot-pulse"></div></div>;
 
   const isCustomer = data && (data.id_khach_hang != null || data.id != null || getUserProfile()?.id_khach_hang != null);
@@ -144,7 +179,7 @@ const ThongTinCaNhan: React.FC = () => {
         marginBottom: '40px', 
         padding: '60px 48px', 
         borderRadius: 'var(--radius-xl)', 
-        background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%)', 
+        background: 'linear-gradient(135deg, #6366f1 0%, #0d9488 50%, #ec4899 100%)', 
         color: 'white', 
         position: 'relative', 
         overflow: 'hidden', 
@@ -188,14 +223,14 @@ const ThongTinCaNhan: React.FC = () => {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
               <h3 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--ink)', margin: 0 }}>Thông tin cơ bản</h3>
               {!isEditing ? (
-                <button className="btn btn-primary btn-pill" onClick={() => setIsEditing(true)}>
+                <button data-ai-id="button-thongtincanhan-ixxz" className="btn btn-primary btn-pill" onClick={() => setIsEditing(true)}>
                   <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>edit</span>
                   Chỉnh sửa
                 </button>
               ) : (
                 <div style={{ display: 'flex', gap: '12px' }}>
-                  <button className="btn btn-pill" style={{ background: 'var(--gray-100)', color: 'var(--ink)' }} onClick={() => setIsEditing(false)}>Hủy</button>
-                  <button className="btn btn-primary btn-pill" onClick={handleSave}>Lưu thay đổi</button>
+                  <button data-ai-id="button-thongtincanhan-7lpc" className="btn btn-pill" style={{ background: 'var(--gray-100)', color: 'var(--ink)' }} onClick={() => setIsEditing(false)}>Hủy</button>
+                  <button data-ai-id="button-thongtincanhan-0z5q" className="btn btn-primary btn-pill" onClick={handleSave}>Lưu thay đổi</button>
                 </div>
               )}
             </div>
@@ -204,18 +239,18 @@ const ThongTinCaNhan: React.FC = () => {
               <div style={{ gridColumn: '1 / -1' }}>
                 <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '12px', display: 'block', textTransform: 'uppercase' }}>HỌ VÀ TÊN <span style={{ color: '#ff4d4f' }}>*</span></label>
                 {isEditing ? (
-                  <input type="text" name={isCustomer ? "ten_khach_hang" : "ho_ten"} value={formData.ten_khach_hang || formData.ho_ten || ''} onChange={handleChange} style={{ width: '100%', padding: '14px 18px', borderRadius: '14px', border: '1px solid var(--gray-200)', background: 'var(--gray-50)', color: 'var(--ink)', fontWeight: 600, outline: 'none' }} />
+                  <input data-ai-id="input-thongtincanhan-yly7" type="text" name={isCustomer ? "ten_khach_hang" : "ho_ten"} value={formData.ten_khach_hang || formData.ho_ten || ''} onChange={handleChange} style={{ width: '100%', padding: '14px 18px', borderRadius: '14px', border: '1px solid var(--gray-200)', background: 'var(--gray-50)', color: 'var(--ink)', fontWeight: 600, outline: 'none' }} />
                 ) : (
                   <div style={{ fontSize: '1.4rem', fontWeight: 900, color: 'var(--ink)' }}>{data?.ten_khach_hang || data?.ho_ten || "Khách hàng"}</div>
                 )}
               </div>
               <div>
                 <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '12px', display: 'block', textTransform: 'uppercase' }}>SỐ ĐIỆN THOẠI <span style={{ color: '#ff4d4f' }}>*</span></label>
-                {isEditing ? <input type="tel" name={isCustomer ? "sdt" : "so_dien_thoai"} value={formData.sdt || formData.so_dien_thoai || ''} onChange={handleChange} style={{ width: '100%', padding: '14px 18px', borderRadius: '14px', border: '1px solid var(--gray-200)', background: 'var(--gray-50)', color: 'var(--ink)', fontWeight: 600, outline: 'none' }} /> : <div style={{ fontWeight: 700, color: 'var(--ink)' }}>{data?.sdt || data?.so_dien_thoai || "—"}</div>}
+                {isEditing ? <input data-ai-id="input-thongtincanhan-6uth" type="tel" name={isCustomer ? "sdt" : "so_dien_thoai"} value={formData.sdt || formData.so_dien_thoai || ''} onChange={handleChange} style={{ width: '100%', padding: '14px 18px', borderRadius: '14px', border: '1px solid var(--gray-200)', background: 'var(--gray-50)', color: 'var(--ink)', fontWeight: 600, outline: 'none' }} /> : <div style={{ fontWeight: 700, color: 'var(--ink)' }}>{data?.sdt || data?.so_dien_thoai || "—"}</div>}
               </div>
               <div>
                 <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '12px', display: 'block', textTransform: 'uppercase' }}>EMAIL <span style={{ color: '#ff4d4f' }}>*</span></label>
-                {isEditing ? <input type="email" name="email" value={formData.email || ''} onChange={handleChange} style={{ width: '100%', padding: '14px 18px', borderRadius: '14px', border: '1px solid var(--gray-200)', background: 'var(--gray-50)', color: 'var(--ink)', fontWeight: 600, outline: 'none' }} /> : <div style={{ fontWeight: 700, color: 'var(--ink)' }}>{data?.email || "—"}</div>}
+                {isEditing ? <input data-ai-id="input-thongtincanhan-1qez" type="email" name="email" value={formData.email || ''} onChange={handleChange} style={{ width: '100%', padding: '14px 18px', borderRadius: '14px', border: '1px solid var(--gray-200)', background: 'var(--gray-50)', color: 'var(--ink)', fontWeight: 600, outline: 'none' }} /> : <div style={{ fontWeight: 700, color: 'var(--ink)' }}>{data?.email || "—"}</div>}
               </div>
               <div>
                 <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '12px', display: 'block', textTransform: 'uppercase' }}>ĐỊA CHỈ LIÊN HỆ</label>
@@ -231,7 +266,7 @@ const ThongTinCaNhan: React.FC = () => {
           <div className="glass-card" style={{ padding: '48px', borderRadius: 'var(--radius-xl)', border: '1.5px solid var(--primary)' }}>
             <h3 style={{ fontSize: '1.8rem', fontWeight: 900, color: 'var(--primary)', marginBottom: '16px' }}>Bảo mật & Quyền riêng tư</h3>
             <p style={{ color: 'var(--gray-400)', fontWeight: 600, marginBottom: '32px', fontSize: '1rem' }}>Chúng tôi khuyên bạn nên cập nhật mật khẩu 6 tháng một lần để bảo vệ tài khoản.</p>
-            <button className="btn btn-outline btn-pill" onClick={() => setShowPasswordModal(true)} style={{ padding: '14px 40px' }}>
+            <button data-ai-id="button-thongtincanhan-hydh" className="btn btn-outline btn-pill" onClick={() => setShowPasswordModal(true)} style={{ padding: '14px 40px' }}>
               <span className="material-symbols-outlined">lock_reset</span>
               Thay đổi mật khẩu
             </button>
@@ -251,63 +286,82 @@ const ThongTinCaNhan: React.FC = () => {
             <p style={{ color: 'var(--gray-400)', fontWeight: 800, fontSize: '0.75rem', marginTop: '8px' }}>ID: #{data?.id_khach_hang || data?.id_nhan_vien || data?.id}</p>
           </div>
 
-          <div className="glass-card" style={{ padding: '32px', borderRadius: 'var(--radius-xl)' }}>
-            <h4 style={{ fontWeight: 800, marginBottom: '20px', color: 'var(--ink)' }}>Thông báo</h4>
-            <div style={{ display: 'grid', gap: '16px' }}>
-              <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', padding: '12px 0', borderBottom: '1px solid var(--gray-100)' }}>
-                <span style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--ink)' }}>Email Marketing</span>
-                <div onClick={() => setEmailNoti(!emailNoti)} style={{ width: '50px', height: '26px', background: emailNoti ? 'var(--primary)' : 'var(--gray-200)', borderRadius: '50px', position: 'relative', transition: 'all 0.3s', cursor: 'pointer' }}>
-                  <div style={{ width: '18px', height: '18px', background: 'white', borderRadius: '50%', position: 'absolute', top: '4px', left: emailNoti ? '28px' : '4px', transition: 'all 0.3s', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' }}></div>
+          {isCustomer && (
+            <>
+              <div className="glass-card" style={{ padding: '32px', borderRadius: 'var(--radius-xl)' }}>
+                <h4 style={{ fontWeight: 800, marginBottom: '20px', color: 'var(--ink)' }}>Thông báo</h4>
+                <div style={{ display: 'grid', gap: '16px' }}>
+                  <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', padding: '12px 0', borderBottom: '1px solid var(--gray-100)' }}>
+                    <span style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--ink)' }}>Email Marketing</span>
+                    <div onClick={() => handleToggleMarketing('email', emailNoti)} style={{ width: '50px', height: '26px', background: emailNoti ? 'var(--primary)' : 'var(--gray-200)', borderRadius: '50px', position: 'relative', transition: 'all 0.3s', cursor: 'pointer' }}>
+                      <div style={{ width: '18px', height: '18px', background: 'white', borderRadius: '50%', position: 'absolute', top: '4px', left: emailNoti ? '28px' : '4px', transition: 'all 0.3s', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' }}></div>
+                    </div>
+                  </label>
+                  <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', padding: '12px 0' }}>
+                    <span style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--ink)' }}>Thông báo SMS</span>
+                    <div onClick={() => handleToggleMarketing('sms', smsNoti)} style={{ width: '50px', height: '26px', background: smsNoti ? 'var(--primary)' : 'var(--gray-200)', borderRadius: '50px', position: 'relative', transition: 'all 0.3s', cursor: 'pointer' }}>
+                      <div style={{ width: '18px', height: '18px', background: 'white', borderRadius: '50%', position: 'absolute', top: '4px', left: smsNoti ? '28px' : '4px', transition: 'all 0.3s', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' }}></div>
+                    </div>
+                  </label>
                 </div>
-              </label>
-              <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', padding: '12px 0' }}>
-                <span style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--ink)' }}>Thông báo SMS</span>
-                <div onClick={() => setSmsNoti(!smsNoti)} style={{ width: '50px', height: '26px', background: smsNoti ? 'var(--primary)' : 'var(--gray-200)', borderRadius: '50px', position: 'relative', transition: 'all 0.3s', cursor: 'pointer' }}>
-                  <div style={{ width: '18px', height: '18px', background: 'white', borderRadius: '50%', position: 'absolute', top: '4px', left: smsNoti ? '28px' : '4px', transition: 'all 0.3s', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' }}></div>
-                </div>
-              </label>
-            </div>
-          </div>
+              </div>
 
-          <div style={{ 
-            padding: '24px', 
-            borderRadius: '24px', 
-            background: 'rgba(239, 68, 68, 0.05)', 
-            border: '1px solid rgba(239, 68, 68, 0.1)',
-            textAlign: 'center'
-          }}>
-            <h4 style={{ color: '#ef4444', fontWeight: 900, fontSize: '0.9rem', marginBottom: '4px' }}>Khu vực nguy hiểm</h4>
-            <p style={{ color: '#ef4444', fontSize: '0.75rem', fontWeight: 600, marginBottom: '16px', opacity: 0.7 }}>Thao tác này không thể khôi phục</p>
-            <button 
-              className="btn btn-pill" 
-              style={{ background: '#ef4444', color: 'white', width: '100%', fontWeight: 800, padding: '12px' }} 
-              onClick={() => setShowDeleteModal(true)}
-            >
-              Xóa tài khoản
-            </button>
-          </div>
+              <div style={{ 
+                padding: '24px', 
+                borderRadius: '24px', 
+                background: 'rgba(239, 68, 68, 0.05)', 
+                border: '1px solid rgba(239, 68, 68, 0.1)',
+                textAlign: 'center'
+              }}>
+                <h4 style={{ color: '#ef4444', fontWeight: 900, fontSize: '0.9rem', marginBottom: '4px' }}>Khu vực nguy hiểm</h4>
+                <p style={{ color: '#ef4444', fontSize: '0.75rem', fontWeight: 600, marginBottom: '16px', opacity: 0.7 }}>Thao tác này không thể khôi phục</p>
+                <button data-ai-id="button-thongtincanhan-3fft" 
+                  className="btn btn-pill" 
+                  style={{ background: '#ef4444', color: 'white', width: '100%', fontWeight: 800, padding: '12px' }} 
+                  onClick={() => setShowDeleteModal(true)}
+                >
+                  Xóa tài khoản
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
       {/* MODAL ĐỔI MẬT KHẨU */}
-      <Modal isOpen={showPasswordModal} onClose={() => setShowPasswordModal(false)} title="Thay đổi mật khẩu" maxWidth="450px">
+      <Modal isOpen={showPasswordModal} onClose={() => { setShowPasswordModal(false); setShowCurrentPass(false); setShowNewPass(false); setShowConfirmPass(false); }} title="Thay đổi mật khẩu" maxWidth="450px">
         <div style={{ display: 'grid', gap: '20px', marginBottom: '32px' }}>
           <div>
-            <label>MẬT KHẨU HIỆN TẠI</label>
-            <input type="password" name="currentPass" value={passData.currentPass} onChange={handlePassChange} style={{ width: '100%' }} />
+            <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '8px', display: 'block' }}>MẬT KHẨU HIỆN TẠI</label>
+            <div style={{ position: "relative" }}>
+              <input data-ai-id="input-thongtincanhan-pym5" type={showCurrentPass ? "text" : "password"} name="currentPass" value={passData.currentPass} onChange={handlePassChange} style={{ width: '100%', paddingRight: '48px', background: 'var(--gray-50)', padding: '14px 48px 14px 18px', borderRadius: '14px', border: '1px solid var(--gray-200)', color: 'var(--ink)', fontWeight: 600, outline: 'none' }} />
+              <span className="material-symbols-outlined" onClick={() => setShowCurrentPass(!showCurrentPass)} style={{ position: "absolute", right: "16px", top: "50%", transform: "translateY(-50%)", cursor: "pointer", color: "var(--gray-400)", userSelect: "none", zIndex: 10 }}>
+                {showCurrentPass ? "visibility" : "visibility_off"}
+              </span>
+            </div>
           </div>
           <div>
-            <label>MẬT KHẨU MỚI</label>
-            <input type="password" name="newPass" value={passData.newPass} onChange={handlePassChange} style={{ width: '100%' }} />
+            <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '8px', display: 'block' }}>MẬT KHẨU MỚI</label>
+            <div style={{ position: "relative" }}>
+              <input data-ai-id="input-thongtincanhan-lmif" type={showNewPass ? "text" : "password"} name="newPass" value={passData.newPass} onChange={handlePassChange} style={{ width: '100%', paddingRight: '48px', background: 'var(--gray-50)', padding: '14px 48px 14px 18px', borderRadius: '14px', border: '1px solid var(--gray-200)', color: 'var(--ink)', fontWeight: 600, outline: 'none' }} />
+              <span className="material-symbols-outlined" onClick={() => setShowNewPass(!showNewPass)} style={{ position: "absolute", right: "16px", top: "50%", transform: "translateY(-50%)", cursor: "pointer", color: "var(--gray-400)", userSelect: "none", zIndex: 10 }}>
+                {showNewPass ? "visibility" : "visibility_off"}
+              </span>
+            </div>
           </div>
           <div>
-            <label>XÁC NHẬN MẬT KHẨU MỚI</label>
-            <input type="password" name="confirmPass" value={passData.confirmPass} onChange={handlePassChange} style={{ width: '100%' }} />
+            <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '8px', display: 'block' }}>XÁC NHẬN MẬT KHẨU MỚI</label>
+            <div style={{ position: "relative" }}>
+              <input data-ai-id="input-thongtincanhan-xz62" type={showConfirmPass ? "text" : "password"} name="confirmPass" value={passData.confirmPass} onChange={handlePassChange} style={{ width: '100%', paddingRight: '48px', background: 'var(--gray-50)', padding: '14px 48px 14px 18px', borderRadius: '14px', border: '1px solid var(--gray-200)', color: 'var(--ink)', fontWeight: 600, outline: 'none' }} />
+              <span className="material-symbols-outlined" onClick={() => setShowConfirmPass(!showConfirmPass)} style={{ position: "absolute", right: "16px", top: "50%", transform: "translateY(-50%)", cursor: "pointer", color: "var(--gray-400)", userSelect: "none", zIndex: 10 }}>
+                {showConfirmPass ? "visibility" : "visibility_off"}
+              </span>
+            </div>
           </div>
         </div>
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-          <button className="btn btn-pill" style={{ background: 'var(--gray-100)', color: 'var(--ink)' }} onClick={() => setShowPasswordModal(false)}>Hủy</button>
-          <button className="btn btn-primary btn-pill" onClick={handleSavePass}>Lưu mật khẩu</button>
+          <button data-ai-id="button-thongtincanhan-zsem" className="btn btn-pill" style={{ background: 'var(--gray-100)', color: 'var(--ink)' }} onClick={() => setShowPasswordModal(false)}>Hủy</button>
+          <button data-ai-id="button-thongtincanhan-52rs" className="btn btn-primary btn-pill" onClick={handleSavePass}>Lưu mật khẩu</button>
         </div>
       </Modal>
 
@@ -324,7 +378,7 @@ const ThongTinCaNhan: React.FC = () => {
           </p>
         </div>
         <div style={{ display: 'grid', gap: '12px' }}>
-          <button
+          <button data-ai-id="button-thongtincanhan-gl4d"
             className="btn btn-pill"
             style={{ background: '#ef4444', color: 'white', width: '100%', padding: '14px', fontWeight: 800 }}
             onClick={handleDeleteAccount}
@@ -332,7 +386,7 @@ const ThongTinCaNhan: React.FC = () => {
           >
             {isDeleting ? "Đang xử lý..." : "Xác nhận xóa vĩnh viễn"}
           </button>
-          <button
+          <button data-ai-id="button-thongtincanhan-g7jh"
             className="btn btn-pill"
             style={{ background: 'var(--gray-100)', color: 'var(--ink)', width: '100%', padding: '14px', fontWeight: 800 }}
             onClick={() => setShowDeleteModal(false)}

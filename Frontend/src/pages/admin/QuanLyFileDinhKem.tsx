@@ -18,8 +18,18 @@ const QuanLyFileDinhKem: React.FC = () => {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploadHoSoId, setUploadHoSoId] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const API_BASE_URL = (import.meta as any).env.VITE_API_URL || "http://localhost:8081";
+
+  const filteredFiles = React.useMemo(() => {
+    if (!searchQuery.trim()) return files;
+    const q = searchQuery.toLowerCase();
+    return files.filter(f => 
+      f.ten_file?.toLowerCase().includes(q) || 
+      f.loai?.toLowerCase().includes(q)
+    );
+  }, [files, searchQuery]);
 
   const fetchFiles = () => {
     setLoading(true);
@@ -98,66 +108,103 @@ const QuanLyFileDinhKem: React.FC = () => {
           <h1 style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--ink)', letterSpacing: '-1px' }}>Kho tệp tin y tế</h1>
           <p style={{ color: 'var(--gray-500)', fontWeight: 600 }}>Lưu trữ phim X-quang, kết quả xét nghiệm và các hồ sơ số hóa.</p>
         </div>
-        <button className="btn btn-primary btn-pill" onClick={handleOpenUploadModal}>
+        <button data-ai-id="button-quanlyfiledinhkem-yy80" className="btn btn-primary btn-pill" onClick={handleOpenUploadModal}>
           <span className="material-symbols-outlined">upload_file</span>
           Tải tệp lên
         </button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '24px', marginBottom: '40px' }}>
-        {files.map(file => (
-          <div key={file.id} className="glass-card" style={{ padding: '24px', borderRadius: 'var(--radius-lg)', display: 'flex', alignItems: 'center', gap: '20px' }}>
-            <div style={{ width: '56px', height: '56px', background: 'var(--primary-light)', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
-              <span className="material-symbols-outlined" style={{ fontSize: '32px' }}>
-                {file.loai?.toLowerCase().includes('hình ảnh') ? 'image' : 'description'}
-              </span>
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--ink)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.ten_file}</h3>
-              <p style={{ fontSize: '0.75rem', color: 'var(--gray-400)', fontWeight: 700, margin: '4px 0' }}>{formatSize(file.kich_thuoc)} · {file.ngay_upload?.split('T')[0]}</p>
-            </div>
-            <a href={`${API_BASE_URL}${file.duong_dan}`} target="_blank" rel="noreferrer" className="btn" style={{ padding: '8px', background: 'var(--gray-50)', color: 'var(--ink)' }}>
-              <span className="material-symbols-outlined">download</span>
-            </a>
-          </div>
-        ))}
+      {/* THANH TÌM KIẾM TỆP TIN */}
+      <div style={{ marginBottom: '32px', maxWidth: '400px' }}>
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+          <span className="material-symbols-outlined" style={{ position: 'absolute', left: '16px', color: 'var(--gray-400)', pointerEvents: 'none' }}>search</span>
+          <input data-ai-id="input-quanlyfiledinhkem-search"
+            type="text"
+            placeholder="Tìm nhanh tên tệp hoặc loại..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '14px 40px 14px 48px',
+              borderRadius: '16px',
+              border: '1px solid var(--gray-200)',
+              background: 'var(--surface)',
+              color: 'var(--ink)',
+              fontWeight: 700,
+              fontSize: '0.95rem',
+              outline: 'none',
+              transition: 'all 0.3s'
+            }}
+          />
+          {searchQuery && (
+            <span className="material-symbols-outlined" onClick={() => setSearchQuery("")} style={{ position: 'absolute', right: '16px', color: 'var(--gray-400)', cursor: 'pointer', userSelect: 'none' }}>close</span>
+          )}
+        </div>
       </div>
 
-      <div className="glass-card" style={{ padding: '32px', borderRadius: 'var(--radius-xl)', overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ background: 'var(--gray-50)', textAlign: 'left' }}>
-              <th style={{ padding: '20px', fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800 }}>TÊN TỆP TIN</th>
-              <th style={{ padding: '20px', fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800 }}>LOẠI TỆP</th>
-              <th style={{ padding: '20px', fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800, textAlign: 'right' }}>KÍCH THƯỚC</th>
-              <th style={{ padding: '20px', fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800, textAlign: 'center' }}>THAO TÁC</th>
-            </tr>
-          </thead>
-          <tbody>
-            {files.map((file) => (
-              <tr key={file.id} style={{ borderBottom: '1px solid var(--gray-50)', transition: 'all 0.2s' }}>
-                <td style={{ padding: '20px', fontWeight: 800, color: 'var(--ink)' }}>{file.ten_file}</td>
-                <td style={{ padding: '20px' }}>
-                  <span style={{ padding: '4px 10px', borderRadius: '6px', background: 'var(--gray-100)', fontSize: '0.75rem', fontWeight: 800, color: 'var(--ink)' }}>
-                    {file.loai}
+      {filteredFiles.length === 0 ? (
+        <div className="glass-card" style={{ padding: '60px', textAlign: 'center', borderRadius: 'var(--radius-xl)', marginBottom: '40px' }}>
+          <span className="material-symbols-outlined" style={{ fontSize: '48px', color: 'var(--gray-300)', marginBottom: '16px' }}>folder_off</span>
+          <p style={{ color: 'var(--gray-500)', fontWeight: 700, margin: 0 }}>Không tìm thấy tệp đính kèm nào phù hợp! 😿</p>
+        </div>
+      ) : (
+        <>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '24px', marginBottom: '40px' }}>
+            {filteredFiles.map(file => (
+              <div key={file.id} className="glass-card" style={{ padding: '24px', borderRadius: 'var(--radius-lg)', display: 'flex', alignItems: 'center', gap: '20px' }}>
+                <div style={{ width: '56px', height: '56px', background: 'var(--primary-light)', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '32px' }}>
+                    {file.loai?.toLowerCase().includes('hình ảnh') ? 'image' : 'description'}
                   </span>
-                </td>
-                <td style={{ padding: '20px', textAlign: 'right', fontWeight: 700 }}>{formatSize(file.kich_thuoc)}</td>
-                <td style={{ padding: '20px', textAlign: 'center' }}>
-                  <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-                    <a href={`${API_BASE_URL}${file.duong_dan}`} target="_blank" rel="noreferrer" className="btn" style={{ padding: '8px', background: 'var(--primary-light)', color: 'var(--primary)' }}>
-                      <span className="material-symbols-outlined">visibility</span>
-                    </a>
-                    <button className="btn" style={{ padding: '8px', background: 'var(--danger-light, rgba(239, 68, 68, 0.15))', color: 'var(--danger)' }} onClick={() => handleDelete(file.id)}>
-                      <span className="material-symbols-outlined">delete</span>
-                    </button>
-                  </div>
-                </td>
-              </tr>
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--ink)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.ten_file}</h3>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--gray-400)', fontWeight: 700, margin: '4px 0' }}>{formatSize(file.kich_thuoc)} · {file.ngay_upload?.split('T')[0]}</p>
+                </div>
+                <a href={`${API_BASE_URL}${file.duong_dan}`} target="_blank" rel="noreferrer" className="btn" style={{ padding: '8px', background: 'var(--gray-50)', color: 'var(--ink)' }}>
+                  <span className="material-symbols-outlined">download</span>
+                </a>
+              </div>
             ))}
-          </tbody>
-        </table>
-      </div>
+          </div>
+
+          <div className="glass-card" style={{ padding: '32px', borderRadius: 'var(--radius-xl)', overflow: 'hidden' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ background: 'var(--gray-50)', textAlign: 'left' }}>
+                  <th style={{ padding: '20px', fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800 }}>TÊN TỆP TIN</th>
+                  <th style={{ padding: '20px', fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800 }}>LOẠI TỆP</th>
+                  <th style={{ padding: '20px', fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800, textAlign: 'right' }}>KÍCH THƯỚC</th>
+                  <th style={{ padding: '20px', fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800, textAlign: 'center' }}>THAO TÁC</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredFiles.map((file) => (
+                  <tr key={file.id} style={{ borderBottom: '1px solid var(--gray-50)', transition: 'all 0.2s' }}>
+                    <td style={{ padding: '20px', fontWeight: 800, color: 'var(--ink)' }}>{file.ten_file}</td>
+                    <td style={{ padding: '20px' }}>
+                      <span style={{ padding: '4px 10px', borderRadius: '6px', background: 'var(--gray-100)', fontSize: '0.75rem', fontWeight: 800, color: 'var(--ink)' }}>
+                        {file.loai}
+                      </span>
+                    </td>
+                    <td style={{ padding: '20px', textAlign: 'right', fontWeight: 700 }}>{formatSize(file.kich_thuoc)}</td>
+                    <td style={{ padding: '20px', textAlign: 'center' }}>
+                      <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+                        <a href={`${API_BASE_URL}${file.duong_dan}`} target="_blank" rel="noreferrer" className="btn" style={{ padding: '8px', background: 'var(--primary-light)', color: 'var(--primary)' }}>
+                          <span className="material-symbols-outlined">visibility</span>
+                        </a>
+                        <button data-ai-id="button-quanlyfiledinhkem-bnuc" className="btn" style={{ padding: '8px', background: 'var(--danger-light, rgba(239, 68, 68, 0.15))', color: 'var(--danger)' }} onClick={() => handleDelete(file.id)}>
+                          <span className="material-symbols-outlined">delete</span>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
 
       {/* MODAL NHẬP MÃ HỒ SƠ KHI UPLOAD */}
       <Modal isOpen={showUploadModal} onClose={() => { setShowUploadModal(false); setSelectedFile(null); }} title="Tải tệp đính kèm mới" maxWidth="450px">
@@ -167,7 +214,7 @@ const QuanLyFileDinhKem: React.FC = () => {
 
             {!selectedFile ? (
               <div style={{ position: 'relative' }}>
-                <input type="file" id="file-upload" onChange={(e) => e.target.files && setSelectedFile(e.target.files[0])} style={{ display: 'none' }} />
+                <input data-ai-id="input-quanlyfiledinhkem-nx4r" type="file" id="file-upload" onChange={(e) => e.target.files && setSelectedFile(e.target.files[0])} style={{ display: 'none' }} />
                 <label htmlFor="file-upload" style={{
                   display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px',
                   padding: '40px 20px', border: '2px dashed var(--gray-300)', borderRadius: '16px', background: 'var(--gray-50)',
@@ -193,7 +240,7 @@ const QuanLyFileDinhKem: React.FC = () => {
                   <p style={{ margin: '0 0 4px 0', fontWeight: 800, color: 'var(--ink)', fontSize: '0.95rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{selectedFile.name}</p>
                   <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 700 }}>{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</p>
                 </div>
-                <button type="button" onClick={() => setSelectedFile(null)} style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'white', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--danger)', cursor: 'pointer', boxShadow: 'var(--shadow-sm)', transition: 'transform 0.2s' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>
+                <button data-ai-id="button-quanlyfiledinhkem-j015" type="button" onClick={() => setSelectedFile(null)} style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'white', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--danger)', cursor: 'pointer', boxShadow: 'var(--shadow-sm)', transition: 'transform 0.2s' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>
                   <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>delete</span>
                 </button>
               </div>
@@ -203,12 +250,12 @@ const QuanLyFileDinhKem: React.FC = () => {
             <label style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '8px', display: 'block' }}>MÃ HỒ SƠ BỆNH ÁN (CẦN GẮN TỆP)</label>
             <div style={{ position: 'relative' }}>
               <span className="material-symbols-outlined" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--gray-400)', pointerEvents: 'none' }}>clinical_notes</span>
-              <input type="number" className="form-input" placeholder="Ví dụ: 123" value={uploadHoSoId} onChange={e => setUploadHoSoId(e.target.value)} style={{ width: '100%', background: 'var(--gray-50)', padding: '16px 16px 16px 48px', borderRadius: '16px', border: '1px solid var(--gray-200)', outline: 'none', color: 'var(--ink)', fontWeight: 700, fontSize: '1rem' }} />
+              <input data-ai-id="input-quanlyfiledinhkem-nmns" type="number" className="form-input" placeholder="Ví dụ: 123" value={uploadHoSoId} onChange={e => setUploadHoSoId(e.target.value)} style={{ width: '100%', background: 'var(--gray-50)', padding: '16px 16px 16px 48px', borderRadius: '16px', border: '1px solid var(--gray-200)', outline: 'none', color: 'var(--ink)', fontWeight: 700, fontSize: '1rem' }} />
             </div>
           </div>
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '8px' }}>
-            <button className="btn btn-pill" onClick={() => { setShowUploadModal(false); setSelectedFile(null); setUploadHoSoId(""); }} style={{ background: 'var(--gray-100)', color: 'var(--ink)' }}>Hủy bỏ</button>
-            <button className="btn btn-primary btn-pill" onClick={executeUpload} disabled={!selectedFile || !uploadHoSoId.trim()}>
+            <button data-ai-id="button-quanlyfiledinhkem-35zr" className="btn btn-pill" onClick={() => { setShowUploadModal(false); setSelectedFile(null); setUploadHoSoId(""); }} style={{ background: 'var(--gray-100)', color: 'var(--ink)' }}>Hủy bỏ</button>
+            <button data-ai-id="button-quanlyfiledinhkem-6hph" className="btn btn-primary btn-pill" onClick={executeUpload} disabled={!selectedFile || !uploadHoSoId.trim()}>
               <span className="material-symbols-outlined">backup</span>
               Tải lên hệ thống
             </button>

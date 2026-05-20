@@ -58,7 +58,7 @@ const PhanHoiDap: React.FC = () => {
                         <div style={{ flex: 1, minWidth: '280px', display: 'flex', flexDirection: 'column', gap: '0' }}>
                             {faqs.map((faq, i) => (
                                 <div key={i} className="faq-item" style={{ borderBottom: '1px solid var(--gray-200)' }}>
-                                    <button
+                                    <button data-ai-id="button-phanhoidap-67qz"
                                         className="faq-toggle-btn"
                                         onClick={() => setActiveFaq(activeFaq === i ? null : i)}
                                         style={{ width: '100%', padding: '28px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', borderRadius: '8px', gap: '20px' }}
