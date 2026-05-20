@@ -687,6 +687,29 @@ export const ChatBot: React.FC = () => {
     const waveBar2Ref = useRef<HTMLDivElement>(null);
     const waveBar3Ref = useRef<HTMLDivElement>(null);
     const isAiSpeakingRef = useRef<boolean>(false);
+    const micIdleTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    // XÓA TIMEOUT CHỜ MIC
+    const clearMicIdleTimeout = () => {
+        if (micIdleTimeoutRef.current) {
+            clearTimeout(micIdleTimeoutRef.current);
+            micIdleTimeoutRef.current = null;
+        }
+    };
+
+    // ĐẶT LẠI TIMEOUT 15 GIÂY CHO MIC
+    const resetMicIdleTimeout = useCallback(() => {
+        clearMicIdleTimeout();
+        micIdleTimeoutRef.current = setTimeout(() => {
+            if (recognitionRef.current) {
+                recognitionRef.current.stop();
+            }
+            setIsListening(false);
+            if (activeTabRef.current === 'standard') setInput("");
+            else setAgentInput("");
+            toast.info("Micro đã tự động tắt do không có âm thanh.");
+        }, 15000);
+    }, []);
 
     // 3. ĐỌC THÀNH TIẾNG (TEXT-TO-SPEECH VIETNAMESE)
     const speakText = useCallback((text: string) => {
@@ -1316,6 +1339,7 @@ export const ChatBot: React.FC = () => {
                 recognitionRef.current.lang = "vi-VN";
 
                 recognitionRef.current.onresult = (event: any) => {
+                    resetMicIdleTimeout(); // Có tiếng động là reset timer
                     if (isAiSpeakingRef.current) return; // Bỏ qua âm thanh khi AI đang nói để tránh echo
 
                     // Duyệt qua các kết quả mới nhận được từ sau resultIndex
@@ -1326,6 +1350,7 @@ export const ChatBot: React.FC = () => {
                             
                             // LỆNH GIỌNG NÓI: TẮT MIC
                             if (lowerText.includes("tắt mic") || lowerText.includes("tắt micro") || lowerText.includes("dừng nghe")) {
+                                clearMicIdleTimeout();
                                 if (recognitionRef.current) recognitionRef.current.stop();
                                 setIsListening(false);
                                 stopAudioAnalysis();
@@ -1347,11 +1372,13 @@ export const ChatBot: React.FC = () => {
 
                 recognitionRef.current.onerror = (e: any) => {
                     console.error("Speech Error:", e);
+                    clearMicIdleTimeout();
                     setIsListening(false);
                     stopAudioAnalysis();
                 };
 
                 recognitionRef.current.onend = () => {
+                    clearMicIdleTimeout();
                     setIsListening(false);
                     stopAudioAnalysis();
                 };
@@ -1390,6 +1417,7 @@ export const ChatBot: React.FC = () => {
 
             setIsListening(true);
             recognitionRef.current.start();
+            resetMicIdleTimeout(); // Bắt đầu đếm ngược 15s khi vừa bật mic
             updateVolume();
         } catch (err) {
             console.error("Microphone Access Blocked:", err);
@@ -1400,6 +1428,7 @@ export const ChatBot: React.FC = () => {
     // Đảm bảo dừng micro khi tắt cửa sổ chat
     useEffect(() => {
         if (!isOpen && isListening) {
+            clearMicIdleTimeout();
             if (recognitionRef.current) recognitionRef.current.stop();
             setIsListening(false);
             stopAudioAnalysis();
