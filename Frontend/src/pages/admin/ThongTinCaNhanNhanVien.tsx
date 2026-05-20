@@ -334,7 +334,11 @@ const ThongTinCaNhanNhanVien: React.FC = () => {
                                 </div>
                                 <div>
                                     <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--gray-400)', letterSpacing: '1px' }}>NGÀY GIA NHẬP</div>
-                                    <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--ink)' }}>{profile.ngay_vao_lam ? new Date(profile.ngay_vao_lam).toLocaleDateString('vi-VN') : 'Chưa cập nhật'}</div>
+                                    <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--ink)' }}>
+                                        {(profile.ngay_vao_lam || profile.ngay_tao || profile.createdAt) 
+                                            ? new Date(profile.ngay_vao_lam || profile.ngay_tao || profile.createdAt).toLocaleDateString('vi-VN') 
+                                            : new Date().toLocaleDateString('vi-VN')}
+                                    </div>
                                 </div>
                             </div>
                         </div>
