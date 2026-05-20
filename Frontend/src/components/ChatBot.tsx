@@ -686,6 +686,7 @@ export const ChatBot: React.FC = () => {
     const waveBar1Ref = useRef<HTMLDivElement>(null);
     const waveBar2Ref = useRef<HTMLDivElement>(null);
     const waveBar3Ref = useRef<HTMLDivElement>(null);
+    const isAiSpeakingRef = useRef<boolean>(false);
 
     // 3. ĐỌC THÀNH TIẾNG (TEXT-TO-SPEECH VIETNAMESE)
     const speakText = useCallback((text: string) => {
@@ -711,6 +712,10 @@ export const ChatBot: React.FC = () => {
         const viVoice = voices.find(v => v.lang.includes("vi-VN") || v.lang.includes("vi_VN"));
         if (viVoice) utterance.voice = viVoice;
         utterance.rate = 1.05; // Đọc nhanh hơn một chút để tạo cảm giác linh hoạt
+        
+        utterance.onstart = () => { isAiSpeakingRef.current = true; };
+        utterance.onend = () => { setTimeout(() => { isAiSpeakingRef.current = false; }, 800); };
+        utterance.onerror = () => { isAiSpeakingRef.current = false; };
         
         window.speechSynthesis.speak(utterance);
     }, [isVoiceEnabled]);
@@ -1311,6 +1316,8 @@ export const ChatBot: React.FC = () => {
                 recognitionRef.current.lang = "vi-VN";
 
                 recognitionRef.current.onresult = (event: any) => {
+                    if (isAiSpeakingRef.current) return; // Bỏ qua âm thanh khi AI đang nói để tránh echo
+
                     // Duyệt qua các kết quả mới nhận được từ sau resultIndex
                     for (let i = event.resultIndex; i < event.results.length; ++i) {
                         const resultText = event.results[i][0].transcript.trim();
@@ -2986,8 +2993,23 @@ export const ChatBot: React.FC = () => {
                 
                 @media (max-width: 768px) {
                     #chatCallout { display: none !important; }
-                    #chatBtn { right: 16px !important; bottom: 16px !important; width: 56px !important; height: 56px !important; }
-                    #chatWindow { right: 16px !important; bottom: 85px !important; width: calc(100vw - 32px) !important; height: calc(100vh - 120px) !important; max-height: 600px !important; }
+                    #chatBtn { 
+                        right: 16px !important; 
+                        bottom: max(16px, env(safe-area-inset-bottom, 16px)) !important; 
+                        width: 56px !important; 
+                        height: 56px !important; 
+                    }
+                    #chatWindow { 
+                        right: 0 !important; 
+                        bottom: 0 !important; 
+                        width: 100vw !important; 
+                        height: 100dvh !important; 
+                        max-height: 100dvh !important; 
+                        border-radius: 0 !important;
+                    }
+                    .glass-card {
+                        border-radius: 0 !important;
+                    }
                 }
             `}</style>
 
