@@ -8,7 +8,7 @@
 
 $PublicImg = "d:\QLy Phòng Khám Thú Y\Frontend\public\img"
 
-Write-Host "🎬 Bat dau phau thuat video cho Sep..." -ForegroundColor Cyan
+Write-Host "🎬 Bat dau phau thuat video ..." -ForegroundColor Cyan
 
 # Ham got video (Cat 15% tren, 20% duoi, chuyen sang webm)
 function Optimize-Video($fileName, $startTime, $duration) {
@@ -38,5 +38,8 @@ Optimize-Video "video_cho_chao" $null $null
 
 # Be meo chao (Got tren duoi, giu nguyen do dai)
 Optimize-Video "video_meo_chao" $null $null
+
+# Be meo nhay o footer (Got tren duoi, giu nguyen do dai)
+Optimize-Video "meonhayfooter" $null $null
 
 Write-Host "🚀 TAT CA VIDEO DA DUOC TOI UU! Sep hay vao code va doi duoi .mp4 sang .webm nhe!" -ForegroundColor Cyan

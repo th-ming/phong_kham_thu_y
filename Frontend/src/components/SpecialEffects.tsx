@@ -477,7 +477,7 @@ const MemeCatCore: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
 /**
  * TRÌNH PHÁT VIDEO NỀN TRONG SUỐT (TÍCH HỢP TẨY PHÔNG XANH)
  */
-export const TransparentVideo: React.FC<{ src: string, style?: React.CSSProperties, playbackRate?: number, isDark?: boolean }> = ({ src, style, playbackRate = 1, isDark = false }) => {
+export const TransparentVideo: React.FC<{ src: string, style?: React.CSSProperties, playbackRate?: number, isDark?: boolean, loop?: boolean, muted?: boolean, onEnded?: () => void }> = ({ src, style, playbackRate = 1, isDark = false, loop = true, muted = true, onEnded }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [inView, setInView] = useState(false);
@@ -520,6 +520,16 @@ export const TransparentVideo: React.FC<{ src: string, style?: React.CSSProperti
           }
 
           const maxRB = Math.max(r, b), diff = g - maxRB, luma = 0.299 * r + 0.587 * g + 0.114 * b;
+          
+          // TỰ ĐỘNG TÁCH NỀN ĐEN (BLACK SCREEN REMOVAL)
+          if (r < 25 && g < 25 && b < 25 && luma < 20) {
+            data[i + 3] = 0; 
+            continue;
+          } else if (r < 45 && g < 45 && b < 45 && luma < 40) {
+            // Khử viền đen mượt mà (Anti-aliasing fringes)
+            data[i + 3] = Math.max(0, 255 * ((luma - 20) / 20)); 
+            continue;
+          }
           const isTextArea = (py < canvas.height * 0.45) && (px > canvas.width * 0.40);
 
           // XỬ LÝ ĐẶC BIỆT CHO CHỮ TRÊN CHẾ ĐỘ TỐI (LÀM TRẮNG CHỮ)
@@ -543,9 +553,10 @@ export const TransparentVideo: React.FC<{ src: string, style?: React.CSSProperti
         ref={videoRef}
         src={inView ? src : ""}
         autoPlay
-        loop
-        muted
+        loop={loop}
+        muted={muted}
         playsInline
+        onEnded={onEnded}
         style={{ display: 'none' }}
       />
       <canvas ref={canvasRef} style={{ ...style, background: 'transparent' }} />

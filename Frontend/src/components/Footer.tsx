@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { generateSlug } from "@utils/index";
 import axiosInstance from "@services/axios";
+import { TransparentVideo } from './SpecialEffects';
 
 // =========================================================================
 // HỆ THỐNG THÚ CƯNG ẢO CAO CẤP (PREMIUM VIRTUAL PETS)
@@ -150,6 +151,7 @@ const VirtualPets: React.FC<{ containerRef: React.RefObject<HTMLElement> }> = ({
 const Footer: React.FC<{ isSimple?: boolean }> = ({ isSimple }) => {
     const footerRef = useRef<HTMLElement>(null);
     const [services, setServices] = useState<any[]>([]);
+    const [isMemePlaying, setIsMemePlaying] = useState(false);
 
     useEffect(() => {
         if (!isSimple) {
@@ -172,7 +174,87 @@ const Footer: React.FC<{ isSimple?: boolean }> = ({ isSimple }) => {
             overflow: 'hidden',
             cursor: isSimple ? 'default' : 'crosshair'
         }}>
-            {!isSimple && <VirtualPets containerRef={footerRef} />}
+            {!isSimple && !isMemePlaying && <VirtualPets containerRef={footerRef} />}
+
+            {/* LỚP BONG BÓNG CHAT (TỰ NHIÊN & SINH ĐỘNG HƠN) */}
+            {!isSimple && !isMemePlaying && (
+                <div style={{
+                    position: 'absolute',
+                    bottom: '260px', // Đặt vừa khít trên đỉnh đầu ảnh tĩnh 130px
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    zIndex: 11,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    cursor: 'pointer'
+                }} onClick={() => setIsMemePlaying(true)}>
+                    <div style={{
+                        backgroundColor: 'rgba(255, 255, 255, 0.85)', color: '#0f172a', padding: '8px 18px',
+                        borderRadius: '24px', fontWeight: '800', fontSize: '13px',
+                        position: 'relative', animation: 'floatBubble 3s ease-in-out infinite',
+                        boxShadow: '0 6px 20px rgba(0,0,0,0.15)', backdropFilter: 'blur(4px)',
+                        border: '1px solid rgba(255,255,255,0.4)', willChange: 'transform', whiteSpace: 'nowrap'
+                    }}>
+                        Click xem tôi nhảy nè! 🐾
+                        <div style={{
+                            content: '""', position: 'absolute', bottom: '-6px', left: '50%',
+                            transform: 'translateX(-50%)', borderWidth: '6px 6px 0',
+                            borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.85) transparent transparent transparent',
+                        }}></div>
+                    </div>
+                </div>
+            )}
+
+            {/* LỚP CHỨA ẢNH/VIDEO */}
+            {!isSimple && (
+                <div style={{
+                    position: 'absolute',
+                    bottom: '130px', 
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    zIndex: 10,
+                    display: 'flex',
+                    justifyContent: 'center',
+                    cursor: 'pointer'
+                }}>
+                    {isMemePlaying ? (
+                        /* VIDEO KHI ĐƯỢC CLICK */
+                        <div style={{ 
+                            height: '250px', display: 'flex', alignItems: 'flex-end',
+                            filter: 'drop-shadow(0 10px 15px rgba(0,0,0,0.45))'
+                        }}>
+                            <TransparentVideo
+                                src="/img/meonhayfooter_v3.webm" 
+                                loop={false}
+                                muted={false}
+                                onEnded={() => setIsMemePlaying(false)}
+                                style={{ height: '100%', width: 'auto', objectFit: 'contain' }}
+                            />
+                        </div>
+                    ) : (
+                        /* ẢNH TĨNH LÚC CHỜ (Chỉnh cho tự nhiên như Thú cưng ảo) */
+                        <div style={{ 
+                            height: '130px', display: 'flex', alignItems: 'flex-end',
+                            filter: 'drop-shadow(0 10px 15px rgba(0,0,0,0.35))',
+                            transition: 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+                        }}
+                        onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.15) translateY(-5px)'}
+                        onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1) translateY(0)'}
+                        onClick={() => setIsMemePlaying(true)}>
+                            <img
+                                src="/img/anh_meo_nhay.png"
+                                alt="Click để xem video"
+                                style={{ height: '100%', width: 'auto', objectFit: 'contain' }}
+                            />
+                        </div>
+                    )}
+                </div>
+            )}
+
+            <style>{`
+                @keyframes floatBubble { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+            `}</style>
 
             <div className="container" style={{ position: 'relative', zIndex: 1 }}>
                 {!isSimple && (
@@ -267,6 +349,7 @@ const Footer: React.FC<{ isSimple?: boolean }> = ({ isSimple }) => {
                         </div>
                     </div>
                 )}
+                
                 <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
                     <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>© 2026 REXI VETERINARY SYSTEM. All rights reserved.</p>
                 </div>
@@ -276,6 +359,13 @@ const Footer: React.FC<{ isSimple?: boolean }> = ({ isSimple }) => {
                     </div>
                 )}
             </div>
+
+            {!isSimple && (
+                <div style={{ display: 'none', position: 'absolute', right: '2rem', bottom: '1.75rem', width: '180px', maxWidth: '22%', zIndex: 2, pointerEvents: 'none', filter: 'drop-shadow(0 20px 45px rgba(0,0,0,0.35))' }}>
+                    <img src="/img/anh_meo_nhay.png" alt="Mèo nhảy" style={{ width: '100%', height: 'auto', display: 'block' }} />
+                </div>
+            )}
+
             <style>{`
                 .footer-link { color: #94a3b8; text-decoration: none; padding: 8px 0; font-size: 0.95rem; transition: all 0.3s; }
                 .footer-link:hover { color: #0f9d8a; transform: translateX(5px); }

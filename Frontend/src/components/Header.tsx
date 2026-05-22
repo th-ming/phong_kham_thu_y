@@ -167,7 +167,7 @@ const Header: React.FC<{ hideMenu?: boolean }> = ({ hideMenu }) => {
           </div>
         )}
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+        <div className="header-action-group" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
           {/* nút giao diện sáng tối */}
           <ThemeToggle />
 
@@ -212,7 +212,7 @@ const Header: React.FC<{ hideMenu?: boolean }> = ({ hideMenu }) => {
             aria-label={isMenuOpen ? "Đóng menu điều hướng" : "Mở menu điều hướng"}
             style={{ background: 'var(--gray-100)', border: '1px solid var(--gray-200)', cursor: 'pointer', color: 'var(--ink)', width: '48px', height: '48px', borderRadius: '16px', display: 'grid', placeItems: 'center', transition: 'transform 0.22s ease, background 0.22s ease, border-color 0.22s ease' }}
           >
-            <span className="material-symbols-outlined" style={{ fontSize: '30px' }}>{isMenuOpen ? 'close' : 'menu'}</span>
+            <span className="material-symbols-outlined" style={{ fontSize: '26px', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}>{isMenuOpen ? 'close' : 'menu'}</span>
           </button>
         </div>
       </nav>
@@ -315,6 +315,11 @@ const Header: React.FC<{ hideMenu?: boolean }> = ({ hideMenu }) => {
         }
         @media (max-width: 991px) { .mobile-hide { display: none !important; } }
         @media (min-width: 992px) { .mobile-show { display: none !important; } }
+        /* Tối ưu chống vỡ layout, lệch nút trên màn hình điện thoại cực nhỏ (dưới 380px) */
+        @media (max-width: 380px) {
+          .header-action-group { gap: 8px !important; }
+          .logo-container { display: none !important; }
+        }
       `}</style>
     </header>
   );
