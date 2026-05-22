@@ -180,10 +180,10 @@ const PhanDichVu: React.FC = () => {
                     </div>
 
                     {/* bố cục dịch vụ */}
-                    <div className="service-layout" style={{ display: 'flex', gap: '40px', alignItems: 'flex-start' }}>
+                    <div className="service-layout-grid">
 
                         {/* cột thẻ dịch vụ nổi bật */}
-                        <div className="featured-service-card premium-fluid-gradient" style={{ flex: '0 0 auto', width: '48%', height: '600px', borderRadius: '32px', padding: '48px', color: 'white', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxShadow: '0 30px 80px var(--primary-light)' }}>
+                        <div className="featured-service-card premium-fluid-gradient" style={{ height: '600px', borderRadius: '32px', padding: '48px', color: 'white', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxShadow: '0 30px 80px var(--primary-light)' }}>
                             {/* nền trang trí */}
                             <div style={{ position: 'absolute', top: '-60px', right: '-60px', width: '280px', height: '280px', borderRadius: '50%', background: 'rgba(255,255,255,0.06)', pointerEvents: 'none' }} />
                             <div style={{ position: 'absolute', bottom: '-40px', left: '-40px', width: '200px', height: '200px', borderRadius: '50%', background: 'rgba(255,255,255,0.04)', pointerEvents: 'none' }} />

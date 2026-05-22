@@ -84,7 +84,7 @@ const PhanCTA: React.FC = () => {
                 .cta-btn-outline:hover .cta-btn-icon {
                     transform: rotate(-8deg) scale(1.08);
                 }
-                @media (max-width: 768px) {
+                @media (max-width: 1024px) {
                     .cta-layout { flex-direction: column !important; text-align: center !important; }
                     .cta-btn-group { justify-content: center !important; }
                     .cta-badges { justify-content: center !important; }
