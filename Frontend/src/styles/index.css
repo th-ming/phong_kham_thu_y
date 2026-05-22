@@ -1673,3 +1673,97 @@ html {
   border-top-color: rgba(255, 255, 255, 0.3);
 }
 
+
+/* ========================================= */
+/* RESPONSIVE UTILITIES FOR MOBILE & IPAD    */
+/* ========================================= */
+
+/* 1. Bảng biểu (Tables) */
+.table-responsive-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 1rem;
+}
+
+.table-responsive-wrapper table {
+  min-width: 800px; /* Force tables to maintain a minimum width so they don't squish */
+}
+
+/* 2. Lưới Form (Form Grids) */
+.responsive-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.responsive-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.responsive-grid-1-5-1 {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  gap: 16px;
+}
+
+/* 3. Media Queries */
+@media screen and (max-width: 768px) {
+  /* Gập dọc tất cả các lưới form trên điện thoại */
+  .responsive-grid-2,
+  .responsive-grid-3,
+  .responsive-grid-1-5-1 {
+    grid-template-columns: 1fr !important;
+    gap: 12px;
+  }
+  
+  /* Giảm padding của modal trên mobile */
+  .modal-content {
+    padding: 20px !important;
+  }
+  
+  /* Tối ưu padding cho các thẻ glass-card */
+  .glass-card {
+    padding: 16px !important;
+  }
+  
+  /* Modal wrapper padding */
+  .modal-wrapper {
+    padding: 12px !important;
+  }
+}
+
+@media screen and (max-width: 1024px) {
+  /* Tối ưu cho iPad */
+  .admin-main-content, .customer-main-content {
+    padding: 20px 16px !important;
+  }
+}
+.responsive-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+@media screen and (max-width: 1024px) {
+  .responsive-grid-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+@media screen and (max-width: 768px) {
+  .responsive-grid-4 {
+    grid-template-columns: 1fr !important;
+  }
+}
+.responsive-grid-booking {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 32px;
+  align-items: start;
+}
+@media screen and (max-width: 1024px) {
+  .responsive-grid-booking {
+    grid-template-columns: 1fr;
+  }
+}

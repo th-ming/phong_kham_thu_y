@@ -132,7 +132,9 @@ const BacSiDashboard: React.FC = () => {
                         <h2 style={{ fontSize: '1.2rem', margin: 0, fontWeight: 800 }}>Lịch hẹn của bạn hôm nay</h2>
                     </div>
                     <div style={{ overflowX: 'auto', maxHeight: '400px' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                        <div className="table-responsive-wrapper">
+<div style={{ minWidth: '800px' }}>
+<table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                             <tbody>
                                 {myAppointments.length === 0 ? (
                                     <tr><td colSpan={4} style={{ padding: '40px', textAlign: 'center', color: 'var(--gray-400)', fontWeight: 600 }}>Hôm nay bạn không có lịch hẹn nào.</td></tr>
@@ -161,6 +163,7 @@ const BacSiDashboard: React.FC = () => {
                                 )}
                             </tbody>
                         </table>
+</div></div>
                     </div>
                 </div>
 

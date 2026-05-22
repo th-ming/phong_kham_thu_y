@@ -347,7 +347,9 @@ const DashboardQuanLy: React.FC = () => {
               <Link to="/quan-ly/lich-hen" className="btn btn-pill" style={{ background: 'var(--primary-light)', color: 'var(--primary)', padding: '8px 20px', fontSize: '0.8rem', textDecoration: 'none' }}>Tất cả</Link>
             </div>
             <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <div className="table-responsive-wrapper">
+<div style={{ minWidth: '800px' }}>
+<table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--gray-100)' }}>
                     <th style={{ padding: '16px 8px', color: 'var(--gray-400)', fontSize: '0.8rem', fontWeight: 700 }}>GIỜ</th>
@@ -371,6 +373,7 @@ const DashboardQuanLy: React.FC = () => {
                   ))}
                 </tbody>
               </table>
+</div></div>
             </div>
           </div>
         )}

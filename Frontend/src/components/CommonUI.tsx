@@ -25,6 +25,7 @@ export const Modal: React.FC<{
 
   return createPortal(
     <div
+      className="modal-wrapper"
       style={{
         position: "fixed",
         inset: 0,

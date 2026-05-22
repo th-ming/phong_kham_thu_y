@@ -181,7 +181,9 @@ const TiepTanDashboard: React.FC = () => {
                         </div>
                     </div>
                     <div style={{ overflowX: 'auto', maxHeight: '500px' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                        <div className="table-responsive-wrapper">
+<div style={{ minWidth: '800px' }}>
+<table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                             <thead>
                                 <tr style={{ background: 'var(--gray-50)' }}>
                                     <th style={{ padding: '16px 24px', fontSize: '0.8rem', color: 'var(--gray-500)' }}>THỜI GIAN</th>
@@ -223,6 +225,7 @@ const TiepTanDashboard: React.FC = () => {
                                 )}
                             </tbody>
                         </table>
+</div></div>
                     </div>
                 </div>
 

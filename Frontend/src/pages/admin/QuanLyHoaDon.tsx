@@ -220,7 +220,9 @@ const QuanLyHoaDon: React.FC = () => {
             />
           </div>
         </div>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <div className="table-responsive-wrapper">
+<div style={{ minWidth: '800px' }}>
+<table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ background: 'var(--gray-50)', textAlign: 'left' }}>
               <th style={{ padding: '20px', fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800 }}>MÃ HÓA ĐƠN</th>
@@ -270,6 +272,7 @@ const QuanLyHoaDon: React.FC = () => {
             ))}
           </tbody>
         </table>
+</div></div>
       </div>
 
       {/* MODAL CHI TIẾT HÓA ĐƠN */}
@@ -288,7 +291,7 @@ const QuanLyHoaDon: React.FC = () => {
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '32px' }}>
+            <div className="responsive-grid-2">
               <div style={{ background: 'var(--surface)', border: '1px solid var(--gray-200)', padding: '20px', borderRadius: '20px' }}>
                 <div style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--gray-400)', letterSpacing: '1px', marginBottom: '12px' }}>KHÁCH HÀNG</div>
                 <div style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--ink)' }}>{viewingHD.ten_khach_hang || 'Khách vãng lai'}</div>
@@ -301,7 +304,9 @@ const QuanLyHoaDon: React.FC = () => {
               </div>
             </div>
 
-            <table style={{ width: '100%', marginBottom: '32px' }}>
+            <div className="table-responsive-wrapper">
+<div style={{ minWidth: '800px' }}>
+<table style={{ width: '100%', marginBottom: '32px' }}>
               <thead>
                 <tr style={{ borderBottom: '2px solid var(--gray-100)' }}>
                   <th style={{ textAlign: 'left', padding: '12px 0', fontSize: '0.8rem', fontWeight: 900, color: 'var(--ink)' }}>DIỄN GIẢI</th>
@@ -327,6 +332,7 @@ const QuanLyHoaDon: React.FC = () => {
                 </tr>
               </tfoot>
             </table>
+</div></div>
 
             <div style={{ textAlign: 'center', color: 'var(--gray-400)', fontSize: '0.8rem', fontStyle: 'italic' }}>
               Cảm ơn bạn đã tin tưởng dịch vụ tại Rexi!

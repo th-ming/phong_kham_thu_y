@@ -270,7 +270,7 @@ const QuanLyNhanVienPhanQuyen: React.FC = () => {
               <input data-ai-id="input-quanlynhanvienphanquyen-xxff" id="ho_ten" required className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left', cursor: 'text' }} value={formData.ho_ten} onChange={e => setFormData({ ...formData, ho_ten: e.target.value })} />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <div className="responsive-grid-2">
               <div style={{ display: 'grid', gap: '8px' }}>
                 <label htmlFor="chuyen_mon" style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)' }}>CHUYÊN MÔN</label>
                 <select data-ai-id="select-quanlynhanvienphanquyen-pl4x" id="chuyen_mon" className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left' }} value={formData.chuyen_mon} onChange={e => setFormData({ ...formData, chuyen_mon: e.target.value })}>
@@ -422,7 +422,7 @@ const QuanLyNhanVienPhanQuyen: React.FC = () => {
               ))}
             </select>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+          <div className="responsive-grid-2">
             <div style={{ display: 'grid', gap: '8px' }}>
               <label htmlFor="account_role" style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)' }}>VAI TRÒ</label>
               <select id="account_role" className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left' }} value={accountForm.id_vai_tro} onChange={e => setAccountForm({ ...accountForm, id_vai_tro: e.target.value })}>
@@ -460,7 +460,9 @@ const QuanLyNhanVienPhanQuyen: React.FC = () => {
       </Modal>
 
       <div className="glass-card stagger-2" style={{ borderRadius: '32px', overflow: 'hidden', border: '1px solid var(--gray-100)' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <div className="table-responsive-wrapper">
+<div style={{ minWidth: '800px' }}>
+<table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ background: 'var(--gray-50)', textAlign: 'left' }}>
               <th style={{ padding: '24px 20px', fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800 }}>NHÂN VIÊN</th>
@@ -525,6 +527,7 @@ const QuanLyNhanVienPhanQuyen: React.FC = () => {
             ))}
           </tbody>
         </table>
+</div></div>
       </div>
 
       {isAdmin && (
@@ -551,7 +554,9 @@ const QuanLyNhanVienPhanQuyen: React.FC = () => {
               </button>
             </div>
           </div>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <div className="table-responsive-wrapper">
+<div style={{ minWidth: '800px' }}>
+<table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ background: 'var(--gray-50)', textAlign: 'left' }}>
                 <th style={{ padding: '18px 20px', fontSize: '0.75rem', color: 'var(--gray-400)', fontWeight: 800 }}>TÀI KHOẢN</th>
@@ -612,6 +617,7 @@ const QuanLyNhanVienPhanQuyen: React.FC = () => {
               )}
             </tbody>
           </table>
+</div></div>
         </div>
       )}
     </div>

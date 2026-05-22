@@ -1306,7 +1306,9 @@ export const ChatBot: React.FC = () => {
     <div class="content-box">${data.treatment}</div>
     
     <div class="section-title">3. Danh sách dược phẩm chỉ định</div>
-    <table>
+    <div className="table-responsive-wrapper">
+<div style={{ minWidth: '800px' }}>
+<table>
         <thead>
             <tr>
                 <th style="width: 8%;">STT</th>
@@ -1326,6 +1328,7 @@ export const ChatBot: React.FC = () => {
             `).join("") : `<tr><td colspan="4" style="text-align: center; color: #94a3b8;">Không có thuốc chỉ định đặc biệt</td></tr>`}
         </tbody>
     </table>
+</div></div>
     
     <div class="footer">
         <div class="signature">
@@ -3328,7 +3331,7 @@ export const ChatBot: React.FC = () => {
                         - **Co giật nặng:** Thiết lập đường truyền IV khẩn cấp. Chuẩn bị tiêm tĩnh mạch Diazepam **liều 0.5 - 1.0 mg/kg** hoặc đặt trực tràng.<br />
                         - **Chảy máu cấp:** Băng ép lực ổn định, truyền dịch chống sốc.
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                    <div className="responsive-grid-2">
                         <button data-ai-id="button-chatbot-tahq" onClick={() => { setIsOpen(false); navigate("/quan-ly/lich-hen"); }} style={{
                             background: '#ef4444', color: 'white', border: 'none',
                             borderRadius: '10px', padding: '10px', fontWeight: 800, fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
@@ -3362,7 +3365,7 @@ export const ChatBot: React.FC = () => {
                         - **Ngộ độc:** Đưa bé đến ngay Rexi hoặc trạm thú y gần nhất. Tuyệt đối không tự ý gây nôn trừ khi có chỉ định bác sĩ qua hotline.<br />
                         - **Đường dây nóng Cấp cứu:** Gọi trực tiếp số hotline **0353.374.156**
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                    <div className="responsive-grid-2">
                         <a href="tel:***REMOVED***-VIETQR_ACCOUNT_NO" style={{
                             textDecoration: 'none', background: '#fb7185', color: 'white',
                             borderRadius: '10px', padding: '10px', fontWeight: 800, fontSize: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
@@ -3809,7 +3812,7 @@ export const ChatBot: React.FC = () => {
                                                         <div style={{ fontSize: '0.78rem', opacity: 0.9, marginBottom: '14px', lineHeight: 1.5, fontWeight: 600 }}>
                                                             Dạ Sen ơi, các tác vụ tự động lập lịch khám, quản lý bệnh án thú y và tra cứu dữ liệu khách hàng yêu cầu quyền tài khoản bảo mật của Bệnh viện Thú y Rexi. Sen đăng nhập hoặc đăng ký tài khoản nhanh chỉ trong 10 giây để cùng Rexi chăm sóc bé yêu nhé!
                                                         </div>
-                                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                                                        <div className="responsive-grid-2">
                                                             <button data-ai-id="button-chatbot-jos2" onClick={() => { setIsOpen(false); navigate("/dang-nhap"); }} style={{
                                                                 background: '#10b981', color: 'white', border: 'none',
                                                                 borderRadius: '10px', padding: '10px', fontWeight: 900, fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px'
@@ -3900,7 +3903,9 @@ export const ChatBot: React.FC = () => {
                                                 {/* KỸ NĂNG 5+7: HIỂN THỊ KẾT QUẢ DẠNG BẢNG (THUỐC, THÚ CƯNG, V.V.) */}
                                                 {msg.isTableData && msg.tableHeader && msg.tableRows && (
                                                     <div style={{ marginTop: '12px', overflowX: 'auto' }}>
-                                                        <table style={{
+                                                        <div className="table-responsive-wrapper">
+<div style={{ minWidth: '800px' }}>
+<table style={{
                                                             width: '100%', borderCollapse: 'collapse',
                                                             fontSize: '0.75rem', fontFamily: 'inherit'
                                                         }}>
@@ -3938,6 +3943,7 @@ export const ChatBot: React.FC = () => {
                                                                 ))}
                                                             </tbody>
                                                         </table>
+</div></div>
                                                         <div style={{ fontSize: '0.68rem', color: '#94a3b8', marginTop: '6px', fontStyle: 'italic' }}>
                                                             Hiển thị {msg.tableRows.length} dòng đầu • Dữ liệu trực tiếp từ hệ thống Rexi
                                                         </div>
@@ -3975,7 +3981,9 @@ export const ChatBot: React.FC = () => {
                                                 {/* KỸ NĂNG 2: HIỂN THỊ HÓA ĐƠN / LỊCH TRỰC HÀNH CHÍNH (ĐỒNG NGHIỆP DỮ LIỆU) */}
                                                 {msg.isTableData && msg.tableRows && (
                                                     <div style={{ marginTop: '10px', overflowX: 'auto', borderRadius: '10px', border: '1px solid var(--gray-200)' }}>
-                                                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.75rem' }}>
+                                                        <div className="table-responsive-wrapper">
+<div style={{ minWidth: '800px' }}>
+<table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.75rem' }}>
                                                             <thead>
                                                                 <tr style={{ background: 'var(--gray-100)', fontWeight: 900 }}>
                                                                     {msg.tableHeader.map((h: string, hIdx: number) => (
@@ -3993,6 +4001,7 @@ export const ChatBot: React.FC = () => {
                                                                 ))}
                                                             </tbody>
                                                         </table>
+</div></div>
                                                     </div>
                                                 )}
 
@@ -4037,7 +4046,7 @@ export const ChatBot: React.FC = () => {
                                                         <div style={{ fontSize: '0.78rem', opacity: 0.9, marginBottom: '14px', lineHeight: 1.5, fontWeight: 600 }}>
                                                             Dạ Sen ơi, các tác vụ tự động lập lịch khám, quản lý bệnh án thú y và tra cứu dữ liệu khách hàng yêu cầu quyền tài khoản bảo mật của Bệnh viện Thú y Rexi. Sen đăng nhập hoặc đăng ký tài khoản nhanh chỉ trong 10 giây để cùng Rexi chăm sóc bé yêu nhé!
                                                         </div>
-                                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                                                        <div className="responsive-grid-2">
                                                             <button data-ai-id="button-chatbot-fbml" onClick={() => { setIsOpen(false); navigate("/dang-nhap"); }} style={{
                                                                 background: '#f43f5e', color: 'white', border: 'none',
                                                                 borderRadius: '10px', padding: '10px', fontWeight: 900, fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px'

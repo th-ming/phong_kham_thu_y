@@ -296,7 +296,7 @@ export const ModalTaoLichHenAdmin: React.FC<ModalProps> = ({ isOpen, onClose, on
                             <button data-ai-id="button-modaltaolichhenadmin-sqmt" type="button" onClick={() => setStep(1)} className="btn btn-pill" style={{ background: 'var(--surface)', color: 'var(--ink)', padding: '8px 16px', fontSize: '0.85rem', border: '1px solid var(--gray-200)', boxShadow: 'var(--shadow-sm)', fontWeight: 800 }}>Thay đổi</button>
                         </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                        <div className="responsive-grid-2">
                             <div>
                                 <label style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '8px', display: 'block' }}>THÚ CƯNG</label>
                                 {isNewCustomer ? <input data-ai-id="input-modaltaolichhenadmin-iki8" type="text" style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid var(--gray-200)', background: 'var(--gray-100)', color: 'var(--gray-500)', outline: 'none', fontWeight: 700 }} value={newPetName} disabled /> : <select data-ai-id="select-modaltaolichhenadmin-z74y" value={selectedPetId} onChange={e => setSelectedPetId(e.target.value)} style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid var(--gray-200)', background: 'var(--gray-50)', outline: 'none', fontWeight: 700, color: 'var(--ink)' }} required><option value="">-- Chọn thú cưng --</option>{customerPets.map(pet => <option key={pet.id_thu_cung} value={pet.id_thu_cung}>{pet.ten_thu_cung}</option>)}</select>}

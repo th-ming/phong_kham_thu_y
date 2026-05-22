@@ -216,7 +216,7 @@ const QuanLyBenhAn: React.FC = () => {
                 {selectedLich && (
                     <div className="glass-card animate-fade-in" style={{ padding: '24px', borderRadius: '24px', border: '1px solid var(--primary-light)' }}>
                         <h2 style={{ fontSize: '1.2rem', fontWeight: 900, marginBottom: '16px', color: 'var(--primary)' }}>2. Thông tin ca khám</h2>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '18px' }}>
+                        <div className="responsive-grid-2">
                             {[
                                 ['Thời gian', `${getDateOnly(selectedLich.ngay_kham)} ${getTimeShort(selectedLich.gio_kham)}`],
                                 ['Trạng thái', getStatusLabel(selectedLich.trang_thai)],

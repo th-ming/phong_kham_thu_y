@@ -288,7 +288,7 @@ const QuanLyKhachHangThuCung: React.FC = () => {
           <h2 style={{ fontSize: '1.1rem', fontWeight: 900, color: 'var(--ink)', margin: 0 }}>
             Danh sách khách hàng ({filteredKhachHang.length}) <span style={{ fontSize: '0.75rem', background: 'var(--primary-light)', color: 'var(--primary)', padding: '2px 8px', borderRadius: '20px', marginLeft: '6px', fontWeight: 800 }}>Virtual List</span>
           </h2>
-          <div className="glass-card" style={{ display: 'flex', alignItems: 'center', padding: '0 16px', borderRadius: '16px', border: '1px solid var(--gray-200)', background: 'var(--surface)', width: '300px' }}>
+          <div className="glass-card" style={{ display: 'flex', alignItems: 'center', padding: '0 16px', borderRadius: '16px', border: '1px solid var(--gray-200)', background: 'var(--surface)', width: '300px', maxWidth: '100%' }}>
             <span className="material-symbols-outlined" style={{ color: 'var(--gray-400)', marginRight: '8px' }}>search</span>
             <input data-ai-id="input-quanlykhachhangthucung-ous7"
               type="text"
@@ -299,6 +299,9 @@ const QuanLyKhachHangThuCung: React.FC = () => {
             />
           </div>
         </div>
+
+        <div className="table-responsive-wrapper">
+          <div style={{ minWidth: '800px' }}>
 
         {/* Tiêu đề cột dạng CSS Grid */}
         <div style={{ 
@@ -412,6 +415,8 @@ const QuanLyKhachHangThuCung: React.FC = () => {
             </div>
           )}
         </div>
+        </div>
+      </div>
       </div>
 
       {/* STYLES CHO HOVER VIRTUAL LIST DỄ CĂN CHỈNH */}
@@ -428,7 +433,7 @@ const QuanLyKhachHangThuCung: React.FC = () => {
       <div className="glass-card" style={{ borderRadius: 'var(--radius-xl)', overflow: 'hidden' }}>
         <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--gray-100)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', background: 'var(--surface)' }}>
           <h2 style={{ fontSize: '1.1rem', fontWeight: 900, color: 'var(--ink)', margin: 0 }}>Danh sách thú cưng ({thuCung.length})</h2>
-          <div className="glass-card" style={{ display: 'flex', alignItems: 'center', padding: '0 16px', borderRadius: '16px', border: '1px solid var(--gray-200)', background: 'var(--surface)', width: '300px' }}>
+          <div className="glass-card" style={{ display: 'flex', alignItems: 'center', padding: '0 16px', borderRadius: '16px', border: '1px solid var(--gray-200)', background: 'var(--surface)', width: '300px', maxWidth: '100%' }}>
             <span className="material-symbols-outlined" style={{ color: 'var(--gray-400)', marginRight: '8px' }}>search</span>
             <input data-ai-id="input-quanlykhachhangthucung-1lnd"
               type="text"
@@ -439,6 +444,7 @@ const QuanLyKhachHangThuCung: React.FC = () => {
             />
           </div>
         </div>
+        <div className="table-responsive-wrapper">
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ background: 'var(--gray-50)', textAlign: 'left' }}>
@@ -498,6 +504,7 @@ const QuanLyKhachHangThuCung: React.FC = () => {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       {/* BỘ NÚT ĐIỀU HƯỚNG PHÂN TRANG */}
@@ -568,7 +575,7 @@ const QuanLyKhachHangThuCung: React.FC = () => {
                 {khachHang.map(kh => <option key={kh.id_khach_hang} value={kh.id_khach_hang}>{kh.ten_khach_hang} - {kh.sdt}</option>)}
               </select>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.5fr) minmax(0, 1fr)', gap: '12px' }}>
+            <div className="responsive-grid-1-5-1">
               <div style={{ display: 'grid', gap: '8px' }}>
                 <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)' }}>TÊN BÉ</label>
                 <input data-ai-id="input-quanlykhachhangthucung-ub0z" required className="btn" style={petFieldStyle} value={petFormData.ten_thu_cung} onChange={e => setPetFormData({ ...petFormData, ten_thu_cung: e.target.value })} />
@@ -582,7 +589,7 @@ const QuanLyKhachHangThuCung: React.FC = () => {
                 </select>
               </div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '12px' }}>
+            <div className="responsive-grid-2">
               <div style={{ display: 'grid', gap: '8px' }}>
                 <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)' }}>GIỐNG</label>
                 <input data-ai-id="input-quanlykhachhangthucung-y0af" className="btn" style={petFieldStyle} value={petFormData.giong} onChange={e => setPetFormData({ ...petFormData, giong: e.target.value })} />
@@ -592,7 +599,7 @@ const QuanLyKhachHangThuCung: React.FC = () => {
                 <input data-ai-id="input-quanlykhachhangthucung-ccuw" type="number" step="0.1" className="btn" style={petFieldStyle} value={petFormData.trong_luong} onChange={e => setPetFormData({ ...petFormData, trong_luong: e.target.value })} />
               </div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '12px' }}>
+            <div className="responsive-grid-3">
               <div style={{ display: 'grid', gap: '8px' }}>
                 <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)' }}>GIỚI TÍNH</label>
                 <select data-ai-id="select-quanlykhachhangthucung-1av9" className="btn" style={petSelectStyle} value={petFormData.gioi_tinh} onChange={e => setPetFormData({ ...petFormData, gioi_tinh: e.target.value })}>

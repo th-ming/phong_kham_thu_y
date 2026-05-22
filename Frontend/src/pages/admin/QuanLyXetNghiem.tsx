@@ -74,7 +74,9 @@ const QuanLyXetNghiem: React.FC = () => {
       </div>
 
       <div className="glass-card" style={{ borderRadius: 'var(--radius-xl)', overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <div className="table-responsive-wrapper">
+<div style={{ minWidth: '800px' }}>
+<table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ background: 'var(--gray-50)', textAlign: 'left' }}>
               <th style={{ padding: '20px', fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800 }}>MÃ XN</th>
@@ -118,13 +120,14 @@ const QuanLyXetNghiem: React.FC = () => {
             ))}
           </tbody>
         </table>
+</div></div>
       </div>
 
       <Modal isOpen={!!viewingXN} onClose={() => setViewingXN(null)} title="Kết quả xét nghiệm" maxWidth="600px">
         {viewingXN && (
           <div style={{ display: 'grid', gap: '24px' }}>
             <div style={{ background: 'var(--gray-50)', padding: '24px', borderRadius: '24px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+              <div className="responsive-grid-2">
                 <InfoRow label="Loại xét nghiệm" value={viewingXN.ten_xet_nghiem || 'Tổng quát'} />
                 <InfoRow label="Ngày lấy mẫu" value={chuyenNgayISO_SangVN(viewingXN.ngay_lay_mau)} />
                 <InfoRow label="Bác sĩ" value={viewingXN.ten_bac_si || '—'} />

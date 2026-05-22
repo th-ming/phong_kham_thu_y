@@ -96,7 +96,9 @@ const QuanLyHoSoBenhAn: React.FC = () => {
       </div>
 
       <div className="glass-card" style={{ borderRadius: 'var(--radius-xl)', overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <div className="table-responsive-wrapper">
+<div style={{ minWidth: '800px' }}>
+<table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ background: 'var(--gray-50)', color: 'var(--gray-500)', textAlign: 'left', borderBottom: '1px solid var(--gray-200)' }}>
               <th style={{ padding: '24px 20px', fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px' }}>MÃ HỒ SƠ</th>
@@ -146,6 +148,7 @@ const QuanLyHoSoBenhAn: React.FC = () => {
             ))}
           </tbody>
         </table>
+</div></div>
       </div>
 
       {/* BỘ NÚT ĐIỀU HƯỚNG PHÂN TRANG */}

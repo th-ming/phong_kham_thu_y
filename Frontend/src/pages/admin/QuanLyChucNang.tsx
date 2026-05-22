@@ -59,7 +59,9 @@ const QuanLyChucNang: React.FC = () => {
       </div>
 
       <div className="glass-card" style={{ borderRadius: 'var(--radius-xl)', overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <div className="table-responsive-wrapper">
+<div style={{ minWidth: '800px' }}>
+<table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ background: 'var(--gray-50)', textAlign: 'left' }}>
               <th style={{ padding: '20px', fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800 }}>ID</th>
@@ -98,6 +100,7 @@ const QuanLyChucNang: React.FC = () => {
             ))}
           </tbody>
         </table>
+</div></div>
       </div>
     </div>
   );
