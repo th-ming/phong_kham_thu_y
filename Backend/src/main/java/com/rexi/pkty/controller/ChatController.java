@@ -438,7 +438,7 @@ public class ChatController {
     private String extractTextFromJson(String jsonText) {
         try {
             ObjectMapper mapper = new ObjectMapper()
-                .configure(com.fasterxml.jackson.core.JsonParser.Feature.ALLOW_UNQUOTED_CONTROL_CHARS, true);
+                .configure(com.fasterxml.jackson.core.JsonParser.Feature.ALLOW_UNESCAPED_CONTROL_CHARS, true);
             JsonNode node = mapper.readTree(jsonText);
             if (node.has("reply") && node.get("reply").isTextual()) {
                 return node.get("reply").asText();
