@@ -1767,3 +1767,12 @@ html {
     grid-template-columns: 1fr;
   }
 }
+.responsive-grid-split {
+  display: grid;
+  gap: 40px;
+}
+@media screen and (max-width: 1024px) {
+  .responsive-grid-split {
+    grid-template-columns: 1fr !important;
+  }
+}

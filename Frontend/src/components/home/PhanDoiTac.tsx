@@ -66,18 +66,14 @@ const PhanDoiTac: React.FC = () => {
                     </div>
                 </RevealSection>
 
-                <div style={{
-                    display: 'grid',
+                <div className="responsive-grid-split" style={{
                     gridTemplateColumns: '1.1fr 0.9fr',
-                    gap: '40px',
-                    alignItems: 'start',
+                    alignItems: 'center',
                     marginTop: '56px'
                 }}>
                     <div>
-                        <div style={{
-                            display: 'grid',
-                            gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-                            gap: '24px'
+                        <div className="responsive-grid-split" style={{
+                            gridTemplateColumns: 'repeat(2, minmax(0, 1fr))'
                         }}>
                             <div className="stat-card-light">
                                 <div style={{ fontSize: '2.4rem', fontWeight: 900, color: '#059669' }}>120+</div>
