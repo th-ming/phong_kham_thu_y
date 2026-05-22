@@ -419,7 +419,7 @@ const DatLichHen: React.FC = () => {
         <p style={{ fontWeight: 600, color: 'rgba(255,255,255,0.7)', position: 'relative', zIndex: 1, margin: 0, fontSize: '1.1rem', maxWidth: '600px' }}>Mang đến dịch vụ chăm sóc y tế chuẩn quốc tế cho người bạn nhỏ của bạn ngay tại Rexi.</p>
       </div>
 
-      <div className="stagger-2" style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: '32px', alignItems: 'start' }}>
+      <div className="stagger-2 responsive-grid-booking">
         <form className="glass-card" style={{ padding: '40px', borderRadius: 'var(--radius-xl)', display: 'grid', gap: '32px' }} onSubmit={handleBooking}>
           <div style={{ display: 'grid', gap: '12px' }}>
             <label style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gray-400)', letterSpacing: '1px' }}>1. CHỌN THÚ CƯNG <span style={{ color: '#ff4d4f' }}>*</span></label>
@@ -471,7 +471,7 @@ const DatLichHen: React.FC = () => {
 
           <div style={{ display: 'grid', gap: '12px' }}>
             <label>3. CHỌN BÁC SĨ & NGÀY KHÁM</label>
-            <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '16px' }}>
+            <div className="responsive-grid-1-5-1">
               <select data-ai-id="select-datlichhen-33v9" value={idBacSi} onChange={e => setIdBacSi(e.target.value)} disabled={!date}>
                 <option value="">{date ? "-- Bác sĩ khám (Tùy chọn) --" : "-- Vui lòng chọn ngày khám trước --"}</option>
                 {doctors.map(d => <option key={d.id_nhan_vien} value={d.id_nhan_vien}>{d.ho_ten} ({d.chuyen_mon})</option>)}

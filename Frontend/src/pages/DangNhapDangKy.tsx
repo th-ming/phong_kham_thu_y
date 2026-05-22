@@ -415,7 +415,7 @@ const DangNhapDangKy: React.FC = () => {
 
             <form onSubmit={handleSubmit} style={{ display: 'grid', gap: '12px' }}>
               {!isLogin ? (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div className="responsive-grid-2">
                   <div className="input-group">
                     <span className="material-symbols-outlined" style={{ color: '#0d9488', opacity: 0.7, fontSize: '18px' }}>badge</span>
                     <input data-ai-id="input-dangnhapdangky-wgtk" placeholder="Họ và tên" value={fullname} onChange={e => setFullname(e.target.value)} required />

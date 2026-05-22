@@ -49,7 +49,7 @@ const ChiTietHoSoBenhAn: React.FC = () => {
           <div style={{ display: 'grid', gap: '32px' }}>
             <div className="glass-card" style={{ padding: '40px', borderRadius: 'var(--radius-xl)' }}>
               <Skeleton width="250px" height="28px" borderRadius="8px" style={{ marginBottom: '32px' }} />
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px' }}>
+              <div className="responsive-grid-2">
                 <div><Skeleton width="100%" height="60px" borderRadius="8px" /></div>
                 <div><Skeleton width="100%" height="60px" borderRadius="8px" /></div>
                 <div style={{ gridColumn: '1 / -1' }}><Skeleton width="100%" height="100px" borderRadius="8px" /></div>
@@ -101,7 +101,7 @@ const ChiTietHoSoBenhAn: React.FC = () => {
               <span className="material-symbols-outlined" style={{ color: 'var(--primary)' }}>clinical_notes</span>
               Thông tin lâm sàng
             </h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px' }}>
+            <div className="responsive-grid-2">
               <div>
                 <label style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gray-400)' }}>TRIỆU CHỨNG</label>
                 <p style={{ marginTop: '12px', fontWeight: 700, fontSize: '1.1rem', color: 'var(--ink)' }}>{record.trieu_chung || "Không ghi nhận"}</p>
@@ -181,7 +181,7 @@ const ChiTietHoSoBenhAn: React.FC = () => {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+          <div className="responsive-grid-2">
             <div className="glass-card" style={{ padding: '24px', borderRadius: 'var(--radius-xl)', background: 'var(--primary-gradient)', color: 'white', display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div style={{ width: '48px', height: '48px', background: 'rgba(255,255,255,0.2)', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <span className="material-symbols-outlined" style={{ fontSize: '28px' }}>monitor_weight</span>

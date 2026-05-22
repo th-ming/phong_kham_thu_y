@@ -74,7 +74,9 @@ const QuanLyDonThuoc: React.FC = () => {
       </div>
 
       <div className="glass-card" style={{ borderRadius: 'var(--radius-xl)', overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <div className="table-responsive-wrapper">
+<div style={{ minWidth: '800px' }}>
+<table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ background: 'var(--gray-50)', textAlign: 'left' }}>
               <th style={{ padding: '20px', fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800 }}>MÃ ĐƠN</th>
@@ -115,6 +117,7 @@ const QuanLyDonThuoc: React.FC = () => {
             ))}
           </tbody>
         </table>
+</div></div>
       </div>
 
       {/* MODAL CHI TIẾT ĐƠN THUỐC */}
@@ -133,7 +136,7 @@ const QuanLyDonThuoc: React.FC = () => {
              </div>
 
              <div style={{ background: 'var(--surface)', border: '1px solid var(--gray-200)', padding: '20px', borderRadius: '20px', marginBottom: '32px' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                <div className="responsive-grid-2">
                    <div>
                       <div style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--gray-400)', letterSpacing: '1px', marginBottom: '4px' }}>BỆNH NHÂN</div>
                       <div style={{ fontWeight: 900, color: 'var(--ink)' }}>{viewingDT.ten_thu_cung || 'N/A'}</div>

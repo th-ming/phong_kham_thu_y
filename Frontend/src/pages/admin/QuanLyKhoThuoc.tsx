@@ -130,7 +130,7 @@ const QuanLyKhoThuoc: React.FC = () => {
               <label style={{ display: 'block', marginBottom: 6, fontWeight: 800, color: 'var(--gray-400)' }}>Tên thuốc</label>
               <input className="form-input" value={newThuoc.ten_thuoc} onChange={e => setNewThuoc({ ...newThuoc, ten_thuoc: e.target.value })} required />
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            <div className="responsive-grid-2">
               <div>
                 <label style={{ display: 'block', marginBottom: 6, fontWeight: 800, color: 'var(--gray-400)' }}>Mã thuốc (ma_thuoc)</label>
                 <input className="form-input" value={newThuoc.ma_thuoc} onChange={e => setNewThuoc({ ...newThuoc, ma_thuoc: e.target.value })} />
@@ -140,7 +140,7 @@ const QuanLyKhoThuoc: React.FC = () => {
                 <input className="form-input" value={newThuoc.don_vi} onChange={e => setNewThuoc({ ...newThuoc, don_vi: e.target.value })} />
               </div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            <div className="responsive-grid-2">
               <div>
                 <label style={{ display: 'block', marginBottom: 6, fontWeight: 800, color: 'var(--gray-400)' }}>Giá bán</label>
                 <input type="number" className="form-input" value={newThuoc.gia_ban} onChange={e => setNewThuoc({ ...newThuoc, gia_ban: Number(e.target.value) })} />
@@ -162,7 +162,9 @@ const QuanLyKhoThuoc: React.FC = () => {
         <div className="glass-card" style={{ padding: '32px', borderRadius: 'var(--radius-xl)' }}>
           <h2 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '24px' }}>Danh mục thuốc</h2>
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <div className="table-responsive-wrapper">
+<div style={{ minWidth: '800px' }}>
+<table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--gray-100)' }}>
                   <th style={{ padding: '16px 8px', fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800 }}>TÊN THUỐC</th>
@@ -187,6 +189,7 @@ const QuanLyKhoThuoc: React.FC = () => {
                 ))}
               </tbody>
             </table>
+</div></div>
           </div>
         </div>
 

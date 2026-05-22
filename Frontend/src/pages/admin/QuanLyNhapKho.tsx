@@ -132,7 +132,9 @@ const QuanLyNhapKho: React.FC = () => {
       </div>
 
       <div className="glass-card" style={{ borderRadius: 'var(--radius-xl)', overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <div className="table-responsive-wrapper">
+<div style={{ minWidth: '800px' }}>
+<table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ background: 'var(--gray-50)', textAlign: 'left' }}>
               <th style={{ padding: '20px', fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800 }}>LÔ HÀNG</th>
@@ -171,6 +173,7 @@ const QuanLyNhapKho: React.FC = () => {
             ))}
           </tbody>
         </table>
+</div></div>
       </div>
 
       {/* MODAL TẠO PHIẾU NHẬP */}
@@ -192,7 +195,7 @@ const QuanLyNhapKho: React.FC = () => {
             </select>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+          <div className="responsive-grid-2">
             <div>
               <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '8px', display: 'block' }}>SỐ LÔ</label>
               <input data-ai-id="input-quanlynhapkho-pc2b" type="text" className="form-input" placeholder="Ví Gụ: LOT2024-001" style={{ width: '100%' }} value={formData.so_lo} onChange={e => setFormData({ ...formData, so_lo: e.target.value })} required />
@@ -203,7 +206,7 @@ const QuanLyNhapKho: React.FC = () => {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+          <div className="responsive-grid-2">
             <div>
               <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '8px', display: 'block' }}>SỐ LƯỢNG NHẬP</label>
               <input data-ai-id="input-quanlynhapkho-8lya" type="number" min="1" className="form-input" style={{ width: '100%' }} value={formData.so_luong_nhap} onChange={e => setFormData({ ...formData, so_luong_nhap: e.target.value === '' ? 0 : parseInt(e.target.value) })} required />

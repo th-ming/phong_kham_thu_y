@@ -103,7 +103,7 @@ const PhanDoiTac: React.FC = () => {
                         </div>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '24px' }}>
+                    <div className="responsive-grid-2">
                         {partners.map((partner) => (
                             <div key={partner.name} className="partner-card-new">
                                 <div className="partner-logo-box">

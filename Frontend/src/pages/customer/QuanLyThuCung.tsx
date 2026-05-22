@@ -253,7 +253,7 @@ const QuanLyThuCung: React.FC = () => {
                   <Skeleton width="80px" height="20px" borderRadius="8px" />
                 </div>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', padding: '20px', borderRadius: '20px', background: 'var(--gray-50)' }}>
+              <div className="responsive-grid-2">
                 <Skeleton width="100%" height="40px" borderRadius="8px" />
                 <Skeleton width="100%" height="40px" borderRadius="8px" />
                 <Skeleton width="100%" height="40px" borderRadius="8px" />
@@ -392,7 +392,7 @@ const QuanLyThuCung: React.FC = () => {
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', background: 'rgba(255,255,255,0.03)', padding: '20px', borderRadius: '20px', marginBottom: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+              <div className="responsive-grid-2">
                 <div>
                   <p style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '4px' }}>GIỚI TÍNH</p>
                   <p style={{ fontWeight: 800, margin: 0, color: 'var(--ink)' }}>{pet.gioi_tinh || '—'}</p>

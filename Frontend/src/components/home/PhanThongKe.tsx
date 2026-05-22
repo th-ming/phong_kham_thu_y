@@ -117,7 +117,7 @@ const PhanThongKe: React.FC = () => {
                 </div>
 
                 {/* Stats grid */}
-                <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '24px' }}>
+                <div className="stats-grid responsive-grid-4">
                     {stats.map((s, i) => (
                         <div key={i} className="stat-card">
                             {/* Icon */}

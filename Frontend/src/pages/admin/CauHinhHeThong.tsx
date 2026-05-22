@@ -291,7 +291,7 @@ const CauHinhHeThong: React.FC = () => {
                 {activeTab === 'general' && (
                     <div className="animate-fade-in" style={{ display: 'grid', gap: '24px' }}>
                         <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--ink)' }}>Cấu hình cơ bản</h2>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+                        <div className="responsive-grid-2">
                             <div>
                                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, color: 'var(--gray-600)' }}>Tên hệ thống</label>
                                 <input type="text" className="form-input" value={configs.app_name || ''} onChange={e => setConfigs({...configs, app_name: e.target.value})} placeholder="Rexi Veterinary Clinic" />
@@ -315,7 +315,7 @@ const CauHinhHeThong: React.FC = () => {
                             <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--ink)', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
                                 <span className="material-symbols-outlined" style={{ color: 'var(--primary)' }}>qr_code_2</span> Cấu hình VietQR
                             </h2>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+                            <div className="responsive-grid-2">
                                 <div>
                                     <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, color: 'var(--gray-600)' }}>Mã Ngân Hàng (Bank ID)</label>
                                     <input type="text" className="form-input" value={configs.vietqr_bank_id || ''} onChange={e => setConfigs({...configs, vietqr_bank_id: e.target.value})} placeholder="VD: MB, VCB, TCB..." />
@@ -337,7 +337,7 @@ const CauHinhHeThong: React.FC = () => {
                             <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--ink)', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
                                 <span className="material-symbols-outlined" style={{ color: '#005baa' }}>account_balance</span> Cổng thanh toán VNPay
                             </h2>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+                            <div className="responsive-grid-2">
                                 <div>
                                     <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, color: 'var(--gray-600)' }}>vnp_TmnCode (Mã Website)</label>
                                     <input type="text" className="form-input" value={configs.vnpay_tmn_code || ''} onChange={e => setConfigs({...configs, vnpay_tmn_code: e.target.value})} />
@@ -469,7 +469,9 @@ const CauHinhHeThong: React.FC = () => {
                         <p style={{ color: 'var(--gray-500)', marginBottom: '24px' }}>Cấu hình những hành động mà Trợ lý ảo Rexi được phép thực hiện dựa trên vai trò của người dùng đang chat.</p>
 
                         <div style={{ overflowX: 'auto', borderRadius: '16px', border: '1px solid var(--gray-200)', boxShadow: 'var(--shadow-sm)' }}>
-                            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'center', background: 'var(--surface)' }}>
+                            <div className="table-responsive-wrapper">
+<div style={{ minWidth: '800px' }}>
+<table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'center', background: 'var(--surface)' }}>
                                 <thead style={{ background: 'var(--gray-50)' }}>
                                     <tr>
                                         <th style={{ padding: '16px', textAlign: 'left', fontWeight: 800, color: 'var(--gray-600)', borderBottom: '2px solid var(--gray-200)' }}>Hành động (Action)</th>
@@ -510,6 +512,7 @@ const CauHinhHeThong: React.FC = () => {
                                     ))}
                                 </tbody>
                             </table>
+</div></div>
                         </div>
                     </div>
                 )}
@@ -611,7 +614,9 @@ const CauHinhHeThong: React.FC = () => {
                             </div>
                             <div style={{ maxHeight: '500px', overflow: 'auto', border: '1px solid var(--gray-200)', borderRadius: '12px', background: 'var(--surface)', width: '100%', minWidth: 0 }}>
                                 {logs.length === 0 ? <p style={{ padding: '40px', textAlign: 'center', color: 'var(--gray-400)' }}>Chưa có nhật ký.</p> : (
-                                    <table style={{ width: '100%', minWidth: 0, tableLayout: 'fixed', fontSize: '0.85rem', borderCollapse: 'collapse' }}>
+                                    <div className="table-responsive-wrapper">
+<div style={{ minWidth: '800px' }}>
+<table style={{ width: '100%', minWidth: 0, tableLayout: 'fixed', fontSize: '0.85rem', borderCollapse: 'collapse' }}>
                                         <tbody>
                                             {logs.map((log) => (
                                                 <tr className="settings-log-row" key={log.id} style={{ borderBottom: '1px solid var(--gray-100)' }}>
@@ -626,6 +631,7 @@ const CauHinhHeThong: React.FC = () => {
                                             ))}
                                         </tbody>
                                     </table>
+</div></div>
                                 )}
                             </div>
                         </div>

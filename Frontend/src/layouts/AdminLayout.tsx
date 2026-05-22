@@ -31,7 +31,7 @@ const AdminLayout: React.FC = () => {
     // Đổi minHeight thành height và chặn cuộn tổng thể để Sidebar được ghim cố định
     <div style={{ display: "flex", height: "100vh", overflow: "hidden", background: "var(--background)" }}>
       <SidebarAdmin />
-      <main className="main-content" style={{ flex: 1, padding: "40px", overflowY: "auto", position: 'relative' }}>
+      <main className="main-content admin-main-content" style={{ flex: 1, padding: "40px", overflowY: "auto", position: 'relative' }}>
         <div className="animate-fade-in">
           <React.Suspense fallback={
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>

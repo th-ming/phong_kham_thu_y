@@ -973,7 +973,7 @@ const QuanLyLichLamViec: React.FC = () => {
                             )}
                         </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '32px' }}>
+                        <div className="responsive-grid-2">
                             <div>
                                 <label style={{ display: 'block', fontWeight: 800, marginBottom: '8px', color: 'var(--gray-500)', fontSize: '0.85rem' }}>NGÀY</label>
                                 <div style={{ fontWeight: 700 }}>{selectedSlot?.day.label} ({selectedSlot?.day.dateStr})</div>

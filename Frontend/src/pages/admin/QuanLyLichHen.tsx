@@ -179,6 +179,8 @@ const QuanLyLichHen: React.FC = () => {
       </div>
 
       <div className="glass-card stagger-2" style={{ borderRadius: 'var(--radius-xl)', overflow: 'hidden' }}>
+        <div className="table-responsive-wrapper">
+          <div style={{ minWidth: '800px' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ background: 'var(--gray-50)' }}>
@@ -240,6 +242,8 @@ const QuanLyLichHen: React.FC = () => {
             ))}
           </tbody>
         </table>
+          </div>
+        </div>
       </div>
 
       {/* BỘ NÚT ĐIỀU HƯỚNG PHÂN TRANG */}
@@ -290,7 +294,7 @@ const QuanLyLichHen: React.FC = () => {
               </span>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+            <div className="responsive-grid-2">
               <div style={{ background: 'var(--surface)', border: '1px solid var(--gray-200)', padding: '20px', borderRadius: '20px' }}>
                 <h4 style={{ margin: '0 0 16px 0', fontSize: '0.9rem', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <span className="material-symbols-outlined" style={{ color: 'var(--primary)' }}>person</span> Thông tin chủ nuôi

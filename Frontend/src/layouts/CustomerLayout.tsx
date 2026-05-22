@@ -32,7 +32,7 @@ const CustomerLayout: React.FC = () => {
   return (
     <div style={{ display: "flex", height: "100vh", overflow: "hidden", background: "var(--background)" }}>
       <SidebarKhachHang />
-      <main className="main-content" style={{ flex: 1, padding: "40px", overflowY: "auto", position: 'relative' }}>
+      <main className="main-content customer-main-content" style={{ flex: 1, padding: "40px", overflowY: "auto", position: 'relative' }}>
         <div className="animate-fade-in">
           <React.Suspense fallback={
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>

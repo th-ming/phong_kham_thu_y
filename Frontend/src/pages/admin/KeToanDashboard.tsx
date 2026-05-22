@@ -423,7 +423,9 @@ const KeToanDashboard: React.FC = () => {
                 </div>
 
                 <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                    <div className="table-responsive-wrapper">
+<div style={{ minWidth: '800px' }}>
+<table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                         <thead style={{ background: 'var(--gray-50)' }}>
                             <tr>
                                 <th style={{ padding: '16px 24px', fontSize: '0.8rem', color: 'var(--gray-500)' }}>MÃ HĐ</th>
@@ -485,6 +487,7 @@ const KeToanDashboard: React.FC = () => {
                             )}
                         </tbody>
                     </table>
+</div></div>
                 </div>
 
                 {/* BỘ NÚT ĐIỀU HƯỚNG PHÂN TRANG */}
@@ -548,7 +551,9 @@ const KeToanDashboard: React.FC = () => {
                             </div>
                         </div>
 
-                        <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '24px' }}>
+                        <div className="table-responsive-wrapper">
+<div style={{ minWidth: '800px' }}>
+<table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '24px' }}>
                             <thead>
                                 <tr style={{ borderBottom: '2px solid var(--gray-200)', textAlign: 'left' }}>
                                     <th style={{ padding: '12px 0', fontSize: '0.85rem', color: 'var(--gray-500)' }}>NỘI DUNG</th>
@@ -580,6 +585,7 @@ const KeToanDashboard: React.FC = () => {
                                 </tr>
                             </tfoot>
                         </table>
+</div></div>
 
                         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }} className="no-print">
                             <button data-ai-id="button-ketoandashboard-v1vt" className="btn btn-pill" onClick={() => setViewingHD(null)} style={{ background: 'var(--gray-100)', color: 'var(--ink)', padding: '10px 20px' }}>Đóng</button>
