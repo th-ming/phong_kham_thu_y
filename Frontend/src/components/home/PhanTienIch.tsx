@@ -36,28 +36,23 @@ const PhanTienIch: React.FC = () => {
                 .feature-item p { opacity: 0.8 !important; margin-top: 6px !important; }
                 .feature-icon-box { background: rgba(255, 255, 255, 0.2) !important; border: 1px solid rgba(255, 255, 255, 0.3) !important; }
                 .feature-icon-box span { color: white !important; }
-                .feature-item { min-width: 220px !important; }
+                @media screen and (max-width: 1024px) {
+                    .feature-divider { display: none !important; }
+                }
             `}</style>
                 {/* Shimmer overlay */}
                 <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.04) 50%, transparent 100%)', pointerEvents: 'none' }} />
                 <div className="container">
-                    <div style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        flexWrap: "wrap",
-                        gap: "20px"
-                    }}>
+                    <div className="feature-grid">
                         {features.map((f, idx) => (
                             <div key={idx} className="feature-item" style={{
                                 display: "flex",
                                 alignItems: "center",
                                 gap: "14px",
-                                flex: "1 1 180px",
                                 position: 'relative'
                             }}>
                                 {idx < features.length - 1 && (
-                                    <div style={{ position: 'absolute', right: '-10px', top: '50%', transform: 'translateY(-50%)', width: '1px', height: '30px', background: 'rgba(255,255,255,0.15)' }} />
+                                    <div className="feature-divider" style={{ position: 'absolute', right: '-10px', top: '50%', transform: 'translateY(-50%)', width: '1px', height: '30px', background: 'rgba(255,255,255,0.15)' }} />
                                 )}
                                 <div className="feature-icon-box" style={{
                                     width: "46px",

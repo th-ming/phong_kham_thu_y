@@ -153,7 +153,7 @@ const PhanGioiThieu: React.FC = () => {
 
                 <div className="hero-hero-background" />
                 <div className="container" style={{ position: 'relative', zIndex: 4 }}>
-                    <div className="responsive-grid-split" style={{ gridTemplateColumns: "1.15fr 0.85fr", alignItems: "center" }}>
+                    <div className="hero-layout-grid">
                         <div className="hero-content">
                             {/* nhãn tin cậy */}
                             <div ref={petRef as any} className="section-label" style={{ marginBottom: "28px", cursor: 'default', background: isDark ? 'rgba(217, 119, 6, 0.15)' : '#fffbeb', color: isDark ? '#fbbf24' : '#d97706', borderColor: isDark ? 'rgba(251, 191, 36, 0.3)' : '#fde68a' }}>
@@ -181,7 +181,7 @@ const PhanGioiThieu: React.FC = () => {
                                 <span style={{ position: "absolute", left: "-5px", top: "-15px", fontSize: "3.5rem", color: "var(--primary)", opacity: 0.15, fontFamily: "serif", userSelect: 'none' }}>“</span>
                                 Rexi mang đến tiêu chuẩn y khoa quốc tế kết hợp cùng tình yêu thương vô bờ bến. Chúng tôi cam kết chăm sóc thú cưng của bạn như chính gia đình mình.
                             </p>
-                            <div className="hero-cta-grid">
+                            <div className="hero-cta-grid" style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
                                 {/* ========================================================================= */}
                                 {/* ĐÂY LÀ NÚT "ĐẶT LỊCH HẸN NGAY" Ở BANNER CHÍNH TRANG CHỦ                   */}
                                 {/* ========================================================================= */}
@@ -191,7 +191,7 @@ const PhanGioiThieu: React.FC = () => {
 
 
                             {/* Khối Chứng nhận & Đánh giá - nâng cấp thành pill cards */}
-                            <div style={{ display: "flex", gap: "14px", marginTop: "24px", flexWrap: 'wrap' }}>
+                            <div className="hero-stat-pill-container" style={{ display: "flex", gap: "14px", marginTop: "24px", flexWrap: 'wrap' }}>
                                 <div className="hero-stat-pill stat-item">
                                     <div style={{ background: "var(--green-50)", color: "var(--green-600)", width: "40px", height: "40px", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                                         <span className="material-symbols-outlined" style={{ fontSize: "22px" }}>workspace_premium</span>
@@ -225,7 +225,7 @@ const PhanGioiThieu: React.FC = () => {
                         </div>
 
                         {/* ảnh video banner */}
-                        <div style={{ position: "relative", height: window.innerWidth < 768 ? "300px" : "480px" }}>
+                        <div className="hero-image-container">
                             {/* ========================================================================= */}
                             {/* ĐÂY LÀ THẺ "TẬN TÂM 24/7 - CẤP CỨU KỊP THỜI" HIỂN THỊ NỔI TRÊN BANNER      */}
                             {/* ========================================================================= */}
