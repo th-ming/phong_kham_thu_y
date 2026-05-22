@@ -2,13 +2,13 @@ import React, { useState, useEffect } from 'react';
 import axiosInstance from '@services/axios';
 import { toast } from '@components/Toast';
 import { RevealSection } from '@components/SpecialEffects';
-import { getUserProfile } from '@utils/index';
+import { getUserProfile, normalizeUserRole } from '@utils/index';
 import { Modal } from '@components/CommonUI';
 
 const ThongTinCaNhanNhanVien: React.FC = () => {
     const user = getUserProfile() || {};
     const currentUserId = user?.id_nhan_vien || user?.id || 'NV-SYSTEM';
-    const userRole = (user.loai_tai_khoan || user.ten_vai_tro || 'STAFF').toUpperCase();
+    const userRole = normalizeUserRole(user);
 
     const [profile, setProfile] = useState<any>(null);
     const [loading, setLoading] = useState(true);
@@ -184,8 +184,8 @@ const ThongTinCaNhanNhanVien: React.FC = () => {
         );
     }
 
-    const displayHoTen = userRole === 'ADMIN' || userRole.includes('QUẢN TRỊ') ? 'Admin Rexi System' : (profile?.ho_ten || profile?.hoTen || 'Nhân viên');
-    const displayRole = userRole === 'ADMIN' || userRole.includes('QUẢN TRỊ') ? 'Quản trị viên tối cao' : (profile?.chuyen_mon || profile?.chuyenMon || profile?.chuc_vu || 'Nhân viên hệ thống');
+    const displayHoTen = userRole === 'admin' ? 'Admin Rexi System' : (profile?.ho_ten || profile?.hoTen || 'Nhân viên');
+    const displayRole = userRole === 'admin' ? 'Quản trị viên tối cao' : (profile?.chuyen_mon || profile?.chuyenMon || profile?.chuc_vu || 'Nhân viên hệ thống');
 
     return (
         <div style={{ padding: '32px 40px', minHeight: '100vh', background: 'var(--background)' }}>

@@ -39,16 +39,39 @@ public class AgentController {
     @GetMapping("/retention-reminders")
     public ResponseEntity<?> getRetentionReminders() {
         try {
+            org.springframework.security.core.Authentication auth =
+                org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+            if (auth == null || auth.getName() == null || "anonymousUser".equals(auth.getName())) {
+                return ResponseEntity.ok(List.of());
+            }
+
+            String username = auth.getName();
+            List<Map<String, Object>> accounts = jdbcTemplate.queryForList(
+                "SELECT id_khach_hang, id_vai_tro FROM TaiKhoan WHERE ten_dang_nhap = ?",
+                username
+            );
+            if (accounts.isEmpty()) {
+                return ResponseEntity.ok(List.of());
+            }
+
+            Map<String, Object> account = accounts.get(0);
+            String idKhachHang = account.get("id_khach_hang") != null ? account.get("id_khach_hang").toString() : "";
+            String idVaiTro = account.get("id_vai_tro") != null ? account.get("id_vai_tro").toString() : "";
+            if (!"VT-5".equalsIgnoreCase(idVaiTro) || idKhachHang.isBlank()) {
+                return ResponseEntity.ok(List.of());
+            }
+
             // Lấy tối đa 3 bé thú cưng để đề xuất chăm sóc chủ động
-            // Ưu tiên bé có ngày khám gần nhất (lọc ra những bé cần tái khám)
+            // Chỉ lấy thú cưng thuộc đúng khách hàng đang đăng nhập.
             String sql = "SELECT TOP 3 tc.id_thu_cung, tc.ten_thu_cung, tc.loai, tc.giong, " +
                          "tc.id_khach_hang, kh.ten_khach_hang, kh.sdt " +
                          "FROM ThuCung tc " +
                          "JOIN KhachHang kh ON tc.id_khach_hang = kh.id_khach_hang " +
                          "WHERE (kh.da_xoa = 0 OR kh.da_xoa IS NULL) " +
-                         "AND (tc.da_xoa = 0 OR tc.da_xoa IS NULL)";
+                         "AND (tc.da_xoa = 0 OR tc.da_xoa IS NULL) " +
+                         "AND tc.id_khach_hang = ?";
             
-            List<Map<String, Object>> pets = jdbcTemplate.queryForList(sql);
+            List<Map<String, Object>> pets = jdbcTemplate.queryForList(sql, idKhachHang);
             List<Map<String, Object>> reminders = new ArrayList<>();
 
             for (Map<String, Object> pet : pets) {

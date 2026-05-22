@@ -69,6 +69,14 @@ const PhanLienHe: React.FC = () => {
                     pointerEvents: 'none'
                 }} />
                 <style>{`
+                    @keyframes contactIconPulse {
+                        0%, 100% { box-shadow: 0 8px 16px currentColor; }
+                        50% { box-shadow: 0 10px 24px currentColor; }
+                    }
+                    @keyframes directionBtnShine {
+                        0% { transform: translateX(-130%) skewX(-18deg); }
+                        58%, 100% { transform: translateX(170%) skewX(-18deg); }
+                    }
                     .contact-card-main { transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.5s ease; position: relative; overflow: hidden; z-index: 1; }
                     .contact-card-main:hover { transform: translateY(-5px); box-shadow: 0 50px 100px rgba(15,157,138,0.08) !important; }
                     .contact-card-main::before {
@@ -81,7 +89,32 @@ const PhanLienHe: React.FC = () => {
                     .contact-info-row:hover { background: var(--surface); border-color: var(--gray-200); box-shadow: 0 15px 30px rgba(0,0,0,0.04); transform: translateX(10px); }
                     .contact-info-row .icon-box { transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
                     .contact-info-row:hover .icon-box { transform: scale(1.15) rotate(-8deg); }
+                    .btn-direction {
+                        position: relative;
+                        overflow: hidden;
+                    }
+                    .btn-direction::before {
+                        content: "";
+                        position: absolute;
+                        top: -45%;
+                        bottom: -45%;
+                        left: 0;
+                        width: 42%;
+                        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.62), transparent);
+                        transform: translateX(-130%) skewX(-18deg);
+                        animation: directionBtnShine 2.9s ease-in-out infinite;
+                    }
+                    .btn-direction span {
+                        position: relative;
+                        z-index: 1;
+                        transition: transform 0.25s ease;
+                    }
                     .btn-direction:hover { background: linear-gradient(135deg, #f59e0b, #ea580c) !important; transform: translateY(-3px); box-shadow: 0 12px 25px rgba(245, 158, 11, 0.35) !important; }
+                    .btn-direction:hover span:first-child { transform: rotate(-10deg) scale(1.08); }
+                    [data-theme='dark'] .contact-info-row:hover {
+                        background: rgba(15, 23, 42, 0.72);
+                        border-color: rgba(34, 211, 238, 0.22);
+                    }
                     @media (max-width: 991px) {
                         .contact-grid { grid-template-columns: 1fr !important; gap: 40px !important; }
                         .contact-info-col { border-right: none !important; padding-right: 0 !important; border-bottom: 1px dashed #e2e8f0; padding-bottom: 40px; }
@@ -184,7 +217,7 @@ const PhanLienHe: React.FC = () => {
                                         className="btn-direction"
                                     >
                                         <span className="material-symbols-outlined" style={{ fontSize: "22px" }}>directions</span>
-                                        Chỉ đường ngay
+                                        <span>Chỉ đường ngay</span>
                                     </a>
                                 </div>
                             </div>

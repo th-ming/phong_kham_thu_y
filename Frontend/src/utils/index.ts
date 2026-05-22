@@ -29,6 +29,58 @@ export const layTenTuEmail = (email: string): string => {
   return email.split('@')[0]
 }
 
+export const normalizeSearchText = (value: unknown): string => {
+  return String(value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D")
+    .toLowerCase()
+    .trim();
+}
+
+export type UserRoleCode = "admin" | "quan_ly" | "bac_si" | "ke_toan" | "tiep_tan" | "y_ta" | "staff" | "khach_hang" | "guest";
+
+export const normalizeUserRole = (user: any): UserRoleCode => {
+  const source = normalizeSearchText([
+    user?.loai_tai_khoan,
+    user?.ten_vai_tro,
+    user?.id_vai_tro,
+    user?.role,
+    user?.quyen,
+    user?.chuc_vu
+  ].filter(Boolean).join(" "));
+
+  if (!source) return "guest";
+  if (source.includes("vt-1") || source.includes("admin") || source.includes("quan tri")) return "admin";
+  if (source.includes("vt-6") || source.includes("quan_ly") || source.includes("quan ly") || source.includes("manager")) return "quan_ly";
+  if (source.includes("vt-2") || source.includes("bac_si") || source.includes("bac si") || source.includes("doctor")) return "bac_si";
+  if (source.includes("vt-4") || source.includes("ke_toan") || source.includes("ke toan") || source.includes("accountant")) return "ke_toan";
+  if (source.includes("vt-7") || source.includes("tiep_tan") || source.includes("tiep tan") || source.includes("le tan") || source.includes("reception")) return "tiep_tan";
+  if (source.includes("vt-8") || source.includes("y_ta") || source.includes("y ta") || source.includes("dieu duong") || source.includes("nurse")) return "y_ta";
+  if (source.includes("vt-5") || source.includes("khach_hang") || source.includes("khach hang") || source.includes("customer") || user?.id_khach_hang) return "khach_hang";
+  if (source.includes("vt-3") || source.includes("nhan vien") || source.includes("staff")) return "staff";
+
+  return user?.id_nhan_vien ? "staff" : "guest";
+};
+
+export const hasAnyRole = (user: any, roles: string[]): boolean => {
+  const role = normalizeUserRole(user);
+  return roles.map(r => normalizeSearchText(r).replace("khach hang", "khach_hang")).includes(role);
+};
+
+export const includesSearch = (value: unknown, query: string): boolean => {
+  const normalizedQuery = normalizeSearchText(query);
+  if (!normalizedQuery) return true;
+  return normalizeSearchText(value).includes(normalizedQuery);
+}
+
+export const matchesSearchFields = (query: string, fields: unknown[]): boolean => {
+  const normalizedQuery = normalizeSearchText(query);
+  if (!normalizedQuery) return true;
+  return fields.some(field => normalizeSearchText(field).includes(normalizedQuery));
+}
+
 export const chuyenNgayISO_SangVN = (dateString: string): string => {
   if (!dateString) return "—";
   const date = new Date(dateString);

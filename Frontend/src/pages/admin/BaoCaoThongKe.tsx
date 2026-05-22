@@ -37,7 +37,12 @@ const BaoCaoThongKe: React.FC = () => {
   const [dailyRevenueData, setDailyRevenueData] = useState<any[]>([]);
   const [petStats, setPetStats] = useState<any[]>([]);
   const [serviceStats, setServiceStats] = useState<any[]>([]);
+  const [financeSummary, setFinanceSummary] = useState<any>(null);
+  const [allDoctors, setAllDoctors] = useState<any[]>([]);
+  const [allServices, setAllServices] = useState<any[]>([]);
+  const [medicalRecords, setMedicalRecords] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedKpi, setSelectedKpi] = useState<"revenue" | "cases" | "doctor" | "service" | null>(null);
 
   // State quản lý Modal danh sách thú cưng
   const [selectedPetType, setSelectedPetType] = useState<string | null>(null);
@@ -47,12 +52,26 @@ const BaoCaoThongKe: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [revRes, docRes, dailyRevRes, petStatsRes, serviceStatsRes] = await Promise.all([
+        const [
+          revRes,
+          docRes,
+          dailyRevRes,
+          petStatsRes,
+          serviceStatsRes,
+          financeSummaryRes,
+          doctorsRes,
+          servicesRes,
+          recordsRes
+        ] = await Promise.allSettled([
           axiosInstance.get("/api/bao-cao/doanh-thu-thang"),
           axiosInstance.get("/api/bao-cao/thong-ke-bac-si"),
           axiosInstance.get("/api/bao-cao/doanh-thu-ngay"),
           axiosInstance.get("/api/bao-cao/thong-ke-thu-cung"),
-          axiosInstance.get("/api/bao-cao/doanh-thu-dich-vu")
+          axiosInstance.get("/api/bao-cao/doanh-thu-dich-vu"),
+          axiosInstance.get("/api/bao-cao/tong-quan-tai-chinh"),
+          axiosInstance.get("/api/bac-si"),
+          axiosInstance.get("/api/dich-vu"),
+          axiosInstance.get("/api/ho-so-benh-an", { params: { page: 0, size: 999 } })
         ]);
 
         const extractArray = (data: any): any[] => {
@@ -67,11 +86,17 @@ const BaoCaoThongKe: React.FC = () => {
           return [];
         };
 
-        setRevenueData(extractArray(revRes.data).slice(0, 12).reverse());
-        setDoctorStats(extractArray(docRes.data));
-        setDailyRevenueData(extractArray(dailyRevRes.data));
-        setPetStats(extractArray(petStatsRes.data));
-        setServiceStats(extractArray(serviceStatsRes.data));
+        const valueOf = (res: PromiseSettledResult<any>) => res.status === "fulfilled" ? res.value.data : null;
+
+        setRevenueData(extractArray(valueOf(revRes)).slice(0, 12).reverse());
+        setDoctorStats(extractArray(valueOf(docRes)));
+        setDailyRevenueData(extractArray(valueOf(dailyRevRes)));
+        setPetStats(extractArray(valueOf(petStatsRes)));
+        setServiceStats(extractArray(valueOf(serviceStatsRes)));
+        setFinanceSummary(valueOf(financeSummaryRes) || null);
+        setAllDoctors(extractArray(valueOf(doctorsRes)));
+        setAllServices(extractArray(valueOf(servicesRes)));
+        setMedicalRecords(extractArray(valueOf(recordsRes)));
       } catch (err) {
         console.error("Lỗi lấy dữ liệu báo cáo:", err);
       } finally {
@@ -81,8 +106,54 @@ const BaoCaoThongKe: React.FC = () => {
     fetchData();
   }, []);
 
-  const totalRevenue = useMemo(() => revenueData.reduce((sum, d) => sum + (d.TongDoanhThu || d.doanh_thu || d.tong_doanh_thu || 0), 0), [revenueData]);
+  const totalRevenue = useMemo(() => {
+    const directTotal = financeSummary?.TongDoanhThu ?? financeSummary?.tongDoanhThu ?? financeSummary?.tong_doanh_thu;
+    if (directTotal !== undefined && directTotal !== null) return Number(directTotal) || 0;
+    return revenueData.reduce((sum, d) => sum + (d.TongDoanhThu || d.doanh_thu || d.tong_doanh_thu || 0), 0);
+  }, [financeSummary, revenueData]);
   const totalApps = useMemo(() => doctorStats.reduce((sum, d) => sum + (d.SoHoSo || d.so_ho_so || 0), 0), [doctorStats]);
+
+  const formatMoney = (value: number) => `${Number(value || 0).toLocaleString('vi-VN')} đ`;
+  const getRevenueValue = (item: any) => Number(item?.TongDoanhThu || item?.doanh_thu || item?.tong_doanh_thu || 0);
+  const getRecordDate = (item: any) => {
+    const raw = item?.ngay_kham || item?.NgayKham || item?.ngay_tao || item?.NgayTao;
+    if (!raw) return "";
+    return new Date(raw).toISOString().slice(0, 10);
+  };
+  const getDoctorName = (item: any) => item?.TenBacSi || item?.ten_bac_si || item?.ho_ten || item?.HoTen || "";
+  const getServiceName = (item: any) => item?.TenDichVu || item?.ten_dich_vu || "";
+  const normalizeText = (value: any) => String(value || "").trim().toLowerCase();
+
+  const latestRevenueCompare = useMemo(() => {
+    const list = [...dailyRevenueData]
+      .sort((a, b) => new Date(a.Ngay || a.ngay).getTime() - new Date(b.Ngay || b.ngay).getTime());
+    const current = getRevenueValue(list[list.length - 1]);
+    const previous = getRevenueValue(list[list.length - 2]);
+    const diff = current - previous;
+    const percent = previous > 0 ? (diff / previous) * 100 : current > 0 ? 100 : 0;
+    return { current, previous, diff, percent };
+  }, [dailyRevenueData]);
+
+  const caseCompare = useMemo(() => {
+    const counts = medicalRecords.reduce<Record<string, number>>((acc, item) => {
+      const date = getRecordDate(item);
+      if (date) acc[date] = (acc[date] || 0) + 1;
+      return acc;
+    }, {});
+    const dates = Object.keys(counts).sort();
+    const current = dates.length ? counts[dates[dates.length - 1]] : totalApps;
+    const previous = dates.length > 1 ? counts[dates[dates.length - 2]] : 0;
+    const diff = current - previous;
+    const percent = previous > 0 ? (diff / previous) * 100 : current > 0 ? 100 : 0;
+    return { current, previous, diff, percent };
+  }, [medicalRecords, totalApps]);
+
+  const formatTrend = (diff: number, percent: number, unit: string) => {
+    const direction = diff > 0 ? "Tăng" : diff < 0 ? "Giảm" : "Không đổi";
+    const absDiff = Math.abs(diff);
+    const percentText = `${Math.abs(percent).toFixed(1)}%`;
+    return `${direction} ${percentText} (${diff >= 0 ? "+" : "-"}${unit === "đ" ? formatMoney(absDiff) : `${absDiff} ${unit}`})`;
+  };
 
   // Bác sĩ có hiệu suất cao nhất (nhiều ca hoàn thành nhất)
   const topDoctor = useMemo(() => {
@@ -90,11 +161,33 @@ const BaoCaoThongKe: React.FC = () => {
     return [...doctorStats].sort((a, b) => (b.SoHoSo || b.so_ho_so || 0) - (a.SoHoSo || a.so_ho_so || 0))[0];
   }, [doctorStats]);
 
+  const topDoctorProfile = useMemo(() => {
+    if (!topDoctor) return null;
+    const topName = normalizeText(getDoctorName(topDoctor));
+    return allDoctors.find(d => normalizeText(d.ho_ten || d.HoTen) === topName) || null;
+  }, [allDoctors, topDoctor]);
+
+  const topDoctorRecords = useMemo(() => {
+    if (!topDoctor) return [];
+    const topName = normalizeText(getDoctorName(topDoctor));
+    const topId = topDoctorProfile?.id_nhan_vien || topDoctorProfile?.idNhanVien || topDoctorProfile?.id;
+    return medicalRecords.filter(record => {
+      const recordDoctorId = record.id_bac_si || record.IdBacSi || record.id_nhan_vien;
+      return (topId && String(recordDoctorId) === String(topId)) || normalizeText(record.ten_bac_si || record.TenBacSi) === topName;
+    }).slice(0, 8);
+  }, [medicalRecords, topDoctor, topDoctorProfile]);
+
   // Dịch vụ phổ biến mang lại doanh thu cao nhất
   const topService = useMemo(() => {
     if (serviceStats.length === 0) return null;
     return [...serviceStats].sort((a, b) => (b.DoanhThu || b.doanh_thu || b.tong_doanh_thu || 0) - (a.DoanhThu || a.doanh_thu || a.tong_doanh_thu || 0))[0];
   }, [serviceStats]);
+
+  const topServiceProfile = useMemo(() => {
+    if (!topService) return null;
+    const topName = normalizeText(getServiceName(topService));
+    return allServices.find(s => normalizeText(s.ten_dich_vu || s.TenDichVu) === topName) || null;
+  }, [allServices, topService]);
 
   // Lọc và sắp xếp để đảm bảo biểu đồ chỉ lấy đúng 7 ngày gần nhất theo thứ tự tăng dần
   const sortedDailyData = useMemo(() => {
@@ -187,13 +280,32 @@ const BaoCaoThongKe: React.FC = () => {
     }]
   };
 
+  const serviceChartItems = useMemo(() => {
+    if (serviceStats.length > 0) return serviceStats;
+    return allServices.map(service => ({
+      TenDichVu: service.ten_dich_vu || service.TenDichVu,
+      DoanhThu: 0
+    }));
+  }, [allServices, serviceStats]);
+
   const serviceChartData = {
-    labels: serviceStats.map(s => s.TenDichVu || s.ten_dich_vu),
+    labels: serviceChartItems.map(s => s.TenDichVu || s.ten_dich_vu),
     datasets: [{
       label: 'Doanh thu',
-      data: serviceStats.map(s => (s.DoanhThu || s.doanh_thu || s.tong_doanh_thu || 0) / 1000000),
-      backgroundColor: 'rgba(234, 88, 12, 0.8)',
+      data: serviceChartItems.map(s => (s.DoanhThu || s.doanh_thu || s.tong_doanh_thu || 0) / 1000000),
+      backgroundColor: (context: any) => {
+        const chart = context.chart;
+        const { ctx, chartArea } = chart;
+        if (!chartArea) return 'rgba(34, 211, 238, 0.75)';
+        const gradient = ctx.createLinearGradient(chartArea.left, 0, chartArea.right, 0);
+        gradient.addColorStop(0, 'rgba(34, 211, 238, 0.95)');
+        gradient.addColorStop(1, 'rgba(20, 184, 166, 0.72)');
+        return gradient;
+      },
+      borderColor: 'rgba(125, 211, 252, 0.9)',
+      borderWidth: 1,
       borderRadius: 8,
+      hoverBackgroundColor: 'rgba(34, 211, 238, 1)',
     }]
   };
 
@@ -295,6 +407,68 @@ const BaoCaoThongKe: React.FC = () => {
         }
         .hover-lift { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: default; }
         .hover-lift:hover { transform: translateY(-6px); box-shadow: 0 20px 40px rgba(15, 157, 138, 0.08) !important; }
+        .report-kpi-card {
+          position: relative;
+          min-height: 150px;
+          overflow: hidden;
+          cursor: pointer;
+        }
+        .report-kpi-card::after {
+          content: "";
+          position: absolute;
+          inset: auto 18px 14px 18px;
+          height: 1px;
+          background: linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.55), transparent);
+          opacity: 0;
+          transition: opacity 0.25s ease;
+        }
+        .report-kpi-card:hover::after { opacity: 1; }
+        .kpi-hover-detail {
+          margin-top: auto;
+          padding-top: 12px;
+          opacity: 0;
+          transform: translateY(8px);
+          max-height: 0;
+          transition: opacity 0.25s ease, transform 0.25s ease, max-height 0.25s ease;
+          color: var(--gray-400);
+          font-size: 0.78rem;
+          font-weight: 800;
+          line-height: 1.45;
+        }
+        .report-kpi-card:hover .kpi-hover-detail {
+          opacity: 1;
+          transform: translateY(0);
+          max-height: 90px;
+        }
+        .kpi-hover-detail b {
+          color: var(--ink);
+          font-weight: 950;
+        }
+        .kpi-detail-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+          gap: 12px;
+        }
+        .kpi-detail-tile {
+          padding: 14px;
+          border: 1px solid var(--gray-200);
+          border-radius: 14px;
+          background: var(--surface);
+        }
+        .kpi-detail-label {
+          font-size: 0.72rem;
+          color: var(--gray-400);
+          font-weight: 900;
+          text-transform: uppercase;
+          letter-spacing: 0.4px;
+          margin-bottom: 6px;
+        }
+        .kpi-detail-value {
+          color: var(--ink);
+          font-size: 1.05rem;
+          font-weight: 950;
+          word-break: break-word;
+        }
       `}</style>
 
       {/* TIÊU ĐỀ TRANG */}
@@ -315,23 +489,29 @@ const BaoCaoThongKe: React.FC = () => {
 
       {/* HÀNG THẺ KPI KÍNH MỜ CAO CẤP */}
       <div className="stagger-1 no-print" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '24px', marginBottom: '40px' }}>
-        <div className="glass-card hover-lift" style={{ padding: '24px', borderRadius: '24px', borderLeft: '4px solid var(--primary)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <div className="glass-card hover-lift report-kpi-card" onClick={() => setSelectedKpi("revenue")} title="Bấm để xem chi tiết doanh thu" style={{ padding: '24px', borderRadius: '24px', borderLeft: '4px solid var(--primary)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gray-500)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>TỔNG DOANH THU</span>
             <span className="material-symbols-outlined" style={{ color: 'var(--primary)', fontSize: '24px' }}>payments</span>
           </div>
           <h3 style={{ fontSize: '1.8rem', fontWeight: 950, color: 'var(--ink)', margin: 0 }}>{totalRevenue.toLocaleString('vi-VN')} đ</h3>
+          <div className="kpi-hover-detail">
+            <b>So với ngày trước:</b> {formatTrend(latestRevenueCompare.diff, latestRevenueCompare.percent, "đ")}. Bấm để xem ngày hiện tại và ngày trước đó.
+          </div>
         </div>
 
-        <div className="glass-card hover-lift" style={{ padding: '24px', borderRadius: '24px', borderLeft: '4px solid #3b82f6', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <div className="glass-card hover-lift report-kpi-card" onClick={() => setSelectedKpi("cases")} title="Bấm để xem chi tiết ca điều trị" style={{ padding: '24px', borderRadius: '24px', borderLeft: '4px solid #3b82f6', display: 'flex', flexDirection: 'column', gap: '8px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gray-500)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>TỔNG CA ĐIỀU TRỊ</span>
             <span className="material-symbols-outlined" style={{ color: '#3b82f6', fontSize: '24px' }}>medical_services</span>
           </div>
           <h3 style={{ fontSize: '1.8rem', fontWeight: 950, color: 'var(--ink)', margin: 0 }}>{totalApps} ca</h3>
+          <div className="kpi-hover-detail">
+            <b>So với ngày trước:</b> {formatTrend(caseCompare.diff, caseCompare.percent, "ca")}. Bấm để xem phân bổ theo bác sĩ.
+          </div>
         </div>
 
-        <div className="glass-card hover-lift" style={{ padding: '24px', borderRadius: '24px', borderLeft: '4px solid #f59e0b', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <div className="glass-card hover-lift report-kpi-card" onClick={() => setSelectedKpi("doctor")} title="Bấm để xem hồ sơ bác sĩ" style={{ padding: '24px', borderRadius: '24px', borderLeft: '4px solid #f59e0b', display: 'flex', flexDirection: 'column', gap: '8px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gray-500)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>BÁC SĨ TÍCH CỰC</span>
             <span className="material-symbols-outlined" style={{ color: '#f59e0b', fontSize: '24px' }}>workspace_premium</span>
@@ -342,9 +522,12 @@ const BaoCaoThongKe: React.FC = () => {
           <span style={{ fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 700 }}>
             {topDoctor ? `${topDoctor.SoHoSo || topDoctor.so_ho_so || 0} ca hoàn thành` : '—'}
           </span>
+          <div className="kpi-hover-detail">
+            <b>Thông tin:</b> {topDoctorProfile ? `${topDoctorProfile.so_dien_thoai || topDoctorProfile.sdt || "chưa có SĐT"} • ${topDoctorProfile.email || "chưa có email"}` : "Bấm để xem ca hoàn thành và hồ sơ liên quan."}
+          </div>
         </div>
 
-        <div className="glass-card hover-lift" style={{ padding: '24px', borderRadius: '24px', borderLeft: '4px solid #ec4899', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <div className="glass-card hover-lift report-kpi-card" onClick={() => setSelectedKpi("service")} title="Bấm để xem chi tiết dịch vụ" style={{ padding: '24px', borderRadius: '24px', borderLeft: '4px solid #ec4899', display: 'flex', flexDirection: 'column', gap: '8px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gray-500)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>DỊCH VỤ HÀNG ĐẦU</span>
             <span className="material-symbols-outlined" style={{ color: '#ec4899', fontSize: '24px' }}>local_activity</span>
@@ -355,6 +538,9 @@ const BaoCaoThongKe: React.FC = () => {
           <span style={{ fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 700 }}>
             {topService ? `${((topService.DoanhThu || topService.doanh_thu || 0) / 1000000).toFixed(1)} Tr VNĐ` : '—'}
           </span>
+          <div className="kpi-hover-detail">
+            <b>Thông tin:</b> {topServiceProfile ? `${formatMoney(Number(topServiceProfile.gia || 0))} • ${topServiceProfile.thoi_luong_phut || "—"} phút` : "Bấm để xem tên, giá, trạng thái và doanh thu."}
+          </div>
         </div>
       </div>
 
@@ -452,14 +638,33 @@ const BaoCaoThongKe: React.FC = () => {
         {/* Doanh thu dịch vụ */}
         <div className="glass-card" style={{ padding: '32px', borderRadius: 'var(--radius-xl)', gridColumn: 'span 2' }}>
           <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '24px', color: 'var(--ink)' }}>Phân bổ doanh thu dịch vụ</h3>
-          <div style={{ height: '400px' }}>
+          <div style={{ height: '400px', position: 'relative' }}>
             <Bar
               options={{
                 ...commonOptions,
                 indexAxis: 'y' as const,
+                plugins: {
+                  ...commonOptions.plugins,
+                  tooltip: {
+                    ...commonOptions.plugins.tooltip,
+                    callbacks: {
+                      label: (context: any) => {
+                        const value = Number(context.parsed.x || 0) * 1000000;
+                        return `Doanh thu: ${formatMoney(value)}`;
+                      }
+                    }
+                  }
+                },
                 scales: {
-                  x: { beginAtZero: true, grid: { display: false }, ticks: { font: { weight: 'bold' as const } } },
-                  y: { grid: { display: false }, ticks: { font: { weight: 'bold' as const } } }
+                  x: {
+                    beginAtZero: true,
+                    grid: { color: 'rgba(148, 163, 184, 0.18)' },
+                    ticks: { font: { weight: 'bold' as const }, color: '#94a3b8', padding: 8 }
+                  },
+                  y: {
+                    grid: { display: false },
+                    ticks: { font: { weight: 'bold' as const }, color: '#64748b', padding: 10 }
+                  }
                 }
               }}
               data={serviceChartData}
@@ -478,6 +683,158 @@ const BaoCaoThongKe: React.FC = () => {
           <p style={{ margin: '8px 0 0 0', fontSize: '1.1rem', opacity: 0.8, fontWeight: 600 }}>Hệ thống đã xử lý <b style={{ color: '#0ea5e9' }}>{totalApps}</b> ca bệnh với tổng giá trị <b style={{ color: '#10b981' }}>{totalRevenue.toLocaleString('vi-VN')} đ</b></p>
         </div>
       </div>
+
+      <Modal
+        isOpen={!!selectedKpi}
+        onClose={() => setSelectedKpi(null)}
+        title={
+          selectedKpi === "revenue" ? "Chi tiết tổng doanh thu" :
+          selectedKpi === "cases" ? "Chi tiết tổng ca điều trị" :
+          selectedKpi === "doctor" ? "Thông tin bác sĩ tích cực" :
+          "Thông tin dịch vụ hàng đầu"
+        }
+        maxWidth="760px"
+      >
+        {selectedKpi === "revenue" && (
+          <div style={{ display: 'grid', gap: '18px' }}>
+            <div className="kpi-detail-grid">
+              <div className="kpi-detail-tile">
+                <div className="kpi-detail-label">Tổng thực thu</div>
+                <div className="kpi-detail-value">{formatMoney(totalRevenue)}</div>
+              </div>
+              <div className="kpi-detail-tile">
+                <div className="kpi-detail-label">Ngày gần nhất</div>
+                <div className="kpi-detail-value">{formatMoney(latestRevenueCompare.current)}</div>
+              </div>
+              <div className="kpi-detail-tile">
+                <div className="kpi-detail-label">Ngày trước đó</div>
+                <div className="kpi-detail-value">{formatMoney(latestRevenueCompare.previous)}</div>
+              </div>
+              <div className="kpi-detail-tile">
+                <div className="kpi-detail-label">Chênh lệch</div>
+                <div className="kpi-detail-value" style={{ color: latestRevenueCompare.diff >= 0 ? 'var(--primary)' : '#ef4444' }}>
+                  {formatTrend(latestRevenueCompare.diff, latestRevenueCompare.percent, "đ")}
+                </div>
+              </div>
+            </div>
+            <div style={{ fontWeight: 800, color: 'var(--gray-500)', lineHeight: 1.55 }}>
+              Dữ liệu lấy từ hóa đơn đã thanh toán. Phần tăng/giảm được tính bằng doanh thu ngày gần nhất trong báo cáo 7 ngày so với ngày liền trước có dữ liệu.
+            </div>
+          </div>
+        )}
+
+        {selectedKpi === "cases" && (
+          <div style={{ display: 'grid', gap: '18px' }}>
+            <div className="kpi-detail-grid">
+              <div className="kpi-detail-tile">
+                <div className="kpi-detail-label">Tổng ca ghi nhận</div>
+                <div className="kpi-detail-value">{totalApps} ca</div>
+              </div>
+              <div className="kpi-detail-tile">
+                <div className="kpi-detail-label">Ngày gần nhất</div>
+                <div className="kpi-detail-value">{caseCompare.current} ca</div>
+              </div>
+              <div className="kpi-detail-tile">
+                <div className="kpi-detail-label">Ngày trước đó</div>
+                <div className="kpi-detail-value">{caseCompare.previous} ca</div>
+              </div>
+              <div className="kpi-detail-tile">
+                <div className="kpi-detail-label">Chênh lệch</div>
+                <div className="kpi-detail-value" style={{ color: caseCompare.diff >= 0 ? 'var(--primary)' : '#ef4444' }}>
+                  {formatTrend(caseCompare.diff, caseCompare.percent, "ca")}
+                </div>
+              </div>
+            </div>
+            <div style={{ display: 'grid', gap: '10px', maxHeight: '260px', overflowY: 'auto' }}>
+              {doctorStats.map((doc, idx) => (
+                <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', gap: '16px', padding: '14px 16px', border: '1px solid var(--gray-200)', borderRadius: '14px', background: 'var(--surface)' }}>
+                  <span style={{ fontWeight: 900, color: 'var(--ink)' }}>{getDoctorName(doc)}</span>
+                  <span style={{ fontWeight: 950, color: '#3b82f6' }}>{doc.SoHoSo || doc.so_ho_so || 0} ca</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {selectedKpi === "doctor" && (
+          <div style={{ display: 'grid', gap: '18px' }}>
+            <div className="kpi-detail-grid">
+              <div className="kpi-detail-tile">
+                <div className="kpi-detail-label">Họ tên</div>
+                <div className="kpi-detail-value">{topDoctor ? getDoctorName(topDoctor) : "Chưa có"}</div>
+              </div>
+              <div className="kpi-detail-tile">
+                <div className="kpi-detail-label">Ngày sinh</div>
+                <div className="kpi-detail-value">{topDoctorProfile?.ngay_sinh ? new Date(topDoctorProfile.ngay_sinh).toLocaleDateString('vi-VN') : "Chưa cập nhật"}</div>
+              </div>
+              <div className="kpi-detail-tile">
+                <div className="kpi-detail-label">Số điện thoại</div>
+                <div className="kpi-detail-value">{topDoctorProfile?.so_dien_thoai || topDoctorProfile?.sdt || "Chưa cập nhật"}</div>
+              </div>
+              <div className="kpi-detail-tile">
+                <div className="kpi-detail-label">Email</div>
+                <div className="kpi-detail-value">{topDoctorProfile?.email || "Chưa cập nhật"}</div>
+              </div>
+              <div className="kpi-detail-tile">
+                <div className="kpi-detail-label">Chuyên môn</div>
+                <div className="kpi-detail-value">{topDoctorProfile?.chuyen_mon || topDoctorProfile?.chuyenMon || "Bác sĩ"}</div>
+              </div>
+              <div className="kpi-detail-tile">
+                <div className="kpi-detail-label">Ca hoàn thành</div>
+                <div className="kpi-detail-value">{topDoctor ? (topDoctor.SoHoSo || topDoctor.so_ho_so || 0) : 0} ca</div>
+              </div>
+            </div>
+            {topDoctorProfile?.gioi_thieu && (
+              <div style={{ padding: '14px 16px', borderRadius: '14px', background: 'var(--primary-light)', color: 'var(--ink)', fontWeight: 800, lineHeight: 1.55 }}>
+                {topDoctorProfile.gioi_thieu}
+              </div>
+            )}
+            <div style={{ display: 'grid', gap: '10px', maxHeight: '220px', overflowY: 'auto' }}>
+              {topDoctorRecords.length === 0 ? (
+                <div style={{ color: 'var(--gray-400)', fontWeight: 800 }}>Chưa có hồ sơ chi tiết tương ứng để hiển thị.</div>
+              ) : topDoctorRecords.map((record, idx) => (
+                <div key={idx} style={{ padding: '14px 16px', border: '1px solid var(--gray-200)', borderRadius: '14px', background: 'var(--surface)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', marginBottom: '6px' }}>
+                    <b style={{ color: 'var(--ink)' }}>{record.ten_thu_cung || record.TenThuCung || "Bệnh án"}</b>
+                    <span style={{ color: 'var(--gray-400)', fontWeight: 800 }}>{record.ngay_kham ? new Date(record.ngay_kham).toLocaleDateString('vi-VN') : "—"}</span>
+                  </div>
+                  <div style={{ color: 'var(--gray-500)', fontWeight: 700 }}>{record.chan_doan || record.ChanDoan || record.trieu_chung || "Chưa có chẩn đoán"}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {selectedKpi === "service" && (
+          <div style={{ display: 'grid', gap: '18px' }}>
+            <div className="kpi-detail-grid">
+              <div className="kpi-detail-tile">
+                <div className="kpi-detail-label">Tên dịch vụ</div>
+                <div className="kpi-detail-value">{topService ? getServiceName(topService) : "Chưa có"}</div>
+              </div>
+              <div className="kpi-detail-tile">
+                <div className="kpi-detail-label">Giá niêm yết</div>
+                <div className="kpi-detail-value">{formatMoney(Number(topServiceProfile?.gia || 0))}</div>
+              </div>
+              <div className="kpi-detail-tile">
+                <div className="kpi-detail-label">Thời lượng</div>
+                <div className="kpi-detail-value">{topServiceProfile?.thoi_luong_phut ? `${topServiceProfile.thoi_luong_phut} phút` : "Chưa cập nhật"}</div>
+              </div>
+              <div className="kpi-detail-tile">
+                <div className="kpi-detail-label">Trạng thái</div>
+                <div className="kpi-detail-value">{topServiceProfile?.trang_thai === false ? "Tạm ngừng" : "Đang hoạt động"}</div>
+              </div>
+              <div className="kpi-detail-tile">
+                <div className="kpi-detail-label">Doanh thu ghi nhận</div>
+                <div className="kpi-detail-value">{formatMoney(topService?.DoanhThu || topService?.doanh_thu || topService?.tong_doanh_thu || 0)}</div>
+              </div>
+            </div>
+            <div style={{ padding: '14px 16px', borderRadius: '14px', background: 'var(--surface)', border: '1px solid var(--gray-200)', color: 'var(--gray-500)', fontWeight: 800, lineHeight: 1.55 }}>
+              {topServiceProfile?.mo_ta || "Dịch vụ này chưa có mô tả chi tiết trong danh mục dịch vụ."}
+            </div>
+          </div>
+        )}
+      </Modal>
 
       {/* MODAL DANH SÁCH THÚ CƯNG TRƯỢT DRILLED-DOWN */}
       <Modal isOpen={!!selectedPetType} onClose={() => setSelectedPetType(null)} title={`Danh sách bé thuộc nhóm: ${selectedPetType}`} maxWidth="600px">

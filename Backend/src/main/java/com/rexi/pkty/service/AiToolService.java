@@ -77,6 +77,18 @@ public class AiToolService {
             10. gui_email_don_le
                 Mô tả: Gửi email thông báo, nhắc lịch đến một khách hàng cụ thể.
                 Params: {"email": "địa chỉ email", "tieu_de": "tiêu đề", "noi_dung": "nội dung"}
+
+            11. kiem_tra_cau_hinh_ai
+                Mô tả: Kiểm tra provider AI nào đã cấu hình key/model, không bao giờ tiết lộ API key.
+                Params: {} (không cần tham số)
+
+            12. kiem_tra_phan_he
+                Mô tả: Xem danh sách phân hệ, route và quyền truy cập chính trong hệ thống.
+                Params: {} (không cần tham số)
+
+            13. xem_hoa_don
+                Mô tả: Xem danh sách hóa đơn theo trạng thái để hỗ trợ kế toán/đối soát.
+                Params: {"trang_thai": "CHO_THANH_TOAN | DA_THANH_TOAN | all"}
             
             Khi đã có đủ thông tin để trả lời CUỐI CÙNG (không cần gọi tool thêm),
             hãy trả về: {"final_answer": "<câu trả lời đầy đủ cho người dùng>"}
@@ -101,6 +113,9 @@ public class AiToolService {
                 case "thong_ke_doanh_thu"    -> toolThongKeDoanhThu((String) params.getOrDefault("khoang_thoi_gian", "hom_nay"));
                 case "tim_kiem_web"          -> toolTimKiemWeb((String) params.getOrDefault("query", ""));
                 case "gui_email_don_le"      -> toolGuiEmailDonLe(params);
+                case "kiem_tra_cau_hinh_ai"  -> toolKiemTraCauHinhAi();
+                case "kiem_tra_phan_he"      -> toolKiemTraPhanHe();
+                case "xem_hoa_don"           -> toolXemHoaDon((String) params.getOrDefault("trang_thai", "all"));
                 default -> "Lỗi: Tool '" + toolName + "' không tồn tại.";
             };
         } catch (Exception e) {
@@ -195,7 +210,7 @@ public class AiToolService {
     private String toolTimLichTrong(String ngay) {
         // Tìm tất cả giờ đã đặt trong ngày đó
         String sql = "SELECT gio_kham FROM LichHen WHERE CAST(ngay_kham AS DATE) = ? AND trang_thai != 'DA_HUY'";
-        var bookedSlots = jdbcTemplate.queryForList(sql, ngay, String.class);
+        var bookedSlots = jdbcTemplate.queryForList(sql, String.class, ngay);
         List<String> allSlots = List.of("08:00","08:30","09:00","09:30","10:00","10:30","11:00","14:00","14:30","15:00","15:30","16:00","16:30","17:00");
         List<String> available = new ArrayList<>();
         for (String slot : allSlots) {
@@ -240,9 +255,9 @@ public class AiToolService {
 
     private String toolThongKeDoanhThu(String khoang) {
         String dateFilter = switch (khoang) {
-            case "tuan_nay"  -> "DATEPART(week, ngay_tao) = DATEPART(week, GETDATE()) AND YEAR(ngay_tao) = YEAR(GETDATE())";
-            case "thang_nay" -> "MONTH(ngay_tao) = MONTH(GETDATE()) AND YEAR(ngay_tao) = YEAR(GETDATE())";
-            default          -> "CAST(ngay_tao AS DATE) = CAST(GETDATE() AS DATE)"; // hom_nay
+            case "tuan_nay"  -> "DATEPART(week, ngay_lap_hoa_don) = DATEPART(week, GETDATE()) AND YEAR(ngay_lap_hoa_don) = YEAR(GETDATE())";
+            case "thang_nay" -> "MONTH(ngay_lap_hoa_don) = MONTH(GETDATE()) AND YEAR(ngay_lap_hoa_don) = YEAR(GETDATE())";
+            default          -> "CAST(ngay_lap_hoa_don AS DATE) = CAST(GETDATE() AS DATE)"; // hom_nay
         };
         try {
             String sql = "SELECT COUNT(*) AS so_hoa_don, SUM(tong_tien) AS tong_doanh_thu, " +
@@ -295,5 +310,76 @@ public class AiToolService {
         } catch (Exception e) {
             return "Lỗi gửi email: " + e.getMessage();
         }
+    }
+
+    private String toolKiemTraCauHinhAi() {
+        String sql = "SELECT ten_cau_hinh, gia_tri FROM CauHinhHeThong WHERE ten_cau_hinh IN " +
+            "('groq_api_key','groq_model','groq_vision_model','gemini_api_key','gemini_model','openrouter_api_key','openrouter_model','ai_action_policy')";
+        var rows = jdbcTemplate.queryForList(sql);
+        Map<String, String> values = new HashMap<>();
+        for (var row : rows) {
+            values.put(String.valueOf(row.get("ten_cau_hinh")), row.get("gia_tri") == null ? "" : String.valueOf(row.get("gia_tri")));
+        }
+        return "Trạng thái cấu hình AI:\n"
+            + "- Groq key: " + maskConfigured(values.get("groq_api_key")) + " | model: " + safeValue(values.get("groq_model")) + " | vision: " + safeValue(values.get("groq_vision_model")) + "\n"
+            + "- Gemini key: " + maskConfigured(values.get("gemini_api_key")) + " | model: " + safeValue(values.get("gemini_model")) + "\n"
+            + "- OpenRouter key: " + maskConfigured(values.get("openrouter_api_key")) + " | model: " + safeValue(values.get("openrouter_model")) + "\n"
+            + "- Action policy: " + (values.getOrDefault("ai_action_policy", "").isBlank() ? "chưa cấu hình" : "đã cấu hình") + "\n"
+            + "Lưu ý: API key được che để bảo mật. Backend đọc trực tiếp các giá trị này từ bảng CauHinhHeThong mỗi lần gọi AI.";
+    }
+
+    private String toolKiemTraPhanHe() {
+        return """
+            Phân hệ chính đang hoạt động:
+            - Tổng quan quản trị: /quan-ly/dashboard
+            - Báo cáo & Thống kê: /quan-ly/bao-cao-thong-ke
+            - Quản lý lịch hẹn: /quan-ly/lich-hen
+            - Điều hành nhân sự: /quan-ly/lich-lam-viec
+            - Nhân sự & Phân quyền: /quan-ly/nhan-vien-phan-quyen
+            - Khách hàng & Thú cưng: /quan-ly/khach-hang-thu-cung
+            - Danh mục dịch vụ: /quan-ly/dich-vu
+            - Khám bệnh & Kê đơn: /quan-ly/kham-benh
+            - Hồ sơ bệnh án: /quan-ly/ho-so-benh-an
+            - Đơn thuốc: /quan-ly/don-thuoc
+            - Xét nghiệm: /quan-ly/xet-nghiem
+            - Kho tệp y tế: /quan-ly/file-dinh-kem
+            - Kho thuốc: /quan-ly/kho-thuoc
+            - Nhập kho & Kiểm kê: /quan-ly/nhap-kho
+            - Hóa đơn & Thanh toán: /quan-ly/hoa-don
+            - Tài chính - Kế toán: /quan-ly/ke-toan
+            - Marketing: /quan-ly/marketing
+            - Cấu hình hệ thống: /quan-ly/cau-hinh
+            - Phân hệ chức năng: /quan-ly/chuc-nang
+            - Cổng khách hàng: /khach-hang/dashboard
+            """;
+    }
+
+    private String toolXemHoaDon(String trangThai) {
+        boolean filter = trangThai != null && !trangThai.isBlank() && !"all".equalsIgnoreCase(trangThai);
+        String sql = "SELECT TOP 10 hd.id_hoa_don, hd.ngay_lap_hoa_don, hd.tong_tien_cuoi, hd.trang_thai, kh.ten_khach_hang, kh.sdt " +
+            "FROM HoaDon hd LEFT JOIN KhachHang kh ON hd.id_khach_hang = kh.id_khach_hang " +
+            (filter ? "WHERE hd.trang_thai = ? " : "") +
+            "ORDER BY hd.ngay_lap_hoa_don DESC";
+        var rows = filter ? jdbcTemplate.queryForList(sql, trangThai) : jdbcTemplate.queryForList(sql);
+        if (rows.isEmpty()) return "Không tìm thấy hóa đơn phù hợp.";
+        StringBuilder sb = new StringBuilder("Danh sách hóa đơn (" + rows.size() + " dòng mới nhất):\n");
+        for (var row : rows) {
+            sb.append("- #").append(row.get("id_hoa_don"))
+                .append(" | ").append(row.get("ten_khach_hang"))
+                .append(" | SĐT: ").append(row.get("sdt"))
+                .append(" | Tổng: ").append(row.get("tong_tien_cuoi"))
+                .append(" | TT: ").append(row.get("trang_thai"))
+                .append(" | Ngày: ").append(row.get("ngay_lap_hoa_don"))
+                .append("\n");
+        }
+        return sb.toString();
+    }
+
+    private String maskConfigured(String value) {
+        return value == null || value.trim().isEmpty() ? "chưa cấu hình" : "đã cấu hình";
+    }
+
+    private String safeValue(String value) {
+        return value == null || value.trim().isEmpty() ? "dùng fallback môi trường" : value.trim();
     }
 }

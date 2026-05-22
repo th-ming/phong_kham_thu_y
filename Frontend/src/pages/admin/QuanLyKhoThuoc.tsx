@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import axiosInstance from "@services/axios";
-import { getUserProfile } from "@utils/index";
+import { getUserProfile, matchesSearchFields, normalizeUserRole } from "@utils/index";
+import { Modal } from "@components/CommonUI";
+import { toast } from "@components/Toast";
+import thuocService from "@services/thuocService";
 
 const chuyenNgayISO_SangVN = (dateString: string) => {
   if (!dateString) return "—";
@@ -15,6 +18,18 @@ const QuanLyKhoThuoc: React.FC = () => {
   const [loThuocs, setLoThuocs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchThuoc, setSearchThuoc] = useState("");
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [newThuoc, setNewThuoc] = useState<any>({
+    id_thuoc: '',
+    ten_thuoc: '',
+    ma_thuoc: '',
+    loai_thuoc: '',
+    don_vi: '',
+    gia_ban: 0,
+    cach_dung: '',
+    trang_thai: true,
+    da_xoa: false
+  });
 
   useEffect(() => {
     Promise.all([
@@ -33,17 +48,22 @@ const QuanLyKhoThuoc: React.FC = () => {
   }, []);
 
   const user = getUserProfile();
-  const userRoleRaw = (user?.loai_tai_khoan || user?.ten_vai_tro || 'staff').toLowerCase();
-  const canManageInventory = userRoleRaw.includes('admin') || userRoleRaw.includes('quản lý') || userRoleRaw.includes('kế toán') || userRoleRaw.includes('manager') || userRoleRaw.includes('accountant');
+  const userRole = normalizeUserRole(user);
+  const canManageInventory = userRole === 'admin' || userRole === 'quan_ly' || userRole === 'ke_toan';
 
   const filteredThuocs = React.useMemo(() => {
     if (!searchThuoc.trim()) return thuocs;
-    const s = searchThuoc.toLowerCase();
-    return thuocs.filter(t => 
-      (t.ten_thuoc || "").toLowerCase().includes(s) || 
-      (t.thanh_phan || "").toLowerCase().includes(s) || 
-      (t.dang_bao_che || "").toLowerCase().includes(s)
-    );
+    return thuocs.filter(t => matchesSearchFields(searchThuoc, [
+      t.id_thuoc,
+      t.ten_thuoc,
+      t.thanh_phan,
+      t.dang_bao_che,
+      t.don_vi,
+      t.mo_ta,
+      t.gia_ban,
+      t.so_luong_ton,
+      t.trang_thai ? "đang bán active" : "ngừng bán inactive"
+    ]));
   }, [thuocs, searchThuoc]);
 
   if (loading) return (
@@ -71,12 +91,71 @@ const QuanLyKhoThuoc: React.FC = () => {
             />
           </div>
           {canManageInventory && (
-            <Link to="/quan-ly/nhap-kho" className="btn btn-primary btn-pill" style={{ textDecoration: 'none' }}>
-              <span className="material-symbols-outlined">add_box</span>
-              Nhập thuốc mới
-            </Link>
+            <>
+              <Link to="/quan-ly/nhap-kho" className="btn btn-primary btn-pill" style={{ textDecoration: 'none' }}>
+                <span className="material-symbols-outlined">add_box</span>
+                Nhập thuốc mới
+              </Link>
+              <button type="button" className="btn btn-outline btn-pill" style={{ marginLeft: 8 }} onClick={() => setIsAddModalOpen(true)}>
+                <span className="material-symbols-outlined">add</span>
+                Thêm thuốc
+              </button>
+            </>
           )}
         </div>
+        {/* Add Thuoc modal */}
+        <Modal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} title="Thêm thuốc mới">
+          <form onSubmit={async (e) => {
+            e.preventDefault();
+            try {
+              // ensure an id is provided (backend requires id_thuoc)
+              if (!newThuoc.id_thuoc || !newThuoc.ten_thuoc) {
+                toast.error('Vui lòng nhập `id_thuoc` và `ten_thuoc`.');
+                return;
+              }
+              const saved = await thuocService.create(newThuoc);
+              setThuocs(prev => [...prev, saved]);
+              toast.success('Đã thêm thuốc thành công');
+              setIsAddModalOpen(false);
+              setNewThuoc({ id_thuoc: '', ten_thuoc: '', ma_thuoc: '', loai_thuoc: '', don_vi: '', gia_ban: 0, cach_dung: '', trang_thai: true, da_xoa: false });
+            } catch (err: any) {
+              toast.error(err?.response?.data || 'Lỗi khi thêm thuốc');
+            }
+          }} style={{ display: 'grid', gap: 12 }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: 6, fontWeight: 800, color: 'var(--gray-400)' }}>Mã thuốc (id_thuoc)</label>
+              <input className="form-input" value={newThuoc.id_thuoc} onChange={e => setNewThuoc({ ...newThuoc, id_thuoc: e.target.value })} required />
+            </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: 6, fontWeight: 800, color: 'var(--gray-400)' }}>Tên thuốc</label>
+              <input className="form-input" value={newThuoc.ten_thuoc} onChange={e => setNewThuoc({ ...newThuoc, ten_thuoc: e.target.value })} required />
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: 6, fontWeight: 800, color: 'var(--gray-400)' }}>Mã thuốc (ma_thuoc)</label>
+                <input className="form-input" value={newThuoc.ma_thuoc} onChange={e => setNewThuoc({ ...newThuoc, ma_thuoc: e.target.value })} />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: 6, fontWeight: 800, color: 'var(--gray-400)' }}>Đơn vị</label>
+                <input className="form-input" value={newThuoc.don_vi} onChange={e => setNewThuoc({ ...newThuoc, don_vi: e.target.value })} />
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: 6, fontWeight: 800, color: 'var(--gray-400)' }}>Giá bán</label>
+                <input type="number" className="form-input" value={newThuoc.gia_ban} onChange={e => setNewThuoc({ ...newThuoc, gia_ban: Number(e.target.value) })} />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: 6, fontWeight: 800, color: 'var(--gray-400)' }}>Loại</label>
+                <input className="form-input" value={newThuoc.loai_thuoc} onChange={e => setNewThuoc({ ...newThuoc, loai_thuoc: e.target.value })} />
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}>
+              <button type="button" className="btn btn-pill" onClick={() => setIsAddModalOpen(false)} style={{ background: 'var(--gray-100)', color: 'var(--ink)' }}>Hủy</button>
+              <button type="submit" className="btn btn-primary btn-pill">Tạo thuốc</button>
+            </div>
+          </form>
+        </Modal>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '32px' }}>
@@ -111,22 +190,22 @@ const QuanLyKhoThuoc: React.FC = () => {
           </div>
         </div>
 
-        <div className="glass-card" style={{ padding: '32px', borderRadius: 'var(--radius-xl)', background: 'var(--secondary)', color: 'white' }}>
-          <h2 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '24px' }}>Lô thuốc & Hạn dùng</h2>
+        <div className="glass-card" style={{ padding: '32px', borderRadius: 'var(--radius-xl)', background: 'var(--surface)', color: 'var(--ink)', border: '1px solid var(--gray-200)' }}>
+          <h2 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '24px', color: 'var(--ink)' }}>Lô thuốc & Hạn dùng</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {loThuocs.map(l => (
-              <div key={l.id_lo} style={{ background: 'rgba(255,255,255,0.1)', padding: '16px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
+              <div key={l.id_lo} style={{ background: 'var(--primary-light)', padding: '16px', borderRadius: '16px', border: '1px solid var(--primary-border, rgba(15, 157, 138, 0.18))' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                  <span style={{ fontWeight: 800 }}>Lô: {l.so_lo}</span>
+                  <span style={{ fontWeight: 800, color: 'var(--ink)' }}>Lô: {l.so_lo}</span>
                   <span style={{
                     fontSize: '0.7rem', fontWeight: 800, padding: '4px 10px', borderRadius: '50px',
-                    background: l.so_luong_ton < 10 ? 'var(--danger)' : 'rgba(255,255,255,0.2)',
-                    color: 'white'
+                    background: l.so_luong_ton < 10 ? 'var(--danger)' : 'var(--primary)',
+                    color: '#fff'
                   }}>
                     TỒN: {l.so_luong_ton}
                   </span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', opacity: 0.7 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: 'var(--gray-500)', fontWeight: 650 }}>
                   <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>event</span>
                   Hạn dùng: {chuyenNgayISO_SangVN(l.han_su_dung)}
                 </div>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axiosInstance from "@services/axios";
-import { formatTienVND } from "@utils/index";
+import { formatTienVND, matchesSearchFields } from "@utils/index";
 import { Modal } from "@components/CommonUI";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
@@ -21,12 +21,18 @@ const QuanLyHoaDon: React.FC = () => {
 
   const filteredHoaDons = React.useMemo(() => {
     return hoaDons.filter((h) => {
-      const search = searchHoaDon.toLowerCase();
-      const code = `hd-${h.id_hoa_don}`.toLowerCase();
-      const name = (h.ten_khach_hang || "").toLowerCase();
-      const phone = (h.sdt || "").toLowerCase();
-      const status = (h.trang_thai?.toLowerCase() === 'da_thanh_toan' ? 'đã quyết toán' : 'chờ thanh toán').toLowerCase();
-      return code.includes(search) || name.includes(search) || phone.includes(search) || status.includes(search);
+      const status = h.trang_thai?.toLowerCase() === 'da_thanh_toan' ? 'đã quyết toán đã thanh toán đã thu tiền paid' : 'chờ thanh toán chưa thu tiền unpaid';
+      return matchesSearchFields(searchHoaDon, [
+        `HD-${h.id_hoa_don}`,
+        h.id_hoa_don,
+        h.ten_khach_hang,
+        h.ten_thu_cung,
+        h.sdt,
+        h.ten_nhan_vien,
+        h.tong_tien_cuoi,
+        h.ngay_lap_hoa_don,
+        status
+      ]);
     });
   }, [hoaDons, searchHoaDon]);
 
@@ -164,12 +170,29 @@ const QuanLyHoaDon: React.FC = () => {
   );
 
   return (
-    <div className="animate-fade-in">
+    <div className="animate-fade-in invoice-admin-page" style={{ margin: '-40px', padding: '40px', minHeight: '100vh', background: '#f8fafc', color: '#0f172a' }}>
       <style>{`
         @media print {
           body * { visibility: hidden; }
           #print-section, #print-section * { visibility: visible; }
           #print-section { position: absolute; left: 0; top: 0; width: 100%; }
+        }
+        .invoice-admin-page {
+          --surface: rgba(255, 255, 255, 0.94);
+          --background: #f8fafc;
+          --ink: #0f172a;
+          --gray-50: #f8fafc;
+          --gray-100: #f1f5f9;
+          --gray-200: #e2e8f0;
+          --gray-300: #cbd5e1;
+          --gray-400: #94a3b8;
+          --gray-500: #64748b;
+          --glass-border: rgba(148, 163, 184, 0.24);
+        }
+        .invoice-admin-page .glass-card {
+          background: rgba(255, 255, 255, 0.94) !important;
+          border-color: rgba(148, 163, 184, 0.24) !important;
+          color: #0f172a;
         }
       `}</style>
 
@@ -178,7 +201,7 @@ const QuanLyHoaDon: React.FC = () => {
           <h1 style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--ink)', letterSpacing: '-1px' }}>Quản lý Hóa đơn</h1>
           <p style={{ color: 'var(--gray-500)', fontWeight: 600 }}>Theo dõi dòng tiền và lịch sử thanh toán của khách hàng.</p>
         </div>
-        <button data-ai-id="button-quanlyhoadon-5wcs" onClick={handleExportExcel} className="btn btn-pill hover-lift" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '10px 20px', fontSize: '0.9rem', fontWeight: 800 }}>
+        <button data-ai-id="button-quanlyhoadon-5wcs" onClick={handleExportExcel} className="btn btn-primary btn-pill hover-lift" style={{ background: 'var(--primary)', color: '#ffffff', border: '1px solid var(--primary)', padding: '10px 20px', fontSize: '0.9rem', fontWeight: 800, boxShadow: '0 12px 28px rgba(15, 157, 138, 0.22)' }}>
           <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>download</span> Xuất Excel
         </button>
       </div>

@@ -61,7 +61,7 @@ public class OpenRouterService {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     private final HttpClient client = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(4))
+            .connectTimeout(Duration.ofSeconds(20))
             .build();
 
     public String chat(List<ChatMessage> history) throws Exception {
@@ -103,7 +103,7 @@ public class OpenRouterService {
                 .header("HTTP-Referer", "http://localhost:3000") // Required for OpenRouter
                 .header("X-Title", "Rexi Vet Clinic")
                 .POST(HttpRequest.BodyPublishers.ofString(requestBody, StandardCharsets.UTF_8))
-                .timeout(Duration.ofSeconds(4))
+                .timeout(Duration.ofSeconds(25))
                 .build();
 
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());

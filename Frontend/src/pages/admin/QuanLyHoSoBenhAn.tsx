@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import axiosInstance from "@services/axios";
+import { matchesSearchFields } from "@utils/index";
 
 const chuyenNgayISO_SangVN = (dateString: string) => {
   if (!dateString) return "—";
@@ -25,7 +26,7 @@ const QuanLyHoSoBenhAn: React.FC = () => {
   const fetchData = () => {
     setLoading(true);
     axiosInstance.get("/api/ho-so-benh-an", {
-      params: { page: currentPage - 1, size: ITEMS_PER_PAGE }
+      params: { page: currentPage - 1, size: ITEMS_PER_PAGE, search: searchHoSo.trim() || undefined }
     })
       .then(res => {
         if (res.data && res.data.content) {
@@ -46,21 +47,28 @@ const QuanLyHoSoBenhAn: React.FC = () => {
 
   useEffect(() => {
     fetchData();
-  }, [currentPage]);
+  }, [currentPage, searchHoSo]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchHoSo]);
 
   const filteredHoSos = React.useMemo(() => {
-    if (!searchHoSo.trim()) return hoSos;
-    const s = searchHoSo.toLowerCase();
-    return hoSos.filter(h => 
-      String(h.id_ho_so || "").toLowerCase().includes(s) ||
-      (h.ten_thu_cung || "").toLowerCase().includes(s) ||
-      (h.ten_bac_si || "").toLowerCase().includes(s) ||
-      (h.chan_doan || "").toLowerCase().includes(s)
-    );
-  }, [hoSos, searchHoSo]);
+    if (isServerPaginated || !searchHoSo.trim()) return hoSos;
+    return hoSos.filter(h => matchesSearchFields(searchHoSo, [
+      h.id_ho_so,
+      h.ten_thu_cung,
+      h.giong_loai,
+      h.ten_khach_hang,
+      h.ten_bac_si,
+      h.trieu_chung,
+      h.chan_doan,
+      h.trang_thai_ho_so
+    ]));
+  }, [hoSos, isServerPaginated, searchHoSo]);
 
-  const totalPages = isServerPaginated ? (searchHoSo.trim() ? 1 : totalServerPages) : Math.ceil(filteredHoSos.length / ITEMS_PER_PAGE);
-  const currentRows = searchHoSo.trim() ? filteredHoSos : (isServerPaginated ? hoSos : filteredHoSos.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE));
+  const totalPages = isServerPaginated ? totalServerPages : Math.ceil(filteredHoSos.length / ITEMS_PER_PAGE);
+  const currentRows = isServerPaginated ? hoSos : filteredHoSos.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
   if (loading && hoSos.length === 0) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
@@ -90,7 +98,7 @@ const QuanLyHoSoBenhAn: React.FC = () => {
       <div className="glass-card" style={{ borderRadius: 'var(--radius-xl)', overflow: 'hidden' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
-            <tr style={{ background: 'var(--secondary-gradient)', color: 'white', textAlign: 'left' }}>
+            <tr style={{ background: 'var(--gray-50)', color: 'var(--gray-500)', textAlign: 'left', borderBottom: '1px solid var(--gray-200)' }}>
               <th style={{ padding: '24px 20px', fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px' }}>MÃ HỒ SƠ</th>
               <th style={{ padding: '24px 20px', fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px' }}>NGÀY KHÁM</th>
               <th style={{ padding: '24px 20px', fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px' }}>THÚ CƯNG</th>

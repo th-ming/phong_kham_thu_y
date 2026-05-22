@@ -442,6 +442,25 @@ textarea {
   outline: none;
 }
 
+select {
+  -webkit-appearance: none;
+  appearance: none;
+  padding-right: 56px !important;
+  border-radius: 16px;
+  background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Crect x='4.5' y='4.5' width='31' height='31' rx='11.5' fill='%2306B6D4' fill-opacity='.12' stroke='%2306B6D4' stroke-opacity='.45'/%3E%3Cpath d='M14 17L20 23L26 17' stroke='%2322D3EE' stroke-width='2.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 10px center !important;
+  background-size: 40px 40px !important;
+}
+
+select:hover {
+  border-color: var(--primary);
+}
+
+select::-ms-expand {
+  display: none;
+}
+
 input:focus,
 select:focus,
 textarea:focus {
@@ -457,6 +476,10 @@ textarea:focus {
   background: rgba(255, 255, 255, 0.03);
   color: #ffffff;
   color-scheme: dark;
+}
+
+[data-theme='dark'] select {
+  background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Crect x='4.5' y='4.5' width='31' height='31' rx='11.5' fill='%2322D3EE' fill-opacity='.16' stroke='%2322D3EE' stroke-opacity='.52'/%3E%3Cpath d='M14 17L20 23L26 17' stroke='%2367E8F9' stroke-width='2.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
 }
 
 [data-theme='dark'] input:focus,
@@ -792,6 +815,82 @@ label {
   animation: float 3s ease-in-out infinite;
 }
 
+/* ============================================================ */
+/* Hiệu ứng mời bấm cho nút CTA (pulse + bob + glow)         */
+/* ============================================================ */
+/* Hiệu ứng to lên nhỏ lại (Scale Pulse) thay cho lắc lư */
+@keyframes ctaScalePulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+}
+
+/* Vòng sáng tỏa mạnh hơn */
+@keyframes ctaPulseRing {
+  0% { transform: scale(0.92); opacity: 0.5; }
+  50% { transform: scale(1.5); opacity: 0.8; }
+  100% { transform: scale(0.92); opacity: 0.5; }
+}
+
+/* Hào quang sáng và rộng hơn */
+@keyframes ctaHaloBurst {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.6); }
+}
+
+.cta-invite {
+  position: relative;
+  z-index: var(--z-floating);
+  will-change: transform, box-shadow;
+  animation: ctaScalePulse 2s ease-in-out infinite !important, heroCtaGlowBreath 3.2s ease-in-out infinite !important;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  box-shadow: 0 18px 48px rgba(6, 182, 212, 0.28), 0 6px 18px rgba(6,182,212,0.12) inset;
+}
+
+.cta-invite:hover {
+  transform: translateY(-4px) scale(1.06) !important;
+  box-shadow: 0 34px 90px rgba(6, 182, 212, 0.3) !important;
+}
+
+.cta-invite::before,
+.cta-invite::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  border-radius: 999px;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.cta-invite::before {
+  width: 300%;
+  height: 300%;
+  transform: translate(-50%, -50%);
+  border: 3px solid rgba(0, 255, 240, 0.48);
+  box-shadow: 0 0 80px rgba(0,255,240,0.56), 0 0 36px rgba(0,255,240,0.28) inset;
+  opacity: 0.95;
+  mix-blend-mode: screen;
+  animation: ctaHaloBurst 2.4s cubic-bezier(.2,.85,.2,1) infinite, ctaRippleOut 3.2s ease-out infinite;
+}
+
+.cta-invite::after {
+  width: 220%;
+  height: 220%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle at center, rgba(0,255,240,0.96) 0%, rgba(0,255,240,0.68) 28%, rgba(0,255,240,0.34) 52%, transparent 76%);
+  opacity: 0.92;
+  filter: blur(56px);
+  mix-blend-mode: screen;
+  animation: ctaPulseRing 1.4s ease-in-out infinite, ctaRippleOut 3.8s ease-out infinite 0.3s;
+}
+
+/* Phù hợp cho chế độ tối hơn: hạ độ sáng để vẫn dịu mắt */
+[data-theme='dark'] .cta-invite::before,
+[data-theme='dark'] .cta-invite::after {
+  opacity: 0.16;
+}
+
+
 /* Hiệu ứng nhịp đập 3 chấm nhỏ lúc đang Loading */
 .dot-pulse-small {
   position: relative;
@@ -995,22 +1094,173 @@ label {
 }
 
 /* Hiệu ứng sóng cho nút Đặt lịch hẹn */
-@keyframes waveEffect {
-  0% {
-    box-shadow: 0 0 0 0 rgba(15, 157, 138, 0.4);
+@keyframes ctaButtonBreath {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg) scale(1);
+    box-shadow:
+      0 12px 30px var(--primary-shadow),
+      0 0 0 0 rgba(34, 211, 238, 0.18);
   }
 
-  70% {
-    box-shadow: 0 0 0 20px rgba(15, 157, 138, 0);
+  50% {
+    transform: translateY(-2px) rotate(0deg) scale(1.035);
+    box-shadow:
+      0 16px 34px rgba(34, 211, 238, 0.22),
+      0 0 0 9px rgba(34, 211, 238, 0);
+  }
+}
+
+@keyframes ctaLiquidShift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes ctaSoftPulse {
+  0%, 100% {
+    box-shadow:
+      0 12px 30px var(--primary-shadow),
+      0 0 0 0 rgba(20, 184, 166, 0.22);
+  }
+
+  55% {
+    box-shadow:
+      0 18px 38px rgba(20, 184, 166, 0.34),
+      0 0 0 7px rgba(20, 184, 166, 0);
+  }
+}
+
+@keyframes ctaCallShine {
+  0% {
+    transform: translateX(-130%) skewX(-18deg);
+    opacity: 0;
+  }
+
+  18%, 76% {
+    opacity: 0.42;
   }
 
   100% {
-    box-shadow: 0 0 0 0 rgba(15, 157, 138, 0);
+    transform: translateX(170%) skewX(-18deg);
+    opacity: 0;
+  }
+}
+
+@keyframes ctaRippleOut {
+  0% {
+    opacity: 0;
+    transform: scale(0.94);
+    box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.58);
+  }
+
+  18% {
+    opacity: 0.45;
+  }
+
+  72%, 100% {
+    opacity: 0;
+    transform: scale(1.12);
+    box-shadow: 0 0 0 10px rgba(34, 211, 238, 0);
+  }
+}
+
+@keyframes ctaRippleOutDark {
+  0% {
+    opacity: 0;
+    transform: scale(0.92);
+    box-shadow:
+      0 0 0 0 rgba(34, 211, 238, 0.78),
+      0 0 18px rgba(34, 211, 238, 0.42);
+  }
+
+  16% {
+    opacity: 0.62;
+  }
+
+  72%, 100% {
+    opacity: 0;
+    transform: scale(1.14);
+    box-shadow:
+      0 0 0 13px rgba(34, 211, 238, 0),
+      0 0 14px rgba(20, 184, 166, 0);
   }
 }
 
 .btn-wave {
-  animation: waveEffect 2s infinite;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  transform-origin: center;
+  background-size: 190% 190% !important;
+  animation:
+    ctaButtonBreath 2.7s ease-in-out infinite,
+    ctaLiquidShift 5.2s ease-in-out infinite;
+  will-change: transform, box-shadow, background-position;
+}
+
+.btn-wave > * {
+  position: relative;
+  z-index: 1;
+}
+
+.btn-wave::before {
+  content: "";
+  position: absolute;
+  top: -45%;
+  bottom: -45%;
+  left: 0;
+  width: 42%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.44), transparent);
+  transform: translateX(-130%) skewX(-18deg);
+  animation: ctaCallShine 5.2s linear infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.btn-wave::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.16);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.btn-wave:hover {
+  animation-duration: 3.8s, 5.2s;
+  filter: brightness(1.05);
+}
+
+[data-theme='dark'] .btn-wave {
+  box-shadow:
+    0 10px 26px rgba(34, 211, 238, 0.24),
+    0 0 18px rgba(20, 184, 166, 0.18) !important;
+}
+
+[data-theme='dark'] .btn-wave {
+  animation-name: ctaButtonBreath, ctaLiquidShift;
+}
+
+[data-theme='dark'] .btn-wave::before {
+  inset: auto auto auto 0;
+  top: -45%;
+  bottom: -45%;
+  width: 42%;
+  border: none;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.40), transparent);
+  animation: ctaCallShine 5.2s linear infinite;
+}
+
+[data-theme='dark'] .btn-wave::after {
+  inset: 0;
+  border: none;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.14);
+  animation: none;
 }
 
 /* Hiệu ứng trượt xuống khi bấm xem câu hỏi thường gặp (PhanHoiDap) */
@@ -1245,360 +1495,114 @@ html {
   clip-path: circle(150% at 0% 50%);
 }
 
-/* ============================================================ */
-/* ULTRA PREMIUM UX / ANIMATION SYSTEM                          */
-/* ============================================================ */
-
-:root {
-  --motion-fast: 180ms;
-  --motion-medium: 360ms;
-  --motion-slow: 720ms;
-  --ease-premium: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --spotlight-x: 50%;
-  --spotlight-y: 50%;
-  --tilt-x: 0deg;
-  --tilt-y: 0deg;
-  --magnet-x: 0px;
-  --magnet-y: 0px;
-}
-
-.page-transition-shell {
-  animation: pageCrossFade var(--motion-slow) var(--ease-premium) both;
-  min-height: 100%;
-}
-
-@keyframes pageCrossFade {
-  from {
-    opacity: 0;
-    filter: blur(8px);
-    transform: translateY(18px) scale(0.992);
+/* Hiệu ứng Đặt lịch ngay ở Banner: ánh sáng tỏa nhẹ, không dùng vòng sóng rõ */
+@keyframes heroCtaSoftRing {
+  0%, 68%, 100% {
+    transform: translateY(0) scale(1) rotate(0deg);
+    filter: brightness(1);
   }
-  to {
-    opacity: 1;
-    filter: blur(0);
-    transform: translateY(0) scale(1);
+  73% {
+    transform: translateY(-1px) scale(1.025) rotate(-0.25deg);
+    filter: brightness(1.05);
+  }
+  78% {
+    transform: translateY(0) scale(1.012) rotate(0.22deg);
+  }
+  83% {
+    transform: translateY(-0.5px) scale(1.018) rotate(-0.14deg);
+  }
+  88% {
+    transform: translateY(0) scale(1) rotate(0deg);
+    filter: brightness(1);
   }
 }
 
-.premium-spotlight-card {
-  isolation: isolate;
-  transform-style: preserve-3d;
-  transform: perspective(1200px) rotateX(var(--tilt-x)) rotateY(var(--tilt-y)) translateZ(0);
-  transition:
-    transform var(--motion-medium) var(--ease-premium),
-    box-shadow var(--motion-medium) var(--ease-premium),
-    border-color var(--motion-medium) var(--ease-premium);
+@keyframes heroCtaGlowBreath {
+  0%, 100% {
+    box-shadow: 0 8px 25px var(--primary-shadow), 0 0 12px rgba(15, 157, 138, 0.20);
+    filter: brightness(1);
+  }
+  52% {
+    box-shadow: 0 13px 34px var(--primary-shadow), 0 0 28px rgba(34, 211, 238, 0.50), 0 0 48px rgba(15, 157, 138, 0.28);
+    filter: brightness(1.07);
+  }
 }
 
-.premium-spotlight-card::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background:
-    radial-gradient(
-      circle 180px at var(--spotlight-x) var(--spotlight-y),
-      rgba(255, 255, 255, 0.28),
-      rgba(255, 255, 255, 0.08) 35%,
-      transparent 70%
-    );
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity var(--motion-medium) ease;
-  z-index: 1;
-}
-
-.premium-spotlight-card:hover::after {
-  opacity: 1;
-}
-
-[data-theme='dark'] .premium-spotlight-card::after {
-  background:
-    radial-gradient(
-      circle 200px at var(--spotlight-x) var(--spotlight-y),
-      rgba(34, 211, 238, 0.2),
-      rgba(20, 184, 166, 0.08) 40%,
-      transparent 72%
-    );
-}
-
-.magnetic-btn {
+.hero-cta-btn {
   position: relative;
   overflow: hidden;
-  transform: translate3d(var(--magnet-x), var(--magnet-y), 0);
-  will-change: transform;
-  transition:
-    transform var(--motion-medium) var(--ease-spring),
-    box-shadow var(--motion-medium) var(--ease-premium),
-    background var(--motion-medium) var(--ease-premium),
-    color var(--motion-medium) var(--ease-premium);
+  box-shadow: 0 8px 25px var(--primary-shadow);
+  transition: box-shadow 0.35s ease, filter 0.35s ease;
+  isolation: isolate;
+  animation: heroCtaGlowBreath 3.8s ease-in-out infinite;
+}
+.hero-cta-btn > * {
+  position: relative;
+  z-index: 1;
+}
+.hero-cta-btn:hover {
+  transform: translateY(-4px) scale(1.03);
+  box-shadow: 0 15px 35px var(--primary-shadow), 0 0 25px var(--primary);
+  animation-play-state: paused;
+}
+.hero-cta-btn:hover::after {
+  content: none;
 }
 
-.magnetic-btn::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(110deg, transparent 0%, rgba(255, 255, 255, 0.28) 45%, transparent 60%);
-  transform: translateX(-120%);
-  transition: transform 0.7s var(--ease-premium);
-  pointer-events: none;
+/* Nút CTA hero đặc biệt: nhô lên/xuống, lắc và vòng sáng mời nhấn */
+.hero-cta-btn.cta-invite {
+  animation: ctaScalePulse 2s ease-in-out infinite, heroCtaGlowBreath 3.8s ease-in-out infinite !important;
+}
+.hero-cta-btn.cta-invite::after {
+  animation: ctaPulseRing 2.6s ease-in-out infinite !important;
+  opacity: 0.22;
 }
 
-.magnetic-btn:hover::before {
-  transform: translateX(120%);
-}
-
-.stagger-table-body tr,
-.item-card,
-.appointment-card,
-.service-card-select {
-  animation: staggerRise 0.52s var(--ease-premium) both;
-}
-
-.scroll-reveal {
-  opacity: 0;
-  transform: translateY(22px);
-  transition:
-    opacity 0.68s var(--ease-premium),
-    transform 0.68s var(--ease-premium),
-    filter 0.68s var(--ease-premium);
-  filter: blur(4px);
-}
-
-.scroll-reveal.is-revealed {
-  opacity: 1;
-  transform: translateY(0);
-  filter: blur(0);
-}
-
-.stagger-table-body tr {
-  animation-delay: calc(var(--row-index, 0) * 48ms);
-}
-
-@keyframes staggerRise {
-  from {
-    opacity: 0;
-    transform: translateY(14px);
+@keyframes heroSecondaryIdle {
+  0%, 78%, 100% {
+    transform: translateY(0);
+    box-shadow: 0 8px 18px rgba(15, 157, 138, 0);
   }
-  to {
-    opacity: 1;
+  84% {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 20px rgba(15, 157, 138, 0.10);
+  }
+  90% {
     transform: translateY(0);
   }
 }
 
-tbody tr {
-  position: relative;
-}
-
-tbody tr:hover {
-  background-image: linear-gradient(90deg, var(--primary-light), transparent) !important;
-}
-
-.row-update-flash,
-tbody tr.flash-updated {
-  animation: updateFlash 1.35s var(--ease-premium) both;
-}
-
-@keyframes updateFlash {
-  0% {
-    background-color: rgba(16, 185, 129, 0);
-    box-shadow: inset 4px 0 0 rgba(16, 185, 129, 0);
-  }
-  18% {
-    background-color: rgba(16, 185, 129, 0.18);
-    box-shadow: inset 4px 0 0 rgba(16, 185, 129, 0.9);
-  }
-  100% {
-    background-color: transparent;
-    box-shadow: inset 4px 0 0 rgba(16, 185, 129, 0);
-  }
-}
-
-.floating-field {
-  position: relative;
-}
-
-.floating-field label {
-  transform-origin: left top;
-  transition: transform var(--motion-medium) var(--ease-premium), color var(--motion-medium) ease;
-}
-
-.floating-field:focus-within label {
-  color: var(--primary);
-  transform: translateY(-3px) scale(0.94);
-}
-
-.custom-checkbox:checked::after {
-  content: "";
-  width: 10px;
-  height: 6px;
-  border-left: 2.5px solid white;
-  border-bottom: 2.5px solid white;
-  transform: translate(-50%, -62%) rotate(-45deg);
-  animation: checkboxDraw 0.24s var(--ease-premium) both;
-}
-
-@keyframes checkboxDraw {
-  from {
-    opacity: 0;
-    clip-path: inset(0 100% 0 0);
-  }
-  to {
-    opacity: 1;
-    clip-path: inset(0 0 0 0);
-  }
-}
-
-.fluid-progress {
+.hero-secondary-cta {
   position: relative;
   overflow: hidden;
+  isolation: isolate;
+  transition: transform 0.24s ease, border-color 0.24s ease, box-shadow 0.24s ease, color 0.24s ease;
+  animation: heroSecondaryIdle 4.8s ease-in-out infinite;
 }
 
-.fluid-progress::after {
-  content: "";
+.hero-secondary-cta::before {
+  content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent);
-  transform: translateX(-100%);
-  animation: progressFlow 1.5s ease-in-out infinite;
+  z-index: -1;
+  background: linear-gradient(120deg, transparent 0%, var(--primary-light) 48%, transparent 100%);
+  opacity: 0;
+  transform: translateX(-120%);
+  transition: transform 0.45s ease, opacity 0.45s ease;
 }
 
-@keyframes progressFlow {
-  to { transform: translateX(100%); }
+.hero-secondary-cta:hover {
+  transform: translateY(-2px);
+  border-color: var(--primary) !important;
+  box-shadow: 0 12px 24px var(--primary-shadow);
+  animation-play-state: paused;
 }
 
-.premium-modal-backdrop {
-  animation: modalBackdropIn 0.28s ease both;
-  backdrop-filter: blur(18px) saturate(1.25) !important;
-  -webkit-backdrop-filter: blur(18px) saturate(1.25) !important;
+.hero-secondary-cta:hover::before {
+  opacity: 0.22;
+  transform: translateX(120%);
 }
 
-.premium-modal-panel {
-  animation: modalSpringIn 0.58s var(--ease-spring) both !important;
-  transform-origin: center 58%;
-}
-
-@keyframes modalBackdropIn {
-  from { opacity: 0; backdrop-filter: blur(0); }
-  to { opacity: 1; backdrop-filter: blur(18px); }
-}
-
-@keyframes modalSpringIn {
-  from {
-    opacity: 0;
-    transform: translateY(30px) scale(0.92);
-  }
-  70% {
-    opacity: 1;
-    transform: translateY(-4px) scale(1.012);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-.toast-premium {
-  animation:
-    toastStackIn 0.55s var(--ease-spring) both,
-    toastStackOut 0.42s var(--ease-premium) 2.58s forwards !important;
-}
-
-@keyframes toastStackIn {
-  from {
-    opacity: 0;
-    transform: translateX(120%) scale(0.92);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0) scale(1);
-  }
-}
-
-@keyframes toastStackOut {
-  to {
-    opacity: 0;
-    transform: translateX(36px) translateY(-10px) scale(0.88);
-    max-height: 0;
-    padding-top: 0;
-    padding-bottom: 0;
-    margin-bottom: -12px;
-  }
-}
-
-.chat-message-user,
-.chat-message-ai {
-  animation: chatBubbleIn 0.34s var(--ease-spring) both;
-}
-
-.chat-message-user {
-  transform-origin: bottom right;
-}
-
-.chat-message-ai {
-  transform-origin: bottom left;
-}
-
-@keyframes chatBubbleIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px) scale(0.94);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-.wave-bar {
-  width: 4px;
-  min-height: 6px;
-  border-radius: 999px;
-  background: linear-gradient(180deg, #fb7185, var(--primary));
-  animation: voiceSpring 0.72s var(--ease-spring) infinite alternate;
-}
-
-.wave-bar:nth-child(2) {
-  animation-delay: 0.12s;
-}
-
-.wave-bar:nth-child(3) {
-  animation-delay: 0.24s;
-}
-
-@keyframes voiceSpring {
-  from { height: 6px; transform: scaleY(0.8); }
-  to { height: 24px; transform: scaleY(1.12); }
-}
-
-.premium-loader {
-  width: 64px;
-  height: 64px;
-  border-radius: 24px;
-  background:
-    linear-gradient(var(--surface), var(--surface)) padding-box,
-    conic-gradient(from 0deg, var(--primary), #3b82f6, #f43f5e, var(--primary)) border-box;
-  border: 2px solid transparent;
-  box-shadow: var(--shadow-xl);
-  animation: premiumLoaderSpin 1.15s linear infinite, premiumLoaderPulse 2s ease-in-out infinite;
-}
-
-@keyframes premiumLoaderSpin {
-  to { transform: rotate(360deg); }
-}
-
-@keyframes premiumLoaderPulse {
-  50% { filter: drop-shadow(0 0 18px var(--primary-shadow)); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.001ms !important;
-    animation-iteration-count: 1 !important;
-    scroll-behavior: auto !important;
-    transition-duration: 0.001ms !important;
-  }
+.hero-secondary-cta:active {
+  transform: translateY(0) scale(0.985);
 }

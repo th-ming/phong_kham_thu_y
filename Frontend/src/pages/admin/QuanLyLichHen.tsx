@@ -3,6 +3,7 @@ import axiosInstance from "@services/axios";
 import ModalTaoLichHenAdmin from "./ModalTaoLichHenAdmin";
 import { Modal, InfoRow } from "@components/CommonUI";
 import { toast } from "@components/Toast";
+import { matchesSearchFields } from "@utils/index";
 
 const chuyenNgayISO_SangVN = (dateString: string) => {
   if (!dateString) return "—";
@@ -42,7 +43,8 @@ const QuanLyLichHen: React.FC = () => {
       params: {
         page: currentPage - 1,
         size: ITEMS_PER_PAGE,
-        status: filterStatus !== 'all' ? filterStatus : undefined
+        status: filterStatus !== 'all' ? filterStatus : undefined,
+        search: searchLichHen.trim() || undefined
       }
     })
       .then(res => {
@@ -78,27 +80,31 @@ const QuanLyLichHen: React.FC = () => {
 
   useEffect(() => {
     fetchData();
-  }, [currentPage, filterStatus]);
+  }, [currentPage, filterStatus, searchLichHen]);
 
   // Reset về trang 1 mỗi khi đổi bộ lọc
   useEffect(() => {
     setCurrentPage(1);
-  }, [filterStatus]);
+  }, [filterStatus, searchLichHen]);
 
   const rows = React.useMemo(() => {
     let filtered = lichHens;
     if (!isServerPaginated) {
       filtered = lichHens.filter(l => filterStatus === 'all' || l.trang_thai?.toUpperCase() === filterStatus.toUpperCase());
     }
-    if (searchLichHen.trim() !== "") {
-      const s = searchLichHen.toLowerCase();
+    if (!isServerPaginated && searchLichHen.trim() !== "") {
       filtered = filtered.filter(l => {
-        const idStr = String(l.id_lich_hen || "").toLowerCase();
-        const petName = (l.ten_thu_cung || "").toLowerCase();
-        const ownerName = (l.ten_khach_hang || "").toLowerCase();
-        const phone = (l.sdt || "").toLowerCase();
-        const doctorName = (l.ten_bac_si || "").toLowerCase();
-        return idStr.includes(s) || petName.includes(s) || ownerName.includes(s) || phone.includes(s) || doctorName.includes(s);
+        return matchesSearchFields(searchLichHen, [
+          l.id_lich_hen,
+          l.ten_thu_cung,
+          l.ten_khach_hang,
+          l.sdt,
+          l.ten_bac_si,
+          l.ten_dich_vu,
+          l.ly_do,
+          l.ghi_chu,
+          l.trang_thai
+        ]);
       });
     }
     return filtered;
@@ -118,7 +124,8 @@ const QuanLyLichHen: React.FC = () => {
         }
         .stagger-1 { animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both; }
         .stagger-2 { animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both; }
-        .table-row:hover { background-color: white !important; transform: scale(1.01) translateX(8px); box-shadow: -10px 10px 20px rgba(15, 157, 138, 0.08); z-index: 10; position: relative; border-radius: 16px; }
+        .table-row:hover { background-color: var(--surface) !important; transform: scale(1.01) translateX(8px); box-shadow: -10px 10px 20px rgba(15, 157, 138, 0.08); z-index: 10; position: relative; border-radius: 16px; }
+        [data-theme='dark'] .table-row:hover { background-color: rgba(15, 23, 42, 0.96) !important; box-shadow: -10px 10px 24px rgba(34, 211, 238, 0.08); }
       `}</style>
       <div className="stagger-1" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
         <div>

@@ -1,5 +1,7 @@
 package com.rexi.pkty.controller;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rexi.pkty.dto.ChatMessage;
 import com.rexi.pkty.entity.LichSuTuVan;
 import com.rexi.pkty.repository.LichSuTuVanRepository;
@@ -12,6 +14,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.concurrent.ConcurrentHashMap;
 import java.time.Instant;
@@ -373,6 +377,8 @@ public class ChatController {
                 }
             }
 
+            reply = sanitizeChatReply(reply);
+
             // BẢO MẬT: Làm sạch dữ liệu chống XSS (Stored XSS) trước khi lưu vào CSDL
             String safeUserQuery = org.springframework.web.util.HtmlUtils.htmlEscape(userQuery);
 
@@ -397,6 +403,66 @@ public class ChatController {
             return Map.of("reply",
                     "Sen ơi, não bộ của Rexi đang được bảo trì nâng cấp xíu nên hơi lác. Sen đợi một chút rồi thử lại nha! 🛠️🐾");
         }
+    }
+
+    private String sanitizeChatReply(String reply) {
+        if (reply == null) {
+            return "";
+        }
+        String cleaned = reply.trim();
+
+        Pattern fencePattern = Pattern.compile("(?s)```(?:json)?\\s*([\\[{][\\s\\S]*?[\\]}])\\s*```", Pattern.CASE_INSENSITIVE);
+        Matcher fenceMatcher = fencePattern.matcher(cleaned);
+        if (fenceMatcher.find()) {
+            String beforeText = cleaned.substring(0, fenceMatcher.start()).trim();
+            String jsonPayload = fenceMatcher.group(1).trim();
+            String extracted = extractTextFromJson(jsonPayload);
+            if (!beforeText.isEmpty()) {
+                return extracted.isEmpty() ? beforeText : beforeText + "\n\n" + extracted;
+            }
+            if (!extracted.isEmpty()) {
+                return extracted;
+            }
+        }
+
+        if (cleaned.startsWith("{") || cleaned.startsWith("[")) {
+            String extracted = extractTextFromJson(cleaned);
+            if (!extracted.isEmpty()) {
+                return extracted;
+            }
+        }
+
+        return cleaned;
+    }
+
+    private String extractTextFromJson(String jsonText) {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode node = mapper.readTree(jsonText);
+            if (node.has("reply") && node.get("reply").isTextual()) {
+                return node.get("reply").asText();
+            }
+            if (node.has("final_answer") && node.get("final_answer").isTextual()) {
+                return node.get("final_answer").asText();
+            }
+            if (node.has("text") && node.get("text").isTextual()) {
+                return node.get("text").asText();
+            }
+            if (node.has("message") && node.get("message").isTextual()) {
+                return node.get("message").asText();
+            }
+            if (node.isTextual()) {
+                return node.asText();
+            }
+            if (node.isObject() && node.size() == 1) {
+                JsonNode onlyValue = node.elements().next();
+                if (onlyValue.isTextual()) {
+                    return onlyValue.asText();
+                }
+            }
+        } catch (Exception ignored) {
+        }
+        return "";
     }
 
     private List<Map<String, String>> searchWebDuckDuckGo(String query) {

@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import axiosInstance from "@services/axios";
 import { useTheme } from "../contexts/ThemeContextV2";
-import { getUserProfile } from "../utils/index";
+import { getUserProfile, normalizeSearchText, normalizeUserRole } from "../utils/index";
+import { ADMIN_ROUTE_ROLES, canAccessAdminPath } from "../utils/permissions";
 import { executeAction } from "./ActionExecutor";
 import { toast } from "@components/Toast";
 
@@ -26,6 +27,90 @@ interface SwarmData {
     finalReply: string;
     contacts?: SwarmContact[];
 }
+
+type QuickSuggestion = {
+    label: string;
+    prompt: string;
+    tone?: "default" | "danger" | "warning" | "success" | "info" | "agent";
+};
+
+const toSafeContextHeader = (value: string, maxLength = 3500): string => {
+    return encodeURIComponent(value.slice(0, maxLength));
+};
+
+const extractTaggedJsonPayload = (replyText: string, tag: string): { cleanedText: string; json: any | null } => {
+    const tagIndex = replyText.indexOf(tag);
+    if (tagIndex === -1) {
+        return { cleanedText: replyText, json: null };
+    }
+
+    let jsonStart = tagIndex + tag.length;
+    while (jsonStart < replyText.length && /\s/.test(replyText[jsonStart])) {
+        jsonStart++;
+    }
+    if (jsonStart >= replyText.length) {
+        return { cleanedText: replyText, json: null };
+    }
+
+    let opener = replyText[jsonStart];
+    if (opener !== "{" && opener !== "[") {
+        const nextBrace = replyText.indexOf("{", jsonStart);
+        if (nextBrace === -1) {
+            return { cleanedText: replyText, json: null };
+        }
+        jsonStart = nextBrace;
+        opener = "{";
+    }
+
+    const closer = opener === "{" ? "}" : "]";
+    let depth = 0;
+    let inString = false;
+    let escaped = false;
+    let endPos = -1;
+
+    for (let i = jsonStart; i < replyText.length; i++) {
+        const ch = replyText[i];
+        if (escaped) {
+            escaped = false;
+            continue;
+        }
+        if (ch === "\\") {
+            escaped = true;
+            continue;
+        }
+        if (ch === '"') {
+            inString = !inString;
+            continue;
+        }
+        if (!inString) {
+            if (ch === opener) {
+                depth++;
+            } else if (ch === closer) {
+                depth--;
+                if (depth === 0) {
+                    endPos = i;
+                    break;
+                }
+            }
+        }
+    }
+
+    if (endPos === -1) {
+        return { cleanedText: replyText, json: null };
+    }
+
+    const jsonString = replyText.substring(jsonStart, endPos + 1).trim();
+    try {
+        const parsed = JSON.parse(jsonString);
+        const beforeText = replyText.substring(0, tagIndex).trim();
+        const afterText = replyText.substring(endPos + 1).trim();
+        const cleanedText = [beforeText, afterText].filter(Boolean).join(" ").trim();
+        return { cleanedText, json: parsed };
+    } catch (err) {
+        console.error("Lỗi parse tagged JSON payload:", err);
+        return { cleanedText: replyText, json: null };
+    }
+};
 
 const SwarmConsole: React.FC<{ data: SwarmData; isDark: boolean }> = ({ data, isDark }) => {
     const [currentStep, setCurrentStep] = useState<number>(0);
@@ -365,7 +450,7 @@ export const ChatBot: React.FC = () => {
             });
 
             const uniqueMetrics = Array.from(new Set(metrics)).filter(m => m.trim().length > 0);
-            return uniqueMetrics.join(" | ");
+            return uniqueMetrics.join(" | ").slice(0, 3500);
         } catch (e) {
             console.error("Lỗi parse DOM context:", e);
             return "";
@@ -376,21 +461,218 @@ export const ChatBot: React.FC = () => {
     const rawName = user?.ten_khach_hang || user?.ho_ten || user?.ten_dang_nhap || "";
     const userName = cleanName(rawName);
 
-    const userRole = user?.loai_tai_khoan || user?.id_vai_tro || "";
-    const isClinicStaff = userRole && userRole !== "CUSTOMER" && userRole !== "KHACH_HANG" && userRole !== "VT-5";
-    const userRoleName = user?.ten_vai_tro || 
-        (userRole.includes("ADMIN") || userRole === "VT-1" ? "Quản trị" : 
-         userRole.includes("QL") || userRole === "VT-6" ? "Quản lý" : 
-         userRole.includes("BS") || userRole === "VT-2" ? "Bác sĩ" : 
-         userRole.includes("KT") || userRole === "VT-4" ? "Kế toán" : 
-         userRole.includes("TT") || userRole === "VT-7" ? "Tiếp tân" : 
-         userRole.includes("YT") || userRole === "VT-8" ? "Y tá" : 
-         userRole.includes("STAFF") || userRole.includes("NV") || userRole === "VT-3" ? "Nhân viên" : "Nhân sự");
+    const normalizedRoleCode = normalizeUserRole(user);
+    const isCustomerRoute = location.pathname.startsWith("/khach-hang");
+    const isStaffRoute = location.pathname.startsWith("/quan-ly");
+    const roleDisplayName: Record<string, string> = {
+        admin: "Quản trị",
+        quan_ly: "Quản lý",
+        bac_si: "Bác sĩ",
+        ke_toan: "Kế toán",
+        tiep_tan: "Tiếp tân",
+        y_ta: "Y tá",
+        staff: "Nhân viên",
+        khach_hang: "Khách hàng",
+        guest: "Khách",
+    };
+    const isCustomerAccount = normalizedRoleCode === "khach_hang" || isCustomerRoute;
+    const isClinicStaff = normalizedRoleCode !== "khach_hang" && normalizedRoleCode !== "guest" && (isStaffRoute || !isCustomerAccount);
+    const userRoleName = isCustomerAccount ? "Khách hàng" : (user?.ten_vai_tro || roleDisplayName[normalizedRoleCode] || "Nhân sự");
 
     const displayGreetingName = (userName.toLowerCase().includes(userRoleName.toLowerCase()) || 
                                  (userRoleName.toLowerCase() === 'bác sĩ' && userName.toLowerCase().startsWith('bs')))
         ? userName
         : `${userRoleName} ${userName}`;
+
+    const roleSuggestionKey =
+        isCustomerAccount ? "customer" :
+        normalizedRoleCode === "admin" ? "admin" :
+        normalizedRoleCode === "quan_ly" ? "manager" :
+        normalizedRoleCode === "bac_si" ? "doctor" :
+        normalizedRoleCode === "ke_toan" ? "accountant" :
+        normalizedRoleCode === "tiep_tan" ? "reception" :
+        normalizedRoleCode === "y_ta" ? "nurse" :
+        isClinicStaff ? "staff" : "guest";
+
+    const sharedClinicalSuggestions: QuickSuggestion[] = [
+        { label: "Cấp cứu hóc dị vật", prompt: "Bé bị hóc dị vật, sơ cứu thế nào?", tone: "danger" },
+        { label: "Lịch tiêm phòng", prompt: "Lịch tiêm phòng vaccine định kỳ cho chó mèo?", tone: "info" },
+        { label: "Dấu hiệu cần đi khám", prompt: "Những dấu hiệu nào ở chó mèo cần đưa đi khám ngay?", tone: "warning" },
+        { label: "Chăm sóc sau khám", prompt: "Sau khi bé vừa khám xong cần chăm sóc và theo dõi thế nào?", tone: "success" },
+        { label: "Dinh dưỡng thú cưng", prompt: "Tư vấn khẩu phần ăn phù hợp cho chó mèo theo tuổi và cân nặng", tone: "default" },
+        { label: "Sơ cứu ngộ độc", prompt: "Cách sơ cứu mèo bị ngộ độc thực phẩm?", tone: "danger" },
+    ];
+
+    const standardSuggestionMap: Record<string, QuickSuggestion[]> = {
+        customer: [
+            { label: "Đặt lịch khám", prompt: "Tôi muốn đặt lịch khám sức khỏe cho thú cưng", tone: "success" },
+            { label: "Hồ sơ bé", prompt: "Tôi muốn xem và hiểu hồ sơ y tế của thú cưng", tone: "info" },
+            { label: "Hóa đơn của tôi", prompt: "Tôi muốn kiểm tra các hóa đơn và trạng thái thanh toán", tone: "warning" },
+            ...sharedClinicalSuggestions,
+        ],
+        admin: [
+            { label: "Tổng quan hôm nay", prompt: "Tóm tắt nhanh tình hình vận hành phòng khám hôm nay", tone: "agent" },
+            { label: "Lịch hẹn hôm nay", prompt: "Xem danh sách lịch hẹn hôm nay và ca cần xử lý", tone: "info" },
+            { label: "Khách hàng mới", prompt: "Kiểm tra số khách hàng mới và xu hướng hôm nay", tone: "success" },
+            { label: "Doanh thu", prompt: "Phân tích nhanh doanh thu và hóa đơn hôm nay", tone: "warning" },
+            { label: "Kho thuốc cảnh báo", prompt: "Kiểm tra thuốc sắp hết hoặc cần nhập thêm", tone: "danger" },
+            { label: "Nhân sự & quyền", prompt: "Gợi ý kiểm tra phân quyền và tài khoản nhân sự", tone: "default" },
+            ...sharedClinicalSuggestions.slice(0, 3),
+        ],
+        manager: [
+            { label: "Tải vận hành", prompt: "Đánh giá tải vận hành theo lịch hẹn và ca khám hôm nay", tone: "agent" },
+            { label: "Bác sĩ bận", prompt: "Bác sĩ nào đang có nhiều ca nhất hôm nay?", tone: "info" },
+            { label: "Dịch vụ nổi bật", prompt: "Dịch vụ nào đang được đặt nhiều hoặc tạo doanh thu tốt?", tone: "success" },
+            { label: "Lịch trực", prompt: "Kiểm tra lịch trực và nhân sự thiếu ca", tone: "warning" },
+            { label: "Báo cáo nhanh", prompt: "Tạo báo cáo nhanh hoạt động phòng khám hôm nay", tone: "agent" },
+            ...sharedClinicalSuggestions.slice(0, 3),
+        ],
+        doctor: [
+            { label: "Ca khám hôm nay", prompt: "Xem các ca khám hôm nay của bác sĩ và thứ tự ưu tiên", tone: "info" },
+            { label: "Bệnh án gần đây", prompt: "Tóm tắt các bệnh án gần đây cần theo dõi", tone: "agent" },
+            { label: "Liều Diazepam", prompt: "Cần chuẩn bị liều lượng Diazepam cấp cứu thế nào?", tone: "danger" },
+            { label: "Sơ cứu Heimlich", prompt: "Hướng dẫn kỹ thuật Heimlich cho chó mèo?", tone: "danger" },
+            { label: "Đọc xét nghiệm", prompt: "Gợi ý cách đọc kết quả xét nghiệm máu chó mèo", tone: "info" },
+            { label: "Phác đồ điều trị", prompt: "Gợi ý lập phác đồ điều trị ban đầu theo triệu chứng", tone: "warning" },
+            ...sharedClinicalSuggestions.slice(2, 5),
+        ],
+        accountant: [
+            { label: "Hóa đơn chờ thu", prompt: "Kiểm tra hóa đơn đang chờ thanh toán hôm nay", tone: "warning" },
+            { label: "Doanh thu ngày", prompt: "Tổng hợp doanh thu thực thu trong ngày", tone: "success" },
+            { label: "Đối soát thanh toán", prompt: "Gợi ý đối soát hóa đơn đã thanh toán và chưa thanh toán", tone: "agent" },
+            { label: "Xuất Excel", prompt: "Hướng dẫn xuất file Excel hóa đơn và doanh thu", tone: "info" },
+            { label: "Công nợ khách", prompt: "Tìm các khách hàng còn hóa đơn chưa thanh toán", tone: "danger" },
+            ...sharedClinicalSuggestions.slice(3, 5),
+        ],
+        reception: [
+            { label: "Xác nhận lịch", prompt: "Xem các lịch hẹn đang chờ xác nhận", tone: "warning" },
+            { label: "Check-in", prompt: "Hướng dẫn check-in khách đã tới phòng khám", tone: "success" },
+            { label: "Tạo lịch mới", prompt: "Tạo lịch hẹn mới cho khách hàng và thú cưng", tone: "info" },
+            { label: "Tìm khách hàng", prompt: "Tìm nhanh khách hàng theo tên hoặc số điện thoại", tone: "agent" },
+            { label: "Không đến", prompt: "Các ca nào cần cập nhật trạng thái không đến?", tone: "danger" },
+            ...sharedClinicalSuggestions.slice(0, 3),
+        ],
+        nurse: [
+            { label: "Ca cần hỗ trợ", prompt: "Xem các ca khám cần y tá hỗ trợ hôm nay", tone: "info" },
+            { label: "Chuẩn bị xét nghiệm", prompt: "Danh sách việc cần chuẩn bị trước khi lấy mẫu xét nghiệm", tone: "warning" },
+            { label: "Theo dõi nội trú", prompt: "Các chỉ số cần theo dõi cho thú cưng nội trú", tone: "success" },
+            { label: "Vật tư cần kiểm", prompt: "Kiểm tra vật tư hoặc thuốc cần bổ sung cho ca trực", tone: "agent" },
+            ...sharedClinicalSuggestions,
+        ],
+        staff: [
+            { label: "Lịch hẹn hôm nay", prompt: "Xem danh sách lịch hẹn hôm nay", tone: "info" },
+            { label: "Tìm thú cưng", prompt: "Tìm bé mèo trong hệ thống", tone: "success" },
+            { label: "Kho thuốc", prompt: "Kiểm tra kho thuốc tồn kho", tone: "warning" },
+            ...sharedClinicalSuggestions,
+        ],
+        guest: sharedClinicalSuggestions,
+    };
+
+    const agentSuggestionMap: Record<string, QuickSuggestion[]> = {
+        customer: [
+            { label: "Tự điền lịch khám", prompt: "Tự động điền lịch khám cho thú cưng của tôi vào khung giờ phù hợp", tone: "agent" },
+            { label: "Tìm hóa đơn", prompt: "Mở trang hóa đơn và tìm hóa đơn chưa thanh toán của tôi", tone: "warning" },
+            { label: "Mở hồ sơ y tế", prompt: "Mở hồ sơ y tế thú cưng của tôi", tone: "info" },
+            { label: "Tìm tài liệu mèo mang thai", prompt: "Lên mạng tìm tài liệu chăm sóc mèo mang thai y khoa", tone: "success" },
+            { label: "Sơ cứu hóc xương", prompt: "Tìm tài liệu về cách sơ cứu hóc xương ở mèo", tone: "danger" },
+        ],
+        admin: [
+            { label: "Mở báo cáo thống kê", prompt: "Mở trang báo cáo thống kê và tóm tắt KPI quan trọng", tone: "agent" },
+            { label: "Tra khách hàng", prompt: "Tìm danh sách khách hàng phòng khám nhanh", tone: "info" },
+            { label: "Lịch hẹn hôm nay", prompt: "Xem danh sách lịch hẹn hôm nay", tone: "success" },
+            { label: "Kho thuốc tồn", prompt: "Kiểm tra kho thuốc tồn kho", tone: "warning" },
+            { label: "Doanh thu hôm nay", prompt: "Thống kê nhanh số liệu hôm nay", tone: "agent" },
+            { label: "Phân quyền", prompt: "Mở trang nhân sự và quyền hạn để kiểm tra tài khoản", tone: "danger" },
+            { label: "Dịch vụ", prompt: "Mở danh mục dịch vụ và kiểm tra dịch vụ đang hoạt động", tone: "default" },
+            { label: "Marketing", prompt: "Gợi ý một chiến dịch marketing nhắc lịch tái khám", tone: "info" },
+        ],
+        manager: [
+            { label: "Điều phối lịch", prompt: "Mở quản lý lịch hẹn và kiểm tra ca cần điều phối", tone: "agent" },
+            { label: "Lịch trực", prompt: "Mở điều hành nhân sự và kiểm tra lịch trực tuần này", tone: "warning" },
+            { label: "Báo cáo KPI", prompt: "Tạo báo cáo nhanh số ca, doanh thu và bác sĩ hoạt động tích cực", tone: "success" },
+            { label: "Tìm khách hàng", prompt: "Tìm danh sách khách hàng phòng khám nhanh", tone: "info" },
+            { label: "Kho cảnh báo", prompt: "Kiểm tra thuốc sắp hết hoặc cảnh báo kho", tone: "danger" },
+        ],
+        doctor: [
+            { label: "Ca của tôi", prompt: "Mở danh sách ca khám hôm nay của bác sĩ", tone: "agent" },
+            { label: "Bệnh án", prompt: "Tìm bệnh án gần đây cần theo dõi", tone: "info" },
+            { label: "Tra cứu y khoa", prompt: "Lên mạng tìm tài liệu điều trị mèo bị giảm bạch cầu", tone: "success" },
+            { label: "Đơn thuốc", prompt: "Mở trang kê đơn và kiểm tra đơn thuốc gần nhất", tone: "warning" },
+            { label: "Xét nghiệm", prompt: "Mở quản lý xét nghiệm và tìm kết quả mới nhất", tone: "default" },
+        ],
+        accountant: [
+            { label: "Hóa đơn chờ", prompt: "Mở quản lý hóa đơn và lọc hóa đơn chờ thanh toán", tone: "warning" },
+            { label: "Đối soát", prompt: "Thống kê nhanh số tiền đã thu và còn chờ thu hôm nay", tone: "agent" },
+            { label: "Xuất Excel", prompt: "Mở trang hóa đơn để xuất Excel doanh thu", tone: "success" },
+            { label: "Tìm hóa đơn", prompt: "Tìm hóa đơn theo mã hoặc số điện thoại khách hàng", tone: "info" },
+            { label: "Báo cáo doanh thu", prompt: "Mở báo cáo thống kê doanh thu", tone: "default" },
+        ],
+        reception: [
+            { label: "Chờ xác nhận", prompt: "Mở quản lý lịch hẹn và lọc lịch chờ xác nhận", tone: "warning" },
+            { label: "Check-in ca", prompt: "Mở trang tiếp tân để check-in ca đang tới", tone: "success" },
+            { label: "Tạo lịch hộ", prompt: "Tự động tạo lịch khám nhanh cho khách hàng mới", tone: "agent" },
+            { label: "Tra SĐT khách", prompt: "Tìm khách hàng theo số điện thoại", tone: "info" },
+            { label: "Ca không đến", prompt: "Lọc các ca không đến hoặc đã hủy hôm nay", tone: "danger" },
+        ],
+        nurse: [
+            { label: "Lịch trực", prompt: "Mở lịch trực cá nhân và kiểm tra ca sắp tới", tone: "info" },
+            { label: "Ca hỗ trợ", prompt: "Tìm ca khám cần y tá hỗ trợ hôm nay", tone: "agent" },
+            { label: "Xét nghiệm", prompt: "Mở quản lý xét nghiệm và cân lâm sàng", tone: "success" },
+            { label: "Kho vật tư", prompt: "Kiểm tra vật tư hoặc thuốc cần bổ sung", tone: "warning" },
+            { label: "Nội trú", prompt: "Tạo checklist theo dõi nội trú cho thú cưng", tone: "default" },
+        ],
+        staff: [
+            { label: "Lịch hôm nay", prompt: "Xem danh sách lịch hẹn hôm nay", tone: "info" },
+            { label: "Tìm thú cưng", prompt: "Tìm bé mèo trong hệ thống", tone: "success" },
+            { label: "Kho thuốc", prompt: "Kiểm tra kho thuốc tồn kho", tone: "warning" },
+            { label: "Tài liệu y khoa", prompt: "Lên mạng tìm tài liệu chăm sóc mèo mang thai y khoa", tone: "agent" },
+        ],
+        guest: [
+            { label: "Đăng nhập", prompt: "Tôi cần đăng nhập để sử dụng các chức năng cá nhân", tone: "info" },
+            { label: "Đặt lịch", prompt: "Hướng dẫn đặt lịch khám thú cưng", tone: "success" },
+            { label: "Dịch vụ Rexi", prompt: "Rexi có những dịch vụ thú y nào?", tone: "default" },
+        ],
+    };
+
+    const standardSuggestions = standardSuggestionMap[roleSuggestionKey] || standardSuggestionMap.staff;
+    const agentSuggestions = agentSuggestionMap[roleSuggestionKey] || agentSuggestionMap.staff;
+
+    const suggestionToneStyles: Record<NonNullable<QuickSuggestion["tone"]>, React.CSSProperties> = {
+        default: { borderColor: 'var(--gray-300)', background: 'var(--background)', color: 'var(--ink)' },
+        danger: { borderColor: 'rgba(239, 68, 68, 0.55)', background: 'rgba(239, 68, 68, 0.08)', color: '#ef4444' },
+        warning: { borderColor: 'rgba(245, 158, 11, 0.55)', background: 'rgba(245, 158, 11, 0.10)', color: '#f59e0b' },
+        success: { borderColor: 'rgba(16, 185, 129, 0.55)', background: 'rgba(16, 185, 129, 0.10)', color: '#10b981' },
+        info: { borderColor: 'rgba(34, 211, 238, 0.55)', background: 'rgba(34, 211, 238, 0.10)', color: '#22d3ee' },
+        agent: { borderColor: 'rgba(244, 63, 94, 0.55)', background: 'rgba(244, 63, 94, 0.10)', color: '#f43f5e' },
+    };
+
+    const renderSuggestionRail = (
+        suggestions: QuickSuggestion[],
+        onSelect: (prompt: string) => void,
+        prefix: "standard" | "agent"
+    ) => {
+        const railItems = [...suggestions, ...suggestions];
+        const duration = Math.max(28, suggestions.length * 4.2);
+
+        return (
+            <div className="chat-suggestion-shell" data-ai-id={`chat-suggestions-${prefix}`} aria-label={`Gợi ý nhanh ${prefix}`}>
+                <div className="chat-suggestion-track" style={{ animationDuration: `${duration}s` }}>
+                    {railItems.map((item, idx) => (
+                        <button
+                            key={`${prefix}-${idx}-${item.label}`}
+                            data-ai-id={`button-chatbot-suggestion-${prefix}-${idx}`}
+                            onClick={() => onSelect(item.prompt)}
+                            className="chat-suggestion-chip"
+                            style={suggestionToneStyles[item.tone || "default"]}
+                            type="button"
+                        >
+                            {item.label}
+                        </button>
+                    ))}
+                </div>
+            </div>
+        );
+    };
 
     const getGreeting = () => {
         const hour = new Date().getHours();
@@ -401,12 +683,99 @@ export const ChatBot: React.FC = () => {
         return "Chào cú đêm"; 
     };
     const timeGreeting = getGreeting();
+    const userIdentity = String(user?.id_tai_khoan || user?.id_khach_hang || user?.id_nhan_vien || user?.ten_dang_nhap || userName || "guest");
+    const chatSessionScope = `${isCustomerAccount ? "customer" : isClinicStaff ? "staff" : "guest"}_${userIdentity}`;
+    const standardChatHistoryKey = `rexi_standard_chat_history_${chatSessionScope}`;
+    const agentChatHistoryKey = `rexi_agent_chat_history_${chatSessionScope}`;
+
+    const hasExplicitAgentActionIntent = (text: string) => {
+        const normalized = normalizeSearchText(text);
+        const actionWords = [
+            "mo", "mo trang", "vao trang", "chuyen sang", "dieu huong", "truy cap", "di toi",
+            "xem danh sach", "loc", "tim", "tra cuu", "kiem tra", "thong ke", "tao", "them",
+            "sua", "xoa", "dat lich", "lap lich", "xuat", "in", "gui", "dien", "tu dong"
+        ];
+        return actionWords.some(word => normalized.includes(word));
+    };
+
+    const isConceptualQuestion = (text: string) => {
+        const normalized = normalizeSearchText(text);
+        const questionWords = [
+            "la gi", "la sao", "tai sao", "vi sao", "nhu nao", "the nao", "duoc khong",
+            "co duoc", "co biet", "biet duoc", "co phai", "nghia la", "dung de lam gi"
+        ];
+        return questionWords.some(word => normalized.includes(word));
+    };
+
+    const buildLocationPrivacyAnswer = () => {
+        return [
+            `Không tự biết chính xác vị trí khách hàng đâu ${isClinicStaff ? "đồng nghiệp" : "Sen"} ạ.`,
+            "",
+            "Web chỉ lấy được vị trí thật khi **người dùng bấm cho phép quyền định vị của trình duyệt**. Nếu họ không cho phép thì hệ thống không có GPS/toạ độ chính xác.",
+            "",
+            "Hệ thống có thể biết một số dữ liệu khác nếu đã có trong hồ sơ, ví dụ: địa chỉ khách nhập, số điện thoại, email, lịch hẹn, thú cưng. Trình duyệt hoặc máy chủ cũng có thể suy đoán vị trí tương đối từ IP, nhưng cái đó không đủ chính xác để coi là vị trí khách hàng.",
+            "",
+            "Tóm lại: muốn lấy vị trí chuẩn thì phải xin quyền rõ ràng từ khách, không được âm thầm lấy."
+        ].join("\n");
+    };
+
+    const createStandardGreeting = () => ({
+        type: "ai",
+        text: isClinicStaff
+            ? `${timeGreeting} **${displayGreetingName}**! 🐾 Trợ lý Rexi rất vui được đồng hành cùng bạn hôm nay. Bạn cần tôi hỗ trợ tra cứu thông tin hoặc tư vấn y học thú cưng nào không ạ?`
+            : userName
+                ? `${timeGreeting} Sen **${userName}**! 🐾 Trợ lý Rexi rất vui được gặp lại. Hôm nay bé yêu nhà mình có khỏe không dạ?`
+                : `${timeGreeting} Sen! 🐾 Rexi đây ạ. Rexi có thể giúp gì cho sức khỏe của bé nhà mình hôm nay?`
+    });
+
+    const createAgentGreeting = () => ({
+        type: "ai",
+        text: isClinicStaff
+            ? `${timeGreeting} **Đồng nghiệp ${userRoleName} ${userName}**! 🐾 Tôi là **Rexi Agent v2** - Trợ lý Tác vụ AI. Tôi được tích hợp sâu để giúp bạn tự động hóa nghiệp vụ: tra cứu thông tin khách hàng nhanh, lập lịch khám nhanh, xem bệnh án, hoặc kiểm tra thuốc. Hãy cho tôi biết tác vụ bạn cần nhé!`
+            : `${timeGreeting} Sen **${userName || "nhà mình"}**! 🐾 Tôi là **Rexi Agent v2** - Trợ lý Tác vụ AI. Tôi có thể hỗ trợ đặt lịch khám, tra cứu lịch trực bác sĩ và tìm tài liệu thú y chuẩn xác. Sen muốn Rexi làm gì hôm nay ạ?`
+    });
+
+    const readScopedChatHistory = (key: string, fallback: any[]) => {
+        try {
+            const saved = sessionStorage.getItem(key);
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                if (Array.isArray(parsed)) return parsed;
+            }
+        } catch (e) {
+            console.error("Lỗi đọc lịch sử chat:", e);
+        }
+        return fallback;
+    };
 
     // 2. TRẠNG THÁI GIAO DIỆN UÝ PHÁP (STATE HOOKS)
     const [isOpen, setIsOpen] = useState(false);
     const [activeTab, setActiveTab] = useState<'standard' | 'agent'>('standard');
     const [proactiveMessage, setProactiveMessage] = useState<{ id: string, text: string, action: () => void } | null>(null);
     const [userActivityLogs, setUserActivityLogs] = useState<{ action: string, timestamp: string }[]>([]);
+    const proactiveDismissKey = `rexi_dismissed_proactive_${new Date().toISOString().slice(0, 10)}`;
+
+    const isProactiveDismissed = (id: string) => {
+        try {
+            const dismissedIds = JSON.parse(localStorage.getItem(proactiveDismissKey) || "[]");
+            return Array.isArray(dismissedIds) && dismissedIds.includes(id);
+        } catch {
+            return false;
+        }
+    };
+
+    const dismissProactiveMessage = () => {
+        if (proactiveMessage?.id) {
+            try {
+                const dismissedIds = JSON.parse(localStorage.getItem(proactiveDismissKey) || "[]");
+                const nextIds = Array.from(new Set([...(Array.isArray(dismissedIds) ? dismissedIds : []), proactiveMessage.id]));
+                localStorage.setItem(proactiveDismissKey, JSON.stringify(nextIds));
+            } catch {
+                // Nếu localStorage lỗi thì vẫn tắt popup trong phiên hiện tại.
+            }
+        }
+        setProactiveMessage(null);
+    };
 
     // LẮNG NGHE HÀNH VI NGƯỜI DÙNG TOÀN CỤC (USER ACTIVITY TRACING)
     useEffect(() => {
@@ -576,14 +945,23 @@ export const ChatBot: React.FC = () => {
     useEffect(() => {
         const fetchRetentionReminders = async () => {
             try {
+                if (!isCustomerAccount || !user?.id_khach_hang) {
+                    setProactiveMessage(prev => prev?.id?.startsWith("retention-") ? null : prev);
+                    return;
+                }
+
                 // Fix C: dùng axiosInstance để tự động đính kèm JWT token
                 const response = await axiosInstance.get("/api/agent/retention-reminders");
                 const data = response.data;
                 if (data && data.length > 0) {
                     const reminder = data[Math.floor(Math.random() * data.length)];
+                    const reminderId = `retention-${reminder.id_thu_cung}`;
+                    if (isProactiveDismissed(reminderId)) return;
+
                     setTimeout(() => {
+                        if (isProactiveDismissed(reminderId)) return;
                         setProactiveMessage({
-                            id: `retention-${reminder.id_thu_cung}`,
+                            id: reminderId,
                             text: reminder.message,
                             action: () => {
                                 setActiveTab("agent");
@@ -601,7 +979,53 @@ export const ChatBot: React.FC = () => {
             }
         };
         fetchRetentionReminders();
-    }, [user]);
+    }, [isCustomerAccount, user?.id_khach_hang]);
+
+    // Gợi ý chủ động theo ngữ cảnh trang hiện tại, chỉ đưa ra nhắc nhở có thể hành động.
+    useEffect(() => {
+        if (!user || isOpen) return;
+
+        const contextHints: Record<string, { id: string; text: string; prompt: string }> = {
+            "/quan-ly/cau-hinh": {
+                id: "context-ai-config",
+                text: "Mình thấy sếp đang ở Cấu hình hệ thống. Nếu vừa đổi API key/model AI, Rexi có thể kiểm tra provider nào đã được lưu và đang được backend đọc thật.",
+                prompt: "Kiểm tra cấu hình AI hiện tại: provider nào đã có key, model nào đang được backend đọc, action policy đã lưu chưa?"
+            },
+            "/quan-ly/chuc-nang": {
+                id: "context-feature-map",
+                text: "Trang phân hệ này nên khớp với route và quyền thật. Rexi có thể kiểm tra nhanh bản đồ phân hệ và chỉ ra mục nào đang thiếu hoặc lệch.",
+                prompt: "Kiểm tra danh sách phân hệ chức năng, route và quyền truy cập hiện tại có đủ và khớp hệ thống không?"
+            },
+            "/quan-ly/ke-toan": {
+                id: "context-accounting-check",
+                text: "Sếp đang ở kế toán. Rexi có thể đối soát nhanh doanh thu, công nợ và hóa đơn chờ thanh toán bằng dữ liệu thật.",
+                prompt: "Đối soát nhanh doanh thu hôm nay, công nợ chưa thu và hóa đơn chờ thanh toán bằng dữ liệu hiện tại."
+            },
+            "/khach-hang/dat-lich-hen": {
+                id: "context-booking-helper",
+                text: "Sen đang đặt lịch. Nếu thiếu thú cưng, dịch vụ hoặc ngày giờ, Rexi có thể kiểm tra form và gợi ý bước tiếp theo.",
+                prompt: "Kiểm tra form đặt lịch hiện tại đang thiếu gì và hướng dẫn tôi hoàn tất đúng."
+            }
+        };
+
+        const hint = contextHints[location.pathname];
+        if (!hint || isProactiveDismissed(hint.id)) return;
+
+        const timer = window.setTimeout(() => {
+            if (isProactiveDismissed(hint.id)) return;
+            setProactiveMessage(prev => prev || {
+                id: hint.id,
+                text: hint.text,
+                action: () => {
+                    setActiveTab("agent");
+                    setIsOpen(true);
+                    setTimeout(() => handleAgentSend(hint.prompt), 450);
+                }
+            });
+        }, 2400);
+
+        return () => window.clearTimeout(timer);
+    }, [location.pathname, userIdentity, isOpen]);
 
     // DÙNG REF TRÁNH STALE CLOSURE KHI SỬ DỤNG VOICE TRONG TABS
     const activeTabRef = useRef(activeTab);
@@ -615,39 +1039,13 @@ export const ChatBot: React.FC = () => {
 
     // Lưu trữ tin nhắn riêng cho hai Tab để không bị lộn xộn
     const [messages, setMessages] = useState<any[]>(() => {
-        try {
-            const saved = sessionStorage.getItem("rexi_standard_chat_history");
-            if (saved) return JSON.parse(saved);
-        } catch (e) { console.error("Lỗi đọc lịch sử chat standard:", e); }
-        
-        return [
-            {
-                type: "ai",
-                text: isClinicStaff
-                    ? `${timeGreeting} **${displayGreetingName}**! 🐾 Trợ lý Rexi rất vui được đồng hành cùng bạn hôm nay. Bạn cần tôi hỗ trợ tra cứu thông tin hoặc tư vấn y học thú cưng nào không ạ?`
-                    : userName
-                        ? `${timeGreeting} Sen **${userName}**! 🐾 Trợ lý Rexi rất vui được gặp lại. Hôm nay bé yêu nhà mình có khỏe không dạ?`
-                        : `${timeGreeting} Sen! 🐾 Rexi đây ạ. Rexi có thể giúp gì cho sức khỏe của bé nhà mình hôm nay?`
-            }
-        ];
+        return readScopedChatHistory(standardChatHistoryKey, [createStandardGreeting()]);
     });
 
     // Streaming typewriter effect state — theo dõi tin nhắn nào đang được stream
         
     const [agentMessages, setAgentMessages] = useState<any[]>(() => {
-        try {
-            const saved = sessionStorage.getItem("rexi_agent_chat_history");
-            if (saved) return JSON.parse(saved);
-        } catch (e) { console.error("Lỗi đọc lịch sử chat agent:", e); }
-
-        return [
-            {
-                type: "ai",
-                text: isClinicStaff
-                    ? `${timeGreeting} **Đồng nghiệp ${userRoleName} ${userName}**! 🐾 Tôi là **Rexi Agent v2** - Trợ lý Tác vụ AI. Tôi được tích hợp sâu để giúp bạn tự động hóa nghiệp vụ: tra cứu thông tin khách hàng nhanh, lập lịch khám nhanh, xem bệnh án, hoặc kiểm tra thuốc. Hãy cho tôi biết tác vụ bạn cần nhé!`
-                    : `${timeGreeting} Sen **${userName || "nhà mình"}**! 🐾 Tôi là **Rexi Agent v2** - Trợ lý Tác vụ AI. Tôi có khả năng thực hiện trực tiếp các yêu cầu như: tự động điền form Đặt lịch khám, đăng ký thông tin nhanh, tra cứu lịch trực bác sĩ, tra cứu mạng (Google Search) tài liệu thú y chuẩn xác. Sen muốn Rexi làm gì hôm nay ạ?`
-            }
-        ];
+        return readScopedChatHistory(agentChatHistoryKey, [createAgentGreeting()]);
     });
 
     const [input, setInput] = useState("");
@@ -677,6 +1075,14 @@ export const ChatBot: React.FC = () => {
     const textInputRef = useRef<HTMLTextAreaElement>(null);
     const standardEndRef = useRef<HTMLDivElement>(null);
     const agentEndRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        setMessages(readScopedChatHistory(standardChatHistoryKey, [createStandardGreeting()]));
+        setAgentMessages(readScopedChatHistory(agentChatHistoryKey, [createAgentGreeting()]));
+        setProactiveMessage(null);
+        setInput("");
+        setAgentInput("");
+    }, [chatSessionScope]);
     const recognitionRef = useRef<any>(null);
 
     // Audio Visualizer Refs
@@ -987,15 +1393,15 @@ export const ChatBot: React.FC = () => {
     // Lưu trữ lịch sử vào SessionStorage
     useEffect(() => {
         try {
-            sessionStorage.setItem("rexi_standard_chat_history", JSON.stringify(messages));
+            sessionStorage.setItem(standardChatHistoryKey, JSON.stringify(messages));
         } catch (e) { }
-    }, [messages]);
+    }, [messages, standardChatHistoryKey]);
 
     useEffect(() => {
         try {
-            sessionStorage.setItem("rexi_agent_chat_history", JSON.stringify(agentMessages));
+            sessionStorage.setItem(agentChatHistoryKey, JSON.stringify(agentMessages));
         } catch (e) { }
-    }, [agentMessages]);
+    }, [agentMessages, agentChatHistoryKey]);
 
     // ==================== HỆ THỐNG TRỢ LÝ CHỦ ĐỘNG AUTOPILOT LÂM SÀNG & KẾ TOÁN ====================
     
@@ -1345,27 +1751,29 @@ export const ChatBot: React.FC = () => {
 
                     // Duyệt qua các kết quả mới nhận được từ sau resultIndex
                     for (let i = event.resultIndex; i < event.results.length; ++i) {
-                        const resultText = event.results[i][0].transcript.trim();
-                        if (resultText) {
-                            const lowerText = resultText.toLowerCase();
-                            
-                            // LỆNH GIỌNG NÓI: TẮT MIC
-                            if (lowerText.includes("tắt mic") || lowerText.includes("tắt micro") || lowerText.includes("dừng nghe")) {
-                                clearMicIdleTimeout();
-                                if (recognitionRef.current) recognitionRef.current.stop();
-                                setIsListening(false);
-                                stopAudioAnalysis();
-                                if (activeTabRef.current === 'standard') setInput("");
-                                else setAgentInput("");
-                                speakText("Đã tắt micro.");
-                                return;
-                            }
-                            
-                            // TỰ ĐỘNG GỬI & THỰC THI NGAY LẬP TỨC
-                            if (activeTabRef.current === 'standard') {
-                                handleSend(resultText);
-                            } else {
-                                handleAgentSend(resultText);
+                        if (event.results[i].isFinal) {
+                            const resultText = event.results[i][0].transcript.trim();
+                            if (resultText) {
+                                const lowerText = resultText.toLowerCase();
+                                
+                                // LỆNH GIỌNG NÓI: TẮT MIC
+                                if (lowerText.includes("tắt mic") || lowerText.includes("tắt micro") || lowerText.includes("dừng nghe")) {
+                                    clearMicIdleTimeout();
+                                    if (recognitionRef.current) recognitionRef.current.stop();
+                                    setIsListening(false);
+                                    stopAudioAnalysis();
+                                    if (activeTabRef.current === 'standard') setInput("");
+                                    else setAgentInput("");
+                                    speakText("Đã tắt micro.");
+                                    return;
+                                }
+                                
+                                // TỰ ĐỘNG GỬI & THỰC THI NGAY LẬP TỨC
+                                if (activeTabRef.current === 'standard') {
+                                    handleSend(resultText);
+                                } else {
+                                    handleAgentSend(resultText);
+                                }
                             }
                         }
                     }
@@ -1525,9 +1933,9 @@ export const ChatBot: React.FC = () => {
                 response = await axiosInstance.post("/api/chat", apiHistory, {
                     headers: { 
                         "X-User-Name": userName,
-                        "X-Current-Path": encodeURIComponent(location.pathname),
-                        "X-Current-DOM-Context": encodeURIComponent(getPageDomContext()),
-                        "X-User-Activity-Logs": encodeURIComponent(JSON.stringify(userActivityLogs))
+                        "X-Current-Path": toSafeContextHeader(location.pathname, 500),
+                        "X-Current-DOM-Context": toSafeContextHeader(getPageDomContext()),
+                        "X-User-Activity-Logs": toSafeContextHeader(JSON.stringify(userActivityLogs.slice(-8)), 1500)
                     }
                 });
             }
@@ -1537,21 +1945,12 @@ export const ChatBot: React.FC = () => {
             let treatmentData = null;
             let swarmData = null;
 
-            // 0. Phân giải phối hợp đa Agent (Swarm Orchestration) — dùng indexOf để tránh lỗi regex khi JSON chứa ký tự ]
+            // 0. Phân giải phối hợp đa Agent (Swarm Orchestration) — dùng parser an toàn để tránh lỗi khi JSON chứa ký tự ]
             const SWARM_TAG = "[SWARM_ORCHESTRATION:";
-            if (replyText.includes(SWARM_TAG)) {
-                const tagStart = replyText.indexOf(SWARM_TAG);
-                const jsonStart = tagStart + SWARM_TAG.length;
-                const jsonEndBrace = replyText.lastIndexOf("}");
-                if (jsonEndBrace > jsonStart) {
-                    try {
-                        const jsonStr = replyText.substring(jsonStart, jsonEndBrace + 1).trim();
-                        swarmData = JSON.parse(jsonStr);
-                        cleanedReplyText = replyText.substring(0, tagStart).trim();
-                    } catch (e) {
-                        console.error("Lỗi parse Swarm data:", e);
-                    }
-                }
+            const swarmPayloadResult = extractTaggedJsonPayload(replyText, SWARM_TAG);
+            if (swarmPayloadResult.json) {
+                swarmData = swarmPayloadResult.json;
+                cleanedReplyText = swarmPayloadResult.cleanedText;
             }
 
             // 1. Phân giải đơn thuốc PDF y khoa đặc hữu
@@ -1626,16 +2025,9 @@ export const ChatBot: React.FC = () => {
                     const navigatePath = navMatch[1].trim();
                     cleanedReplyText = replyText.replace(/\[NAVIGATE:[^\]]+\]/g, "").trim();
                     
-                    const lowerUserRole = userRole ? userRole.toLowerCase() : "";
-                    let hasPermission = true;
-                    
-                    if (navigatePath.startsWith("/quan-ly/")) {
-                        if (navigatePath === "/quan-ly/nhan-vien-phan-quyen" || navigatePath === "/quan-ly/cau-hinh" || navigatePath === "/quan-ly/chuc-nang") {
-                            hasPermission = lowerUserRole.includes("admin");
-                        } else if (navigatePath === "/quan-ly/bao-cao-thong-ke" || navigatePath === "/quan-ly/ke-toan" || navigatePath === "/quan-ly/nhap-kho") {
-                            hasPermission = lowerUserRole.includes("admin") || lowerUserRole.includes("quan_ly") || lowerUserRole.includes("ke_toan");
-                        }
-                    }
+                    const hasPermission = navigatePath.startsWith("/quan-ly/")
+                        ? canAccessAdminPath(normalizedRoleCode, navigatePath)
+                        : true;
                     
                     if (hasPermission) {
                         setTimeout(() => {
@@ -1683,6 +2075,7 @@ export const ChatBot: React.FC = () => {
             }, 6);
 
         } catch (err) {
+            console.error("Chat API request failed:", err);
             setMessages(prev => [...prev, { type: "ai", text: "Kết nối gián đoạn. Đừng lo, Bác sĩ Rexi vẫn ở đây và sẵn sàng hỗ trợ bé!" }]);
         } finally {
             setLoading(false);
@@ -1735,17 +2128,43 @@ export const ChatBot: React.FC = () => {
         try {
             // LẬP TRÌNH DỮ LIỆU ĐỘNG (DỄ DÀNG KÉO TÌM KIẾM MẠNG HOẶC ĐIỀN FORM TỰ ĐỘNG)
             const query = textToSend.toLowerCase();
+            const normalizedAgentQuery = normalizeSearchText(textToSend);
+            const hasActionIntent = hasExplicitAgentActionIntent(textToSend);
+            const isQuestionIntent = isConceptualQuestion(textToSend);
+            const shouldUseDirectToolRule = hasActionIntent && !isQuestionIntent;
+            const isLocationPrivacyQuestion =
+                (normalizedAgentQuery.includes("vi tri") ||
+                 normalizedAgentQuery.includes("dinh vi") ||
+                 normalizedAgentQuery.includes("gps") ||
+                 normalizedAgentQuery.includes("location")) &&
+                (normalizedAgentQuery.includes("web") ||
+                 normalizedAgentQuery.includes("khach hang") ||
+                 normalizedAgentQuery.includes("nguoi dung") ||
+                 normalizedAgentQuery.includes("trinh duyet") ||
+                 normalizedAgentQuery.includes("biet duoc") ||
+                 normalizedAgentQuery.includes("co biet"));
+
+            if (isLocationPrivacyQuestion && !hasActionIntent) {
+                const aiReply = {
+                    type: "ai",
+                    text: buildLocationPrivacyAnswer()
+                };
+                setAgentMessages(prev => [...prev, aiReply]);
+                speakText(aiReply.text);
+                setAgentLoading(false);
+                return;
+            }
 
             // KỸ NĂNG 1: TRA CỨU TÀI LIỆU Y KHOA THÚ Y / TRA CỨU MẠNG THẬT 100%
-            if (["lên mạng", "tìm tài liệu", "google", "tra cứu mạng", "tài liệu thú y", "giảm bạch cầu", "bạch cầu"].some(kw => query.includes(kw))) {
+            if (shouldUseDirectToolRule && ["lên mạng", "tìm tài liệu", "google", "tra cứu mạng", "tài liệu thú y", "giảm bạch cầu", "bạch cầu"].some(kw => query.includes(kw))) {
                 // Gọi API backend thật để lấy câu trả lời chuyên sâu sinh động của mô hình AI (Gemini/DeepSeek)
                 const response = await axiosInstance.post("/api/chat", [
                     { role: "user", content: textToSend }
                 ], {
                     headers: { 
                         "X-User-Name": userName,
-                        "X-Current-Path": encodeURIComponent(location.pathname),
-                        "X-Current-DOM-Context": encodeURIComponent(getPageDomContext())
+                        "X-Current-Path": toSafeContextHeader(location.pathname, 500),
+                        "X-Current-DOM-Context": toSafeContextHeader(getPageDomContext())
                     }
                 });
                 
@@ -1783,7 +2202,7 @@ export const ChatBot: React.FC = () => {
             }
 
             // KỸ NĂNG 2: TRUY VẤN NỘI BỘ DANH SÁCH KHÁCH HÀNG THỰC TẾ CHO ĐỒNG NGHIỆP CLINIC
-            if (isClinicStaff && (query.includes("tìm khách hàng") || query.includes("tra cứu khách") || query.includes("danh sách khách"))) {
+            if (isClinicStaff && shouldUseDirectToolRule && (query.includes("tìm khách hàng") || query.includes("tra cứu khách") || query.includes("danh sách khách"))) {
                 (async () => {
                     try {
                         const response = await axiosInstance.get("/api/khach-hang");
@@ -1849,7 +2268,7 @@ export const ChatBot: React.FC = () => {
             }
 
             // KỸ NĂNG MỚI: XEM LỊCH HẸN HÔM NAY CHO ĐỒNG NGHIỆP CLINIC
-            if (isClinicStaff && (query.includes("lịch hẹn hôm nay") || query.includes("danh sách lịch hẹn") || query.includes("lịch khám hôm nay"))) {
+            if (isClinicStaff && shouldUseDirectToolRule && (query.includes("lịch hẹn hôm nay") || query.includes("danh sách lịch hẹn") || query.includes("lịch khám hôm nay"))) {
                 (async () => {
                     try {
                         const response = await axiosInstance.get("/api/lich-hen/hom-nay");
@@ -1895,7 +2314,7 @@ export const ChatBot: React.FC = () => {
 
 
             // KỸ NĂNG MỚI: TỰ ĐỘNG ĐIỀU KHIỂN LỌC HÓA ĐƠN CHO ADMIN / NHÂN VIÊN (AUTOPILOT)
-            if (isClinicStaff && (query.includes("lọc hóa đơn") || query.includes("tìm hóa đơn") || query.includes("tra cứu hóa đơn"))) {
+            if (isClinicStaff && shouldUseDirectToolRule && (query.includes("lọc hóa đơn") || query.includes("tìm hóa đơn") || query.includes("tra cứu hóa đơn"))) {
                 setTimeout(() => {
                     let searchVal = "Trần Minh";
                     if (query.includes("hóa đơn của")) {
@@ -1915,7 +2334,7 @@ export const ChatBot: React.FC = () => {
                     setAgentLoading(false);
                     
                     setTimeout(() => {
-                        navigate(`/admin/quan-ly-hoa-don?search=${encodeURIComponent(searchVal)}&autopilot=true`);
+                        navigate(`/quan-ly/hoa-don?search=${encodeURIComponent(searchVal)}&autopilot=true`);
                     }, 2000);
                 }, 1500);
                 return;
@@ -2022,133 +2441,136 @@ export const ChatBot: React.FC = () => {
                     keywords: ["dashboard", "bảng điều khiển", "trang quản lý", "tổng quan", "dashboard admin"],
                     path: "/quan-ly/dashboard",
                     label: "Bảng điều khiển quản lý nội bộ",
-                    roles: ["admin", "quan_ly", "bac_si", "ke_toan", "tiep_tan", "y_ta", "staff"]
+                    roles: ADMIN_ROUTE_ROLES["/quan-ly/dashboard"]
                 },
                 {
                     keywords: ["khách hàng", "chủ nuôi", "quản lý thú cưng", "khách hàng thú cưng"],
                     path: "/quan-ly/khach-hang-thu-cung",
                     label: "Quản lý Khách hàng & Thú cưng",
-                    roles: ["admin", "quan_ly", "bac_si", "ke_toan", "tiep_tan", "y_ta", "staff"]
+                    roles: ADMIN_ROUTE_ROLES["/quan-ly/khach-hang-thu-cung"]
                 },
                 {
                     keywords: ["quản lý lịch hẹn", "danh sách đặt lịch", "lịch hẹn khám"],
                     path: "/quan-ly/lich-hen",
                     label: "Quản lý Lịch hẹn khám",
-                    roles: ["admin", "quan_ly", "bac_si", "ke_toan", "tiep_tan", "y_ta", "staff"]
+                    roles: ADMIN_ROUTE_ROLES["/quan-ly/lich-hen"]
                 },
                 {
                     keywords: ["lịch làm việc", "lịch trực", "lịch bác sĩ", "ca trực"],
                     path: "/quan-ly/lich-lam-viec",
                     label: "Quản lý Lịch làm việc Bác sĩ",
-                    roles: ["admin", "quan_ly", "bac_si", "ke_toan", "tiep_tan", "y_ta", "staff"]
+                    roles: ADMIN_ROUTE_ROLES["/quan-ly/lich-lam-viec"]
                 },
                 {
                     keywords: ["bệnh án", "hồ sơ bệnh án", "lịch sử điều trị"],
                     path: "/quan-ly/ho-so-benh-an",
                     label: "Quản lý Hồ sơ bệnh án",
-                    roles: ["admin", "quan_ly", "bac_si", "ke_toan", "tiep_tan", "y_ta", "staff"]
+                    roles: ADMIN_ROUTE_ROLES["/quan-ly/ho-so-benh-an"]
                 },
                 {
                     keywords: ["khám bệnh", "phân hệ khám", "bác sĩ khám", "khám bệnh lâm sàng"],
                     path: "/quan-ly/kham-benh",
                     label: "Phân hệ Khám bệnh Bác sĩ",
-                    roles: ["admin", "quan_ly", "bac_si", "ke_toan", "tiep_tan", "y_ta", "staff"]
+                    roles: ADMIN_ROUTE_ROLES["/quan-ly/kham-benh"]
                 },
                 {
                     keywords: ["đơn thuốc", "toa thuốc", "bốc thuốc", "kê đơn"],
                     path: "/quan-ly/don-thuoc",
                     label: "Quản lý Đơn thuốc",
-                    roles: ["admin", "quan_ly", "bac_si", "ke_toan", "tiep_tan", "y_ta", "staff"]
+                    roles: ADMIN_ROUTE_ROLES["/quan-ly/don-thuoc"]
                 },
                 {
                     keywords: ["tài liệu", "file đính kèm", "tập tin", "hình ảnh đính kèm"],
                     path: "/quan-ly/file-dinh-kem",
                     label: "Quản lý Tài liệu đính kèm",
-                    roles: ["admin", "quan_ly", "bac_si", "ke_toan", "tiep_tan", "y_ta", "staff"]
+                    roles: ADMIN_ROUTE_ROLES["/quan-ly/file-dinh-kem"]
                 },
                 {
                     keywords: ["thông tin cá nhân nhân viên", "thông tin của tôi", "profile nhân sự"],
                     path: "/quan-ly/thong-tin-ca-nhan",
                     label: "Thông tin cá nhân nhân viên",
-                    roles: ["admin", "quan_ly", "bac_si", "ke_toan", "tiep_tan", "y_ta", "staff"]
+                    roles: ADMIN_ROUTE_ROLES["/quan-ly/thong-tin-ca-nhan"]
                 },
                 {
                     keywords: ["hóa đơn", "thu phí", "thanh toán hóa đơn", "xuất hóa đơn"],
                     path: "/quan-ly/hoa-don",
                     label: "Quản lý Hóa đơn & Thu phí",
-                    roles: ["admin", "quan_ly", "ke_toan", "tiep_tan"]
+                    roles: ADMIN_ROUTE_ROLES["/quan-ly/hoa-don"]
                 },
                 {
                     keywords: ["kế toán", "phân hệ kế toán", "thu chi", "sổ quỹ"],
                     path: "/quan-ly/ke-toan",
                     label: "Bảng điều khiển Kế toán",
-                    roles: ["admin", "quan_ly", "ke_toan"]
+                    roles: ADMIN_ROUTE_ROLES["/quan-ly/ke-toan"]
                 },
                 {
                     keywords: ["báo cáo", "thống kê", "doanh thu", "lợi nhuận", "báo cáo doanh thu"],
                     path: "/quan-ly/bao-cao-thong-ke",
                     label: "Báo cáo tài chính & Thống kê doanh thu",
-                    roles: ["admin", "quan_ly", "ke_toan"]
+                    roles: ADMIN_ROUTE_ROLES["/quan-ly/bao-cao-thong-ke"]
                 },
                 {
                     keywords: ["nhập kho", "nhập thuốc", "phiếu nhập kho"],
                     path: "/quan-ly/nhap-kho",
                     label: "Quản lý Nhập kho thuốc & vật tư",
-                    roles: ["admin", "quan_ly", "ke_toan"]
+                    roles: ADMIN_ROUTE_ROLES["/quan-ly/nhap-kho"]
                 },
                 {
                     keywords: ["kho thuốc", "tồn kho", "dược phẩm", "vật tư y tế"],
                     path: "/quan-ly/kho-thuoc",
                     label: "Quản lý Kho thuốc & Vật tư y tế",
-                    roles: ["admin", "quan_ly", "ke_toan", "bac_si", "y_ta", "tiep_tan"]
+                    roles: ADMIN_ROUTE_ROLES["/quan-ly/kho-thuoc"]
                 },
                 {
                     keywords: ["nhân viên", "phân quyền", "tài khoản nhân viên", "thêm nhân viên", "danh sách nhân viên", "nhân sự", "thêm nhân sự", "quản lý nhân sự", "danh sách nhân sự"],
                     path: "/quan-ly/nhan-vien-phan-quyen",
                     label: "Quản lý Nhân sự & Phân quyền tài khoản",
-                    roles: ["admin"]
+                    roles: ADMIN_ROUTE_ROLES["/quan-ly/nhan-vien-phan-quyen"]
                 },
                 {
                     keywords: ["cấu hình", "cài đặt hệ thống", "cài đặt"],
                     path: "/quan-ly/cau-hinh",
                     label: "Cấu hình hệ thống",
-                    roles: ["admin"]
+                    roles: ADMIN_ROUTE_ROLES["/quan-ly/cau-hinh"]
                 },
                 {
                     keywords: ["quản lý chức năng", "chức năng hệ thống"],
                     path: "/quan-ly/chuc-nang",
                     label: "Quản lý chức năng hệ thống",
-                    roles: ["admin"]
+                    roles: ADMIN_ROUTE_ROLES["/quan-ly/chuc-nang"]
                 },
                 {
                     keywords: ["dịch vụ", "quản lý dịch vụ", "danh mục dịch vụ", "thêm dịch vụ"],
                     path: "/quan-ly/dich-vu",
                     label: "Quản lý danh mục Dịch vụ",
-                    roles: ["admin", "quan_ly"]
+                    roles: ADMIN_ROUTE_ROLES["/quan-ly/dich-vu"]
                 },
                 {
                     keywords: ["xét nghiệm", "kết quả xét nghiệm", "phiếu xét nghiệm"],
                     path: "/quan-ly/xet-nghiem",
                     label: "Quản lý kết quả Xét nghiệm",
-                    roles: ["admin", "quan_ly"]
+                    roles: ADMIN_ROUTE_ROLES["/quan-ly/xet-nghiem"]
                 },
                 {
                     keywords: ["marketing", "maketing", "viết mail", "việt mail", "gửi mail", "chiến dịch"],
                     path: "/quan-ly/marketing",
                     label: "Chiến dịch Email Marketing & Gửi mail chăm sóc khách hàng",
-                    roles: ["admin", "quan_ly"]
+                    roles: ADMIN_ROUTE_ROLES["/quan-ly/marketing"]
                 }
             ];
 
             // Tìm kiếm khớp quy tắc điền hướng
-            const matchedRule = navigationRules.find(rule => 
-                rule.keywords.some(kw => query.includes(kw))
-            );
+            const matchedRule = hasActionIntent && !isQuestionIntent
+                ? navigationRules.find(rule => 
+                    rule.keywords.some(kw => query.includes(kw))
+                )
+                : undefined;
 
             if (matchedRule) {
                 setTimeout(() => {
-                    const lowerUserRole = userRole.toLowerCase();
-                    const hasPermission = !matchedRule.roles || matchedRule.roles.some(r => lowerUserRole.includes(r.toLowerCase()));
+                    const hasPermission = matchedRule.path.startsWith("/quan-ly/")
+                        ? isClinicStaff && canAccessAdminPath(normalizedRoleCode, matchedRule.path)
+                        : true;
                     
                     if (hasPermission) {
                         const aiReply = {
@@ -2177,7 +2599,7 @@ export const ChatBot: React.FC = () => {
 
             // KỸ NĂNG MỚI: TRUY VẤN LỊCH HẸN KHÁM BỆNH HÔM NAY (ĐỘC QUYỀN VAI TRÒ NỘI BỘ / GIAO DIỆN DỮ LIỆU THẬT)
             const isTodayQuery = ["hôm nay có ai", "ai khám", "lịch khám hôm nay", "lịch hẹn hôm nay", "danh sách khám", "ai hẹn", "có ai khám", "lịch hôm nay"].some(kw => query.includes(kw));
-            if (isTodayQuery) {
+            if (shouldUseDirectToolRule && isTodayQuery) {
                 try {
                     if (!isClinicStaff) {
                         const aiReply = {
@@ -2241,7 +2663,7 @@ export const ChatBot: React.FC = () => {
             }
 
             // KỸ NĂNG 3: ĐẶT LỊCH HẸN TỰ ĐỘNG BẰNG HÀM REACT ĐỘNG (BẢO VỆ PHÂN QUYỀN VAI TRÒ NỘI BỘ!)
-            if ((query.includes("đặt lịch") || (query.includes("khám") && !query.includes("phòng khám")) || query.includes("lập lịch")) && !isTodayQuery) {
+            if (shouldUseDirectToolRule && (query.includes("đặt lịch") || (query.includes("khám") && !query.includes("phòng khám")) || query.includes("lập lịch")) && !isTodayQuery) {
                 setTimeout(() => {
                     if (isClinicStaff) {
                         const aiReply = {
@@ -2284,7 +2706,7 @@ export const ChatBot: React.FC = () => {
             }
 
             // KỸ NĂNG MỚI 5: TRA CỨU KHO THUỐC / TỒN KHO DƯỢC PHẨM (CHỈ NỘI BỘ)
-            if (isClinicStaff && (query.includes("kho thuốc") || query.includes("tồn kho") || query.includes("còn thuốc") || query.includes("tìm thuốc") || query.includes("kiểm tra thuốc"))) {
+            if (isClinicStaff && shouldUseDirectToolRule && (query.includes("kho thuốc") || query.includes("tồn kho") || query.includes("còn thuốc") || query.includes("tìm thuốc") || query.includes("kiểm tra thuốc"))) {
                 (async () => {
                     try {
                         const response = await axiosInstance.get("/api/thuoc");
@@ -2329,7 +2751,7 @@ export const ChatBot: React.FC = () => {
             }
 
             // KỸ NĂNG MỚI 6: THỐNG KÊ NHANH DOANH THU & SỐ LIỆU HÔM NAY (CHỈ NỘI BỘ)
-            if (isClinicStaff && (query.includes("doanh thu") || query.includes("thống kê nhanh") || query.includes("bao nhiêu lịch") || query.includes("tổng thu") || query.includes("số liệu hôm nay"))) {
+            if (isClinicStaff && shouldUseDirectToolRule && (query.includes("doanh thu") || query.includes("thống kê nhanh") || query.includes("bao nhiêu lịch") || query.includes("tổng thu") || query.includes("số liệu hôm nay"))) {
                 (async () => {
                     try {
                         const [statsRes, scheduleRes] = await Promise.all([
@@ -2359,7 +2781,7 @@ export const ChatBot: React.FC = () => {
             }
 
             // KỸ NĂNG MỚI 7: TÌM THÚ CƯNG THEO LOẠI / BỆNH / TÊN (TRỰC TIẾP TỪ DB)
-            if (isClinicStaff && (query.includes("tìm bé") || query.includes("tìm pet") || query.includes("tìm thú cưng") || query.includes("danh sách thú cưng"))) {
+            if (isClinicStaff && shouldUseDirectToolRule && (query.includes("tìm bé") || query.includes("tìm pet") || query.includes("tìm thú cưng") || query.includes("danh sách thú cưng"))) {
                 (async () => {
                     try {
                         const response = await axiosInstance.get("/api/thu-cung");
@@ -2405,7 +2827,7 @@ export const ChatBot: React.FC = () => {
             }
 
             // KỸ NĂNG MỚI 8: CẢNH BÁO KHO THUỐC SẮP HẾT (CHỈ NỘI BỘ)
-            if (isClinicStaff && (query.includes("sắp hết") || query.includes("hết thuốc") || query.includes("cảnh báo kho") || query.includes("thuốc cần nhập"))) {
+            if (isClinicStaff && shouldUseDirectToolRule && (query.includes("sắp hết") || query.includes("hết thuốc") || query.includes("cảnh báo kho") || query.includes("thuốc cần nhập"))) {
                 (async () => {
                     try {
                         const response = await axiosInstance.get("/api/thuoc");
@@ -2446,7 +2868,7 @@ export const ChatBot: React.FC = () => {
             }
 
             // KỸ NĂNG MỚI 9: XEM BỆNH ÁN GẦN ĐÂY / CA KHÁM MỚI NHẤT (CHỈ NỘI BỘ)
-            if (isClinicStaff && (query.includes("bệnh án") || query.includes("ca khám") || query.includes("khám gần đây") || query.includes("lịch sử khám"))) {
+            if (isClinicStaff && shouldUseDirectToolRule && (query.includes("bệnh án") || query.includes("ca khám") || query.includes("khám gần đây") || query.includes("lịch sử khám"))) {
                 (async () => {
                     try {
                         const response = await axiosInstance.get("/api/benh-an");
@@ -2519,39 +2941,45 @@ export const ChatBot: React.FC = () => {
                                        query.includes("tìm chó bị");
 
             let response;
-            if (isMarketingCampaign) {
+            if (shouldUseDirectToolRule && isMarketingCampaign) {
                 response = await axiosInstance.post("/api/agent/swarm-orchestration", { query: textToSend });
             } else {
-                response = await axiosInstance.post("/api/chat", apiHistory, {
-                    headers: { 
-                        "X-User-Name": userName,
-                        "X-Current-Path": encodeURIComponent(location.pathname),
-                        "X-Current-DOM-Context": encodeURIComponent(getPageDomContext()),
-                        "X-User-Activity-Logs": encodeURIComponent(JSON.stringify(userActivityLogs))
-                    }
+                const compactHistory = agentMessages
+                    .slice(-6)
+                    .map((msg: any) => `${msg.type === "ai" ? "AI" : "Người dùng"}: ${String(msg.text || "").slice(0, 180)}`)
+                    .join("\n");
+                const allowedRoutes = Object.entries(ADMIN_ROUTE_ROLES)
+                    .filter(([path]) => canAccessAdminPath(normalizedRoleCode, path))
+                    .map(([path]) => path)
+                    .slice(0, 24)
+                    .join(", ");
+                const pageContext = [
+                    `Yêu cầu người dùng: ${textToSend}`,
+                    `Kiểu yêu cầu đã phân loại ở frontend: ${isQuestionIntent ? "câu hỏi/đánh giá/ngữ cảnh" : hasActionIntent ? "lệnh thao tác" : "ý định mơ hồ"}`,
+                    `Người dùng hiện tại: ${userName || "ẩn danh"} | Vai trò chuẩn: ${normalizedRoleCode} | Nhóm: ${isClinicStaff ? "nhân sự nội bộ" : isCustomerAccount ? "khách hàng" : "khách vãng lai"}`,
+                    `Trang hiện tại: ${getPageDisplayName(location.pathname)} (${location.pathname})`,
+                    `Các route quản trị tài khoản này được phép truy cập: ${allowedRoutes || "không có route quản trị"}`,
+                    `Bối cảnh giao diện hiện tại: ${getPageDomContext()}`,
+                    `Nhật ký thao tác gần đây: ${JSON.stringify(userActivityLogs.slice(0, 8))}`,
+                    `Lịch sử chat gần nhất:\n${compactHistory}`
+                ].join("\n");
+
+                response = await axiosInstance.post("/api/agent/react", {
+                    query: pageContext
                 });
             }
-            const replyText = response.data.reply || "Rexi Agent v2 đã ghi nhận tác vụ!";
+            const replyText = response.data.finalAnswer || response.data.reply || "Rexi Agent v2 đã ghi nhận tác vụ!";
             
             let cleanedReplyText = replyText;
             let treatmentData = null;
             let swarmData = null;
 
-            // 0. Phân giải phối hợp đa Agent (Swarm Orchestration) — dùng indexOf để tránh lỗi regex khi JSON chứa ký tự ]
+            // 0. Phân giải phối hợp đa Agent (Swarm Orchestration) — dùng parser an toàn để tránh lỗi khi JSON chứa ký tự ]
             const SWARM_TAG_AGENT = "[SWARM_ORCHESTRATION:";
-            if (replyText.includes(SWARM_TAG_AGENT)) {
-                const tagStartA = replyText.indexOf(SWARM_TAG_AGENT);
-                const jsonStartA = tagStartA + SWARM_TAG_AGENT.length;
-                const jsonEndBraceA = replyText.lastIndexOf("}");
-                if (jsonEndBraceA > jsonStartA) {
-                    try {
-                        const jsonStrA = replyText.substring(jsonStartA, jsonEndBraceA + 1).trim();
-                        swarmData = JSON.parse(jsonStrA);
-                        cleanedReplyText = replyText.substring(0, tagStartA).trim();
-                    } catch (e) {
-                        console.error("Lỗi parse Swarm data (Agent tab):", e);
-                    }
-                }
+            const swarmPayloadResultAgent = extractTaggedJsonPayload(replyText, SWARM_TAG_AGENT);
+            if (swarmPayloadResultAgent.json) {
+                swarmData = swarmPayloadResultAgent.json;
+                cleanedReplyText = swarmPayloadResultAgent.cleanedText;
             }
 
             // 1. Phân giải đơn thuốc PDF y khoa đặc hữu
@@ -2614,16 +3042,9 @@ export const ChatBot: React.FC = () => {
                     const navigatePath = navMatch[1].trim();
                     cleanedReplyText = cleanedReplyText.replace(/\[NAVIGATE:[^\]]+\]/g, "").trim();
                     
-                    const lowerUserRole = userRole ? userRole.toLowerCase() : "";
-                    let hasPermission = true;
-                    
-                    if (navigatePath.startsWith("/quan-ly/")) {
-                        if (navigatePath === "/quan-ly/nhan-vien-phan-quyen" || navigatePath === "/quan-ly/cau-hinh" || navigatePath === "/quan-ly/chuc-nang") {
-                            hasPermission = lowerUserRole.includes("admin");
-                        } else if (navigatePath === "/quan-ly/bao-cao-thong-ke" || navigatePath === "/quan-ly/ke-toan" || navigatePath === "/quan-ly/nhap-kho") {
-                            hasPermission = lowerUserRole.includes("admin") || lowerUserRole.includes("quan_ly") || lowerUserRole.includes("ke_toan");
-                        }
-                    }
+                    const hasPermission = navigatePath.startsWith("/quan-ly/")
+                        ? canAccessAdminPath(normalizedRoleCode, navigatePath)
+                        : true;
                     
                     if (hasPermission) {
                         setTimeout(() => {
@@ -2743,22 +3164,9 @@ export const ChatBot: React.FC = () => {
 </div>
         `;
 
-        const bookingMessage = {
-            type: "ai",
-            text: `🎉 **Rexi Agent v2 đã đặt lịch khám bệnh thành công cho bé!**\n\n- **Khách hàng:** ${clientName} (SĐT: ${clientPhone})\n- **Bé cưng:** ${info.petName}\n- **Thời gian:** ${info.time} ngày ${info.date}\n- **Dịch vụ:** ${info.service}\n- **Bác sĩ phụ trách:** ${info.doctorName}\n\nĐể bảo đảm vị trí giữ chỗ cho bé, sếp vui lòng chuyển khoản đặt cọc **50.000 VND** qua mã VietQR thông minh dưới đây nha sếp! ✨🐾\n${depositQrHtml}`,
-            isHtml: true
-        };
-
-        if (activeTab === 'standard') {
-            setMessages(prev => [...prev, bookingMessage]);
-        } else {
-            setAgentMessages(prev => [...prev, bookingMessage]);
-        }
-        
-        speakText(`Đã chốt lịch thành công cho bé ${info.petName} vào lúc ${info.time} ngày ${info.date}`);
-
         // Tự động đồng bộ hóa lên DB Phòng khám thực qua API
         try {
+            setAgentLoading(true); // Hoặc setLoading(true)
             await axiosInstance.post("/api/lich-hen/dat-lich-nhanh", {
                 khach_hang: {
                     ten_khach_hang: clientName,
@@ -2777,8 +3185,23 @@ export const ChatBot: React.FC = () => {
                     ghi_chu: "Lập lịch hẹn tự động bởi Siêu Trợ lý Rexi Jarvis v2 🤖"
                 }
             });
+            
+            const bookingMessage = {
+                type: "ai",
+                text: `🎉 **Rexi Agent v2 đã đặt lịch khám bệnh thành công cho bé!**\n\n- **Khách hàng:** ${clientName} (SĐT: ${clientPhone})\n- **Bé cưng:** ${info.petName}\n- **Thời gian:** ${info.time} ngày ${info.date}\n- **Dịch vụ:** ${info.service}\n- **Bác sĩ phụ trách:** ${info.doctorName}\n\nĐể bảo đảm vị trí giữ chỗ cho bé, sếp vui lòng chuyển khoản đặt cọc **50.000 VND** qua mã VietQR thông minh dưới đây nha sếp! ✨🐾\n${depositQrHtml}`,
+                isHtml: true
+            };
+            if (activeTab === 'standard') setMessages(prev => [...prev, bookingMessage]);
+            else setAgentMessages(prev => [...prev, bookingMessage]);
+            speakText(`Đã chốt lịch thành công cho bé ${info.petName} vào lúc ${info.time} ngày ${info.date}`);
+            
         } catch (err) {
             console.error("Đồng bộ lịch hẹn tự động thất bại:", err);
+            const errorMsg = { type: "ai", text: "Xin lỗi, đã xảy ra lỗi từ hệ thống khi tạo lịch hẹn. Bạn vui lòng thử lại sau nhé!" };
+            if (activeTab === 'standard') setMessages(prev => [...prev, errorMsg]);
+            else setAgentMessages(prev => [...prev, errorMsg]);
+        } finally {
+            setAgentLoading(false);
         }
     };
 
@@ -2787,7 +3210,7 @@ export const ChatBot: React.FC = () => {
         if (!window.confirm("Bạn có chắc chắn muốn làm mới toàn bộ lịch sử tư vấn và bắt đầu cuộc trò chuyện mới?")) return;
 
         if (activeTab === 'standard') {
-            sessionStorage.removeItem("rexi_standard_chat_history");
+            sessionStorage.removeItem(standardChatHistoryKey);
             setMessages([
                 {
                     type: "ai",
@@ -2799,7 +3222,7 @@ export const ChatBot: React.FC = () => {
                 }
             ]);
         } else {
-            sessionStorage.removeItem("rexi_agent_chat_history");
+            sessionStorage.removeItem(agentChatHistoryKey);
             setAgentMessages([
                 {
                     type: "ai",
@@ -2906,14 +3329,14 @@ export const ChatBot: React.FC = () => {
                         - **Chảy máu cấp:** Băng ép lực ổn định, truyền dịch chống sốc.
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                        <button data-ai-id="button-chatbot-tahq" onClick={() => { setIsOpen(false); navigate("/admin/tiep-tan"); }} style={{
+                        <button data-ai-id="button-chatbot-tahq" onClick={() => { setIsOpen(false); navigate("/quan-ly/lich-hen"); }} style={{
                             background: '#ef4444', color: 'white', border: 'none',
                             borderRadius: '10px', padding: '10px', fontWeight: 800, fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
                         }}>
                             <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>assignment_ind</span>
                             MỞ TIẾP ĐÓN NHANH
                         </button>
-                        <button data-ai-id="button-chatbot-sgm6" onClick={() => { setIsOpen(false); navigate("/admin/bac-si-truc"); }} style={{
+                        <button data-ai-id="button-chatbot-sgm6" onClick={() => { setIsOpen(false); navigate("/quan-ly/lich-lam-viec"); }} style={{
                             background: 'transparent', border: '1.5px solid #ef4444', color: '#ef4444',
                             borderRadius: '10px', padding: '10px', fontWeight: 800, fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
                         }}>
@@ -3020,6 +3443,66 @@ export const ChatBot: React.FC = () => {
                 .chat-tab-btn.active-tab {
                     color: white;
                 }
+                @keyframes chatSuggestionMarquee {
+                    0% { transform: translateX(0); }
+                    100% { transform: translateX(-50%); }
+                }
+                .chat-suggestion-shell {
+                    overflow-x: auto;
+                    overflow-y: hidden;
+                    padding: 10px 14px;
+                    background: var(--surface);
+                    border-top: 1px solid var(--gray-200);
+                    scrollbar-width: thin;
+                    scrollbar-color: rgba(34, 211, 238, 0.45) transparent;
+                }
+                .chat-suggestion-shell::-webkit-scrollbar {
+                    height: 6px;
+                }
+                .chat-suggestion-shell::-webkit-scrollbar-track {
+                    background: transparent;
+                }
+                .chat-suggestion-shell::-webkit-scrollbar-thumb {
+                    background: rgba(34, 211, 238, 0.45);
+                    border-radius: 999px;
+                }
+                .chat-suggestion-track {
+                    display: flex;
+                    width: max-content;
+                    min-width: 100%;
+                    gap: 8px;
+                    animation-name: chatSuggestionMarquee;
+                    animation-timing-function: linear;
+                    animation-iteration-count: infinite;
+                    will-change: transform;
+                }
+                .chat-suggestion-shell:hover .chat-suggestion-track,
+                .chat-suggestion-shell:focus-within .chat-suggestion-track {
+                    animation-play-state: paused;
+                }
+                .chat-suggestion-chip {
+                    flex: 0 0 auto;
+                    white-space: nowrap;
+                    padding: 7px 12px;
+                    border-radius: 12px;
+                    border: 1px solid;
+                    font-size: 0.75rem;
+                    font-weight: 850;
+                    cursor: pointer;
+                    transition: transform 0.18s ease, filter 0.18s ease, box-shadow 0.18s ease;
+                }
+                .chat-suggestion-chip:hover {
+                    transform: translateY(-1px);
+                    filter: brightness(1.08);
+                    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.14);
+                }
+                [data-theme='dark'] .chat-suggestion-shell {
+                    background: rgba(15, 23, 42, 0.96);
+                    border-top-color: rgba(148, 163, 184, 0.18);
+                }
+                [data-theme='dark'] .chat-suggestion-chip:hover {
+                    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.28);
+                }
                 
                 @media (max-width: 768px) {
                     #chatCallout { display: none !important; }
@@ -3040,6 +3523,67 @@ export const ChatBot: React.FC = () => {
                     .glass-card {
                         border-radius: 0 !important;
                     }
+                }
+                @keyframes chatSoftWave {
+                    0%, 54%, 100% {
+                        opacity: 0;
+                        transform: scale(0.9);
+                    }
+                    66% {
+                        opacity: 0.18;
+                        transform: scale(1);
+                    }
+                    92% {
+                        opacity: 0;
+                        transform: scale(1.62);
+                    }
+                }
+                @keyframes chatLightSweep {
+                    0%, 52% {
+                        opacity: 0;
+                        transform: translateX(-120%) rotate(25deg);
+                    }
+                    66% {
+                        opacity: 0.56;
+                    }
+                    88%, 100% {
+                        opacity: 0;
+                        transform: translateX(125%) rotate(25deg);
+                    }
+                }
+                #chatBtn {
+                    isolation: isolate;
+                    overflow: visible;
+                }
+                #chatBtn::before,
+                #chatBtn::after {
+                    content: "";
+                    position: absolute;
+                    inset: -4px;
+                    border-radius: 50%;
+                    border: 1px solid rgba(45, 212, 191, 0.16);
+                    pointer-events: none;
+                    z-index: -1;
+                    box-shadow: 0 0 18px rgba(45, 212, 191, 0.10);
+                    animation: chatSoftWave 3.6s ease-out infinite;
+                }
+                #chatBtn::after {
+                    inset: -8px;
+                    border-color: rgba(34, 211, 238, 0.10);
+                    box-shadow: 0 0 22px rgba(34, 211, 238, 0.07);
+                    animation-delay: 0.95s;
+                }
+                [data-theme='dark'] #chatBtn::before {
+                    border-color: rgba(34, 211, 238, 0.20);
+                    box-shadow: 0 0 20px rgba(34, 211, 238, 0.12);
+                }
+                [data-theme='dark'] #chatBtn::after {
+                    border-color: rgba(20, 184, 166, 0.12);
+                    box-shadow: 0 0 24px rgba(20, 184, 166, 0.08);
+                }
+                #chatBtn:hover::before,
+                #chatBtn:hover::after {
+                    animation-duration: 2.4s;
                 }
             `}</style>
 
@@ -3069,7 +3613,7 @@ export const ChatBot: React.FC = () => {
                         <div style={{ lineHeight: '1.5', color: 'var(--ink)' }}>{proactiveMessage.text}</div>
                     </div>
                     <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '4px' }}>
-                        <button onClick={() => setProactiveMessage(null)} style={{
+                        <button onClick={dismissProactiveMessage} style={{
                             background: 'transparent', border: 'none', color: 'var(--gray-500)',
                             fontWeight: 800, cursor: 'pointer', padding: '6px 12px', fontSize: '0.78rem'
                         }}>Lờ đi</button>
@@ -3098,7 +3642,7 @@ export const ChatBot: React.FC = () => {
                     backdropFilter: 'blur(5px)'
                 }}
             >
-                <span className="material-symbols-outlined" style={{ fontSize: '32px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))', animation: isOpen ? 'none' : 'chatIconWaggle 6s infinite ease-in-out' }}>
+                <span className="material-symbols-outlined" style={{ position: 'relative', zIndex: 1, fontSize: '32px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))', animation: isOpen ? 'none' : 'chatIconWaggle 6s infinite ease-in-out' }}>
                     {isOpen ? 'close' : 'pets'}
                 </span>
             </button>
@@ -3114,7 +3658,11 @@ export const ChatBot: React.FC = () => {
                         onDragLeave={handleDragLeave}
                         onDrop={handleDrop}
                         style={{
-                            position: 'fixed', bottom: '100px', right: '30px', width: 'calc(100vw - 60px)', maxWidth: '420px', height: 'min(540px, calc(100vh - 140px))', zIndex: 1101,
+                            position: 'fixed', bottom: isMobile ? '84px' : '90px', right: isMobile ? '16px' : '30px',
+                            width: isMobile ? 'calc(100vw - 32px)' : 'calc(100vw - 60px)',
+                            maxWidth: '420px',
+                            height: isMobile ? 'min(620px, calc(100vh - 110px))' : 'min(680px, calc(100vh - 120px))',
+                            zIndex: 1101,
                             borderRadius: '24px', overflow: 'hidden', display: 'flex', flexDirection: 'column',
                             border: activeTab === 'agent' ? '2.5px solid rgba(244, 63, 94, 0.35)' : '2.5px solid rgba(16, 185, 129, 0.35)',
                             boxShadow: activeTab === 'agent' ? '0 20px 50px rgba(244, 63, 94, 0.2)' : '0 20px 50px rgba(16, 185, 129, 0.2)',
@@ -3293,34 +3841,8 @@ export const ChatBot: React.FC = () => {
                                     <div ref={standardEndRef} />
                                 </div>
 
-                                {/* QUICK SUGGESTIONS GRID FOR STANDARD TAB */}
-                                <div style={{ overflowX: 'auto', padding: '10px 14px', background: 'var(--surface)', borderTop: '1px solid var(--gray-200)', display: 'flex', gap: '8px' }}>
-                                    {isClinicStaff ? (
-                                        <>
-                                            <button data-ai-id="button-chatbot-7heb" onClick={() => handleSend("Cần chuẩn bị liều lượng Diazepam cấp cứu thế nào?")} style={{ whiteSpace: 'nowrap', padding: '6px 12px', borderRadius: '12px', border: '1px solid var(--gray-300)', background: 'var(--background)', color: 'var(--ink)', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer' }}>
-                                                🩺 Liều Diazepam
-                                            </button>
-                                            <button data-ai-id="button-chatbot-5dri" onClick={() => handleSend("Hướng dẫn kỹ thuật Heimlich cho chó mèo?")} style={{ whiteSpace: 'nowrap', padding: '6px 12px', borderRadius: '12px', border: '1px solid var(--gray-300)', background: 'var(--background)', color: 'var(--ink)', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer' }}>
-                                                🐱 Sơ cứu Heimlich
-                                            </button>
-                                            <button data-ai-id="button-chatbot-rpg2" onClick={() => handleSend("Cách sơ cứu mèo bị ngộ độc thực phẩm?")} style={{ whiteSpace: 'nowrap', padding: '6px 12px', borderRadius: '12px', border: '1px solid var(--gray-300)', background: 'var(--background)', color: 'var(--ink)', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer' }}>
-                                                💊 Sơ cứu ngộ độc
-                                            </button>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <button data-ai-id="button-chatbot-tlp8" onClick={() => handleSend("Bé bị hóc dị vật, sơ cứu thế nào?")} style={{ whiteSpace: 'nowrap', padding: '6px 12px', borderRadius: '12px', border: '1px solid #f87171', background: 'rgba(239,68,68,0.05)', color: '#ef4444', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer' }}>
-                                                🚨 Cấp cứu Hóc Dị Vật
-                                            </button>
-                                            <button data-ai-id="button-chatbot-lez3" onClick={() => handleSend("Lịch tiêm phòng vaccine định kỳ cho chó mèo?")} style={{ whiteSpace: 'nowrap', padding: '6px 12px', borderRadius: '12px', border: '1px solid var(--gray-300)', background: 'var(--background)', color: 'var(--ink)', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer' }}>
-                                                💉 Lịch Tiêm Phòng
-                                            </button>
-                                            <button data-ai-id="button-chatbot-3kbg" onClick={() => handleSend("Đăng ký đặt lịch hẹn khám sức khỏe")} style={{ whiteSpace: 'nowrap', padding: '6px 12px', borderRadius: '12px', border: '1px solid var(--gray-300)', background: 'var(--background)', color: 'var(--ink)', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer' }}>
-                                                📅 Đặt Lịch Khám
-                                            </button>
-                                        </>
-                                    )}
-                                </div>
+                                {/* QUICK SUGGESTIONS BY ROLE */}
+                                {renderSuggestionRail(standardSuggestions, handleSend, "standard")}
                             </>
                         ) : (
                             // ==================== TAB 2: REXI AGENT V2 ====================
@@ -3547,43 +4069,8 @@ export const ChatBot: React.FC = () => {
                                     <div ref={agentEndRef} />
                                 </div>
 
-                                {/* QUICK SUGGESTIONS GRID FOR AGENT TAB */}
-                                <div style={{ overflowX: 'auto', padding: '10px 14px', background: 'var(--surface)', borderTop: '1px solid var(--gray-200)', display: 'flex', gap: '8px' }}>
-                                    {isClinicStaff ? (
-                                        <>
-                                            <button data-ai-id="button-chatbot-4y5q" onClick={() => handleAgentSend("Tìm danh sách khách hàng phòng khám nhanh")} style={{ whiteSpace: 'nowrap', padding: '6px 12px', borderRadius: '12px', border: '1px solid var(--gray-300)', background: 'var(--background)', color: 'var(--ink)', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer' }}>
-                                                🔍 Danh Sách Khách Hàng
-                                            </button>
-                                            <button data-ai-id="button-chatbot-sl1v" onClick={() => handleAgentSend("Lên mạng tìm tài liệu điều trị mèo bị giảm bạch cầu")} style={{ whiteSpace: 'nowrap', padding: '6px 12px', borderRadius: '12px', border: '1px solid var(--gray-300)', background: 'var(--background)', color: 'var(--ink)', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer' }}>
-                                                🌐 Tra cứu giảm bạch cầu VNUA
-                                            </button>
-                                            <button data-ai-id="button-chatbot-8kwv" onClick={() => handleAgentSend("Xem danh sách lịch hẹn hôm nay")} style={{ whiteSpace: 'nowrap', padding: '6px 12px', borderRadius: '12px', border: '1px solid var(--gray-300)', background: 'var(--background)', color: 'var(--ink)', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer' }}>
-                                                📅 Lịch Hẹn Hôm Nay
-                                            </button>
-                                            <button data-ai-id="button-chatbot-kho1" onClick={() => handleAgentSend("Kiểm tra kho thuốc tồn kho")} style={{ whiteSpace: 'nowrap', padding: '6px 12px', borderRadius: '12px', border: '1px solid #f59e0b', background: 'rgba(245,158,11,0.08)', color: '#b45309', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer' }}>
-                                                💊 Kho Thuốc
-                                            </button>
-                                            <button data-ai-id="button-chatbot-stat1" onClick={() => handleAgentSend("Thống kê nhanh số liệu hôm nay")} style={{ whiteSpace: 'nowrap', padding: '6px 12px', borderRadius: '12px', border: '1px solid #3b82f6', background: 'rgba(59,130,246,0.08)', color: '#1d4ed8', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer' }}>
-                                                📊 Thống Kê Nhanh
-                                            </button>
-                                            <button data-ai-id="button-chatbot-pet1" onClick={() => handleAgentSend("Tìm bé mèo trong hệ thống")} style={{ whiteSpace: 'nowrap', padding: '6px 12px', borderRadius: '12px', border: '1px solid #10b981', background: 'rgba(16,185,129,0.08)', color: '#059669', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer' }}>
-                                                🐱 Tìm Thú Cưng
-                                            </button>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <button data-ai-id="button-chatbot-b9qc" onClick={() => handleAgentSend("Lên mạng tìm tài liệu chăm sóc mèo mang thai y khoa")} style={{ whiteSpace: 'nowrap', padding: '6px 12px', borderRadius: '12px', border: '1px solid #fb7185', background: 'rgba(244,63,94,0.05)', color: '#e11d48', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer' }}>
-                                                🌐 Google Mèo Mang Thai
-                                            </button>
-                                            <button data-ai-id="button-chatbot-5o0f" onClick={() => handleAgentSend("Đặt lịch khám khẩn cấp ngày mai lúc 9h30")} style={{ whiteSpace: 'nowrap', padding: '6px 12px', borderRadius: '12px', border: '1px solid var(--gray-300)', background: 'var(--background)', color: 'var(--ink)', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer' }}>
-                                                📅 Tự Động Điền Lịch Khám
-                                            </button>
-                                            <button data-ai-id="button-chatbot-qjxx" onClick={() => handleAgentSend("Tìm tài liệu về cách sơ cứu hóc xương ở mèo")} style={{ whiteSpace: 'nowrap', padding: '6px 12px', borderRadius: '12px', border: '1px solid var(--gray-300)', background: 'var(--background)', color: 'var(--ink)', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer' }}>
-                                                🌐 Sơ Cứu Hóc Dị Vật
-                                            </button>
-                                        </>
-                                    )}
-                                </div>
+                                {/* QUICK SUGGESTIONS BY ROLE */}
+                                {renderSuggestionRail(agentSuggestions, handleAgentSend, "agent")}
                             </>
                         )}
 

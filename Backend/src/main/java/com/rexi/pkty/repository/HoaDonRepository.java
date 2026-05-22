@@ -58,8 +58,13 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, String> {
         @Query(value = "SELECT * FROM LoThuoc", nativeQuery = true)
         List<Map<String, Object>> getAllLoThuoc();
 
-        // Báo cáo doanh thu theo tháng (View)
-        @Query(value = "SELECT Nam, Thang, TongDoanhThu FROM v_DoanhThu_TheoThang ORDER BY Nam DESC, Thang DESC", nativeQuery = true)
+        // Báo cáo doanh thu theo tháng từ hóa đơn đã thanh toán
+        @Query(value = "SELECT YEAR(ngay_lap_hoa_don) AS Nam, MONTH(ngay_lap_hoa_don) AS Thang, SUM(tong_tien_cuoi) AS TongDoanhThu "
+                        +
+                        "FROM HoaDon " +
+                        "WHERE UPPER(LTRIM(RTRIM(trang_thai))) = 'DA_THANH_TOAN' " +
+                        "GROUP BY YEAR(ngay_lap_hoa_don), MONTH(ngay_lap_hoa_don) " +
+                        "ORDER BY Nam DESC, Thang DESC", nativeQuery = true)
         List<Map<String, Object>> getDoanhThuTheoThang();
 
         // Thống kê theo bác sĩ (View)
@@ -67,7 +72,7 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, String> {
         List<Map<String, Object>> getThongKeBacSi();
 
         // Báo cáo doanh thu theo ngày (7 ngày gần nhất)
-        @Query(value = "SELECT CAST(ngay_lap_hoa_don AS DATE) as Ngay, SUM(tong_tien_cuoi) as TongDoanhThu FROM HoaDon WHERE trang_thai = 'da_thanh_toan' AND ngay_lap_hoa_don >= DATEADD(day, -6, CAST(GETDATE() AS DATE)) GROUP BY CAST(ngay_lap_hoa_don AS DATE) ORDER BY Ngay ASC", nativeQuery = true)
+        @Query(value = "SELECT CAST(ngay_lap_hoa_don AS DATE) as Ngay, SUM(tong_tien_cuoi) as TongDoanhThu FROM HoaDon WHERE UPPER(LTRIM(RTRIM(trang_thai))) = 'DA_THANH_TOAN' AND ngay_lap_hoa_don >= DATEADD(day, -6, CAST(GETDATE() AS DATE)) GROUP BY CAST(ngay_lap_hoa_don AS DATE) ORDER BY Ngay ASC", nativeQuery = true)
         List<Map<String, Object>> getDoanhThuTheoNgay();
 
         // Thống kê tỷ lệ thú cưng
@@ -79,7 +84,7 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, String> {
                         "FROM HoaDon hd " +
                         "JOIN LichHen lh ON hd.id_lich_hen = lh.id_lich_hen " +
                         "JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu " +
-                        "WHERE hd.trang_thai = 'da_thanh_toan' " +
+                        "WHERE UPPER(LTRIM(RTRIM(hd.trang_thai))) = 'DA_THANH_TOAN' " +
                         "GROUP BY dv.ten_dich_vu " +
                         "ORDER BY DoanhThu DESC", nativeQuery = true)
         List<Map<String, Object>> getDoanhThuTheoDichVu();

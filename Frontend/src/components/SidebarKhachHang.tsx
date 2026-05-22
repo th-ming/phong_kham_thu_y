@@ -33,6 +33,9 @@ const SidebarKhachHang: React.FC = () => {
     const cleaned = name.replace(/^\d+\.\s*/, '').trim();
     return cleaned.toLowerCase() === 'admin' ? 'Quản trị viên' : cleaned;
   };
+  const userDisplayName = cleanName(user?.display_name || user?.displayName || user?.ho_ten || user?.hoTen || user?.fullName || user?.ten_khach_hang || user?.ten_dang_nhap || user?.username || "Thành viên");
+  const userAvatar = user?.hinh_anh || user?.avatar || "";
+  const userInitial = userDisplayName.charAt(0).toUpperCase() || "S";
 
   return (
     <>
@@ -77,23 +80,25 @@ const SidebarKhachHang: React.FC = () => {
           </Link>
 
           <div className="glass-card" style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '20px', borderRadius: '24px', border: '1px solid var(--glass-border)', boxShadow: '0 10px 30px -5px rgba(0,0,0,0.3)', background: 'rgba(255,255,255,0.02)' }}>
-            <div style={{ background: 'var(--primary-gradient)', color: 'white', width: '50px', height: '50px', borderRadius: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', border: '2px solid rgba(255,255,255,0.1)', boxShadow: '0 5px 15px rgba(0,0,0,0.2)' }}>
-              {user?.hinh_anh || user?.avatar ? (
-                <img
-                  src={user.hinh_anh || user.avatar}
-                  alt="Avatar"
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).parentElement!.innerHTML = '<span class="material-symbols-outlined" style="font-size: 30px">account_circle</span>';
-                  }}
-                />
-              ) : (
-                <span className="material-symbols-outlined" style={{ fontSize: '30px' }}>account_circle</span>
-              )}
+            <div style={{ width: '52px', height: '52px', borderRadius: '50%', background: 'var(--primary-gradient)', display: 'grid', placeItems: 'center', boxShadow: '0 0 20px var(--primary-shadow)', flexShrink: 0 }}>
+              <div style={{ width: '44px', height: '44px', borderRadius: '50%', overflow: 'hidden', border: '2px solid var(--surface)', background: 'var(--primary)', display: 'grid', placeItems: 'center', color: 'white', fontWeight: 950, fontSize: '1.25rem' }}>
+                {userAvatar ? (
+                  <img
+                    src={userAvatar}
+                    alt={userDisplayName}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = 'none';
+                    }}
+                  />
+                ) : (
+                  <span>{userInitial}</span>
+                )}
+              </div>
             </div>
             <div style={{ overflow: 'hidden' }}>
               <p style={{ fontWeight: 950, fontSize: '1rem', color: 'var(--ink)', margin: 0, whiteSpace: 'nowrap', textOverflow: 'ellipsis', letterSpacing: '-0.5px' }}>
-                {cleanName(user?.display_name || user?.displayName || user?.ho_ten || user?.hoTen || user?.fullName || user?.ten_khach_hang || user?.ten_dang_nhap || user?.username || "Thành viên")}
+                {userDisplayName}
               </p>
               <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: '2px' }}>
                 <span className="material-symbols-outlined" style={{ fontSize: '12px', color: 'var(--primary)' }}>stars</span>

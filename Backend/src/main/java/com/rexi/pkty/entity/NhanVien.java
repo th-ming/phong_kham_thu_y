@@ -15,6 +15,12 @@ public class NhanVien {
     @Transient
     private String mat_khau;
 
+    @Transient
+    private String ten_dang_nhap;
+
+    @Transient
+    private Boolean tao_tai_khoan;
+
     @Column(name = "id_tai_khoan")
     private String id_tai_khoan;
 

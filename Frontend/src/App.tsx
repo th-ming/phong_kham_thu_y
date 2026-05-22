@@ -1,9 +1,10 @@
-import React, { lazy, Suspense } from "react";
+import React, { lazy, Suspense, useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import ErrorBoundary from "@components/ErrorBoundary";
 import PublicLayout from "@layouts/PublicLayout";
 import CustomerLayout from "@layouts/CustomerLayout";
 import AdminLayout from "@layouts/AdminLayout";
+import axiosInstance from "@services/axios";
 
 const TrangChu = lazy(() => import("@pages/TrangChu"));
 const DangNhapDangKy = lazy(() => import("@pages/DangNhapDangKy"));
@@ -54,18 +55,57 @@ import LoadingSpinner from "@components/LoadingSpinner";
 import { ToastContainer } from "@components/Toast";
 import ProtectedRoute from "@components/ProtectedRoute";
 import { GlobalConfirmModal } from "@components/ConfirmModal";
-import { PremiumUXEngine } from "@components/SpecialEffects";
+import { ROLE_GROUPS } from "@utils/permissions";
+
+const routeTitleMap: Record<string, string> = {
+  "/": "Trang chủ",
+  "/dang-nhap": "Đăng nhập",
+  "/quan-ly/dashboard": "Tổng quan quản trị",
+  "/quan-ly/cau-hinh": "Cấu hình hệ thống",
+  "/khach-hang/dashboard": "Bảng điều khiển khách hàng",
+  "/khach-hang/dat-lich-hen": "Đặt lịch hẹn",
+};
+
+const SystemTitle: React.FC = () => {
+  const location = useLocation();
+  const [appName, setAppName] = useState(() => localStorage.getItem("rexi_app_name") || "Rexi - Phòng Khám Thú Y");
+
+  useEffect(() => {
+    let mounted = true;
+    axiosInstance.get("/api/system/cau-hinh")
+      .then((res) => {
+        const configuredName = String(res.data?.app_name || "").trim();
+        if (mounted && configuredName) {
+          localStorage.setItem("rexi_app_name", configuredName);
+          setAppName(configuredName);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    const pageTitle = routeTitleMap[location.pathname] || "Rexi";
+    document.title = `${pageTitle} | ${appName}`;
+  }, [appName, location.pathname]);
+
+  return null;
+};
 
 /**
  * Xử lý lỗi tập trung bằng Error Boundary
  * Tự động hiển thị chỉ báo khi các trang đang tải
  */
-const AnimatedRoutes: React.FC = () => {
-  const location = useLocation();
-
+const App: React.FC = () => {
   return (
-    <div key={location.pathname} className="page-transition-shell">
-      <Suspense fallback={
+    <BrowserRouter>
+      <ErrorBoundary>
+        <SystemTitle />
+        <ToastContainer />
+        <GlobalConfirmModal />
+        <Suspense fallback={
           <div style={{
             display: 'flex',
             justifyContent: 'center',
@@ -76,7 +116,7 @@ const AnimatedRoutes: React.FC = () => {
             <LoadingSpinner size="large" />
           </div>
         }>
-        <Routes location={location}>
+        <Routes>
           <Route element={<PublicLayout />}>
             <Route path="/" element={<TrangChu />} />
             <Route path="/ve-chung-toi" element={<VeChungToi />} />
@@ -104,63 +144,76 @@ const AnimatedRoutes: React.FC = () => {
           {/* HỆ THỐNG QUẢN TRỊ NỘI BỘ - ĐƯỢC BẢO VỆ 3 LỚP */}
           <Route element={<AdminLayout />}>
             {/* LỚP 1: Các trang nội bộ dùng chung cho mọi nhân viên */}
-            <Route element={<ProtectedRoute allowedRoles={['admin', 'quan_ly', 'bac_si', 'ke_toan', 'tiep_tan', 'y_ta', 'staff']} />}>
+            <Route element={<ProtectedRoute allowedRoles={ROLE_GROUPS.dashboard} />}>
               <Route path="/quan-ly/dashboard" element={<DashboardQuanLy />} />
-              <Route path="/quan-ly/khach-hang-thu-cung" element={<QuanLyKhachHangThuCung />} />
-              <Route path="/quan-ly/lich-hen" element={<QuanLyLichHen />} />
               <Route path="/quan-ly/lich-lam-viec" element={<QuanLyLichLamViec />} />
-              <Route path="/quan-ly/ho-so-benh-an" element={<QuanLyHoSoBenhAn />} />
-              <Route path="/quan-ly/kham-benh" element={<QuanLyBenhAn />} />
-              <Route path="/quan-ly/chi-tiet-benh-an/:id" element={<ChiTietHoSoBenhAn />} />
-              <Route path="/quan-ly/don-thuoc" element={<QuanLyDonThuoc />} />
-              <Route path="/quan-ly/file-dinh-kem" element={<QuanLyFileDinhKem />} />
               <Route path="/quan-ly/thong-tin-ca-nhan" element={<ThongTinCaNhanNhanVien />} />
             </Route>
 
+            <Route element={<ProtectedRoute allowedRoles={ROLE_GROUPS.appointment} />}>
+              <Route path="/quan-ly/lich-hen" element={<QuanLyLichHen />} />
+            </Route>
+
+            <Route element={<ProtectedRoute allowedRoles={ROLE_GROUPS.customerAndPet} />}>
+              <Route path="/quan-ly/khach-hang-thu-cung" element={<QuanLyKhachHangThuCung />} />
+            </Route>
+
+            <Route element={<ProtectedRoute allowedRoles={ROLE_GROUPS.clinicalRecord} />}>
+              <Route path="/quan-ly/ho-so-benh-an" element={<QuanLyHoSoBenhAn />} />
+              <Route path="/quan-ly/chi-tiet-benh-an/:id" element={<ChiTietHoSoBenhAn />} />
+            </Route>
+
+            <Route element={<ProtectedRoute allowedRoles={ROLE_GROUPS.prescription} />}>
+              <Route path="/quan-ly/kham-benh" element={<QuanLyBenhAn />} />
+              <Route path="/quan-ly/don-thuoc" element={<QuanLyDonThuoc />} />
+            </Route>
+
+            <Route element={<ProtectedRoute allowedRoles={ROLE_GROUPS.lab} />}>
+              <Route path="/quan-ly/xet-nghiem" element={<QuanLyXetNghiem />} />
+            </Route>
+
+            <Route element={<ProtectedRoute allowedRoles={ROLE_GROUPS.files} />}>
+              <Route path="/quan-ly/file-dinh-kem" element={<QuanLyFileDinhKem />} />
+            </Route>
+
             {/* LỚP 2: Các trang TÀI CHÍNH - QUẢN LÝ TÀI SẢN */}
-            <Route element={<ProtectedRoute allowedRoles={['admin', 'quan_ly', 'ke_toan', 'tiep_tan']} />}>
+            <Route element={<ProtectedRoute allowedRoles={ROLE_GROUPS.invoice} />}>
               <Route path="/quan-ly/hoa-don" element={<QuanLyHoaDon />} />
             </Route>
             
-            <Route element={<ProtectedRoute allowedRoles={['admin', 'quan_ly', 'ke_toan']} />}>
+            <Route element={<ProtectedRoute allowedRoles={ROLE_GROUPS.finance} />}>
               <Route path="/quan-ly/ke-toan" element={<KeToanDashboard />} />
               <Route path="/quan-ly/bao-cao-thong-ke" element={<BaoCaoThongKe />} />
               <Route path="/quan-ly/nhap-kho" element={<QuanLyNhapKho />} />
             </Route>
 
             {/* LỚP 2.5: KHO THUỐC (Mọi nhân viên chuyên môn đều được xem tồn kho) */}
-            <Route element={<ProtectedRoute allowedRoles={['admin', 'quan_ly', 'ke_toan', 'bac_si', 'y_ta', 'tiep_tan']} />}>
+            <Route element={<ProtectedRoute allowedRoles={ROLE_GROUPS.inventory} />}>
               <Route path="/quan-ly/kho-thuoc" element={<QuanLyKhoThuoc />} />
             </Route>
 
-            {/* LỚP 3: Các trang QUẢN TRỊ HỆ THỐNG - CHỈ ADMIN TỐI CAO */}
-            <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+            {/* LỚP 3: Nhân sự cho Admin/Quản lý, cấu hình hệ thống chỉ Admin */}
+            <Route element={<ProtectedRoute allowedRoles={ROLE_GROUPS.staffAccountManage} />}>
               <Route path="/quan-ly/nhan-vien-phan-quyen" element={<QuanLyNhanVienPhanQuyen />} />
+            </Route>
+
+            {/* LỚP 3.5: Các trang QUẢN TRỊ HỆ THỐNG - CHỈ ADMIN TỐI CAO */}
+            <Route element={<ProtectedRoute allowedRoles={ROLE_GROUPS.adminOnly} />}>
               <Route path="/quan-ly/cau-hinh" element={<CauHinhHeThong />} />
               <Route path="/quan-ly/chuc-nang" element={<QuanLyChucNang />} />
             </Route>
 
-            {/* LỚP 4: QUẢN LÝ NGHIỆP VỤ CAO CẤP - ADMIN & QUẢN LÝ */}
-            <Route element={<ProtectedRoute allowedRoles={['admin', 'quan_ly']} />}>
+            <Route element={<ProtectedRoute allowedRoles={ROLE_GROUPS.serviceCatalog} />}>
               <Route path="/quan-ly/dich-vu" element={<QuanLyDichVu />} />
-              <Route path="/quan-ly/xet-nghiem" element={<QuanLyXetNghiem />} />
+            </Route>
+
+            {/* LỚP 4: QUẢN LÝ NGHIỆP VỤ CAO CẤP - ADMIN & QUẢN LÝ */}
+            <Route element={<ProtectedRoute allowedRoles={ROLE_GROUPS.marketing} />}>
               <Route path="/quan-ly/marketing" element={<QuanLyMarketing />} />
             </Route>
           </Route>
         </Routes>
       </Suspense>
-    </div>
-  );
-};
-
-const App: React.FC = () => {
-  return (
-    <BrowserRouter>
-      <ErrorBoundary>
-        <PremiumUXEngine />
-        <ToastContainer />
-        <GlobalConfirmModal />
-        <AnimatedRoutes />
       </ErrorBoundary>
     </BrowserRouter>
   );

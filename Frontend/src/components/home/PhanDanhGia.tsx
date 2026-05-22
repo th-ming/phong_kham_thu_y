@@ -4,61 +4,16 @@ import { RevealSection } from "@components/SpecialEffects";
 
 
 const testimonials = [
-    { 
-        name: "Chị Minh Hạnh", 
-        pet: "Chủ của Lu - Poodle, 2 tuổi", 
-        text: "Cảm ơn BS Minh Anh đã cực kỳ tận tâm với bé Lu nhà mình. Bé bị viêm phổi nặng nhưng bác sĩ theo dõi sát sao từng giờ, giờ bé đã khỏe mạnh và chạy nhảy bình thường rồi!", 
-        star: 5,
-        avatar: "https://i.pravatar.cc/150?img=32",
-        petAvatar: "https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?auto=format&fit=crop&w=100&q=80"
-    },
-    { 
-        name: "Anh Quốc Trung", 
-        pet: "Chủ của Bông - Mèo Anh lông ngắn", 
-        text: "Phòng khám rất sạch sẽ, không có mùi hôi như những chỗ khác. BS Khánh Linh phẫu thuật triệt sản cho bé Bông rất khéo, vết mổ nhỏ và nhanh lành. Cảm ơn đội ngũ Rexi!", 
-        star: 5,
-        avatar: "https://i.pravatar.cc/150?img=11",
-        petAvatar: "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=100&q=80"
-    },
-    { 
-        name: "Cô Thu Hà", 
-        pet: "Chủ của MiMi - Phốc sóc", 
-        text: "Dịch vụ ở đây đúng là tiền nào của nấy. Nhân viên nhiệt tình, bác sĩ Hoàng Nam giải thích bệnh tình của bé MiMi rất kỹ càng, không vẽ vời xét nghiệm linh tinh. Rất tin tưởng!", 
-        star: 5,
-        avatar: "https://i.pravatar.cc/150?img=47"
-        // Không có petAvatar để test fallback UI cũ
-    },
-    { 
-        name: "Anh Văn Đức", 
-        pet: "Chủ của Shiba - 3 tuổi", 
-        text: "Mình đã đưa bé đi nhiều phòng khám nhưng chỉ Rexi là mình thực sự tin tưởng. Không gian sạch, bác sĩ ân cần và quy trình chuyên nghiệp.", 
-        star: 5,
-        avatar: "https://i.pravatar.cc/150?img=12",
-        petAvatar: "https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=100&q=80"
-    },
-    { 
-        name: "Chị Lan Phương", 
-        pet: "Chủ của Kitty - Mèo Ba Tư", 
-        text: "Bé Kitty nhà mình bị sỏi thận, đội ngũ Rexi xử lý nhanh và chuyên nghiệp. Phòng nội trú rất sạch, bé được chăm sóc tận tình 24/7.", 
-        star: 5,
-        avatar: "https://i.pravatar.cc/150?img=44",
-        petAvatar: "https://images.unsplash.com/photo-1573865526739-10659fec78a5?auto=format&fit=crop&w=100&q=80"
-    },
-    { 
-        name: "Chị Hương Giang", 
-        pet: "Chủ của Tí - Mèo Xiêm", 
-        text: "Phòng khám Rexi phục vụ rất chuyên nghiệp, từ lễ tân đến bác sĩ đều thân thiện. Bé Tí được khám và điều trị rất cẩn thận.", 
-        star: 5
-        // Giữ nguyên hiển thị dạng Chữ cái
-    },
-    { 
-        name: "Anh Thành Long", 
-        pet: "Chủ của Leo - Chó Golden", 
-        text: "Tôi thực sự ấn tượng với cách đội ngũ ở đây đối xử với thú cưng. Chuyên gia giải thích chi tiết, thuốc an toàn, kết quả tốt.", 
-        star: 5,
-        avatar: "https://i.pravatar.cc/150?img=33"
-    },
+    { name: "Trần Minh", pet: "Chủ của Bông - Mèo Anh", text: "Phòng khám rất sạch sẽ, không có mùi hôi như những chỗ khác. BS Khánh Linh phẫu thuật cho bé Bông rất khéo, vết mổ nhỏ và nhanh lành. Cảm ơn đội ngũ Rexi!", star: 5, avatar: "https://files.catbox.moe/dhjgf3.png", petAvatar: "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=150&q=80" },
+    { name: "Chị Minh Hạnh", pet: "Chủ của Lu - Poodle", text: "Cảm ơn BS Minh Anh đã cực kỳ tận tâm với bé Lu nhà mình. Bé bị viêm phổi nặng nhưng bác sĩ theo dõi sát sao từng giờ, giờ bé đã khỏe mạnh và chạy nhảy bình thường rồi!", star: 5, avatar: "https://images.pexels.com/photos/1382731/pexels-photo-1382731.jpeg?auto=compress&cs=tinysrgb&w=150", petAvatar: "https://images.unsplash.com/photo-1591768575198-88dac53fbd0a?auto=format&fit=crop&w=150&q=80" },
+    { name: "Sơn Tùng M-TP", pet: "Chủ của Chiko - Shiba", text: "Phòng khám xịn xò thực sự! Đưa bé đi khám mà có cảm giác như vào resort 5 sao. Không gian sạch, bác sĩ ân cần và quy trình rất chuyên nghiệp. Đánh giá 10 điểm!", star: 5, avatar: "https://files.catbox.moe/cajakw.png", petAvatar: "https://images.unsplash.com/photo-1583337130417-3346a1be7dee?auto=format&fit=crop&w=150&q=80" },
+    { name: "MONO", pet: "Chủ của Leo - Chó Corgi", text: "Thao thức vì bé Corgi bị ốm, nhưng qua Rexi thì u is chời, bác sĩ chữa đỉnh của chóp luôn! Dịch vụ 10 điểm không có nhưng, phòng khám siêu xịn xò. Mãi iu Rexi!", star: 5, avatar: "https://files.catbox.moe/ohq4bo.jpg", petAvatar: "https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&w=150&q=80" },
+    { name: "Chi Pu", pet: "Chủ của Kitty - Mèo Ba Tư", text: "Bé Kitty nhà mình bị sỏi thận, đội ngũ Rexi xử lý nhanh và rất chuyên nghiệp. Phòng nội trú thơm tho sạch sẽ, bé được chăm sóc tận tình 24/7 luôn nè.", star: 5, avatar: "https://files.catbox.moe/9onx1p.jpg", petAvatar: "https://images.unsplash.com/photo-1513360371669-4adf3dd7dff8?auto=format&fit=crop&w=150&q=80" },
+    { name: "Jack - J97", pet: "Chủ của Thiên Ân - Chuột Hamster", text: "Phòng khám tuyệt vời lắm luôn á, hôm trước mang bé chuột qua tiêm phòng mà bác sĩ làm nhẹ nhàng cực kỳ, bé xíu xiu mà không đau khóc gì luôn. Mãi iuuu ❤️", star: 5, avatar: "https://files.catbox.moe/fpds9u.png", petAvatar: "https://images.unsplash.com/photo-1425082661705-1834bfd08d98?auto=format&fit=crop&w=150&q=80" },
+    { name: "Cô Thu Hà", pet: "Chủ của MiMi - Phốc sóc", text: "Dịch vụ ở đây đúng là tiền nào của nấy. Nhân viên nhiệt tình, bác sĩ Hoàng Nam giải thích bệnh tình của bé MiMi rất kỹ càng. Rất tin tưởng!", star: 5, petAvatar: "https://images.unsplash.com/photo-1605897472359-85e4b94d685d?auto=format&fit=crop&w=150&q=80" },
+    { name: "Chị Hương Giang", pet: "Chủ của Tí - Mèo Xiêm", text: "Phòng khám Rexi phục vụ rất chuyên nghiệp, từ lễ tân đến bác sĩ đều thân thiện. Mình sẽ giới thiệu cho bạn bè.", star: 5, petAvatar: "https://images.unsplash.com/photo-1511044568932-338cba0ad803?auto=format&fit=crop&w=150&q=80" },
 ];
+
 
 const PhanDanhGia: React.FC = () => {
     const { theme } = useTheme();
@@ -183,27 +138,23 @@ const PhanDanhGia: React.FC = () => {
                                 {/* Author */}
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', paddingTop: '10px', borderTop: '1px solid var(--gray-200)' }}>
                                     {t.avatar ? (
-                                        <img src={t.avatar} alt={t.name} style={{ width: '44px', height: '44px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: '2px solid var(--primary-light)' }} />
+                                        <img src={t.avatar} alt={t.name} style={{ width: '44px', height: '44px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
                                     ) : (
                                         <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'var(--primary-gradient)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '1rem', flexShrink: 0 }}>
                                             {t.name.charAt(t.name.lastIndexOf(' ') + 1)}
                                         </div>
                                     )}
-                                    
                                     <div>
                                         <div style={{ fontWeight: 900, fontSize: '0.95rem', color: 'var(--ink)' }}>{t.name}</div>
                                         <div style={{ fontSize: '0.78rem', color: 'var(--gray-400)', fontWeight: 600 }}>{t.pet}</div>
                                     </div>
-                                    
-                                    {t.petAvatar ? (
-                                        <div style={{ marginLeft: 'auto', width: '36px', height: '36px', borderRadius: '50%', overflow: 'hidden', border: '2px solid rgba(255, 255, 255, 0.5)', boxShadow: 'var(--shadow-md)' }}>
+                                    <div style={{ marginLeft: 'auto', background: 'var(--primary-light)', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                                        {t.petAvatar ? (
                                             <img src={t.petAvatar} alt="Pet" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                        </div>
-                                    ) : (
-                                        <div style={{ marginLeft: 'auto', background: 'var(--primary-light)', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        ) : (
                                             <span className="material-symbols-outlined" style={{ fontSize: '16px', color: 'var(--primary)' }}>pets</span>
-                                        </div>
-                                    )}
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         ))}

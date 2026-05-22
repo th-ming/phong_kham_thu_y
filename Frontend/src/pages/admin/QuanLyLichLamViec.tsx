@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useMemo } from 'react';
+﻿import React, { useState, useEffect, useMemo } from 'react';
 import axiosInstance from '@services/axios';
 import { toast } from '@components/Toast';
 import { RevealSection } from '@components/SpecialEffects';
-import { getUserProfile } from '@utils/index';
+import { getUserProfile, includesSearch, normalizeSearchText, normalizeUserRole } from '@utils/index';
 
 const HOURS = Array.from({ length: 13 }).map((_, i) => i + 8); // 8:00 đến 20:00
 const DAYS = [
@@ -28,24 +28,12 @@ const DOCTOR_COLORS = [
 
 const QuanLyLichLamViec: React.FC = () => {
     const user = getUserProfile();
-    const userRoleRaw = (user?.loai_tai_khoan || user?.ten_vai_tro || 'staff').toLowerCase();
-    
-    // Chuẩn hóa quyền giống Sidebar
-    const userRole = useMemo(() => {
-        const r = userRoleRaw.toLowerCase();
-        if (r.includes('quản trị') || r.includes('admin') || r === 'vt-1') return 'admin';
-        if (r.includes('quản lý') || r.includes('manager') || r.includes('quan_ly') || r === 'vt-6') return 'quan_ly';
-        if (r.includes('bác sĩ') || r.includes('doctor') || r.includes('bac_si') || r === 'vt-2') return 'bac_si';
-        if (r.includes('kế toán') || r.includes('accountant') || r.includes('ke_toan') || r === 'vt-4') return 'ke_toan';
-        if (r.includes('tiếp tân') || r.includes('reception') || r.includes('tiep_tan') || r === 'vt-7') return 'tiep_tan';
-        if (r.includes('y tá') || r.includes('điều dưỡng') || r.includes('nurse') || r.includes('y_ta') || r === 'vt-8') return 'y_ta';
-        return 'staff';
-    }, [userRoleRaw]);
+    const userRole = useMemo(() => normalizeUserRole(user), [user]);
+    const userRoleRaw = userRole;
 
     const isAdmin = userRole === 'admin' || userRole === 'quan_ly';
-    const currentUserId = String(user?.id_nhan_vien || user?.id || '');
     
-
+    console.log('--- DEBUG SCHEDULE ---', { userRole, isAdmin });
 
     const [staffs, setStaffs] = useState<any[]>([]);
     const [schedules, setSchedules] = useState<any[]>([]);
@@ -58,12 +46,26 @@ const QuanLyLichLamViec: React.FC = () => {
     const [showAddModal, setShowAddModal] = useState(false);
     const [selectedSlot, setSelectedSlot] = useState<any>(null);
     const [selectedStaffId, setSelectedStaffId] = useState<string>('');
+    const [staffPickerOpen, setStaffPickerOpen] = useState(false);
     const [viewMode, setViewMode] = useState<'all' | 'personal'>(isAdmin ? 'all' : 'personal');
+    const isAllStaffView = isAdmin && viewMode === 'all';
+    const hiddenWhenPersonal = isAllStaffView
+        ? {}
+        : { visibility: 'hidden' as const, pointerEvents: 'none' as const };
 
     const [hoveredStaffId, setHoveredStaffId] = useState<string | null>(null);
     const [draggedShift, setDraggedShift] = useState<any>(null);
     const [dragOverSlot, setDragOverSlot] = useState<string | null>(null);
     const [isCopying, setIsCopying] = useState(false);
+    const currentStaffId = useMemo(() => {
+        const directStaffId = user?.id_nhan_vien || user?.idNhanVien;
+        if (directStaffId) return String(directStaffId);
+
+        const accountId = user?.id_tai_khoan || user?.idTaiKhoan || user?.id;
+        const staff = staffs.find(st => String(st.id_tai_khoan || st.idTaiKhoan || '') === String(accountId || ''));
+        return staff?.id_nhan_vien ? String(staff.id_nhan_vien) : '';
+    }, [user, staffs]);
+
     useEffect(() => {
         fetchData();
     }, []);
@@ -77,7 +79,9 @@ const QuanLyLichLamViec: React.FC = () => {
             setStaffs(staffRes.data);
             setSchedules(scheduleRes.data);
             if (!isAdmin && user) {
-                setSelectedStaffId((user.id_nhan_vien || user.id)?.toString());
+                const accountId = user.id_tai_khoan || user.idTaiKhoan || user.id;
+                const staff = staffRes.data.find((st: any) => String(st.id_tai_khoan || st.idTaiKhoan || '') === String(accountId || ''));
+                setSelectedStaffId(String(user.id_nhan_vien || user.idNhanVien || staff?.id_nhan_vien || ''));
             }
         } catch (error) {
             toast.error("Lỗi tải dữ liệu lịch trực");
@@ -118,24 +122,24 @@ const QuanLyLichLamViec: React.FC = () => {
 
         // Lọc theo chế độ xem (Cá nhân vs Tất cả)
         if (viewMode === 'personal' && user) {
-            const userId = user.id_nhan_vien || user.id;
+            const userId = currentStaffId;
             filtered = schedules.filter(s => String(s.id_nhan_vien) === String(userId));
         }
 
         return filtered.filter(s => {
             const staffInfo = staffs.find(st => String(st.id_nhan_vien) === String(s.id_nhan_vien));
             const role = staffInfo ? (staffInfo.chuyen_mon || staffInfo.chuc_vu || 'Nhân viên') : 'Nhân viên';
-            const matchRole = filterRole === 'all' || role.toLowerCase() === filterRole.toLowerCase();
+            const matchRole = filterRole === 'all' || normalizeSearchText(role) === normalizeSearchText(filterRole);
             const hoTen = staffInfo ? staffInfo.ho_ten : (s.ho_ten || '');
-            const matchName = hoTen.toLowerCase().includes(searchName.toLowerCase());
+            const matchName = includesSearch(hoTen, searchName) || includesSearch(staffInfo?.so_dien_thoai, searchName) || includesSearch(staffInfo?.email, searchName);
             return matchRole && matchName;
         });
-    }, [schedules, filterRole, searchName, viewMode, user, staffs]);
+    }, [schedules, filterRole, searchName, viewMode, user, staffs, currentStaffId]);
 
     const staffWorkingHours = useMemo(() => {
-        if (!isAdmin) return [];
+        if (!isAllStaffView) return [];
         const weekDateStrs = weekDates.map(d => d.dateStr);
-        const shiftsThisWeek = schedules.filter(s => weekDateStrs.includes(s.ngay_lam));
+        const shiftsThisWeek = visibleSchedules.filter(s => weekDateStrs.includes(s.ngay_lam));
 
         const stats: Record<string, { id_nhan_vien: string, ho_ten: string, chuc_vu: string, hours: number }> = {};
 
@@ -148,7 +152,7 @@ const QuanLyLichLamViec: React.FC = () => {
         });
 
         return Object.values(stats).sort((a, b) => b.hours - a.hours);
-    }, [schedules, weekDates, isAdmin, staffs]);
+    }, [visibleSchedules, weekDates, isAllStaffView, staffs]);
 
     const allRoles = useMemo(() => {
         const roles = new Set<string>();
@@ -169,6 +173,10 @@ const QuanLyLichLamViec: React.FC = () => {
         return grouped;
     }, [staffs]);
 
+    const selectedStaff = useMemo(() => {
+        return staffs.find(s => String(s.id_nhan_vien) === String(selectedStaffId));
+    }, [staffs, selectedStaffId]);
+
     const handleAddShift = (day: any, hour: number) => {
         // RÀNG BUỘC: Nhân viên chỉ được đăng ký lịch cho tuần sau (weekOffset >= 1)
         if (!isAdmin && weekOffset < 1) {
@@ -177,8 +185,8 @@ const QuanLyLichLamViec: React.FC = () => {
         }
 
         setSelectedSlot({ day, hour });
-        // Nếu là nhân viên, tự động chọn chính mình
-        if (!isAdmin) setSelectedStaffId(currentUserId);
+        // Ở chế độ cá nhân, chỉ đăng ký cho chính người đang đăng nhập.
+        if (!isAllStaffView) setSelectedStaffId(currentStaffId);
         setShowAddModal(true);
     };
 
@@ -197,6 +205,7 @@ const QuanLyLichLamViec: React.FC = () => {
             await axiosInstance.post('/api/nhan-vien/lich-lam-viec', payload, { headers });
             toast.success(isAdmin ? "Đã cập nhật ca trực!" : "Đã đăng ký ca trực thành công!");
             setShowAddModal(false);
+            setStaffPickerOpen(false);
             fetchData();
         } catch (error: any) {
             console.error('Server Error Details:', error.response?.data || error.message);
@@ -336,7 +345,7 @@ const QuanLyLichLamViec: React.FC = () => {
 
     const handleMoveShift = async (shift: any, targetDay: any, targetHour: number) => {
         // KIỂM TRA QUYỀN SỞ HỮU: Nhân viên không được động vào lịch người khác
-        if (!isAdmin && String(shift.id_nhan_vien) !== currentUserId) {
+        if (!isAdmin && String(shift.id_nhan_vien) !== currentStaffId) {
             toast.error("Bạn không có quyền di chuyển lịch trực của người khác!");
             return;
         }
@@ -378,7 +387,7 @@ const QuanLyLichLamViec: React.FC = () => {
 
     const handleDeleteShift = async (id: number, shiftStaffId: string) => {
         // KIỂM TRA QUYỀN SỞ HỮU
-        if (!isAdmin && String(shiftStaffId) !== currentUserId) {
+        if (!isAdmin && String(shiftStaffId) !== currentStaffId) {
             toast.error("Bạn không có quyền xóa lịch trực của người khác!");
             return;
         }
@@ -425,6 +434,68 @@ const QuanLyLichLamViec: React.FC = () => {
                     /* Mở rộng chiều cao để in được hết */
                     .print-scroll-area { height: auto !important; overflow: visible !important; }
                     .glass-card { box-shadow: none !important; border: 1px solid #ccc !important; }
+                }
+                .schedule-scroll-wrap {
+                    width: 100%;
+                    max-height: 700px;
+                    overflow: auto;
+                }
+                .schedule-scroll-wrap::-webkit-scrollbar,
+                .slot-shift-list::-webkit-scrollbar {
+                    height: 8px;
+                    width: 8px;
+                }
+                .schedule-scroll-wrap::-webkit-scrollbar-thumb,
+                .slot-shift-list::-webkit-scrollbar-thumb {
+                    background: rgba(13, 148, 136, 0.24);
+                    border-radius: 999px;
+                }
+                .schedule-grid {
+                    min-width: 1320px;
+                    display: grid;
+                    grid-template-columns: 76px repeat(7, minmax(170px, 1fr));
+                }
+                .schedule-header-grid {
+                    position: sticky;
+                    top: 0;
+                    z-index: 5;
+                    background: var(--background);
+                }
+                .slot-shift-list {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                    max-height: 98px;
+                    overflow-y: auto;
+                    padding-right: 2px;
+                }
+                .shift-card {
+                    width: 100%;
+                    min-width: 0;
+                    overflow: hidden;
+                }
+                .shift-main-text,
+                .shift-sub-text {
+                    display: block;
+                    max-width: 100%;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                }
+                .shift-sub-text {
+                    opacity: 0.72;
+                    font-size: 0.65rem;
+                }
+                .slot-summary {
+                    min-height: 22px;
+                    overflow: hidden;
+                }
+                .staff-picker-menu::-webkit-scrollbar {
+                    width: 8px;
+                }
+                .staff-picker-menu::-webkit-scrollbar-thumb {
+                    background: rgba(20, 184, 166, 0.45);
+                    border-radius: 999px;
                 }
             `}</style>
             <main style={{ flex: 1, padding: '32px 40px', overflowY: 'auto' }}>
@@ -493,8 +564,8 @@ const QuanLyLichLamViec: React.FC = () => {
 
                         <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                             {isAdmin && (
-                                <>
-                                    <button data-ai-id="button-quanlylichlamviec-z4n2" className="btn btn-pill no-print" disabled={isCopying} onClick={handleCopyAllSchedulesToNextWeek} style={{ background: isCopying ? 'var(--gray-200)' : 'var(--gray-100)', color: 'var(--ink)', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 800 }}>
+                                <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap', ...hiddenWhenPersonal }}>
+                                    <button data-ai-id="button-quanlylichlamviec-z4n2" className="btn btn-pill no-print" disabled={isCopying || !isAllStaffView} onClick={handleCopyAllSchedulesToNextWeek} style={{ background: isCopying ? 'var(--gray-200)' : 'var(--gray-100)', color: 'var(--ink)', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 800 }}>
                                         <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>{isCopying ? 'sync' : 'content_paste'}</span>
                                         {isCopying ? 'Đang sao chép...' : 'Sao chép tất cả'}
                                     </button>
@@ -506,7 +577,7 @@ const QuanLyLichLamViec: React.FC = () => {
                                         <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>print</span>
                                         In lịch trực
                                     </button>
-                                </>
+                                </div>
                             )}
 
                             {isAdmin && (
@@ -523,7 +594,12 @@ const QuanLyLichLamViec: React.FC = () => {
                                         TẤT CẢ
                                     </button>
                                     <button data-ai-id="button-quanlylichlamviec-6ewm"
-                                        onClick={() => setViewMode('personal')}
+                                        onClick={() => {
+                                            setViewMode('personal');
+                                            setFilterRole('all');
+                                            setSearchName('');
+                                            setSelectedStaffId(currentStaffId);
+                                        }}
                                         style={{
                                             background: viewMode === 'personal' ? 'white' : 'transparent',
                                             color: viewMode === 'personal' ? 'var(--primary)' : 'var(--gray-500)',
@@ -537,7 +613,7 @@ const QuanLyLichLamViec: React.FC = () => {
                             )}
 
                             {isAdmin && (
-                                <div style={{ display: 'flex', gap: '12px' }}>
+                                <div style={{ display: 'flex', gap: '12px', ...hiddenWhenPersonal }}>
                                     <div className="glass-card" style={{ display: 'flex', alignItems: 'center', padding: '0 16px', borderRadius: '16px', border: '1px solid var(--gray-200)', background: 'var(--surface)' }}>
                                         <span className="material-symbols-outlined" style={{ color: 'var(--gray-400)', marginRight: '8px' }}>search</span>
                                         <input data-ai-id="input-quanlylichlamviec-aiab"
@@ -563,8 +639,8 @@ const QuanLyLichLamViec: React.FC = () => {
                         </div>
                     </div>
 
-                    {isAdmin && staffWorkingHours.length > 0 && (
-                            <div className="no-print" style={{ marginBottom: '24px', animation: 'fadeInUp 0.4s ease-out' }}>
+                    {isAdmin && (
+                            <div className="no-print" style={{ minHeight: '74px', marginBottom: '24px', animation: isAllStaffView ? 'fadeInUp 0.4s ease-out' : 'none', ...hiddenWhenPersonal }}>
                                 <div style={{ fontSize: '0.8rem', fontWeight: 900, color: 'var(--gray-500)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                                     ⏱️ THỐNG KÊ GIỜ LÀM TRONG TUẦN
                                 </div>
@@ -606,11 +682,12 @@ const QuanLyLichLamViec: React.FC = () => {
 
                         <div id="print-section">
                             <div className="print-only" style={{ display: 'none', marginBottom: '20px', textAlign: 'center' }}>
-                                <h2 style={{ fontSize: '1.8rem', fontWeight: 900 }}>Lịch Trực Nhân Sự Rexi</h2>
+                                <h2 style={{ fontSize: '1.8rem', fontWeight: 900 }}>{viewMode === 'all' ? 'Lịch Trực Nhân Sự Rexi' : 'Lịch Trực Cá Nhân'}</h2>
                                 <p style={{ fontSize: '1rem', color: '#555' }}>Từ {weekDates[0].dateStr} đến {weekDates[6].dateStr}</p>
                             </div>
                             <div className="glass-card" style={{ borderRadius: '32px', border: '1px solid var(--gray-200)', background: 'var(--surface)', overflow: 'hidden', boxShadow: 'var(--shadow-xl)' }}>
-                                <div style={{ display: 'grid', gridTemplateColumns: '80px repeat(7, 1fr)', background: 'var(--background)' }}>
+                                <div className="schedule-scroll-wrap">
+                                <div className="schedule-grid schedule-header-grid">
                                     <div style={{ padding: '20px', borderRight: '1px solid var(--gray-200)' }}></div>
                                     {weekDates.map(day => (
                                         <div key={day.key} style={{ padding: '15px 10px', textAlign: 'center', borderRight: '1px solid var(--gray-200)' }}>
@@ -622,7 +699,7 @@ const QuanLyLichLamViec: React.FC = () => {
                                     ))}
                                 </div>
 
-                                <div className="print-scroll-area" style={{ display: 'grid', gridTemplateColumns: '80px repeat(7, 1fr)', height: '700px', overflowY: 'auto' }}>
+                                <div className="print-scroll-area schedule-grid">
                                     {HOURS.map(hour => (
                                         <React.Fragment key={hour}>
                                             <div style={{
@@ -668,7 +745,7 @@ const QuanLyLichLamViec: React.FC = () => {
                                                             if (!isLockedSlot && draggedShift) handleMoveShift(draggedShift, day, hour);
                                                         }}
                                                         style={{
-                                                            minHeight: '120px',
+                                                            minHeight: '138px',
                                                             borderTop: '1px solid var(--gray-100)',
                                                             borderRight: '1px solid var(--gray-100)',
                                                             padding: '6px',
@@ -676,22 +753,25 @@ const QuanLyLichLamViec: React.FC = () => {
                                                             boxShadow: isDragOver ? 'inset 0 0 0 2px var(--primary)' : 'none',
                                                             opacity: isPastDay ? 0.6 : 1,
                                                             position: 'relative',
-                                                            transition: 'background 0.2s'
+                                                            transition: 'background 0.2s',
+                                                            minWidth: 0,
+                                                            overflow: 'hidden'
                                                         }}
                                                     >
                                                         {shiftsInSlot.length > 0 && (
-                                                            <div style={{ fontSize: '0.65rem', fontWeight: 900, color: isShortStaffed ? 'var(--danger)' : 'var(--gray-400)', marginBottom: '6px', textAlign: 'left', paddingLeft: '4px', display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
+                                                            <div className="slot-summary" style={{ fontSize: '0.65rem', fontWeight: 900, color: isShortStaffed ? 'var(--danger)' : 'var(--gray-400)', marginBottom: '6px', textAlign: 'left', paddingLeft: '4px', display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
                                                                 <span><span style={{ color: isShortStaffed ? 'var(--danger)' : 'var(--primary)' }}>{shiftsInSlot.length}</span> nhân sự trực</span>
                                                                 {isShortStaffed && <span style={{ color: 'var(--danger)', fontSize: '0.6rem', background: 'rgba(239, 68, 68, 0.15)', padding: '2px 6px', borderRadius: '6px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>Thiếu người</span>}
                                                             </div>
                                                         )}
-                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                                        <div className="slot-shift-list">
                                                             {shiftsInSlot.map(shift => {
                                                                 const staffInfo = staffs.find(s => s.id_nhan_vien === shift.id_nhan_vien);
                                                                 const colors = getShiftColor(shift.id_nhan_vien, staffInfo?.chuyen_mon || 'staff');
                                                                 const avatar = staffInfo?.hinh_anh || "/img/avtpkty.png";
                                                                 return (
                                                                     <div
+                                                                        className="shift-card"
                                                                         key={shift.id_lich_lam_viec}
                                                                         draggable={!isLockedSlot}
                                                                         onDragStart={() => !isLockedSlot && setDraggedShift(shift)}
@@ -708,7 +788,8 @@ const QuanLyLichLamViec: React.FC = () => {
                                                                             display: 'flex',
                                                                             alignItems: 'center',
                                                                             gap: '8px',
-                                                                            cursor: isLockedSlot ? 'default' : 'grab'
+                                                                            cursor: isLockedSlot ? 'default' : 'grab',
+                                                                            minHeight: '52px'
                                                                         }}
                                                                         onMouseEnter={() => setHoveredStaffId(shift.id_nhan_vien)}
                                                                         onMouseLeave={() => setHoveredStaffId(null)}
@@ -742,9 +823,9 @@ const QuanLyLichLamViec: React.FC = () => {
                                                                                 </div>
                                                                             )}
                                                                         </div>
-                                                                        <div style={{ flex: 1, minWidth: 0, textAlign: 'left', paddingRight: '12px' }}>
-                                                                            <div style={{ textTransform: 'uppercase', marginBottom: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{staffInfo ? staffInfo.ho_ten : shift.id_nhan_vien}</div>
-                                                                            <div style={{ opacity: 0.7, fontSize: '0.65rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{staffInfo ? (staffInfo.chuyen_mon || staffInfo.chuc_vu) : 'Nhân viên'}</div>
+                                                                        <div style={{ flex: 1, minWidth: 0, textAlign: 'left', paddingRight: '14px' }}>
+                                                                            <div className="shift-main-text" title={staffInfo ? staffInfo.ho_ten : shift.id_nhan_vien} style={{ textTransform: 'uppercase', marginBottom: '2px' }}>{staffInfo ? staffInfo.ho_ten : shift.id_nhan_vien}</div>
+                                                                            <div className="shift-sub-text" title={staffInfo ? (staffInfo.chuyen_mon || staffInfo.chuc_vu) : 'Nhân viên'}>{staffInfo ? (staffInfo.chuyen_mon || staffInfo.chuc_vu) : 'Nhân viên'}</div>
                                                                         </div>
 
                                                                         {!isPastDay && (
@@ -779,6 +860,7 @@ const QuanLyLichLamViec: React.FC = () => {
                                         </React.Fragment>
                                     ))}
                                 </div>
+                                </div>
                             </div>
                         </div>
                 </RevealSection>
@@ -786,27 +868,104 @@ const QuanLyLichLamViec: React.FC = () => {
 
             {/* MODAL THÊM CA TRỰC */}
             {showAddModal && (
-                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+                <div onClick={() => setStaffPickerOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
                     <div className="glass-card" style={{ width: '450px', padding: '40px', borderRadius: '32px', background: 'var(--surface)' }}>
                         <h2 style={{ fontSize: '1.5rem', fontWeight: 950, marginBottom: '24px', letterSpacing: '-0.5px' }}>Đăng Ký <span style={{ color: 'var(--primary)' }}>Ca Trực</span></h2>
 
                         <div style={{ marginBottom: '24px' }}>
                             <label style={{ display: 'block', fontWeight: 800, marginBottom: '8px', color: 'var(--gray-500)', fontSize: '0.85rem' }}>NHÂN VIÊN</label>
-                            {isAdmin ? (
-                                <select data-ai-id="select-quanlylichlamviec-atmu"
-                                    value={selectedStaffId}
-                                    onChange={(e) => setSelectedStaffId(e.target.value)}
-                                    style={{ width: '100%', padding: '14px', borderRadius: '16px', border: '1px solid var(--gray-200)', outline: 'none', fontWeight: 700 }}
-                                >
-                                    <option value="">Chọn nhân viên...</option>
-                                    {Object.entries(staffsByRole).map(([role, list]) => (
-                                        <optgroup key={role} label={role.toUpperCase()}>
-                                            {list.map(s => (
-                                                <option key={s.id_nhan_vien} value={s.id_nhan_vien}>{s.ho_ten}</option>
+                            {isAllStaffView ? (
+                                <div data-ai-id="select-quanlylichlamviec-atmu" onClick={(e) => e.stopPropagation()} style={{ position: 'relative' }}>
+                                    <button
+                                        type="button"
+                                        onClick={() => setStaffPickerOpen(v => !v)}
+                                        style={{
+                                            width: '100%',
+                                            padding: '14px 16px',
+                                            borderRadius: '16px',
+                                            border: '1px solid var(--primary)',
+                                            outline: 'none',
+                                            fontWeight: 800,
+                                            background: 'var(--gray-50)',
+                                            color: 'var(--ink)',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'space-between',
+                                            cursor: 'pointer',
+                                            textAlign: 'left'
+                                        }}
+                                    >
+                                        <span>{selectedStaff?.ho_ten || 'Chọn nhân viên...'}</span>
+                                        <span className="material-symbols-outlined" style={{ fontSize: '20px', color: 'var(--primary)' }}>
+                                            {staffPickerOpen ? 'expand_less' : 'expand_more'}
+                                        </span>
+                                    </button>
+                                    {staffPickerOpen && (
+                                        <div
+                                            className="staff-picker-menu"
+                                            style={{
+                                                position: 'absolute',
+                                                zIndex: 1002,
+                                                top: 'calc(100% + 8px)',
+                                                left: 0,
+                                                right: 0,
+                                                maxHeight: '320px',
+                                                overflowY: 'auto',
+                                                background: 'var(--surface)',
+                                                color: 'var(--ink)',
+                                                border: '1px solid var(--primary)',
+                                                borderRadius: '18px',
+                                                boxShadow: 'var(--shadow-xl)',
+                                                padding: '8px'
+                                            }}
+                                        >
+                                            {Object.entries(staffsByRole).map(([role, list]) => (
+                                                <div key={role}>
+                                                    <div style={{ padding: '10px 12px 6px', color: 'var(--gray-400)', fontSize: '0.72rem', fontWeight: 950, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                                                        {role}
+                                                    </div>
+                                                    {list.map(s => {
+                                                        const active = String(selectedStaffId) === String(s.id_nhan_vien);
+                                                        return (
+                                                            <button
+                                                                key={s.id_nhan_vien}
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setSelectedStaffId(String(s.id_nhan_vien));
+                                                                    setStaffPickerOpen(false);
+                                                                }}
+                                                                style={{
+                                                                    width: '100%',
+                                                                    border: 'none',
+                                                                    borderRadius: '12px',
+                                                                    padding: '12px',
+                                                                    marginBottom: '4px',
+                                                                    background: active ? 'var(--primary)' : 'transparent',
+                                                                    color: active ? '#fff' : 'var(--ink)',
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    gap: '10px',
+                                                                    cursor: 'pointer',
+                                                                    fontWeight: 850,
+                                                                    textAlign: 'left'
+                                                                }}
+                                                                onMouseEnter={e => {
+                                                                    if (!active) e.currentTarget.style.background = 'var(--gray-50)';
+                                                                }}
+                                                                onMouseLeave={e => {
+                                                                    if (!active) e.currentTarget.style.background = 'transparent';
+                                                                }}
+                                                            >
+                                                                <span className="material-symbols-outlined" style={{ fontSize: '18px', color: active ? '#fff' : 'var(--primary)' }}>person</span>
+                                                                <span>{s.ho_ten}</span>
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
                                             ))}
-                                        </optgroup>
-                                    ))}
-                                </select>
+                                        </div>
+                                    )}
+                                </div>
                             ) : (
                                 <div style={{ padding: '14px', background: 'var(--gray-50)', borderRadius: '16px', fontWeight: 700 }}>
                                     {user.ho_ten || user.ten_dang_nhap || 'Bác sĩ'}
@@ -826,7 +985,7 @@ const QuanLyLichLamViec: React.FC = () => {
                         </div>
 
                         <div style={{ display: 'flex', gap: '12px' }}>
-                            <button data-ai-id="button-quanlylichlamviec-9xrv" className="btn btn-outline btn-pill" style={{ flex: 1 }} onClick={() => setShowAddModal(false)}>HỦY</button>
+                            <button data-ai-id="button-quanlylichlamviec-9xrv" className="btn btn-outline btn-pill" style={{ flex: 1 }} onClick={() => { setShowAddModal(false); setStaffPickerOpen(false); }}>HỦY</button>
                             <button data-ai-id="button-quanlylichlamviec-76g1" className="btn btn-primary btn-pill" style={{ flex: 1, fontWeight: 900 }} onClick={confirmAddShift}>XÁC NHẬN</button>
                         </div>
                     </div>

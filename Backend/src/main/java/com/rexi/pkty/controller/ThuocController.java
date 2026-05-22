@@ -108,7 +108,7 @@ public class ThuocController {
         org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
             .getContext().getAuthentication();
         String role = (auth != null) ? auth.getAuthorities().toString().toUpperCase() : "";
-        return role.contains("ADMIN") || role.contains("KETOAN") || role.contains("QUAN_LY");
+        return role.contains("ADMIN") || role.contains("KE_TOAN") || role.contains("KETOAN") || role.contains("QUAN_LY");
     }
 }
 

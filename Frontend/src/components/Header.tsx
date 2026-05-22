@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import ThemeToggle from "./ThemeToggle";
-import { getUserProfile } from "../utils/index";
+import { getUserProfile, normalizeUserRole } from "../utils/index";
 import { toast } from "@components/Toast";
 
 const Header: React.FC<{ hideMenu?: boolean }> = ({ hideMenu }) => {
@@ -16,8 +16,7 @@ const Header: React.FC<{ hideMenu?: boolean }> = ({ hideMenu }) => {
   const handleBookingRedirect = (e?: React.MouseEvent) => {
     if (e) e.preventDefault();
     if (user) {
-      const vaiTro = (user.ten_vai_tro || user.loai_tai_khoan || "").toLowerCase();
-      if (vaiTro !== "customer" && vaiTro !== "khach_hang" && !vaiTro.includes("khách hàng")) {
+      if (normalizeUserRole(user) !== "khach_hang") {
         toast.info("Bạn đang đăng nhập với tài khoản nhân sự. Hệ thống đang chuyển hướng bạn đến Trang quản lý lịch hẹn nội bộ!");
         navigate("/quan-ly/lich-hen");
         return;
@@ -41,11 +40,13 @@ const Header: React.FC<{ hideMenu?: boolean }> = ({ hideMenu }) => {
 
   const getDashboardLink = () => {
     if (!user) return "/dang-nhap";
-    const vaiTro = user.ten_vai_tro?.toLowerCase() || user.loai_tai_khoan?.toLowerCase();
-    return (vaiTro && !vaiTro.includes("khách hàng")) ? "/quan-ly/dashboard" : "/khach-hang/dashboard";
+    return normalizeUserRole(user) === "khach_hang" ? "/khach-hang/dashboard" : "/quan-ly/dashboard";
   };
 
   const isHomePage = location.pathname === "/";
+  const userDisplayName = cleanName(user?.display_name || user?.displayName || user?.ho_ten || user?.hoTen || user?.fullName || user?.ten_khach_hang || user?.ten_dang_nhap || user?.username || "Người dùng Rexi");
+  const userAvatar = user?.hinh_anh || user?.avatar || "";
+  const userInitial = userDisplayName.charAt(0).toUpperCase() || "R";
 
   const navItems = [
     { label: 'Dịch vụ', path: '/#services', anchor: '#services', icon: 'medical_services' },
@@ -171,35 +172,37 @@ const Header: React.FC<{ hideMenu?: boolean }> = ({ hideMenu }) => {
           <ThemeToggle />
 
           {user ? (
-            <Link to={getDashboardLink()} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'var(--gray-100)', padding: '12px', borderRadius: '20px', border: '1px solid var(--gray-200)', textDecoration: 'none', color: 'var(--ink)', fontWeight: 700 }}>
+            <Link to={getDashboardLink()} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'var(--gray-100)', padding: '10px 14px 10px 10px', borderRadius: '22px', border: '1px solid var(--gray-200)', textDecoration: 'none', color: 'var(--ink)', fontWeight: 700 }}>
               <div style={{
-                width: '44px', height: '44px', borderRadius: '12px', overflow: 'hidden',
-                border: '2px solid var(--background)', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
-                background: (user?.hinh_anh || user?.avatar) ? 'transparent' : 'var(--primary)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center'
+                width: '46px', height: '46px', borderRadius: '50%',
+                background: 'var(--primary-gradient)',
+                display: 'grid', placeItems: 'center',
+                boxShadow: '0 0 18px var(--primary-shadow)',
+                flexShrink: 0
               }}>
-                {/* avatar người dùng: Ưu tiên ảnh Google, nếu không có dùng icon hình người chuyên nghiệp */}
-                {user?.hinh_anh || user?.avatar ? (
-                  <img
-                    src={user.hinh_anh || user.avatar}
-                    alt={user?.displayName || "Avatar"}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).parentElement!.innerHTML = '<span class="material-symbols-outlined" style="font-size: 28px; color: white;">account_circle</span>';
-                    }}
-                  />
-                ) : (
-                  <span className="material-symbols-outlined" style={{ fontSize: '28px', color: 'white' }}>account_circle</span>
-                )}
+                <div style={{ width: '40px', height: '40px', borderRadius: '50%', overflow: 'hidden', border: '2px solid var(--surface)', background: 'var(--primary)', display: 'grid', placeItems: 'center', color: 'white', fontWeight: 950 }}>
+                  {userAvatar ? (
+                    <img
+                      src={userAvatar}
+                      alt={userDisplayName}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                  ) : (
+                    <span style={{ fontSize: '1.45rem', lineHeight: 1 }}>{userInitial}</span>
+                  )}
+                </div>
               </div>
               <span className="mobile-hide" style={{ fontSize: '0.85rem' }}>
-                {cleanName(user.display_name || user.displayName || user.ho_ten || user.hoTen || user.fullName || user.ten_khach_hang || user.ten_dang_nhap || user.username || "Người dùng Rexi")}
+                {userDisplayName}
               </span>
             </Link>
           ) : (
             <Link to="/dang-nhap" style={{ textDecoration: 'none', color: 'var(--ink)', fontWeight: 700, border: '1px solid var(--gray-200)', padding: '8px 20px', borderRadius: '50px' }}>Đăng nhập</Link>
           )}
-          <button data-ai-id="button-header-datlich" onClick={handleBookingRedirect} className="mobile-hide" style={{ background: 'var(--primary-gradient)', color: 'white', padding: '10px 24px', borderRadius: '50px', textDecoration: 'none', fontWeight: 800, fontSize: '0.9rem', boxShadow: '0 10px 20px rgba(15, 157, 138, 0.25)', border: 'none', transition: 'all 0.3s', cursor: 'pointer' }} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}>Đặt lịch hẹn</button>
+          <button data-ai-id="button-header-datlich" onClick={handleBookingRedirect} className="mobile-hide header-booking-cta" style={{ background: 'var(--primary-gradient)', color: 'white', padding: '10px 24px', borderRadius: '50px', textDecoration: 'none', fontWeight: 800, fontSize: '0.9rem', boxShadow: '0 10px 20px var(--primary-shadow)', border: 'none', cursor: 'pointer' }}><span>Đặt lịch hẹn</span></button>
 
           {/* nút mở menu trên điện thoại */}
           <button data-ai-id="button-header-x3hq"
@@ -207,7 +210,7 @@ const Header: React.FC<{ hideMenu?: boolean }> = ({ hideMenu }) => {
             className="mobile-show"
             aria-expanded={isMenuOpen}
             aria-label={isMenuOpen ? "Đóng menu điều hướng" : "Mở menu điều hướng"}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ink)' }}
+            style={{ background: 'var(--gray-100)', border: '1px solid var(--gray-200)', cursor: 'pointer', color: 'var(--ink)', width: '48px', height: '48px', borderRadius: '16px', display: 'grid', placeItems: 'center', transition: 'transform 0.22s ease, background 0.22s ease, border-color 0.22s ease' }}
           >
             <span className="material-symbols-outlined" style={{ fontSize: '30px' }}>{isMenuOpen ? 'close' : 'menu'}</span>
           </button>
@@ -216,12 +219,13 @@ const Header: React.FC<{ hideMenu?: boolean }> = ({ hideMenu }) => {
 
       {/* menu hiển thị trên điện thoại */}
       {isMenuOpen && (
-        <div style={{ position: 'absolute', top: '100%', left: 0, width: '100%', background: 'var(--background)', padding: '20px', display: 'flex', flexDirection: 'column', gap: '10px', borderBottom: '1px solid var(--gray-200)', zIndex: 10, boxShadow: 'var(--shadow-xl)' }}>
+        <div className="mobile-nav-panel" style={{ position: 'absolute', top: '100%', left: 0, width: '100%', background: 'var(--background)', padding: '18px 20px 20px', display: 'flex', flexDirection: 'column', gap: '10px', borderBottom: '1px solid var(--gray-200)', zIndex: 10, boxShadow: 'var(--shadow-xl)' }}>
           {navItems.map((item, idx) => (
             <button data-ai-id="button-header-8sdi"
               key={idx}
               onClick={() => handleNavClick(item)}
-              style={{ background: 'none', border: 'none', textAlign: 'left', color: 'var(--ink)', fontWeight: 700, padding: '15px', borderRadius: '12px', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '12px' }}
+              className="mobile-nav-item"
+              style={{ ['--item-index' as any]: idx, background: 'rgba(15, 157, 138, 0.05)', border: '1px solid transparent', textAlign: 'left', color: 'var(--ink)', fontWeight: 800, padding: '15px 16px', borderRadius: '14px', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}
             >
               <span className="material-symbols-outlined" style={{ color: 'var(--primary)' }}>{item.icon}</span>
               {item.label}
@@ -235,10 +239,80 @@ const Header: React.FC<{ hideMenu?: boolean }> = ({ hideMenu }) => {
       @keyframes textBlinkRed { 0%, 100% { color: var(--alert-text); } 50% { opacity: 0.8; } }
       .animate-blink { animation: blink 2s infinite; }
       .text-blink-red { animation: textBlinkRed 1.8s infinite ease-in-out; }
+      @keyframes headerCtaGlowBreath {
+        0%, 100% {
+          box-shadow: 0 10px 20px var(--primary-shadow), 0 0 10px rgba(15, 157, 138, 0.18);
+          filter: brightness(1);
+        }
+        52% {
+          box-shadow: 0 12px 26px var(--primary-shadow), 0 0 24px rgba(34, 211, 238, 0.46), 0 0 38px rgba(15, 157, 138, 0.24);
+          filter: brightness(1.06);
+        }
+      }
+      .header-booking-cta {
+        position: relative;
+        isolation: isolate;
+        overflow: hidden;
+        transition: box-shadow 0.24s ease, filter 0.24s ease;
+        animation: headerCtaGlowBreath 3.8s ease-in-out infinite;
+      }
+      .header-booking-cta > span {
+        position: relative;
+        z-index: 1;
+      }
+      .header-booking-cta:hover {
+        filter: brightness(1.04);
+        box-shadow: 0 12px 26px var(--primary-shadow), 0 0 18px var(--primary-shadow) !important;
+      }
       .nav-link-btn:hover { color: var(--primary) !important; }
         .nav-link-btn:hover .material-symbols-outlined { color: var(--primary) !important; }
         .nav-underline { position: absolute; bottom: 0; left: 0; width: 0; height: 2px; background: var(--primary); transition: width 0.3s; }
         .nav-link-btn:hover .nav-underline { width: 100%; }
+        .mobile-show:hover { transform: translateY(-1px); background: rgba(15, 157, 138, 0.10) !important; border-color: rgba(15, 157, 138, 0.28) !important; }
+        .mobile-show:active { transform: scale(0.94); }
+        .mobile-nav-panel {
+          transform-origin: top center;
+          animation: mobileMenuDrop 0.24s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+        .mobile-nav-item {
+          position: relative;
+          overflow: hidden;
+          transform: translateY(8px);
+          opacity: 0;
+          animation: mobileItemIn 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+          animation-delay: calc(var(--item-index) * 55ms);
+          transition: transform 0.2s ease, color 0.2s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .mobile-nav-item::after {
+          content: "";
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+          transform: translateX(-120%);
+          transition: transform 0.45s ease;
+        }
+        .mobile-nav-item:hover,
+        .mobile-nav-item:focus-visible {
+          color: var(--primary) !important;
+          background: rgba(15, 157, 138, 0.12) !important;
+          border-color: rgba(15, 157, 138, 0.25) !important;
+          box-shadow: 0 10px 24px rgba(15, 157, 138, 0.12);
+          transform: translateX(4px);
+          outline: none;
+        }
+        .mobile-nav-item:hover::after,
+        .mobile-nav-item:focus-visible::after { transform: translateX(120%); }
+        .mobile-nav-item:active { transform: translateX(4px) scale(0.98); }
+        .mobile-nav-item .material-symbols-outlined { transition: transform 0.2s ease, color 0.2s ease; }
+        .mobile-nav-item:hover .material-symbols-outlined,
+        .mobile-nav-item:focus-visible .material-symbols-outlined { transform: translateX(2px) scale(1.08); }
+        @keyframes mobileMenuDrop {
+          from { opacity: 0; transform: translateY(-10px) scaleY(0.98); }
+          to { opacity: 1; transform: translateY(0) scaleY(1); }
+        }
+        @keyframes mobileItemIn {
+          to { opacity: 1; transform: translateY(0); }
+        }
         @media (max-width: 991px) { .mobile-hide { display: none !important; } }
         @media (min-width: 992px) { .mobile-show { display: none !important; } }
       `}</style>

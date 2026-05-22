@@ -67,7 +67,7 @@ public class FinanceController {
         String role = (auth != null) ? auth.getAuthorities().toString().toUpperCase() : "";
 
         // BẢO MẬT: Chặn khách hàng tự lập hóa đơn ảo
-        if (!role.contains("ADMIN") && !role.contains("QUAN_LY") && !role.contains("KETOAN")
+        if (!role.contains("ADMIN") && !role.contains("QUAN_LY") && !role.contains("KETOAN") && !role.contains("KE_TOAN")
                 && !role.contains("STAFF") && !role.contains("TIEP_TAN")) {
             return ResponseEntity.status(403)
                     .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền lập hóa đơn!"));
@@ -92,8 +92,8 @@ public class FinanceController {
                 .getContext().getAuthentication();
         String role = (auth != null) ? auth.getAuthorities().toString().toUpperCase() : "";
         // BẢO MẬT: Chặn khách hàng xem thông tin cảnh báo kho thuốc
-        if (!role.contains("ADMIN") && !role.contains("QUAN_LY") && !role.contains("KETOAN") && !role.contains("STAFF")
-                && !role.contains("BAC_SI")) {
+        if (!role.contains("ADMIN") && !role.contains("QUAN_LY") && !role.contains("KETOAN") && !role.contains("KE_TOAN")
+                && !role.contains("BAC_SI") && !role.contains("Y_TA") && !role.contains("TIEP_TAN")) {
             return ResponseEntity.status(403)
                     .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền xem thông tin kho thuốc!"));
         }
@@ -212,8 +212,8 @@ public class FinanceController {
                 .getContext().getAuthentication();
         String role = (auth != null) ? auth.getAuthorities().toString().toUpperCase() : "";
         // BẢO MẬT: Chặn khách hàng lấy danh sách toàn bộ mặt hàng thuốc
-        if (!role.contains("ADMIN") && !role.contains("QUAN_LY") && !role.contains("KETOAN") && !role.contains("STAFF")
-                && !role.contains("BAC_SI")) {
+        if (!role.contains("ADMIN") && !role.contains("QUAN_LY") && !role.contains("KETOAN") && !role.contains("KE_TOAN")
+                && !role.contains("BAC_SI") && !role.contains("Y_TA") && !role.contains("TIEP_TAN")) {
             return ResponseEntity.status(403)
                     .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền truy cập kho thuốc!"));
         }
@@ -233,8 +233,8 @@ public class FinanceController {
                 .getContext().getAuthentication();
         String role = (auth != null) ? auth.getAuthorities().toString().toUpperCase() : "";
         // BẢO MẬT: Chặn lộ giá nhập (gia_nhap) và số lượng tồn kho cho người ngoài
-        if (!role.contains("ADMIN") && !role.contains("QUAN_LY") && !role.contains("KETOAN") && !role.contains("STAFF")
-                && !role.contains("BAC_SI")) {
+        if (!role.contains("ADMIN") && !role.contains("QUAN_LY") && !role.contains("KETOAN") && !role.contains("KE_TOAN")
+                && !role.contains("BAC_SI") && !role.contains("Y_TA") && !role.contains("TIEP_TAN")) {
             return ResponseEntity.status(403)
                     .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền truy cập thông tin lô thuốc!"));
         }
@@ -256,7 +256,7 @@ public class FinanceController {
 
         // BẢO MẬT LỚP 1: Chặn khách hàng tự ý đổi trạng thái hóa đơn của mình thành "Đã
         // thanh toán"
-        if (!role.contains("ADMIN") && !role.contains("QUAN_LY") && !role.contains("KETOAN")
+        if (!role.contains("ADMIN") && !role.contains("QUAN_LY") && !role.contains("KETOAN") && !role.contains("KE_TOAN")
                 && !role.contains("STAFF") && !role.contains("TIEP_TAN")) {
             return ResponseEntity.status(403)
                     .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền cập nhật trạng thái hóa đơn!"));
@@ -346,6 +346,29 @@ public class FinanceController {
         } catch (Exception e) {
             return ResponseEntity.status(500)
                     .body(Map.of("message", "Lỗi truy xuất báo cáo doanh thu: " + e.getMessage()));
+        }
+    }
+
+    // Tổng quan tài chính chuẩn: chỉ tính hóa đơn đã thanh toán
+    @GetMapping("/bao-cao/tong-quan-tai-chinh")
+    public ResponseEntity<?> getTongQuanTaiChinh() {
+        if (!hasFinancePermission()) {
+            return ResponseEntity.status(403)
+                    .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền xem báo cáo tài chính!"));
+        }
+        try {
+            Map<String, Object> summary = jdbcTemplate.queryForMap(
+                    "SELECT " +
+                            "COALESCE(SUM(CASE WHEN UPPER(LTRIM(RTRIM(trang_thai))) = 'DA_THANH_TOAN' THEN tong_tien_cuoi ELSE 0 END), 0) AS TongDoanhThu, "
+                            +
+                            "COUNT(CASE WHEN UPPER(LTRIM(RTRIM(trang_thai))) = 'DA_THANH_TOAN' THEN 1 END) AS SoHoaDonDaThanhToan, "
+                            +
+                            "COUNT(*) AS TongSoHoaDon " +
+                            "FROM HoaDon");
+            return ResponseEntity.ok(summary);
+        } catch (Exception e) {
+            return ResponseEntity.status(500)
+                    .body(Map.of("message", "Lỗi truy xuất tổng quan tài chính: " + e.getMessage()));
         }
     }
 

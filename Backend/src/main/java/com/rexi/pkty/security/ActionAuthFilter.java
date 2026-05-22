@@ -37,7 +37,10 @@ public class ActionAuthFilter extends OncePerRequestFilter {
                     com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
                     Map<String, List<String>> dbPolicy = mapper.readValue(dbVal.trim(), new com.fasterxml.jackson.core.type.TypeReference<Map<String, List<String>>>() {});
                     if (dbPolicy != null) {
-                        return dbPolicy.getOrDefault(roleStr, Collections.emptyList());
+                        List<String> allowed = dbPolicy.getOrDefault(roleStr, Collections.emptyList());
+                        if (allowed.stream().anyMatch(action -> List.of("CLICK", "FILL", "SELECT", "TOGGLE", "DELETE").contains(action))) {
+                            return allowed;
+                        }
                     }
                 }
             }

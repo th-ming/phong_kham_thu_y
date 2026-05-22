@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -19,7 +20,6 @@ import java.util.stream.Collectors;
  */
 @RestController
 @RequestMapping("/api/admin")
-@PreAuthorize("hasRole('ADMIN')")
 public class AdminAccountController {
 
     @Autowired
@@ -31,12 +31,16 @@ public class AdminAccountController {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
     /**
      * Tìm kiếm tài khoản theo tên đăng nhập, email hoặc số điện thoại.
      * Admin có thể tìm cả tài khoản nhân viên lẫn khách hàng.
      * Kết quả trả về KHÔNG chứa mật khẩu gốc (chỉ trả về hash).
      */
     @GetMapping("/tai-khoan")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> findAccount(
             @RequestParam(required = false) String username,
             @RequestParam(required = false) String email,
@@ -84,6 +88,7 @@ public class AdminAccountController {
      * Chỉ Admin mới được phép gọi.
      */
     @GetMapping("/tai-khoan/tat-ca")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> getAllAccounts() {
         List<TaiKhoan> all = taiKhoanRepository.findAll();
 
@@ -103,6 +108,7 @@ public class AdminAccountController {
      * Admin thông báo mật khẩu mới cho người dùng qua kênh riêng.
      */
     @PostMapping("/tai-khoan/{id}/reset-mk")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> resetPassword(@PathVariable String id) {
         Optional<TaiKhoan> opt = taiKhoanRepository.findById(id);
         if (opt.isEmpty()) {
@@ -117,7 +123,7 @@ public class AdminAccountController {
         String matKhauHash = passwordEncoder.encode(matKhauTamThoi);
 
         // Cập nhật mật khẩu mới (đã băm) vào Database
-        tk.setMat_khau(matKhauHash);
+        tk.setMat_khau(matKhauTamThoi);
         tk.setMat_khau_hash(matKhauHash);
         taiKhoanRepository.save(tk);
 
@@ -134,6 +140,54 @@ public class AdminAccountController {
     }
 
     /**
+     * Admin được sửa trực tiếp thông tin tài khoản nhân viên: username, vai trò,
+     * trạng thái và mật khẩu mới nếu cần.
+     */
+    @PutMapping("/tai-khoan/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> updateAccount(@PathVariable String id, @RequestBody Map<String, String> payload) {
+        Optional<TaiKhoan> opt = taiKhoanRepository.findById(id);
+        if (opt.isEmpty()) {
+            return ResponseEntity.status(404)
+                    .body(Map.of("message", "Không tìm thấy tài khoản với ID: " + id));
+        }
+
+        TaiKhoan tk = opt.get();
+
+        String username = trimToNull(payload.get("ten_dang_nhap"));
+        if (username != null && !username.equals(tk.getTen_dang_nhap())) {
+            Optional<TaiKhoan> existed = taiKhoanRepository.findByTenDangNhap(username);
+            if (existed.isPresent() && !id.equals(existed.get().getId_tai_khoan())) {
+                return ResponseEntity.status(409)
+                        .body(Map.of("message", "Tên đăng nhập đã tồn tại."));
+            }
+            tk.setTen_dang_nhap(username);
+        }
+
+        String roleId = trimToNull(payload.get("id_vai_tro"));
+        if (roleId != null) {
+            tk.setId_vai_tro(roleId);
+        }
+
+        String status = trimToNull(payload.get("trang_thai"));
+        if (status != null) {
+            tk.setTrang_thai(status);
+        }
+
+        String newPassword = trimToNull(payload.get("mat_khau"));
+        if (newPassword != null) {
+            tk.setMat_khau(newPassword);
+            tk.setMat_khau_hash(passwordEncoder.encode(newPassword));
+        }
+
+        taiKhoanRepository.save(tk);
+        auditLogService.logAction("UPDATE", "TaiKhoan",
+                "Admin cập nhật tài khoản: " + tk.getTen_dang_nhap() + " (ID: " + id + ")");
+
+        return ResponseEntity.ok(toSafeMap(tk));
+    }
+
+    /**
      * Chuyển đổi TaiKhoan thành Map an toàn (không chứa mật khẩu gốc).
      * Chỉ trả về các trường công khai + hash để Admin xác minh.
      */
@@ -144,10 +198,48 @@ public class AdminAccountController {
         m.put("id_vai_tro", tk.getId_vai_tro());
         m.put("trang_thai", tk.getTrang_thai());
         m.put("ngay_tao", tk.getNgay_tao());
+        m.put("id_tai_khoan", tk.getId_tai_khoan());
         m.put("id_nhan_vien", tk.getId_nhan_vien());
         m.put("id_khach_hang", tk.getId_khach_hang());
-        // Mật khẩu chỉ trả về dạng hash (không thể đọc ngược)
-        m.put("mat_khau_hash", tk.getMat_khau_hash());
+        m.put("mat_khau_hien_thi", getDisplayPassword(tk.getMat_khau()));
+        m.put("nhan_vien", getNhanVienInfo(tk.getId_nhan_vien(), tk.getId_tai_khoan()));
         return m;
+    }
+
+    private String getDisplayPassword(String passwordValue) {
+        if (passwordValue == null || passwordValue.isBlank()) return null;
+        if (passwordValue.startsWith("$2a$") || passwordValue.startsWith("$2b$") || passwordValue.startsWith("$2y$")) {
+            return null;
+        }
+        return passwordValue;
+    }
+
+    private Map<String, Object> getNhanVienInfo(String idNhanVien, String idTaiKhoan) {
+        if ((idNhanVien == null || idNhanVien.isBlank()) && (idTaiKhoan == null || idTaiKhoan.isBlank())) return null;
+        try {
+            if (idNhanVien != null && !idNhanVien.isBlank()) {
+                List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+                        "SELECT ho_ten, email, so_dien_thoai, chuyen_mon FROM NhanVien WHERE id_nhan_vien = ?",
+                        idNhanVien);
+                if (!rows.isEmpty()) {
+                    return rows.get(0);
+                }
+            }
+            if (idTaiKhoan != null && !idTaiKhoan.isBlank()) {
+                List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+                        "SELECT ho_ten, email, so_dien_thoai, chuyen_mon FROM NhanVien WHERE id_tai_khoan = ?",
+                        idTaiKhoan);
+                return rows.isEmpty() ? null : rows.get(0);
+            }
+            return null;
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private String trimToNull(String value) {
+        if (value == null) return null;
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 }

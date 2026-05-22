@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import axiosInstance from "@services/axios";
 import { Modal } from "@components/CommonUI";
 import { toast } from "@components/Toast";
+import { matchesSearchFields } from "@utils/index";
 
 const chuyenNgayISO_SangVN = (dateString: string) => {
   if (!dateString) return "—";
@@ -48,22 +49,48 @@ const QuanLyNhapKho: React.FC = () => {
 
   const filteredLoThuocs = React.useMemo(() => {
     if (!searchLo.trim()) return loThuocs;
-    const s = searchLo.toLowerCase();
     return loThuocs.filter(l => {
-      const matchBatch = (l.so_lo || "").toLowerCase().includes(s);
-      const matchMedicine = (thuocs.find(t => t.id_thuoc === l.id_thuoc)?.ten_thuoc || "").toLowerCase().includes(s);
-      return matchBatch || matchMedicine;
+      const thuoc = thuocs.find(t => t.id_thuoc === l.id_thuoc);
+      return matchesSearchFields(searchLo, [
+        l.id_lo_thuoc,
+        l.id_thuoc,
+        l.so_lo,
+        thuoc?.ten_thuoc,
+        thuoc?.thanh_phan,
+        l.ngay_nhap,
+        l.han_su_dung,
+        l.so_luong_nhap,
+        l.so_luong_ton,
+        l.gia_nhap
+      ]);
     });
   }, [loThuocs, thuocs, searchLo]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // Validate expiration date is not in the past
+    const isDateBeforeToday = (dateString: string) => {
+      if (!dateString) return false;
+      const sel = new Date(dateString);
+      const today = new Date();
+      sel.setHours(0,0,0,0);
+      today.setHours(0,0,0,0);
+      return sel < today;
+    };
+
+    if (isDateBeforeToday(formData.han_su_dung)) {
+      toast.error("Hạn sử dụng không được đặt trong quá khứ!");
+      return;
+    }
+
     if (formData.so_luong_nhap <= 0) {
       toast.error("Số lượng nhập kho phải lớn hơn 0!");
       return;
     }
     try {
-      await axiosInstance.post("/api/kho/lo-thuoc", formData);
+      // ensure id_lo is provided (backend expects id_lo non-null)
+      const payload = { ...formData, id_lo: formData.so_lo ? `LO-${Date.now().toString(36).toUpperCase()}` : `LO-${Date.now().toString(36).toUpperCase()}` };
+      await axiosInstance.post("/api/kho/lo-thuoc", payload);
       toast.success("Đã tạo phiếu nhập kho thành công! (Dữ liệu đã được đồng bộ với kho)");
       setIsModalOpen(false);
       setFormData({ ...formData, so_lo: "", han_su_dung: "", so_luong_nhap: 0, gia_nhap: 0 });

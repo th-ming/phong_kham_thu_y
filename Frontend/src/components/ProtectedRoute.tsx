@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { toast } from '@components/Toast';
+import { normalizeUserRole } from '@utils/index';
 
 interface ProtectedRouteProps {
     allowedRoles: string[];
@@ -27,18 +28,12 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles }) => {
 
     try {
         const user = JSON.parse(userStr);
-        let userRole = (user?.loai_tai_khoan?.toLowerCase() || user?.ten_vai_tro?.toLowerCase() || 'guest');
-
-        // Chuẩn hóa vai trò tiếng Việt sang mã hệ thống để khớp với App.tsx
-        if (userRole.includes('quản trị')) userRole = 'admin';
-        if (userRole.includes('kế toán')) userRole = 'ke_toan';
-        if (userRole.includes('bác sĩ')) userRole = 'bac_si';
-        if (userRole.includes('nhân viên') || userRole.includes('tiếp tân')) userRole = 'staff';
+        const userRole = normalizeUserRole(user);
 
         const hasPermission = allowedRoles.map(r => r.toLowerCase()).includes(userRole);
 
         if (!hasPermission) {
-            const fallbackRoute = (userRole.includes('khach_hang') || userRole.includes('customer') || userRole === 'guest') ? '/khach-hang/dashboard' : '/quan-ly/dashboard';
+            const fallbackRoute = (userRole === 'khach_hang' || userRole === 'guest') ? '/khach-hang/dashboard' : '/quan-ly/dashboard';
             return <RedirectWithToast
                 to={fallbackRoute}
                 message="Cảnh báo bảo mật: Bạn không có quyền truy cập vào chức năng này!"

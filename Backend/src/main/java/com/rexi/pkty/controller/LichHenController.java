@@ -45,11 +45,20 @@ public class LichHenController {
     @Autowired
     private com.rexi.pkty.service.AuditLogService auditLogService;
 
+    private String blankToNull(String value) {
+        return value == null || value.trim().isEmpty() ? null : value.trim();
+    }
+
     @PostMapping
     @Transactional
     public ResponseEntity<?> createLichHen(@RequestBody LichHen lichHen) {
         try {
             lichHen.setId_lich_hen(null);
+            lichHen.setId_khach_hang(blankToNull(lichHen.getId_khach_hang()));
+            lichHen.setId_thu_cung(blankToNull(lichHen.getId_thu_cung()));
+            lichHen.setId_bac_si(blankToNull(lichHen.getId_bac_si()));
+            lichHen.setId_dich_vu(blankToNull(lichHen.getId_dich_vu()));
+            lichHen.setId_nguoi_dat(blankToNull(lichHen.getId_nguoi_dat()));
 
             org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
                     .getContext().getAuthentication();
@@ -72,6 +81,33 @@ public class LichHenController {
                 throw new RuntimeException(
                         "Tài khoản nội bộ (Admin/Nhân viên) vui lòng chọn khách hàng để đặt lịch. Nếu sếp là khách hàng, vui lòng dùng tài khoản Khách hàng!");
             }
+
+            if (lichHen.getNgay_kham() == null) {
+                throw new RuntimeException("Ngày khám không được để trống!");
+            }
+
+            if (lichHen.getId_thu_cung() == null) {
+                throw new RuntimeException("Vui lòng chọn thú cưng cần khám!");
+            }
+
+            Integer petOwnerCount = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM ThuCung WHERE id_thu_cung = ? AND id_khach_hang = ? AND ISNULL(da_xoa, 0) = 0",
+                    Integer.class, lichHen.getId_thu_cung(), lichHen.getId_khach_hang());
+            if (petOwnerCount == null || petOwnerCount == 0) {
+                throw new RuntimeException("Thú cưng đã chọn không thuộc hồ sơ khách hàng này hoặc đã bị xóa!");
+            }
+
+            if (lichHen.getId_dich_vu() == null) {
+                throw new RuntimeException("Vui lòng chọn dịch vụ trước khi đặt lịch!");
+            }
+
+            Integer activeServiceCount = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM DichVu WHERE id_dich_vu = ? AND trang_thai = 1",
+                    Integer.class, lichHen.getId_dich_vu());
+            if (activeServiceCount == null || activeServiceCount == 0) {
+                throw new RuntimeException("Dịch vụ đã chọn không còn khả dụng. Vui lòng chọn dịch vụ khác!");
+            }
+
             Integer thoiLuongMoi = 30;
             if (lichHen.getId_dich_vu() != null) {
                 try {
@@ -92,6 +128,9 @@ public class LichHenController {
             java.time.LocalDate today = java.time.LocalDate.now(vnZone);
             if (lichHen.getNgay_kham().isBefore(today)) {
                 throw new RuntimeException("Sếp ơi, ngày khám không được ở quá khứ đâu ạ!");
+            }
+            if (lichHen.getNgay_kham().isEqual(today) && !newStart.isAfter(LocalTime.now(vnZone))) {
+                throw new RuntimeException("Khung giờ này đã qua rồi. Vui lòng chọn giờ khám muộn hơn!");
             }
             LocalTime newEnd = newStart.plusMinutes(thoiLuongMoi);
 
@@ -203,6 +242,8 @@ public class LichHenController {
 
             if (lichHen.getLy_do() != null)
                 lichHen.setLy_do(org.springframework.web.util.HtmlUtils.htmlEscape(lichHen.getLy_do()));
+            if (lichHen.getGhi_chu() != null)
+                lichHen.setGhi_chu(org.springframework.web.util.HtmlUtils.htmlEscape(lichHen.getGhi_chu()));
             if (lichHen.getGhi_chu_noi_bo() != null)
                 lichHen.setGhi_chu_noi_bo(org.springframework.web.util.HtmlUtils.htmlEscape(lichHen.getGhi_chu_noi_bo()));
 
@@ -339,7 +380,8 @@ public class LichHenController {
     public ResponseEntity<?> getAll(
             @RequestParam(required = false) Integer page,
             @RequestParam(required = false) Integer size,
-            @RequestParam(required = false) String status) {
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String search) {
         if (!isInternalUser()) {
             return ResponseEntity.status(403).body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền truy cập danh sách lịch hẹn tổng quát!"));
         }
@@ -350,6 +392,22 @@ public class LichHenController {
         if (status != null && !status.isEmpty()) {
             where.append(" AND lh.trang_thai = ?");
             params.add(status.toUpperCase());
+        }
+        if (search != null && !search.trim().isEmpty()) {
+            String likePattern = "%" + search.trim() + "%";
+            where.append(" AND (")
+                    .append("CAST(lh.id_lich_hen AS NVARCHAR(50)) LIKE ? ")
+                    .append("OR tc.ten_thu_cung COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI ")
+                    .append("OR kh.ten_khach_hang COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI ")
+                    .append("OR kh.sdt LIKE ? ")
+                    .append("OR nv.ho_ten COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI ")
+                    .append("OR dv.ten_dich_vu COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI ")
+                    .append("OR lh.ly_do COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI ")
+                    .append("OR lh.ghi_chu COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI")
+                    .append(")");
+            for (int i = 0; i < 8; i++) {
+                params.add(likePattern);
+            }
         }
 
         String baseSelect = "SELECT lh.*, kh.ten_khach_hang, kh.sdt, tc.ten_thu_cung, nv.ho_ten as ten_bac_si, dv.ten_dich_vu " +
@@ -363,7 +421,12 @@ public class LichHenController {
         if (page != null && size != null && size > 0) {
             try {
                 Integer total = jdbcTemplate.queryForObject(
-                        "SELECT COUNT(*) FROM LichHen lh " + where, Integer.class, params.toArray());
+                        "SELECT COUNT(*) FROM LichHen lh " +
+                                "LEFT JOIN KhachHang kh ON lh.id_khach_hang = kh.id_khach_hang " +
+                                "LEFT JOIN ThuCung tc ON lh.id_thu_cung = tc.id_thu_cung " +
+                                "LEFT JOIN NhanVien nv ON lh.id_bac_si = nv.id_nhan_vien " +
+                                "LEFT JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu " +
+                                where, Integer.class, params.toArray());
                 int totalPages = (int) Math.ceil((double) (total != null ? total : 0) / size);
 
                 java.util.List<Object> dataParams = new java.util.ArrayList<>(params);
@@ -619,6 +682,9 @@ public class LichHenController {
             @RequestParam(required = false) String id_nhan_vien,
             @RequestParam String ngay,
             @RequestParam(required = false) String id_dich_vu) {
+
+        id_nhan_vien = blankToNull(id_nhan_vien);
+        id_dich_vu = blankToNull(id_dich_vu);
 
         List<LocalTime> caTrucList = new java.util.ArrayList<>();
         List<Map<String, Object>> existingApps = new java.util.ArrayList<>();

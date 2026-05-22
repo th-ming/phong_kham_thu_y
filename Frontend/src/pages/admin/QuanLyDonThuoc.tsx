@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axiosInstance from "@services/axios";
 import { Modal } from "@components/CommonUI";
+import { matchesSearchFields } from "@utils/index";
 
 const QuanLyDonThuoc: React.FC = () => {
   const [donThuocs, setDonThuocs] = useState<any[]>([]);
@@ -22,14 +23,17 @@ const QuanLyDonThuoc: React.FC = () => {
 
   const filteredDonThuocs = React.useMemo(() => {
     if (!searchDonThuoc.trim()) return donThuocs;
-    const s = searchDonThuoc.toLowerCase();
-    return donThuocs.filter(dt => 
-      String(dt.id_don_thuoc || "").toLowerCase().includes(s) ||
-      (dt.ten_thu_cung || "").toLowerCase().includes(s) ||
-      (dt.ten_thuoc || "").toLowerCase().includes(s) ||
-      (dt.cach_dung || "").toLowerCase().includes(s) ||
-      (dt.ghi_chu || "").toLowerCase().includes(s)
-    );
+    return donThuocs.filter(dt => matchesSearchFields(searchDonThuoc, [
+      dt.id_don_thuoc,
+      dt.id_ho_so,
+      dt.ten_thu_cung,
+      dt.ten_khach_hang,
+      dt.ten_thuoc,
+      dt.cach_dung,
+      dt.lieu_dung,
+      dt.ghi_chu,
+      dt.ngay_ke_don
+    ]));
   }, [donThuocs, searchDonThuoc]);
 
   const handlePrint = () => {

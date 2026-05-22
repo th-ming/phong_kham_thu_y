@@ -55,24 +55,57 @@ public class HoSoBenhAnController {
     @GetMapping
     public org.springframework.http.ResponseEntity<?> getAllHoSoBenhAn(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "50") int size) {
+            @RequestParam(defaultValue = "50") int size,
+            @RequestParam(required = false) String search) {
         if (!hasMedicalPermission()) {
             return org.springframework.http.ResponseEntity.status(403)
                     .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền xem danh sách bệnh án tổng quát!"));
         }
         int offset = page * size;
+        StringBuilder where = new StringBuilder("WHERE 1=1");
+        java.util.List<Object> params = new java.util.ArrayList<>();
+        if (search != null && !search.trim().isEmpty()) {
+            String likePattern = "%" + search.trim() + "%";
+            where.append(" AND (")
+                    .append("CAST(hs.id_ho_so_benh_an AS NVARCHAR(50)) LIKE ? ")
+                    .append("OR tc.ten_thu_cung COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI ")
+                    .append("OR tc.giong COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI ")
+                    .append("OR kh.ten_khach_hang COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI ")
+                    .append("OR nv.ho_ten COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI ")
+                    .append("OR hs.trieu_chung COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI ")
+                    .append("OR hs.chan_doan COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI ")
+                    .append("OR hs.trang_thai_ho_so COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI")
+                    .append(")");
+            for (int i = 0; i < 8; i++) {
+                params.add(likePattern);
+            }
+        }
+
+        String fromSql = "FROM HoSoBenhAn hs " +
+                "LEFT JOIN ThuCung tc ON hs.id_thu_cung = tc.id_thu_cung " +
+                "LEFT JOIN KhachHang kh ON tc.id_khach_hang = kh.id_khach_hang " +
+                "LEFT JOIN NhanVien nv ON hs.id_bac_si = nv.id_nhan_vien ";
+
+        Integer total = jdbcTemplate.queryForObject("SELECT COUNT(*) " + fromSql + where, Integer.class, params.toArray());
+        int totalPages = (int) Math.max(1, Math.ceil((double) (total != null ? total : 0) / size));
+
         String sql = "SELECT hs.id_ho_so_benh_an as id_ho_so, hs.ngay_kham, hs.trieu_chung, hs.chan_doan, hs.phac_do_dieu_tri, hs.huong_dan_cham_soc, "
                 + "hs.nhiet_do, hs.can_nang, hs.trang_thai_ho_so, " +
                 "tc.id_thu_cung, tc.ten_thu_cung, tc.giong as giong_loai, " +
                 "nv.id_nhan_vien as id_bac_si, nv.ho_ten as ten_bac_si, " +
                 "kh.id_khach_hang, kh.ten_khach_hang " +
-                "FROM HoSoBenhAn hs " +
-                "LEFT JOIN ThuCung tc ON hs.id_thu_cung = tc.id_thu_cung " +
-                "LEFT JOIN KhachHang kh ON tc.id_khach_hang = kh.id_khach_hang " +
-                "LEFT JOIN NhanVien nv ON hs.id_bac_si = nv.id_nhan_vien " +
+                fromSql + where + " " +
                 "ORDER BY hs.ngay_kham DESC " +
                 "OFFSET CAST(? AS INT) ROWS FETCH NEXT CAST(? AS INT) ROWS ONLY";
-        return org.springframework.http.ResponseEntity.ok(jdbcTemplate.queryForList(sql, offset, size));
+        java.util.List<Object> dataParams = new java.util.ArrayList<>(params);
+        dataParams.add(offset);
+        dataParams.add(size);
+        return org.springframework.http.ResponseEntity.ok(Map.of(
+                "content", jdbcTemplate.queryForList(sql, dataParams.toArray()),
+                "totalPages", totalPages,
+                "totalElements", total != null ? total : 0,
+                "currentPage", page
+        ));
     }
 
     @GetMapping("/{id}")
@@ -193,7 +226,7 @@ public class HoSoBenhAnController {
         if (auth == null || auth.getName().equals("anonymousUser"))
             return false;
         String role = auth.getAuthorities().toString().toUpperCase();
-        return role.contains("ADMIN") || role.contains("DOCTOR") || role.contains("NHANVIEN");
+        return role.contains("ADMIN") || role.contains("QUAN_LY") || role.contains("BAC_SI") || role.contains("Y_TA");
     }
 
     @PostMapping
@@ -211,7 +244,7 @@ public class HoSoBenhAnController {
 
             String idHoSo = "HS-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase();
             String sql = "INSERT INTO HoSoBenhAn (id_ho_so_benh_an, id_thu_cung, id_bac_si, id_lich_hen, trieu_chung, chan_doan, ngay_kham, trang_thai_ho_so, id_nguoi_tao, ngay_tao) "
-                    + "VALUES (?, ?, ?, ?, ?, ?, CAST(GETDATE() AS DATE), 'NHAP', ?, GETDATE())";
+                    + "VALUES (?, ?, ?, ?, ?, ?, CAST(GETDATE() AS DATE), 'HOAN_TAT', ?, GETDATE())";
 
             jdbcTemplate.update(sql, idHoSo, idThuCung, idBacSi, idLichHen, trieuChung, chanDoan, idBacSi);
 

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import axiosInstance from "@services/axios";
 import { Modal } from "@components/CommonUI";
 import { toast } from "@components/Toast";
+import { matchesSearchFields } from "@utils/index";
 
 const QuanLyKhachHangThuCung: React.FC = () => {
   const [thuCung, setThuCung] = useState<any[]>([]);
@@ -34,22 +35,32 @@ const QuanLyKhachHangThuCung: React.FC = () => {
     mau_sac: "", trong_luong: "", ngay_sinh: "", id_khach_hang: ""
   });
 
-  // Hàm chuẩn hóa loại bỏ dấu Tiếng Việt phục vụ tìm kiếm thông minh không dấu / có dấu
-  const removeAccents = (str: string) => {
-    return str
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/đ/g, "d")
-      .replace(/Đ/g, "D");
+  const petFieldStyle: React.CSSProperties = {
+    width: '100%',
+    minWidth: 0,
+    background: 'var(--gray-50)',
+    textAlign: 'left',
+    cursor: 'text',
+    padding: '14px 16px',
+    justifyContent: 'flex-start'
+  };
+
+  const petSelectStyle: React.CSSProperties = {
+    ...petFieldStyle,
+    cursor: 'pointer'
   };
 
   const filteredKhachHang = React.useMemo(() => {
-    const cleanSearch = removeAccents(searchKhachHang.toLowerCase());
     return khachHang.filter((kh) => {
-      const name = removeAccents((kh.ten_khach_hang || "").toLowerCase());
-      const phone = (kh.sdt || "").toLowerCase();
-      const email = (kh.email || "").toLowerCase();
-      return name.includes(cleanSearch) || phone.includes(cleanSearch) || email.includes(cleanSearch);
+      return matchesSearchFields(searchKhachHang, [
+        kh.id_khach_hang,
+        kh.ten_khach_hang,
+        kh.sdt,
+        kh.email,
+        kh.dia_chi,
+        kh.trang_thai,
+        kh.ngay_tao
+      ]);
     });
   }, [khachHang, searchKhachHang]);
 
@@ -547,44 +558,44 @@ const QuanLyKhachHangThuCung: React.FC = () => {
       </Modal>
 
       {/* MODAL THÊM THÚ CƯNG */}
-      <Modal isOpen={showAddPetModal} onClose={() => setShowAddPetModal(false)} title={editingPetId ? "Cập nhật thú cưng" : "Đăng ký bé mới"} maxWidth="500px">
-        <div style={{ display: 'grid', gap: '16px' }}>
+      <Modal isOpen={showAddPetModal} onClose={() => setShowAddPetModal(false)} title={editingPetId ? "Cập nhật thú cưng" : "Đăng ký bé mới"} maxWidth="620px">
+        <div style={{ display: 'grid', gap: '16px', width: '100%', overflowX: 'hidden' }}>
           <form onSubmit={handleAddPet} style={{ display: 'grid', gap: '16px' }}>
             <div style={{ display: 'grid', gap: '8px' }}>
               <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)' }}>CHỦ SỞ HỮU</label>
-              <select data-ai-id="select-quanlykhachhangthucung-nqxg" required className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left' }} value={petFormData.id_khach_hang} onChange={e => setPetFormData({ ...petFormData, id_khach_hang: e.target.value })}>
+              <select data-ai-id="select-quanlykhachhangthucung-nqxg" required className="btn" style={petSelectStyle} value={petFormData.id_khach_hang} onChange={e => setPetFormData({ ...petFormData, id_khach_hang: e.target.value })}>
                 <option value="">-- Chọn khách hàng --</option>
                 {khachHang.map(kh => <option key={kh.id_khach_hang} value={kh.id_khach_hang}>{kh.ten_khach_hang} - {kh.sdt}</option>)}
               </select>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '12px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.5fr) minmax(0, 1fr)', gap: '12px' }}>
               <div style={{ display: 'grid', gap: '8px' }}>
                 <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)' }}>TÊN BÉ</label>
-                <input data-ai-id="input-quanlykhachhangthucung-ub0z" required className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left', cursor: 'text' }} value={petFormData.ten_thu_cung} onChange={e => setPetFormData({ ...petFormData, ten_thu_cung: e.target.value })} />
+                <input data-ai-id="input-quanlykhachhangthucung-ub0z" required className="btn" style={petFieldStyle} value={petFormData.ten_thu_cung} onChange={e => setPetFormData({ ...petFormData, ten_thu_cung: e.target.value })} />
               </div>
               <div style={{ display: 'grid', gap: '8px' }}>
                 <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)' }}>LOÀI</label>
-                <select data-ai-id="select-quanlykhachhangthucung-36r6" className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left' }} value={petFormData.loai} onChange={e => setPetFormData({ ...petFormData, loai: e.target.value })}>
+                <select data-ai-id="select-quanlykhachhangthucung-36r6" className="btn" style={petSelectStyle} value={petFormData.loai} onChange={e => setPetFormData({ ...petFormData, loai: e.target.value })}>
                   <option value="Chó">Chó</option>
                   <option value="Mèo">Mèo</option>
                   <option value="Khác">Khác</option>
                 </select>
               </div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '12px' }}>
               <div style={{ display: 'grid', gap: '8px' }}>
                 <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)' }}>GIỐNG</label>
-                <input data-ai-id="input-quanlykhachhangthucung-y0af" className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left', cursor: 'text' }} value={petFormData.giong} onChange={e => setPetFormData({ ...petFormData, giong: e.target.value })} />
+                <input data-ai-id="input-quanlykhachhangthucung-y0af" className="btn" style={petFieldStyle} value={petFormData.giong} onChange={e => setPetFormData({ ...petFormData, giong: e.target.value })} />
               </div>
               <div style={{ display: 'grid', gap: '8px' }}>
                 <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)' }}>CÂN NẶNG (KG)</label>
-                <input data-ai-id="input-quanlykhachhangthucung-ccuw" type="number" step="0.1" className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left', cursor: 'text' }} value={petFormData.trong_luong} onChange={e => setPetFormData({ ...petFormData, trong_luong: e.target.value })} />
+                <input data-ai-id="input-quanlykhachhangthucung-ccuw" type="number" step="0.1" className="btn" style={petFieldStyle} value={petFormData.trong_luong} onChange={e => setPetFormData({ ...petFormData, trong_luong: e.target.value })} />
               </div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '12px' }}>
               <div style={{ display: 'grid', gap: '8px' }}>
                 <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)' }}>GIỚI TÍNH</label>
-                <select data-ai-id="select-quanlykhachhangthucung-1av9" className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left' }} value={petFormData.gioi_tinh} onChange={e => setPetFormData({ ...petFormData, gioi_tinh: e.target.value })}>
+                <select data-ai-id="select-quanlykhachhangthucung-1av9" className="btn" style={petSelectStyle} value={petFormData.gioi_tinh} onChange={e => setPetFormData({ ...petFormData, gioi_tinh: e.target.value })}>
                   <option value="Đực">Đực</option>
                   <option value="Cái">Cái</option>
                   <option value="Không xác định">Không xác định</option>
@@ -592,11 +603,11 @@ const QuanLyKhachHangThuCung: React.FC = () => {
               </div>
               <div style={{ display: 'grid', gap: '8px' }}>
                 <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)' }}>NGÀY SINH</label>
-                <input data-ai-id="input-quanlykhachhangthucung-guzt" type="date" className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left', cursor: 'text', padding: '0 12px' }} value={petFormData.ngay_sinh} onChange={e => setPetFormData({ ...petFormData, ngay_sinh: e.target.value })} max={new Date().toISOString().split("T")[0]} />
+                <input data-ai-id="input-quanlykhachhangthucung-guzt" type="date" className="btn" style={{ ...petFieldStyle, padding: '14px 12px' }} value={petFormData.ngay_sinh} onChange={e => setPetFormData({ ...petFormData, ngay_sinh: e.target.value })} max={new Date().toISOString().split("T")[0]} />
               </div>
               <div style={{ display: 'grid', gap: '8px' }}>
                 <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)' }}>MÀU SẮC</label>
-                <input data-ai-id="input-quanlykhachhangthucung-h9m1" className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left', cursor: 'text' }} value={petFormData.mau_sac} onChange={e => setPetFormData({ ...petFormData, mau_sac: e.target.value })} />
+                <input data-ai-id="input-quanlykhachhangthucung-h9m1" className="btn" style={petFieldStyle} value={petFormData.mau_sac} onChange={e => setPetFormData({ ...petFormData, mau_sac: e.target.value })} />
               </div>
             </div>
             <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>

@@ -131,14 +131,27 @@ public class KhachHangController {
                     kh.getSdt(),
                     kh.getDia_chi());
 
+            // Stored procedure hiện chỉ cập nhật thông tin chữ. Avatar lưu trực tiếp qua JPA
+            // để trang cá nhân khách hàng đổi ảnh đại diện được ngay.
+            if (kh.getHinh_anh() != null) {
+                khachHangRepository.findById(id).ifPresent(existing -> {
+                    existing.setHinh_anh(kh.getHinh_anh());
+                    khachHangRepository.save(existing);
+                });
+            }
+
             if (result != null && !result.isEmpty()) {
                 // GHI LOG
                 if (!isKhachHang) {
                     auditLogService.logAction("CẬP NHẬT", "KhachHang", "Cập nhật thông tin khách hàng ID " + id);
                 }
-                return ResponseEntity.ok(result.get(0));
+                return khachHangRepository.findById(id)
+                        .<ResponseEntity<?>>map(ResponseEntity::ok)
+                        .orElseGet(() -> ResponseEntity.ok(result.get(0)));
             }
-            return ResponseEntity.ok(Map.of("message", "Cập nhật thành công!"));
+            return khachHangRepository.findById(id)
+                    .<ResponseEntity<?>>map(ResponseEntity::ok)
+                    .orElseGet(() -> ResponseEntity.ok(Map.of("message", "Cập nhật thành công!")));
         } catch (Exception e) {
             return ResponseEntity.status(400).body(Map.of("message", "Lỗi cập nhật: " + e.getMessage()));
         }
@@ -169,6 +182,20 @@ public class KhachHangController {
                     return ResponseEntity.status(403).body(Map.of("message",
                             "Cảnh báo bảo mật: Bạn không có quyền vô hiệu hóa tài khoản của người khác!"));
                 }
+                if (!isKhachHang) {
+                    String role = tk.getId_vai_tro() != null ? tk.getId_vai_tro().toUpperCase() : "";
+                    String authorities = (auth.getAuthorities() != null) ? auth.getAuthorities().toString().toUpperCase() : "";
+                    boolean canDeactivateCustomer = role.equals("VT-1")
+                            || role.equals("VT-2")
+                            || authorities.contains("ADMIN")
+                            || authorities.contains("QUAN_LY");
+                    if (!canDeactivateCustomer) {
+                        return ResponseEntity.status(403).body(Map.of("message",
+                                "Cảnh báo bảo mật: Chỉ Admin/Quản lý mới được vô hiệu hóa tài khoản khách hàng!"));
+                    }
+                }
+            } else {
+                return ResponseEntity.status(404).body(Map.of("message", "Không tìm thấy tài khoản xác thực!"));
             }
 
             khachHangRepository.deactivateAccountByKhachHangId(id);

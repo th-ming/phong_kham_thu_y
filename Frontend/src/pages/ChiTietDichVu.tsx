@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { MemeCat, ScrollToTop } from "@components/SpecialEffects";
 import axiosInstance from "@services/axios";
-import { formatTienVND, generateSlug, getUserProfile } from "@utils/index";
+import { formatTienVND, generateSlug, getUserProfile, normalizeUserRole } from "@utils/index";
 import { toast } from "@components/Toast";
 
 interface ServiceData {
@@ -23,8 +23,7 @@ const ChiTietDichVu: React.FC = () => {
   const handleBookingClick = () => {
     const user = getUserProfile();
     if (user) {
-      const role = (user.ten_vai_tro || user.loai_tai_khoan || "").toLowerCase();
-      if (role !== "customer" && role !== "khach_hang" && !role.includes("khách hàng")) {
+      if (normalizeUserRole(user) !== "khach_hang") {
         toast.info("Bạn đang đăng nhập với tài khoản nhân sự. Hệ thống đang chuyển hướng bạn đến Trang quản lý lịch hẹn nội bộ!");
         navigate("/quan-ly/lich-hen");
         return;

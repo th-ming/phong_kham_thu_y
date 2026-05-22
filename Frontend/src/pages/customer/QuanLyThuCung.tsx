@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import axiosInstance from "@services/axios";
-import { getUserProfile } from "@utils/index";
+import { getUserProfile, matchesSearchFields } from "@utils/index";
 import { toast } from "@components/Toast";
 import { Skeleton } from "@components/CommonUI";
 import { confirmAction } from "@components/ConfirmModal";
@@ -208,12 +208,26 @@ const QuanLyThuCung: React.FC = () => {
 
   const filteredPets = useMemo(() => {
     if (!searchQuery.trim()) return petsWithHistory;
-    const q = searchQuery.toLowerCase();
-    return petsWithHistory.filter(pet => 
-      pet.ten_thu_cung?.toLowerCase().includes(q) || 
-      pet.loai?.toLowerCase().includes(q) || 
-      pet.giong?.toLowerCase().includes(q)
-    );
+    return petsWithHistory.filter(pet => matchesSearchFields(searchQuery, [
+      pet.ten_thu_cung,
+      pet.tenThuCung,
+      pet.ten,
+      pet.loai,
+      pet.loai_thu_cung,
+      pet.loaiThuCung,
+      pet.giong,
+      pet.giong_loai,
+      pet.giongLoai,
+      pet.gioi_tinh,
+      pet.gioiTinh,
+      pet.mau_sac,
+      pet.mauSac,
+      pet.trong_luong,
+      pet.can_nang,
+      pet.canNang,
+      pet.ngay_sinh,
+      pet.ngaySinh
+    ]));
   }, [petsWithHistory, searchQuery]);
 
   if (loading) {

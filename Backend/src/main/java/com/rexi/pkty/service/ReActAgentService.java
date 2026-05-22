@@ -21,6 +21,8 @@ public class ReActAgentService {
     private static final int MAX_ITERATIONS = 6;
 
     @Autowired private OpenRouterService openRouterService;
+    @Autowired private GeminiService geminiService;
+    @Autowired private GroqService groqService;
     @Autowired private AiToolService toolService;
     @Autowired private AiMemoryService memoryService;
 
@@ -34,6 +36,13 @@ public class ReActAgentService {
      */
     public ReActResult run(String userQuery, String username, String userRole) {
         List<ReActStep> steps = new ArrayList<>();
+        String originalUserIntent = extractOriginalUserIntent(userQuery);
+        String normalizedQuery = normalizeVietnamese(originalUserIntent.trim().toLowerCase());
+        if (normalizedQuery.matches("^(hi|hello|helo|chao|xin chao|alo|hey|test|ok)$")) {
+            String greeting = "Dạ, Rexi Agent v2 đang hoạt động bình thường. Bạn cần tôi hỗ trợ đặt lịch, xem hồ sơ, tra cứu lịch hẹn hay tìm thông tin thú y nào?";
+            steps.add(new ReActStep("FINAL", greeting, null, null, null));
+            return new ReActResult(greeting, steps);
+        }
 
         // Xây dựng system prompt với tool schema + ngữ cảnh người dùng
         String systemPrompt = buildSystemPrompt(username, userRole);
@@ -56,10 +65,12 @@ public class ReActAgentService {
 
             String rawResponse;
             try {
-                rawResponse = openRouterService.chat(history);
+                rawResponse = callBestAvailableModel(history);
             } catch (Exception e) {
                 logger.severe("[ReAct] Lỗi gọi LLM: " + e.getMessage());
-                return new ReActResult("Xin lỗi, có lỗi kết nối AI. Vui lòng thử lại sau.", steps);
+                String fallback = "Rexi Agent v2 đang bị lỗi kết nối tới nhà cung cấp AI bên ngoài. Các tác vụ tra cứu dữ liệu nội bộ vẫn cần cấu hình lại API key hoặc mạng trước khi chạy tiếp.";
+                steps.add(new ReActStep("ERROR", fallback, null, null, e.getMessage()));
+                return new ReActResult(fallback, steps);
             }
 
             // Cắt bỏ markdown code block nếu model trả về ```json ... ```
@@ -67,11 +78,15 @@ public class ReActAgentService {
             if (cleaned.startsWith("```")) {
                 cleaned = cleaned.replaceAll("^```[a-z]*\\s*", "").replaceAll("\\s*```$", "").trim();
             }
+            
+            // Trích xuất block JSON phòng khi AI sinh ra văn bản "suy nghĩ" phía trước
+            int jsonStartIndex = cleaned.indexOf("{");
+            String possibleJson = jsonStartIndex >= 0 ? cleaned.substring(jsonStartIndex) : cleaned;
 
             // Kiểm tra xem đây có phải JSON tool call không
-            if (cleaned.startsWith("{")) {
+            if (jsonStartIndex >= 0) {
                 try {
-                    JsonNode node = mapper.readTree(cleaned);
+                    JsonNode node = mapper.readTree(possibleJson);
 
                     // ── FINAL ANSWER ──
                     if (node.has("final_answer")) {
@@ -129,6 +144,54 @@ public class ReActAgentService {
         return new ReActResult(fallback, steps);
     }
 
+    private String extractOriginalUserIntent(String userQuery) {
+        if (userQuery == null) return "";
+        for (String line : userQuery.split("\\R")) {
+            String normalizedLine = normalizeVietnamese(line.toLowerCase());
+            if (normalizedLine.startsWith("yeu cau nguoi dung:")) {
+                return line.substring(line.indexOf(":") + 1).trim();
+            }
+        }
+        return userQuery.trim();
+    }
+
+    private String callBestAvailableModel(List<ChatMessage> history) throws Exception {
+        Exception lastError = null;
+        try {
+            return openRouterService.chat(history);
+        } catch (Exception e) {
+            lastError = e;
+            logger.warning("[ReAct] OpenRouter lỗi, fallback sang Gemini: " + e.getMessage());
+        }
+
+        try {
+            return geminiService.chat(history);
+        } catch (Exception e) {
+            lastError = e;
+            logger.warning("[ReAct] Gemini lỗi, fallback sang Groq: " + e.getMessage());
+        }
+
+        try {
+            return groqService.chat(history);
+        } catch (Exception e) {
+            lastError = e;
+            logger.warning("[ReAct] Groq lỗi: " + e.getMessage());
+        }
+
+        throw lastError != null ? lastError : new RuntimeException("Không có provider AI khả dụng.");
+    }
+
+    private String normalizeVietnamese(String input) {
+        return input
+                .replaceAll("[àáạảãâầấậẩẫăằắặẳẵ]", "a")
+                .replaceAll("[èéẹẻẽêềếệểễ]", "e")
+                .replaceAll("[ìíịỉĩ]", "i")
+                .replaceAll("[òóọỏõôồốộổỗơờớợởỡ]", "o")
+                .replaceAll("[ùúụủũưừứựửữ]", "u")
+                .replaceAll("[ỳýỵỷỹ]", "y")
+                .replaceAll("[đ]", "d");
+    }
+
     /**
      * Xây dựng system prompt tích hợp ngữ cảnh người dùng + tool schema.
      */
@@ -149,9 +212,13 @@ public class ReActAgentService {
             + "\n=== THÔNG TIN NGƯỜI DÙNG ===\n" + userCtx
             + "\n=== VAI TRÒ ===\n" + roleContext
             + "\n\nQUY TẮC QUAN TRỌNG:\n"
-            + "- Luôn suy nghĩ từng bước: Tôi cần thông tin gì? Tool nào giúp lấy được?\n"
-            + "- Sau khi có đủ thông tin từ tools, trả về final_answer bằng tiếng Việt thân thiện.\n"
+            + "- Đọc kỹ phần 'Yêu cầu người dùng', 'Trang hiện tại', 'Bối cảnh giao diện hiện tại' và 'Nhật ký thao tác gần đây' nếu có trong tin nhắn user.\n"
+            + "- Phân biệt rõ CÂU HỎI và LỆNH THAO TÁC: nếu người dùng hỏi 'có hoạt động không', 'vì sao', 'là gì', hãy giải thích/đề xuất kiểm tra; không tự điều hướng hoặc thao tác.\n"
+            + "- Nếu người dùng muốn thao tác thật, hãy chọn tool phù hợp trước. Nếu tool chưa đủ dữ liệu, hỏi lại đúng một câu ngắn, không tự bịa dữ liệu.\n"
+            + "- Nếu thấy người dùng đang ở sai trang, thiếu dữ liệu nhập, chưa lưu cấu hình, hoặc hành động có rủi ro, hãy cảnh báo và gợi ý bước tiếp theo.\n"
+            + "- Tối ưu token: chỉ tóm tắt đúng dữ liệu cần thiết, không lặp lại toàn bộ DOM hoặc lịch sử dài.\n"
+            + "- Sau khi có đủ thông tin từ tools, trả về final_answer bằng tiếng Việt rõ, ngắn, đúng vai trò hiện tại.\n"
             + "- Nếu câu hỏi đơn giản (chào hỏi, hỏi thông tin chung) → trả final_answer ngay, không cần dùng tool.\n"
-            + "- KHÔNG bịa đặt dữ liệu. Chỉ dùng thông tin từ tool hoặc kiến thức y khoa thực tế.\n";
+            + "- KHÔNG bịa đặt dữ liệu. Chỉ dùng thông tin từ tool, bối cảnh màn hình được gửi lên hoặc kiến thức y khoa thực tế.\n";
     }
 }

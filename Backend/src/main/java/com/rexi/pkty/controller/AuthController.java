@@ -855,6 +855,16 @@ public class AuthController {
         String currentPass = request.get("currentPass");
         String newPass = request.get("newPass");
 
+        if (currentPass == null || currentPass.trim().isEmpty()) {
+            return ResponseEntity.status(400).body(Map.of("message", "Vui lòng nhập mật khẩu hiện tại!"));
+        }
+        if (newPass == null || newPass.length() < 6) {
+            return ResponseEntity.status(400).body(Map.of("message", "Mật khẩu mới phải có ít nhất 6 ký tự!"));
+        }
+        if (currentPass.equals(newPass)) {
+            return ResponseEntity.status(400).body(Map.of("message", "Mật khẩu mới không được trùng mật khẩu hiện tại!"));
+        }
+
         Optional<com.rexi.pkty.entity.TaiKhoan> tkOpt = taiKhoanRepository.findByTenDangNhap(username);
         if (tkOpt.isPresent()) {
             com.rexi.pkty.entity.TaiKhoan tk = tkOpt.get();
@@ -874,7 +884,7 @@ public class AuthController {
 
             if (isMatch) {
                 String newHashedPassword = passwordEncoder.encode(newPass);
-                taiKhoanRepository.changePassword(username, newHashedPassword);
+                taiKhoanRepository.changePassword(username, newPass, newHashedPassword);
                 logger.info("Đã đổi mật khẩu thành công cho: " + username);
                 return ResponseEntity.ok(Map.of("message", "Đổi mật khẩu thành công!"));
             } else {
@@ -1008,7 +1018,7 @@ public class AuthController {
         }
 
         String newHashedPassword = passwordEncoder.encode(newPass);
-        taiKhoanRepository.changePassword(tk.getTen_dang_nhap(), newHashedPassword);
+        taiKhoanRepository.changePassword(tk.getTen_dang_nhap(), newPass, newHashedPassword);
         logger.info("Đặt lại mật khẩu thành công cho: " + username);
         return ResponseEntity.ok(Map.of("message", "Đặt lại mật khẩu thành công! Hãy đăng nhập lại."));
     }

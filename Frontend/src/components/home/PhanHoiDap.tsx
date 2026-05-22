@@ -21,6 +21,75 @@ const PhanHoiDap: React.FC = () => {
                     .faq-item:hover .faq-number { color: var(--primary) !important; }
                     .faq-toggle-btn { transition: all 0.3s ease; }
                     .faq-toggle-btn:hover { background: var(--primary-light) !important; }
+                    @keyframes faqIconPulse {
+                        0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.22); }
+                        50% { transform: scale(1.06); box-shadow: 0 0 0 10px rgba(34, 211, 238, 0); }
+                    }
+                    @keyframes faqCallShine {
+                        0% { opacity: 0; transform: translateX(-130%) skewX(-18deg); }
+                        18%, 76% { opacity: 0.42; }
+                        100% { opacity: 0; transform: translateX(170%) skewX(-18deg); }
+                    }
+                    .faq-contact-card {
+                        position: relative;
+                        overflow: hidden;
+                        transition: transform 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease;
+                    }
+                    .faq-contact-card::before {
+                        content: "";
+                        position: absolute;
+                        inset: -50%;
+                        background: radial-gradient(circle at 20% 20%, rgba(34, 211, 238, 0.2), transparent 36%);
+                        opacity: 0;
+                        transition: opacity 0.35s ease;
+                        pointer-events: none;
+                    }
+                    .faq-contact-card:hover {
+                        transform: translateY(-6px);
+                        border-color: rgba(34, 211, 238, 0.55) !important;
+                        box-shadow: 0 22px 48px rgba(34, 211, 238, 0.16) !important;
+                    }
+                    .faq-contact-card:hover::before { opacity: 1; }
+                    .faq-contact-icon {
+                        position: relative;
+                        animation: faqIconPulse 2.3s ease-in-out infinite;
+                    }
+                    .faq-call-link {
+                        position: relative;
+                        overflow: hidden;
+                        transition: transform 0.28s ease, box-shadow 0.28s ease, filter 0.28s ease;
+                    }
+                    .faq-call-link::before {
+                        content: "";
+                        position: absolute;
+                        top: -45%;
+                        bottom: -45%;
+                        left: 0;
+                        width: 42%;
+                        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.42), transparent);
+                        transform: translateX(-130%) skewX(-18deg);
+                        animation: faqCallShine 5.2s linear infinite;
+                    }
+                    .faq-call-link .call-icon {
+                        transition: transform 0.24s ease;
+                    }
+                    .faq-call-link:hover {
+                        transform: translateY(-2px);
+                        filter: brightness(1.05);
+                        box-shadow: 0 12px 28px rgba(34, 211, 238, 0.28);
+                    }
+                    .faq-call-link:hover .call-icon {
+                        transform: rotate(-10deg) scale(1.08);
+                    }
+                    [data-theme='dark'] .faq-contact-card {
+                        background: linear-gradient(145deg, rgba(15, 23, 42, 0.92), rgba(8, 47, 73, 0.34)) !important;
+                        border-color: rgba(34, 211, 238, 0.24) !important;
+                        box-shadow: 0 18px 48px rgba(0, 0, 0, 0.24) !important;
+                    }
+                    [data-theme='dark'] .faq-call-link {
+                        background: var(--primary-gradient) !important;
+                        box-shadow: 0 10px 26px rgba(34, 211, 238, 0.22);
+                    }
                     @keyframes slideDownFaq {
                         from { opacity: 0; transform: translateY(-8px); }
                         to { opacity: 1; transform: translateY(0); }
@@ -41,15 +110,15 @@ const PhanHoiDap: React.FC = () => {
                                 Giải đáp mọi thắc mắc của bạn về quy trình khám, chi phí và dịch vụ tại Rexi.
                             </p>
                             {/* Still have questions CTA */}
-                            <div style={{ background: 'var(--surface)', borderRadius: '24px', padding: '24px', border: '1px solid var(--gray-200)', boxShadow: 'var(--shadow-sm)' }}>
-                                <div style={{ width: '48px', height: '48px', background: 'var(--primary-light)', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '14px' }}>
+                            <div className="faq-contact-card" style={{ background: 'var(--surface)', borderRadius: '24px', padding: '24px', border: '1px solid var(--gray-200)', boxShadow: 'var(--shadow-sm)' }}>
+                                <div className="faq-contact-icon" style={{ width: '48px', height: '48px', background: 'var(--primary-light)', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '14px' }}>
                                     <span className="material-symbols-outlined" style={{ fontSize: '24px', color: 'var(--primary)' }}>chat_bubble</span>
                                 </div>
-                                <div style={{ fontWeight: 900, color: 'var(--ink)', fontSize: '0.95rem', marginBottom: '8px' }}>Còn câu hỏi khác?</div>
-                                <div style={{ color: 'var(--gray-500)', fontSize: '0.85rem', fontWeight: 500, marginBottom: '16px', lineHeight: 1.5 }}>Hãy chat trực tiếp với Trợ lý Rexi hoặc gọi hotline.</div>
-                                <a href="tel:02412345678" style={{ background: 'var(--primary)', color: 'white', padding: '10px 20px', borderRadius: '50px', fontWeight: 800, textDecoration: 'none', fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-                                    <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>call</span>
-                                    Gọi ngay
+                                <div style={{ fontWeight: 900, color: 'var(--ink)', fontSize: '0.95rem', marginBottom: '8px', position: 'relative', zIndex: 1 }}>Còn câu hỏi khác?</div>
+                                <div style={{ color: 'var(--gray-500)', fontSize: '0.85rem', fontWeight: 500, marginBottom: '16px', lineHeight: 1.5, position: 'relative', zIndex: 1 }}>Hãy chat trực tiếp với Trợ lý Rexi hoặc gọi hotline.</div>
+                                <a href="tel:02412345678" className="faq-call-link" style={{ background: 'var(--primary)', color: 'white', padding: '10px 20px', borderRadius: '50px', fontWeight: 800, textDecoration: 'none', fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '8px', position: 'relative', zIndex: 1 }}>
+                                    <span className="material-symbols-outlined call-icon" style={{ fontSize: '16px', position: 'relative', zIndex: 1 }}>call</span>
+                                    <span style={{ position: 'relative', zIndex: 1 }}>Gọi ngay</span>
                                 </a>
                             </div>
                         </div>

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { RevealSection } from "@components/SpecialEffects";
 import axiosInstance from "@services/axios";
-import { formatTienVND, generateSlug, getUserProfile } from "@utils/index";
+import { formatTienVND, generateSlug, getUserProfile, normalizeUserRole } from "@utils/index";
 import { toast } from "@components/Toast";
 
 const MOCK_SERVICES = [
@@ -24,8 +24,7 @@ const PhanDichVu: React.FC = () => {
         e.preventDefault();
         const user = getUserProfile();
         if (user) {
-            const role = (user.ten_vai_tro || user.loai_tai_khoan || "").toLowerCase();
-            if (role !== "customer" && role !== "khach_hang" && !role.includes("khách hàng")) {
+            if (normalizeUserRole(user) !== "khach_hang") {
                 toast.info("Bạn đang đăng nhập với tài khoản nhân sự. Hệ thống đang chuyển hướng bạn đến Trang quản lý lịch hẹn nội bộ!");
                 navigate("/quan-ly/lich-hen");
                 return;
@@ -95,6 +94,51 @@ const PhanDichVu: React.FC = () => {
                     .service-tab:hover { border-color: var(--primary); background: var(--primary-light); transform: translateX(4px); }
                     .service-tab.active { border-color: var(--primary); background: var(--primary-light); box-shadow: var(--shadow-lg); transform: translateX(8px); }
                     .featured-service-card { transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+                    @keyframes serviceCtaShine {
+                        0% { opacity: 0; transform: translateX(-130%) skewX(-18deg); }
+                        18%, 76% { opacity: 0.42; }
+                        100% { opacity: 0; transform: translateX(170%) skewX(-18deg); }
+                    }
+                    @keyframes serviceIconBreath {
+                        0%, 100% { transform: translateY(0) scale(1); box-shadow: 0 0 0 0 rgba(255,255,255,0.22); }
+                        50% { transform: translateY(-3px) scale(1.04); box-shadow: 0 0 0 12px rgba(255,255,255,0); }
+                    }
+                    .service-booking-btn,
+                    .service-detail-link {
+                        position: relative;
+                        overflow: hidden;
+                        transition: transform 0.28s ease, box-shadow 0.28s ease, filter 0.28s ease;
+                    }
+                    .service-booking-btn::before,
+                    .service-detail-link::before {
+                        content: "";
+                        position: absolute;
+                        top: -45%;
+                        bottom: -45%;
+                        left: 0;
+                        width: 42%;
+                        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.42), transparent);
+                        transform: translateX(-130%) skewX(-18deg);
+                        animation: serviceCtaShine 5.2s linear infinite;
+                    }
+                    .service-booking-btn:hover,
+                    .service-detail-link:hover {
+                        transform: translateY(-3px);
+                        filter: brightness(1.05);
+                    }
+                    .service-detail-link .detail-arrow {
+                        transition: transform 0.24s ease;
+                    }
+                    .service-detail-link:hover .detail-arrow {
+                        transform: translateX(5px);
+                    }
+                    .featured-service-icon {
+                        animation: serviceIconBreath 2.6s ease-in-out infinite;
+                    }
+                    .service-tab:hover span:last-child,
+                    .service-tab.active span:last-child {
+                        transform: translateX(4px);
+                    }
                     
                     /* Tùy chỉnh thanh cuộn siêu mượt và trong suốt cho danh sách dịch vụ */
                     .service-list-container {
@@ -132,7 +176,7 @@ const PhanDichVu: React.FC = () => {
                             <h2 style={{ fontSize: "clamp(2rem, 4vw, 3rem)", fontWeight: 950, color: "var(--ink)", marginBottom: '12px', letterSpacing: '-1px' }}>Chăm Sóc <span style={{ color: "var(--primary)" }}>Toàn Diện</span></h2>
                             <p style={{ color: "var(--gray-500)", fontWeight: 500, fontSize: '1rem', maxWidth: '480px', lineHeight: 1.6 }}>Đầy đủ dịch vụ thú y từ khám tổng quát đến phẫu thuật phức tạp.</p>
                         </div>
-                        <a href="#" onClick={handleBookingClick} className="btn" style={{ padding: '14px 28px', borderRadius: '50px', background: 'var(--primary)', color: 'white', textDecoration: 'none', fontWeight: 800, fontSize: '0.9rem', boxShadow: '0 8px 20px var(--primary-light)', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center' }}>Đặt lịch ngay →</a>
+                        <a href="#" onClick={handleBookingClick} className="btn service-booking-btn" style={{ padding: '14px 28px', borderRadius: '50px', background: 'var(--primary)', color: 'white', textDecoration: 'none', fontWeight: 800, fontSize: '0.9rem', boxShadow: '0 8px 20px var(--primary-light)', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center' }}><span style={{ position: 'relative', zIndex: 1 }}>Đặt lịch ngay →</span></a>
                     </div>
 
                     {/* bố cục dịch vụ */}
@@ -149,7 +193,7 @@ const PhanDichVu: React.FC = () => {
                             )}
 
                             <div>
-                                <div style={{ width: '80px', height: '80px', background: 'rgba(255,255,255,0.15)', borderRadius: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '28px', backdropFilter: 'blur(8px)' }}>
+                                <div className="featured-service-icon" style={{ width: '80px', height: '80px', background: 'rgba(255,255,255,0.15)', borderRadius: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '28px', backdropFilter: 'blur(8px)' }}>
                                     <span className="material-symbols-outlined" style={{ fontSize: '40px', color: 'white' }}>{featuredInfo.icon}</span>
                                 </div>
                                 <h3 style={{ fontSize: 'clamp(1.6rem, 2.5vw, 2.2rem)', fontWeight: 950, marginBottom: '16px', lineHeight: 1.2, letterSpacing: '-0.5px' }}>{featured.ten_dich_vu}</h3>
@@ -162,8 +206,8 @@ const PhanDichVu: React.FC = () => {
                                     <div style={{ fontSize: '0.65rem', opacity: 0.7, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>Chi phí từ</div>
                                     <div style={{ fontSize: '1.6rem', fontWeight: 950 }}>{featured.gia ? formatTienVND(featured.gia) : featured.price}</div>
                                 </div>
-                                <Link to={`/dich-vu/${generateSlug(featured.ten_dich_vu)}`} style={{ background: 'var(--tien-ich-gradient)', color: 'white', padding: '14px 28px', borderRadius: '50px', fontWeight: 900, textDecoration: 'none', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.3s', boxShadow: '0 8px 20px var(--primary-light)' }} onMouseEnter={e => (e.currentTarget.style.transform = 'translateY(-2px)')} onMouseLeave={e => (e.currentTarget.style.transform = 'none')}>
-                                    Chi tiết <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>arrow_forward</span>
+                                <Link to={`/dich-vu/${generateSlug(featured.ten_dich_vu)}`} className="service-detail-link" style={{ background: 'var(--tien-ich-gradient)', color: 'white', padding: '14px 28px', borderRadius: '50px', fontWeight: 900, textDecoration: 'none', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 8px 20px var(--primary-light)' }}>
+                                    <span style={{ position: 'relative', zIndex: 1 }}>Chi tiết</span> <span className="material-symbols-outlined detail-arrow" style={{ fontSize: '18px', position: 'relative', zIndex: 1 }}>arrow_forward</span>
                                 </Link>
                             </div>
                         </div>

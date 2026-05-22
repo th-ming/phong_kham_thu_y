@@ -18,7 +18,9 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         // Khởi tạo STOMP client
         const client = new Client({
             webSocketFactory: () => new SockJS('http://localhost:8081/ws'), // URL tới Spring Boot
-            debug: () => {},
+            debug: () => {
+                // console.log(str);
+            },
             reconnectDelay: 5000,
             heartbeatIncoming: 4000,
             heartbeatOutgoing: 4000,
@@ -26,6 +28,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
         client.onConnect = () => {
             setConnected(true);
+            console.log('Đã kết nối WebSocket thành công');
             
             // Lắng nghe topic public (thông báo chung)
             client.subscribe('/topic/public', (message) => {

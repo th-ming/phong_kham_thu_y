@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axiosInstance from "@services/axios";
-import { formatTienVND, getUserProfile } from "@utils/index";
+import { formatTienVND, getUserProfile, matchesSearchFields, normalizeUserRole } from "@utils/index";
 import { toast } from "@components/Toast";
 
 interface DichVu {
@@ -21,16 +21,19 @@ const QuanLyDichVu: React.FC = () => {
   const [searchDichVu, setSearchDichVu] = useState("");
 
   const currentUser = getUserProfile();
-  const userRole = currentUser?.ten_vai_tro?.toLowerCase() || currentUser?.loai_tai_khoan?.toLowerCase() || '';
-  const canEdit = userRole.includes('admin') || userRole.includes('quan-ly') || userRole.includes('quản lý');
+  const userRole = normalizeUserRole(currentUser);
+  const canEdit = userRole === "admin" || userRole === "quan_ly";
 
   const filteredDichVus = React.useMemo(() => {
     if (!searchDichVu.trim()) return dichVus;
-    const s = searchDichVu.toLowerCase();
-    return dichVus.filter(dv => 
-      (dv.ten_dich_vu || "").toLowerCase().includes(s) || 
-      (dv.mo_ta || "").toLowerCase().includes(s)
-    );
+    return dichVus.filter(dv => matchesSearchFields(searchDichVu, [
+      dv.id_dich_vu,
+      dv.ten_dich_vu,
+      dv.mo_ta,
+      dv.gia,
+      dv.thoi_luong_phut,
+      dv.trang_thai ? "đang hoạt động active" : "tạm ngừng inactive"
+    ]));
   }, [dichVus, searchDichVu]);
 
   useEffect(() => { fetchDichVus(); }, []);
