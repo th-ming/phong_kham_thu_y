@@ -228,6 +228,7 @@ const Footer: React.FC<{ isSimple?: boolean }> = ({ isSimple }) => {
                                 src="/img/meonhayfooter_v3.webm" 
                                 loop={false}
                                 muted={false}
+                                removeBlack={true}
                                 onEnded={() => setIsMemePlaying(false)}
                                 style={{ height: '100%', width: 'auto', objectFit: 'contain' }}
                             />
