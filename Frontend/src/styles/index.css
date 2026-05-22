@@ -1606,3 +1606,70 @@ html {
 .hero-secondary-cta:active {
   transform: translateY(0) scale(0.985);
 }
+
+/* CHAT BUBBLE FOOTER */
+.footer-chat-bubble {
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: #f8fafc;
+  padding: 10px 24px;
+  border-radius: 30px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  position: relative;
+  animation: floatBubble 3s ease-in-out infinite;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  will-change: transform;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.footer-chat-bubble:hover {
+  background: var(--primary-gradient);
+  transform: scale(1.05) translateY(-5px) !important;
+  box-shadow: 0 15px 35px var(--primary-shadow);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: white;
+}
+
+.footer-chat-bubble::before {
+  content: '';
+  position: absolute;
+  bottom: -9px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 9px 9px 0;
+  border-style: solid;
+  border-color: rgba(255, 255, 255, 0.15) transparent transparent transparent;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 1;
+}
+
+.footer-chat-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -7px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 8px 8px 0;
+  border-style: solid;
+  border-color: rgba(15, 23, 42, 0.65) transparent transparent transparent;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 2;
+}
+
+.footer-chat-bubble:hover::after {
+  /* When hovering, match the primary gradient bottom color. 
+     Since it's a gradient, we'll approximate it with a solid primary color */
+  border-top-color: var(--primary);
+}
+
+.footer-chat-bubble:hover::before {
+  border-top-color: rgba(255, 255, 255, 0.3);
+}
+
