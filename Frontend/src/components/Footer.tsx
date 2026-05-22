@@ -271,6 +271,26 @@ const Footer: React.FC<{ isSimple?: boolean }> = ({ isSimple }) => {
                 <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
                     <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>© 2026 REXI VETERINARY SYSTEM. All rights reserved.</p>
                 </div>
+
+                <div style={{ marginTop: '32px', paddingTop: '32px', borderTop: '1px solid rgba(255,255,255,0.05)', textAlign: 'center' }}>
+                    <h4 style={{ color: '#0f9d8a', marginBottom: '20px', fontSize: '1rem' }}>🐾 Mèo Nhảy Footer 🐾</h4>
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', flexWrap: 'wrap' }}>
+                        <div style={{ flex: '0 1 auto' }}>
+                            <img 
+                                src="/img/anhmeonhayfooter.jpg" 
+                                alt="Mèo nhảy" 
+                                style={{ maxWidth: '150px', height: 'auto', borderRadius: '12px', boxShadow: '0 4px 15px rgba(15, 157, 138, 0.3)' }}
+                            />
+                        </div>
+                        <div style={{ flex: '0 1 auto' }}>
+                            <video 
+                                src="/img/meonhayfooter.mp4" 
+                                controls
+                                style={{ maxWidth: '200px', height: 'auto', borderRadius: '12px', boxShadow: '0 4px 15px rgba(15, 157, 138, 0.3)', backgroundColor: '#000' }}
+                            />
+                        </div>
+                    </div>
+                </div>
                 {!isSimple && (
                     <div style={{ textAlign: 'center', marginTop: '16px', fontSize: '0.8rem', color: 'rgba(255,255,255,0.2)', fontWeight: 800 }}>
                         🐾 Mẹo nhỏ: Click vào khoảng trống bất kỳ để thả thức ăn cho thú cưng!
