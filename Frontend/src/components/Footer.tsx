@@ -189,19 +189,9 @@ const Footer: React.FC<{ isSimple?: boolean }> = ({ isSimple }) => {
                     alignItems: 'center',
                     cursor: 'pointer'
                 }} onClick={() => setIsMemePlaying(true)}>
-                    <div style={{
-                        backgroundColor: 'rgba(255, 255, 255, 0.85)', color: '#0f172a', padding: '8px 18px',
-                        borderRadius: '24px', fontWeight: '800', fontSize: '13px',
-                        position: 'relative', animation: 'floatBubble 3s ease-in-out infinite',
-                        boxShadow: '0 6px 20px rgba(0,0,0,0.15)', backdropFilter: 'blur(4px)',
-                        border: '1px solid rgba(255,255,255,0.4)', willChange: 'transform', whiteSpace: 'nowrap'
-                    }}>
+                    <div className="footer-chat-bubble">
+                        <span className="material-symbols-outlined" style={{ fontSize: '18px', color: '#fbbf24' }}>auto_awesome</span>
                         Click xem tôi nhảy nè! 🐾
-                        <div style={{
-                            content: '""', position: 'absolute', bottom: '-6px', left: '50%',
-                            transform: 'translateX(-50%)', borderWidth: '6px 6px 0',
-                            borderStyle: 'solid', borderColor: 'rgba(255, 255, 255, 0.85) transparent transparent transparent',
-                        }}></div>
                     </div>
                 </div>
             )}
