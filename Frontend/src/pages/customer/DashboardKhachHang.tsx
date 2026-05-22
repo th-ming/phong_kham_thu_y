@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axiosInstance from "@services/axios";
 import { Modal } from "@components/CommonUI";
@@ -31,6 +31,9 @@ const DashboardKhachHang: React.FC = () => {
   const randomTip = useMemo(() => PET_CARE_TIPS[Math.floor(Math.random() * PET_CARE_TIPS.length)], []);
 
   const user = getUserProfile();
+  const userName = user?.display_name || user?.displayName || user?.ho_ten || user?.hoTen || user?.fullName || user?.ten_khach_hang || user?.ten_dang_nhap || user?.username || "Sen";
+  const userAvatar = user?.hinh_anh || user?.avatar || "";
+  const userInitial = String(userName).replace(/^\d+\.\s*/, '').trim().charAt(0).toUpperCase() || "S";
 
   useEffect(() => {
     if (!user) {
@@ -73,7 +76,8 @@ const DashboardKhachHang: React.FC = () => {
             const st = String(l.trang_thai || l.trangThai || '').toUpperCase();
             return st === 'CHO_XAC_NHAN' || st === 'DA_XAC_NHAN' || st === 'DANG_KHAM';
           });
-          setUpcoming(upcomingList.slice(0, 3));
+          // Lưu toàn bộ danh sách lịch hẹn sắp tới để hiển thị đúng số lượng ở thẻ thống kê
+          setUpcoming(upcomingList);
 
           const hoanTatCount = appointments.filter((l: any) => {
             const st = String(l.trang_thai || l.trangThai || '').toUpperCase();
@@ -133,20 +137,47 @@ const DashboardKhachHang: React.FC = () => {
         .appointment-card:hover { border-color: var(--primary) !important; background: var(--surface) !important; transform: scale(1.02) translateX(8px); box-shadow: -5px 15px 25px rgba(15, 157, 138, 0.12); z-index: 10; }
         
         .icon-bounce:hover span { animation: bounceLocal 0.3s ease infinite alternate; }
+
+        /* Hiệu ứng hover cao cấp cho thẻ Cẩm nang chăm sóc */
+        .tip-card {
+          transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+          background: var(--surface);
+          border: 1px solid var(--gray-200);
+          cursor: pointer;
+        }
+        .tip-card:hover {
+          transform: translateY(-4px) scale(1.015);
+          border-color: var(--primary) !important;
+          background: var(--surface) !important;
+          /* Hiệu ứng phát sáng (glow) kết hợp bóng đổ mượt mà */
+          box-shadow: 0 15px 30px rgba(15, 157, 138, 0.2), 0 0 12px rgba(15, 157, 138, 0.15);
+          /* Tăng độ sáng khi di chuột để làm nổi bật thẻ */
+          filter: brightness(1.2);
+        }
+        .tip-card .tip-icon-container {
+          transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+          background: var(--background);
+          color: var(--primary);
+        }
+        .tip-card:hover .tip-icon-container {
+          background: var(--primary) !important;
+          color: white !important;
+          transform: scale(1.1) rotate(6deg);
+          box-shadow: 0 6px 20px rgba(15, 157, 138, 0.35);
+        }
       `}</style>
       <div className="stagger-1" style={{ marginBottom: '40px', padding: '48px', borderRadius: 'var(--radius-xl)', background: 'var(--secondary-gradient)', color: 'white', position: 'relative', overflow: 'hidden', boxShadow: '0 15px 35px rgba(13, 148, 136, 0.2)' }}>
         <div style={{ position: 'absolute', top: '-10%', right: '-5%', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }}></div>
         <div style={{ position: 'absolute', bottom: '-20%', left: '0%', width: '250px', height: '250px', background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none', opacity: 0.5 }}></div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '24px', position: 'relative', zIndex: 1 }}>
-          <div style={{ width: '80px', height: '80px', borderRadius: '24px', overflow: 'hidden', border: '3px solid rgba(255,255,255,0.3)', boxShadow: '0 10px 20px rgba(0,0,0,0.2)' }}>
-
-            {user?.hinh_anh || user?.avatar ? (
-              <img src={user.hinh_anh || user.avatar} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            ) : (
-              <div style={{ width: '100%', height: '100%', background: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <span className="material-symbols-outlined" style={{ fontSize: '40px', color: 'white' }}>person</span>
-              </div>
-            )}
+          <div style={{ width: '88px', height: '88px', borderRadius: '50%', background: 'var(--primary-gradient)', display: 'grid', placeItems: 'center', boxShadow: '0 14px 32px rgba(0,0,0,0.18), 0 0 22px var(--primary-shadow)', flexShrink: 0 }}>
+            <div style={{ width: '78px', height: '78px', borderRadius: '50%', overflow: 'hidden', border: '3px solid rgba(255,255,255,0.72)', background: 'var(--primary)', display: 'grid', placeItems: 'center', color: 'white', fontWeight: 950, fontSize: '2rem' }}>
+              {userAvatar ? (
+                <img src={userAvatar} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                <span>{userInitial}</span>
+              )}
+            </div>
           </div>
           <div>
             <h1 className="header-title" style={{ fontSize: '3.5rem', fontWeight: 950, letterSpacing: '-2px', margin: '0 0 8px 0', textShadow: '0 4px 15px rgba(0,0,0,0.2)', color: 'white' }}>Xin chào! 👋</h1>
@@ -184,7 +215,8 @@ const DashboardKhachHang: React.FC = () => {
             </div>
           ) : (
             <div style={{ display: 'grid', gap: '16px' }}>
-              {upcoming.map((app, i) => (
+              {/* Chỉ hiển thị tối đa 3 lịch hẹn sắp tới trên giao diện danh sách */}
+              {upcoming.slice(0, 3).map((app, i) => (
                 <div key={i} className="appointment-card" style={{ background: 'var(--surface)', padding: '20px', borderRadius: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                     <div style={{ width: '48px', height: '48px', background: 'var(--background)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)', boxShadow: 'var(--shadow-sm)' }}>
@@ -232,8 +264,8 @@ const DashboardKhachHang: React.FC = () => {
       <Modal isOpen={isTipsModalOpen} onClose={() => setIsTipsModalOpen(false)} title="Cẩm nang chăm sóc thú cưng">
         <div style={{ display: 'grid', gap: '16px', maxHeight: '60vh', overflowY: 'auto', paddingRight: '8px' }}>
           {PET_CARE_TIPS.map((tip, i) => (
-            <div key={i} style={{ display: 'flex', gap: '20px', padding: '20px', background: 'var(--surface)', border: '1px solid var(--gray-200)', borderRadius: '20px', animation: 'slideUpFade 0.5s ease forwards', animationDelay: `${i * 0.1}s`, opacity: 0 }}>
-              <div style={{ width: '48px', height: '48px', background: 'var(--background)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)', flexShrink: 0 }}>
+            <div key={i} className="tip-card" style={{ display: 'flex', gap: '20px', padding: '20px', borderRadius: '20px', animation: 'slideUpFade 0.5s ease forwards', animationDelay: `${i * 0.1}s`, opacity: 0 }}>
+              <div className="tip-icon-container" style={{ width: '48px', height: '48px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <span className="material-symbols-outlined">{tip.icon}</span>
               </div>
               <div>

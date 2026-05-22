@@ -2,7 +2,7 @@
 import { useNavigate } from "react-router-dom";
 import { MemeCat, ScrollToTop, RevealSection } from "@components/SpecialEffects";
 import axiosInstance from "@services/axios";
-import { formatTienVND, getUserProfile } from "@utils/index";
+import { formatTienVND, getUserProfile, normalizeUserRole } from "@utils/index";
 import { toast } from "@components/Toast";
 import { useTheme } from "../contexts/ThemeContextV2";
 
@@ -25,8 +25,7 @@ const BangGiaDichVu: React.FC = () => {
         e.preventDefault();
         const user = getUserProfile();
         if (user) {
-            const role = (user.ten_vai_tro || user.loai_tai_khoan || "").toLowerCase();
-            if (role !== "customer" && role !== "khach_hang" && !role.includes("khách hàng")) {
+            if (normalizeUserRole(user) !== "khach_hang") {
                 toast.info("Bạn đang đăng nhập với tài khoản nhân sự. Hệ thống đang chuyển hướng bạn đến Trang quản lý lịch hẹn nội bộ!");
                 navigate("/quan-ly/lich-hen");
                 return;
@@ -206,11 +205,35 @@ const BangGiaDichVu: React.FC = () => {
                 </div>
             </section>
 
-            <section style={{ padding: '80px 0', background: 'linear-gradient(135deg, #0f9d8a 0%, #2dd4bf 100%)', color: 'white', textAlign: 'center' }}>
+            <section style={{
+                padding: '80px 0',
+                background: isDark
+                    ? 'linear-gradient(135deg, rgba(15, 23, 42, 0.96) 0%, rgba(8, 47, 73, 0.92) 100%)'
+                    : 'linear-gradient(135deg, #0d9488 0%, #14b8a6 100%)',
+                color: 'white',
+                textAlign: 'center',
+                borderTop: isDark ? '1px solid rgba(34, 211, 238, 0.16)' : 'none',
+                borderBottom: isDark ? '1px solid rgba(34, 211, 238, 0.16)' : 'none',
+                boxShadow: isDark ? 'inset 0 1px 0 rgba(255,255,255,0.04), 0 -24px 80px rgba(34, 211, 238, 0.08)' : 'none'
+            }}>
                 <div className="container">
                     <RevealSection>
                         <h2 style={{ fontSize: '2.5rem', fontWeight: 950, marginBottom: '24px' }}>Cần Báo Giá Chi Tiết Hơn?</h2>
-                        <a href="#" onClick={handleBookingClick} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'white', color: '#0f9d8a', padding: '16px 32px', borderRadius: '50px', textDecoration: 'none', fontWeight: 900, fontSize: '1rem', boxShadow: '0 10px 20px rgba(0,0,0,0.1)', transition: 'transform 0.2s' }}>
+                        <a href="#" onClick={handleBookingClick} style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            background: isDark ? 'var(--primary-gradient)' : 'white',
+                            color: isDark ? '#ffffff' : '#0d9488',
+                            padding: '16px 32px',
+                            borderRadius: '50px',
+                            textDecoration: 'none',
+                            fontWeight: 900,
+                            fontSize: '1rem',
+                            boxShadow: isDark ? '0 14px 34px rgba(34, 211, 238, 0.22)' : '0 10px 20px rgba(0,0,0,0.1)',
+                            border: isDark ? '1px solid rgba(255,255,255,0.12)' : 'none',
+                            transition: 'transform 0.2s'
+                        }}>
                             <span className="material-symbols-outlined">calendar_today</span> Đặt Lịch Tư Vấn
                         </a>
                     </RevealSection>

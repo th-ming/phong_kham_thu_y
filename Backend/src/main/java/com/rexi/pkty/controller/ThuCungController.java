@@ -36,7 +36,7 @@ public class ThuCungController {
         try {
             org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
             String role = (auth != null) ? auth.getAuthorities().toString().toUpperCase() : "";
-            if (!role.contains("ADMIN") && !role.contains("STAFF") && !role.contains("QUAN_LY") && !role.contains("KE_TOAN") && !role.contains("TIEP_TAN")) {
+            if (!role.contains("ADMIN") && !role.contains("QUAN_LY") && !role.contains("TIEP_TAN") && !role.contains("BAC_SI") && !role.contains("Y_TA")) {
                 return ResponseEntity.status(403).body(Map.of("message", "Từ chối truy cập"));
             }
 

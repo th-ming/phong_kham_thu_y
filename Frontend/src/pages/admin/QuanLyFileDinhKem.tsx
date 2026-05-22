@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import axiosInstance from "@services/axios";
 import { Modal } from "@components/CommonUI";
 import { toast } from "@components/Toast";
+import { matchesSearchFields } from "@utils/index";
 
 interface FileDinhKem {
   id: number;
@@ -24,11 +25,14 @@ const QuanLyFileDinhKem: React.FC = () => {
 
   const filteredFiles = React.useMemo(() => {
     if (!searchQuery.trim()) return files;
-    const q = searchQuery.toLowerCase();
-    return files.filter(f => 
-      f.ten_file?.toLowerCase().includes(q) || 
-      f.loai?.toLowerCase().includes(q)
-    );
+    return files.filter(f => matchesSearchFields(searchQuery, [
+      f.id,
+      f.ten_file,
+      f.loai,
+      f.duong_dan,
+      f.kich_thuoc,
+      f.ngay_upload
+    ]));
   }, [files, searchQuery]);
 
   const fetchFiles = () => {

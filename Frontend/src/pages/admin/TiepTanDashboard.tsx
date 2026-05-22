@@ -1,6 +1,6 @@
 ﻿import React, { useEffect, useState, useMemo } from "react";
 import axiosInstance from "@services/axios";
-import { getUserProfile } from "@utils/index";
+import { getUserProfile, matchesSearchFields } from "@utils/index";
 import ModalTaoLichHenAdmin from "./ModalTaoLichHenAdmin";
 import { toast } from "@components/Toast";
 
@@ -59,11 +59,17 @@ const TiepTanDashboard: React.FC = () => {
 
     const filteredAppointments = useMemo(() => {
         if (!searchTerm.trim()) return appointments;
-        const lowerTerm = searchTerm.toLowerCase();
-        return appointments.filter(app =>
-            app.ten_khach_hang?.toLowerCase().includes(lowerTerm) ||
-            app.sdt?.includes(searchTerm)
-        );
+        return appointments.filter(app => matchesSearchFields(searchTerm, [
+            app.id_lich_hen,
+            app.ten_khach_hang,
+            app.ten_thu_cung,
+            app.sdt,
+            app.ten_bac_si,
+            app.ten_dich_vu,
+            app.ly_do,
+            app.ghi_chu,
+            app.trang_thai
+        ]));
     }, [appointments, searchTerm]);
 
     const statusStats = useMemo(() => {

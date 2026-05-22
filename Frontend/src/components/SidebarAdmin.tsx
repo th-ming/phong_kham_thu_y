@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { getUserProfile } from "@utils/index";
+import { getUserProfile, normalizeUserRole } from "@utils/index";
+import { ADMIN_ROUTE_ROLES } from "@utils/permissions";
 
 import ThemeToggle from './ThemeToggle';
 
@@ -12,17 +13,7 @@ const SidebarAdmin: React.FC = () => {
 
   const user = getUserProfile() || {};
 
-  let userRole = (user?.loai_tai_khoan || user?.ten_vai_tro || 'staff').toLowerCase();
-  
-  // Chuẩn hóa quyền toàn diện từ tiếng Việt sang mã kỹ thuật
-  if (userRole.includes('quản trị') || userRole.includes('admin') || userRole === 'vt-1') userRole = 'admin';
-  else if (userRole.includes('bác sĩ') || userRole.includes('doctor') || userRole.includes('bac_si') || userRole === 'vt-2') userRole = 'bac_si';
-  else if (userRole.includes('nhân viên') || userRole.includes('staff') || userRole === 'vt-3') userRole = 'staff';
-  else if (userRole.includes('kế toán') || userRole.includes('accountant') || userRole.includes('ke_toan') || userRole === 'vt-4') userRole = 'ke_toan';
-  else if (userRole.includes('quản lý') || userRole.includes('manager') || userRole.includes('quan_ly') || userRole === 'vt-6') userRole = 'quan_ly';
-  else if (userRole.includes('tiếp tân') || userRole.includes('reception') || userRole.includes('tiep_tan') || userRole === 'vt-7') userRole = 'tiep_tan';
-  else if (userRole.includes('y tá') || userRole.includes('điều dưỡng') || userRole.includes('nurse') || userRole.includes('y_ta') || userRole === 'vt-8') userRole = 'y_ta';
-  else userRole = 'staff';
+  const userRole = normalizeUserRole(user);
 
   const allMenuItems = [
     { isHeader: true, label: 'TỔNG QUAN', roles: ['admin', 'staff', 'bac_si', 'quan_ly', 'tiep_tan', 'y_ta', 'ke_toan'] },
@@ -37,7 +28,7 @@ const SidebarAdmin: React.FC = () => {
       label: (userRole === 'admin' || userRole === 'quan_ly') ? 'Điều hành nhân sự' : 'Lịch trực của tôi', 
       roles: ['admin', 'staff', 'bac_si', 'quan_ly', 'tiep_tan', 'y_ta', 'ke_toan'] 
     },
-    { path: '/quan-ly/nhan-vien-phan-quyen', icon: 'badge', label: 'Nhân sự & Quyền hạn', roles: ['admin'] },
+    { path: '/quan-ly/nhan-vien-phan-quyen', icon: 'badge', label: 'Nhân sự & Quyền hạn', roles: ['admin', 'quan_ly'] },
 
     { isHeader: true, label: 'KHÁCH HÀNG & DỊCH VỤ', roles: ['admin', 'quan_ly', 'tiep_tan', 'bac_si', 'y_ta'] },
     { path: '/quan-ly/khach-hang-thu-cung', icon: 'groups', label: 'Khách hàng & Thú cưng', roles: ['admin', 'quan_ly', 'tiep_tan', 'bac_si', 'y_ta'] },
@@ -50,9 +41,9 @@ const SidebarAdmin: React.FC = () => {
     { path: '/quan-ly/xet-nghiem', icon: 'biotech', label: 'Xét nghiệm & Cận lâm sàng', roles: ['admin', 'bac_si', 'y_ta'] },
 
     { isHeader: true, label: 'KHO & TÀI CHÍNH', roles: ['admin', 'quan_ly', 'ke_toan', 'tiep_tan'] },
-    { path: '/quan-ly/kho-thuoc', icon: 'medication', label: 'Danh mục kho thuốc', roles: ['admin', 'quan_ly', 'ke_toan', 'bac_si', 'y_ta'] },
+    { path: '/quan-ly/kho-thuoc', icon: 'medication', label: 'Danh mục kho thuốc', roles: ['admin', 'quan_ly', 'ke_toan', 'bac_si', 'y_ta', 'tiep_tan'] },
     { path: '/quan-ly/nhap-kho', icon: 'inventory_2', label: 'Nhập kho & Kiểm kê', roles: ['admin', 'quan_ly', 'ke_toan'] },
-    { path: '/quan-ly/hoa-don', icon: 'receipt_long', label: 'Hóa đơn & Thanh toán', roles: ['admin', 'quan_ly', 'tiep_tan'] },
+    { path: '/quan-ly/hoa-don', icon: 'receipt_long', label: 'Hóa đơn & Thanh toán', roles: ['admin', 'quan_ly', 'ke_toan', 'tiep_tan'] },
     { path: '/quan-ly/ke-toan', icon: 'account_balance', label: 'Tài chính - Kế toán', roles: ['admin', 'quan_ly', 'ke_toan'] },
 
     { isHeader: true, label: 'TIỆN ÍCH & MARKETING', roles: ['admin', 'quan_ly', 'tiep_tan', 'bac_si', 'y_ta'] },
@@ -66,7 +57,10 @@ const SidebarAdmin: React.FC = () => {
   ];
 
   // Chỉ lấy những mục mà user có quyền truy cập
-  const menuItems = allMenuItems.filter(item => item.roles.some(role => userRole.includes(role)));
+  const menuItems = allMenuItems.filter(item => {
+    const routeRoles = item.path ? ADMIN_ROUTE_ROLES[item.path] : undefined;
+    return (routeRoles || item.roles).includes(userRole);
+  });
   
   // Loại bỏ các header liên tiếp hoặc header ở cuối (do các menu con bên trong bị ẩn)
   const filteredMenuItems = menuItems.filter((item, index, array) => {
@@ -92,6 +86,9 @@ const SidebarAdmin: React.FC = () => {
     const cleaned = name.replace(/^\d+\.\s*/, '').trim();
     return cleaned.toLowerCase() === 'admin' ? 'Quản trị viên' : cleaned;
   };
+  const userDisplayName = cleanName(user.display_name || user.displayName || user.ho_ten || user.hoTen || user.fullName || user.ten_khach_hang || user.ten_dang_nhap || user.username || 'Người dùng Rexi');
+  const userAvatar = user.hinh_anh || user.avatar || "";
+  const userInitial = userDisplayName.charAt(0).toUpperCase() || "A";
 
   return (
     <div className="glass-card" style={{
@@ -116,30 +113,27 @@ const SidebarAdmin: React.FC = () => {
       </div>
 
       <div className="glass-card" style={{ display: 'flex', alignItems: 'center', gap: '14px', background: 'rgba(255,255,255,0.03)', padding: '16px', borderRadius: '20px', marginBottom: '30px', border: '1px solid var(--glass-border)' }}>
-        <div style={{ background: 'var(--primary-gradient)', color: 'white', width: '42px', height: '42px', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 5px 15px var(--primary-shadow)' }}>
-          <span className="material-symbols-outlined" style={{ fontSize: '24px' }}>
-            {
-              userRole.includes('bac_si') ? 'medical_services' :
-                userRole.includes('admin') ? 'shield_person' :
-                  userRole.includes('quan_ly') ? 'manage_accounts' :
-                    userRole.includes('tiep_tan') ? 'concierge' :
-                      userRole.includes('ke_toan') ? 'account_balance' :
-                        userRole.includes('y_ta') ? 'health_and_safety' : 'badge'
-            }
-          </span>
+        <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: 'var(--primary-gradient)', display: 'grid', placeItems: 'center', boxShadow: '0 0 20px var(--primary-shadow)', flexShrink: 0 }}>
+          <div style={{ width: '42px', height: '42px', borderRadius: '50%', overflow: 'hidden', border: '2px solid var(--surface)', background: 'var(--primary)', display: 'grid', placeItems: 'center', color: 'white', fontWeight: 950, fontSize: '1.15rem' }}>
+            {userAvatar ? (
+              <img src={userAvatar} alt={userDisplayName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            ) : (
+              <span>{userInitial}</span>
+            )}
+          </div>
         </div>
         <div style={{ overflow: 'hidden', flex: 1 }}>
           <p style={{ fontWeight: 950, fontSize: '1rem', color: 'var(--ink)', margin: 0, whiteSpace: 'nowrap', textOverflow: 'ellipsis', letterSpacing: '-0.5px' }}>
-            {cleanName(user.display_name || user.displayName || user.ho_ten || user.hoTen || user.fullName || user.ten_khach_hang || user.ten_dang_nhap || user.username || 'Người dùng Rexi')}
+            {userDisplayName}
           </p>
           <p style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--primary)', margin: '2px 0 0 0', textTransform: 'uppercase', letterSpacing: '1px' }}>
             {
-              userRole.includes('bac_si') ? 'Bác sĩ chuyên khoa' :
-                userRole.includes('admin') ? 'Quản trị tối cao' :
-                  userRole.includes('quan_ly') ? 'Quản lý điều hành' :
-                    userRole.includes('tiep_tan') ? 'Tiếp tân chuyên nghiệp' :
-                      userRole.includes('ke_toan') ? 'Kế toán viên' :
-                        userRole.includes('y_ta') ? 'Điều dưỡng viên' : 'Nhân viên hệ thống'
+              userRole === 'bac_si' ? 'Bác sĩ chuyên khoa' :
+                userRole === 'admin' ? 'Quản trị tối cao' :
+                  userRole === 'quan_ly' ? 'Quản lý điều hành' :
+                    userRole === 'tiep_tan' ? 'Tiếp tân chuyên nghiệp' :
+                      userRole === 'ke_toan' ? 'Kế toán viên' :
+                        userRole === 'y_ta' ? 'Điều dưỡng viên' : 'Nhân viên hệ thống'
             }
           </p>
         </div>

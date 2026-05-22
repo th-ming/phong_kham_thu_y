@@ -3,6 +3,7 @@ import { Outlet, useNavigate } from "react-router-dom";
 import SidebarAdmin from "@components/SidebarAdmin";
 import { ScrollToTop } from "@components/SpecialEffects";
 import { ChatBot } from "@components/ChatBot";
+import { normalizeUserRole } from "@utils/index";
 
 const AdminLayout: React.FC = () => {
   const navigate = useNavigate();
@@ -17,9 +18,8 @@ const AdminLayout: React.FC = () => {
 
     try {
       const user = JSON.parse(userStr);
-      const role = (user.loai_tai_khoan || user.ten_vai_tro || "").toLowerCase();
-      // Chặn triệt để cả trường hợp backend trả về "customer" hoặc "khach_hang"
-      if (role === "customer" || role === "khach_hang") {
+      const role = normalizeUserRole(user);
+      if (role === "khach_hang" || role === "guest") {
         navigate("/khach-hang/dashboard", { replace: true });
       }
     } catch (e) {

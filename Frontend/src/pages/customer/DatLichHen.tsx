@@ -1,7 +1,7 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, useRef } from "react";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import axiosInstance from "@services/axios";
-import { formatTienVND, getUserProfile } from "@utils/index";
+import { formatTienVND, getUserProfile, normalizeUserRole } from "@utils/index";
 import { toast } from "@components/Toast";
 
 const DatLichHen: React.FC = () => {
@@ -20,6 +20,7 @@ const DatLichHen: React.FC = () => {
   const [note, setNote] = useState("");
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [serviceScrollHintOpacity, setServiceScrollHintOpacity] = useState(1);
 
   // Trạng thái của lái tự động (Autopilot) cho Sếp/Khách hàng
   const [autopilotStep, setAutopilotStep] = useState(0);
@@ -27,7 +28,25 @@ const DatLichHen: React.FC = () => {
   const [isAutopilotRunning, setIsAutopilotRunning] = useState(false);
 
   // CHUYỂN GET USER RA NGOÀI CÙNG COMPONENT ĐỂ KHÔNG VI PHẠM LUẬT HOOK
-  const user = getUserProfile();
+  const user = useMemo(() => getUserProfile(), []);
+  const userRole = normalizeUserRole(user);
+  const isCustomerUser = userRole === "khach_hang";
+  const idKhachHang = user?.id_khach_hang || (isCustomerUser ? user?.id : undefined);
+
+  const bookingStateRef = useRef({
+    idThuCung,
+    idDichVu,
+    idBacSi,
+    date,
+    time,
+    note,
+    availableSlots,
+    services,
+  });
+
+  useEffect(() => {
+    bookingStateRef.current = { idThuCung, idDichVu, idBacSi, date, time, note, availableSlots, services };
+  }, [idThuCung, idDichVu, idBacSi, date, time, note, availableSlots, services]);
 
   useEffect(() => {
     const isAutopilot = searchParams.get("autopilot") === "true";
@@ -72,9 +91,10 @@ const DatLichHen: React.FC = () => {
           let checkSlotsCount = 0;
           const checkSlotsInterval = setInterval(() => {
             checkSlotsCount++;
-            if (availableSlots && availableSlots.length > 0) {
+            const latestSlots = bookingStateRef.current.availableSlots;
+            if (latestSlots && latestSlots.length > 0) {
               clearInterval(checkSlotsInterval);
-              const targetTime = availableSlots[0];
+              const targetTime = latestSlots[0];
               setTime(targetTime);
               setAutopilotStep(5);
               setAutopilotMsg("🤖 [4/5] Khung giờ: Đã chọn khung giờ trống sớm nhất lúc " + targetTime.substring(0, 5) + "!");
@@ -99,8 +119,14 @@ const DatLichHen: React.FC = () => {
                       toast.success("Autopilot hoàn tất! Đang gửi thông tin đặt lịch...");
                       
                       // Gọi hàm submit form
-                      const fakeEvent = { preventDefault: () => {} } as React.FormEvent;
-                      handleBooking(fakeEvent);
+                      handleBooking(undefined, {
+                        idThuCung: bookingStateRef.current.idThuCung,
+                        idDichVu: bookingStateRef.current.idDichVu,
+                        idBacSi: bookingStateRef.current.idBacSi,
+                        date: bookingStateRef.current.date,
+                        time: bookingStateRef.current.time,
+                        note: bookingStateRef.current.note,
+                      });
                     }, 1500);
                   }
                 }, 45);
@@ -117,19 +143,15 @@ const DatLichHen: React.FC = () => {
       }, 1200);
     }, 1500);
 
-  }, [pets, services, availableSlots]);
+  }, [pets, services]);
 
   useEffect(() => {
     const fetchBaseData = async () => {
-      const currentUser = getUserProfile();
-      if (currentUser) {
-        const idKhachHang = currentUser.id_khach_hang || currentUser.id_tai_khoan || currentUser.id;
-        if (idKhachHang) {
+      if (idKhachHang) {
           axiosInstance.get(`/api/thu-cung/khach/${idKhachHang}`, { params: { page: 0, size: 999 } }).then(res => {
             const data = res.data;
             setPets(Array.isArray(data) ? data : (data.content || data.data || []));
           }).catch(e => console.error(e));
-        }
       }
       axiosInstance.get("/api/dich-vu/active").then(res => setServices(res.data)).catch(e => console.error(e));
     };
@@ -142,7 +164,7 @@ const DatLichHen: React.FC = () => {
     }, 10000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [idKhachHang]);
 
   useEffect(() => {
     if (!date) {
@@ -164,8 +186,9 @@ const DatLichHen: React.FC = () => {
   useEffect(() => {
     if (date && idDichVu) {
       setLoadingSlots(true);
-      const bacSiParam = idBacSi || '';
-      axiosInstance.get(`/api/lich-hen/gio-ranh?id_nhan_vien=${bacSiParam}&ngay=${date}&id_dich_vu=${idDichVu}`)
+      const params = new URLSearchParams({ ngay: date, id_dich_vu: idDichVu });
+      if (idBacSi) params.set("id_nhan_vien", idBacSi);
+      axiosInstance.get(`/api/lich-hen/gio-ranh?${params.toString()}`)
         .then(res => {
           const now = new Date();
           const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
@@ -194,37 +217,70 @@ const DatLichHen: React.FC = () => {
   const dv = useMemo(() => services.find(d => String(d.id_dich_vu) === idDichVu), [idDichVu, services]);
   const selectedPrice = dv ? (dv.gia > 0 ? `Từ ${formatTienVND(dv.gia)}` : "Theo thực tế") : "—";
 
-  const handleBooking = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleServiceScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const scrollTop = e.currentTarget.scrollTop;
+    const nextOpacity = Math.max(0, Math.min(1, 1 - scrollTop / 110));
+    setServiceScrollHintOpacity(nextOpacity);
+  };
 
-    const role = String(user?.loai_tai_khoan || '').toLowerCase();
-    if (role !== 'khach_hang' && role !== 'customer') {
+  const handleBooking = async (
+    e?: React.FormEvent,
+    override?: Partial<{
+      idThuCung: string;
+      idDichVu: string;
+      idBacSi: string;
+      date: string;
+      time: string;
+      note: string;
+    }>
+  ) => {
+    e?.preventDefault();
+
+    if (!isCustomerUser) {
       toast.error("Tài khoản nội bộ (Admin/Nhân viên) không được phép đặt lịch khám. Vui lòng dùng tài khoản Khách hàng!");
       return;
     }
 
-    if (!idThuCung) {
+    const formIdThuCung = override?.idThuCung ?? idThuCung;
+    const formIdDichVu = override?.idDichVu ?? idDichVu;
+    const formIdBacSi = override?.idBacSi ?? idBacSi;
+    const formDate = override?.date ?? date;
+    const formTime = override?.time ?? time;
+    const formNote = override?.note ?? note;
+    const selectedService = services.find(d => String(d.id_dich_vu) === formIdDichVu);
+    const selectedPet = pets.find(p => String(p.id_thu_cung) === formIdThuCung);
+
+    if (!formIdThuCung) {
       toast.info("Vui lòng chọn thú cưng cần khám!");
       return;
     }
 
-    if (!idDichVu) {
+    if (!selectedPet) {
+      toast.error("Thú cưng đã chọn không còn trong hồ sơ của tài khoản này. Vui lòng tải lại trang!");
+      return;
+    }
+
+    if (!formIdDichVu) {
       toast.info("Vui lòng chọn một dịch vụ cho bé nhé!");
       return;
     }
 
-    if (!date) {
+    if (!selectedService) {
+      toast.error("Dịch vụ đã chọn không còn khả dụng. Vui lòng chọn lại dịch vụ!");
+      return;
+    }
+
+    if (!formDate) {
       toast.info("Vui lòng chọn ngày khám!");
       return;
     }
 
-    if (!time) {
+    if (!formTime) {
       toast.info("Vui lòng chọn khung giờ khám!");
       return;
     }
 
     setLoading(true);
-    const idKhachHang = user?.id_khach_hang || user?.id;
     if (!idKhachHang) {
       toast.error("Không tìm thấy thông tin tài khoản. Vui lòng đăng nhập lại!");
       setLoading(false);
@@ -232,14 +288,14 @@ const DatLichHen: React.FC = () => {
     }
 
     const payload = {
-      ngay_kham: date,
-      gio_kham: time.length === 5 ? `${time}:00` : time,
-      ly_do: dv?.ten_dich_vu || "Khám bệnh",
-      ghi_chu: note,
+      ngay_kham: formDate,
+      gio_kham: formTime.length === 5 ? `${formTime}:00` : formTime,
+      ly_do: selectedService?.ten_dich_vu || "Khám bệnh",
+      ghi_chu: formNote,
       id_khach_hang: idKhachHang,
-      id_thu_cung: idThuCung,
-      id_bac_si: idBacSi || null,
-      id_dich_vu: idDichVu,
+      id_thu_cung: formIdThuCung,
+      id_bac_si: formIdBacSi || null,
+      id_dich_vu: formIdDichVu,
       id_nguoi_dat: idKhachHang
     };
 
@@ -275,6 +331,86 @@ const DatLichHen: React.FC = () => {
         .hover-scale:hover { transform: scale(1.02); }
         .summary-card { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
         .summary-card:hover { transform: translateY(-5px); box-shadow: 0 25px 50px rgba(0,0,0,0.3); }
+        .booking-service-scroll {
+          position: relative;
+          max-height: 332px;
+          overflow-y: scroll;
+          overflow-x: hidden;
+          padding: 2px 20px 42px 2px;
+          margin-right: -12px;
+          scroll-behavior: smooth;
+          scrollbar-gutter: stable;
+          border-radius: 24px;
+          border: 1px solid rgba(34, 211, 238, 0.12);
+          background: rgba(15, 23, 42, 0.16);
+        }
+        .booking-service-scroll::-webkit-scrollbar {
+          width: 10px;
+        }
+        .booking-service-scroll::-webkit-scrollbar-track {
+          background: rgba(34, 211, 238, 0.08);
+          border-radius: 999px;
+        }
+        .booking-service-scroll::-webkit-scrollbar-thumb {
+          background: linear-gradient(180deg, var(--primary), #14b8a6);
+          border-radius: 999px;
+          border: 2px solid rgba(15, 23, 42, 0.9);
+        }
+        .booking-service-list {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 16px;
+        }
+        .booking-service-list .service-card-select {
+          min-height: 103px;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+        }
+        .booking-service-fade {
+          pointer-events: none;
+          position: absolute;
+          left: 2px;
+          right: 18px;
+          bottom: 0;
+          height: 88px;
+          background: linear-gradient(to bottom, rgba(15, 23, 42, 0), rgba(15, 23, 42, 0.88) 74%);
+          border-radius: 0 0 22px 22px;
+          transition: opacity 0.22s ease;
+        }
+        .booking-service-more-hint {
+          pointer-events: none;
+          position: absolute;
+          left: 50%;
+          bottom: 13px;
+          transform: translateX(-50%);
+          padding: 8px 16px;
+          border-radius: 999px;
+          background: rgba(34, 211, 238, 0.18);
+          border: 1px solid rgba(34, 211, 238, 0.38);
+          color: var(--primary);
+          font-size: 0.78rem;
+          font-weight: 900;
+          letter-spacing: 0.3px;
+          backdrop-filter: blur(10px);
+          box-shadow: 0 10px 28px rgba(34, 211, 238, 0.16);
+          white-space: nowrap;
+          transition: opacity 0.22s ease, transform 0.22s ease;
+        }
+        .booking-service-count {
+          color: var(--gray-400);
+          font-size: 0.78rem;
+          font-weight: 800;
+          margin-left: 8px;
+        }
+        @media (max-width: 900px) {
+          .booking-service-list {
+            grid-template-columns: 1fr;
+          }
+          .booking-service-scroll {
+            max-height: 462px;
+          }
+        }
       `}</style>
       <div className="stagger-1" style={{ display: 'block', width: '100%', margin: '10px 0 40px 0', padding: '48px', borderRadius: '32px', background: 'var(--secondary-gradient)', color: 'white', position: 'relative', overflow: 'hidden', boxShadow: 'var(--shadow-xl)', zIndex: 1 }}>
         <div style={{ position: 'absolute', top: '-10%', right: '-5%', width: '300px', height: '300px', background: 'radial-gradient(circle, var(--primary-light) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }}></div>
@@ -301,14 +437,35 @@ const DatLichHen: React.FC = () => {
           </div>
 
           <div style={{ display: 'grid', gap: '12px' }}>
-            <label>2. CHỌN DỊCH VỤ <span style={{ color: '#ff4d4f' }}>*</span></label>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
-              {services.map(s => (
-                <div key={s.id_dich_vu} data-ai-id={`div-datlichhen-service-${s.id_dich_vu}`} className={`service-card-select ${idDichVu === String(s.id_dich_vu) ? 'selected' : ''}`} onClick={() => setIdDichVu(String(s.id_dich_vu))}>
-                  <div style={{ fontWeight: 800, color: idDichVu === String(s.id_dich_vu) ? 'var(--primary)' : 'var(--ink)', fontSize: '1.05rem', marginBottom: '4px' }}>{s.ten_dich_vu}</div>
-                  <div style={{ fontSize: '0.85rem', color: 'var(--gray-400)', fontWeight: 700 }}>{s.gia > 0 ? `Từ ${formatTienVND(s.gia)}` : 'Theo thực tế'}</div>
+            <label>
+              2. CHỌN DỊCH VỤ <span style={{ color: '#ff4d4f' }}>*</span>
+              {services.length > 6 && <span className="booking-service-count">({services.length} dịch vụ, kéo trong khung để xem thêm)</span>}
+            </label>
+            <div style={{ position: 'relative' }}>
+              <div className="booking-service-scroll" aria-label="Danh sách dịch vụ có thể cuộn" onScroll={handleServiceScroll}>
+                <div className="booking-service-list">
+                  {services.map(s => (
+                    <div key={s.id_dich_vu} data-ai-id={`div-datlichhen-service-${s.id_dich_vu}`} className={`service-card-select ${idDichVu === String(s.id_dich_vu) ? 'selected' : ''}`} onClick={() => setIdDichVu(String(s.id_dich_vu))}>
+                      <div style={{ fontWeight: 800, color: idDichVu === String(s.id_dich_vu) ? 'var(--primary)' : 'var(--ink)', fontSize: '1.05rem', marginBottom: '4px' }}>{s.ten_dich_vu}</div>
+                      <div style={{ fontSize: '0.85rem', color: 'var(--gray-400)', fontWeight: 700 }}>{s.gia > 0 ? `Từ ${formatTienVND(s.gia)}` : 'Theo thực tế'}</div>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              </div>
+              {services.length > 6 && (
+                <>
+                  <div className="booking-service-fade" style={{ opacity: serviceScrollHintOpacity }} />
+                  <div
+                    className="booking-service-more-hint"
+                    style={{
+                      opacity: serviceScrollHintOpacity,
+                      transform: `translateX(-50%) translateY(${(1 - serviceScrollHintOpacity) * 8}px)`,
+                    }}
+                  >
+                    Cuộn xuống để xem thêm dịch vụ
+                  </div>
+                </>
+              )}
             </div>
           </div>
 

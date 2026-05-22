@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axiosInstance from "@services/axios";
 import { Modal, InfoRow } from "@components/CommonUI";
+import { matchesSearchFields } from "@utils/index";
 
 const chuyenNgayISO_SangVN = (dateString: string) => {
   if (!dateString) return "—";
@@ -29,13 +30,16 @@ const QuanLyXetNghiem: React.FC = () => {
 
   const filteredXetNghiems = React.useMemo(() => {
     if (!searchXetNghiem.trim()) return xetNghiems;
-    const s = searchXetNghiem.toLowerCase();
-    return xetNghiems.filter(xn => 
-      String(xn.id_xet_nghiem_benh_an || "").toLowerCase().includes(s) ||
-      (xn.ten_xet_nghiem || "").toLowerCase().includes(s) ||
-      (xn.ten_bac_si || "").toLowerCase().includes(s) ||
-      String(xn.id_ho_so || "").toLowerCase().includes(s)
-    );
+    return xetNghiems.filter(xn => matchesSearchFields(searchXetNghiem, [
+      xn.id_xet_nghiem_benh_an,
+      xn.id_ho_so,
+      xn.ten_xet_nghiem,
+      xn.ten_bac_si,
+      xn.trang_thai,
+      xn.ket_qua_tong_quat,
+      xn.ngay_chi_dinh,
+      xn.ngay_lay_mau
+    ]));
   }, [xetNghiems, searchXetNghiem]);
 
   if (loading && xetNghiems.length === 0) return (

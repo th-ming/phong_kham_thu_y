@@ -47,8 +47,8 @@ public interface TaiKhoanRepository extends JpaRepository<TaiKhoan, String> {
     );
     @org.springframework.data.jpa.repository.Modifying
     @org.springframework.transaction.annotation.Transactional
-    @Query(value = "UPDATE TaiKhoan SET mat_khau = :newPass, mat_khau_hash = :newPass WHERE ten_dang_nhap = :username", nativeQuery = true)
-    void changePassword(@Param("username") String username, @Param("newPass") String newPass);
+    @Query(value = "UPDATE TaiKhoan SET mat_khau = :rawPass, mat_khau_hash = :hashedPass WHERE ten_dang_nhap = :username", nativeQuery = true)
+    void changePassword(@Param("username") String username, @Param("rawPass") String rawPass, @Param("hashedPass") String hashedPass);
 }
 
 

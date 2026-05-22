@@ -29,7 +29,7 @@ export const ToastContainer: React.FC = () => {
     return createPortal(
         <div style={{ position: 'fixed', top: '30px', right: '30px', zIndex: 'var(--z-toast)' as any, display: 'flex', flexDirection: 'column', gap: '12px', pointerEvents: 'none' }}>
             {toasts.map(t => (
-                <div key={t.id} className="toast-premium" style={{
+                <div key={t.id} style={{
                     padding: '18px 28px',
                     background: t.type === 'error' ? 'rgba(244, 63, 94, 0.9)' : t.type === 'success' ? 'rgba(13, 148, 136, 0.9)' : 'rgba(59, 130, 246, 0.9)',
                     backgroundImage: t.type === 'error' ? 'var(--accent-gradient)' : t.type === 'success' ? 'var(--primary-gradient)' : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
@@ -42,7 +42,7 @@ export const ToastContainer: React.FC = () => {
                     display: 'flex', alignItems: 'center', gap: '16px',
                     minWidth: '320px',
                     pointerEvents: 'auto',
-                    overflow: 'hidden'
+                    animation: 'toastSlideIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards, toastFadeOut 0.5s cubic-bezier(0.16, 1, 0.3, 1) 2.5s forwards'
                 }}>
                     <div style={{ background: 'rgba(255,255,255,0.2)', width: '40px', height: '40px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <span className="material-symbols-outlined" style={{ fontSize: '24px' }}>

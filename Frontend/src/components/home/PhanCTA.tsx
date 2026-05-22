@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { getUserProfile } from "@utils/index";
+import { getUserProfile, normalizeUserRole } from "@utils/index";
 import { toast } from "@components/Toast";
 
 /**
@@ -13,8 +13,7 @@ const PhanCTA: React.FC = () => {
         e.preventDefault();
         const user = getUserProfile();
         if (user) {
-            const role = (user.ten_vai_tro || user.loai_tai_khoan || "").toLowerCase();
-            if (role !== "customer" && role !== "khach_hang" && !role.includes("khách hàng")) {
+            if (normalizeUserRole(user) !== "khach_hang") {
                 toast.info("Bạn đang đăng nhập với tài khoản nhân sự. Hệ thống đang chuyển hướng bạn đến Trang quản lý lịch hẹn nội bộ!");
                 navigate("/quan-ly/lich-hen");
                 return;
@@ -33,8 +32,58 @@ const PhanCTA: React.FC = () => {
                     0%, 100% { transform: scale(1); opacity: 0.5; }
                     50% { transform: scale(1.1); opacity: 0.8; }
                 }
+                @keyframes ctaButtonShine {
+                    0% { transform: translateX(-130%) skewX(-18deg); }
+                    56%, 100% { transform: translateX(170%) skewX(-18deg); }
+                }
+                @keyframes ctaAvatarFloat {
+                    0%, 100% { transform: translateY(0); }
+                    50% { transform: translateY(-5px); }
+                }
+                .cta-action-card {
+                    transition: transform 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease;
+                }
+                .cta-action-card:hover {
+                    transform: translateY(-6px);
+                    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.22);
+                    border-color: rgba(255,255,255,0.36) !important;
+                }
+                .cta-avatar {
+                    animation: ctaAvatarFloat 3s ease-in-out infinite;
+                    transition: transform 0.25s ease;
+                }
+                .cta-action-card:hover .cta-avatar {
+                    transform: translateY(-4px) scale(1.04);
+                }
+                .cta-btn-primary,
+                .cta-btn-outline {
+                    position: relative;
+                    overflow: hidden;
+                }
+                .cta-btn-primary::before,
+                .cta-btn-outline::before {
+                    content: "";
+                    position: absolute;
+                    top: -45%;
+                    bottom: -45%;
+                    left: 0;
+                    width: 42%;
+                    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.58), transparent);
+                    transform: translateX(-130%) skewX(-18deg);
+                    animation: ctaButtonShine 2.8s ease-in-out infinite;
+                }
                 .cta-btn-primary:hover { background: #fffbeb !important; color: #ea580c !important; transform: translateY(-3px); box-shadow: 0 15px 35px rgba(0,0,0,0.2) !important; }
-                .cta-btn-outline:hover { background: rgba(255,255,255,0.1) !important; border-color: white !important; transform: translateY(-3px); }
+                .cta-btn-outline:hover { background: rgba(255,255,255,0.14) !important; border-color: white !important; transform: translateY(-3px); box-shadow: 0 12px 28px rgba(255,255,255,0.14); }
+                .cta-btn-primary span,
+                .cta-btn-outline span {
+                    position: relative;
+                    z-index: 1;
+                    transition: transform 0.25s ease;
+                }
+                .cta-btn-primary:hover .cta-btn-icon,
+                .cta-btn-outline:hover .cta-btn-icon {
+                    transform: rotate(-8deg) scale(1.08);
+                }
                 @media (max-width: 768px) {
                     .cta-layout { flex-direction: column !important; text-align: center !important; }
                     .cta-btn-group { justify-content: center !important; }
@@ -78,11 +127,11 @@ const PhanCTA: React.FC = () => {
                     </div>
 
                     {/* Bên phải: Thẻ đăng ký trực tuyến */}
-                    <div style={{ flex: '0 0 auto', background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(16px)', borderRadius: '32px', padding: '40px 36px', border: '1px solid rgba(255,255,255,0.2)', minWidth: '320px', textAlign: 'center' }}>
+                    <div className="cta-action-card" style={{ flex: '0 0 auto', background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(16px)', borderRadius: '32px', padding: '40px 36px', border: '1px solid rgba(255,255,255,0.2)', minWidth: '320px', textAlign: 'center' }}>
                         {/* Nhóm ảnh đại diện bác sĩ nổi bật */}
                         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
                             {["/img/bac_si_minh_anh.png", "/img/bac_si_khanh_linh.png", "/img/bac_si_hoang_nam.png"].map((src, i) => (
-                                <div key={i} style={{ width: '52px', height: '52px', borderRadius: '50%', border: '3px solid rgba(255,255,255,0.5)', overflow: 'hidden', marginLeft: i === 0 ? 0 : '-16px', position: 'relative', zIndex: 3 - i, background: 'var(--primary)' }}>
+                                <div key={i} className="cta-avatar" style={{ width: '52px', height: '52px', borderRadius: '50%', border: '3px solid rgba(255,255,255,0.5)', overflow: 'hidden', marginLeft: i === 0 ? 0 : '-16px', position: 'relative', zIndex: 3 - i, background: 'var(--primary)', animationDelay: `${i * 0.18}s` }}>
                                     <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top' }} />
                                 </div>
                             ))}
@@ -94,12 +143,12 @@ const PhanCTA: React.FC = () => {
 
                         <div className="cta-btn-group" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                             <a href="#" onClick={handleBookingClick} className="cta-btn-primary" style={{ background: 'linear-gradient(135deg, #f59e0b, #ea580c)', color: 'white', padding: '16px 32px', borderRadius: '50px', fontWeight: 900, textDecoration: 'none', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', transition: 'all 0.3s', boxShadow: '0 8px 24px rgba(245,158,11,0.3)', border: 'none' }}>
-                                <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>calendar_month</span>
-                                Đặt lịch hẹn ngay
+                                <span className="material-symbols-outlined cta-btn-icon" style={{ fontSize: '20px' }}>calendar_month</span>
+                                <span>Đặt lịch hẹn ngay</span>
                             </a>
                             <a href="tel:02412345678" className="cta-btn-outline" style={{ background: 'transparent', color: 'white', padding: '14px 32px', borderRadius: '50px', fontWeight: 800, textDecoration: 'none', fontSize: '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', border: '2px solid rgba(255,255,255,0.4)', transition: 'all 0.3s' }}>
-                                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>call</span>
-                                024 1234 5678
+                                <span className="material-symbols-outlined cta-btn-icon" style={{ fontSize: '18px' }}>call</span>
+                                <span>024 1234 5678</span>
                             </a>
                         </div>
                     </div>

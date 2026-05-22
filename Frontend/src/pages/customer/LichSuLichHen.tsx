@@ -24,15 +24,28 @@ const hienThiTrangThaiLich = (status: string) => {
   }
 };
 
+const getCustomerId = (user: any) => user?.id_khach_hang ?? user?.idKhachHang ?? user?.id_tai_khoan ?? user?.idTaiKhoan ?? user?.id;
+const getAppointmentId = (item: any) => item?.id_lich_hen ?? item?.idLichHen ?? item?.id;
+const getAppointmentStatus = (item: any) => String(item?.trang_thai ?? item?.trangThai ?? "").toUpperCase();
+const getPetId = (item: any) => item?.id_thu_cung ?? item?.idThuCung;
+const getServiceId = (item: any) => item?.id_dich_vu ?? item?.idDichVu;
+const getDoctorId = (item: any) => item?.id_bac_si ?? item?.idBacSi;
+const getPetName = (item: any, thuCungs: any[]) => {
+  const petId = getPetId(item);
+  const pet = thuCungs.find(p => String(p.id_thu_cung ?? p.idThuCung ?? p.id) === String(petId));
+  return pet?.ten_thu_cung ?? pet?.tenThuCung ?? item?.ten_thu_cung ?? item?.tenThuCung ?? "Thú cưng";
+};
+
 interface AppointmentCardProps {
   item: any;
   thuCungs: any[];
-  onCancel: (id: number) => void;
+  onCancel: (id: number | string) => void;
   onRebook: (item: any) => void;
 }
 
 const AppointmentCard: React.FC<AppointmentCardProps> = ({ item, thuCungs, onCancel, onRebook }) => {
   const [showDetails, setShowDetails] = useState(false);
+  const statusCode = getAppointmentStatus(item);
 
   return (
     <div className="glass-card item-card" style={{ padding: '24px 32px', borderRadius: 'var(--radius-xl)', overflow: 'hidden' }}>
@@ -44,24 +57,24 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({ item, thuCungs, onCan
           <div>
             <h3 style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--ink)', margin: 0 }}>{item.ly_do || "Khám định kỳ"}</h3>
             <p style={{ color: 'var(--gray-400)', fontWeight: 700, margin: '2px 0', fontSize: '0.8rem' }}>
-              Bệnh nhân: <b style={{ color: 'var(--ink)' }}>{thuCungs.find(p => p.id_thu_cung === item.id_thu_cung)?.ten_thu_cung || "Thú cưng"}</b>
+              Bệnh nhân: <b style={{ color: 'var(--ink)' }}>{getPetName(item, thuCungs)}</b>
             </p>
           </div>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '32px' }}>
           <div style={{ textAlign: 'right' }}>
-            <b style={{ fontSize: '1.1rem', fontWeight: 900, color: 'var(--ink)' }}>{chuyenNgayISO_SangVN(item.ngay_kham)}</b>
-            <div style={{ fontSize: '0.85rem', color: 'var(--primary)', fontWeight: 800 }}>{item.gio_kham?.substring(0, 5)}</div>
+            <b style={{ fontSize: '1.1rem', fontWeight: 900, color: 'var(--ink)' }}>{chuyenNgayISO_SangVN(item.ngay_kham ?? item.ngayKham)}</b>
+            <div style={{ fontSize: '0.85rem', color: 'var(--primary)', fontWeight: 800 }}>{(item.gio_kham ?? item.gioKham)?.substring(0, 5)}</div>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <span style={{
               minWidth: '110px', textAlign: 'center', padding: '6px 16px', borderRadius: '50px', fontSize: '0.7rem', fontWeight: 900,
-              background: (item.trang_thai || item.trangThai)?.toLowerCase() === 'da_huy' ? 'var(--danger-light, rgba(239, 68, 68, 0.15))' : ((item.trang_thai || item.trangThai)?.toLowerCase() === 'da_xac_nhan' ? 'var(--primary-light)' : 'var(--gray-50)'),
-              color: (item.trang_thai || item.trangThai)?.toLowerCase() === 'da_huy' ? 'var(--danger)' : ((item.trang_thai || item.trangThai)?.toLowerCase() === 'da_xac_nhan' ? 'var(--primary)' : 'var(--gray-400)')
+              background: statusCode === 'DA_HUY' ? 'var(--danger-light, rgba(239, 68, 68, 0.15))' : (statusCode === 'DA_XAC_NHAN' ? 'var(--primary-light)' : 'var(--gray-50)'),
+              color: statusCode === 'DA_HUY' ? 'var(--danger)' : (statusCode === 'DA_XAC_NHAN' ? 'var(--primary)' : 'var(--gray-400)')
             }}>
-              {hienThiTrangThaiLich(item.trang_thai || item.trangThai)}
+              {hienThiTrangThaiLich(statusCode)}
             </span>
 
             <button
@@ -85,32 +98,32 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({ item, thuCungs, onCan
               <p style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '4px' }}>BÁC SĨ PHỤ TRÁCH</p>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700 }}>
                 <span className="material-symbols-outlined" style={{ fontSize: '18px', color: 'var(--primary)' }}>medical_information</span>
-                {item.ten_bac_si || "Đang phân bổ"}
+                {item.ten_bac_si || item.tenBacSi || "Đang phân bổ"}
               </div>
             </div>
             <div style={{ flex: 1 }}>
               <p style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '4px' }}>DỊCH VỤ</p>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700 }}>
                 <span className="material-symbols-outlined" style={{ fontSize: '18px', color: 'var(--primary)' }}>vaccines</span>
-                {item.ten_dich_vu || "Khám tổng quát"}
+                {item.ten_dich_vu || item.tenDichVu || "Khám tổng quát"}
               </div>
             </div>
           </div>
 
           <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
             {/* NÚT HỦY LỊCH - Chỉ hiện khi đang CHỜ XÁC NHẬN hoặc ĐÃ XÁC NHẬN */}
-            {(item.trang_thai === 'CHO_XAC_NHAN' || item.trang_thai === 'DA_XAC_NHAN') && (
+            {(['CHO_XAC_NHAN', 'DA_XAC_NHAN'].includes(statusCode)) && (
               <button
                 className="btn btn-outline"
                 style={{ flex: 1, padding: '10px', color: 'var(--danger)', borderColor: 'var(--danger-light)' }}
-                onClick={() => onCancel(item.id_lich_hen)}
+                onClick={() => onCancel(getAppointmentId(item))}
               >
                 Hủy lịch hẹn
               </button>
             )}
 
             {/* NÚT ĐẶT LẠI - Hiện khi đã HOÀN TẤT hoặc ĐÃ HỦY */}
-            {(item.trang_thai === 'DA_KHAM' || item.trang_thai === 'HOAN_THANH' || item.trang_thai === 'DA_HUY') && (
+            {(['DA_KHAM', 'HOAN_THANH', 'DA_HUY'].includes(statusCode)) && (
               <button
                 className="btn btn-primary"
                 style={{ flex: 1, padding: '10px' }}
@@ -142,15 +155,19 @@ const LichSuLichHen: React.FC = () => {
 
   const fetchLichHen = () => {
     const user = getUserProfile();
-    if (!user) return;
-    const id = user?.id_khach_hang;
+    const id = getCustomerId(user);
+    if (!id) {
+      setLoading(false);
+      setServerError("Không xác định được tài khoản khách hàng hiện tại. Vui lòng đăng nhập lại.");
+      return;
+    }
     setLoading(true);
     setServerError(null);
     Promise.allSettled([
       axiosInstance.get(`/api/lich-hen/khach/${id}`, {
         params: { page: currentPage - 1, size: ITEMS_PER_PAGE, status: status !== 'all' ? status : undefined, petId: petId !== 'all' ? petId : undefined }
       }),
-      axiosInstance.get(`/api/thu-cung/khach/${id}`)
+      axiosInstance.get(`/api/thu-cung/khach/${id}`, { params: { page: 0, size: 999 } })
     ]).then(([lichHenRes, thuCungRes]) => {
       let failed = false;
 
@@ -169,7 +186,8 @@ const LichSuLichHen: React.FC = () => {
       }
 
       if (thuCungRes.status === 'fulfilled') {
-        setThuCungs(thuCungRes.value.data?.content || thuCungRes.value.data || []);
+          const petData = thuCungRes.value.data;
+          setThuCungs(petData?.content || petData?.data || petData?.result || petData || []);
       } else {
         console.error("Lỗi lấy danh sách thú cưng:", thuCungRes.reason);
         failed = true;
@@ -187,7 +205,7 @@ const LichSuLichHen: React.FC = () => {
     fetchLichHen();
   }, [currentPage, status, petId]);
 
-  const handleCancelAppointment = async (id: number) => {
+  const handleCancelAppointment = async (id: number | string) => {
     if (window.confirm("Sếp chắc chắn muốn hủy lịch hẹn này chứ? Bé cưng sẽ buồn lắm đấy... 😿")) {
       try {
         await axiosInstance.put(`/api/lich-hen/${id}/status`, { trang_thai: "DA_HUY" });
@@ -202,9 +220,9 @@ const LichSuLichHen: React.FC = () => {
   const handleRebook = (item: any) => {
     // FIX: Đúng route /khach-hang/dat-lich-hen (trước đây sai là /dat-lich)
     const params = new URLSearchParams({
-      id_thu_cung: item.id_thu_cung,
-      id_dich_vu: item.id_dich_vu,
-      ...(item.id_bac_si && { id_bac_si: item.id_bac_si })
+      id_thu_cung: String(getPetId(item) ?? ""),
+      id_dich_vu: String(getServiceId(item) ?? ""),
+      ...(getDoctorId(item) && { id_bac_si: String(getDoctorId(item)) })
     }).toString();
     navigate(`/khach-hang/dat-lich-hen?${params}`);
   };
@@ -217,9 +235,9 @@ const LichSuLichHen: React.FC = () => {
   const rows = useMemo(() => {
     if (isServerPaginated) return lichHens; // Nếu backend đã phân trang thì không cần lọc ở client nữa
     return lichHens
-      .filter((l) => (petId === "all" ? true : String(l.id_thu_cung) === petId))
-      .filter((l) => (status === "all" ? true : (l.trang_thai || l.trangThai)?.toUpperCase() === status || (status === 'DA_KHAM' && (l.trang_thai || l.trangThai)?.toUpperCase() === 'HOAN_THANH')))
-      .sort((a, b) => new Date(b.ngay_kham).getTime() - new Date(a.ngay_kham).getTime());
+      .filter((l) => (petId === "all" ? true : String(getPetId(l)) === petId))
+      .filter((l) => (status === "all" ? true : getAppointmentStatus(l) === status || (status === 'DA_KHAM' && getAppointmentStatus(l) === 'HOAN_THANH')))
+      .sort((a, b) => new Date(b.ngay_kham ?? b.ngayKham).getTime() - new Date(a.ngay_kham ?? a.ngayKham).getTime());
   }, [lichHens, petId, status, isServerPaginated]);
 
   // Tính toán dữ liệu hiển thị cho trang hiện tại
@@ -283,7 +301,7 @@ const LichSuLichHen: React.FC = () => {
             <select className="filter-select" value={petId} onChange={e => setPetId(e.target.value)} style={{ minWidth: '220px', borderRadius: '18px', padding: '14px 20px 14px 48px', background: 'rgba(255,255,255,0.1)', color: 'white', fontWeight: 800, outline: 'none', cursor: 'pointer', backdropFilter: 'blur(12px)', fontSize: '0.9rem' }}>
               <option value="all" style={{ color: 'var(--ink)' }}>Tất cả thú cưng</option>
               {thuCungs.map(pet => (
-                <option key={pet.id_thu_cung} value={String(pet.id_thu_cung)} style={{ color: 'var(--ink)' }}>{pet.ten_thu_cung}</option>
+                <option key={pet.id_thu_cung ?? pet.idThuCung ?? pet.id} value={String(pet.id_thu_cung ?? pet.idThuCung ?? pet.id)} style={{ color: 'var(--ink)' }}>{pet.ten_thu_cung ?? pet.tenThuCung}</option>
               ))}
             </select>
           </div>
@@ -369,7 +387,7 @@ const LichSuLichHen: React.FC = () => {
             </button>
           </div>
         ) : currentRows.map((item) => (
-          <AppointmentCard key={item.id_lich_hen} item={item} thuCungs={thuCungs} onCancel={handleCancelAppointment} onRebook={handleRebook} />
+          <AppointmentCard key={getAppointmentId(item)} item={item} thuCungs={thuCungs} onCancel={handleCancelAppointment} onRebook={handleRebook} />
         ))}
 
         {/* BỘ NÚT ĐIỀU HƯỚNG PHÂN TRANG */}

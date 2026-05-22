@@ -39,7 +39,7 @@ public class FileDinhKemController {
         if (auth == null || auth.getName().equals("anonymousUser"))
             return false;
         String role = auth.getAuthorities().toString().toUpperCase();
-        return role.contains("ADMIN") || role.contains("BAC_SI") || role.contains("STAFF");
+        return role.contains("ADMIN") || role.contains("QUAN_LY") || role.contains("BAC_SI") || role.contains("Y_TA");
     }
 
     // Lấy danh sách file đã upload

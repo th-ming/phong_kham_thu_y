@@ -45,6 +45,77 @@ const PhanBacSi: React.FC = () => {
                     }
                     .doc-featured-img { transition: transform 0.6s ease; }
                     .doc-featured:hover .doc-featured-img { transform: scale(1.03); }
+                    @keyframes doctorCtaPulse {
+                        0%, 100% { transform: translateY(0) scale(1); box-shadow: 0 10px 26px rgba(245, 158, 11, 0.18); }
+                        50% { transform: translateY(-2px) scale(1.03); box-shadow: 0 14px 34px rgba(245, 158, 11, 0.32); }
+                    }
+                    @keyframes doctorCtaGlow {
+                        0% { opacity: 0; transform: translateX(-130%) skewX(-18deg); }
+                        18%, 76% { opacity: 0.40; }
+                        100% { opacity: 0; transform: translateX(170%) skewX(-18deg); }
+                    }
+                    .doctor-all-card {
+                        position: relative;
+                        overflow: hidden;
+                        transition: transform 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease, background 0.35s ease;
+                    }
+                    .doctor-all-card::before {
+                        content: "";
+                        position: absolute;
+                        inset: -40%;
+                        background: radial-gradient(circle at 30% 20%, rgba(251, 191, 36, 0.24), transparent 38%);
+                        opacity: 0;
+                        transition: opacity 0.35s ease;
+                        pointer-events: none;
+                    }
+                    .doctor-all-card:hover {
+                        transform: translateY(-8px);
+                        border-color: rgba(245, 158, 11, 0.72) !important;
+                        box-shadow: 0 22px 48px rgba(245, 158, 11, 0.22);
+                    }
+                    .doctor-all-card:hover::before { opacity: 1; }
+                    .doctor-all-icon {
+                        position: relative;
+                        transition: transform 0.35s ease, box-shadow 0.35s ease;
+                        animation: doctorCtaPulse 2.4s ease-in-out infinite;
+                    }
+                    .doctor-all-card:hover .doctor-all-icon {
+                        transform: translateY(-4px) rotate(-4deg) scale(1.08);
+                    }
+                    .doctor-all-link {
+                        position: relative;
+                        overflow: hidden;
+                        transition: transform 0.28s ease, box-shadow 0.28s ease, filter 0.28s ease;
+                    }
+                    .doctor-all-link::before {
+                        content: "";
+                        position: absolute;
+                        top: -40%;
+                        bottom: -40%;
+                        left: 0;
+                        width: 42%;
+                        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.40), transparent);
+                        transform: translateX(-130%) skewX(-18deg);
+                        animation: doctorCtaGlow 5.2s linear infinite;
+                    }
+                    .doctor-all-link span {
+                        transition: transform 0.25s ease;
+                    }
+                    .doctor-all-link:hover {
+                        transform: translateY(-2px);
+                        filter: brightness(1.05);
+                        box-shadow: 0 12px 28px rgba(245, 158, 11, 0.42) !important;
+                    }
+                    .doctor-all-link:hover span {
+                        transform: translateX(4px);
+                    }
+                    [data-theme='dark'] .doctor-all-card {
+                        background: linear-gradient(135deg, rgba(245, 158, 11, 0.13), rgba(234, 88, 12, 0.08)) !important;
+                        border-color: rgba(251, 191, 36, 0.32) !important;
+                    }
+                    [data-theme='dark'] .doctor-all-card:hover {
+                        box-shadow: 0 0 0 1px rgba(251, 191, 36, 0.25), 0 24px 55px rgba(245, 158, 11, 0.18);
+                    }
                     @media (max-width: 1024px) {
                         .doctors-layout { flex-direction: column !important; }
                         .doc-featured { width: 100% !important; max-width: 100% !important; }
@@ -109,16 +180,16 @@ const PhanBacSi: React.FC = () => {
                             ))}
 
                             {/* thẻ xem tất cả */}
-                            <div style={{ borderRadius: '24px', background: isDark ? 'rgba(217, 119, 6, 0.1)' : 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)', padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center', gap: '16px', border: isDark ? '1px solid rgba(251, 191, 36, 0.2)' : '1px solid #fde68a' }}>
-                                <div style={{ width: '56px', height: '56px', background: 'var(--background)', borderRadius: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'var(--shadow-sm)' }}>
+                            <div className="doctor-all-card" style={{ borderRadius: '24px', background: isDark ? 'rgba(217, 119, 6, 0.1)' : 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)', padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center', gap: '16px', border: isDark ? '1px solid rgba(251, 191, 36, 0.2)' : '1px solid #fde68a' }}>
+                                <div className="doctor-all-icon" style={{ width: '56px', height: '56px', background: 'var(--background)', borderRadius: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'var(--shadow-sm)' }}>
                                     <span className="material-symbols-outlined" style={{ fontSize: '28px', color: '#f59e0b' }}>groups</span>
                                 </div>
-                                <div>
+                                <div style={{ position: 'relative', zIndex: 1 }}>
                                     <div style={{ fontWeight: 900, color: '#92400e', fontSize: '1rem', marginBottom: '6px' }}>Xem tất cả bác sĩ</div>
                                     <div style={{ color: '#b45309', fontSize: '0.8rem', fontWeight: 600 }}>Đội ngũ 10+ chuyên gia</div>
                                 </div>
-                                <Link to="/bac-si" style={{ background: 'linear-gradient(135deg, #f59e0b, #ea580c)', color: 'white', padding: '10px 22px', borderRadius: '50px', fontWeight: 800, textDecoration: 'none', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 8px 20px rgba(245,158,11,0.25)' }}>
-                                    Xem hồ sơ <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>arrow_forward</span>
+                                <Link to="/bac-si" className="doctor-all-link" style={{ background: 'linear-gradient(135deg, #f59e0b, #ea580c)', color: 'white', padding: '10px 22px', borderRadius: '50px', fontWeight: 800, textDecoration: 'none', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 8px 20px rgba(245,158,11,0.25)', zIndex: 1 }}>
+                                    <span style={{ position: 'relative', zIndex: 1 }}>Xem hồ sơ</span> <span className="material-symbols-outlined" style={{ fontSize: '16px', position: 'relative', zIndex: 1 }}>arrow_forward</span>
                                 </Link>
                             </div>
                         </div>

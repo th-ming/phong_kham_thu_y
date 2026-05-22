@@ -233,6 +233,26 @@ const MemeCatCore: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
 
   if (!active) return null;
 
+  const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1280;
+  const edgeGap = isMobile ? 8 : 16;
+  const bubbleWidth = Math.min(
+    isMobile ? 132 : 190,
+    Math.max(isMobile ? 104 : 138, pos.size * (isMobile ? 1.42 : 1.52))
+  );
+  const catCenterX = pos.x + pos.size / 2;
+  const bubbleLeft = Math.min(
+    Math.max(catCenterX - bubbleWidth / 2, edgeGap),
+    viewportWidth - bubbleWidth - edgeGap
+  );
+  const bubbleTailX = Math.min(
+    Math.max(catCenterX - bubbleLeft, isMobile ? 18 : 24),
+    bubbleWidth - (isMobile ? 18 : 24)
+  );
+  const bubbleBelowCat = pos.y < (isMobile ? 72 : 96);
+  const bubbleTop = bubbleBelowCat
+    ? pos.y + pos.size + Math.max(8, pos.size * 0.08)
+    : pos.y - (isMobile ? 56 : 70);
+
   return (
     <>
       <video
@@ -248,42 +268,55 @@ const MemeCatCore: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
       {message && (
         <div className="cat-bubble-animate" style={{
           position: 'fixed', zIndex: 999999,
-          top: pos.y < 80 ? pos.y + pos.size + (isMobile ? 10 : 15) : pos.y - (isMobile ? 48 : 65),
-          left: isMobile
-            ? `clamp(10px, ${pos.x + pos.size / 2}px, calc(100vw - 150px))`
-            : `clamp(20px, ${pos.x + pos.size / 2}px, calc(100vw - 250px))`,
+          top: bubbleTop,
+          left: bubbleLeft,
+          width: bubbleWidth,
+          boxSizing: 'border-box',
           background: 'var(--surface)',
           backdropFilter: 'blur(12px)',
-          padding: isMobile ? '6px 12px' : '10px 18px',
-          borderRadius: isMobile ? '16px' : '22px',
+          padding: isMobile ? '5px 9px' : '8px 12px',
+          borderRadius: isMobile ? '14px' : '18px',
           border: '1.5px solid var(--primary)',
           color: 'var(--primary)',
           fontWeight: 800,
-          fontSize: isMobile ? '0.7rem' : (message.length > 30 ? '0.8rem' : '0.9rem'),
+          fontSize: isMobile ? '0.64rem' : (message.length > 30 ? '0.72rem' : '0.78rem'),
           boxShadow: 'var(--shadow-lg)',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
           gap: '4px',
-          maxWidth: isMobile ? '130px' : '220px',
           textAlign: 'center',
           wordBreak: 'break-word',
-          lineHeight: '1.3'
+          lineHeight: '1.25',
+          transform: 'translateZ(0)'
         }}>
           <span className="material-symbols-outlined" style={{ fontSize: isMobile ? '14px' : '18px', opacity: 0.7 }}>pets</span>
           {message}
           {/* Đuôi bong bóng chat */}
-          <div style={{
-            position: 'absolute',
-            bottom: isMobile ? '-5px' : '-8px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            width: 0, height: 0,
-            borderLeft: isMobile ? '5px solid transparent' : '8px solid transparent',
-            borderRight: isMobile ? '5px solid transparent' : '8px solid transparent',
-            borderTop: isMobile ? '5px solid var(--primary)' : '8px solid var(--primary)',
-          }} />
+          {bubbleBelowCat ? (
+            <div style={{
+              position: 'absolute',
+              top: isMobile ? '-5px' : '-7px',
+              left: `${bubbleTailX}px`,
+              transform: 'translateX(-50%)',
+              width: 0, height: 0,
+              borderLeft: isMobile ? '5px solid transparent' : '7px solid transparent',
+              borderRight: isMobile ? '5px solid transparent' : '7px solid transparent',
+              borderBottom: isMobile ? '5px solid var(--primary)' : '7px solid var(--primary)',
+            }} />
+          ) : (
+            <div style={{
+              position: 'absolute',
+              bottom: isMobile ? '-5px' : '-7px',
+              left: `${bubbleTailX}px`,
+              transform: 'translateX(-50%)',
+              width: 0, height: 0,
+              borderLeft: isMobile ? '5px solid transparent' : '7px solid transparent',
+              borderRight: isMobile ? '5px solid transparent' : '7px solid transparent',
+              borderTop: isMobile ? '5px solid var(--primary)' : '7px solid var(--primary)',
+            }} />
+          )}
         </div>
       )}
 
@@ -297,6 +330,92 @@ const MemeCatCore: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
             color: #22d3ee !important;
             animation: darkBubblePulse 1.8s infinite ease-in-out !important;
           }
+          @keyframes bananaAuraPulse {
+            0%, 100% {
+              filter: none;
+            }
+            50% {
+              filter: none;
+            }
+          }
+          @keyframes bananaAuraWave {
+            0% {
+              opacity: 0;
+              transform: translate(-50%, -50%) scale(0.6);
+            }
+            18% {
+              opacity: 0.16;
+            }
+            76%, 100% {
+              opacity: 0;
+              transform: translate(-50%, -50%) scale(1.18);
+            }
+          }
+          @keyframes bananaAuraPulseDark {
+            0%, 100% {
+              filter:
+                drop-shadow(0 0 5px rgba(250, 204, 21, 0.35))
+                drop-shadow(0 0 10px rgba(245, 158, 11, 0.22));
+            }
+            50% {
+              filter:
+                drop-shadow(0 0 11px rgba(251, 191, 36, 0.72))
+                drop-shadow(0 0 20px rgba(245, 158, 11, 0.36));
+            }
+          }
+          .banana-cat-aura {
+            isolation: isolate;
+            overflow: visible;
+            animation: none;
+          }
+          .banana-cat-aura::before,
+          .banana-cat-aura::after {
+            content: "";
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 54%;
+            height: 54%;
+            border-radius: 999px;
+            border: 1px solid rgba(250, 204, 21, 0.08);
+            box-shadow: 0 0 8px rgba(245, 158, 11, 0.08), inset 0 0 8px rgba(254, 240, 138, 0.06);
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            z-index: -1;
+            animation: none;
+          }
+          .banana-cat-aura::after {
+            width: 70%;
+            height: 70%;
+            border-color: rgba(251, 191, 36, 0.06);
+            animation-delay: 0.65s;
+          }
+          [data-theme='dark'] .banana-cat-aura {
+            animation: bananaAuraPulseDark 2.25s ease-in-out infinite;
+          }
+          [data-theme='dark'] .banana-cat-aura::before,
+          [data-theme='dark'] .banana-cat-aura::after {
+            animation: bananaAuraWave 2.6s ease-out infinite;
+          }
+          [data-theme='dark'] .banana-cat-aura::before {
+            border-color: rgba(250, 204, 21, 0.16);
+            box-shadow: 0 0 10px rgba(245, 158, 11, 0.12), inset 0 0 10px rgba(254, 240, 138, 0.08);
+          }
+          [data-theme='dark'] .banana-cat-aura::after {
+            border-color: rgba(251, 191, 36, 0.1);
+          }
+          .banana-cat-aura-sprint::before,
+          .banana-cat-aura-sprint::after {
+            animation-duration: 2s;
+          }
+          [data-theme='light'] .banana-cat-canvas,
+          :root:not([data-theme='dark']) .banana-cat-canvas {
+            filter:
+              contrast(1.18)
+              brightness(1.08)
+              saturate(1.16)
+              drop-shadow(0 5px 10px rgba(0,0,0,0.24)) !important;
+          }
         `}</style>
 
       {/* HIỂN THỊ CÁC TÀN ẢNH TRUY ĐUỔI (GHOST TRAIL) */}
@@ -309,7 +428,7 @@ const MemeCatCore: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
             zIndex: 9997 - t.age, pointerEvents: 'none',
             transform: `translate(-50%, -50%) rotate(${t.rotation}deg) translateX(${t.size * 0.75}px)`,
             opacity: 0.5 * (1 - t.age / 6),
-            background: 'linear-gradient(90deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 100%)',
+            background: 'linear-gradient(90deg, rgba(250, 204, 21, 0.9) 0%, rgba(251, 191, 36, 0.32) 48%, rgba(255,255,255,0) 100%)',
             filter: `blur(${t.age * 0.5 + 2}px)`,
             mixBlendMode: 'screen',
             borderRadius: '50px'
@@ -320,30 +439,37 @@ const MemeCatCore: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
             width: `${t.size}px`, height: `${t.size}px`,
             zIndex: 9998 - t.age, pointerEvents: 'none', transform: `rotate(${t.rotation}deg)`,
             opacity: 0.4 * (1 - t.age / 6),
-            filter: `blur(${t.age * 1}px) brightness(1.1) saturate(3) hue-rotate(${t.age * 60}deg)`,
+            filter: `blur(${t.age * 1}px) brightness(1.12) saturate(1.7) sepia(0.24) drop-shadow(0 0 12px rgba(250, 204, 21, 0.48))`,
             mixBlendMode: 'lighten',
           }} />
         </React.Fragment>
       ))}
 
-      <canvas ref={canvasRef} style={{
+      <div className={`banana-cat-aura ${isSprintingRef.current ? 'banana-cat-aura-sprint' : ''}`} style={{
         position: 'fixed', top: pos.y, left: pos.x,
         width: `${pos.size}px`,
         height: `${pos.size * (canvasRef.current ? (canvasRef.current.height / canvasRef.current.width) : 1)}px`,
         zIndex: 9999, pointerEvents: 'none', transform: `rotate(${pos.rotation}deg)`,
         display: (pos.x === -200 || !showCanvas) ? 'none' : 'block',
+        transition: 'filter 0.1s ease'
+      }}>
+        <canvas ref={canvasRef} className="banana-cat-canvas" style={{
+        width: '100%',
+        height: '100%',
         imageRendering: 'auto',
         filter: `
-          contrast(1.15) 
-          brightness(1.1) 
-          saturate(1.2) 
-          drop-shadow(0 5px 10px rgba(0,0,0,0.3))
-          drop-shadow(0 0 15px rgba(15, 157, 138, 0.8)) 
-          drop-shadow(0 0 30px rgba(15, 157, 138, 0.4))
+          contrast(1.18) 
+          brightness(1.12) 
+          saturate(1.28) 
+          drop-shadow(0 5px 10px rgba(0,0,0,0.28))
+          drop-shadow(0 0 12px rgba(250, 204, 21, 0.95))
+          drop-shadow(0 0 28px rgba(245, 158, 11, 0.62))
+          drop-shadow(0 0 46px rgba(251, 191, 36, 0.34))
           ${isSprintingRef.current ? `blur(2px)` : ''}
         `,
         transition: 'filter 0.1s ease'
-      }} />
+        }} />
+      </div>
     </>
   );
 };
@@ -501,122 +627,6 @@ export const RevealSection: React.FC<{ children: React.ReactNode }> = ({ childre
       transition: 'all 0.8s ease-out'
     }}>{children}</div>
   );
-};
-
-/**
- * GLOBAL PREMIUM UX ENGINE
- * Gắn các hiệu ứng tương tác cao cấp lên DOM hiện tại mà không phải sửa từng màn hình.
- */
-export const PremiumUXEngine: React.FC = () => {
-  useEffect(() => {
-    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reduceMotion) return;
-
-    const cardSelector = ".glass-card, .stat-card, .stat-card-light, .doctor-card, .item-card, .service-card-select, .feature-item, .partner-card-new, .review-card, .appointment-card, .mission-card";
-    const buttonSelector = "button, .btn, a.btn";
-    const inputSelector = "input:not([type='hidden']):not([type='file']), select, textarea";
-    const revealObserver = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add("is-revealed");
-          revealObserver.unobserve(entry.target);
-        }
-      });
-    }, { threshold: 0.12, rootMargin: "0px 0px -40px 0px" });
-
-    const enhance = () => {
-      document.querySelectorAll<HTMLElement>(cardSelector).forEach((card) => {
-        card.classList.add("premium-spotlight-card");
-        card.classList.add("scroll-reveal");
-        if (!card.classList.contains("is-revealed")) {
-          revealObserver.observe(card);
-        }
-        if (!card.classList.contains("premium-tilt-ready")) {
-          card.classList.add("premium-tilt-ready");
-        }
-      });
-
-      document.querySelectorAll<HTMLElement>(buttonSelector).forEach((button) => {
-        if (!button.closest("#chatWindow") || button.id === "chatBtn") {
-          button.classList.add("magnetic-btn");
-        }
-      });
-
-      document.querySelectorAll<HTMLElement>("tbody").forEach((tbody) => {
-        tbody.classList.add("stagger-table-body");
-        Array.from(tbody.querySelectorAll<HTMLElement>("tr")).forEach((row, index) => {
-          row.style.setProperty("--row-index", String(Math.min(index, 16)));
-        });
-      });
-
-      document.querySelectorAll<HTMLElement>(inputSelector).forEach((field) => {
-        const parent = field.parentElement;
-        if (parent && parent.querySelector("label") && !parent.classList.contains("floating-field")) {
-          parent.classList.add("floating-field");
-        }
-      });
-    };
-
-    const handleMouseMove = (event: MouseEvent) => {
-      const target = event.target as HTMLElement;
-      const card = target.closest<HTMLElement>(".premium-spotlight-card");
-      if (card) {
-        const rect = card.getBoundingClientRect();
-        const x = event.clientX - rect.left;
-        const y = event.clientY - rect.top;
-        card.style.setProperty("--spotlight-x", `${x}px`);
-        card.style.setProperty("--spotlight-y", `${y}px`);
-
-        if (card.classList.contains("premium-tilt-ready") && window.innerWidth > 900) {
-          const rotateX = ((y / rect.height) - 0.5) * -7;
-          const rotateY = ((x / rect.width) - 0.5) * 7;
-          card.style.setProperty("--tilt-x", `${rotateX.toFixed(2)}deg`);
-          card.style.setProperty("--tilt-y", `${rotateY.toFixed(2)}deg`);
-        }
-      }
-
-      const button = target.closest<HTMLElement>(".magnetic-btn");
-      if (button && window.innerWidth > 900) {
-        const rect = button.getBoundingClientRect();
-        const range = Math.max(rect.width, rect.height) * 0.9;
-        const dx = event.clientX - (rect.left + rect.width / 2);
-        const dy = event.clientY - (rect.top + rect.height / 2);
-        if (Math.hypot(dx, dy) < range) {
-          button.style.setProperty("--magnet-x", `${dx * 0.16}px`);
-          button.style.setProperty("--magnet-y", `${dy * 0.16}px`);
-        }
-      }
-    };
-
-    const handleMouseOut = (event: MouseEvent) => {
-      const target = event.target as HTMLElement;
-      const card = target.closest<HTMLElement>(".premium-spotlight-card");
-      if (card) {
-        card.style.setProperty("--tilt-x", "0deg");
-        card.style.setProperty("--tilt-y", "0deg");
-      }
-      const button = target.closest<HTMLElement>(".magnetic-btn");
-      if (button) {
-        button.style.setProperty("--magnet-x", "0px");
-        button.style.setProperty("--magnet-y", "0px");
-      }
-    };
-
-    const observer = new MutationObserver(enhance);
-    enhance();
-    observer.observe(document.body, { childList: true, subtree: true });
-    window.addEventListener("mousemove", handleMouseMove, { passive: true });
-    window.addEventListener("mouseout", handleMouseOut, { passive: true });
-
-    return () => {
-      observer.disconnect();
-      revealObserver.disconnect();
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseout", handleMouseOut);
-    };
-  }, []);
-
-  return null;
 };
 
 /**

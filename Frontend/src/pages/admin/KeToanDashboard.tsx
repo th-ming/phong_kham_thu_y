@@ -112,6 +112,41 @@ const KeToanDashboard: React.FC = () => {
         };
     }, [invoices, revenueData]);
 
+    const financeInsight = useMemo(() => {
+        const toDateKey = (value: any) => {
+            if (!value) return "";
+            const date = new Date(value);
+            return Number.isNaN(date.getTime()) ? String(value).slice(0, 10) : date.toISOString().slice(0, 10);
+        };
+        const today = new Date();
+        const todayKey = today.toISOString().slice(0, 10);
+        const yesterday = new Date(today);
+        yesterday.setDate(today.getDate() - 1);
+        const yesterdayKey = yesterday.toISOString().slice(0, 10);
+
+        const paidInvoices = invoices.filter(inv => inv.trang_thai?.toUpperCase() === 'DA_THANH_TOAN');
+        const unpaidInvoices = invoices.filter(inv => inv.trang_thai?.toUpperCase() === 'CHO_THANH_TOAN');
+        const paidToday = paidInvoices.filter(inv => toDateKey(inv.ngay_lap_hoa_don) === todayKey);
+        const paidYesterday = paidInvoices.filter(inv => toDateKey(inv.ngay_lap_hoa_don) === yesterdayKey);
+        const yesterdayRevenue = revenueData.find((d: any) => (d.Ngay || d.ngay || "").startsWith(yesterdayKey))?.TongDoanhThu
+            || paidYesterday.reduce((sum, inv) => sum + (Number(inv.tong_tien_cuoi) || 0), 0);
+        const diff = stats.todayRevenue - yesterdayRevenue;
+        const diffPct = yesterdayRevenue > 0 ? (diff / yesterdayRevenue) * 100 : null;
+        const largestUnpaid = [...unpaidInvoices].sort((a, b) => (Number(b.tong_tien_cuoi) || 0) - (Number(a.tong_tien_cuoi) || 0))[0];
+        const latestUnpaid = [...unpaidInvoices].sort((a, b) => new Date(b.ngay_lap_hoa_don || 0).getTime() - new Date(a.ngay_lap_hoa_don || 0).getTime())[0];
+
+        return {
+            paidToday,
+            paidYesterday,
+            yesterdayRevenue,
+            diff,
+            diffPct,
+            unpaidInvoices,
+            largestUnpaid,
+            latestUnpaid
+        };
+    }, [invoices, revenueData, stats.todayRevenue]);
+
     const filteredInvoices = useMemo(() => {
         let result = invoices;
         if (filterStatus !== 'all') {
@@ -258,6 +293,33 @@ const KeToanDashboard: React.FC = () => {
 
     if (loading) return <div style={{ display: 'flex', justifyContent: 'center', padding: '100px' }}><div className="dot-pulse"></div></div>;
 
+    const KpiCard = ({
+        accent,
+        title,
+        value,
+        details,
+        icon
+    }: {
+        accent: string;
+        title: string;
+        value: React.ReactNode;
+        details: React.ReactNode;
+        icon: string;
+    }) => (
+        <div className="ketoan-kpi-card glass-card" tabIndex={0} style={{ padding: '24px', borderRadius: '24px', borderLeft: `4px solid ${accent}` }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
+                <div>
+                    <p style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--gray-400)', margin: '0 0 8px 0' }}>{title}</p>
+                    <h3 style={{ fontSize: '2rem', fontWeight: 900, color: accent, margin: 0 }}>{value}</h3>
+                </div>
+                <span className="material-symbols-outlined" style={{ color: accent, fontSize: '28px' }}>{icon}</span>
+            </div>
+            <div className="ketoan-kpi-popover">
+                {details}
+            </div>
+        </div>
+    );
+
     return (
         <div className="animate-fade-in" style={{ paddingBottom: '40px' }}>
             <div className="animate-slide-up" style={{ marginBottom: '40px', padding: '48px', borderRadius: '24px', background: 'var(--primary-gradient)', color: 'white', position: 'relative', overflow: 'hidden', boxShadow: '0 20px 40px var(--primary-shadow)' }}>
@@ -270,19 +332,52 @@ const KeToanDashboard: React.FC = () => {
             </div>
 
             {/* Các thẻ thống kê */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '24px', marginBottom: '40px' }}>
-                <div className="glass-card" style={{ padding: '24px', borderRadius: '24px', borderLeft: '4px solid #10b981' }}>
-                    <p style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--gray-400)', margin: '0 0 8px 0' }}>DOANH THU HÔM NAY</p>
-                    <h3 style={{ fontSize: '2rem', fontWeight: 900, color: '#10b981', margin: 0 }}>{formatTienVND(stats.todayRevenue)}</h3>
-                </div>
-                <div className="glass-card" style={{ padding: '24px', borderRadius: '24px', borderLeft: '4px solid #f59e0b' }}>
-                    <p style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--gray-400)', margin: '0 0 8px 0' }}>CÔNG NỢ CHƯA THU</p>
-                    <h3 style={{ fontSize: '2rem', fontWeight: 900, color: '#f59e0b', margin: 0 }}>{formatTienVND(stats.totalUnpaid)}</h3>
-                </div>
-                <div className="glass-card" style={{ padding: '24px', borderRadius: '24px', borderLeft: '4px solid #3b82f6' }}>
-                    <p style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--gray-400)', margin: '0 0 8px 0' }}>HÓA ĐƠN CHƯA THANH TOÁN</p>
-                    <h3 style={{ fontSize: '2rem', fontWeight: 900, color: '#3b82f6', margin: 0 }}>{stats.unpaidCount} <span style={{ fontSize: '1rem', color: 'var(--gray-400)' }}>phiếu</span></h3>
-                </div>
+            <div className="ketoan-kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '24px', marginBottom: '40px' }}>
+                <KpiCard
+                    accent="#10b981"
+                    title="DOANH THU HÔM NAY"
+                    value={formatTienVND(stats.todayRevenue)}
+                    icon="payments"
+                    details={
+                        <div>
+                            <strong>Chi tiết thực thu hôm nay</strong>
+                            <p>{financeInsight.paidToday.length} hóa đơn đã thanh toán, tổng {formatTienVND(stats.todayRevenue)}.</p>
+                            <p>Hôm qua: {formatTienVND(financeInsight.yesterdayRevenue)}.</p>
+                            <p>Chênh lệch: {financeInsight.diff >= 0 ? "+" : ""}{formatTienVND(financeInsight.diff)}
+                                {financeInsight.diffPct !== null ? ` (${financeInsight.diffPct >= 0 ? "+" : ""}${financeInsight.diffPct.toFixed(1)}%)` : " (chưa có mốc so sánh)"}
+                            </p>
+                        </div>
+                    }
+                />
+                <KpiCard
+                    accent="#f59e0b"
+                    title="CÔNG NỢ CHƯA THU"
+                    value={formatTienVND(stats.totalUnpaid)}
+                    icon="account_balance_wallet"
+                    details={
+                        <div>
+                            <strong>Chi tiết công nợ</strong>
+                            <p>{financeInsight.unpaidInvoices.length} hóa đơn đang chờ thu, tổng {formatTienVND(stats.totalUnpaid)}.</p>
+                            <p>Khoản lớn nhất: {financeInsight.largestUnpaid ? `#${financeInsight.largestUnpaid.id_hoa_don} - ${financeInsight.largestUnpaid.ten_khach_hang || "Khách vãng lai"} (${formatTienVND(financeInsight.largestUnpaid.tong_tien_cuoi)})` : "Chưa có công nợ"}.</p>
+                            <p>Hóa đơn mới nhất: {financeInsight.latestUnpaid ? `#${financeInsight.latestUnpaid.id_hoa_don}` : "Không có"}.</p>
+                        </div>
+                    }
+                />
+                <KpiCard
+                    accent="#3b82f6"
+                    title="HÓA ĐƠN CHƯA THANH TOÁN"
+                    value={<>{stats.unpaidCount} <span style={{ fontSize: '1rem', color: 'var(--gray-400)' }}>phiếu</span></>}
+                    icon="receipt_long"
+                    details={
+                        <div>
+                            <strong>Danh sách cần xử lý</strong>
+                            {financeInsight.unpaidInvoices.slice(0, 4).map((inv: any) => (
+                                <p key={inv.id_hoa_don}>#{inv.id_hoa_don} - {inv.ten_khach_hang || "Khách vãng lai"}: {formatTienVND(inv.tong_tien_cuoi)}</p>
+                            ))}
+                            {financeInsight.unpaidInvoices.length === 0 && <p>Không còn hóa đơn chờ thanh toán.</p>}
+                        </div>
+                    }
+                />
             </div>
 
             {/* Biểu đồ doanh thu 7 ngày */}
@@ -498,6 +593,67 @@ const KeToanDashboard: React.FC = () => {
                     </div>
                 )}
             </Modal>
+            <style>{`
+                .ketoan-kpi-card {
+                    position: relative;
+                    cursor: help;
+                    overflow: visible;
+                    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+                }
+                .ketoan-kpi-grid {
+                    position: relative;
+                    z-index: 80;
+                }
+                .ketoan-kpi-card:hover,
+                .ketoan-kpi-card:focus {
+                    transform: translateY(-3px);
+                    box-shadow: 0 18px 42px rgba(15, 23, 42, 0.12);
+                    outline: none;
+                    z-index: 120;
+                }
+                .ketoan-kpi-popover {
+                    position: absolute;
+                    left: 18px;
+                    right: 18px;
+                    top: calc(100% + 10px);
+                    z-index: 90;
+                    padding: 16px;
+                    border-radius: 16px;
+                    border: 1px solid rgba(20, 184, 166, 0.35);
+                    background: #ffffff;
+                    color: var(--ink);
+                    box-shadow: 0 24px 56px rgba(15, 23, 42, 0.24);
+                    opacity: 0;
+                    transform: translateY(-6px);
+                    pointer-events: none;
+                    transition: opacity 0.18s ease, transform 0.18s ease;
+                    font-size: 0.86rem;
+                    line-height: 1.45;
+                }
+                .ketoan-kpi-popover strong {
+                    display: block;
+                    margin-bottom: 8px;
+                    color: var(--primary);
+                    font-size: 0.92rem;
+                    font-weight: 900;
+                }
+                .ketoan-kpi-popover p {
+                    margin: 6px 0;
+                    color: var(--ink);
+                    font-weight: 800;
+                }
+                .ketoan-kpi-card:hover .ketoan-kpi-popover,
+                .ketoan-kpi-card:focus .ketoan-kpi-popover {
+                    opacity: 1;
+                    transform: translateY(0);
+                    pointer-events: auto;
+                }
+                [data-theme='dark'] .ketoan-kpi-popover {
+                    background: #111827;
+                    border-color: rgba(34, 211, 238, 0.42);
+                    box-shadow: 0 24px 56px rgba(0, 0, 0, 0.42);
+                }
+            `}</style>
         </div>
     );
 };

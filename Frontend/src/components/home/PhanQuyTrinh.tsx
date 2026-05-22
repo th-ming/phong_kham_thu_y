@@ -17,6 +17,18 @@ const PhanQuyTrinh: React.FC = () => {
 
                     <div className="process-grid" style={{ position: 'relative' }}>
                         <style>{`
+                            @keyframes processLineFlow {
+                                0% { background-position: 0% 50%; }
+                                100% { background-position: 200% 50%; }
+                            }
+                            @keyframes stepBadgePulse {
+                                0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.28); }
+                                50% { box-shadow: 0 0 0 9px rgba(245, 158, 11, 0); }
+                            }
+                            @keyframes stepIconFloat {
+                                0%, 100% { transform: translateY(0); }
+                                50% { transform: translateY(-4px); }
+                            }
                             .step-card { 
                                 transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
                                 border: 1px solid var(--gray-200); 
@@ -44,6 +56,9 @@ const PhanQuyTrinh: React.FC = () => {
                                 background: rgba(15, 157, 138, 0.15) !important;
                                 border-color: rgba(15, 157, 138, 0.2) !important;
                             }
+                            .step-card .step-icon-wrap {
+                                animation: stepIconFloat 3.2s ease-in-out infinite;
+                            }
                             .step-card:hover .step-icon-wrap { 
                                 background: var(--primary-gradient) !important; 
                                 border-color: transparent !important; 
@@ -51,8 +66,13 @@ const PhanQuyTrinh: React.FC = () => {
                                 box-shadow: 0 0 20px rgba(15,157,138,0.2) !important; 
                             }
                             .step-card:hover .step-icon-wrap span { color: white !important; }
-                            .step-badge { transition: all 0.4s ease; }
+                            .step-badge { transition: all 0.4s ease; animation: stepBadgePulse 2.8s ease-in-out infinite; }
                             .step-card:hover .step-badge { transform: scale(1.2); }
+                            .process-line {
+                                background-size: 200% 100% !important;
+                                animation: processLineFlow 4s linear infinite;
+                                box-shadow: 0 0 18px rgba(15, 157, 138, 0.18);
+                            }
                             .process-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 40px; }
                             @media (max-width: 991px) {
                                 .process-grid { grid-template-columns: repeat(2, 1fr); gap: 30px; }
@@ -62,7 +82,7 @@ const PhanQuyTrinh: React.FC = () => {
                                 .process-grid { grid-template-columns: 1fr; gap: 20px; }
                             }
                         `}</style>
-                        <div className="process-line" style={{ position: 'absolute', top: '40px', left: '12%', right: '12%', height: '2px', background: 'linear-gradient(90deg, #ccfbf1 0%, #99f6e4 50%, #ccfbf1 100%)', zIndex: 0, borderRadius: '2px' }}></div>
+                        <div className="process-line" style={{ position: 'absolute', top: '40px', left: '12%', right: '12%', height: '2px', background: 'linear-gradient(90deg, #ccfbf1 0%, #2dd4bf 30%, #0f9d8a 50%, #99f6e4 70%, #ccfbf1 100%)', zIndex: 0, borderRadius: '2px' }}></div>
                         {[
                             { t: "Tạo tài khoản", d: "Đăng ký nhanh qua email hoặc Google", icon: "person_add" },
                             { t: "Chọn dịch vụ", d: "Chọn loại dịch vụ và bác sĩ phù hợp", icon: "stethoscope" },
@@ -70,9 +90,9 @@ const PhanQuyTrinh: React.FC = () => {
                             { t: "Đến khám", d: "Đến đúng giờ, để chúng tôi lo phần còn lại", icon: "clinical_notes" }
                         ].map((step, i) => (
                             <div key={i} className="step-card" style={{ position: 'relative', zIndex: 1, padding: '36px 24px', borderRadius: '28px' }}>
-                                <div className="step-icon-wrap" style={{ width: '80px', height: '80px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px', fontWeight: 900, position: 'relative' }}>
+                                <div className="step-icon-wrap" style={{ width: '80px', height: '80px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px', fontWeight: 900, position: 'relative', animationDelay: `${i * 0.18}s` }}>
                                     <span className="material-symbols-outlined" style={{ fontSize: '36px' }}>{step.icon}</span>
-                                    <div className="step-badge" style={{ position: 'absolute', top: '-5px', right: '-5px', width: '28px', height: '28px', background: '#f59e0b', color: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', fontWeight: 900 }}>{i + 1}</div>
+                                    <div className="step-badge" style={{ position: 'absolute', top: '-5px', right: '-5px', width: '28px', height: '28px', background: '#f59e0b', color: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', fontWeight: 900, animationDelay: `${i * 0.2}s` }}>{i + 1}</div>
                                 </div>
                                 <h4 style={{ fontWeight: 900, marginBottom: '12px', fontSize: '1.1rem', color: 'var(--ink)' }}>{step.t}</h4>
                                 <p style={{ fontSize: '0.9rem', color: 'var(--gray-500)', fontWeight: 500, lineHeight: 1.6 }}>{step.d}</p>

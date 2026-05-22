@@ -98,55 +98,105 @@ const QuenMatKhau: React.FC = () => {
   return (
     <div className="auth-container">
       <style>{`
-        .auth-container { min-height: 100vh; background: #f0f2f5 !important; display: flex; flex-direction: column; position: relative; overflow: hidden; transition: background 0.4s ease; }
-        .auth-card { background: #ffffff !important; border-radius: 24px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1); overflow: hidden; position: relative; z-index: 10; display: grid; grid-template-columns: 1.1fr 1.2fr; width: 100%; max-width: 1050px; margin: auto; border: 1px solid #f1f5f9; }
-        .auth-sidebar { background: #0d9488 !important; padding: 60px; color: white !important; display: flex; flex-direction: column; justify-content: center; text-align: center; }
-        .input-group { background: #f8fafc !important; border: 1.5px solid #e2e8f0 !important; border-radius: 12px; padding: 4px 16px; margin-bottom: 12px; }
-        .input-group input { background: transparent !important; border: none !important; width: 100%; padding: 14px 0; outline: none !important; font-weight: 600; color: #1e293b !important; }
-        .btn-auth { background: #0d9488 !important; color: white !important; border: none !important; border-radius: 50px !important; padding: 16px !important; font-weight: 800 !important; cursor: pointer !important; width: 100% !important; transition: all 0.3s !important; }
+        .auth-container { min-height: 100vh; background: var(--background) !important; color: var(--ink); display: flex; flex-direction: column; position: relative; overflow-y: auto; overflow-x: hidden; transition: background 0.4s ease; }
+        .auth-card { background: var(--surface) !important; border-radius: 24px; box-shadow: var(--shadow-xl); overflow: hidden; position: relative; z-index: 10; display: grid; grid-template-columns: 1.1fr 1.2fr; width: 100%; max-width: 1050px; margin: auto; border: 1px solid var(--gray-200); }
+        .auth-sidebar { background: var(--primary-gradient) !important; padding: 60px; color: white !important; display: flex; flex-direction: column; justify-content: center; text-align: center; }
+        .input-group { background: var(--gray-50) !important; border: 1.5px solid var(--gray-200) !important; border-radius: 12px; padding: 4px 16px; margin-bottom: 12px; }
+        .input-group input { background: transparent !important; border: none !important; width: 100%; padding: 14px 0; outline: none !important; font-weight: 600; color: var(--ink) !important; }
+        .btn-auth { background: var(--primary-gradient) !important; color: white !important; border: none !important; border-radius: 50px !important; padding: 16px !important; font-weight: 800 !important; cursor: pointer !important; width: 100% !important; transition: all 0.3s !important; box-shadow: 0 12px 28px var(--primary-shadow); }
         .tab-btn { flex: 1; padding: 12px; border-radius: 12px; border: none; font-weight: 800; cursor: pointer; transition: all 0.3s; }
+        .auth-form-panel { padding: 60px; display: flex; flex-direction: column; justify-content: center; }
 
-        /* --- DARK MODE OVERRIDES --- */
-        [data-theme='dark'] .auth-container { background: #020617 !important; }
-        [data-theme='dark'] .auth-card { background: rgba(15, 23, 42, 0.7) !important; border: 1px solid rgba(255,255,255,0.1) !important; }
-        [data-theme='dark'] .auth-sidebar { background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%) !important; }
-        [data-theme='dark'] .input-group { background: rgba(255,255,255,0.03) !important; border-color: rgba(255,255,255,0.1) !important; }
-        [data-theme='dark'] .input-group input { color: #fff !important; }
-        [data-theme='dark'] .back-btn { background: rgba(255,255,255,0.1) !important; color: #fff !important; border-color: rgba(255,255,255,0.2) !important; }
-        [data-theme='dark'] .tab-container { background: rgba(0,0,0,0.3) !important; }
-        [data-theme='dark'] .tab-btn.active { background: rgba(255,255,255,0.1) !important; color: #fff !important; }
+        [data-theme='dark'] .auth-container {
+          background: var(--background) !important;
+          color: var(--ink) !important;
+          color-scheme: dark;
+        }
+        [data-theme='dark'] .auth-card {
+          background: var(--surface) !important;
+          border: 1px solid var(--glass-border) !important;
+          box-shadow: 0 28px 70px rgba(0, 0, 0, 0.45);
+          backdrop-filter: var(--glass-blur);
+          -webkit-backdrop-filter: var(--glass-blur);
+        }
+        [data-theme='dark'] .auth-sidebar {
+          background:
+            linear-gradient(135deg, rgba(6, 182, 212, 0.92) 0%, rgba(20, 184, 166, 0.86) 100%),
+            url('/img/hinh-nen-chan-thu.png') center/420px repeat !important;
+          background-blend-mode: multiply;
+          border-right: 1px solid rgba(34, 211, 238, 0.26);
+        }
+        [data-theme='dark'] .auth-sidebar h2,
+        [data-theme='dark'] .auth-sidebar p,
+        [data-theme='dark'] .auth-sidebar span {
+          color: #ffffff !important;
+        }
+        [data-theme='dark'] .auth-sidebar h2 {
+          text-shadow: 0 4px 18px rgba(0, 0, 0, 0.24);
+        }
+        [data-theme='dark'] .auth-sidebar-icon {
+          background: rgba(255, 255, 255, 0.22) !important;
+          border: 1px solid rgba(255, 255, 255, 0.28);
+        }
+        [data-theme='dark'] .auth-form-panel {
+          background: var(--surface) !important;
+        }
+        [data-theme='dark'] .input-group {
+          background: var(--gray-50) !important;
+          border-color: rgba(34, 211, 238, 0.34) !important;
+        }
+        [data-theme='dark'] .input-group input { color: #f8fafc !important; }
+        [data-theme='dark'] .input-group input::placeholder { color: #cbd5e1 !important; opacity: 0.78; }
+        [data-theme='dark'] .back-btn {
+          background: var(--surface) !important;
+          color: #f8fafc !important;
+          border-color: rgba(34, 211, 238, 0.34) !important;
+        }
+        [data-theme='dark'] .tab-container { background: var(--gray-50) !important; }
+        [data-theme='dark'] .tab-btn.active { background: var(--surface) !important; color: var(--primary) !important; }
         [data-theme='dark'] .tab-btn:not(.active) { color: #94a3b8 !important; }
+        [data-theme='dark'] .auth-logo-box {
+          background: var(--primary-gradient) !important;
+          box-shadow: 0 12px 28px rgba(34, 211, 238, 0.24);
+        }
+        [data-theme='dark'] .auth-logo-title { color: var(--primary) !important; }
+        [data-theme='dark'] .auth-logo-subtitle { color: var(--gray-400) !important; opacity: 1 !important; }
+        @media (max-width: 900px) {
+          .auth-card { grid-template-columns: 1fr; }
+          .auth-sidebar { display: none; }
+          .auth-form-panel { padding: 36px 24px; }
+        }
       `}</style>
 
       <header style={{ padding: '30px 60px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative', zIndex: 10 }}>
         <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '15px', textDecoration: 'none' }}>
-          <div style={{ background: '#0d9488', width: '48px', height: '48px', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="auth-logo-box" style={{ background: 'var(--primary-gradient)', width: '48px', height: '48px', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 10px 25px var(--primary-shadow)' }}>
             <img src="/img/avtpkty.png" alt="Rexi" style={{ width: '70%', filter: 'brightness(0) invert(1)' }} />
           </div>
-          <div className="logo-container">
-            <div style={{ fontSize: '1.8rem', fontWeight: 950, color: '#0d9488' }}>Rexi</div>
-            <div style={{ fontSize: '0.7rem', fontWeight: 850, color: '#0d9488', opacity: 0.8 }}>Phòng Khám Thú Y</div>
+          <div className="logo-container" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            <div className="auth-logo-title" style={{ fontSize: '1.8rem', fontWeight: 950, color: 'var(--primary)', lineHeight: 1 }}>Rexi</div>
+            <div className="auth-logo-subtitle" style={{ fontSize: '0.72rem', fontWeight: 850, color: 'var(--gray-500)', opacity: 0.9, textTransform: 'uppercase', letterSpacing: '1px', marginTop: '2px', lineHeight: 1 }}>Phòng Khám Thú Y</div>
           </div>
         </Link>
-        <Link to="/dang-nhap" className="back-btn" style={{ background: 'white', color: '#1e293b', padding: '12px 24px', borderRadius: '50px', textDecoration: 'none', fontWeight: 800, border: '1px solid #e2e8f0', transition: 'all 0.3s' }}>Quay lại đăng nhập</Link>
+        <Link to="/dang-nhap" className="back-btn" style={{ background: 'var(--surface)', color: 'var(--ink)', padding: '12px 24px', borderRadius: '50px', textDecoration: 'none', fontWeight: 800, border: '1px solid var(--gray-200)', transition: 'all 0.3s' }}>Quay lại đăng nhập</Link>
       </header>
 
       <main style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
         <div className="auth-card">
           <div className="auth-sidebar">
-            <div style={{ width: '80px', height: '80px', background: 'rgba(255,255,255,0.2)', borderRadius: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
+            <div className="auth-sidebar-icon" style={{ width: '80px', height: '80px', background: 'rgba(255,255,255,0.2)', borderRadius: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
               <span className="material-symbols-outlined" style={{ fontSize: '40px' }}>{step === 4 ? 'lock_reset' : 'person_search'}</span>
             </div>
             <h2 style={{ fontSize: '2.5rem', fontWeight: 950, lineHeight: 1.1, marginBottom: '20px' }}>{step === 4 ? 'Mật khẩu mới' : 'Quên mật khẩu?'}</h2>
             <p style={{ opacity: 0.9 }}>Rexi sẽ giúp sếp lấy lại tài khoản nhanh nhất! 🐾</p>
           </div>
 
-          <div style={{ padding: '60px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          <div className="auth-form-panel">
             {step === 1 && (
               <div>
-                <div className="tab-container" style={{ display: 'flex', gap: '10px', marginBottom: '24px', background: '#f1f5f9', padding: '6px', borderRadius: '16px' }}>
-                  <button data-ai-id="button-quenmatkhau-8qgt" onClick={() => setMethod('quick')} className={`tab-btn ${method === 'quick' ? 'active' : ''}`} style={{ background: method === 'quick' ? '#fff' : 'transparent', color: method === 'quick' ? '#0d9488' : '#64748b' }}>Xác minh nhanh</button>
-                  <button data-ai-id="button-quenmatkhau-8oz9" onClick={() => setMethod('otp')} className={`tab-btn ${method === 'otp' ? 'active' : ''}`} style={{ background: method === 'otp' ? '#fff' : 'transparent', color: method === 'otp' ? '#0d9488' : '#64748b' }}>Dùng mã OTP</button>
+                <div className="tab-container" style={{ display: 'flex', gap: '10px', marginBottom: '24px', background: 'var(--gray-100)', padding: '6px', borderRadius: '16px' }}>
+                  <button data-ai-id="button-quenmatkhau-8qgt" onClick={() => setMethod('quick')} className={`tab-btn ${method === 'quick' ? 'active' : ''}`} style={{ background: method === 'quick' ? 'var(--surface)' : 'transparent', color: method === 'quick' ? 'var(--primary)' : 'var(--gray-500)' }}>Xác minh nhanh</button>
+                  <button data-ai-id="button-quenmatkhau-8oz9" onClick={() => setMethod('otp')} className={`tab-btn ${method === 'otp' ? 'active' : ''}`} style={{ background: method === 'otp' ? 'var(--surface)' : 'transparent', color: method === 'otp' ? 'var(--primary)' : 'var(--gray-500)' }}>Dùng mã OTP</button>
                 </div>
 
                 {method === 'quick' ? (

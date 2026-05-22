@@ -1,4 +1,5 @@
 ﻿import React, { useState, useEffect } from "react";
+import { useRef } from "react";
 import axiosInstance from "@services/axios";
 import { useNavigate } from "react-router-dom";
 import { Modal } from "@components/CommonUI";
@@ -19,6 +20,8 @@ const ThongTinCaNhan: React.FC = () => {
   const [showCurrentPass, setShowCurrentPass] = useState(false);
   const [showNewPass, setShowNewPass] = useState(false);
   const [showConfirmPass, setShowConfirmPass] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState("");
+  const avatarInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -39,6 +42,7 @@ const ThongTinCaNhan: React.FC = () => {
           .then(res => {
             setData(res.data);
             setFormData(res.data);
+            setAvatarPreview(res.data.hinh_anh || res.data.avatar || "");
             // Khởi tạo trạng thái nhận thông báo từ dữ liệu DB (mặc định là true nếu null)
             setEmailNoti(res.data.nhan_email ?? true);
             setSmsNoti(res.data.nhan_sms ?? true);
@@ -59,6 +63,33 @@ const ThongTinCaNhan: React.FC = () => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Vui lòng chọn đúng file ảnh!");
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Ảnh avatar nên nhỏ hơn 2MB để tải nhanh hơn!");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const imageUrl = String(reader.result || "");
+      setAvatarPreview(imageUrl);
+      setFormData((prev: any) => ({
+        ...prev,
+        hinh_anh: imageUrl,
+        avatar: imageUrl,
+      }));
+    };
+    reader.readAsDataURL(file);
   };
 
   const handlePassChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -112,6 +143,19 @@ const ThongTinCaNhan: React.FC = () => {
         .then(() => {
           toast.success("Cập nhật thông tin thành công!");
           setData(formData);
+          const currentUser = getUserProfile();
+          if (currentUser) {
+            const nextUser = {
+              ...currentUser,
+              ho_ten: formData.ho_ten || formData.ten_khach_hang || currentUser.ho_ten,
+              ten_khach_hang: formData.ten_khach_hang || formData.ho_ten || currentUser.ten_khach_hang,
+              email: formData.email || currentUser.email,
+              sdt: formData.sdt || formData.so_dien_thoai || currentUser.sdt,
+              hinh_anh: formData.hinh_anh || formData.avatar || currentUser.hinh_anh,
+              avatar: formData.avatar || formData.hinh_anh || currentUser.avatar,
+            };
+            localStorage.setItem("user", JSON.stringify(nextUser));
+          }
           setIsEditing(false);
         })
         .catch(err => {
@@ -274,16 +318,80 @@ const ThongTinCaNhan: React.FC = () => {
         </div>
 
         <div style={{ display: 'grid', gap: '32px', height: 'fit-content' }}>
-          <div className="glass-card" style={{ padding: '32px', textAlign: 'center', borderRadius: 'var(--radius-xl)' }}>
-            <div style={{ width: '100px', height: '100px', background: 'var(--primary-gradient)', borderRadius: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', margin: '0 auto 24px', boxShadow: 'var(--shadow-lg)', overflow: 'hidden' }}>
-              {getUserProfile()?.hinh_anh || getUserProfile()?.avatar ? (
-                <img src={getUserProfile()?.hinh_anh || getUserProfile()?.avatar} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              ) : (
-                <span className="material-symbols-outlined" style={{ fontSize: '48px' }}>person</span>
-              )}
+          <div className="glass-card" style={{ padding: '34px 28px', textAlign: 'center', borderRadius: 'var(--radius-xl)', display: 'grid', justifyItems: 'center', gap: '18px' }}>
+            <input
+              ref={avatarInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleAvatarChange}
+              style={{ display: 'none' }}
+            />
+            <button
+              type="button"
+              aria-label="Đổi avatar"
+              onClick={() => isEditing && avatarInputRef.current?.click()}
+              style={{
+                width: '124px',
+                height: '124px',
+                padding: 0,
+                border: 'none',
+                borderRadius: '50%',
+                background: 'transparent',
+                position: 'relative',
+                display: 'grid',
+                placeItems: 'center',
+                cursor: isEditing ? 'pointer' : 'default',
+              }}
+            >
+              <div style={{
+                position: 'absolute',
+                inset: '-5px',
+                borderRadius: '50%',
+                background: 'var(--primary-gradient)',
+                boxShadow: '0 0 24px var(--primary-shadow)',
+              }} />
+              <div style={{
+                position: 'relative',
+                width: '112px',
+                height: '112px',
+                borderRadius: '50%',
+                background: 'var(--primary)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
+                overflow: 'hidden',
+                border: '3px solid var(--surface)',
+              }}>
+                {avatarPreview ? (
+                  <img src={avatarPreview} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  <span style={{ fontSize: '3rem', fontWeight: 900 }}>{(data?.ten_khach_hang || data?.ho_ten || "K").charAt(0).toUpperCase()}</span>
+                )}
+                {isEditing && (
+                  <div style={{
+                    position: 'absolute',
+                    inset: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: 'rgba(2, 6, 23, 0.48)',
+                    color: 'white',
+                  }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '34px' }}>photo_camera</span>
+                  </div>
+                )}
+              </div>
+            </button>
+            {isEditing && (
+              <div style={{ color: 'var(--primary)', fontWeight: 800, fontSize: '0.82rem', marginTop: '-4px' }}>
+                Nhấn vào ảnh để đổi avatar
+              </div>
+            )}
+            <div>
+              <h3 style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--ink)', margin: 0 }}>{data?.ten_khach_hang || data?.ho_ten}</h3>
+              <p style={{ color: 'var(--gray-400)', fontWeight: 800, fontSize: '0.75rem', marginTop: '8px' }}>ID: #{data?.id_khach_hang || data?.id_nhan_vien || data?.id}</p>
             </div>
-            <h3 style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--ink)', margin: 0 }}>{data?.ten_khach_hang || data?.ho_ten}</h3>
-            <p style={{ color: 'var(--gray-400)', fontWeight: 800, fontSize: '0.75rem', marginTop: '8px' }}>ID: #{data?.id_khach_hang || data?.id_nhan_vien || data?.id}</p>
           </div>
 
           {isCustomer && (

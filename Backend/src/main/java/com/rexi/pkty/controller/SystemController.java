@@ -110,10 +110,26 @@ public class SystemController {
     @GetMapping("/chuc-nang")
     public ResponseEntity<?> getChucNang() {
         List<Map<String, Object>> features = List.of(
-            Map.of("id_chuc_nang", "1", "ma_chuc_nang", "DAT_LICH", "ten_chuc_nang", "Quản lý lịch hẹn", "mo_ta", "Hỗ trợ khách hàng đặt lịch trực tuyến"),
-            Map.of("id_chuc_nang", "2", "ma_chuc_nang", "KHAM_BENH", "ten_chuc_nang", "Khám bệnh & Kê đơn", "mo_ta", "Ghi nhận bệnh lý và đơn thuốc"),
-            Map.of("id_chuc_nang", "3", "ma_chuc_nang", "KHO_HANG", "ten_chuc_nang", "Quản lý kho thuốc", "mo_ta", "Kiểm soát nhập xuất tồn kho"),
-            Map.of("id_chuc_nang", "4", "ma_chuc_nang", "KE_TOAN", "ten_chuc_nang", "Hóa đơn & Thanh toán", "mo_ta", "Thu ngân và báo cáo doanh thu")
+            Map.of("id_chuc_nang", "1", "ma_chuc_nang", "TONG_QUAN", "ten_chuc_nang", "Tổng quan quản trị", "mo_ta", "Bảng điều khiển vận hành theo vai trò", "duong_dan", "/quan-ly/dashboard", "vai_tro", "ADMIN, QUAN_LY, BAC_SI, KE_TOAN, TIEP_TAN, Y_TA, STAFF"),
+            Map.of("id_chuc_nang", "2", "ma_chuc_nang", "BAO_CAO", "ten_chuc_nang", "Báo cáo & Thống kê", "mo_ta", "KPI doanh thu, ca điều trị, bác sĩ và dịch vụ", "duong_dan", "/quan-ly/bao-cao-thong-ke", "vai_tro", "ADMIN, QUAN_LY, KE_TOAN"),
+            Map.of("id_chuc_nang", "3", "ma_chuc_nang", "LICH_HEN", "ten_chuc_nang", "Quản lý lịch hẹn", "mo_ta", "Điều phối, xác nhận, check-in và hoàn tất lịch khám", "duong_dan", "/quan-ly/lich-hen", "vai_tro", "ADMIN, QUAN_LY, STAFF, BAC_SI, TIEP_TAN, Y_TA"),
+            Map.of("id_chuc_nang", "4", "ma_chuc_nang", "LICH_TRUC", "ten_chuc_nang", "Điều hành nhân sự", "mo_ta", "Quản lý lịch trực, ca làm và tải nhân sự", "duong_dan", "/quan-ly/lich-lam-viec", "vai_tro", "ADMIN, QUAN_LY, STAFF, BAC_SI, TIEP_TAN, Y_TA"),
+            Map.of("id_chuc_nang", "5", "ma_chuc_nang", "NHAN_SU", "ten_chuc_nang", "Nhân sự & Phân quyền", "mo_ta", "Tài khoản nhân viên, vai trò và quyền truy cập", "duong_dan", "/quan-ly/nhan-vien-phan-quyen", "vai_tro", "ADMIN, QUAN_LY"),
+            Map.of("id_chuc_nang", "6", "ma_chuc_nang", "KHACH_HANG", "ten_chuc_nang", "Khách hàng & Thú cưng", "mo_ta", "Quản lý hồ sơ chủ nuôi và thú cưng", "duong_dan", "/quan-ly/khach-hang-thu-cung", "vai_tro", "ADMIN, QUAN_LY, TIEP_TAN, BAC_SI, Y_TA"),
+            Map.of("id_chuc_nang", "7", "ma_chuc_nang", "DICH_VU", "ten_chuc_nang", "Danh mục dịch vụ", "mo_ta", "Bảng giá, thời lượng, mô tả dịch vụ và cấu hình hiển thị", "duong_dan", "/quan-ly/dich-vu", "vai_tro", "ADMIN, QUAN_LY, TIEP_TAN"),
+            Map.of("id_chuc_nang", "8", "ma_chuc_nang", "KHAM_BENH", "ten_chuc_nang", "Khám bệnh & Kê đơn", "mo_ta", "Chọn ca khám, ghi bệnh án, kê đơn và hoàn tất điều trị", "duong_dan", "/quan-ly/kham-benh", "vai_tro", "ADMIN, BAC_SI"),
+            Map.of("id_chuc_nang", "9", "ma_chuc_nang", "HO_SO_BENH_AN", "ten_chuc_nang", "Hồ sơ bệnh án", "mo_ta", "Tra cứu bệnh án, chẩn đoán, phác đồ và lịch sử điều trị", "duong_dan", "/quan-ly/ho-so-benh-an", "vai_tro", "ADMIN, QUAN_LY, BAC_SI, Y_TA"),
+            Map.of("id_chuc_nang", "10", "ma_chuc_nang", "DON_THUOC", "ten_chuc_nang", "Kê đơn & Thuốc", "mo_ta", "Quản lý đơn thuốc và liên kết thuốc trong kho", "duong_dan", "/quan-ly/don-thuoc", "vai_tro", "ADMIN, BAC_SI"),
+            Map.of("id_chuc_nang", "11", "ma_chuc_nang", "XET_NGHIEM", "ten_chuc_nang", "Xét nghiệm & Cận lâm sàng", "mo_ta", "Phiếu xét nghiệm, chỉ số và kết quả cận lâm sàng", "duong_dan", "/quan-ly/xet-nghiem", "vai_tro", "ADMIN, QUAN_LY, BAC_SI, Y_TA"),
+            Map.of("id_chuc_nang", "12", "ma_chuc_nang", "TEP_Y_TE", "ten_chuc_nang", "Kho tệp y tế", "mo_ta", "Ảnh, tài liệu đính kèm và hồ sơ lâm sàng số", "duong_dan", "/quan-ly/file-dinh-kem", "vai_tro", "ADMIN, QUAN_LY, BAC_SI, Y_TA"),
+            Map.of("id_chuc_nang", "13", "ma_chuc_nang", "KHO_THUOC", "ten_chuc_nang", "Danh mục kho thuốc", "mo_ta", "Tồn kho, hạn dùng, giá bán và cảnh báo thuốc", "duong_dan", "/quan-ly/kho-thuoc", "vai_tro", "ADMIN, QUAN_LY, KE_TOAN, BAC_SI, Y_TA, TIEP_TAN"),
+            Map.of("id_chuc_nang", "14", "ma_chuc_nang", "NHAP_KHO", "ten_chuc_nang", "Nhập kho & Kiểm kê", "mo_ta", "Phiếu nhập, kiểm kê và luồng kho dược", "duong_dan", "/quan-ly/nhap-kho", "vai_tro", "ADMIN, QUAN_LY, KE_TOAN, BAC_SI, Y_TA, TIEP_TAN"),
+            Map.of("id_chuc_nang", "15", "ma_chuc_nang", "HOA_DON", "ten_chuc_nang", "Hóa đơn & Thanh toán", "mo_ta", "Thu phí, trạng thái thanh toán và chi tiết hóa đơn", "duong_dan", "/quan-ly/hoa-don", "vai_tro", "ADMIN, QUAN_LY, KE_TOAN, TIEP_TAN"),
+            Map.of("id_chuc_nang", "16", "ma_chuc_nang", "KE_TOAN", "ten_chuc_nang", "Tài chính - Kế toán", "mo_ta", "Doanh thu, công nợ, đối soát và xuất báo cáo", "duong_dan", "/quan-ly/ke-toan", "vai_tro", "ADMIN, QUAN_LY, KE_TOAN"),
+            Map.of("id_chuc_nang", "17", "ma_chuc_nang", "MARKETING", "ten_chuc_nang", "Email Marketing", "mo_ta", "Chiến dịch chăm sóc khách hàng và nhắc lịch tái khám", "duong_dan", "/quan-ly/marketing", "vai_tro", "ADMIN, QUAN_LY"),
+            Map.of("id_chuc_nang", "18", "ma_chuc_nang", "CAU_HINH", "ten_chuc_nang", "Cấu hình hệ thống", "mo_ta", "AI provider, SMTP, thanh toán, backup và nhật ký", "duong_dan", "/quan-ly/cau-hinh", "vai_tro", "ADMIN"),
+            Map.of("id_chuc_nang", "19", "ma_chuc_nang", "PHAN_HE", "ten_chuc_nang", "Phân hệ chức năng", "mo_ta", "Bản đồ chức năng, route và quyền truy cập hệ thống", "duong_dan", "/quan-ly/chuc-nang", "vai_tro", "ADMIN"),
+            Map.of("id_chuc_nang", "20", "ma_chuc_nang", "KHACH_APP", "ten_chuc_nang", "Cổng khách hàng", "mo_ta", "Thú cưng, đặt lịch, lịch sử khám, hồ sơ y tế, hóa đơn và hồ sơ cá nhân", "duong_dan", "/khach-hang/dashboard", "vai_tro", "KHACH_HANG")
         );
         return ResponseEntity.ok(features);
     }

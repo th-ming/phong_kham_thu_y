@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axiosInstance from "@services/axios";
+import { normalizeUserRole } from "@utils/index";
 
 const API_URL = `/api/auth`;
 
@@ -22,6 +23,12 @@ const DangNhapDangKy: React.FC = () => {
   const [address, setAddress] = useState("");
 
   const GOOGLE_CLIENT_ID = "334761445329-iog83fgqrdlo0iavo68pkv17modc85du.apps.googleusercontent.com";
+
+  useEffect(() => {
+    if (window.location.hostname === "127.0.0.1") {
+      window.location.replace(`http://localhost:${window.location.port}${window.location.pathname}${window.location.search}${window.location.hash}`);
+    }
+  }, []);
 
   useEffect(() => {
     // Cập nhật title trang để tốt cho SEO theo ngữ cảnh
@@ -92,9 +99,7 @@ const DangNhapDangKy: React.FC = () => {
         }
         localStorage.setItem("user", JSON.stringify(res.data.user));
 
-        const role = (res.data.user.loai_tai_khoan || res.data.user.ten_vai_tro || '').toLowerCase();
-        // Hỗ trợ cả 'customer' và 'khach_hang' (từ database cũ hoặc mới)
-        if (role === 'customer' || role === 'khach_hang' || role.includes('khách hàng')) {
+        if (normalizeUserRole(res.data.user) === 'khach_hang') {
           navigate("/khach-hang/dashboard");
         } else {
           navigate("/quan-ly/dashboard");
@@ -147,9 +152,7 @@ const DangNhapDangKy: React.FC = () => {
           localStorage.removeItem("rememberedUsername");
         }
 
-        const role = (res.data.user.loai_tai_khoan || res.data.user.ten_vai_tro || '').toLowerCase();
-        // FIX: Kiểm tra đúng định dạng role: "customer", "admin", "bac_si", "ke_toan" (gạch dưới)
-        if (role === 'customer') {
+        if (normalizeUserRole(res.data.user) === 'khach_hang') {
           navigate("/khach-hang/dashboard");
         } else {
           navigate("/quan-ly/dashboard");
@@ -179,22 +182,22 @@ const DangNhapDangKy: React.FC = () => {
       <div className="aura-blob blob-2"></div>
 
       <style>{`
-        /* --- CƯỠNG BỨC MÀU SÁNG CHO TRANG ĐĂNG NHẬP (ANTI-DUMB) --- */
-        
         .auth-container {
           min-height: 100vh;
-          background: #f0f2f5 !important; /* Cưỡng bức nền trắng sáng */
+          background: var(--background) !important;
+          color: var(--ink);
           display: flex;
           flex-direction: column;
           position: relative;
-          overflow: hidden;
+          overflow-y: auto;
+          overflow-x: hidden;
           transition: background 0.4s ease;
         }
 
         .auth-card {
-          background: #ffffff !important; /* Cưỡng bức card trắng */
+          background: var(--surface) !important;
           border-radius: 24px;
-          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+          box-shadow: var(--shadow-xl);
           overflow: hidden;
           position: relative;
           z-index: 10;
@@ -203,11 +206,11 @@ const DangNhapDangKy: React.FC = () => {
           width: 100%;
           max-width: 1150px; /* Nới rộng card */
           margin: auto;
-          border: 1px solid #f1f5f9;
+          border: 1px solid var(--gray-200);
         }
 
         .auth-sidebar {
-          background: #0d9488 !important; /* Xanh Teal chuẩn sếp yêu cầu */
+          background: #0d9488 !important;
           padding: 40px; /* Thu nhỏ padding sidebar */
           color: white !important;
           position: relative;
@@ -217,16 +220,27 @@ const DangNhapDangKy: React.FC = () => {
           overflow: hidden;
         }
 
+        .auth-sidebar-copy {
+          color: rgba(255, 255, 255, 0.9) !important;
+        }
+
+        .auth-form-panel {
+          padding: 56px;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+        }
+
         .auth-title {
           font-size: 2rem;
           font-weight: 800;
-          color: #1e293b !important; /* Chữ đen đậm */
+          color: var(--ink) !important;
           letter-spacing: -1px;
         }
 
         .input-group {
-          background: #f8fafc !important;
-          border: 1.5px solid #e2e8f0 !important;
+          background: var(--gray-50) !important;
+          border: 1.5px solid var(--gray-200) !important;
           border-radius: 12px;
           padding: 2px 16px;
           display: flex;
@@ -241,17 +255,96 @@ const DangNhapDangKy: React.FC = () => {
           padding: 14px 0;
           outline: none !important;
           font-weight: 600;
-          color: #1e293b !important;
+          color: var(--ink) !important;
         }
 
-        /* CHỈ KHI CÓ DATA-THEME DARK THÌ MỚI ĐƯỢC PHÉP TỐI */
-        [data-theme='dark'] .auth-container { background: #020617 !important; }
-        [data-theme='dark'] .auth-card { background: rgba(15, 23, 42, 0.7) !important; border: 1px solid rgba(255,255,255,0.1) !important; }
-        [data-theme='dark'] .auth-sidebar { background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%) !important; }
-        [data-theme='dark'] .auth-title { color: #fff !important; }
-        [data-theme='dark'] .input-group { background: rgba(255,255,255,0.03) !important; border-color: rgba(255,255,255,0.1) !important; }
-        [data-theme='dark'] .input-group input { color: #fff !important; }
-        [data-theme='dark'] .aura-blob { opacity: 0.3; }
+        .auth-google-shell {
+          display: flex;
+          justify-content: center;
+          width: 100%;
+          min-height: 48px;
+          padding-bottom: 20px;
+        }
+
+        [data-theme='dark'] .auth-container {
+          background: var(--background) !important;
+          color: var(--ink) !important;
+          color-scheme: dark;
+        }
+        [data-theme='dark'] .auth-card {
+          background: var(--surface) !important;
+          border: 1px solid var(--glass-border) !important;
+          box-shadow: 0 28px 70px rgba(0, 0, 0, 0.45);
+          backdrop-filter: var(--glass-blur);
+          -webkit-backdrop-filter: var(--glass-blur);
+        }
+        [data-theme='dark'] .auth-sidebar {
+          background:
+            linear-gradient(135deg, rgba(6, 182, 212, 0.92) 0%, rgba(20, 184, 166, 0.86) 100%),
+            url('/img/hinh-nen-chan-thu.png') center/420px repeat !important;
+          background-blend-mode: multiply;
+          border-right: 1px solid rgba(34, 211, 238, 0.26);
+        }
+        [data-theme='dark'] .auth-sidebar-copy,
+        [data-theme='dark'] .auth-sidebar span,
+        [data-theme='dark'] .auth-sidebar h2 {
+          color: #ffffff !important;
+        }
+        [data-theme='dark'] .auth-sidebar h2 {
+          text-shadow: 0 4px 18px rgba(0, 0, 0, 0.24);
+        }
+        [data-theme='dark'] .auth-sidebar > div > div:first-child {
+          background: rgba(255, 255, 255, 0.22) !important;
+          border: 1px solid rgba(255, 255, 255, 0.28);
+          color: #ffffff !important;
+        }
+        [data-theme='dark'] .auth-sidebar-copy {
+          opacity: 1 !important;
+          color: rgba(255, 255, 255, 0.94) !important;
+        }
+        [data-theme='dark'] .auth-title { color: #f8fafc !important; }
+        [data-theme='dark'] .auth-form-panel {
+          background: var(--surface) !important;
+        }
+        [data-theme='dark'] .auth-form-panel > div > p,
+        [data-theme='dark'] .auth-form-panel label {
+          color: #cbd5e1 !important;
+        }
+        [data-theme='dark'] .input-group {
+          background: var(--gray-50) !important;
+          border-color: rgba(34, 211, 238, 0.34) !important;
+        }
+        [data-theme='dark'] .input-group input { color: #f8fafc !important; }
+        [data-theme='dark'] .input-group input::placeholder { color: #cbd5e1 !important; opacity: 0.78; }
+        [data-theme='dark'] .input-group .material-symbols-outlined { color: var(--primary) !important; opacity: 0.9 !important; }
+        [data-theme='dark'] .btn-auth {
+          background: var(--primary-gradient) !important;
+          color: #ffffff !important;
+          box-shadow: 0 16px 32px rgba(34, 211, 238, 0.24);
+        }
+        [data-theme='dark'] .auth-home-link {
+          background: var(--surface) !important;
+          color: #f8fafc !important;
+          border-color: rgba(34, 211, 238, 0.34) !important;
+        }
+        [data-theme='dark'] .auth-logo-box {
+          background: var(--primary-gradient) !important;
+          box-shadow: 0 12px 28px rgba(34, 211, 238, 0.24);
+        }
+        [data-theme='dark'] .auth-logo-title {
+          color: var(--primary) !important;
+        }
+        [data-theme='dark'] .auth-logo-subtitle {
+          color: var(--gray-400) !important;
+          opacity: 1 !important;
+        }
+        [data-theme='dark'] .auth-divider-line { background: rgba(148, 163, 184, 0.22) !important; }
+        [data-theme='dark'] .auth-divider-label { background: #0f172a !important; color: #94a3b8 !important; }
+        [data-theme='dark'] .auth-register-copy { color: #cbd5e1 !important; }
+        [data-theme='dark'] .auth-google-shell {
+          filter: none;
+        }
+        [data-theme='dark'] .aura-blob { opacity: 0.22; }
 
         .aura-blob {
           position: absolute;
@@ -270,21 +363,22 @@ const DangNhapDangKy: React.FC = () => {
         @media (max-width: 900px) {
           .auth-card { grid-template-columns: 1fr; }
           .auth-sidebar { display: none; }
+          .auth-form-panel { padding: 36px 24px; }
         }
       `}</style>
 
       {/* HEADER CỦA SẾP */}
       <header style={{ padding: '30px 60px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative', zIndex: 10 }}>
         <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '15px', textDecoration: 'none' }}>
-          <div style={{ background: '#0d9488', width: '48px', height: '48px', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="auth-logo-box" style={{ background: 'var(--primary-gradient)', width: '48px', height: '48px', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 10px 25px var(--primary-shadow)' }}>
             <img src="/img/avtpkty.png" alt="Rexi" style={{ width: '70%', filter: 'brightness(0) invert(1)' }} />
           </div>
-          <div className="logo-container">
-            <div style={{ fontSize: '1.8rem', fontWeight: 950, color: '#0d9488' }}>Rexi</div>
-            <div style={{ fontSize: '0.7rem', fontWeight: 850, color: '#0d9488', opacity: 0.8 }}>Phòng Khám Thú Y</div>
+          <div className="logo-container" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            <div className="auth-logo-title" style={{ fontSize: '1.8rem', fontWeight: 950, color: 'var(--primary)', lineHeight: 1 }}>Rexi</div>
+            <div className="auth-logo-subtitle" style={{ fontSize: '0.72rem', fontWeight: 850, color: 'var(--gray-500)', opacity: 0.9, textTransform: 'uppercase', letterSpacing: '1px', marginTop: '2px', lineHeight: 1 }}>Phòng Khám Thú Y</div>
           </div>
         </Link>
-        <Link to="/" style={{ background: 'white', color: '#1e293b', padding: '12px 24px', borderRadius: '50px', textDecoration: 'none', fontWeight: 800, border: '1px solid #e2e8f0' }}>Về trang chủ</Link>
+        <Link to="/" className="auth-home-link" style={{ background: 'var(--surface)', color: 'var(--ink)', padding: '12px 24px', borderRadius: '50px', textDecoration: 'none', fontWeight: 800, border: '1px solid var(--gray-200)' }}>Về trang chủ</Link>
       </header>
 
       <main style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '40px 20px', overflowY: 'auto' }}>
@@ -295,7 +389,7 @@ const DangNhapDangKy: React.FC = () => {
                 <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>verified</span> HỆ THỐNG THÚ Y SỐ 1
               </div>
               <h2 style={{ fontSize: '3.5rem', fontWeight: 950, lineHeight: 1.1, marginBottom: '32px', letterSpacing: '-2px' }}>Đồng hành <br /> cùng bé yêu</h2>
-              <p style={{ fontSize: '1.1rem', opacity: 0.9, lineHeight: 1.8, marginBottom: '48px', maxWidth: '400px' }}>Hơn 10,000 chủ nuôi đã tin tưởng Rexi. Hãy đăng nhập để quản lý sức khỏe thú cưng của bạn một cách chuyên nghiệp nhất.</p>
+              <p className="auth-sidebar-copy" style={{ fontSize: '1.1rem', opacity: 0.9, lineHeight: 1.8, marginBottom: '48px', maxWidth: '400px' }}>Hơn 10,000 chủ nuôi đã tin tưởng Rexi. Hãy đăng nhập để quản lý sức khỏe thú cưng của bạn một cách chuyên nghiệp nhất.</p>
               
               <div style={{ display: 'grid', gap: '20px' }}>
                 {[{ t: 'Đặt lịch nhanh chóng', i: 'schedule' }, { t: 'Theo dõi bệnh án online', i: 'description' }, { t: 'Nhận tư vấn từ bác sĩ', i: 'chat' }].map((item, i) => (
@@ -310,10 +404,10 @@ const DangNhapDangKy: React.FC = () => {
             </div>
           </div>
 
-          <div style={{ padding: '60px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          <div className="auth-form-panel">
             <div style={{ marginBottom: '40px' }}>
               <h3 className="auth-title">{isLogin ? 'Chào mừng trở lại!' : 'Tham gia cùng Rexi'}</h3>
-              <p style={{ color: '#64748b', fontWeight: 600, marginTop: '8px' }}>Vui lòng nhập thông tin tài khoản</p>
+              <p style={{ color: 'var(--gray-500)', fontWeight: 600, marginTop: '8px' }}>Vui lòng nhập thông tin tài khoản</p>
             </div>
 
             {error && <div style={{ background: '#fef2f2', border: '1px solid #fee2e2', color: '#b91c1c', padding: '14px', borderRadius: '16px', marginBottom: '24px', fontSize: '0.85rem', fontWeight: 700 }}>{error}</div>}
@@ -367,7 +461,7 @@ const DangNhapDangKy: React.FC = () => {
                   
                   {/* CHỨC NĂNG GHI NHỚ & QUÊN MẬT KHẨU CỦA SẾP ĐÂY Ạ */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '8px 0' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', margin: 0, textTransform: 'none', color: '#64748b', fontSize: '0.9rem' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', margin: 0, textTransform: 'none', color: 'var(--gray-500)', fontSize: '0.9rem' }}>
                       <input data-ai-id="input-dangnhapdangky-cyre" type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} style={{ width: '18px', height: '18px' }} />
                       Ghi nhớ đăng nhập
                     </label>
@@ -379,7 +473,7 @@ const DangNhapDangKy: React.FC = () => {
             </form>
 
             <div style={{ marginTop: '20px', textAlign: 'center' }}>
-              <p style={{ color: '#64748b', fontWeight: 700, fontSize: '0.9rem' }}>
+              <p className="auth-register-copy" style={{ color: 'var(--gray-500)', fontWeight: 700, fontSize: '0.9rem' }}>
                 {isLogin ? "Chưa có tài khoản? " : "Đã có tài khoản? "}
                 <span 
                   onClick={() => setIsLogin(!isLogin)} 
@@ -391,10 +485,10 @@ const DangNhapDangKy: React.FC = () => {
             </div>
 
             <div style={{ margin: '30px 0', textAlign: 'center', position: 'relative' }}>
-              <div style={{ position: 'absolute', top: '50%', left: 0, width: '100%', height: '1px', background: '#e2e8f0', zIndex: 0 }}></div>
-              <span style={{ position: 'relative', zIndex: 1, background: 'white', padding: '0 15px', fontSize: '0.75rem', color: '#94a3b8', fontWeight: 900 }}>HOẶC</span>
+              <div className="auth-divider-line" style={{ position: 'absolute', top: '50%', left: 0, width: '100%', height: '1px', background: 'var(--gray-200)', zIndex: 0 }}></div>
+              <span className="auth-divider-label" style={{ position: 'relative', zIndex: 1, background: 'var(--surface)', padding: '0 15px', fontSize: '0.75rem', color: 'var(--gray-400)', fontWeight: 900 }}>HOẶC</span>
             </div>
-            <div id="googleBtn" style={{ display: 'flex', justifyContent: 'center', width: '100%', minHeight: '48px', paddingBottom: '20px' }}></div>
+            <div id="googleBtn" className="auth-google-shell"></div>
           </div>
         </div>
       </main>

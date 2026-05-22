@@ -4,6 +4,7 @@ import SidebarKhachHang from "@components/SidebarKhachHang";
 import { ScrollToTop } from "@components/SpecialEffects";
 import { ChatBot } from "@components/ChatBot";
 import { toast } from "@components/Toast";
+import { normalizeUserRole } from "@utils/index";
 
 const CustomerLayout: React.FC = () => {
   const navigate = useNavigate();
@@ -18,9 +19,8 @@ const CustomerLayout: React.FC = () => {
 
     try {
       const user = JSON.parse(userStr);
-      const role = (user.loai_tai_khoan || user.ten_vai_tro || "").toLowerCase();
-      // Nếu không phải "customer" và cũng không phải "khach_hang" thì mới đẩy sang Admin
-      if (role !== "customer" && role !== "khach_hang") {
+      const role = normalizeUserRole(user);
+      if (role !== "khach_hang") {
         toast.error("Tài khoản nhân sự/quản lý không có quyền sử dụng phân hệ đặt lịch và quản lý của Khách hàng!");
         navigate("/quan-ly/dashboard", { replace: true });
       }

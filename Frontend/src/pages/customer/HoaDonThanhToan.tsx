@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from "react";
 import axiosInstance from "@services/axios";
-import { formatTienVND, getUserProfile } from "@utils/index";
+import { formatTienVND, getUserProfile, matchesSearchFields } from "@utils/index";
 import { Modal } from "@components/CommonUI";
 import { useLocation } from "react-router-dom";
 import { toast } from "@components/Toast";
@@ -12,6 +12,16 @@ const chuyenNgayISO_SangVN = (dateString: string) => {
   if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
   return dateString;
 };
+
+const getCustomerId = (user: any) => user?.id_khach_hang ?? user?.idKhachHang ?? user?.id_tai_khoan ?? user?.idTaiKhoan ?? user?.id;
+const getInvoiceId = (hd: any) => hd?.id_hoa_don ?? hd?.idHoaDon ?? hd?.id;
+const getInvoiceStatus = (hd: any) => String(hd?.trang_thai ?? hd?.trangThai ?? "").toLowerCase();
+const getInvoiceDate = (hd: any) => hd?.ngay_lap_hoa_don ?? hd?.ngayLapHoaDon ?? hd?.createdAt;
+const getCustomerName = (hd: any) => hd?.ten_khach_hang ?? hd?.tenKhachHang ?? hd?.khachHang?.ho_ten ?? hd?.khachHang?.hoTen ?? "Khách vãng lai";
+const getPetName = (hd: any) => hd?.ten_thu_cung ?? hd?.tenThuCung ?? hd?.thuCung?.ten_thu_cung ?? hd?.thuCung?.tenThuCung ?? "";
+const getInvoiceTotal = (hd: any) => Number(hd?.tong_tien_cuoi ?? hd?.tongTienCuoi ?? hd?.tong_tien ?? hd?.tongTien ?? hd?.thanh_tien ?? hd?.thanhTien ?? 0);
+const getInvoiceBaseTotal = (hd: any) => Number(hd?.tong_tien_ban_dau ?? hd?.tongTienBanDau ?? getInvoiceTotal(hd));
+const getInvoiceDiscount = (hd: any) => Number(hd?.tong_giam_gia ?? hd?.tongGiamGia ?? 0);
 
 const HoaDonThanhToan: React.FC = () => {
   const [status, setStatus] = useState("all");
@@ -57,7 +67,7 @@ const HoaDonThanhToan: React.FC = () => {
   useEffect(() => {
     const user = getUserProfile();
     if (user) {
-      const userId = user.id_khach_hang || user.id;
+      const userId = getCustomerId(user);
       if (!userId) {
         setLoading(false);
         return;
@@ -100,13 +110,17 @@ const HoaDonThanhToan: React.FC = () => {
   const filteredList = useMemo(() => {
     if (isServerPaginated) return hoaDons;
     return hoaDons.filter(h => {
-      if (status !== "all" && (h.trang_thai || h.trangThai)?.toLowerCase() !== status.toLowerCase()) return false;
+      if (status !== "all" && getInvoiceStatus(h) !== status.toLowerCase()) return false;
       if (debouncedSearch) {
-        const term = debouncedSearch.toLowerCase();
-        const idStr = String(h.id_hoa_don);
-        const petName = (h.ten_thu_cung || "").toLowerCase();
-        const custName = (h.ten_khach_hang || "").toLowerCase();
-        if (!idStr.includes(term) && !petName.includes(term) && !custName.includes(term)) return false;
+        if (!matchesSearchFields(debouncedSearch, [
+          getInvoiceId(h),
+          `HD-${getInvoiceId(h)}`,
+          getPetName(h),
+          getCustomerName(h),
+          getInvoiceDate(h),
+          getInvoiceStatus(h),
+          getInvoiceTotal(h),
+        ])) return false;
       }
       return true;
     });
@@ -122,7 +136,7 @@ const HoaDonThanhToan: React.FC = () => {
       total: hoaDons.length,
       paidCount: paid.length,
       unpaidCount: hoaDons.filter(h => (h.trang_thai || h.trangThai)?.toLowerCase() === "cho_thanh_toan").length,
-      totalPaid: paid.reduce((s, h) => s + (h.tong_tien_cuoi ?? h.tongTienCuoi ?? 0), 0)
+      totalPaid: paid.reduce((s, h) => s + getInvoiceTotal(h), 0)
     };
   }, [hoaDons]);
 
@@ -132,10 +146,10 @@ const HoaDonThanhToan: React.FC = () => {
     }
     const headers = ["Mã HĐ", "Ngày lập", "Thành tiền", "Trạng thái"];
     const rows = filteredList.map(h => [
-      `HD-${h.id_hoa_don}`,
-      h.ngay_lap_hoa_don?.split('T')[0] || "",
-      h.tong_tien_cuoi || h.tongTienCuoi,
-      (h.trang_thai || h.trangThai)?.toLowerCase() === 'da_thanh_toan' ? 'Đã thanh toán' : 'Chưa thanh toán'
+      `HD-${getInvoiceId(h)}`,
+      getInvoiceDate(h)?.split('T')[0] || "",
+      getInvoiceTotal(h),
+      getInvoiceStatus(h) === 'da_thanh_toan' ? 'Đã thanh toán' : 'Chưa thanh toán'
     ]);
 
     // BẢO MẬT: Chống CSV Injection bằng cách thêm dấu nháy đơn trước các ký tự nhạy cảm
@@ -159,7 +173,7 @@ const HoaDonThanhToan: React.FC = () => {
     setViewingHD(hd);
     setLoadingDetails(true);
     try {
-      const res = await axiosInstance.get(`/api/hoa-don/${hd.id_hoa_don}/chi-tiet`);
+      const res = await axiosInstance.get(`/api/hoa-don/${getInvoiceId(hd)}/chi-tiet`);
       setChiTietHD(res.data);
     } catch (error) {
       console.error(error);
@@ -172,9 +186,14 @@ const HoaDonThanhToan: React.FC = () => {
 
   const handlePaymentVNPay = async (hd: any) => {
     try {
+      const amount = getInvoiceTotal(hd);
+      if (!amount || amount <= 0) {
+        toast.error("Hóa đơn chưa có số tiền hợp lệ để thanh toán.");
+        return;
+      }
       const res = await axiosInstance.post('/api/payment/vnpay/create-url', {
-        id_hoa_don: hd.id_hoa_don,
-        amount: hd.tong_tien_cuoi
+        id_hoa_don: getInvoiceId(hd),
+        amount
       });
       if (res.data && res.data.url) {
         window.location.href = res.data.url;
@@ -187,12 +206,17 @@ const HoaDonThanhToan: React.FC = () => {
 
   const handlePaymentVietQR = async (hd: any) => {
     try {
+      const amount = getInvoiceTotal(hd);
+      if (!amount || amount <= 0) {
+        toast.error("Hóa đơn chưa có số tiền hợp lệ để thanh toán.");
+        return;
+      }
       const res = await axiosInstance.post('/api/payment/vietqr/generate', {
-        id_hoa_don: hd.id_hoa_don,
-        amount: hd.tong_tien_cuoi
+        id_hoa_don: getInvoiceId(hd),
+        amount
       });
       if (res.data && res.data.qr_url) {
-        setQrData({ url: res.data.qr_url, info: res.data.add_info, amount: hd.tong_tien_cuoi });
+        setQrData({ url: res.data.qr_url, info: res.data.add_info, amount });
         setShowQRModal(true);
       }
     } catch (error) {
@@ -288,30 +312,30 @@ const HoaDonThanhToan: React.FC = () => {
             <p style={{ fontSize: '1.2rem', color: 'var(--gray-400)', fontWeight: 700 }}>Không tìm thấy hóa đơn nào.</p>
           </div>
         ) : currentRows.map(hd => (
-          <div key={hd.id_hoa_don} className="glass-card item-card" style={{ padding: '32px', borderRadius: 'var(--radius-xl)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div key={getInvoiceId(hd)} className="glass-card item-card" style={{ padding: '32px', borderRadius: 'var(--radius-xl)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
               <div style={{ width: '64px', height: '64px', background: 'var(--primary-light)', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
                 <span className="material-symbols-outlined" style={{ fontSize: '32px' }}>receipt_long</span>
               </div>
               <div>
-                <h3 style={{ fontSize: '1.3rem', fontWeight: 900, color: 'var(--ink)', margin: 0 }}>Hóa đơn #HD-{hd.id_hoa_don}</h3>
-                <p style={{ color: 'var(--gray-400)', fontWeight: 700, margin: '4px 0', fontSize: '0.85rem' }}>{chuyenNgayISO_SangVN(hd.ngay_lap_hoa_don)} {hd.ten_thu_cung ? `· ${hd.ten_thu_cung}` : ''}</p>
+                <h3 style={{ fontSize: '1.3rem', fontWeight: 900, color: 'var(--ink)', margin: 0 }}>Hóa đơn #HD-{getInvoiceId(hd)}</h3>
+                <p style={{ color: 'var(--gray-400)', fontWeight: 700, margin: '4px 0', fontSize: '0.85rem' }}>{chuyenNgayISO_SangVN(getInvoiceDate(hd))} {getPetName(hd) ? `· ${getPetName(hd)}` : ''}</p>
               </div>
             </div>
             <div style={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: '40px' }}>
               <div>
                 <p style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '4px' }}>TỔNG TIỀN</p>
-                <b style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--primary)' }}>{formatTienVND(hd.tong_tien_cuoi ?? 0)}</b>
+                <b style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--primary)' }}>{formatTienVND(getInvoiceTotal(hd))}</b>
               </div>
               <span style={{
                 padding: '8px 20px', borderRadius: '50px', fontSize: '0.75rem', fontWeight: 900,
-                background: (hd.trang_thai || hd.trangThai)?.toLowerCase() === 'da_thanh_toan' ? 'var(--primary-light)' : '#fef9c3',
-                color: (hd.trang_thai || hd.trangThai)?.toLowerCase() === 'da_thanh_toan' ? 'var(--primary)' : '#a16207'
+                background: getInvoiceStatus(hd) === 'da_thanh_toan' ? 'var(--primary-light)' : '#fef9c3',
+                color: getInvoiceStatus(hd) === 'da_thanh_toan' ? 'var(--primary)' : '#a16207'
               }}>
-                {(hd.trang_thai || hd.trangThai)?.toLowerCase() === 'da_thanh_toan' ? 'ĐÃ TRẢ' : 'CHỜ TRẢ'}
+                {getInvoiceStatus(hd) === 'da_thanh_toan' ? 'ĐÃ TRẢ' : 'CHỜ TRẢ'}
               </span>
               <div style={{ display: 'flex', gap: '8px' }}>
-                {(hd.trang_thai || hd.trangThai)?.toLowerCase() === 'cho_thanh_toan' && (
+                {getInvoiceStatus(hd) === 'cho_thanh_toan' && (
                   <>
                     <button data-ai-id="button-hoadonthanhtoan-9z33" className="btn hover-scale" style={{ padding: '12px 20px', background: '#005baa', color: 'white', fontWeight: 800, borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '6px' }} onClick={() => handlePaymentVNPay(hd)} title="Thanh toán qua VNPay">
                       <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>account_balance_wallet</span> VNPay
@@ -376,19 +400,19 @@ const HoaDonThanhToan: React.FC = () => {
                   <div style={{ fontSize: '0.8rem', color: 'var(--gray-500)', fontWeight: 600 }}>Hotline: ***REMOVED***-VIETQR_ACCOUNT_NO</div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--ink)' }}>HÓA ĐƠN #HD-{viewingHD.id_hoa_don}</div>
-                  <div style={{ fontSize: '0.85rem', color: 'var(--gray-400)', fontWeight: 700 }}>Ngày: {chuyenNgayISO_SangVN(viewingHD.ngay_lap_hoa_don)}</div>
+                  <div style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--ink)' }}>HÓA ĐƠN #HD-{getInvoiceId(viewingHD)}</div>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--gray-400)', fontWeight: 700 }}>Ngày: {chuyenNgayISO_SangVN(getInvoiceDate(viewingHD))}</div>
                 </div>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '32px' }}>
                 <div style={{ background: 'var(--surface)', border: '1px solid var(--gray-200)', padding: '20px', borderRadius: '20px' }}>
                   <div style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--gray-400)', letterSpacing: '1px', marginBottom: '12px' }}>KHÁCH HÀNG</div>
-                  <div style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--ink)' }}>{viewingHD.ten_khach_hang || 'Khách vãng lai'}</div>
+                  <div style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--ink)' }}>{getCustomerName(viewingHD)}</div>
                 </div>
                 <div style={{ background: 'var(--surface)', border: '1px solid var(--gray-200)', padding: '20px', borderRadius: '20px' }}>
                   <div style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--gray-400)', letterSpacing: '1px', marginBottom: '12px' }}>THÚ CƯNG</div>
-                  <div style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--ink)' }}>{viewingHD.ten_thu_cung || 'N/A'}</div>
+                  <div style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--ink)' }}>{getPetName(viewingHD) || 'N/A'}</div>
                 </div>
               </div>
 
@@ -408,30 +432,30 @@ const HoaDonThanhToan: React.FC = () => {
                     <tr style={{ borderBottom: '1px solid var(--gray-50)' }}>
                       <td style={{ padding: '16px 0', fontWeight: 700, color: 'var(--ink)' }}>Tổng tiền dịch vụ & vật tư</td>
                       <td style={{ padding: '16px 0', textAlign: 'center', fontWeight: 600, color: 'var(--ink)' }}>1</td>
-                      <td style={{ padding: '16px 0', textAlign: 'right', fontWeight: 600, color: 'var(--ink)' }}>{formatTienVND(viewingHD.tong_tien_ban_dau)}</td>
-                      <td style={{ padding: '16px 0', textAlign: 'right', fontWeight: 800, color: 'var(--ink)' }}>{formatTienVND(viewingHD.tong_tien_ban_dau)}</td>
+                      <td style={{ padding: '16px 0', textAlign: 'right', fontWeight: 600, color: 'var(--ink)' }}>{formatTienVND(getInvoiceBaseTotal(viewingHD))}</td>
+                      <td style={{ padding: '16px 0', textAlign: 'right', fontWeight: 800, color: 'var(--ink)' }}>{formatTienVND(getInvoiceBaseTotal(viewingHD))}</td>
                     </tr>
                   ) : (
                     chiTietHD.map((item, idx) => (
                       <tr key={idx} style={{ borderBottom: '1px solid var(--gray-50)' }}>
-                        <td style={{ padding: '16px 0', fontWeight: 700, color: 'var(--ink)' }}>{item.ten_muc}</td>
-                        <td style={{ padding: '16px 0', textAlign: 'center', fontWeight: 600, color: 'var(--ink)' }}>{item.so_luong}</td>
-                        <td style={{ padding: '16px 0', textAlign: 'right', fontWeight: 600, color: 'var(--ink)' }}>{formatTienVND(item.don_gia)}</td>
-                        <td style={{ padding: '16px 0', textAlign: 'right', fontWeight: 800, color: 'var(--ink)' }}>{formatTienVND(item.thanh_tien)}</td>
+                        <td style={{ padding: '16px 0', fontWeight: 700, color: 'var(--ink)' }}>{item.ten_muc ?? item.tenMuc ?? item.ten_dich_vu ?? item.tenDichVu ?? 'Dịch vụ'}</td>
+                        <td style={{ padding: '16px 0', textAlign: 'center', fontWeight: 600, color: 'var(--ink)' }}>{item.so_luong ?? item.soLuong ?? 1}</td>
+                        <td style={{ padding: '16px 0', textAlign: 'right', fontWeight: 600, color: 'var(--ink)' }}>{formatTienVND(item.don_gia ?? item.donGia ?? 0)}</td>
+                        <td style={{ padding: '16px 0', textAlign: 'right', fontWeight: 800, color: 'var(--ink)' }}>{formatTienVND(item.thanh_tien ?? item.thanhTien ?? 0)}</td>
                       </tr>
                     ))
                   )}
-                  {viewingHD.tong_giam_gia > 0 && (
+                  {getInvoiceDiscount(viewingHD) > 0 && (
                     <tr style={{ borderBottom: '1px solid var(--gray-50)' }}>
                       <td colSpan={3} style={{ padding: '16px 0', color: 'var(--danger)', fontWeight: 700, textAlign: 'right' }}>Giảm giá (Ưu đãi)</td>
-                      <td style={{ padding: '16px 0', textAlign: 'right', color: 'var(--danger)', fontWeight: 800 }}>-{formatTienVND(viewingHD.tong_giam_gia)}</td>
+                      <td style={{ padding: '16px 0', textAlign: 'right', color: 'var(--danger)', fontWeight: 800 }}>-{formatTienVND(getInvoiceDiscount(viewingHD))}</td>
                     </tr>
                   )}
                 </tbody>
                 <tfoot>
                   <tr>
                     <td colSpan={3} style={{ padding: '24px 0', fontSize: '1.1rem', fontWeight: 950, color: 'var(--ink)', textAlign: 'right' }}>TỔNG CỘNG THANH TOÁN</td>
-                    <td style={{ padding: '24px 0', textAlign: 'right', fontSize: '1.4rem', fontWeight: 950, color: 'var(--primary)' }}>{formatTienVND(viewingHD.tong_tien_cuoi)}</td>
+                    <td style={{ padding: '24px 0', textAlign: 'right', fontSize: '1.4rem', fontWeight: 950, color: 'var(--primary)' }}>{formatTienVND(getInvoiceTotal(viewingHD))}</td>
                   </tr>
                 </tfoot>
               </table>

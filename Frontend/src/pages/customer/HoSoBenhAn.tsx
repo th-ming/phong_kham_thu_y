@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from "react";
 import axiosInstance from "@services/axios";
-import { getUserProfile } from "@utils/index";
+import { getUserProfile, matchesSearchFields } from "@utils/index";
 
 const chuyenNgayISO_SangVN = (dateString: string) => {
   if (!dateString) return "—";
@@ -12,8 +12,17 @@ const chuyenNgayISO_SangVN = (dateString: string) => {
 const extractArray = (data: any) => {
   if (Array.isArray(data)) return data;
   if (Array.isArray(data?.content)) return data.content;
+  if (Array.isArray(data?.data)) return data.data;
+  if (Array.isArray(data?.result)) return data.result;
+  if (Array.isArray(data?.items)) return data.items;
+  if (Array.isArray(data?.records)) return data.records;
   return [];
 };
+
+const getCustomerId = (user: any) => user?.id_khach_hang ?? user?.idKhachHang ?? user?.id_tai_khoan ?? user?.idTaiKhoan ?? user?.id;
+const getPetId = (item: any) => item?.id_thu_cung ?? item?.idThuCung ?? item?.id;
+const getPetName = (item: any) => item?.ten_thu_cung ?? item?.tenThuCung ?? "—";
+const getMedicalRecordId = (item: any) => item?.id_ho_so ?? item?.idHoSo ?? item?.id;
 
 const HoSoBenhAn: React.FC = () => {
   const [petFilter, setPetFilter] = useState("all");
@@ -37,7 +46,7 @@ const HoSoBenhAn: React.FC = () => {
       setLoading(false);
       return;
     }
-    const id = user.id_khach_hang || user.id;
+    const id = getCustomerId(user);
     if (!id) {
       setLoading(false);
       return;
@@ -58,7 +67,7 @@ const HoSoBenhAn: React.FC = () => {
           setTotalServerPages(data.totalPages);
           setIsServerPaginated(true);
         } else {
-          setHoSoList(Array.isArray(data) ? data : []);
+          setHoSoList(extractArray(data));
           setIsServerPaginated(false);
         }
       }
@@ -91,16 +100,24 @@ const HoSoBenhAn: React.FC = () => {
   const rows = useMemo(() => {
     if (isServerPaginated) return hoSoList;
     return hoSoList.filter((h) => {
-      // Lọc theo tên bác sĩ (không phân biệt chữ hoa, chữ thường)
       if (debouncedSearch) {
-        const docName = h.ten_bac_si || "";
-        if (!docName.toLowerCase().includes(debouncedSearch.toLowerCase())) return false;
+        if (!matchesSearchFields(debouncedSearch, [
+          h.ma_ho_so, h.maHoSo, h.id_ho_so, h.idHoSo,
+          h.ten_bac_si, h.tenBacSi,
+          h.ten_thu_cung, h.tenThuCung,
+          h.chan_doan, h.chanDoan,
+          h.trieu_chung, h.trieuChung,
+          h.phac_do_dieu_tri, h.phacDoDieuTri,
+          h.huong_dan_cham_soc, h.huongDanChamSoc,
+          h.trang_thai_ho_so, h.trangThaiHoSo,
+        ])) return false;
       }
 
       if (petFilter === "all") return true;
-      const pet = thuCungs.find(p => String(p.id_thu_cung) === petFilter);
-      if (pet && pet.ten_thu_cung === h.ten_thu_cung) return true;
-      if (h.id_thu_cung && String(h.id_thu_cung) === petFilter) return true;
+      const recordPetId = getPetId(h);
+      if (recordPetId && String(recordPetId) === petFilter) return true;
+      const pet = thuCungs.find(p => String(getPetId(p)) === petFilter);
+      if (pet && getPetName(pet) === getPetName(h)) return true;
       return false;
     });
   }, [hoSoList, petFilter, thuCungs, debouncedSearch, isServerPaginated]);
@@ -135,7 +152,7 @@ const HoSoBenhAn: React.FC = () => {
             <input data-ai-id="input-hosobenhan-1g80"
               type="text"
               className="btn"
-              placeholder="Tìm tên bác sĩ..."
+              placeholder="Tìm bác sĩ, bé, chẩn đoán..."
               value={searchDoctor}
               onChange={(e) => setSearchDoctor(e.target.value)}
               style={{ background: 'white', border: 'none', color: '#2563eb', fontWeight: 700, padding: '10px 36px 10px 16px', outline: 'none', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}
@@ -159,7 +176,7 @@ const HoSoBenhAn: React.FC = () => {
           >
             <option value="all">Tất cả thú cưng</option>
             {thuCungs.map(pet => (
-              <option key={pet.id_thu_cung} value={String(pet.id_thu_cung)}>{pet.ten_thu_cung}</option>
+              <option key={getPetId(pet)} value={String(getPetId(pet))}>{getPetName(pet)}</option>
             ))}
           </select>
         </div>
@@ -172,26 +189,26 @@ const HoSoBenhAn: React.FC = () => {
             <p style={{ fontSize: '1.2rem', color: 'var(--gray-400)', fontWeight: 700 }}>Chưa có bản ghi y tế nào cho thú cưng này.</p>
           </div>
         ) : currentRows.map((h) => (
-          <div key={h.id_ho_so} className="glass-card item-card" style={{ padding: '40px', borderRadius: 'var(--radius-xl)' }}>
+          <div key={getMedicalRecordId(h)} className="glass-card item-card" style={{ padding: '40px', borderRadius: 'var(--radius-xl)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
                 <div style={{ width: '64px', height: '64px', background: 'var(--primary-light)', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
                   <span className="material-symbols-outlined" style={{ fontSize: '32px' }}>pets</span>
                 </div>
                 <div>
-                  <h3 style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--ink)', margin: 0 }}>{h.ten_thu_cung}</h3>
+                  <h3 style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--ink)', margin: 0 }}>{getPetName(h)}</h3>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '4px', color: 'var(--gray-400)', fontWeight: 700, fontSize: '0.85rem' }}>
                     <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>event</span>
-                    {chuyenNgayISO_SangVN(h.ngay_kham)}
+                    {chuyenNgayISO_SangVN(h.ngay_kham ?? h.ngayKham)}
                   </div>
                 </div>
               </div>
               <span style={{
                 padding: '8px 20px', borderRadius: '50px', fontSize: '0.75rem', fontWeight: 900,
-                background: h.trang_thai_ho_so?.toLowerCase() === 'hoan_tat' ? 'var(--primary-light)' : 'var(--gray-50)',
-                color: h.trang_thai_ho_so?.toLowerCase() === 'hoan_tat' ? 'var(--primary)' : 'var(--gray-400)'
+                background: (h.trang_thai_ho_so ?? h.trangThaiHoSo ?? h.trang_thai ?? h.trangThai)?.toLowerCase() === 'hoan_tat' ? 'var(--primary-light)' : 'var(--gray-50)',
+                color: (h.trang_thai_ho_so ?? h.trangThaiHoSo ?? h.trang_thai ?? h.trangThai)?.toLowerCase() === 'hoan_tat' ? 'var(--primary)' : 'var(--gray-400)'
               }}>
-                {h.trang_thai_ho_so ? h.trang_thai_ho_so.toUpperCase() : 'HOÀN TẤT'}
+                {(h.trang_thai_ho_so ?? h.trangThaiHoSo ?? h.trang_thai ?? h.trangThai)?.toUpperCase() || 'HOÀN TẤT'}
               </span>
             </div>
 
@@ -200,32 +217,32 @@ const HoSoBenhAn: React.FC = () => {
                 <p style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '8px' }}>BÁC SĨ CHỈ ĐỊNH</p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <span className="material-symbols-outlined" style={{ color: 'var(--primary)', fontSize: '20px' }}>medical_information</span>
-                  <b style={{ fontWeight: 800, color: 'var(--ink)' }}>{h.ten_bac_si || '—'}</b>
+                  <b style={{ fontWeight: 800, color: 'var(--ink)' }}>{h.ten_bac_si ?? h.tenBacSi ?? '—'}</b>
                 </div>
               </div>
               <div style={{ background: 'var(--gray-50)', padding: '24px', borderRadius: '24px' }}>
                 <p style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '8px' }}>CÂN NẶNG</p>
-                <b style={{ fontWeight: 900, fontSize: '1.2rem', color: 'var(--ink)' }}>{h.can_nang || '—'} <small>kg</small></b>
+                <b style={{ fontWeight: 900, fontSize: '1.2rem', color: 'var(--ink)' }}>{h.can_nang ?? h.canNang ?? '—'} <small>kg</small></b>
               </div>
               <div style={{ background: 'var(--gray-50)', padding: '24px', borderRadius: '24px' }}>
                 <p style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '8px' }}>NHIỆT ĐỘ</p>
-                <b style={{ fontWeight: 900, fontSize: '1.2rem', color: 'var(--ink)' }}>{h.nhiet_do || '—'} <small>°C</small></b>
+                <b style={{ fontWeight: 900, fontSize: '1.2rem', color: 'var(--ink)' }}>{h.nhiet_do ?? h.nhietDo ?? '—'} <small>°C</small></b>
               </div>
               <div style={{ gridColumn: '1 / -1', background: 'var(--gray-50)', padding: '24px', borderRadius: '24px' }}>
                 <p style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '8px' }}>TRIỆU CHỨNG LÂM SÀNG</p>
-                <p style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--ink)', margin: 0, lineHeight: '1.6' }}>{h.trieu_chung || '—'}</p>
+                <p style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--ink)', margin: 0, lineHeight: '1.6' }}>{h.trieu_chung ?? h.trieuChung ?? '—'}</p>
               </div>
               <div style={{ gridColumn: '1 / -1', background: 'var(--primary-light)', padding: '24px', borderRadius: '24px', border: '1px solid rgba(15, 157, 138, 0.2)' }}>
                 <p style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--primary)', marginBottom: '8px' }}>CHẨN ĐOÁN CỦA BÁC SĨ</p>
-                <p style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--ink)', margin: 0, lineHeight: '1.6' }}>{h.chan_doan || '—'}</p>
+                <p style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--ink)', margin: 0, lineHeight: '1.6' }}>{h.chan_doan ?? h.chanDoan ?? '—'}</p>
               </div>
               <div style={{ gridColumn: '1 / -1', background: 'var(--gray-50)', padding: '24px', borderRadius: '24px' }}>
                 <p style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '8px' }}>PHÁC ĐỒ ĐIỀU TRỊ</p>
-                <p style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--ink)', margin: 0, lineHeight: '1.6' }}>{h.phac_do_dieu_tri || '—'}</p>
+                <p style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--ink)', margin: 0, lineHeight: '1.6' }}>{h.phac_do_dieu_tri ?? h.phacDoDieuTri ?? '—'}</p>
               </div>
               <div style={{ gridColumn: '1 / -1', background: 'rgba(20, 184, 166, 0.1)', padding: '24px', borderRadius: '24px', border: '1px dashed rgba(20, 184, 166, 0.3)' }}>
                 <p style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--primary)', marginBottom: '8px' }}>HƯỚNG DẪN CHĂM SÓC TẠI NHÀ</p>
-                <p style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--ink)', margin: 0, lineHeight: '1.6' }}>{h.huong_dan_cham_soc || '—'}</p>
+                <p style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--ink)', margin: 0, lineHeight: '1.6' }}>{h.huong_dan_cham_soc ?? h.huongDanChamSoc ?? '—'}</p>
               </div>
             </div>
           </div>
