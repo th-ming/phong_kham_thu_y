@@ -477,7 +477,7 @@ const MemeCatCore: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
 /**
  * TRÌNH PHÁT VIDEO NỀN TRONG SUỐT (TÍCH HỢP TẨY PHÔNG XANH)
  */
-export const TransparentVideo: React.FC<{ src: string, style?: React.CSSProperties, playbackRate?: number, isDark?: boolean, loop?: boolean, muted?: boolean, onEnded?: () => void }> = ({ src, style, playbackRate = 1, isDark = false, loop = true, muted = true, onEnded }) => {
+export const TransparentVideo: React.FC<{ src: string, style?: React.CSSProperties, playbackRate?: number, isDark?: boolean, loop?: boolean, muted?: boolean, onEnded?: () => void, removeBlack?: boolean }> = ({ src, style, playbackRate = 1, isDark = false, loop = true, muted = true, onEnded, removeBlack = false }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [inView, setInView] = useState(false);
@@ -513,22 +513,23 @@ export const TransparentVideo: React.FC<{ src: string, style?: React.CSSProperti
           const r = data[i], g = data[i + 1], b = data[i + 2];
           const idx = i / 4, py = (idx / canvas.width) | 0, px = idx % canvas.width;
 
-          // TỰ ĐỘNG LÀM TRONG SUỐT CẠNH TRÊN/DƯỚI
-          const isExtremeVerticalEdge = py < canvas.height * 0.02 || py > canvas.height * 0.98;
-          if (isExtremeVerticalEdge && r < 45 && g < 45 && b < 45) {
-            data[i + 3] = 0; continue;
-          }
-
           const maxRB = Math.max(r, b), diff = g - maxRB, luma = 0.299 * r + 0.587 * g + 0.114 * b;
-          
-          // TỰ ĐỘNG TÁCH NỀN ĐEN (BLACK SCREEN REMOVAL)
-          if (r < 25 && g < 25 && b < 25 && luma < 20) {
-            data[i + 3] = 0; 
-            continue;
-          } else if (r < 45 && g < 45 && b < 45 && luma < 40) {
-            // Khử viền đen mượt mà (Anti-aliasing fringes)
-            data[i + 3] = Math.max(0, 255 * ((luma - 20) / 20)); 
-            continue;
+          if (removeBlack) {
+            // TỰ ĐỘNG LÀM TRONG SUỐT CẠNH TRÊN/DƯỚI
+            const isExtremeVerticalEdge = py < canvas.height * 0.02 || py > canvas.height * 0.98;
+            if (isExtremeVerticalEdge && r < 45 && g < 45 && b < 45) {
+              data[i + 3] = 0; continue;
+            }
+
+            // TỰ ĐỘNG TÁCH NỀN ĐEN (BLACK SCREEN REMOVAL)
+            if (r < 25 && g < 25 && b < 25 && luma < 20) {
+              data[i + 3] = 0; 
+              continue;
+            } else if (r < 45 && g < 45 && b < 45 && luma < 40) {
+              // Khử viền đen mượt mà (Anti-aliasing fringes)
+              data[i + 3] = Math.max(0, 255 * ((luma - 20) / 20)); 
+              continue;
+            }
           }
           const isTextArea = (py < canvas.height * 0.45) && (px > canvas.width * 0.40);
 
