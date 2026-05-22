@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { getUserProfile, normalizeUserRole } from "@utils/index";
 import { ADMIN_ROUTE_ROLES } from "@utils/permissions";
@@ -8,6 +8,8 @@ import ThemeToggle from './ThemeToggle';
 const SidebarAdmin: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
+
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
 
 
 
@@ -91,17 +93,43 @@ const SidebarAdmin: React.FC = () => {
   const userInitial = userDisplayName.charAt(0).toUpperCase() || "A";
 
   return (
-    <div className="glass-card" style={{
-      width: 'var(--sidebar-width)',
-      height: 'calc(100vh - 40px)',
-      margin: '20px',
-      borderRadius: 'var(--radius-lg)',
-      display: 'flex',
-      flexDirection: 'column',
-      padding: '30px 20px',
-      position: 'sticky',
-      top: '20px'
-    }}>
+    <>
+      {/* Nút Hamburger nổi trên mobile */}
+      <button data-ai-id="button-sidebaradmin-mobile"
+        className="mobile-show"
+        onClick={() => setIsMobileOpen(!isMobileOpen)}
+        style={{
+          position: 'fixed', bottom: '24px', left: '24px', zIndex: 1001,
+          background: 'var(--primary)', color: 'white', border: 'none',
+          width: '56px', height: '56px', borderRadius: '50%',
+          boxShadow: '0 4px 15px rgba(15, 157, 138, 0.4)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
+        }}
+      >
+        <span className="material-symbols-outlined" style={{ fontSize: '28px' }}>{isMobileOpen ? 'close' : 'menu'}</span>
+      </button>
+
+      {/* Lớp phủ mờ khi mở menu trên mobile */}
+      {isMobileOpen && (
+        <div
+          className="mobile-show"
+          onClick={() => setIsMobileOpen(false)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 999, backdropFilter: 'blur(4px)' }}
+        />
+      )}
+
+      <div className={`glass-card sidebar ${isMobileOpen ? 'active' : ''}`} style={{
+        width: isMobileOpen ? '280px' : 'var(--sidebar-width)',
+        height: 'calc(100vh - 40px)',
+        margin: '20px',
+        borderRadius: 'var(--radius-lg)',
+        display: 'flex',
+        flexDirection: 'column',
+        padding: '30px 20px',
+        position: 'sticky',
+        top: '20px',
+        zIndex: 1000
+      }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '24px', padding: '0 10px' }}>
         <div style={{ width: '42px', height: '42px', borderRadius: '12px', overflow: 'hidden', background: 'var(--primary-gradient)', border: '2px solid rgba(255,255,255,0.2)', boxShadow: '0 0 20px var(--primary-shadow)' }}>
           <img src="/img/avtpkty.png" alt="Rexi" style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '6px', filter: 'brightness(0) invert(1)' }} />
@@ -156,6 +184,7 @@ const SidebarAdmin: React.FC = () => {
             <Link
               key={item.path}
               to={item.path || '#'}
+              onClick={() => setIsMobileOpen(false)}
               className="sidebar-link"
               style={{
                 display: 'flex',
@@ -228,6 +257,7 @@ const SidebarAdmin: React.FC = () => {
         Đăng xuất
       </button>
     </div>
+    </>
   );
 };
 
