@@ -190,7 +190,6 @@ const Footer: React.FC<{ isSimple?: boolean }> = ({ isSimple }) => {
                     cursor: 'pointer'
                 }} onClick={() => setIsMemePlaying(true)}>
                     <div className="footer-chat-bubble">
-                        <span className="material-symbols-outlined" style={{ fontSize: '18px', color: '#fbbf24' }}>auto_awesome</span>
                         Click xem tôi nhảy nè! 🐾
                     </div>
                 </div>
@@ -212,15 +211,19 @@ const Footer: React.FC<{ isSimple?: boolean }> = ({ isSimple }) => {
                         /* VIDEO KHI ĐƯỢC CLICK */
                         <div style={{ 
                             height: '250px', display: 'flex', alignItems: 'flex-end',
-                            filter: 'drop-shadow(0 10px 15px rgba(0,0,0,0.45))'
-                        }}>
+                            filter: 'drop-shadow(0 10px 15px rgba(0,0,0,0.45))',
+                            position: 'relative'
+                        }}
+                        onClick={() => setIsMemePlaying(false)}
+                        title="Click để dừng video"
+                        >
                             <TransparentVideo
                                 src="/img/meonhayfooter_v3.webm" 
                                 loop={false}
                                 muted={false}
                                 removeBlack={true}
                                 onEnded={() => setIsMemePlaying(false)}
-                                style={{ height: '100%', width: 'auto', objectFit: 'contain' }}
+                                style={{ height: '100%', width: 'auto', objectFit: 'contain', cursor: 'pointer' }}
                             />
                         </div>
                     ) : (
