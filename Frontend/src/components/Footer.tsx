@@ -267,6 +267,7 @@ const Footer: React.FC<{ isSimple?: boolean }> = ({ isSimple }) => {
                         </div>
                     </div>
                 )}
+                
                 <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
                     <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>© 2026 REXI VETERINARY SYSTEM. All rights reserved.</p>
                 </div>
