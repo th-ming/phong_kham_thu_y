@@ -85,7 +85,7 @@ const Loi404: React.FC = () => {
 
                         <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>
                             <div style={{ transform: 'translateY(-12%)', width: '100%', display: 'flex', justifyContent: 'center' }}>
-                                <TransparentVideo src="/img/video_loi_404.mp4" style={{ width: '85%', height: '85%', objectFit: 'contain', position: 'relative', zIndex: 2 }} />
+                                <TransparentVideo src="/img/video_loi_404.webm" style={{ width: '85%', height: '85%', objectFit: 'contain', position: 'relative', zIndex: 2 }} />
                             </div>
 
                             <div style={{

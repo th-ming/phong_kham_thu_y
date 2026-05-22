@@ -27,7 +27,7 @@ public class ReActAgentService {
     @Autowired private AiMemoryService memoryService;
 
     private final ObjectMapper mapper = new ObjectMapper()
-            .configure(com.fasterxml.jackson.core.JsonParser.Feature.ALLOW_UNESCAPED_CONTROL_CHARS, true);
+            .configure(com.fasterxml.jackson.core.JsonParser.Feature.ALLOW_UNQUOTED_CONTROL_CHARS, true);
 
     public record ReActStep(String type, String content, String toolName, Map<String, Object> toolParams, String observation) {}
     public record ReActResult(String finalAnswer, List<ReActStep> steps) {}
