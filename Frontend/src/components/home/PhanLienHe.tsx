@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { RevealSection } from "@components/SpecialEffects";
 import { useTheme } from "../../contexts/ThemeContextV2";
 
@@ -135,7 +135,7 @@ const PhanLienHe: React.FC = () => {
                         boxShadow: "0 40px 100px rgba(0,0,0,0.05)",
                         border: "1px solid rgba(15,157,138,0.08)"
                     }}>
-                        <div className="contact-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1.2fr", gap: "60px" }}>
+                        <div className="contact-grid responsive-grid-split" style={{ gridTemplateColumns: "1fr 1.2fr" }}>
 
                             {/* LEFT: Contact Information */}
                             <div className="contact-info-col" style={{ borderRight: "1px dashed #e2e8f0", paddingRight: "30px" }}>

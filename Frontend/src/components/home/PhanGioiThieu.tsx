@@ -153,7 +153,7 @@ const PhanGioiThieu: React.FC = () => {
 
                 <div className="hero-hero-background" />
                 <div className="container" style={{ position: 'relative', zIndex: 4 }}>
-                    <div style={{ display: "grid", gridTemplateColumns: "1.15fr 0.85fr", gap: "48px", alignItems: "center" }}>
+                    <div className="responsive-grid-split" style={{ gridTemplateColumns: "1.15fr 0.85fr", alignItems: "center" }}>
                         <div className="hero-content">
                             {/* nhãn tin cậy */}
                             <div ref={petRef as any} className="section-label" style={{ marginBottom: "28px", cursor: 'default', background: isDark ? 'rgba(217, 119, 6, 0.15)' : '#fffbeb', color: isDark ? '#fbbf24' : '#d97706', borderColor: isDark ? 'rgba(251, 191, 36, 0.3)' : '#fde68a' }}>
