@@ -1,3 +1,4 @@
 git add .
-git commit -m "Auto commit by Rexi AI"
-git push origin main
+git commit -m "Auto commit"
+$branch = git branch --show-current
+git push origin $branch
