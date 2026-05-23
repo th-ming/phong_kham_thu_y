@@ -750,10 +750,18 @@ export const ChatBot: React.FC = () => {
 
     // 2. TRẠNG THÁI GIAO DIỆN UÝ PHÁP (STATE HOOKS)
     const [isOpen, setIsOpen] = useState(false);
+    const [isChatBubbleDismissed, setIsChatBubbleDismissed] = useState(false);
     const [activeTab, setActiveTab] = useState<'standard' | 'agent'>('standard');
     const [proactiveMessage, setProactiveMessage] = useState<{ id: string, text: string, action: () => void } | null>(null);
     const [userActivityLogs, setUserActivityLogs] = useState<{ action: string, timestamp: string }[]>([]);
     const proactiveDismissKey = `rexi_dismissed_proactive_${new Date().toISOString().slice(0, 10)}`;
+
+    const dismissChatBubbleForSession = () => {
+        setIsChatBubbleDismissed(true);
+        setIsOpen(false);
+        setShowCallout(false);
+        setProactiveMessage(null);
+    };
 
     const isProactiveDismissed = (id: string) => {
         try {
@@ -3607,7 +3615,7 @@ export const ChatBot: React.FC = () => {
             <div id="chatCallout" className="glass-card animate-fade-in" style={{
                 position: 'fixed', bottom: '110px', right: '30px', padding: '12px 20px',
                 borderRadius: '24px', fontSize: '0.85rem', fontWeight: 800, color: 'var(--primary)',
-                boxShadow: 'var(--shadow-lg)', zIndex: 1100, display: (isOpen || !showCallout || proactiveMessage) ? 'none' : 'flex',
+                boxShadow: 'var(--shadow-lg)', zIndex: 1100, display: (isChatBubbleDismissed || isOpen || !showCallout || proactiveMessage) ? 'none' : 'flex',
                 alignItems: 'center', gap: '10px', border: '2px solid var(--surface)', background: 'var(--surface)'
             }}>
                 <div style={{ width: '10px', height: '10px', background: '#10b981', borderRadius: '50%', animation: 'blink 1s infinite', boxShadow: '0 0 10px #10b981' }}></div>
@@ -3615,7 +3623,7 @@ export const ChatBot: React.FC = () => {
             </div>
 
             {/* BÓNG CHÁT CHỦ ĐỘNG GỢI Ý CỦA REXI (PROACTIVE NOTIFICATION BUBBLE) */}
-            {proactiveMessage && !isOpen && (
+            {proactiveMessage && !isOpen && !isChatBubbleDismissed && (
                 <div className="glass-card animate-fade-in" style={{
                     position: 'fixed', bottom: '110px', right: '30px', padding: '20px',
                     borderRadius: '28px', fontSize: '0.88rem', fontWeight: 800, color: 'var(--ink)',
@@ -3643,25 +3651,57 @@ export const ChatBot: React.FC = () => {
             )}
 
             {/* NÚT KÍCH HOẠT FLOATING CHAT DUY NHẤT */}
-            <button data-ai-id="button-chatbot-yhoj"
-                id="chatBtn"
-                onClick={() => setIsOpen(!isOpen)}
-                style={{
-                    position: 'fixed', bottom: isMobile ? '24px' : '30px', right: isMobile ? '24px' : '30px', zIndex: 1101,
-                    background: activeTab === 'agent' ? 'linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)' : 'var(--chat-gradient)',
-                    color: 'white', border: '1.5px solid rgba(255, 255, 255, 0.1)',
-                    width: isMobile ? '56px' : '64px', height: isMobile ? '56px' : '64px', borderRadius: '50%', cursor: 'pointer',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    boxShadow: activeTab === 'agent' ? '0 10px 40px rgba(244, 63, 94, 0.4)' : '0 10px 40px var(--primary-light)',
-                    transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                    animation: isOpen ? 'none' : 'chatPulseGlow 4s infinite ease-in-out',
-                    backdropFilter: 'blur(5px)'
-                }}
-            >
-                <span className="material-symbols-outlined" style={{ position: 'relative', zIndex: 1, fontSize: '32px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))', animation: isOpen ? 'none' : 'chatIconWaggle 6s infinite ease-in-out' }}>
-                    {isOpen ? 'close' : 'pets'}
-                </span>
-            </button>
+            {!isChatBubbleDismissed && (
+                <>
+                    {!isOpen && (
+                        <button
+                            type="button"
+                            aria-label="Ẩn chatbot trong phiên này"
+                            title="Ẩn chatbot cho tới khi tải lại trang"
+                            onClick={dismissChatBubbleForSession}
+                            style={{
+                                position: 'fixed',
+                                bottom: isMobile ? '70px' : '82px',
+                                right: isMobile ? '20px' : '22px',
+                                zIndex: 1102,
+                                width: '24px',
+                                height: '24px',
+                                borderRadius: '50%',
+                                border: '1px solid rgba(148, 163, 184, 0.35)',
+                                background: isDark ? 'rgba(15, 23, 42, 0.94)' : 'rgba(255, 255, 255, 0.96)',
+                                color: isDark ? '#cbd5e1' : '#64748b',
+                                boxShadow: '0 6px 18px rgba(15, 23, 42, 0.16)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                cursor: 'pointer',
+                                padding: 0
+                            }}
+                        >
+                            <span className="material-symbols-outlined" style={{ fontSize: '16px', lineHeight: 1 }}>close</span>
+                        </button>
+                    )}
+                    <button data-ai-id="button-chatbot-yhoj"
+                        id="chatBtn"
+                        onClick={() => setIsOpen(!isOpen)}
+                        style={{
+                            position: 'fixed', bottom: isMobile ? '24px' : '30px', right: isMobile ? '24px' : '30px', zIndex: 1101,
+                            background: activeTab === 'agent' ? 'linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)' : 'var(--chat-gradient)',
+                            color: 'white', border: '1.5px solid rgba(255, 255, 255, 0.1)',
+                            width: isMobile ? '56px' : '64px', height: isMobile ? '56px' : '64px', borderRadius: '50%', cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            boxShadow: activeTab === 'agent' ? '0 10px 40px rgba(244, 63, 94, 0.4)' : '0 10px 40px var(--primary-light)',
+                            transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                            animation: isOpen ? 'none' : 'chatPulseGlow 4s infinite ease-in-out',
+                            backdropFilter: 'blur(5px)'
+                        }}
+                    >
+                        <span className="material-symbols-outlined" style={{ position: 'relative', zIndex: 1, fontSize: '32px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))', animation: isOpen ? 'none' : 'chatIconWaggle 6s infinite ease-in-out' }}>
+                            {isOpen ? 'close' : 'pets'}
+                        </span>
+                    </button>
+                </>
+            )}
 
             {/* CỬA SỔ CHAT TÍCH HỢP PREMIUM TABS */}
             {isOpen && (
