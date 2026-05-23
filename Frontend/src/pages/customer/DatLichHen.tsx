@@ -342,7 +342,7 @@ const DatLichHen: React.FC = () => {
           scrollbar-gutter: stable;
           border-radius: 24px;
           border: 1px solid rgba(34, 211, 238, 0.12);
-          background: rgba(15, 23, 42, 0.16);
+          background: var(--primary-light);
         }
         .booking-service-scroll::-webkit-scrollbar {
           width: 10px;
@@ -354,7 +354,7 @@ const DatLichHen: React.FC = () => {
         .booking-service-scroll::-webkit-scrollbar-thumb {
           background: linear-gradient(180deg, var(--primary), #14b8a6);
           border-radius: 999px;
-          border: 2px solid rgba(15, 23, 42, 0.9);
+          border: 2px solid var(--surface);
         }
         .booking-service-list {
           display: grid;
@@ -367,17 +367,7 @@ const DatLichHen: React.FC = () => {
           flex-direction: column;
           justify-content: center;
         }
-        .booking-service-fade {
-          pointer-events: none;
-          position: absolute;
-          left: 2px;
-          right: 18px;
-          bottom: 0;
-          height: 88px;
-          background: linear-gradient(to bottom, rgba(15, 23, 42, 0), rgba(15, 23, 42, 0.88) 74%);
-          border-radius: 0 0 22px 22px;
-          transition: opacity 0.22s ease;
-        }
+
         .booking-service-more-hint {
           pointer-events: none;
           position: absolute;
@@ -439,7 +429,6 @@ const DatLichHen: React.FC = () => {
           <div style={{ display: 'grid', gap: '12px' }}>
             <label>
               2. CHỌN DỊCH VỤ <span style={{ color: '#ff4d4f' }}>*</span>
-              {services.length > 6 && <span className="booking-service-count">({services.length} dịch vụ, kéo trong khung để xem thêm)</span>}
             </label>
             <div style={{ position: 'relative' }}>
               <div className="booking-service-scroll" aria-label="Danh sách dịch vụ có thể cuộn" onScroll={handleServiceScroll}>
@@ -454,7 +443,6 @@ const DatLichHen: React.FC = () => {
               </div>
               {services.length > 6 && (
                 <>
-                  <div className="booking-service-fade" style={{ opacity: serviceScrollHintOpacity }} />
                   <div
                     className="booking-service-more-hint"
                     style={{
@@ -571,16 +559,16 @@ const DatLichHen: React.FC = () => {
                 ))}
               </div>
 
-              <div style={{ marginTop: '48px', padding: '32px', background: 'linear-gradient(135deg, var(--secondary) 0%, #0f172a 100%)', borderRadius: '32px', position: 'relative', boxShadow: '0 20px 40px rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)' }}>
+              <div style={{ marginTop: '48px', padding: '32px', background: 'var(--primary-gradient)', borderRadius: '32px', position: 'relative', boxShadow: '0 20px 40px rgba(0,0,0,0.1)', border: '1px solid rgba(255,255,255,0.2)' }}>
                 <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '100%', background: 'url("https://www.transparenttextures.com/patterns/cubes.png")', opacity: 0.05, pointerEvents: 'none' }}></div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', position: 'relative' }}>
-                  <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '1.5px' }}>Phí dự kiến</span>
-                  <span className="material-symbols-outlined" style={{ color: 'var(--primary)', fontSize: '24px' }}>info</span>
+                  <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'rgba(255,255,255,0.95)', textTransform: 'uppercase', letterSpacing: '1.5px' }}>Phí dự kiến</span>
+                  <span className="material-symbols-outlined" style={{ color: 'rgba(255,255,255,0.95)', fontSize: '24px' }}>info</span>
                 </div>
                 <div style={{ fontSize: '2.1rem', fontWeight: 950, color: 'white', letterSpacing: '-1px', textShadow: '0 2px 10px rgba(0,0,0,0.3)', position: 'relative', width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {selectedPrice}
                 </div>
-                <div style={{ marginTop: '16px', fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', fontWeight: 600, fontStyle: 'italic', position: 'relative' }}>
+                <div style={{ marginTop: '16px', fontSize: '0.75rem', color: 'rgba(255,255,255,0.9)', fontWeight: 600, fontStyle: 'italic', position: 'relative' }}>
                   * Giá trên mang tính chất tham khảo, có thể thay đổi tùy tình trạng thực tế của bé.
                 </div>
               </div>

@@ -2961,6 +2961,7 @@ export const ChatBot: React.FC = () => {
                     `Kiểu yêu cầu đã phân loại ở frontend: ${isQuestionIntent ? "câu hỏi/đánh giá/ngữ cảnh" : hasActionIntent ? "lệnh thao tác" : "ý định mơ hồ"}`,
                     `Người dùng hiện tại: ${userName || "ẩn danh"} | Vai trò chuẩn: ${normalizedRoleCode} | Nhóm: ${isClinicStaff ? "nhân sự nội bộ" : isCustomerAccount ? "khách hàng" : "khách vãng lai"}`,
                     `Trang hiện tại: ${getPageDisplayName(location.pathname)} (${location.pathname})`,
+                    `Thời gian hệ thống thực tế (HÔM NAY): ${new Date().toLocaleString("vi-VN")} (TUYỆT ĐỐI TUÂN THỦ NGÀY NÀY CHỨ KHÔNG LẤY NGÀY TRONG BẢNG)`,
                     `Các route quản trị tài khoản này được phép truy cập: ${allowedRoutes || "không có route quản trị"}`,
                     `Bối cảnh giao diện hiện tại: ${getPageDomContext()}`,
                     `Nhật ký thao tác gần đây: ${JSON.stringify(userActivityLogs.slice(0, 8))}`,
@@ -2971,7 +2972,19 @@ export const ChatBot: React.FC = () => {
                     query: pageContext
                 });
             }
-            const replyText = response.data.finalAnswer || response.data.reply || "Rexi Agent v2 đã ghi nhận tác vụ!";
+            let replyText = response.data.finalAnswer || response.data.reply || "Rexi Agent v2 đã ghi nhận tác vụ!";
+            
+            // Xử lý trường hợp Agent vô tình trả về raw JSON string
+            if (typeof replyText === 'string' && replyText.trim().startsWith('{')) {
+                try {
+                    const parsed = JSON.parse(replyText);
+                    if (parsed.final_answer) replyText = parsed.final_answer;
+                    else if (parsed.reply) replyText = parsed.reply;
+                    else if (parsed.text) replyText = parsed.text;
+                } catch (e) {
+                    // Ignore JSON parse error
+                }
+            }
             
             let cleanedReplyText = replyText;
             let treatmentData = null;
@@ -3653,7 +3666,7 @@ export const ChatBot: React.FC = () => {
             {/* CỬA SỔ CHAT TÍCH HỢP PREMIUM TABS */}
             {isOpen && (
                 <>
-                    {/* Backdrop mờ hỗ trợ mobile */}
+                    {/* Backdrop mờ hỗ trợ mobile & desktop (chủ đích của sếp) */}
                     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(3px)', zIndex: 1100 }} onClick={() => setIsOpen(false)}></div>
 
                     <div id="chatWindow" className="glass-card animate-fade-in"
@@ -3662,7 +3675,7 @@ export const ChatBot: React.FC = () => {
                         onDrop={handleDrop}
                         style={{
                             position: 'fixed', bottom: isMobile ? '90px' : '110px', right: isMobile ? '16px' : '30px',
-                            width: isMobile ? 'calc(100vw - 32px)' : '380px',
+                            width: isMobile ? 'calc(100vw - 32px)' : 'min(450px, calc(100vw - 60px))',
                             height: isMobile ? 'min(650px, calc(100vh - 110px))' : '600px',
                             zIndex: 1101,
                             borderRadius: isMobile ? '28px' : '24px', overflow: 'hidden', display: 'flex', flexDirection: 'column',

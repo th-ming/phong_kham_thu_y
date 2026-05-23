@@ -141,8 +141,9 @@ const SidebarAdmin: React.FC = () => {
       </div>
 
       <div className="glass-card" style={{ display: 'flex', alignItems: 'center', gap: '14px', background: 'rgba(255,255,255,0.03)', padding: '16px', borderRadius: '20px', marginBottom: '30px', border: '1px solid var(--glass-border)' }}>
-        <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: 'var(--primary-gradient)', display: 'grid', placeItems: 'center', boxShadow: '0 0 20px var(--primary-shadow)', flexShrink: 0 }}>
-          <div style={{ width: '42px', height: '42px', borderRadius: '50%', overflow: 'hidden', border: '2px solid var(--surface)', background: 'var(--primary)', display: 'grid', placeItems: 'center', color: 'white', fontWeight: 950, fontSize: '1.15rem' }}>
+        <div style={{ width: '50px', height: '50px', borderRadius: '50%', display: 'grid', placeItems: 'center', flexShrink: 0, position: 'relative' }}>
+          <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: '2px solid var(--primary)', boxShadow: '0 0 15px var(--primary), inset 0 0 15px var(--primary)', animation: 'pulse 2s infinite' }} />
+          <div style={{ width: '42px', height: '42px', borderRadius: '50%', overflow: 'hidden', background: 'rgba(20, 184, 166, 0.1)', display: 'grid', placeItems: 'center', color: 'var(--primary)', fontWeight: 950, fontSize: '1.15rem', position: 'relative', zIndex: 1, textShadow: '0 0 10px var(--primary)' }}>
             {userAvatar ? (
               <img src={userAvatar} alt={userDisplayName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             ) : (

@@ -11,7 +11,7 @@ const API_BASE_URL = ''; // Dùng Proxy trong vite.config.ts để xử lý chuy
 
 const axiosInstance: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 30000,
+  timeout: 60000,
   headers: {
     'Content-Type': 'application/json',
   },

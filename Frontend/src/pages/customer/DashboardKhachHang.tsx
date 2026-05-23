@@ -23,6 +23,8 @@ const DashboardKhachHang: React.FC = () => {
   const navigate = useNavigate();
   const [pets, setPets] = useState<any[]>([]);
   const [upcoming, setUpcoming] = useState<any[]>([]);
+  const [allAppointments, setAllAppointments] = useState<any[]>([]);
+  const [paidInvoices, setPaidInvoices] = useState<any[]>([]);
   const [hoanTat, setHoanTat] = useState(0);
   const [totalSpent, setTotalSpent] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -72,6 +74,7 @@ const DashboardKhachHang: React.FC = () => {
         if (petRes.status === 'fulfilled') setPets(extractArray(petRes.value));
         if (appRes.status === 'fulfilled') {
           const appointments = extractArray(appRes.value);
+          setAllAppointments(appointments);
           const upcomingList = appointments.filter((l: any) => {
             const st = String(l.trang_thai || l.trangThai || '').toUpperCase();
             return st === 'CHO_XAC_NHAN' || st === 'DA_XAC_NHAN' || st === 'DANG_KHAM';
@@ -87,14 +90,15 @@ const DashboardKhachHang: React.FC = () => {
         }
         if (invRes.status === 'fulfilled') {
           const invoices = extractArray(invRes.value);
-          const paidInvoices = invoices.filter((inv: any) => (inv.trang_thai || inv.trangThai)?.toLowerCase() === 'da_thanh_toan');
+          const paidInvs = invoices.filter((inv: any) => (inv.trang_thai || inv.trangThai)?.toLowerCase() === 'da_thanh_toan');
+          setPaidInvoices(paidInvs);
           const parseCurrency = (val: any) => {
             if (!val) return 0;
             if (typeof val === 'number') return val;
             const cleanStr = String(val).replace(/[^0-9.-]+/g, "");
             return Number(cleanStr) || 0;
           };
-          const total = paidInvoices.reduce((sum: number, inv: any) => sum + parseCurrency(inv.tong_tien_cuoi || inv.tongTienCuoi || inv.tong_tien_ban_dau || inv.tongTienBanDau), 0);
+          const total = paidInvs.reduce((sum: number, inv: any) => sum + parseCurrency(inv.tong_tien_cuoi || inv.tongTienCuoi || inv.tong_tien_ban_dau || inv.tongTienBanDau), 0);
           setTotalSpent(total);
         }
       } catch (err) {
@@ -106,12 +110,122 @@ const DashboardKhachHang: React.FC = () => {
     fetchData();
   }, [navigate]);
 
-  const stats = useMemo(() => [
-    { label: "BÉ CƯNG", value: pets.length, icon: "pets", color: "var(--primary)" },
-    { label: "LỊCH HẸN", value: upcoming.length, icon: "calendar_month", color: "#3b82f6" },
-    { label: "ĐÃ KHÁM", value: hoanTat, icon: "verified", color: "#f59e0b" },
-    { label: "CHI TIÊU", value: formatTienVND(totalSpent), icon: "payments", color: "#14b8a6" },
-  ], [pets, upcoming, hoanTat, totalSpent]);
+  const calculateRealGrowth = (dataArray: any[], dateFields: string[], amountField?: string) => {
+    if (!dataArray || dataArray.length === 0) return { trend: "Chưa có", tone: "neutral" };
+    
+    const now = new Date();
+    const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+    const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1).getTime();
+    
+    let thisMonthCount = 0;
+    let lastMonthCount = 0;
+
+    dataArray.forEach(item => {
+      let d = null;
+      for (const field of dateFields) {
+        if (item[field]) {
+          d = new Date(item[field]);
+          if (!isNaN(d.getTime())) break;
+        }
+      }
+      if (!d || isNaN(d.getTime())) return;
+      
+      const t = d.getTime();
+      let value = 1;
+      if (amountField) {
+        const val = item[amountField] || item.tongTienCuoi || item.tong_tien_ban_dau || item.tongTienBanDau;
+        value = typeof val === 'number' ? val : (Number(String(val).replace(/[^0-9.-]+/g, "")) || 0);
+      }
+
+      if (t >= startOfThisMonth) {
+        thisMonthCount += value;
+      } else if (t >= startOfLastMonth && t < startOfThisMonth) {
+        lastMonthCount += value;
+      }
+    });
+
+    if (lastMonthCount === 0) {
+      if (thisMonthCount > 0) return { trend: `+${amountField ? formatTienVND(thisMonthCount) : thisMonthCount} tháng này`, tone: "up" };
+      return { trend: "Chưa có", tone: "neutral" };
+    }
+
+    const percentage = ((thisMonthCount - lastMonthCount) / lastMonthCount) * 100;
+    if (percentage === 0) return { trend: "Không đổi", tone: "neutral" };
+    
+    const sign = percentage > 0 ? "+" : "";
+    const tone = percentage > 0 ? "up" : "down";
+    
+    return { trend: `${sign}${Math.round(percentage)}%`, tone };
+  };
+
+  const stats = useMemo(() => {
+    const petsTrend = calculateRealGrowth(pets, ['ngay_tao', 'ngayTao', 'ngay_cap_nhat']);
+    const upcTrend = calculateRealGrowth(allAppointments.filter((l: any) => {
+      const st = String(l.trang_thai || l.trangThai || '').toUpperCase();
+      return st === 'CHO_XAC_NHAN' || st === 'DA_XAC_NHAN' || st === 'DANG_KHAM';
+    }), ['ngay_tao', 'ngayTao', 'ngay_kham']);
+    
+    const completedApps = allAppointments.filter((l: any) => {
+      const st = String(l.trang_thai || l.trangThai || '').toUpperCase();
+      return st === 'DA_KHAM' || st === 'HOAN_THANH' || st === 'HOAN_TAT';
+    });
+    const hoanTatTrend = calculateRealGrowth(completedApps, ['ngay_tao', 'ngayTao', 'ngay_cap_nhat', 'ngay_kham']);
+    const spentTrend = calculateRealGrowth(paidInvoices, ['ngay_lap_hoa_don', 'ngay_lap', 'ngay_tao', 'ngayTao'], 'tong_tien_cuoi');
+
+    // TÓM TẮT DỮ LIỆU THỰC TẾ (DATA BREAKDOWN) CHO HIỆU ỨNG HOVER
+    
+    // Tóm tắt Bé Cưng
+    let petsSummary = "Chưa có dữ liệu chi tiết";
+    if (pets.length > 0) {
+      const dogs = pets.filter(p => String(p.loai_thu_cung || p.giong || '').toLowerCase().includes('chó')).length;
+      const cats = pets.filter(p => String(p.loai_thu_cung || p.giong || '').toLowerCase().includes('mèo')).length;
+      const other = pets.length - dogs - cats;
+      
+      const parts = [];
+      if (dogs > 0) parts.push(`Chó: ${dogs}`);
+      if (cats > 0) parts.push(`Mèo: ${cats}`);
+      if (other > 0) parts.push(`Khác: ${other}`);
+      
+      petsSummary = parts.length > 0 ? `Bao gồm: ${parts.join(', ')}` : `Danh sách: ${pets.slice(0, 3).map(p => p.ten_thu_cung || 'Bé').join(', ')}...`;
+    }
+
+    // Tóm tắt Lịch hẹn
+    let upcSummary = "Không có lịch hẹn nào sắp tới";
+    if (upcoming.length > 0) {
+      const sortedUpc = [...upcoming].sort((a, b) => new Date(a.ngay_kham).getTime() - new Date(b.ngay_kham).getTime());
+      const nextApp = sortedUpc[0];
+      const dateStr = nextApp.ngay_kham?.split('T')[0].split('-').reverse().join('/') || '---';
+      upcSummary = `Gần nhất: ${dateStr} lúc ${nextApp.gio_kham?.substring(0, 5) || '---'}`;
+    }
+
+    // Tóm tắt Đã khám
+    let hoanTatSummary = "Chưa có lịch sử khám bệnh";
+    if (completedApps.length > 0) {
+      const sortedCompleted = [...completedApps].sort((a, b) => new Date(b.ngay_kham).getTime() - new Date(a.ngay_kham).getTime());
+      const lastApp = sortedCompleted[0];
+      const dateStr = lastApp.ngay_kham?.split('T')[0].split('-').reverse().join('/') || '---';
+      hoanTatSummary = `Lần khám gần nhất: ${dateStr}`;
+    }
+
+    // Tóm tắt Chi tiêu
+    let spentSummary = "Chưa có giao dịch nào";
+    if (paidInvoices.length > 0) {
+      const thisMonthInvoices = paidInvoices.filter(inv => {
+        const d = new Date(inv.ngay_lap_hoa_don || inv.ngay_lap || inv.ngay_tao);
+        return !isNaN(d.getTime()) && d.getMonth() === new Date().getMonth() && d.getFullYear() === new Date().getFullYear();
+      });
+      const parseCurrency = (val: any) => typeof val === 'number' ? val : (Number(String(val).replace(/[^0-9.-]+/g, "")) || 0);
+      const thisMonthSpent = thisMonthInvoices.reduce((sum, inv) => sum + parseCurrency(inv.tong_tien_cuoi || inv.tongTienCuoi), 0);
+      spentSummary = `Đã chi trong tháng này: ${formatTienVND(thisMonthSpent)}`;
+    }
+
+    return [
+      { label: "BÉ CƯNG", value: pets.length, icon: "pets", color: "var(--primary)", trendData: petsTrend, summary: petsSummary },
+      { label: "LỊCH HẸN", value: upcoming.length, icon: "calendar_month", color: "#3b82f6", trendData: upcTrend, summary: upcSummary },
+      { label: "ĐÃ KHÁM", value: hoanTat, icon: "verified", color: "#f59e0b", trendData: hoanTatTrend, summary: hoanTatSummary },
+      { label: "CHI TIÊU", value: formatTienVND(totalSpent), icon: "payments", color: "#14b8a6", trendData: spentTrend, summary: spentSummary },
+    ];
+  }, [pets, upcoming, allAppointments, hoanTat, paidInvoices, totalSpent]);
 
   if (loading) return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}><div className="dot-pulse"></div></div>;
 
@@ -137,6 +251,89 @@ const DashboardKhachHang: React.FC = () => {
         .appointment-card:hover { border-color: var(--primary) !important; background: var(--surface) !important; transform: scale(1.02) translateX(8px); box-shadow: -5px 15px 25px rgba(15, 157, 138, 0.12); z-index: 10; }
         
         .icon-bounce:hover span { animation: bounceLocal 0.3s ease infinite alternate; }
+
+        .kpi-card { position: relative; overflow: visible; }
+        .kpi-trend-badge {
+          position: absolute;
+          top: 22px;
+          right: 22px;
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          padding: 7px 9px;
+          border-radius: 999px;
+          font-size: 0.72rem;
+          font-weight: 950;
+          border: 1px solid rgba(148, 163, 184, 0.18);
+          background: rgba(255,255,255,0.74);
+          box-shadow: 0 12px 26px rgba(15, 23, 42, 0.08);
+          cursor: help;
+          z-index: 2;
+          transition: transform 0.2s ease, filter 0.2s ease;
+        }
+        .kpi-trend-badge:hover {
+          transform: scale(1.05);
+          filter: brightness(1.05);
+        }
+        .kpi-trend-badge.up { color: #16a34a; background: rgba(240, 253, 244, 0.92); border-color: rgba(34, 197, 94, 0.28); }
+        .kpi-trend-badge.down { color: #e11d48; background: rgba(255, 241, 242, 0.92); border-color: rgba(244, 63, 94, 0.26); }
+        .kpi-trend-badge.neutral { color: var(--gray-500); background: rgba(248, 250, 252, 0.92); }
+        [data-theme='dark'] .kpi-trend-badge {
+          background: rgba(15, 23, 42, 0.82);
+          border-color: rgba(148, 163, 184, 0.22);
+          box-shadow: 0 14px 30px rgba(0, 0, 0, 0.24), inset 0 1px 0 rgba(255,255,255,0.04);
+          backdrop-filter: blur(10px);
+        }
+        [data-theme='dark'] .kpi-trend-badge.up {
+          color: #86efac;
+          background: rgba(20, 83, 45, 0.34);
+          border-color: rgba(74, 222, 128, 0.32);
+        }
+        [data-theme='dark'] .kpi-trend-badge.down {
+          color: #fda4af;
+          background: rgba(136, 19, 55, 0.34);
+          border-color: rgba(251, 113, 133, 0.32);
+        }
+        [data-theme='dark'] .kpi-trend-badge.neutral {
+          color: #cbd5e1;
+          background: rgba(30, 41, 59, 0.72);
+          border-color: rgba(148, 163, 184, 0.28);
+        }
+        .kpi-trend-popover {
+          position: absolute;
+          top: 58px;
+          right: 18px;
+          width: min(250px, calc(100% - 36px));
+          padding: 14px 15px;
+          border-radius: 16px;
+          background: var(--surface);
+          border: 1px solid var(--gray-200);
+          box-shadow: 0 20px 44px rgba(15, 23, 42, 0.16);
+          color: var(--ink);
+          opacity: 0;
+          transform: translateY(-6px);
+          pointer-events: none;
+          transition: all 0.3s ease;
+        }
+        .kpi-trend-badge:hover + .kpi-trend-popover,
+        .kpi-trend-badge:focus + .kpi-trend-popover,
+        .kpi-trend-popover:hover,
+        .kpi-card:hover .kpi-trend-popover {
+          opacity: 1;
+          transform: translateY(0);
+          pointer-events: auto;
+        }
+
+        .stat-card-container:hover .stat-summary {
+          opacity: 1;
+          transform: translateY(0);
+        }
+
+        .trend-badge:hover {
+          transform: scale(1.05) translateY(-2px);
+          filter: brightness(1.1);
+          box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
 
         /* Hiệu ứng hover cao cấp cho thẻ Cẩm nang chăm sóc */
         .tip-card {
@@ -188,11 +385,31 @@ const DashboardKhachHang: React.FC = () => {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '32px', marginBottom: '40px' }}>
         {stats.map((item, i) => (
-          <div key={i} className="glass-card hover-lift stagger-2" style={{ padding: '32px', borderRadius: '32px', animationDelay: `${0.1 + i * 0.1}s`, border: `1px solid ${item.color}20` }}>
-            <div className="icon-bounce" style={{ background: `${item.color}15`, color: item.color, width: '60px', height: '60px', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '24px', transition: 'transform 0.4s', boxShadow: `0 0 20px ${item.color}20` }}>
-              <span className="material-symbols-outlined" style={{ fontSize: '30px' }}>{item.icon}</span>
+          <div key={i} className="glass-card hover-lift kpi-card" style={{ padding: '32px', borderRadius: '32px', border: `1px solid ${item.color}20`, minHeight: '190px' }}>
+            {item.trendData && (
+              <button
+                type="button"
+                className={`kpi-trend-badge ${item.trendData.tone}`}
+                aria-label={`Chi tiết ${item.label}`}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
+                  {item.trendData.tone === 'up' ? 'trending_up' : item.trendData.tone === 'down' ? 'trending_down' : 'trending_flat'}
+                </span>
+                <span>{item.trendData.trend}</span>
+              </button>
+            )}
+            <div className="kpi-trend-popover">
+              <div className="kpi-popover-title">{item.label}</div>
+              <div className="kpi-popover-value">
+                {item.summary}
+              </div>
             </div>
-            <p style={{ fontSize: '0.8rem', fontWeight: 900, color: 'var(--gray-400)', margin: '0 0 6px 0', letterSpacing: '1px' }}>{item.label}</p>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+              <div style={{ background: `${item.color}15`, color: item.color, width: '60px', height: '60px', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 0 20px ${item.color}20` }}>
+                <span className="material-symbols-outlined" style={{ fontSize: '30px' }}>{item.icon}</span>
+              </div>
+            </div>
+            <p style={{ fontSize: '0.8rem', fontWeight: 900, color: 'var(--gray-500)', margin: '0 0 8px 0', textTransform: 'uppercase', letterSpacing: '1px' }}>{item.label}</p>
             <h3 style={{ fontSize: '2rem', fontWeight: 950, color: 'var(--ink)', margin: 0 }}>{item.value}</h3>
           </div>
         ))}
@@ -248,15 +465,15 @@ const DashboardKhachHang: React.FC = () => {
             <button data-ai-id="button-dashboardkhachhang-tppw" className="btn btn-pill" onClick={() => setIsTipsModalOpen(true)} style={{ background: 'rgba(255,255,255,0.15)', color: 'white', marginTop: '32px', width: '100%', border: '1.5px solid rgba(255,255,255,0.3)', fontWeight: 800, backdropFilter: 'blur(10px)' }}>Xem tất cả mẹo</button>
           </div>
 
-          <div className="glass-card hover-lift" style={{ padding: '32px', borderRadius: 'var(--radius-xl)', display: 'flex', alignItems: 'center', gap: '20px' }}>
+          <a href="tel:***REMOVED***-VIETQR_ACCOUNT_NO" className="glass-card hover-lift" style={{ padding: '32px', borderRadius: 'var(--radius-xl)', display: 'flex', alignItems: 'center', gap: '20px', textDecoration: 'none', cursor: 'pointer' }}>
             <div style={{ width: '56px', height: '56px', background: 'var(--primary-light)', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
               <span className="material-symbols-outlined" style={{ fontSize: '32px' }}>support_agent</span>
             </div>
             <div>
               <h4 style={{ margin: 0, fontWeight: 800, color: 'var(--ink)' }}>Hỗ trợ 24/7</h4>
-              <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem', color: 'var(--gray-500)', fontWeight: 600 }}>Cần tư vấn khẩn cấp? Hãy liên hệ ngay.</p>
+              <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem', color: 'var(--gray-500)', fontWeight: 600 }}>Cần tư vấn khẩn cấp? Gọi <b style={{ color: 'var(--primary)' }}>0353.374.156</b></p>
             </div>
-          </div>
+          </a>
         </div>
       </div>
 

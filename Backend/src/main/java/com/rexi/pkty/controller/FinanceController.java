@@ -205,6 +205,39 @@ public class FinanceController {
         }
     }
 
+    // Lấy lịch sử thanh toán của một hóa đơn
+    @GetMapping("/hoa-don/{id}/thanh-toan")
+    public ResponseEntity<?> getInvoicePaymentHistory(@PathVariable String id) {
+        try {
+            org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
+                    .getContext().getAuthentication();
+            String username = (auth != null) ? auth.getName() : null;
+
+            if (username == null || username.equals("anonymousUser")) {
+                return ResponseEntity.status(401)
+                        .body(Map.of("message", "Cảnh báo bảo mật: Yêu cầu không có Token xác thực hợp lệ!"));
+            }
+
+            com.rexi.pkty.entity.TaiKhoan tk = taiKhoanRepository.findByTenDangNhap(username).orElse(null);
+            if (tk != null && tk.getId_vai_tro() != null && tk.getId_vai_tro().equals("VT-5")) {
+                String sqlCheckOwner = "SELECT id_khach_hang FROM HoaDon WHERE id_hoa_don = ?";
+                List<String> ownerIds = jdbcTemplate.queryForList(sqlCheckOwner, String.class, id);
+                if (!ownerIds.isEmpty() && !ownerIds.get(0).equals(tk.getId_khach_hang())) {
+                    return ResponseEntity.status(403)
+                            .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền xem lịch sử thanh toán hóa đơn này!"));
+                }
+            }
+
+            String sql = "SELECT id_thanh_toan, id_hoa_don, so_tien, phuong_thuc, ngay_tra_tien, "
+                    + "ma_giao_dich_ngan_hang, ghi_chu "
+                    + "FROM ThanhToan WHERE id_hoa_don = ? ORDER BY ngay_tra_tien DESC, id_thanh_toan DESC";
+            return ResponseEntity.ok(jdbcTemplate.queryForList(sql, id));
+        } catch (Exception e) {
+            return ResponseEntity.status(500)
+                    .body(Map.of("message", "Lỗi lấy lịch sử thanh toán: " + e.getMessage()));
+        }
+    }
+
     // Lấy tất cả thuốc
     @GetMapping("/kho/thuoc")
     public ResponseEntity<?> getAllThuoc() {
@@ -283,8 +316,8 @@ public class FinanceController {
             if (updated > 0 && "DA_THANH_TOAN".equals(status) && !"DA_THANH_TOAN".equalsIgnoreCase(currentStatus)) {
                 // Ghi nhận dòng tiền mặt vào lịch sử để kế toán đối soát
                 jdbcTemplate.update(
-                        "INSERT INTO ThanhToan (id_hoa_don, ngay_thanh_toan, so_tien, phuong_thuc, trang_thai) VALUES (?, GETDATE(), (SELECT tong_tien_cuoi FROM HoaDon WHERE id_hoa_don = ?), 'Tien_mat', N'Thành công')",
-                        id, id);
+                        "INSERT INTO ThanhToan (id_thanh_toan, id_hoa_don, ngay_tra_tien, so_tien, phuong_thuc, ghi_chu) VALUES (?, ?, GETDATE(), (SELECT tong_tien_cuoi FROM HoaDon WHERE id_hoa_don = ?), 'Tien_mat', N'Thanh toán tiền mặt thành công')",
+                        "TT-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase(), id, id);
             }
             // GHI LOG
             auditLogService.logAction("ĐỔI TRẠNG THÁI", "HoaDon", "Cập nhật hóa đơn HD-" + id + " thành " + status);

@@ -88,18 +88,17 @@ public class ThuocController {
                 countDonThuoc = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM DonThuocChiTiet WHERE id_thuoc = ?", Integer.class, id);
             } catch (Exception e) {}
             
+            // XÓA MỀM TUYỆT ĐỐI (100% KHÔNG DÙNG deleteById ĐỂ BẢO TOÀN LỊCH SỬ)
+            t.setDa_xoa(true);
+            t.setTrang_thai(false);
+            thuocRepository.save(t);
+            
             if (countLoThuoc > 0 || countDonThuoc > 0) {
-                // Đã được sử dụng -> Chỉ xóa mềm
-                t.setDa_xoa(true);
-                t.setTrang_thai(false);
-                thuocRepository.save(t);
                 auditLogService.logAction("XÓA MỀM", "Thuoc", "Đã ẩn thuốc do có dữ liệu liên kết: " + t.getTen_thuoc());
-                return org.springframework.http.ResponseEntity.ok(java.util.Map.of("message", "Thuốc đang được sử dụng trong kho hoặc đơn thuốc. Đã tự động chuyển sang trạng thái Ngừng kinh doanh/Xóa mềm để bảo toàn dữ liệu lịch sử!"));
+                return org.springframework.http.ResponseEntity.ok(java.util.Map.of("message", "Thuốc đang được sử dụng trong kho hoặc đơn thuốc. Đã chuyển sang trạng thái Xóa mềm (Ngừng kinh doanh) để bảo toàn dữ liệu lịch sử!"));
             } else {
-                // Xóa cứng an toàn
-                auditLogService.logAction("XÓA", "Thuoc", "Xóa thuốc vĩnh viễn: " + t.getTen_thuoc());
-                thuocRepository.deleteById(id);
-                return org.springframework.http.ResponseEntity.ok(java.util.Map.of("message", "Đã xóa thuốc thành công!"));
+                auditLogService.logAction("XÓA MỀM", "Thuoc", "Đã ẩn thuốc: " + t.getTen_thuoc());
+                return org.springframework.http.ResponseEntity.ok(java.util.Map.of("message", "Đã xóa (ẩn) thuốc thành công!"));
             }
         }).orElse(org.springframework.http.ResponseEntity.status(404).body(java.util.Map.of("message", "Không tìm thấy thuốc!")));
     }
@@ -111,4 +110,3 @@ public class ThuocController {
         return role.contains("ADMIN") || role.contains("KE_TOAN") || role.contains("KETOAN") || role.contains("QUAN_LY");
     }
 }
-
