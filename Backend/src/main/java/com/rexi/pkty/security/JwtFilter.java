@@ -24,7 +24,7 @@ public class JwtFilter extends OncePerRequestFilter {
 
     private static final Logger logger = Logger.getLogger(JwtFilter.class.getName());
 
-    @Autowired
+    @Autowired(required = false)
     private JwtUtil jwtUtil;
 
     @Override
@@ -41,7 +41,9 @@ public class JwtFilter extends OncePerRequestFilter {
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             jwt = authHeader.substring(7);
             try {
-                username = jwtUtil.extractUsername(jwt);
+                if (jwtUtil != null) {
+                    username = jwtUtil.extractUsername(jwt);
+                }
             } catch (Exception e) {
                 logger.warning("Không thể đọc được Token: " + e.getMessage());
             }
@@ -51,7 +53,7 @@ public class JwtFilter extends OncePerRequestFilter {
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             
             // Kiểm tra tính hợp lệ của Token
-            if (jwtUtil.validateToken(jwt, username)) {
+            if (jwtUtil != null && jwtUtil.validateToken(jwt, username)) {
                 String role = jwtUtil.extractRole(jwt);
                 
                 // Chuyển đổi vai trò từ Token sang quyền hạn của Spring Security (Thêm tiền tố ROLE_)

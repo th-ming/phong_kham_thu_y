@@ -17,7 +17,7 @@ import PhanLienHe from "@components/home/PhanLienHe";
 /* trang chủ chính */
 const TrangChu: React.FC = () => {
   useEffect(() => {
-    window.scrollTo(0, 0);
+
     document.title = "Rexi - Sức Khoẻ Trọn Vẹn Cho Người Bạn Nhỏ";
   }, []);
 

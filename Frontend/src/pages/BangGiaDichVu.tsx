@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { MemeCat, ScrollToTop, RevealSection } from "@components/SpecialEffects";
 import axiosInstance from "@services/axios";
@@ -35,7 +35,7 @@ const BangGiaDichVu: React.FC = () => {
     };
 
     useEffect(() => {
-        window.scrollTo(0, 0);
+
         const fetchServices = async (showLoading = true) => {
             if (showLoading) setLoading(true);
             try {

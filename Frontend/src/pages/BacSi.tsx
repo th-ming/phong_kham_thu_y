@@ -20,7 +20,7 @@ const BacSi: React.FC = () => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        window.scrollTo(0, 0);
+
 
         const fetchDoctors = async (showLoading = true) => {
             if (showLoading) setLoading(true);
