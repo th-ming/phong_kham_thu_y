@@ -98,9 +98,25 @@ const SystemTitle: React.FC = () => {
  * Xử lý lỗi tập trung bằng Error Boundary
  * Tự động hiển thị chỉ báo khi các trang đang tải
  */
+const ScrollToTopOnNavigate: React.FC = () => {
+  const location = useLocation();
+  const isFirstRender = React.useRef(true);
+  
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
+  
+  return null;
+};
+
 const App: React.FC = () => {
   return (
     <BrowserRouter>
+      <ScrollToTopOnNavigate />
       <ErrorBoundary>
         <SystemTitle />
         <ToastContainer />

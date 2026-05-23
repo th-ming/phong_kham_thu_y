@@ -42,12 +42,11 @@ public class LichHenControllerTest extends BaseControllerTest {
         when(jdbcTemplate.queryForObject(anyString(), eq(Integer.class), (Object) any()))
                 .thenReturn(30);
 
-        // Mock ca trực của bác sĩ: Có ca lúc 09:00
-        // Ép kiểu (Object) any() cho các tham số sau SQL để Java hiểu là dùng bản (String, Object...)
-        when(jdbcTemplate.queryForList(anyString(), (Object) any(), (Object) any()))
-                .thenReturn(List.of(Map.of("gio_bat_dau", Time.valueOf("09:00:00"))));
+        // Ensure pet ownership check passes for the test pet/customer
+        when(jdbcTemplate.queryForObject(org.mockito.ArgumentMatchers.contains("SELECT COUNT(*) FROM ThuCung"), eq(Integer.class), eq("TC-001"), eq("KH-001")))
+                .thenReturn(1);
 
-        // Mock lịch hẹn trùng: Trả về rỗng cho lần gọi thứ hai
+        // Mock ca trực của bác sĩ và lịch hẹn trùng: trả về giá trị theo trình tự
         when(jdbcTemplate.queryForList(anyString(), (Object) any(), (Object) any()))
                 .thenReturn(List.of(Map.of("gio_bat_dau", Time.valueOf("09:00:00"))), Collections.emptyList());
 
@@ -58,7 +57,7 @@ public class LichHenControllerTest extends BaseControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(lichHen)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.ly_do").value("Kham dinh ky"));
+                .andExpect(jsonPath("$.ly_do").value("Kham dinh ky"));
         
         System.out.println("--- TEST DAT LICH HEN (NO AMBIGUITY): OK! ---");
     }

@@ -27,7 +27,7 @@ public class LichHenController {
     @Autowired
     private LichHenRepository lichHenRepository;
 
-    @Autowired
+    @Autowired(required = false)
     private SimpMessagingTemplate messagingTemplate;
 
     @Autowired
