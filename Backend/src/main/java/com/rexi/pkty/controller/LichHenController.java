@@ -652,27 +652,30 @@ public class LichHenController {
                     isCustomer = true;
                     if (!tk.getId_khach_hang().equals(lh.getId_khach_hang())) {
                         return ResponseEntity.status(403)
-                                .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền xóa lịch hẹn này!"));
+                                .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền hủy lịch hẹn này!"));
                     }
                 }
             }
 
-            // BẢO MẬT: Kiểm tra xóa mù (Anti-orphan protection)
-            int hsCount = 0;
+            // BẢO MẬT: Kiểm tra xem đã có Hóa Đơn hoặc Bệnh án chưa
+            int usageCount = 0;
             try {
-                hsCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM HoSoBenhAn WHERE id_lich_hen = ?", Integer.class, id);
+                usageCount += jdbcTemplate.queryForObject("SELECT COUNT(*) FROM HoSoBenhAn WHERE id_lich_hen = ?", Integer.class, id);
+                usageCount += jdbcTemplate.queryForObject("SELECT COUNT(*) FROM HoaDon WHERE id_lich_hen = ?", Integer.class, id);
             } catch (Exception e) {}
             
-            if (hsCount > 0) {
-                return ResponseEntity.status(409).body(Map.of("message", "Không thể xóa lịch hẹn vì đã có Hồ sơ Bệnh án liên kết. Vui lòng chuyển trạng thái thành 'Đã hủy' thay vì xóa!"));
+            if (usageCount > 0) {
+                return ResponseEntity.status(409).body(Map.of("message", "Không thể hủy lịch hẹn vì đã có Hóa đơn hoặc Hồ sơ Bệnh án liên kết. Nếu có sai sót, vui lòng liên hệ Quản lý để xử lý."));
             }
 
-            lichHenRepository.deleteById(id);
+            // THAY MÁU: Thay vì xóa cứng (deleteById), đổi trạng thái thành DA_HUY để giữ lịch sử
+            lh.setTrang_thai("DA_HUY");
+            lichHenRepository.save(lh);
 
             if (!isCustomer) {
-                auditLogService.logAction("XÓA", "LichHen", "Xóa lịch hẹn ID " + id);
+                auditLogService.logAction("HỦY LỊCH (XÓA MỀM)", "LichHen", "Đã hủy lịch hẹn ID " + id);
             }
-            return ResponseEntity.ok(Map.of("message", "Xóa lịch hẹn thành công"));
+            return ResponseEntity.ok(Map.of("message", "Đã hủy lịch hẹn thành công (Dữ liệu vẫn được giữ lại để đối soát)"));
         }
         return ResponseEntity.status(404).body(Map.of("message", "Không tìm thấy lịch hẹn"));
     }

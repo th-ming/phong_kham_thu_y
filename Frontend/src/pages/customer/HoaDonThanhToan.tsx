@@ -13,6 +13,19 @@ const chuyenNgayISO_SangVN = (dateString: string) => {
   return dateString;
 };
 
+const chuyenNgayGioISO_SangVN = (dateString: string) => {
+  if (!dateString) return "—";
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) return chuyenNgayISO_SangVN(dateString);
+  return date.toLocaleString('vi-VN', {
+    hour: '2-digit',
+    minute: '2-digit',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  });
+};
+
 const getCustomerId = (user: any) => user?.id_khach_hang ?? user?.idKhachHang ?? user?.id_tai_khoan ?? user?.idTaiKhoan ?? user?.id;
 const getInvoiceId = (hd: any) => hd?.id_hoa_don ?? hd?.idHoaDon ?? hd?.id;
 const getInvoiceStatus = (hd: any) => String(hd?.trang_thai ?? hd?.trangThai ?? "").toLowerCase();
@@ -22,6 +35,16 @@ const getPetName = (hd: any) => hd?.ten_thu_cung ?? hd?.tenThuCung ?? hd?.thuCun
 const getInvoiceTotal = (hd: any) => Number(hd?.tong_tien_cuoi ?? hd?.tongTienCuoi ?? hd?.tong_tien ?? hd?.tongTien ?? hd?.thanh_tien ?? hd?.thanhTien ?? 0);
 const getInvoiceBaseTotal = (hd: any) => Number(hd?.tong_tien_ban_dau ?? hd?.tongTienBanDau ?? getInvoiceTotal(hd));
 const getInvoiceDiscount = (hd: any) => Number(hd?.tong_giam_gia ?? hd?.tongGiamGia ?? 0);
+const getPaymentDate = (payment: any) => payment?.ngay_tra_tien ?? payment?.ngayTraTien ?? payment?.createdAt;
+const getPaymentMethod = (payment: any) => {
+  const method = String(payment?.phuong_thuc ?? payment?.phuongThuc ?? "").toLowerCase();
+  if (method.includes("vnpay")) return "VNPay";
+  if (method.includes("vietqr")) return "VietQR";
+  if (method.includes("tien_mat") || method.includes("tiền mặt")) return "Tiền mặt";
+  return payment?.phuong_thuc ?? payment?.phuongThuc ?? "Khác";
+};
+const getPaymentAmount = (payment: any) => Number(payment?.so_tien ?? payment?.soTien ?? 0);
+const getPaymentNote = (payment: any) => payment?.ghi_chu ?? payment?.ghiChu ?? payment?.ma_giao_dich_ngan_hang ?? payment?.maGiaoDichNganHang ?? "—";
 
 const HoaDonThanhToan: React.FC = () => {
   const [status, setStatus] = useState("all");
@@ -31,7 +54,9 @@ const HoaDonThanhToan: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [viewingHD, setViewingHD] = useState<any>(null);
   const [chiTietHD, setChiTietHD] = useState<any[]>([]);
+  const [lichSuThanhToan, setLichSuThanhToan] = useState<any[]>([]);
   const [loadingDetails, setLoadingDetails] = useState(false);
+  const [loadingPayments, setLoadingPayments] = useState(false);
   const location = useLocation();
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [showQRModal, setShowQRModal] = useState(false);
@@ -170,17 +195,25 @@ const HoaDonThanhToan: React.FC = () => {
   };
 
   const handleViewDetails = async (hd: any) => {
+
     setViewingHD(hd);
     setLoadingDetails(true);
+    setLoadingPayments(true);
     try {
-      const res = await axiosInstance.get(`/api/hoa-don/${getInvoiceId(hd)}/chi-tiet`);
-      setChiTietHD(res.data);
+      const [detailRes, paymentRes] = await Promise.all([
+        axiosInstance.get(`/api/hoa-don/${getInvoiceId(hd)}/chi-tiet`),
+        axiosInstance.get(`/api/hoa-don/${getInvoiceId(hd)}/thanh-toan`)
+      ]);
+      setChiTietHD(detailRes.data);
+      setLichSuThanhToan(paymentRes.data || []);
     } catch (error) {
       console.error(error);
       toast.error("Không thể tải chi tiết hóa đơn.");
       setChiTietHD([]);
+      setLichSuThanhToan([]);
     } finally {
       setLoadingDetails(false);
+      setLoadingPayments(false);
     }
   };
 
@@ -195,14 +228,13 @@ const HoaDonThanhToan: React.FC = () => {
         id_hoa_don: getInvoiceId(hd),
         amount
       });
-      if (res.data && res.data.url) {
-        window.location.href = res.data.url;
+      if (res.data && res.data.paymentUrl) {
+        window.location.href = res.data.paymentUrl;
       }
     } catch (error) {
       toast.error("Không thể tạo link thanh toán VNPay lúc này.");
     }
   };
-
 
   const handlePaymentVietQR = async (hd: any) => {
     try {
@@ -240,13 +272,15 @@ const HoaDonThanhToan: React.FC = () => {
         .hover-lift:hover { transform: translateY(-6px); box-shadow: 0 20px 40px rgba(0,0,0,0.06); }
         .item-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); border: 1px solid transparent; background: var(--surface); }
         .item-card:hover { border-color: var(--primary) !important; background: var(--surface) !important; transform: translateY(-4px) scale(1.01); box-shadow: 0 20px 40px rgba(15, 157, 138, 0.08); z-index: 10; position: relative; }
+        .stat-card-group:hover .stat-tooltip { opacity: 1; max-height: 40px; margin-top: 12px; }
+        .stat-tooltip { opacity: 0; max-height: 0; overflow: hidden; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); font-size: 0.75rem; color: var(--gray-400); line-height: 1.4; }
         @media print {
           body * { visibility: hidden; }
           #print-section, #print-section * { visibility: visible; }
           #print-section { position: absolute; left: 0; top: 0; width: 100%; }
         }
       `}</style>
-      <div className="stagger-1" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', padding: '36px 48px', borderRadius: 'var(--radius-xl)', background: 'linear-gradient(135deg, #db2777 0%, #e11d48 100%)', color: 'white', position: 'relative', overflow: 'hidden', boxShadow: '0 15px 30px rgba(225, 29, 72, 0.2)', flexWrap: 'wrap', gap: '20px' }}>
+      <div className="stagger-1" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', padding: '36px 48px', borderRadius: 'var(--radius-xl)', background: 'var(--secondary-gradient)', color: 'white', position: 'relative', overflow: 'hidden', boxShadow: '0 15px 30px rgba(225, 29, 72, 0.2)', flexWrap: 'wrap', gap: '20px' }}>
         <div style={{ position: 'absolute', top: '-50px', right: '10%', width: '200px', height: '200px', background: 'radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }}></div>
         <div style={{ position: 'absolute', bottom: '-50px', left: '-50px', width: '150px', height: '150px', background: 'radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }}></div>
         <div style={{ position: 'relative', zIndex: 1 }}>
@@ -287,21 +321,61 @@ const HoaDonThanhToan: React.FC = () => {
       </div>
 
       <div className="stagger-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '24px', marginBottom: '40px' }}>
-        <div className="glass-card hover-lift" style={{ padding: '24px', borderRadius: 'var(--radius-lg)' }}>
-          <p style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '8px' }}>TỔNG HÓA ĐƠN</p>
-          <h3 style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--ink)' }}>{stats.total}</h3>
+        <div className="glass-card hover-lift stat-card-group" style={{ padding: '24px', borderRadius: 'var(--radius-lg)', background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(15, 23, 42, 0.6) 100%)', border: '1px solid rgba(59, 130, 246, 0.2)', cursor: 'default' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div>
+              <p style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '8px' }}>TỔNG HÓA ĐƠN</p>
+              <h3 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#38bdf8' }}>{stats.total}</h3>
+            </div>
+            <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(59, 130, 246, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3b82f6' }}>
+              <span className="material-symbols-outlined">receipt_long</span>
+            </div>
+          </div>
+          <div className="stat-tooltip">
+            Tổng số lượng hóa đơn đã phát sinh từ trước đến nay.
+          </div>
         </div>
-        <div className="glass-card hover-lift" style={{ padding: '24px', borderRadius: 'var(--radius-lg)' }}>
-          <p style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--success)', marginBottom: '8px' }}>ĐÃ THANH TOÁN</p>
-          <h3 style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--ink)' }}>{stats.paidCount}</h3>
+        <div className="glass-card hover-lift stat-card-group" style={{ padding: '24px', borderRadius: 'var(--radius-lg)', background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(15, 23, 42, 0.6) 100%)', border: '1px solid rgba(16, 185, 129, 0.2)', cursor: 'default' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div>
+              <p style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--success)', marginBottom: '8px' }}>ĐÃ THANH TOÁN</p>
+              <h3 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#34d399' }}>{stats.paidCount}</h3>
+            </div>
+            <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(16, 185, 129, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981' }}>
+              <span className="material-symbols-outlined">check_circle</span>
+            </div>
+          </div>
+          <div className="stat-tooltip">
+            Số lượng hóa đơn bạn đã hoàn tất thanh toán.
+          </div>
         </div>
-        <div className="glass-card hover-lift" style={{ padding: '24px', borderRadius: 'var(--radius-lg)' }}>
-          <p style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--danger)', marginBottom: '8px' }}>ĐANG CHỜ</p>
-          <h3 style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--ink)' }}>{stats.unpaidCount}</h3>
+        <div className="glass-card hover-lift stat-card-group" style={{ padding: '24px', borderRadius: 'var(--radius-lg)', background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(15, 23, 42, 0.6) 100%)', border: '1px solid rgba(239, 68, 68, 0.2)', cursor: 'default' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div>
+              <p style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--danger)', marginBottom: '8px' }}>ĐANG CHỜ</p>
+              <h3 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#f87171' }}>{stats.unpaidCount}</h3>
+            </div>
+            <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(239, 68, 68, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ef4444' }}>
+              <span className="material-symbols-outlined">pending_actions</span>
+            </div>
+          </div>
+          <div className="stat-tooltip">
+            Số lượng hóa đơn chưa được thanh toán (đang chờ xử lý).
+          </div>
         </div>
-        <div className="glass-card hover-lift" style={{ padding: '24px', borderRadius: 'var(--radius-lg)', background: 'var(--primary-gradient)', color: 'white' }}>
-          <p style={{ fontSize: '0.75rem', fontWeight: 800, opacity: 0.8, marginBottom: '8px' }}>TỔNG CHI TIÊU</p>
-          <h3 style={{ fontSize: '1.5rem', fontWeight: 900 }}>{formatTienVND(stats.totalPaid)}</h3>
+        <div className="glass-card hover-lift stat-card-group" style={{ padding: '24px', borderRadius: 'var(--radius-lg)', background: 'linear-gradient(135deg, rgba(20, 184, 166, 0.2) 0%, rgba(15, 23, 42, 0.8) 100%)', border: '1px solid rgba(20, 184, 166, 0.4)', color: 'white', cursor: 'default' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div>
+              <p style={{ fontSize: '0.75rem', fontWeight: 800, color: '#5eead4', marginBottom: '8px' }}>TỔNG CHI TIÊU</p>
+              <h3 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#ccfbf1', textShadow: '0 0 10px rgba(45, 212, 191, 0.5)' }}>{formatTienVND(stats.totalPaid)}</h3>
+            </div>
+            <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(20, 184, 166, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ccfbf1' }}>
+              <span className="material-symbols-outlined">payments</span>
+            </div>
+          </div>
+          <div className="stat-tooltip">
+            Tổng số tiền bạn đã thanh toán thành công.
+          </div>
         </div>
       </div>
 
@@ -462,6 +536,47 @@ const HoaDonThanhToan: React.FC = () => {
                 </tfoot>
               </table>
 </div></div>
+
+              <div style={{ marginBottom: '32px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
+                  <span className="material-symbols-outlined" style={{ color: 'var(--primary)', fontSize: '20px' }}>history</span>
+                  <div style={{ fontSize: '0.85rem', fontWeight: 950, color: 'var(--ink)', letterSpacing: '0.5px' }}>LỊCH SỬ THANH TOÁN</div>
+                </div>
+                <div style={{ border: '1px solid var(--gray-200)', borderRadius: '16px', overflow: 'hidden', background: 'var(--surface)' }}>
+                  {loadingPayments ? (
+                    <div style={{ padding: '20px', textAlign: 'center' }}><div className="dot-pulse" style={{ margin: '0 auto' }}></div></div>
+                  ) : lichSuThanhToan.length === 0 ? (
+                    <div style={{ padding: '18px 20px', color: 'var(--gray-400)', fontWeight: 700, fontSize: '0.9rem' }}>
+                      Chưa ghi nhận giao dịch thanh toán cho hóa đơn này.
+                    </div>
+                  ) : (
+                    <div className="table-responsive-wrapper">
+                      <div style={{ minWidth: '640px' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                          <thead>
+                            <tr style={{ background: 'var(--gray-50)', borderBottom: '1px solid var(--gray-200)' }}>
+                              <th style={{ textAlign: 'left', padding: '12px 16px', fontSize: '0.75rem', fontWeight: 900, color: 'var(--gray-500)' }}>THỜI GIAN</th>
+                              <th style={{ textAlign: 'left', padding: '12px 16px', fontSize: '0.75rem', fontWeight: 900, color: 'var(--gray-500)' }}>PHƯƠNG THỨC</th>
+                              <th style={{ textAlign: 'right', padding: '12px 16px', fontSize: '0.75rem', fontWeight: 900, color: 'var(--gray-500)' }}>SỐ TIỀN</th>
+                              <th style={{ textAlign: 'left', padding: '12px 16px', fontSize: '0.75rem', fontWeight: 900, color: 'var(--gray-500)' }}>GHI CHÚ</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {lichSuThanhToan.map((payment, idx) => (
+                              <tr key={payment.id_thanh_toan ?? payment.idThanhToan ?? idx} style={{ borderBottom: idx === lichSuThanhToan.length - 1 ? 'none' : '1px solid var(--gray-100)' }}>
+                                <td style={{ padding: '14px 16px', fontWeight: 700, color: 'var(--ink)', fontSize: '0.85rem' }}>{chuyenNgayGioISO_SangVN(getPaymentDate(payment))}</td>
+                                <td style={{ padding: '14px 16px', fontWeight: 800, color: 'var(--primary)', fontSize: '0.85rem' }}>{getPaymentMethod(payment)}</td>
+                                <td style={{ padding: '14px 16px', textAlign: 'right', fontWeight: 900, color: 'var(--ink)', fontSize: '0.9rem' }}>{formatTienVND(getPaymentAmount(payment))}</td>
+                                <td style={{ padding: '14px 16px', color: 'var(--gray-500)', fontWeight: 600, fontSize: '0.85rem' }}>{getPaymentNote(payment)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
 
               <div style={{ textAlign: 'center', color: 'var(--gray-400)', fontSize: '0.8rem', fontStyle: 'italic' }}>
                 Cảm ơn bạn đã tin tưởng dịch vụ tại Rexi!

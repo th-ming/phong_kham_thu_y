@@ -175,12 +175,11 @@ const Header: React.FC<{ hideMenu?: boolean }> = ({ hideMenu }) => {
             <Link to={getDashboardLink()} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'var(--gray-100)', padding: '10px 14px 10px 10px', borderRadius: '22px', border: '1px solid var(--gray-200)', textDecoration: 'none', color: 'var(--ink)', fontWeight: 700 }}>
               <div style={{
                 width: '46px', height: '46px', borderRadius: '50%',
-                background: 'var(--primary-gradient)',
                 display: 'grid', placeItems: 'center',
-                boxShadow: '0 0 18px var(--primary-shadow)',
-                flexShrink: 0
+                flexShrink: 0, position: 'relative'
               }}>
-                <div style={{ width: '40px', height: '40px', borderRadius: '50%', overflow: 'hidden', border: '2px solid var(--surface)', background: 'var(--primary)', display: 'grid', placeItems: 'center', color: 'white', fontWeight: 950 }}>
+                <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: '2px solid var(--primary)', boxShadow: '0 0 15px var(--primary), inset 0 0 15px var(--primary)', animation: 'pulse 2s infinite' }} />
+                <div style={{ width: '40px', height: '40px', borderRadius: '50%', overflow: 'hidden', background: 'rgba(20, 184, 166, 0.1)', display: 'grid', placeItems: 'center', color: 'var(--primary)', fontWeight: 950, position: 'relative', zIndex: 1, textShadow: '0 0 10px var(--primary)' }}>
                   {userAvatar ? (
                     <img
                       src={userAvatar}

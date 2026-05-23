@@ -69,19 +69,12 @@ public class DichVuController {
             return org.springframework.http.ResponseEntity.status(403).body(java.util.Map.of("message", "Chỉ Admin mới được xóa dịch vụ!"));
 
         try {
-            // BẢO VỆ DỮ LIỆU CỐT LÕI (CHỐNG XÓA MÙ)
-            // Kiểm tra xem dịch vụ này có đang được sử dụng trong Lịch Hẹn không
-            Integer count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM LichHen WHERE id_dich_vu = ?", Integer.class, id);
-            if (count != null && count > 0) {
-                return org.springframework.http.ResponseEntity.status(400).body(
-                        java.util.Map.of("message", "Không thể xóa! Dịch vụ này đang nằm trong " + count + " lịch hẹn. Hãy vào chế độ Cập nhật và tắt 'Trạng thái hoạt động' thay vì xóa."));
-            }
-
-            dichVuRepository.findById(id).ifPresent(dv -> {
-                auditLogService.logAction("XÓA", "DichVu", "Xóa dịch vụ: " + dv.getTen_dich_vu());
-            });
-            dichVuRepository.deleteById(id);
-            return org.springframework.http.ResponseEntity.ok(java.util.Map.of("message", "Đã xóa dịch vụ thành công!"));
+            return dichVuRepository.findById(id).map(dv -> {
+                dv.setTrang_thai(false);
+                dichVuRepository.save(dv);
+                auditLogService.logAction("XÓA (ẨN)", "DichVu", "Đã ẩn dịch vụ (Xóa mềm): " + dv.getTen_dich_vu());
+                return org.springframework.http.ResponseEntity.ok(java.util.Map.of("message", "Đã xóa (ẩn) dịch vụ thành công để bảo toàn dữ liệu lịch sử!"));
+            }).orElse(org.springframework.http.ResponseEntity.status(404).body(java.util.Map.of("message", "Không tìm thấy dịch vụ!")));
         } catch (Exception e) {
             return org.springframework.http.ResponseEntity.status(500).body(java.util.Map.of("message", "Lỗi khi xóa dịch vụ: " + e.getMessage()));
         }

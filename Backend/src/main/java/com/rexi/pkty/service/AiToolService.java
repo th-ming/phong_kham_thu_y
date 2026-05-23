@@ -43,11 +43,11 @@ public class AiToolService {
                Params: {} (không cần tham số)
             
             2. tim_khach_hang
-               Mô tả: Tìm kiếm thông tin khách hàng theo tên hoặc số điện thoại.
+               Mô tả: Tìm kiếm thông tin khách hàng theo tên hoặc số điện thoại. (MẸO: Nếu tiếng Việt có dấu tìm không ra, hãy thử tìm với từ ngắn gọn hoặc từ cuối tên, VD: "Cương" thay vì "văn cương").
                Params: {"tu_khoa": "tên hoặc SĐT cần tìm"}
             
             3. tim_thu_cung
-               Mô tả: Tìm kiếm thú cưng theo tên, loài hoặc ID khách hàng.
+               Mô tả: Tìm kiếm thú cưng theo tên, loài hoặc ID khách hàng. (MẸO: Giống khách hàng, nếu tìm tiếng Việt có dấu không ra thì thử tìm từ khóa ngắn gọn không dấu).
                Params: {"tu_khoa": "tên bé hoặc loài"}
             
             4. xem_benh_an
@@ -59,7 +59,7 @@ public class AiToolService {
                Params: {"ngay": "YYYY-MM-DD"}
             
             6. dat_lich_hen
-               Mô tả: Tạo lịch hẹn khám bệnh mới vào database.
+               Mô tả: Tạo lịch hẹn khám bệnh mới vào database. [QUAN TRỌNG: TRƯỚC KHI ĐẶT, bạn phải tóm tắt lại Ngày, Giờ, Tên khách, Tên thú cưng và HỎI XÁC NHẬN: "Sếp chốt lịch này chưa?"].
                Params: {"id_khach_hang": "...", "id_thu_cung": "...", "id_bac_si": "...", "id_dich_vu": "...", "ngay_kham": "YYYY-MM-DD", "gio_kham": "HH:mm", "ghi_chu": "..."}
             
             7. xem_kho_thuoc
@@ -75,7 +75,7 @@ public class AiToolService {
                Params: {"query": "nội dung cần tìm"}
             
             10. gui_email_don_le
-                Mô tả: Gửi email thông báo, nhắc lịch đến một khách hàng cụ thể.
+                Mô tả: Gửi email thông báo, nhắc lịch đến một khách hàng cụ thể. [QUAN TRỌNG: TRƯỚC KHI GỬI, bạn phải đọc lại nội dung email cho sếp duyệt và HỎI XÁC NHẬN: "Sếp chốt gửi nội dung này chưa?"].
                 Params: {"email": "địa chỉ email", "tieu_de": "tiêu đề", "noi_dung": "nội dung"}
 
             11. kiem_tra_cau_hinh_ai
@@ -89,6 +89,14 @@ public class AiToolService {
             13. xem_hoa_don
                 Mô tả: Xem danh sách hóa đơn theo trạng thái để hỗ trợ kế toán/đối soát.
                 Params: {"trang_thai": "CHO_THANH_TOAN | DA_THANH_TOAN | all"}
+            
+            14. thao_tac_tai_khoan
+                Mô tả: Khóa hoặc Xóa tài khoản khách hàng (Soft Delete). [QUAN TRỌNG: ĐÂY LÀ HÀNH ĐỘNG NGUY HIỂM. Trước tiên bạn phải dùng tool tim_khach_hang. Sau khi có kết quả, BẠN PHẢI TRÌNH BÀY RÕ THÔNG TIN (Tên, SĐT) VÀ HỎI: "Có đúng là người này không? Sếp có chắc chắn muốn khóa/xóa không?". CHỈ KHI SẾP XÁC NHẬN RÕ RÀNG thì mới được gọi tool này].
+                Params: {"id_khach_hang": "...", "hanh_dong": "KHOA | XOA"}
+
+            15. tim_tai_khoan_bi_khoa
+                Mô tả: Xem danh sách các tài khoản đang bị khóa trong hệ thống.
+                Params: {} (không cần tham số)
             
             Khi đã có đủ thông tin để trả lời CUỐI CÙNG (không cần gọi tool thêm),
             hãy trả về: {"final_answer": "<câu trả lời đầy đủ cho người dùng>"}
@@ -116,6 +124,8 @@ public class AiToolService {
                 case "kiem_tra_cau_hinh_ai"  -> toolKiemTraCauHinhAi();
                 case "kiem_tra_phan_he"      -> toolKiemTraPhanHe();
                 case "xem_hoa_don"           -> toolXemHoaDon((String) params.getOrDefault("trang_thai", "all"));
+                case "thao_tac_tai_khoan"    -> toolThaoTacTaiKhoan(params);
+                case "tim_tai_khoan_bi_khoa" -> toolTimTaiKhoanBiKhoa();
                 default -> "Lỗi: Tool '" + toolName + "' không tồn tại.";
             };
         } catch (Exception e) {
@@ -151,39 +161,121 @@ public class AiToolService {
         return sb.toString();
     }
 
+    private String normalizeVietnamese(String input) {
+        if (input == null) return "";
+        return input
+                .replaceAll("[àáạảãâầấậẩẫăằắặẳẵ]", "a")
+                .replaceAll("[èéẹẻẽêềếệểễ]", "e")
+                .replaceAll("[ìíịỉĩ]", "i")
+                .replaceAll("[òóọỏõôồốộổỗơờớợởỡ]", "o")
+                .replaceAll("[ùúụủũưừứựửữ]", "u")
+                .replaceAll("[ỳýỵỷỹ]", "y")
+                .replaceAll("[đ]", "d");
+    }
+
     private String toolTimKhachHang(String tuKhoa) {
-        String sql = "SELECT TOP 5 id_khach_hang, ten_khach_hang, sdt, email, dia_chi " +
-                     "FROM KhachHang WHERE (da_xoa = 0 OR da_xoa IS NULL) " +
-                     "AND (ten_khach_hang LIKE ? OR sdt LIKE ?)";
-        String pattern = "%" + tuKhoa + "%";
-        var rows = jdbcTemplate.queryForList(sql, pattern, pattern);
-        if (rows.isEmpty()) return "Không tìm thấy khách hàng nào với từ khóa: " + tuKhoa;
-        StringBuilder sb = new StringBuilder("Tìm thấy " + rows.size() + " khách hàng:\n");
-        for (var r : rows) {
-            sb.append("- ID: ").append(r.get("id_khach_hang"))
-              .append(" | Tên: ").append(r.get("ten_khach_hang"))
+        if (tuKhoa == null || tuKhoa.trim().isEmpty()) return "Vui lòng cung cấp từ khóa tìm kiếm.";
+        
+        String sql = "SELECT id_khach_hang, ten_khach_hang, sdt, email, dia_chi " +
+                     "FROM KhachHang WHERE (da_xoa = 0 OR da_xoa IS NULL)";
+        var allRows = jdbcTemplate.queryForList(sql);
+        
+        String normalizedTuKhoa = normalizeVietnamese(tuKhoa.toLowerCase().trim());
+        String[] keywords = normalizedTuKhoa.split("\\s+");
+        
+        List<Map<String, Object>> matchedRows = new ArrayList<>();
+        for (var r : allRows) {
+            String name = r.get("ten_khach_hang") != null ? normalizeVietnamese(r.get("ten_khach_hang").toString().toLowerCase()) : "";
+            String phone = r.get("sdt") != null ? r.get("sdt").toString() : "";
+            
+            boolean matchPhone = phone.contains(tuKhoa);
+            boolean matchName = true;
+            for (String kw : keywords) {
+                if (!name.contains(kw)) {
+                    matchName = false;
+                    break;
+                }
+            }
+            
+            if (matchPhone || matchName) {
+                matchedRows.add(r);
+            }
+        }
+
+        if (matchedRows.isEmpty()) return "Không tìm thấy khách hàng nào với từ khóa: " + tuKhoa;
+        
+        StringBuilder sb = new StringBuilder("Kết quả tìm kiếm (" + matchedRows.size() + " người):\n");
+        for (int i = 0; i < Math.min(matchedRows.size(), 5); i++) {
+            var r = matchedRows.get(i);
+            sb.append("- Tên: ").append(r.get("ten_khach_hang"))
               .append(" | SĐT: ").append(r.get("sdt"))
-              .append(" | Email: ").append(r.get("email")).append("\n");
+              .append(" | ID: ").append(r.get("id_khach_hang")).append("\n");
+        }
+        if (matchedRows.size() > 5) sb.append("... và ").append(matchedRows.size() - 5).append(" người khác.\n");
+        return sb.toString();
+    }
+
+    private String toolTimTaiKhoanBiKhoa() {
+        String sql = "SELECT tk.ten_dang_nhap, tk.trang_thai, kh.ten_khach_hang, kh.sdt, nv.ho_ten " +
+                     "FROM TaiKhoan tk " +
+                     "LEFT JOIN KhachHang kh ON tk.id_khach_hang = kh.id_khach_hang " +
+                     "LEFT JOIN NhanVien nv ON tk.id_nhan_vien = nv.id_nhan_vien " +
+                     "WHERE tk.trang_thai = N'Đã khóa' OR tk.trang_thai = 'inactive'";
+        var rows = jdbcTemplate.queryForList(sql);
+        if (rows.isEmpty()) return "Hiện tại không có tài khoản nào đang bị khóa.";
+        
+        StringBuilder sb = new StringBuilder("Danh sách tài khoản đang bị khóa (" + rows.size() + " tài khoản):\n");
+        for (var r : rows) {
+            String ten = r.get("ho_ten") != null ? r.get("ho_ten").toString() : 
+                         (r.get("ten_khach_hang") != null ? r.get("ten_khach_hang").toString() : "N/A");
+            String sdt = r.get("sdt") != null ? r.get("sdt").toString() : "N/A";
+            sb.append("- Tên đăng nhập: ").append(r.get("ten_dang_nhap"))
+              .append(" | Chủ tài khoản: ").append(ten)
+              .append(" | SĐT: ").append(sdt)
+              .append(" | Trạng thái: ").append(r.get("trang_thai")).append("\n");
         }
         return sb.toString();
     }
 
     private String toolTimThuCung(String tuKhoa) {
-        String sql = "SELECT TOP 5 tc.id_thu_cung, tc.ten_thu_cung, tc.loai, tc.giong, " +
+        if (tuKhoa == null || tuKhoa.trim().isEmpty()) return "Vui lòng cung cấp từ khóa tìm kiếm.";
+        
+        String sql = "SELECT tc.id_thu_cung, tc.ten_thu_cung, tc.loai, tc.giong, " +
                      "tc.can_nang, tc.tuoi, kh.ten_khach_hang, kh.sdt " +
                      "FROM ThuCung tc JOIN KhachHang kh ON tc.id_khach_hang = kh.id_khach_hang " +
-                     "WHERE (tc.da_xoa = 0 OR tc.da_xoa IS NULL) " +
-                     "AND (tc.ten_thu_cung LIKE ? OR tc.loai LIKE ?)";
-        String pattern = "%" + tuKhoa + "%";
-        var rows = jdbcTemplate.queryForList(sql, pattern, pattern);
-        if (rows.isEmpty()) return "Không tìm thấy thú cưng nào với từ khóa: " + tuKhoa;
-        StringBuilder sb = new StringBuilder("Tìm thấy " + rows.size() + " thú cưng:\n");
-        for (var r : rows) {
+                     "WHERE (tc.da_xoa = 0 OR tc.da_xoa IS NULL)";
+        var allRows = jdbcTemplate.queryForList(sql);
+        
+        String normalizedTuKhoa = normalizeVietnamese(tuKhoa.toLowerCase().trim());
+        String[] keywords = normalizedTuKhoa.split("\\s+");
+        
+        List<Map<String, Object>> matchedRows = new ArrayList<>();
+        for (var r : allRows) {
+            String ten = r.get("ten_thu_cung") != null ? normalizeVietnamese(r.get("ten_thu_cung").toString().toLowerCase()) : "";
+            String loai = r.get("loai") != null ? normalizeVietnamese(r.get("loai").toString().toLowerCase()) : "";
+            
+            boolean match = true;
+            for (String kw : keywords) {
+                if (!ten.contains(kw) && !loai.contains(kw)) {
+                    match = false;
+                    break;
+                }
+            }
+            if (match) matchedRows.add(r);
+        }
+
+        if (matchedRows.isEmpty()) return "Không tìm thấy thú cưng nào với từ khóa: " + tuKhoa;
+        
+        StringBuilder sb = new StringBuilder("Tìm thấy " + matchedRows.size() + " thú cưng (hiển thị tối đa 5):\n");
+        int count = 0;
+        for (var r : matchedRows) {
+            if (count >= 5) break;
             sb.append("- ID: ").append(r.get("id_thu_cung"))
               .append(" | Tên: ").append(r.get("ten_thu_cung"))
               .append(" | Loài: ").append(r.get("loai")).append(" - ").append(r.get("giong"))
               .append(" | ").append(r.get("can_nang")).append("kg, ").append(r.get("tuoi")).append(" tháng")
               .append(" | Chủ: ").append(r.get("ten_khach_hang")).append(" (").append(r.get("sdt")).append(")\n");
+            count++;
         }
         return sb.toString();
     }
@@ -238,17 +330,48 @@ public class AiToolService {
     }
 
     private String toolXemKhoThuoc(String tuKhoa) {
-        String sql = tuKhoa.isBlank()
-            ? "SELECT TOP 10 ten_thuoc, don_vi, so_luong_ton, gia_ban, han_su_dung FROM Thuoc WHERE (da_xoa = 0 OR da_xoa IS NULL) ORDER BY so_luong_ton ASC"
-            : "SELECT TOP 5 ten_thuoc, don_vi, so_luong_ton, gia_ban, han_su_dung FROM Thuoc WHERE ten_thuoc LIKE ? AND (da_xoa = 0 OR da_xoa IS NULL)";
-        var rows = tuKhoa.isBlank() ? jdbcTemplate.queryForList(sql) : jdbcTemplate.queryForList(sql, "%" + tuKhoa + "%");
-        if (rows.isEmpty()) return "Không tìm thấy thuốc nào.";
-        StringBuilder sb = new StringBuilder("Kho thuốc (" + rows.size() + " loại):\n");
-        for (var r : rows) {
+        String sql = "SELECT ten_thuoc, don_vi, so_luong_ton, gia_ban, han_su_dung FROM Thuoc WHERE (da_xoa = 0 OR da_xoa IS NULL)";
+        var allRows = jdbcTemplate.queryForList(sql);
+        
+        List<Map<String, Object>> matchedRows = new ArrayList<>();
+        if (tuKhoa == null || tuKhoa.trim().isEmpty()) {
+            matchedRows.addAll(allRows);
+        } else {
+            String normalizedTuKhoa = normalizeVietnamese(tuKhoa.toLowerCase().trim());
+            String[] keywords = normalizedTuKhoa.split("\\s+");
+            for (var r : allRows) {
+                String ten = r.get("ten_thuoc") != null ? normalizeVietnamese(r.get("ten_thuoc").toString().toLowerCase()) : "";
+                boolean match = true;
+                for (String kw : keywords) {
+                    if (!ten.contains(kw)) {
+                        match = false;
+                        break;
+                    }
+                }
+                if (match) matchedRows.add(r);
+            }
+        }
+        
+        if (matchedRows.isEmpty()) return "Không tìm thấy thuốc nào.";
+        
+        if (tuKhoa == null || tuKhoa.trim().isEmpty()) {
+            matchedRows.sort((a, b) -> {
+                Double valA = a.get("so_luong_ton") != null ? Double.parseDouble(a.get("so_luong_ton").toString()) : 0.0;
+                Double valB = b.get("so_luong_ton") != null ? Double.parseDouble(b.get("so_luong_ton").toString()) : 0.0;
+                return Double.compare(valA, valB);
+            });
+        }
+        
+        int limit = tuKhoa == null || tuKhoa.trim().isEmpty() ? 10 : 5;
+        StringBuilder sb = new StringBuilder("Kho thuốc (" + matchedRows.size() + " loại, hiển thị tối đa " + limit + "):\n");
+        int count = 0;
+        for (var r : matchedRows) {
+            if (count >= limit) break;
             sb.append("- ").append(r.get("ten_thuoc"))
               .append(" | SL: ").append(r.get("so_luong_ton")).append(" ").append(r.get("don_vi"))
               .append(" | Giá: ").append(r.get("gia_ban")).append("đ")
               .append(" | HSD: ").append(r.get("han_su_dung")).append("\n");
+            count++;
         }
         return sb.toString();
     }
@@ -381,5 +504,22 @@ public class AiToolService {
 
     private String safeValue(String value) {
         return value == null || value.trim().isEmpty() ? "dùng fallback môi trường" : value.trim();
+    }
+
+    private String toolThaoTacTaiKhoan(Map<String, Object> p) {
+        try {
+            String id = (String) p.get("id_khach_hang");
+            String action = (String) p.get("hanh_dong");
+            if (id == null || id.isBlank()) return "Lỗi: Thiếu ID khách hàng.";
+            if ("XOA".equalsIgnoreCase(action) || "KHOA".equalsIgnoreCase(action)) {
+                String sql = "UPDATE KhachHang SET da_xoa = 1 WHERE id_khach_hang = ?";
+                int rows = jdbcTemplate.update(sql, id);
+                if (rows > 0) return "✅ Đã " + action.toLowerCase() + " tài khoản khách hàng " + id + " thành công.";
+                else return "Lỗi: Không tìm thấy khách hàng ID " + id;
+            }
+            return "Lỗi: Hành động không hợp lệ. Chỉ hỗ trợ KHOA hoặc XOA.";
+        } catch (Exception e) {
+            return "Lỗi thao tác tài khoản: " + e.getMessage();
+        }
     }
 }

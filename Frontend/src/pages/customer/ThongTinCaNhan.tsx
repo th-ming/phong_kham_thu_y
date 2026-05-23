@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useRef } from "react";
 import axiosInstance from "@services/axios";
 import { useNavigate } from "react-router-dom";
@@ -345,10 +345,12 @@ const ThongTinCaNhan: React.FC = () => {
             >
               <div style={{
                 position: 'absolute',
-                inset: '-5px',
+                inset: '-4px',
                 borderRadius: '50%',
-                background: 'var(--primary-gradient)',
-                boxShadow: '0 0 24px var(--primary-shadow)',
+                border: '2px solid var(--primary)',
+                boxShadow: '0 0 15px var(--primary), inset 0 0 15px var(--primary)',
+                animation: 'pulse 2s infinite',
+                opacity: 0.8
               }} />
               <div style={{
                 position: 'relative',
@@ -361,7 +363,8 @@ const ThongTinCaNhan: React.FC = () => {
                 justifyContent: 'center',
                 color: 'white',
                 overflow: 'hidden',
-                border: '3px solid var(--surface)',
+                border: '2px solid rgba(255,255,255,0.2)',
+                boxShadow: '0 0 20px rgba(13, 148, 136, 0.4)',
               }}>
                 {avatarPreview ? (
                   <img src={avatarPreview} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />

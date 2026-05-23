@@ -87,11 +87,7 @@ public class GroqService {
         String latestContent = latest.getContent() != null ? latest.getContent() : "";
         String latestNormalized = normalizeVietnamese(latestContent.toLowerCase());
 
-        // Hard Filter cho địa chỉ/vị trí
-        if (latestNormalized.contains("dia chi") || latestNormalized.contains("o dau") ||
-                latestNormalized.contains("vi tri") || latestNormalized.contains("duong di")) {
-            return "Dạ Sen ơi, Phòng khám Rexi tọa lạc tại: **Số 68, Ngõ 10, Đường Ngô Xuân Quảng, Trâu Quỳ, Gia Lâm, Hà Nội** nha! Sen có thể xem chỉ đường chi tiết tại đây ạ: [LINK BẢN ĐỒ] 🐾";
-        }
+
 
         // Kiểm tra ảnh → chọn model phù hợp (Sử dụng list images mới)
         boolean hasImage = latest.getImages() != null && !latest.getImages().isEmpty();

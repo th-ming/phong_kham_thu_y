@@ -278,7 +278,7 @@ const LichSuLichHen: React.FC = () => {
         marginBottom: '40px', 
         padding: '56px 48px', 
         borderRadius: 'var(--radius-xl)', 
-        background: 'linear-gradient(135deg, #0f766e 0%, #115e59 100%)', 
+        background: 'var(--secondary-gradient)', 
         color: 'white', 
         position: 'relative', 
         overflow: 'hidden', 

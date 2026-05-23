@@ -230,9 +230,9 @@ public class KhachHangController {
             String currentRole = (auth != null && auth.getAuthorities() != null) ? auth.getAuthorities().toString()
                     : "";
 
-            if (!currentRole.toUpperCase().contains("ADMIN")) {
+            if (!currentRole.toUpperCase().contains("ADMIN") && !currentRole.toUpperCase().contains("QUAN_LY")) {
                 return ResponseEntity.status(403)
-                        .body(Map.of("message", "Cảnh báo bảo mật: Chỉ Admin mới có quyền mở khóa tài khoản!"));
+                        .body(Map.of("message", "Cảnh báo bảo mật: Chỉ Admin hoặc Quản lý mới có quyền mở khóa tài khoản!"));
             }
 
             // Mở khóa hồ sơ Khách hàng (Bỏ đánh dấu xóa)

@@ -180,7 +180,7 @@ public class PaymentController {
             vnp_Params.put("vnp_ReturnUrl", getVnpReturnUrl());
             vnp_Params.put("vnp_IpAddr", vnp_IpAddr);
 
-            Calendar cld = Calendar.getInstance(TimeZone.getTimeZone("Etc/GMT+7"));
+            Calendar cld = Calendar.getInstance(TimeZone.getTimeZone("Asia/Ho_Chi_Minh"));
             SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss");
             String vnp_CreateDate = formatter.format(cld.getTime());
             vnp_Params.put("vnp_CreateDate", vnp_CreateDate);
@@ -192,7 +192,7 @@ public class PaymentController {
             String queryUrl = VNPayConfig.hashAllFields(vnp_Params, getVnpHashSecret());
             String paymentUrl = getVnpUrl() + "?" + queryUrl;
 
-            return ResponseEntity.ok(Map.of("url", paymentUrl));
+            return ResponseEntity.ok(Map.of("url", paymentUrl, "paymentUrl", paymentUrl));
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of("message", "Đã xảy ra lỗi hệ thống khi khởi tạo thanh toán."));
         }
@@ -364,8 +364,8 @@ public class PaymentController {
 
             content = content.toUpperCase();
 
-            // Regex bắt mã hóa đơn trong nội dung (REXI HD123, REXIHD 123, REXIHD123...)
-            java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("REXI\\s*(HD-[A-Z0-9]+|[0-9]+)");
+            // Regex bắt mã hóa đơn trong nội dung (REXI HD123, REXI HD-123, REXI 123...)
+            java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("REXI\\s*(HD-?[A-Z0-9]+|[0-9]+)");
             java.util.regex.Matcher matcher = pattern.matcher(content);
 
             if (matcher.find()) {

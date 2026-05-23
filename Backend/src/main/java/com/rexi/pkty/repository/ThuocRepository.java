@@ -10,7 +10,7 @@ import java.util.List;
 @Repository
 public interface ThuocRepository extends JpaRepository<Thuoc, String> {
 
-    // Tối ưu: Chỉ tìm và trả về tối đa 20 loại thuốc khớp với từ khóa
-    @Query(value = "SELECT TOP 20 * FROM Thuoc WHERE ten_thuoc LIKE %:keyword%", nativeQuery = true)
+    // Tối ưu: Tìm kiếm không phân biệt dấu tiếng Việt (Smart Search)
+    @Query(value = "SELECT TOP 20 * FROM Thuoc WHERE (da_xoa = 0 OR da_xoa IS NULL) AND ten_thuoc COLLATE SQL_Latin1_General_CP1_CI_AI LIKE %:keyword% COLLATE SQL_Latin1_General_CP1_CI_AI", nativeQuery = true)
     List<Thuoc> searchThuoc(@Param("keyword") String keyword);
 }

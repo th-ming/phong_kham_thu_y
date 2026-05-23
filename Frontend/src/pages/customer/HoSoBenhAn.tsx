@@ -140,7 +140,7 @@ const HoSoBenhAn: React.FC = () => {
         .item-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); border: 1px solid transparent; background: var(--surface); }
         .item-card:hover { border-color: var(--primary) !important; background: var(--surface) !important; transform: translateY(-4px); box-shadow: 0 20px 40px rgba(15, 157, 138, 0.08); z-index: 10; position: relative; }
       `}</style>
-      <div className="stagger-1" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', padding: '36px 48px', borderRadius: 'var(--radius-xl)', background: 'linear-gradient(135deg, #0284c7 0%, #2563eb 100%)', color: 'white', position: 'relative', overflow: 'hidden', boxShadow: '0 15px 30px rgba(37, 99, 235, 0.2)', flexWrap: 'wrap', gap: '20px' }}>
+      <div className="stagger-1" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', padding: '36px 48px', borderRadius: 'var(--radius-xl)', background: 'var(--secondary-gradient)', color: 'white', position: 'relative', overflow: 'hidden', boxShadow: '0 15px 30px rgba(37, 99, 235, 0.2)', flexWrap: 'wrap', gap: '20px' }}>
         <div style={{ position: 'absolute', top: '-50px', left: '-50px', width: '200px', height: '200px', background: 'radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }}></div>
         <div style={{ position: 'absolute', bottom: '-80px', right: '20%', width: '150px', height: '150px', background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }}></div>
         <div style={{ position: 'relative', zIndex: 1 }}>

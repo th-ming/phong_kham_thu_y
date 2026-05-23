@@ -128,6 +128,7 @@ public class AiMemoryService {
 
     public String getGlobalContext() {
         StringBuilder sb = new StringBuilder();
+        sb.append("\n[THÔNG TIN PHÒNG KHÁM]\n- Địa chỉ: Số 68, Ngõ 10, Đường Ngô Xuân Quảng, Trâu Quỳ, Gia Lâm, Hà Nội\n");
         sb.append(getDoctorsContext());
         sb.append(getServicesContext());
         return sb.toString();

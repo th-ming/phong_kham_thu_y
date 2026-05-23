@@ -280,6 +280,9 @@ const QuanLyThuCung: React.FC = () => {
         .stagger-2 { animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both; }
         .item-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); border: 1px solid transparent; background: var(--surface); }
         .item-card:hover { border-color: var(--primary) !important; background: var(--surface) !important; transform: translateY(-6px); box-shadow: 0 20px 40px rgba(15, 157, 138, 0.1); z-index: 10; position: relative; }
+        .btn-action { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important; font-weight: 800; }
+        .btn-action:hover:not(:disabled) { transform: translateY(-3px) scale(1.02); box-shadow: 0 10px 20px rgba(13, 148, 136, 0.2); filter: brightness(1.05); }
+        .btn-action.btn-delete:hover:not(:disabled) { box-shadow: 0 10px 20px rgba(239, 68, 68, 0.2); background: var(--danger) !important; color: white !important; }
       `}</style>
       <div className="stagger-1" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', padding: '48px', borderRadius: 'var(--radius-xl)', background: 'var(--secondary-gradient)', color: 'white', position: 'relative', overflow: 'hidden', boxShadow: 'var(--shadow-2xl)' }}>
         <div style={{ position: 'absolute', top: '-10%', left: '-5%', width: '300px', height: '300px', background: 'radial-gradient(circle, var(--primary-light) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }}></div>
@@ -426,9 +429,9 @@ const QuanLyThuCung: React.FC = () => {
               )}
 
               <div style={{ display: 'flex', gap: '12px', marginTop: 'auto' }}>
-                <button data-ai-id="button-quanlythucung-7v0f" className="btn btn-pill" style={{ flex: 1, background: 'var(--primary-light)', color: 'var(--primary)' }} onClick={() => handleOpenForm(pet)} disabled={!!deletingId}>Sửa</button>
+                <button data-ai-id="button-quanlythucung-7v0f" className="btn btn-pill btn-action" style={{ flex: 1, background: 'var(--primary-light)', color: 'var(--primary)' }} onClick={() => handleOpenForm(pet)} disabled={!!deletingId}>Sửa</button>
                 <button data-ai-id="button-quanlythucung-zykg" 
-                  className="btn btn-pill" 
+                  className="btn btn-pill btn-action btn-delete" 
                   style={{ 
                     background: deletingId === pet.id_thu_cung ? 'var(--gray-100)' : 'var(--danger-light, rgba(239, 68, 68, 0.15))', 
                     color: deletingId === pet.id_thu_cung ? 'var(--gray-400)' : 'var(--danger)',

@@ -6,7 +6,7 @@ Write-Host ">>> Compiling Backend..."
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host ">>> Compile SUCCESS! Starting Backend..."
-    ./mvnw spring-boot:run "-Dspring-boot.run.arguments=--server.port=8080"
+    ./mvnw spring-boot:run
 } else {
     Write-Host ">>> Compile FAILED! Please check the code."
 }

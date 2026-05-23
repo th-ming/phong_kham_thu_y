@@ -74,12 +74,6 @@ public class OpenRouterService {
         String latestContent = latest.getContent() != null ? latest.getContent() : "";
         String latestNormalized = normalizeVietnamese(latestContent.toLowerCase());
 
-        // Hard Filter cho địa chỉ/vị trí giống như Groq
-        if (latestNormalized.contains("dia chi") || latestNormalized.contains("o dau") ||
-                latestNormalized.contains("vi tri") || latestNormalized.contains("duong di")) {
-            return "Dạ Sen ơi, Phòng khám Rexi tọa lạc tại: **Số 68, Ngõ 10, Đường Ngô Xuân Quảng, Trâu Quỳ, Gia Lâm, Hà Nội** nha! Sen có thể xem chỉ đường chi tiết tại đây ạ: [LINK BẢN ĐỒ] 🐾";
-        }
-
         // Chuẩn bị danh sách messages cho API (OpenAI-compatible format)
         List<Map<String, Object>> messagesForApi = new ArrayList<>();
 
