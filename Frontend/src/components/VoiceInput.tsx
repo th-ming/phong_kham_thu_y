@@ -7,7 +7,7 @@ import { toast } from './Toast';
  * và chuyển văn bản đã nhận dạng cho ChatBot qua callback onSend.
  * Nếu trình duyệt không hỗ trợ SpeechRecognition, sẽ hiển thị thông báo hướng dẫn.
  */
-export const VoiceInput = ({ onSend }: { onSend: (text: string) => void }) => {
+export const VoiceInput = ({ onSend, onTyping }: { onSend: (text: string) => void, onTyping?: (text: string) => void }) => {
   const [listening, setListening] = useState(false);
   const [recognition, setRecognition] = useState<any>(null);
 
@@ -17,27 +17,56 @@ export const VoiceInput = ({ onSend }: { onSend: (text: string) => void }) => {
     if (SpeechRecognition) {
       const rec = new SpeechRecognition();
       rec.lang = 'vi-VN';
-      rec.interimResults = false;
+      rec.interimResults = true; // Hiện chữ ngay khi đang nói
       rec.maxAlternatives = 1;
+      
+      let silenceTimer: NodeJS.Timeout;
+      let finalTranscriptAccumulated = '';
+
       rec.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript.trim();
-        toast.success('🎤 Nhận dạng thành công');
-        onSend(transcript);
+        let interimTranscript = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+             finalTranscriptAccumulated += event.results[i][0].transcript;
+          } else {
+             interimTranscript += event.results[i][0].transcript;
+          }
+        }
+        
+        const currentText = (finalTranscriptAccumulated + interimTranscript).trim();
+        if (onTyping) onTyping(currentText);
+
+        // Nếu người dùng im lặng 2.5 giây -> Tự động Send
+        clearTimeout(silenceTimer);
+        silenceTimer = setTimeout(() => {
+          rec.stop();
+          if (currentText) {
+             toast.success('🎤 Nhận dạng thành công');
+             onSend(currentText);
+             finalTranscriptAccumulated = '';
+          }
+        }, 2500);
       };
+      
       rec.onerror = (e: any) => {
-        toast.error('❌ Lỗi nhận dạng giọng nói');
-        console.error(e);
+        if (e.error !== 'no-speech') {
+           toast.error('❌ Lỗi nhận dạng giọng nói');
+           console.error(e);
+        }
         setListening(false);
       };
-      rec.onend = () => setListening(false);
+      
+      rec.onend = () => {
+        setListening(false);
+        clearTimeout(silenceTimer);
+      };
       setRecognition(rec);
     }
-  }, [onSend]);
+  }, [onSend, onTyping]);
 
   const toggleListening = () => {
     if (!recognition) {
-      // Giải pháp dự phòng thu âm và gửi về Server (chưa được cài đặt ở bản này)
-      toast.error('Trình duyệt không hỗ trợ SpeechRecognition, vui lòng bật microphone và gửi file âm thanh');
+      toast.error('Trình duyệt không hỗ trợ SpeechRecognition, vui lòng gõ phím thay thế');
       return;
     }
     if (listening) {
@@ -55,11 +84,11 @@ export const VoiceInput = ({ onSend }: { onSend: (text: string) => void }) => {
   return (
     <button data-ai-id="button-voiceinput-2spt"
       type="button"
-      className={`voice-btn ${listening ? 'listening' : ''}`}
+      className={`voice-btn ${listening ? 'listening pulse' : ''}`}
       onClick={toggleListening}
       title={listening ? 'Nhấn để dừng' : 'Nhấn để nói'}
     >
-      {listening ? '🔴 Đang nghe...' : '🎙️'}
+      {listening ? '🔴' : '🎙️'}
     </button>
   );
 };

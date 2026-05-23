@@ -53,7 +53,7 @@ describe('Header Component', () => {
 
   test('theme toggle button works', () => {
     renderWithRouter(<Header />);
-    const themeToggle = screen.getByRole('button', { name: /theme/i });
+    const themeToggle = screen.getByRole('button', { name: /Đổi giao diện/i });
     expect(themeToggle).toBeInTheDocument();
   });
 });
