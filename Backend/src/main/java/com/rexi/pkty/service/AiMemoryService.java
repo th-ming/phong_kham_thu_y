@@ -1,4 +1,4 @@
-package com.rexi.pkty.service;
+﻿package com.rexi.pkty.service;
 
 import com.rexi.pkty.entity.TaiKhoan;
 import com.rexi.pkty.repository.*;
@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.time.LocalDate;
 
 @Service
 public class AiMemoryService {
@@ -30,6 +31,8 @@ public class AiMemoryService {
     private DichVuRepository dichVuRepository;
     @Autowired
     private NhanVienRepository nhanVienRepository;
+    @Autowired
+    private LichLamViecNhanVienRepository lichLamViecNhanVienRepository;
 
     public String getCurrentCustomerId() {
         try {
@@ -86,7 +89,6 @@ public class AiMemoryService {
         if (query == null || query.trim().length() < 4) return "";
         
         String cleanQuery = query.trim().toLowerCase();
-        // Bỏ qua các từ chào hỏi thông dụng để tránh nạp toàn bộ tài liệu y khoa không cần thiết
         if (cleanQuery.equals("hi") || cleanQuery.equals("hello") || cleanQuery.equals("helo") || 
             cleanQuery.equals("alo") || cleanQuery.equals("chào") || cleanQuery.equals("chao") ||
             cleanQuery.equals("bông") || cleanQuery.equals("cún") || cleanQuery.equals("mèo")) {
@@ -104,9 +106,7 @@ public class AiMemoryService {
             for (File file : folder.listFiles()) {
                 if (file.isFile() && file.getName().endsWith(".md")) {
                     String content = Files.readString(file.toPath());
-                    // Tìm kiếm đoạn văn chứa từ khóa
                     if (content.toLowerCase().contains(cleanQuery)) {
-                        // Giới hạn dung lượng context tối đa là 8000 ký tự để tránh quá tải token cho LLM
                         if (context.length() + content.length() > 8000) {
                             int remainingSpace = 8000 - context.length();
                             if (remainingSpace > 500) {
@@ -126,12 +126,60 @@ public class AiMemoryService {
         }
     }
 
-    public String getGlobalContext() {
+    public String getGlobalContext(String query) {
         StringBuilder sb = new StringBuilder();
         sb.append("\n[THÔNG TIN PHÒNG KHÁM]\n- Địa chỉ: Số 68, Ngõ 10, Đường Ngô Xuân Quảng, Trâu Quỳ, Gia Lâm, Hà Nội\n");
-        sb.append(getDoctorsContext());
-        sb.append(getServicesContext());
+        
+        String cleanQuery = (query != null) ? query.toLowerCase() : "";
+        
+        // Smart Router: Chỉ nhét Bác Sĩ nếu câu hỏi nhắc đến bác sĩ
+        if (cleanQuery.contains("bác sĩ") || cleanQuery.contains("bs") || cleanQuery.contains("ai khám") || cleanQuery.contains("khám bệnh")) {
+            sb.append(getDoctorsContext());
+        }
+        
+        // Smart Router: Chỉ nhét Bảng Giá nếu câu hỏi nhắc đến giá
+        if (cleanQuery.contains("giá") || cleanQuery.contains("dịch vụ") || cleanQuery.contains("bao nhiêu tiền") || cleanQuery.contains("chi phí") || cleanQuery.contains("bảng giá")) {
+            sb.append(getServicesContext());
+        }
+        
+        // Smart Router: Chỉ nhét Lịch Làm Việc nếu câu hỏi nhắc đến lịch
+        if (cleanQuery.contains("lịch") || cleanQuery.contains("trực") || cleanQuery.contains("hôm nay") || cleanQuery.contains("ngày mai") || cleanQuery.contains("giờ làm") || cleanQuery.contains("thứ")) {
+            sb.append(getScheduleContext());
+        }
+
         return sb.toString();
+    }
+
+    private String getScheduleContext() {
+        try {
+            StringBuilder sb = new StringBuilder("\n[LỊCH TRỰC CỦA BÁC SĨ (7 NGÀY TỚI)]\n");
+            var schedules = lichLamViecNhanVienRepository.findAll();
+            var doctors = nhanVienRepository.findAllBacSi();
+            
+            LocalDate today = LocalDate.now();
+            LocalDate nextWeek = today.plusDays(7);
+            boolean hasSchedule = false;
+            
+            for (var s : schedules) {
+                if (s.getNgay_lam() != null && !s.getNgay_lam().isBefore(today) && s.getNgay_lam().isBefore(nextWeek)) {
+                    String tenBacSi = doctors.stream()
+                        .filter(d -> d.getId_nhan_vien().equals(s.getId_nhan_vien()))
+                        .map(d -> d.getHo_ten())
+                        .findFirst()
+                        .orElse("Bác sĩ ẩn danh");
+                        
+                    sb.append("- Ngày ").append(s.getNgay_lam())
+                      .append(": BS ").append(tenBacSi)
+                      .append(" trực từ ").append(s.getGio_bat_dau())
+                      .append(" đến ").append(s.getGio_ket_thuc())
+                      .append(" (").append(s.getGhi_chu() != null ? s.getGhi_chu() : "Không có ghi chú").append(")\n");
+                    hasSchedule = true;
+                }
+            }
+            return hasSchedule ? sb.toString() : "\n[KHÔNG CÓ LỊCH TRỰC NÀO TRONG 7 NGÀY TỚI]\n";
+        } catch (Exception e) {
+            return "";
+        }
     }
 
     private String getServicesContext() {

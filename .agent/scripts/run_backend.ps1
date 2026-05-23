@@ -1,12 +1,14 @@
-$env:JAVA_HOME = "C:\Users\84916\.antigravity\extensions\redhat.java-1.54.0-win32-x64\jre\21.0.10-win32-x86_64"
-$env:Path = "$env:JAVA_HOME\bin;" + $env:Path
+$repoPath = "d:\QLy Phòng Khám Thú Y\Backend"
+Set-Location $repoPath
 
-Write-Host ">>> Compiling Backend..."
-./mvnw clean compile -DskipTests
+Write-Host ">>> Compiling Backend..." -ForegroundColor Yellow
+.\mvnw.cmd clean compile -DskipTests
 
-if ($LASTEXITCODE -eq 0) {
-    Write-Host ">>> Compile SUCCESS! Starting Backend..."
-    ./mvnw spring-boot:run
-} else {
-    Write-Host ">>> Compile FAILED! Please check the code."
+if ($LASTEXITCODE -ne 0) {
+    Write-Host ">>> Compile FAILED! Please check the code." -ForegroundColor Red
+    exit $LASTEXITCODE
 }
+
+Write-Host ">>> Starting Spring Boot Application..." -ForegroundColor Green
+.\mvnw.cmd spring-boot:run
+
