@@ -3634,10 +3634,10 @@ export const ChatBot: React.FC = () => {
                 id="chatBtn"
                 onClick={() => setIsOpen(!isOpen)}
                 style={{
-                    position: 'fixed', bottom: '30px', right: '30px', zIndex: 1101,
+                    position: 'fixed', bottom: isMobile ? '24px' : '30px', right: isMobile ? '24px' : '30px', zIndex: 1101,
                     background: activeTab === 'agent' ? 'linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)' : 'var(--chat-gradient)',
                     color: 'white', border: '1.5px solid rgba(255, 255, 255, 0.1)',
-                    width: '64px', height: '64px', borderRadius: '50%', cursor: 'pointer',
+                    width: isMobile ? '56px' : '64px', height: isMobile ? '56px' : '64px', borderRadius: '50%', cursor: 'pointer',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     boxShadow: activeTab === 'agent' ? '0 10px 40px rgba(244, 63, 94, 0.4)' : '0 10px 40px var(--primary-light)',
                     transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
@@ -3661,12 +3661,11 @@ export const ChatBot: React.FC = () => {
                         onDragLeave={handleDragLeave}
                         onDrop={handleDrop}
                         style={{
-                            position: 'fixed', bottom: isMobile ? '84px' : '90px', right: isMobile ? '16px' : '30px',
-                            width: isMobile ? 'calc(100vw - 32px)' : 'calc(100vw - 60px)',
-                            maxWidth: '420px',
-                            height: isMobile ? 'min(620px, calc(100vh - 110px))' : 'min(680px, calc(100vh - 120px))',
+                            position: 'fixed', bottom: isMobile ? '90px' : '110px', right: isMobile ? '16px' : '30px',
+                            width: isMobile ? 'calc(100vw - 32px)' : '380px',
+                            height: isMobile ? 'min(650px, calc(100vh - 110px))' : '600px',
                             zIndex: 1101,
-                            borderRadius: '24px', overflow: 'hidden', display: 'flex', flexDirection: 'column',
+                            borderRadius: isMobile ? '28px' : '24px', overflow: 'hidden', display: 'flex', flexDirection: 'column',
                             border: activeTab === 'agent' ? '2.5px solid rgba(244, 63, 94, 0.35)' : '2.5px solid rgba(16, 185, 129, 0.35)',
                             boxShadow: activeTab === 'agent' ? '0 20px 50px rgba(244, 63, 94, 0.2)' : '0 20px 50px rgba(16, 185, 129, 0.2)',
                             transition: 'all 0.4s ease'
