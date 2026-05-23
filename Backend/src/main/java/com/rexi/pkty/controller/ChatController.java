@@ -124,8 +124,8 @@ public class ChatController {
             // Lấy bối cảnh dữ liệu THÔNG MINH (Cần gì lấy nấy dựa trên userQuery)
             String userContext = aiMemoryService.getUserContext(realUsername);
             String knowledgeContext = aiMemoryService.getKnowledgeBaseContext(userQuery);
-            // Inject dữ liệu phòng khám thực tế: bác sĩ + dịch vụ + bảng giá
-            String globalContext = aiMemoryService.getGlobalContext();
+            // Inject dữ liệu phòng khám thực tế theo RAG định tuyến từ khóa thông minh
+            String globalContext = aiMemoryService.getGlobalContext(userQuery);
 
             // Đọc các Header bối cảnh DOM từ frontend truyền qua
             String rawPath = request.getHeader("X-Current-Path");
