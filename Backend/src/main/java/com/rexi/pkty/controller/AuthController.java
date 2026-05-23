@@ -947,6 +947,13 @@ public class AuthController {
         String newPass = request.get("newPass");
         String method = request.get("method");
 
+        if (providedEmail != null) {
+            providedEmail = providedEmail.trim().toLowerCase();
+        }
+        if (newPass == null || newPass.length() < 6) {
+            return ResponseEntity.status(400).body(Map.of("message", "Mật khẩu mới phải có ít nhất 6 ký tự!"));
+        }
+
         com.rexi.pkty.entity.TaiKhoan tk = null;
 
         if (username != null && !username.isEmpty()) {
@@ -1007,10 +1014,12 @@ public class AuthController {
                         .body(Map.of("message", "Cảnh báo bảo mật: Thông tin Số điện thoại và Email không hoàn toàn khớp với hệ thống!"));
             }
         } else {
-            boolean isEmailVerified = providedEmail != null
-                    && SystemController.verifiedEmails.containsKey(providedEmail);
-            if (!isEmailVerified) {
+            Long verifiedUntil = providedEmail != null ? SystemController.verifiedEmails.get(providedEmail) : null;
+            if (verifiedUntil == null || System.currentTimeMillis() > verifiedUntil) {
                 logger.warning("Cảnh báo: Đặt lại mật khẩu bỏ qua OTP cho email: " + providedEmail);
+                if (providedEmail != null) {
+                    SystemController.verifiedEmails.remove(providedEmail);
+                }
                 return ResponseEntity.status(403)
                         .body(Map.of("message", "Yêu cầu xác minh OTP trước khi đặt lại mật khẩu!"));
             }

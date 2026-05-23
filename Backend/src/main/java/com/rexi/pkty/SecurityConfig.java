@@ -39,8 +39,10 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/system/health", "/api/system/cau-hinh").permitAll()
                 .requestMatchers(
                     "/api/auth/**", "/api/chat", "/api/chat/**",
+                    "/api/system/send-otp", "/api/system/verify-otp",
                     "/api/payment/**", "/api/lich-hen/gio-ranh",
                     "/api/lich-hen/khach-vang-lai", "/api/dich-vu/**", "/api/bac-si/**",
                     "/public/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/api/test-doanh-thu"

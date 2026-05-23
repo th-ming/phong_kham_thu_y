@@ -1,4 +1,4 @@
-﻿package com.rexi.pkty.service;
+package com.rexi.pkty.service;
 
 import com.rexi.pkty.entity.TaiKhoan;
 import com.rexi.pkty.repository.*;
@@ -7,17 +7,41 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
+import java.text.Normalizer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.time.LocalDate;
 
 @Service
 public class AiMemoryService {
+
+    private static final int KNOWLEDGE_MAX_CONTEXT_CHARS = 3800;
+    private static final int KNOWLEDGE_SNIPPET_RADIUS = 520;
+    private static final Set<String> KNOWLEDGE_STOP_WORDS = Set.of(
+        "toi", "ban", "cho", "cua", "voi", "nay", "kia", "thi", "la", "va", "hoac", "nhung",
+        "mot", "cac", "gi", "nao", "sao", "the", "can", "hay", "giup", "duoc",
+        "khong", "trong", "ngoai", "ve", "bi", "benh", "thu", "cung", "meo", "be"
+    );
+
+    private static class KnowledgeSnippet {
+        private final String fileName;
+        private final String snippet;
+        private final int score;
+
+        private KnowledgeSnippet(String fileName, String snippet, int score) {
+            this.fileName = fileName;
+            this.snippet = snippet;
+            this.score = score;
+        }
+    }
 
     @Autowired
     private TaiKhoanRepository taiKhoanRepository;
@@ -88,42 +112,112 @@ public class AiMemoryService {
     public String getKnowledgeBaseContext(String query) {
         if (query == null || query.trim().length() < 4) return "";
         
-        String cleanQuery = query.trim().toLowerCase();
-        if (cleanQuery.equals("hi") || cleanQuery.equals("hello") || cleanQuery.equals("helo") || 
-            cleanQuery.equals("alo") || cleanQuery.equals("chào") || cleanQuery.equals("chao") ||
-            cleanQuery.equals("bông") || cleanQuery.equals("cún") || cleanQuery.equals("mèo")) {
+        String cleanQuery = query.trim();
+        String normalizedQuery = normalizeForSearch(cleanQuery);
+        if (normalizedQuery.equals("hi") || normalizedQuery.equals("hello") || normalizedQuery.equals("helo") ||
+            normalizedQuery.equals("alo") || normalizedQuery.equals("chao") ||
+            normalizedQuery.equals("bong") || normalizedQuery.equals("cun") || normalizedQuery.equals("meo")) {
             return "";
         }
+        List<String> searchTerms = extractSearchTerms(normalizedQuery);
+        if (searchTerms.isEmpty()) return "";
 
         try {
             Path path = Paths.get("src/main/resources/knowledge");
             File folder = path.toFile();
             if (!folder.exists() || folder.listFiles() == null) return "";
 
-            StringBuilder context = new StringBuilder("\n[KIẾN THỨC CHUYÊN MÔN VNUA]\n");
-            boolean found = false;
+            List<KnowledgeSnippet> matches = new ArrayList<>();
 
             for (File file : folder.listFiles()) {
                 if (file.isFile() && file.getName().endsWith(".md")) {
                     String content = Files.readString(file.toPath());
-                    if (content.toLowerCase().contains(cleanQuery)) {
-                        if (context.length() + content.length() > 8000) {
-                            int remainingSpace = 8000 - context.length();
-                            if (remainingSpace > 500) {
-                                context.append(content, 0, remainingSpace).append("... [ĐÃ RÚT GỌN VÌ QUÁ DÀI] ...\n");
-                                found = true;
-                            }
-                            break;
-                        }
-                        context.append(content).append("\n---\n");
-                        found = true;
-                    }
+                    String normalizedContent = normalizeForSearch(content);
+                    int score = scoreKnowledgeFile(file.getName(), normalizedContent, searchTerms);
+                    if (score <= 0) continue;
+
+                    matches.add(new KnowledgeSnippet(
+                        file.getName(),
+                        extractRelevantSnippet(content, normalizedContent, searchTerms),
+                        score
+                    ));
                 }
             }
-            return found ? context.toString() : "";
+            if (matches.isEmpty()) return "";
+
+            matches.sort(Comparator.comparingInt((KnowledgeSnippet item) -> item.score).reversed());
+            StringBuilder context = new StringBuilder("\n[KIẾN THỨC CHUYÊN MÔN VNUA - TRÍCH ĐOẠN LIÊN QUAN]\n");
+            for (KnowledgeSnippet match : matches.stream().limit(4).collect(Collectors.toList())) {
+                if (context.length() >= KNOWLEDGE_MAX_CONTEXT_CHARS) break;
+                String block = "\nNguồn: " + match.fileName + "\n" + match.snippet.trim() + "\n---\n";
+                int remaining = KNOWLEDGE_MAX_CONTEXT_CHARS - context.length();
+                if (block.length() > remaining) {
+                    if (remaining > 260) {
+                        context.append(block, 0, remaining).append("\n...[ĐÃ RÚT GỌN]...\n");
+                    }
+                    break;
+                }
+                context.append(block);
+            }
+            return context.length() > 80 ? context.toString() : "";
         } catch (Exception e) {
             return "";
         }
+    }
+
+    private String normalizeForSearch(String value) {
+        if (value == null) return "";
+        String normalized = Normalizer.normalize(value.toLowerCase(), Normalizer.Form.NFD)
+            .replaceAll("\\p{M}", "")
+            .replace("đ", "d")
+            .replace("Đ", "d");
+        return normalized.replaceAll("[^a-z0-9\\s]", " ").replaceAll("\\s+", " ").trim();
+    }
+
+    private List<String> extractSearchTerms(String normalizedQuery) {
+        return List.of(normalizedQuery.split("\\s+")).stream()
+            .filter(term -> term.length() >= 3)
+            .filter(term -> !KNOWLEDGE_STOP_WORDS.contains(term))
+            .distinct()
+            .limit(10)
+            .collect(Collectors.toList());
+    }
+
+    private int scoreKnowledgeFile(String fileName, String normalizedContent, List<String> searchTerms) {
+        String normalizedFileName = normalizeForSearch(fileName);
+        int score = 0;
+        for (String term : searchTerms) {
+            if (normalizedFileName.contains(term)) score += 8;
+            int index = normalizedContent.indexOf(term);
+            while (index >= 0) {
+                score += 2;
+                index = normalizedContent.indexOf(term, index + term.length());
+                if (score > 80) break;
+            }
+        }
+        return score;
+    }
+
+    private String extractRelevantSnippet(String originalContent, String normalizedContent, List<String> searchTerms) {
+        int firstHit = -1;
+        for (String term : searchTerms) {
+            int index = normalizedContent.indexOf(term);
+            if (index >= 0 && (firstHit < 0 || index < firstHit)) {
+                firstHit = index;
+            }
+        }
+        if (firstHit < 0) {
+            return originalContent.substring(0, Math.min(originalContent.length(), KNOWLEDGE_SNIPPET_RADIUS * 2));
+        }
+
+        int start = Math.max(0, firstHit - KNOWLEDGE_SNIPPET_RADIUS);
+        int end = Math.min(originalContent.length(), firstHit + KNOWLEDGE_SNIPPET_RADIUS);
+        while (start > 0 && !Character.isWhitespace(originalContent.charAt(start))) start--;
+        while (end < originalContent.length() && !Character.isWhitespace(originalContent.charAt(end - 1))) end++;
+
+        String prefix = start > 0 ? "... " : "";
+        String suffix = end < originalContent.length() ? " ..." : "";
+        return prefix + originalContent.substring(start, end).replaceAll("\\s+", " ").trim() + suffix;
     }
 
     public String getGlobalContext(String query) {

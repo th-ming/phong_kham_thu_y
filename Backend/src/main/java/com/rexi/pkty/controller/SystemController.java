@@ -12,6 +12,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
+import java.security.SecureRandom;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
@@ -35,10 +36,27 @@ public class SystemController {
     private AuditLogService auditLogService;
 
     // Các biến dùng chung cho AuthController (Duy trì tính tương thích)
-    public static final Map<String, String> verifiedEmails = new ConcurrentHashMap<>();
+    public static final Map<String, Long> verifiedEmails = new ConcurrentHashMap<>();
     private final Map<String, String> otpStorage = new ConcurrentHashMap<>();
     private final Map<String, Long> otpExpiry = new ConcurrentHashMap<>();
+    private final Map<String, Integer> otpSendCount = new ConcurrentHashMap<>();
+    private final Map<String, Long> otpSendWindowStart = new ConcurrentHashMap<>();
+    private final Map<String, Long> otpLastSentAt = new ConcurrentHashMap<>();
+    private final Map<String, Integer> otpVerifyFailures = new ConcurrentHashMap<>();
+    private final Map<String, Long> otpVerifyLockedUntil = new ConcurrentHashMap<>();
     private static final long OTP_TTL_MS = 5 * 60 * 1000;
+    public static final long VERIFIED_EMAIL_TTL_MS = 10 * 60 * 1000;
+    private static final long OTP_SEND_WINDOW_MS = 10 * 60 * 1000;
+    private static final long OTP_RESEND_COOLDOWN_MS = 60 * 1000;
+    private static final long OTP_VERIFY_LOCK_MS = 10 * 60 * 1000;
+    private static final int MAX_OTP_SENDS_PER_WINDOW = 3;
+    private static final int MAX_OTP_VERIFY_FAILURES = 5;
+    private static final SecureRandom OTP_RANDOM = new SecureRandom();
+
+    @GetMapping("/health")
+    public ResponseEntity<?> health() {
+        return ResponseEntity.ok(Map.of("status", "UP"));
+    }
 
     @GetMapping("/cau-hinh")
     public ResponseEntity<?> getCauHinh() {
@@ -290,23 +308,37 @@ public class SystemController {
     }
 
     @PostMapping("/send-otp")
-    public ResponseEntity<?> sendOtp(@RequestBody Map<String, String> payload) {
-        String email = payload.get("email");
-        if (email == null || email.isEmpty()) return ResponseEntity.badRequest().body("Email trống");
+    public ResponseEntity<?> sendOtp(@RequestBody Map<String, String> payload,
+            jakarta.servlet.http.HttpServletRequest request) {
+        String email = normalizeEmail(payload.get("email"));
+        if (email == null || email.isEmpty()) return ResponseEntity.badRequest().body(Map.of("message", "Email trống", "success", false));
+
+        String rateKey = email + "|" + getClientIp(request);
+        ResponseEntity<?> rateLimitResponse = checkOtpSendRateLimit(rateKey);
+        if (rateLimitResponse != null) return rateLimitResponse;
         
         // Kiểm tra xem Email có tồn tại trong hệ thống (nhân viên hoặc khách hàng) không
-        String sql = "SELECT COUNT(*) FROM (SELECT email FROM KhachHang WHERE email = ? UNION SELECT email FROM NhanVien WHERE email = ?) AS tbl";
+        String sql = "SELECT COUNT(*) FROM (SELECT email FROM KhachHang WHERE LOWER(email) = LOWER(?) UNION SELECT email FROM NhanVien WHERE LOWER(email) = LOWER(?)) AS tbl";
         Integer count = jdbcTemplate.queryForObject(sql, Integer.class, email, email);
         if (count == null || count == 0) {
             return ResponseEntity.status(400).body(Map.of("message", "Email không tồn tại trên hệ thống!", "success", false));
         }
 
-        String otp = String.format("%06d", (int) (Math.random() * 1000000));
+        String otp = String.format("%06d", OTP_RANDOM.nextInt(1_000_000));
         otpStorage.put(email, otp);
         otpExpiry.put(email, System.currentTimeMillis() + OTP_TTL_MS);
         
         // Thực tế gửi email OTP cho người dùng
-        emailService.sendOtpEmail(email, otp);
+        boolean sent = emailService.sendOtpEmail(email, otp);
+        if (!sent) {
+            otpStorage.remove(email);
+            otpExpiry.remove(email);
+            return ResponseEntity.status(500).body(Map.of("message", "Không gửi được email OTP. Vui lòng kiểm tra cấu hình SMTP.", "success", false));
+        }
+
+        recordOtpSend(rateKey);
+        otpVerifyFailures.remove(email);
+        otpVerifyLockedUntil.remove(email);
         
         logger.info("OTP cho " + email + " đã được sinh và gửi.");
         return ResponseEntity.ok(Map.of("message", "Đã gửi OTP", "success", true));
@@ -314,18 +346,70 @@ public class SystemController {
 
     @PostMapping("/verify-otp")
     public ResponseEntity<?> verifyOtp(@RequestBody Map<String, String> payload) {
-        String email = payload.get("email");
+        String email = normalizeEmail(payload.get("email"));
         String otp = payload.get("otp");
         if (email == null || otp == null) return ResponseEntity.badRequest().body(Map.of("message", "Thiếu email hoặc mã OTP"));
+        if (!otp.matches("\\d{6}")) return ResponseEntity.status(400).body(Map.of("message", "Mã OTP phải gồm 6 chữ số"));
+        Long lockedUntil = otpVerifyLockedUntil.get(email);
+        if (lockedUntil != null && System.currentTimeMillis() < lockedUntil) {
+            return ResponseEntity.status(429).body(Map.of("message", "Bạn đã nhập sai OTP quá nhiều lần. Vui lòng thử lại sau 10 phút."));
+        }
         Long expiry = otpExpiry.get(email);
         if (expiry == null || System.currentTimeMillis() > expiry) return ResponseEntity.status(400).body(Map.of("message", "Mã OTP đã hết hạn"));
         String storedOtp = otpStorage.get(email);
         if (storedOtp != null && storedOtp.equals(otp)) {
-            verifiedEmails.put(email, "VERIFIED");
+            verifiedEmails.put(email, System.currentTimeMillis() + VERIFIED_EMAIL_TTL_MS);
             otpStorage.remove(email);
             otpExpiry.remove(email);
+            otpVerifyFailures.remove(email);
+            otpVerifyLockedUntil.remove(email);
             return ResponseEntity.ok(Map.of("message", "Xác minh thành công", "success", true));
         }
+        int failures = otpVerifyFailures.getOrDefault(email, 0) + 1;
+        otpVerifyFailures.put(email, failures);
+        if (failures >= MAX_OTP_VERIFY_FAILURES) {
+            otpVerifyLockedUntil.put(email, System.currentTimeMillis() + OTP_VERIFY_LOCK_MS);
+            otpStorage.remove(email);
+            otpExpiry.remove(email);
+            return ResponseEntity.status(429).body(Map.of("message", "Bạn đã nhập sai OTP quá nhiều lần. Vui lòng gửi mã mới sau 10 phút."));
+        }
         return ResponseEntity.status(400).body(Map.of("message", "Mã OTP không chính xác"));
+    }
+
+    private String normalizeEmail(String email) {
+        return email == null ? null : email.trim().toLowerCase();
+    }
+
+    private ResponseEntity<?> checkOtpSendRateLimit(String rateKey) {
+        long now = System.currentTimeMillis();
+        Long lastSentAt = otpLastSentAt.get(rateKey);
+        if (lastSentAt != null && now - lastSentAt < OTP_RESEND_COOLDOWN_MS) {
+            return ResponseEntity.status(429).body(Map.of("message", "Vui lòng chờ 60 giây trước khi gửi lại mã OTP.", "success", false));
+        }
+
+        Long windowStart = otpSendWindowStart.get(rateKey);
+        if (windowStart == null || now - windowStart > OTP_SEND_WINDOW_MS) {
+            otpSendWindowStart.put(rateKey, now);
+            otpSendCount.put(rateKey, 0);
+            return null;
+        }
+
+        if (otpSendCount.getOrDefault(rateKey, 0) >= MAX_OTP_SENDS_PER_WINDOW) {
+            return ResponseEntity.status(429).body(Map.of("message", "Bạn đã yêu cầu quá nhiều mã OTP. Vui lòng thử lại sau 10 phút.", "success", false));
+        }
+        return null;
+    }
+
+    private void recordOtpSend(String rateKey) {
+        otpLastSentAt.put(rateKey, System.currentTimeMillis());
+        otpSendCount.put(rateKey, otpSendCount.getOrDefault(rateKey, 0) + 1);
+    }
+
+    private String getClientIp(jakarta.servlet.http.HttpServletRequest request) {
+        String forwardedFor = request.getHeader("X-Forwarded-For");
+        if (forwardedFor != null && !forwardedFor.isBlank()) {
+            return forwardedFor.split(",")[0].trim();
+        }
+        return request.getRemoteAddr();
     }
 }

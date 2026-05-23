@@ -7,12 +7,27 @@ import { toast } from "@components/Toast";
 import { useTheme } from "../contexts/ThemeContextV2";
 
 interface ServiceData {
-    id_dich_vu: number;
+    id_dich_vu: number | string;
     ten_dich_vu: string;
     mo_ta: string;
     gia: number;
     trang_thai: boolean;
 }
+
+const FALLBACK_SERVICES: ServiceData[] = [
+    { id_dich_vu: "fallback-kham", ten_dich_vu: "Khám tổng quát", mo_ta: "Kiểm tra sức khỏe toàn diện cho thú cưng.", gia: 150000, trang_thai: true },
+    { id_dich_vu: "fallback-tiem", ten_dich_vu: "Tiêm phòng", mo_ta: "Tiêm vaccine định kỳ theo lịch.", gia: 200000, trang_thai: true },
+    { id_dich_vu: "fallback-xn", ten_dich_vu: "Xét nghiệm máu", mo_ta: "Xét nghiệm máu toàn phần.", gia: 280000, trang_thai: true },
+    { id_dich_vu: "fallback-sieu-am", ten_dich_vu: "Siêu âm", mo_ta: "Chẩn đoán hình ảnh bằng siêu âm.", gia: 350000, trang_thai: true },
+    { id_dich_vu: "fallback-pt", ten_dich_vu: "Phẫu thuật nhỏ", mo_ta: "Các ca phẫu thuật nhỏ theo chỉ định.", gia: 1500000, trang_thai: true },
+    { id_dich_vu: "fallback-spa", ten_dich_vu: "Spa & Grooming", mo_ta: "Tắm, vệ sinh và cắt tỉa lông.", gia: 100000, trang_thai: true },
+];
+
+const priceGridStyle: React.CSSProperties = {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 450px), 1fr))',
+    gap: '32px'
+};
 
 const BangGiaDichVu: React.FC = () => {
     const { theme } = useTheme();
@@ -20,6 +35,7 @@ const BangGiaDichVu: React.FC = () => {
     const navigate = useNavigate();
     const [services, setServices] = useState<ServiceData[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState(false);
 
     const handleBookingClick = (e: React.MouseEvent) => {
         e.preventDefault();
@@ -40,9 +56,13 @@ const BangGiaDichVu: React.FC = () => {
             if (showLoading) setLoading(true);
             try {
                 const response = await axiosInstance.get('/api/dich-vu/active');
-                setServices(response.data || []);
+                const nextServices = Array.isArray(response.data) ? response.data : [];
+                setServices(nextServices);
+                setLoadError(false);
             } catch (error) {
                 console.error("Lỗi lấy bảng giá:", error);
+                setLoadError(true);
+                setServices((current) => current.length > 0 ? current : FALLBACK_SERVICES);
             } finally {
                 if (showLoading) setLoading(false);
             }
@@ -106,6 +126,11 @@ const BangGiaDichVu: React.FC = () => {
 
             <section style={{ padding: '80px 0 40px' }}>
                 <div className="container">
+                    {loadError && (
+                        <div style={{ background: 'rgba(245, 158, 11, 0.12)', border: '1px solid rgba(245, 158, 11, 0.28)', color: 'var(--ink)', borderRadius: '20px', padding: '16px 20px', marginBottom: '28px', fontWeight: 700, lineHeight: 1.5 }}>
+                            Bảng giá đang hiển thị dữ liệu tham khảo vì hệ thống chưa tải được dữ liệu mới nhất. Vui lòng gọi hotline để xác nhận chi phí trước khi đặt lịch.
+                        </div>
+                    )}
                     {loading ? (
                         <>
                             <style>{`
@@ -119,7 +144,7 @@ const BangGiaDichVu: React.FC = () => {
                                     animation: skeleton-shimmer 2s infinite linear;
                                 }
                             `}</style>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(450px, 1fr))', gap: '32px' }}>
+                            <div style={priceGridStyle}>
                                 {[1, 2, 3, 4].map((i) => (
                                     <div key={i} className="glass-card" style={{ background: 'var(--surface)', borderRadius: '32px', padding: '40px', border: '1px solid var(--gray-200)', height: '100%' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '32px', paddingBottom: '24px', borderBottom: '2px dashed var(--gray-200)' }}>
@@ -141,8 +166,13 @@ const BangGiaDichVu: React.FC = () => {
                                 ))}
                             </div>
                         </>
+                    ) : categorizedServices.length === 0 && otherServices.length === 0 ? (
+                        <div style={{ textAlign: 'center', padding: '56px 24px', background: 'var(--surface)', border: '1px solid var(--gray-200)', borderRadius: '24px' }}>
+                            <span className="material-symbols-outlined" style={{ fontSize: '44px', color: 'var(--gray-300)', marginBottom: '14px' }}>medical_services</span>
+                            <p style={{ margin: 0, color: 'var(--gray-500)', fontWeight: 700 }}>Bảng giá đang được cập nhật. Vui lòng liên hệ hotline để được tư vấn chi phí.</p>
+                        </div>
                     ) : (
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(450px, 1fr))', gap: '32px' }}>
+                        <div style={priceGridStyle}>
                             {categorizedServices.map((cat, idx) => (
                                 <RevealSection key={idx}>
                                     <div className="glass-card" style={{ background: 'var(--surface)', borderRadius: '32px', padding: '40px', border: '1px solid var(--gray-200)', height: '100%' }}>
@@ -154,9 +184,9 @@ const BangGiaDichVu: React.FC = () => {
                                         </div>
                                         <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '20px' }}>
                                             {cat.items.map((item) => (
-                                                <li key={item.id_dich_vu} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: 'var(--ink)' }}>
-                                                    <span style={{ fontSize: '1.05rem', color: 'var(--gray-500)', fontWeight: 600 }}>{item.ten_dich_vu}</span>
-                                                    <span style={{ fontSize: '1.1rem', fontWeight: 900, color: '#0f9d8a' }}>{item.gia > 0 ? formatTienVND(item.gia) : "Liên hệ"}</span>
+                                                <li key={item.id_dich_vu} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', color: 'var(--ink)' }}>
+                                                    <span style={{ fontSize: '1.05rem', color: 'var(--gray-500)', fontWeight: 600, minWidth: 0 }}>{item.ten_dich_vu}</span>
+                                                    <span style={{ fontSize: '1.1rem', fontWeight: 900, color: '#0f9d8a', whiteSpace: 'nowrap' }}>{item.gia > 0 ? formatTienVND(item.gia) : "Liên hệ"}</span>
                                                 </li>
                                             ))}
                                         </ul>
@@ -175,9 +205,9 @@ const BangGiaDichVu: React.FC = () => {
                                         </div>
                                         <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '20px' }}>
                                             {otherServices.map((item) => (
-                                                <li key={item.id_dich_vu} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: 'var(--ink)' }}>
-                                                    <span style={{ fontSize: '1.05rem', color: 'var(--gray-500)', fontWeight: 600 }}>{item.ten_dich_vu}</span>
-                                                    <span style={{ fontSize: '1.1rem', fontWeight: 900, color: '#0f9d8a' }}>{item.gia > 0 ? formatTienVND(item.gia) : "Liên hệ"}</span>
+                                                <li key={item.id_dich_vu} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', color: 'var(--ink)' }}>
+                                                    <span style={{ fontSize: '1.05rem', color: 'var(--gray-500)', fontWeight: 600, minWidth: 0 }}>{item.ten_dich_vu}</span>
+                                                    <span style={{ fontSize: '1.1rem', fontWeight: 900, color: '#0f9d8a', whiteSpace: 'nowrap' }}>{item.gia > 0 ? formatTienVND(item.gia) : "Liên hệ"}</span>
                                                 </li>
                                             ))}
                                         </ul>

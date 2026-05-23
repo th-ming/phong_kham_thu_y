@@ -45,7 +45,7 @@ public class ReActAgentService {
         }
 
         // Xây dựng system prompt với tool schema + ngữ cảnh người dùng
-        String systemPrompt = buildSystemPrompt(username, userRole);
+        String systemPrompt = buildSystemPrompt(userQuery, username, userRole);
 
         // Khởi tạo lịch sử hội thoại với câu hỏi người dùng
         List<ChatMessage> history = new ArrayList<>();
@@ -195,8 +195,9 @@ public class ReActAgentService {
     /**
      * Xây dựng system prompt tích hợp ngữ cảnh người dùng + tool schema.
      */
-    private String buildSystemPrompt(String username, String userRole) {
-        String globalCtx = memoryService.getGlobalContext();
+    private String buildSystemPrompt(String userQuery, String username, String userRole) {
+        // Cung cấp thông tin phòng khám và các RAG context
+        String globalCtx = memoryService.getGlobalContext(userQuery);
         String userCtx   = (username != null) ? memoryService.getUserContext(username) : "";
 
         boolean isStaff = userRole != null && !userRole.isEmpty()

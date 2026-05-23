@@ -212,26 +212,40 @@ public class AgentController {
             String sqlExecuted = sql;
 
             if ("PET_NAME".equals(searchType) && !keyword.isEmpty()) {
-                sqlExecuted = sql + " AND tc.ten_thu_cung COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI";
-                dbResults = jdbcTemplate.queryForList(sqlExecuted, "%" + keyword + "%");
+                StringBuilder where = new StringBuilder(sql);
+                List<Object> params = new ArrayList<>();
+                com.rexi.pkty.util.SmartSearchSql.appendTokenSearch(where, params, keyword,
+                        "tc.ten_thu_cung COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI");
+                sqlExecuted = where.toString();
+                dbResults = jdbcTemplate.queryForList(sqlExecuted, params.toArray());
             } else if ("PET_BREED".equals(searchType) && !keyword.isEmpty()) {
-                sqlExecuted = sql + " AND tc.giong COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI";
-                dbResults = jdbcTemplate.queryForList(sqlExecuted, "%" + keyword + "%");
+                StringBuilder where = new StringBuilder(sql);
+                List<Object> params = new ArrayList<>();
+                com.rexi.pkty.util.SmartSearchSql.appendTokenSearch(where, params, keyword,
+                        "tc.giong COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI");
+                sqlExecuted = where.toString();
+                dbResults = jdbcTemplate.queryForList(sqlExecuted, params.toArray());
             } else if ("PET_TYPE".equals(searchType) && !keyword.isEmpty()) {
-                sqlExecuted = sql + " AND tc.loai COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI";
-                dbResults = jdbcTemplate.queryForList(sqlExecuted, "%" + keyword + "%");
+                StringBuilder where = new StringBuilder(sql);
+                List<Object> params = new ArrayList<>();
+                com.rexi.pkty.util.SmartSearchSql.appendTokenSearch(where, params, keyword,
+                        "tc.loai COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI");
+                sqlExecuted = where.toString();
+                dbResults = jdbcTemplate.queryForList(sqlExecuted, params.toArray());
             } else if ("CUSTOMER_NAME".equals(searchType) && !keyword.isEmpty()) {
-                sqlExecuted = sql + " AND kh.ten_khach_hang COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI";
-                dbResults = jdbcTemplate.queryForList(sqlExecuted, "%" + keyword + "%");
+                StringBuilder where = new StringBuilder(sql);
+                List<Object> params = new ArrayList<>();
+                com.rexi.pkty.util.SmartSearchSql.appendTokenSearch(where, params, keyword,
+                        "kh.ten_khach_hang COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI");
+                sqlExecuted = where.toString();
+                dbResults = jdbcTemplate.queryForList(sqlExecuted, params.toArray());
             } else {
                 dbResults = jdbcTemplate.queryForList(sqlExecuted);
             }
 
-            boolean isDemoMode = false;
             // Nếu không tìm thấy kết quả thật trong DB → trả về danh sách rỗng
             // KHÔNG inject demo data giả để tránh gửi email nhầm
             if (dbResults.isEmpty()) {
-                isDemoMode = true;
                 logger.warning("[SWARM] Không tìm thấy dữ liệu khách hàng phù hợp trong DB. Trả về kết quả rỗng.");
             }
 
@@ -240,7 +254,32 @@ public class AgentController {
                     "- Từ khóa tìm kiếm: \"" + keyword + "\"\n" +
                     "- SQL truy vấn an toàn: " + sqlExecuted.replace("?", "'" + keyword + "'") + "\n" +
                     "- Kết quả truy xuất: Tìm thấy " + dbResults.size() + " chủ nuôi phù hợp trong hệ thống" +
-                    (isDemoMode ? " (Chế độ tự sinh dữ liệu Demo do DB trống)." : ".");
+                    (dbResults.isEmpty() ? ". Không có email nào được tạo để tránh gửi nhầm." : ".");
+
+            if (dbResults.isEmpty()) {
+                Map<String, Object> swarmData = new HashMap<>();
+                swarmData.put("orchestratorPrompt", query);
+
+                List<Map<String, String>> steps = new ArrayList<>();
+                steps.add(Map.of("agent", step1Agent, "action", step1Action, "output", step1Output));
+                steps.add(Map.of("agent", step2Agent, "action", step2Action, "output", step2Output));
+                steps.add(Map.of(
+                    "agent", "✍️ Copywriter Agent",
+                    "action", "Bỏ qua soạn email vì không có người nhận hợp lệ",
+                    "output", "Không tìm thấy khách hàng hoặc thú cưng phù hợp với bộ lọc. Hệ thống không tạo email nháp và không cho phép gửi hàng loạt khi danh sách người nhận rỗng."
+                ));
+                steps.add(Map.of(
+                    "agent", "🛡️ Reviewer Agent",
+                    "action", "Kiểm tra an toàn trước khi gửi",
+                    "output", "Đạt yêu cầu an toàn: không có dữ liệu người nhận nên chiến dịch được dừng lại, tránh gửi nhầm hoặc tạo dữ liệu demo giả."
+                ));
+                swarmData.put("steps", steps);
+                swarmData.put("finalReply", "Không tìm thấy khách hàng hoặc thú cưng phù hợp với yêu cầu. Rexi đã dừng chiến dịch và không tạo email gửi hàng loạt để tránh gửi nhầm.");
+                swarmData.put("contacts", List.of());
+
+                String swarmPayload = "[SWARM_ORCHESTRATION:" + objectMapper.writeValueAsString(swarmData) + "]";
+                return ResponseEntity.ok(Map.of("reply", swarmPayload));
+            }
 
             // Bước 3: ✍️ Copywriter Agent
             String step3Agent = "✍️ Copywriter Agent";

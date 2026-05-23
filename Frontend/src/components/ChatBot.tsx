@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import axiosInstance from "@services/axios";
 import { useTheme } from "../contexts/ThemeContextV2";
-import { getUserProfile, normalizeSearchText, normalizeUserRole } from "../utils/index";
+import { getUserProfile, matchesSearchFields, normalizeSearchText, normalizeUserRole } from "../utils/index";
 import { ADMIN_ROUTE_ROLES, canAccessAdminPath } from "../utils/permissions";
 import { executeAction } from "./ActionExecutor";
 import { toast } from "@components/Toast";
@@ -118,6 +118,7 @@ const SwarmConsole: React.FC<{ data: SwarmData; isDark: boolean }> = ({ data, is
     const [isComplete, setIsComplete] = useState<boolean>(false);
     const [isSending, setIsSending] = useState<boolean>(false);
     const [isSent, setIsSent] = useState<boolean>(false);
+    const [sendError, setSendError] = useState<string>("");
     const [previewIdx, setPreviewIdx] = useState<number | null>(null);
 
     useEffect(() => {
@@ -143,6 +144,7 @@ const SwarmConsole: React.FC<{ data: SwarmData; isDark: boolean }> = ({ data, is
     // Fix E: Gửi email hàng loạt qua API thật
     const handleApproveAndSend = async () => {
         setIsSending(true);
+        setSendError("");
         try {
             await axiosInstance.post('/api/agent/bulk-send-email', {
                 contacts,
@@ -151,8 +153,8 @@ const SwarmConsole: React.FC<{ data: SwarmData; isDark: boolean }> = ({ data, is
             setIsSent(true);
         } catch (err) {
             console.error('Lỗi gửi email:', err);
-            // Vẫn đánh dấu thành công để UX không bị gãy
-            setIsSent(true);
+            setIsSent(false);
+            setSendError("Không gửi được chiến dịch email. Vui lòng kiểm tra cấu hình email hoặc thử lại sau.");
         } finally {
             setIsSending(false);
         }
@@ -278,6 +280,11 @@ const SwarmConsole: React.FC<{ data: SwarmData; isDark: boolean }> = ({ data, is
                                 <div style={{ marginTop: '12px', padding: '12px', borderRadius: '12px', background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', color: 'white', fontWeight: 900, fontSize: '0.82rem' }}>
                                     <span className="material-symbols-outlined" style={{ fontSize: '18px', animation: 'spin 1s infinite linear' }}>autorenew</span>
                                     Đang gửi {contacts.length} email... ✨
+                                </div>
+                            )}
+                            {sendError && (
+                                <div style={{ marginTop: '12px', padding: '12px', borderRadius: '12px', background: isDark ? 'rgba(127, 29, 29, 0.32)' : '#fef2f2', border: '1px solid rgba(239, 68, 68, 0.45)', color: isDark ? '#fecaca' : '#b91c1c', fontWeight: 850, fontSize: '0.78rem', lineHeight: 1.45 }}>
+                                    {sendError}
                                 </div>
                             )}
                         </div>
@@ -651,13 +658,10 @@ export const ChatBot: React.FC = () => {
         onSelect: (prompt: string) => void,
         prefix: "standard" | "agent"
     ) => {
-        const railItems = [...suggestions, ...suggestions];
-        const duration = Math.max(28, suggestions.length * 4.2);
-
         return (
             <div className="chat-suggestion-shell" data-ai-id={`chat-suggestions-${prefix}`} aria-label={`Gợi ý nhanh ${prefix}`}>
-                <div className="chat-suggestion-track" style={{ animationDuration: `${duration}s` }}>
-                    {railItems.map((item, idx) => (
+                <div className="chat-suggestion-track">
+                    {suggestions.map((item, idx) => (
                         <button
                             key={`${prefix}-${idx}-${item.label}`}
                             data-ai-id={`button-chatbot-suggestion-${prefix}-${idx}`}
@@ -698,11 +702,22 @@ export const ChatBot: React.FC = () => {
         return actionWords.some(word => normalized.includes(word));
     };
 
+    const hasExplicitNavigationIntent = (text: string) => {
+        const normalized = normalizeSearchText(text);
+        const navigationPhrases = [
+            "mo trang", "mo phan he", "mo muc", "vao trang", "vao phan he", "chuyen sang",
+            "dieu huong", "truy cap", "di toi", "dua toi", "dua den", "nhay sang",
+            "sang trang", "toi trang", "den trang"
+        ];
+        return navigationPhrases.some(phrase => normalized.includes(phrase));
+    };
+
     const isConceptualQuestion = (text: string) => {
         const normalized = normalizeSearchText(text);
         const questionWords = [
             "la gi", "la sao", "tai sao", "vi sao", "nhu nao", "the nao", "duoc khong",
-            "co duoc", "co biet", "biet duoc", "co phai", "nghia la", "dung de lam gi"
+            "co duoc", "co biet", "biet duoc", "co phai", "nghia la", "dung de lam gi",
+            "thi sao", "co nen", "nen khong", "bao nhieu", "khi nao", "o dau", "can luu y gi"
         ];
         return questionWords.some(word => normalized.includes(word));
     };
@@ -740,12 +755,21 @@ export const ChatBot: React.FC = () => {
             const saved = sessionStorage.getItem(key);
             if (saved) {
                 const parsed = JSON.parse(saved);
-                if (Array.isArray(parsed)) return parsed;
+                if (Array.isArray(parsed)) return stripMediaFromStoredMessages(parsed);
             }
         } catch (e) {
             console.error("Lỗi đọc lịch sử chat:", e);
         }
         return fallback;
+    };
+
+    const stripMediaFromStoredMessages = (items: any[]) => {
+        return items.map(({ images, videos, ...rest }) => {
+            const mediaCount = (Array.isArray(images) ? images.length : 0) + (Array.isArray(videos) ? videos.length : 0);
+            return mediaCount > 0
+                ? { ...rest, mediaSummary: `Đã lược bỏ ${mediaCount} tệp media khỏi lịch sử lưu cục bộ để giảm tải hệ thống.` }
+                : rest;
+        });
     };
 
     // 2. TRẠNG THÁI GIAO DIỆN UÝ PHÁP (STATE HOOKS)
@@ -897,6 +921,14 @@ export const ChatBot: React.FC = () => {
 
             const aiId = target.getAttribute("data-ai-id");
 
+            if (target.value && target.validity && !target.validity.valid) {
+                const lastWarn = Number(target.dataset.rexiLastValidationWarn || "0");
+                if (Date.now() - lastWarn > 2500) {
+                    target.dataset.rexiLastValidationWarn = String(Date.now());
+                    reportFormIssue(target, "input");
+                }
+            }
+
             // KỊCH BẢN 1: CHẨN ĐOÁN LÂM SÀNG CHỦ ĐỘNG (FPV)
             if (aiId === "textarea-quanlybenhan-chandoan") {
                 const val = target.value.toLowerCase();
@@ -937,22 +969,83 @@ export const ChatBot: React.FC = () => {
             }
         };
 
+        const describeFormControl = (target: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement) => {
+            const aiId = target.getAttribute("data-ai-id");
+            const id = target.id;
+            const label = id ? document.querySelector(`label[for="${CSS.escape(id)}"]`)?.textContent?.trim() : "";
+            const aria = target.getAttribute("aria-label") || "";
+            const placeholder = target.getAttribute("placeholder") || "";
+            const name = target.getAttribute("name") || "";
+            return (label || aria || placeholder || name || aiId || "trường nhập liệu").replace(/\s+/g, " ").slice(0, 90);
+        };
+
+        const reportFormIssue = (target: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement, source: "input" | "invalid" | "submit") => {
+            const fieldName = describeFormControl(target);
+            const validationMessage = target.validationMessage || "giá trị đang thiếu hoặc chưa đúng định dạng";
+            const logMsg = `Phát hiện lỗi nhập liệu ở "${fieldName}": ${validationMessage}`;
+            const newLog = { action: logMsg, timestamp: new Date().toLocaleTimeString() };
+            setUserActivityLogs(prev => [newLog, ...prev.slice(0, 9)]);
+
+            if (source !== "input") {
+                toast.info(`Rexi phát hiện lỗi ở "${fieldName}": ${validationMessage}`);
+            }
+
+            setProactiveMessage({
+                id: `form-validation-${target.getAttribute("data-ai-id") || target.name || target.id || "field"}`,
+                text: `Rexi phát hiện lỗi ở "${fieldName}": ${validationMessage}. Bạn có muốn Rexi kiểm tra form hiện tại và hướng dẫn sửa đúng trường đang sai không?`,
+                action: () => {
+                    setActiveTab("agent");
+                    setIsOpen(true);
+                    setTimeout(() => {
+                        handleAgentSend(`Kiểm tra form hiện tại. Người dùng đang bị lỗi ở trường "${fieldName}" với thông báo "${validationMessage}". Hãy chỉ rõ thiếu/sai gì và nếu có thể hãy tự điền/sửa trường đó giúp người dùng dựa trên dữ liệu đang có trên trang.`);
+                    }, 450);
+                }
+            });
+        };
+
+        const handleGlobalInvalid = (e: Event) => {
+            const target = e.target as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
+            if (!target || !("validity" in target)) return;
+            reportFormIssue(target, "invalid");
+        };
+
+        const handleGlobalSubmit = (e: Event) => {
+            const form = e.target as HTMLFormElement;
+            if (!form || !form.querySelectorAll) return;
+            const invalidControl = Array.from(form.querySelectorAll("input, textarea, select"))
+                .find((el) => (el as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement).willValidate && !(el as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement).checkValidity()) as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | undefined;
+            if (invalidControl) {
+                reportFormIssue(invalidControl, "submit");
+            }
+        };
+
         document.addEventListener("click", handleGlobalClick, true);
         window.addEventListener("scroll", handleGlobalScroll);
         window.addEventListener("error", handleGlobalError);
         document.addEventListener("input", handleGlobalInput);
+        document.addEventListener("invalid", handleGlobalInvalid, true);
+        document.addEventListener("submit", handleGlobalSubmit, true);
         return () => {
             document.removeEventListener("click", handleGlobalClick, true);
             window.removeEventListener("scroll", handleGlobalScroll);
             window.removeEventListener("error", handleGlobalError);
             document.removeEventListener("input", handleGlobalInput);
+            document.removeEventListener("invalid", handleGlobalInvalid, true);
+            document.removeEventListener("submit", handleGlobalSubmit, true);
         };
     }, []);
 
     // TỰ ĐỘNG GỢI Ý CHĂM SÓC CHỦ ĐỘNG (UPSELL & RETENTION)
     useEffect(() => {
+        let cancelled = false;
+        let reminderTimer: number | undefined;
+
         const fetchRetentionReminders = async () => {
             try {
+                if (isChatBubbleDismissed) {
+                    setProactiveMessage(null);
+                    return;
+                }
                 if (!isCustomerAccount || !user?.id_khach_hang) {
                     setProactiveMessage(prev => prev?.id?.startsWith("retention-") ? null : prev);
                     return;
@@ -961,12 +1054,14 @@ export const ChatBot: React.FC = () => {
                 // Fix C: dùng axiosInstance để tự động đính kèm JWT token
                 const response = await axiosInstance.get("/api/agent/retention-reminders");
                 const data = response.data;
+                if (cancelled) return;
                 if (data && data.length > 0) {
                     const reminder = data[Math.floor(Math.random() * data.length)];
                     const reminderId = `retention-${reminder.id_thu_cung}`;
                     if (isProactiveDismissed(reminderId)) return;
 
-                    setTimeout(() => {
+                    reminderTimer = window.setTimeout(() => {
+                        if (cancelled || isChatBubbleDismissed) return;
                         if (isProactiveDismissed(reminderId)) return;
                         setProactiveMessage({
                             id: reminderId,
@@ -987,11 +1082,17 @@ export const ChatBot: React.FC = () => {
             }
         };
         fetchRetentionReminders();
-    }, [isCustomerAccount, user?.id_khach_hang]);
+        return () => {
+            cancelled = true;
+            if (reminderTimer) {
+                window.clearTimeout(reminderTimer);
+            }
+        };
+    }, [isCustomerAccount, user?.id_khach_hang, isChatBubbleDismissed]);
 
     // Gợi ý chủ động theo ngữ cảnh trang hiện tại, chỉ đưa ra nhắc nhở có thể hành động.
     useEffect(() => {
-        if (!user || isOpen) return;
+        if (!user || isOpen || isChatBubbleDismissed) return;
 
         const contextHints: Record<string, { id: string; text: string; prompt: string }> = {
             "/quan-ly/cau-hinh": {
@@ -1020,6 +1121,7 @@ export const ChatBot: React.FC = () => {
         if (!hint || isProactiveDismissed(hint.id)) return;
 
         const timer = window.setTimeout(() => {
+            if (isChatBubbleDismissed) return;
             if (isProactiveDismissed(hint.id)) return;
             setProactiveMessage(prev => prev || {
                 id: hint.id,
@@ -1033,7 +1135,7 @@ export const ChatBot: React.FC = () => {
         }, 2400);
 
         return () => window.clearTimeout(timer);
-    }, [location.pathname, userIdentity, isOpen]);
+    }, [location.pathname, userIdentity, isOpen, isChatBubbleDismissed]);
 
     // DÙNG REF TRÁNH STALE CLOSURE KHI SỬ DỤNG VOICE TRONG TABS
     const activeTabRef = useRef(activeTab);
@@ -1404,13 +1506,13 @@ export const ChatBot: React.FC = () => {
     // Lưu trữ lịch sử vào SessionStorage
     useEffect(() => {
         try {
-            sessionStorage.setItem(standardChatHistoryKey, JSON.stringify(messages));
+            sessionStorage.setItem(standardChatHistoryKey, JSON.stringify(stripMediaFromStoredMessages(messages)));
         } catch (e) { }
     }, [messages, standardChatHistoryKey]);
 
     useEffect(() => {
         try {
-            sessionStorage.setItem(agentChatHistoryKey, JSON.stringify(agentMessages));
+            sessionStorage.setItem(agentChatHistoryKey, JSON.stringify(stripMediaFromStoredMessages(agentMessages)));
         } catch (e) { }
     }, [agentMessages, agentChatHistoryKey]);
 
@@ -1686,31 +1788,35 @@ export const ChatBot: React.FC = () => {
     }, [isClinicStaff, isMobile]);
 
     useEffect(() => {
-        if (isOpen) return;
+        if (isOpen || isChatBubbleDismissed) return;
+
+        const hideTimers: number[] = [];
 
         // Kích hoạt hiển thị bong bóng gợi ý sau 1.2 giây khi chuyển trang
         const initialTimer = setTimeout(() => {
+            if (isChatBubbleDismissed) return;
             const tip = getContextualTip(location.pathname);
             setCalloutMessage(tip);
             setShowCallout(true);
             // Tự tắt sau 8 giây để tránh che khuất tầm nhìn của sếp
-            setTimeout(() => setShowCallout(false), 8000);
+            hideTimers.push(window.setTimeout(() => setShowCallout(false), 8000));
         }, 1200);
 
         // Chu kỳ nhắc gợi ý mỗi 30 giây để tạo sinh động
         const interval = setInterval(() => {
-            if (isOpen) return;
+            if (isOpen || isChatBubbleDismissed) return;
             const tip = getContextualTip(location.pathname);
             setCalloutMessage(tip);
             setShowCallout(true);
-            setTimeout(() => setShowCallout(false), 8000);
+            hideTimers.push(window.setTimeout(() => setShowCallout(false), 8000));
         }, 30000);
 
         return () => {
             clearTimeout(initialTimer);
             clearInterval(interval);
+            hideTimers.forEach(window.clearTimeout);
         };
-    }, [location.pathname, getContextualTip, isOpen]);
+    }, [location.pathname, getContextualTip, isOpen, isChatBubbleDismissed]);
 
     // 4. NHẬN DIỆN GIỌNG NÓI & SÓNG ÂM
     const stopAudioAnalysis = useCallback(() => {
@@ -1908,17 +2014,15 @@ export const ChatBot: React.FC = () => {
         }
 
         try {
-            const apiHistory = messages.map((msg) => ({
+            const apiHistory = messages.slice(-10).map((msg) => ({
                 role: msg.type === "ai" ? "assistant" : "user",
-                content: msg.text,
-                ...(msg.images && msg.images.length > 0 && { images: msg.images.map((img: string) => img.includes(',') ? img.split(',')[1] : img) }),
-                ...(msg.videos && msg.videos.length > 0 && { videos: msg.videos })
+                content: String(msg.text || "").slice(0, 1200)
             }));
 
             apiHistory.push({
                 role: "user",
                 content: textToSend,
-                ...(images.length > 0 && { images: images.map(img => img.includes(',') ? img.split(',')[1] : img) }),
+                ...(images.length > 0 && { images }),
                 ...(videos.length > 0 && { videos })
             });
 
@@ -2036,16 +2140,18 @@ export const ChatBot: React.FC = () => {
                     const navigatePath = navMatch[1].trim();
                     cleanedReplyText = replyText.replace(/\[NAVIGATE:[^\]]+\]/g, "").trim();
                     
-                    const hasPermission = navigatePath.startsWith("/quan-ly/")
+                    const hasPermission = hasExplicitNavigationIntent(textToSend) && (navigatePath.startsWith("/quan-ly/")
                         ? canAccessAdminPath(normalizedRoleCode, navigatePath)
-                        : true;
+                        : true);
                     
                     if (hasPermission) {
                         setTimeout(() => {
                             navigate(navigatePath);
                         }, 1500);
                     } else {
-                        cleanedReplyText = "Dạ sếp ơi! Phân hệ này là khu vực được bảo mật cao, tài khoản của sếp hiện không đủ quyền truy cập nhé! 🔒";
+                        cleanedReplyText = hasExplicitNavigationIntent(textToSend)
+                            ? "Dạ sếp ơi! Phân hệ này là khu vực được bảo mật cao, tài khoản của sếp hiện không đủ quyền truy cập nhé! 🔒"
+                            : cleanedReplyText;
                     }
                 }
             }
@@ -2224,10 +2330,14 @@ export const ChatBot: React.FC = () => {
                             if (query.includes("tìm khách hàng")) {
                                 const keyword = query.replace("tìm khách hàng", "").trim();
                                 if (keyword) {
-                                    filtered = data.filter((item: any) =>
-                                        (item.ten_khach_hang || "").toLowerCase().includes(keyword.toLowerCase()) ||
-                                        (item.sdt || "").includes(keyword)
-                                    );
+                                    filtered = data.filter((item: any) => matchesSearchFields(keyword, [
+                                        item.id_khach_hang,
+                                        item.ten_khach_hang,
+                                        item.sdt,
+                                        item.email,
+                                        item.dia_chi,
+                                        item.trang_thai
+                                    ]));
                                 }
                             }
 
@@ -2571,7 +2681,7 @@ export const ChatBot: React.FC = () => {
             ];
 
             // Tìm kiếm khớp quy tắc điền hướng
-            const matchedRule = hasActionIntent && !isQuestionIntent
+            const matchedRule = hasExplicitNavigationIntent(textToSend) && !isQuestionIntent
                 ? navigationRules.find(rule => 
                     rule.keywords.some(kw => query.includes(kw))
                 )
@@ -2729,10 +2839,17 @@ export const ChatBot: React.FC = () => {
                                 .replace(/kho thuốc|tồn kho|còn thuốc|tìm thuốc|kiểm tra thuốc/g, "")
                                 .trim();
                             if (searchKw) {
-                                filtered = data.filter((t: any) =>
-                                    (t.ten_thuoc || "").toLowerCase().includes(searchKw) ||
-                                    (t.hoat_chat || "").toLowerCase().includes(searchKw)
-                                );
+                                filtered = data.filter((t: any) => matchesSearchFields(searchKw, [
+                                    t.id_thuoc,
+                                    t.ten_thuoc,
+                                    t.hoat_chat,
+                                    t.thanh_phan,
+                                    t.dang_bao_che,
+                                    t.don_vi,
+                                    t.mo_ta,
+                                    t.so_luong_ton,
+                                    t.gia_ban
+                                ]));
                             }
                             if (filtered.length === 0) filtered = data.slice(0, 10);
                             const rows = filtered.slice(0, 15).map((t: any) => [
@@ -2804,11 +2921,15 @@ export const ChatBot: React.FC = () => {
                                 .replace(/tìm bé|tìm pet|tìm thú cưng|danh sách thú cưng/g, "")
                                 .trim();
                             if (searchKw) {
-                                filtered = data.filter((p: any) =>
-                                    (p.ten_thu_cung || "").toLowerCase().includes(searchKw) ||
-                                    (p.loai || "").toLowerCase().includes(searchKw) ||
-                                    (p.giong || "").toLowerCase().includes(searchKw)
-                                );
+                                filtered = data.filter((p: any) => matchesSearchFields(searchKw, [
+                                    p.id_thu_cung,
+                                    p.ten_thu_cung,
+                                    p.loai,
+                                    p.giong,
+                                    p.gioi_tinh,
+                                    p.mau_sac,
+                                    p.ten_khach_hang
+                                ]));
                             }
                             if (filtered.length === 0) filtered = data.slice(0, 10);
                             const rows = filtered.slice(0, 15).map((p: any) => [
@@ -2891,11 +3012,18 @@ export const ChatBot: React.FC = () => {
                                 .replace(/bệnh án|ca khám|khám gần đây|lịch sử khám/g, "")
                                 .trim();
                             if (searchKw) {
-                                filtered = data.filter((ba: any) =>
-                                    (ba.ten_thu_cung || "").toLowerCase().includes(searchKw) ||
-                                    (ba.chan_doan || "").toLowerCase().includes(searchKw) ||
-                                    (ba.ten_khach_hang || "").toLowerCase().includes(searchKw)
-                                );
+                                filtered = data.filter((ba: any) => matchesSearchFields(searchKw, [
+                                    ba.id_ho_so,
+                                    ba.id_ho_so_benh_an,
+                                    ba.ten_thu_cung,
+                                    ba.ten_khach_hang,
+                                    ba.chan_doan,
+                                    ba.trieu_chung,
+                                    ba.phac_do_dieu_tri,
+                                    ba.bac_si,
+                                    ba.ten_bac_si,
+                                    ba.ngay_kham
+                                ]));
                             }
                             if (filtered.length === 0) filtered = data.slice(0, 10);
                             const rows = filtered.slice(0, 15).map((ba: any) => [
@@ -3066,16 +3194,18 @@ export const ChatBot: React.FC = () => {
                     const navigatePath = navMatch[1].trim();
                     cleanedReplyText = cleanedReplyText.replace(/\[NAVIGATE:[^\]]+\]/g, "").trim();
                     
-                    const hasPermission = navigatePath.startsWith("/quan-ly/")
+                    const hasPermission = hasExplicitNavigationIntent(textToSend) && (navigatePath.startsWith("/quan-ly/")
                         ? canAccessAdminPath(normalizedRoleCode, navigatePath)
-                        : true;
+                        : true);
                     
                     if (hasPermission) {
                         setTimeout(() => {
                             navigate(navigatePath);
                         }, 1500);
                     } else {
-                        cleanedReplyText = "Dạ sếp ơi! Phân hệ này là khu vực được bảo mật cao, tài khoản của sếp hiện không đủ quyền truy cập nhé! 🔒";
+                        cleanedReplyText = hasExplicitNavigationIntent(textToSend)
+                            ? "Dạ sếp ơi! Phân hệ này là khu vực được bảo mật cao, tài khoản của sếp hiện không đủ quyền truy cập nhé! 🔒"
+                            : cleanedReplyText;
                     }
                 }
             }
@@ -3467,11 +3597,9 @@ export const ChatBot: React.FC = () => {
                 .chat-tab-btn.active-tab {
                     color: white;
                 }
-                @keyframes chatSuggestionMarquee {
-                    0% { transform: translateX(0); }
-                    100% { transform: translateX(-50%); }
-                }
                 .chat-suggestion-shell {
+                    position: relative;
+                    z-index: 3;
                     overflow-x: auto;
                     overflow-y: hidden;
                     padding: 10px 14px;
@@ -3495,16 +3623,10 @@ export const ChatBot: React.FC = () => {
                     width: max-content;
                     min-width: 100%;
                     gap: 8px;
-                    animation-name: chatSuggestionMarquee;
-                    animation-timing-function: linear;
-                    animation-iteration-count: infinite;
-                    will-change: transform;
-                }
-                .chat-suggestion-shell:hover .chat-suggestion-track,
-                .chat-suggestion-shell:focus-within .chat-suggestion-track {
-                    animation-play-state: paused;
                 }
                 .chat-suggestion-chip {
+                    position: relative;
+                    z-index: 4;
                     flex: 0 0 auto;
                     white-space: nowrap;
                     padding: 7px 12px;
@@ -3613,13 +3735,37 @@ export const ChatBot: React.FC = () => {
 
             {/* BÓNG CHÚ THÍCH FLOATING CALLOUT */}
             <div id="chatCallout" className="glass-card animate-fade-in" style={{
-                position: 'fixed', bottom: '110px', right: '30px', padding: '12px 20px',
+                position: 'fixed', bottom: '110px', right: '30px', padding: '12px 42px 12px 20px',
                 borderRadius: '24px', fontSize: '0.85rem', fontWeight: 800, color: 'var(--primary)',
                 boxShadow: 'var(--shadow-lg)', zIndex: 1100, display: (isChatBubbleDismissed || isOpen || !showCallout || proactiveMessage) ? 'none' : 'flex',
                 alignItems: 'center', gap: '10px', border: '2px solid var(--surface)', background: 'var(--surface)'
             }}>
                 <div style={{ width: '10px', height: '10px', background: '#10b981', borderRadius: '50%', animation: 'blink 1s infinite', boxShadow: '0 0 10px #10b981' }}></div>
                 {calloutMessage}
+                <button
+                    type="button"
+                    aria-label="Ẩn bong bóng gợi ý chatbot"
+                    title="Ẩn bong bóng gợi ý cho tới khi tải lại trang"
+                    onClick={dismissChatBubbleForSession}
+                    style={{
+                        position: 'absolute',
+                        top: '7px',
+                        right: '8px',
+                        width: '22px',
+                        height: '22px',
+                        borderRadius: '50%',
+                        border: 'none',
+                        background: 'var(--gray-100)',
+                        color: 'var(--gray-500)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        padding: 0
+                    }}
+                >
+                    <span className="material-symbols-outlined" style={{ fontSize: '15px', lineHeight: 1 }}>close</span>
+                </button>
             </div>
 
             {/* BÓNG CHÁT CHỦ ĐỘNG GỢI Ý CỦA REXI (PROACTIVE NOTIFICATION BUBBLE) */}
@@ -3630,8 +3776,33 @@ export const ChatBot: React.FC = () => {
                     boxShadow: '0 20px 50px rgba(16, 185, 129, 0.25), var(--shadow-lg)', zIndex: 1100,
                     display: 'flex', flexDirection: 'column', gap: '12px', border: '2px solid var(--primary-light)',
                     background: 'var(--surface)', maxWidth: '340px',
+                    paddingRight: '44px',
                     animation: 'chatPulseGlow 3s infinite ease-in-out'
                 }}>
+                    <button
+                        type="button"
+                        aria-label="Ẩn bong bóng gợi ý chatbot"
+                        title="Ẩn bong bóng gợi ý cho tới khi tải lại trang"
+                        onClick={dismissChatBubbleForSession}
+                        style={{
+                            position: 'absolute',
+                            top: '10px',
+                            right: '10px',
+                            width: '26px',
+                            height: '26px',
+                            borderRadius: '50%',
+                            border: 'none',
+                            background: 'var(--gray-100)',
+                            color: 'var(--gray-500)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            padding: 0
+                        }}
+                    >
+                        <span className="material-symbols-outlined" style={{ fontSize: '16px', lineHeight: 1 }}>close</span>
+                    </button>
                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
                         <span className="material-symbols-outlined" style={{ color: 'var(--primary)', fontSize: '24px', animation: 'chatIconWaggle 3s infinite ease-in-out' }}>pets</span>
                         <div style={{ lineHeight: '1.5', color: 'var(--ink)' }}>{proactiveMessage.text}</div>
@@ -3651,57 +3822,25 @@ export const ChatBot: React.FC = () => {
             )}
 
             {/* NÚT KÍCH HOẠT FLOATING CHAT DUY NHẤT */}
-            {!isChatBubbleDismissed && (
-                <>
-                    {!isOpen && (
-                        <button
-                            type="button"
-                            aria-label="Ẩn chatbot trong phiên này"
-                            title="Ẩn chatbot cho tới khi tải lại trang"
-                            onClick={dismissChatBubbleForSession}
-                            style={{
-                                position: 'fixed',
-                                bottom: isMobile ? '70px' : '82px',
-                                right: isMobile ? '20px' : '22px',
-                                zIndex: 1102,
-                                width: '24px',
-                                height: '24px',
-                                borderRadius: '50%',
-                                border: '1px solid rgba(148, 163, 184, 0.35)',
-                                background: isDark ? 'rgba(15, 23, 42, 0.94)' : 'rgba(255, 255, 255, 0.96)',
-                                color: isDark ? '#cbd5e1' : '#64748b',
-                                boxShadow: '0 6px 18px rgba(15, 23, 42, 0.16)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                cursor: 'pointer',
-                                padding: 0
-                            }}
-                        >
-                            <span className="material-symbols-outlined" style={{ fontSize: '16px', lineHeight: 1 }}>close</span>
-                        </button>
-                    )}
-                    <button data-ai-id="button-chatbot-yhoj"
-                        id="chatBtn"
-                        onClick={() => setIsOpen(!isOpen)}
-                        style={{
-                            position: 'fixed', bottom: isMobile ? '24px' : '30px', right: isMobile ? '24px' : '30px', zIndex: 1101,
-                            background: activeTab === 'agent' ? 'linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)' : 'var(--chat-gradient)',
-                            color: 'white', border: '1.5px solid rgba(255, 255, 255, 0.1)',
-                            width: isMobile ? '56px' : '64px', height: isMobile ? '56px' : '64px', borderRadius: '50%', cursor: 'pointer',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            boxShadow: activeTab === 'agent' ? '0 10px 40px rgba(244, 63, 94, 0.4)' : '0 10px 40px var(--primary-light)',
-                            transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                            animation: isOpen ? 'none' : 'chatPulseGlow 4s infinite ease-in-out',
-                            backdropFilter: 'blur(5px)'
-                        }}
-                    >
-                        <span className="material-symbols-outlined" style={{ position: 'relative', zIndex: 1, fontSize: '32px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))', animation: isOpen ? 'none' : 'chatIconWaggle 6s infinite ease-in-out' }}>
-                            {isOpen ? 'close' : 'pets'}
-                        </span>
-                    </button>
-                </>
-            )}
+            <button data-ai-id="button-chatbot-yhoj"
+                id="chatBtn"
+                onClick={() => setIsOpen(!isOpen)}
+                style={{
+                    position: 'fixed', bottom: isMobile ? '24px' : '30px', right: isMobile ? '24px' : '30px', zIndex: 1101,
+                    background: activeTab === 'agent' ? 'linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)' : 'var(--chat-gradient)',
+                    color: 'white', border: '1.5px solid rgba(255, 255, 255, 0.1)',
+                    width: isMobile ? '56px' : '64px', height: isMobile ? '56px' : '64px', borderRadius: '50%', cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    boxShadow: activeTab === 'agent' ? '0 10px 40px rgba(244, 63, 94, 0.4)' : '0 10px 40px var(--primary-light)',
+                    transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                    animation: isOpen ? 'none' : 'chatPulseGlow 4s infinite ease-in-out',
+                    backdropFilter: 'blur(5px)'
+                }}
+            >
+                <span className="material-symbols-outlined" style={{ position: 'relative', zIndex: 1, fontSize: '32px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))', animation: isOpen ? 'none' : 'chatIconWaggle 6s infinite ease-in-out' }}>
+                    {isOpen ? 'close' : 'pets'}
+                </span>
+            </button>
 
             {/* CỬA SỔ CHAT TÍCH HỢP PREMIUM TABS */}
             {isOpen && (

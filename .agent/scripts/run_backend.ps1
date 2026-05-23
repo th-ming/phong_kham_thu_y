@@ -1,4 +1,5 @@
-$repoPath = "d:\QLy Phòng Khám Thú Y\Backend"
+ï»¿$env:JAVA_HOME = "C:\Program Files\Java\jdk-22"
+$repoPath = "d:\QLy PhÃ²ng KhÃ¡m ThÃº Y\Backend"
 Set-Location $repoPath
 
 Write-Host ">>> Compiling Backend..." -ForegroundColor Yellow
@@ -11,4 +12,3 @@ if ($LASTEXITCODE -ne 0) {
 
 Write-Host ">>> Starting Spring Boot Application..." -ForegroundColor Green
 .\mvnw.cmd spring-boot:run
-

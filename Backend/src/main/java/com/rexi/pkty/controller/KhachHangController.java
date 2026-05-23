@@ -61,14 +61,44 @@ public class KhachHangController {
         return ResponseEntity.ok(khachHangRepository.count());
     }
 
-    // Tìm kiếm khách hàng theo SĐT (cho form đặt lịch của Admin)
+    // Tìm kiếm khách hàng thông minh theo tên, SĐT, email, địa chỉ hoặc mã khách.
     @GetMapping("/search")
     public ResponseEntity<?> searchBySdt(@RequestParam String sdt) {
         if (!isInternalStaff()) {
             return ResponseEntity.status(403)
                     .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền tìm kiếm khách hàng!"));
         }
-        return ResponseEntity.ok(khachHangRepository.findBySdtContaining(sdt));
+        return ResponseEntity.ok(khachHangRepository.findAll().stream()
+                .filter(kh -> kh.getDa_xoa() == null || !kh.getDa_xoa())
+                .filter(kh -> com.rexi.pkty.util.SmartSearchSql.matchesFields(sdt,
+                        kh.getId_khach_hang(),
+                        kh.getTen_khach_hang(),
+                        kh.getSdt(),
+                        kh.getEmail(),
+                        kh.getDia_chi()))
+                .limit(20)
+                .toList());
+    }
+
+    // Lấy hồ sơ khách hàng hiện tại từ token, tránh phụ thuộc localStorage frontend còn đủ ID.
+    @GetMapping("/me")
+    public ResponseEntity<?> getCurrentCustomerProfile() {
+        org.springframework.security.core.Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = (auth != null) ? auth.getName() : null;
+        if (username == null || username.equals("anonymousUser")) {
+            return ResponseEntity.status(401)
+                    .body(Map.of("message", "Cảnh báo bảo mật: Yêu cầu không có Token xác thực hợp lệ!"));
+        }
+
+        Optional<TaiKhoan> tkOpt = taiKhoanRepository.findByTenDangNhap(username);
+        if (tkOpt.isEmpty() || tkOpt.get().getId_khach_hang() == null) {
+            return ResponseEntity.status(404)
+                    .body(Map.of("message", "Không tìm thấy hồ sơ khách hàng cho tài khoản hiện tại!"));
+        }
+
+        return khachHangRepository.findById(tkOpt.get().getId_khach_hang())
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     // Lấy thông tin 1 khách hàng theo ID

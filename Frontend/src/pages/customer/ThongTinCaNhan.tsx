@@ -3,7 +3,7 @@ import { useRef } from "react";
 import axiosInstance from "@services/axios";
 import { useNavigate } from "react-router-dom";
 import { Modal } from "@components/CommonUI";
-import { getUserProfile } from "@utils/index";
+import { getUserProfile, normalizeUserRole } from "@utils/index";
 import { toast } from "@components/Toast";
 
 const ThongTinCaNhan: React.FC = () => {
@@ -28,24 +28,43 @@ const ThongTinCaNhan: React.FC = () => {
     try {
       const user = getUserProfile();
       if (user) {
-        const userId = user.id_khach_hang || user.id || user.id_nhan_vien;
-        if (!userId) {
+        const role = normalizeUserRole(user);
+        const customerId = user.id_khach_hang || user.idKhachHang;
+        const staffId = user.id_nhan_vien || user.idNhanVien;
+        if (role !== "khach_hang" && !staffId) {
           console.warn("Không tìm thấy ID người dùng!");
           setLoading(false);
           return;
         }
-        const endpoint = (user.id_khach_hang || user.id)
-          ? `/api/khach-hang/${user.id_khach_hang || user.id}`
-          : `/api/nhan-vien/profile/${user.id_nhan_vien}`;
+        const primaryEndpoint = role === "khach_hang"
+          ? (customerId ? `/api/khach-hang/${customerId}` : `/api/khach-hang/me`)
+          : `/api/nhan-vien/profile/${staffId}`;
+        const fallbackEndpoint = role === "khach_hang" && primaryEndpoint !== "/api/khach-hang/me"
+          ? "/api/khach-hang/me"
+          : null;
 
-        axiosInstance.get(endpoint)
+        const loadProfile = (endpoint: string) => axiosInstance.get(endpoint);
+
+        loadProfile(primaryEndpoint)
+          .catch(err => {
+            if (!fallbackEndpoint || ![403, 404].includes(err.response?.status)) {
+              throw err;
+            }
+            return loadProfile(fallbackEndpoint);
+          })
           .then(res => {
-            setData(res.data);
-            setFormData(res.data);
-            setAvatarPreview(res.data.hinh_anh || res.data.avatar || "");
+            const profileData = {
+              ...user,
+              ...res.data,
+              id_khach_hang: res.data.id_khach_hang || customerId || user.id_khach_hang,
+              id_nhan_vien: res.data.id_nhan_vien || staffId || user.id_nhan_vien,
+            };
+            setData(profileData);
+            setFormData(profileData);
+            setAvatarPreview(profileData.hinh_anh || profileData.avatar || "");
             // Khởi tạo trạng thái nhận thông báo từ dữ liệu DB (mặc định là true nếu null)
-            setEmailNoti(res.data.nhan_email ?? true);
-            setSmsNoti(res.data.nhan_sms ?? true);
+            setEmailNoti(profileData.nhan_email ?? true);
+            setSmsNoti(profileData.nhan_sms ?? true);
             setLoading(false);
           })
           .catch(err => {
@@ -121,7 +140,10 @@ const ThongTinCaNhan: React.FC = () => {
   const handleSave = () => {
     try {
       const user = getUserProfile();
-      const userId = user?.id_khach_hang || user?.id || user?.id_nhan_vien;
+      const isCustomerUser = !!(data?.id_khach_hang || user?.id_khach_hang || normalizeUserRole(user) === "khach_hang");
+      const userId = isCustomerUser
+        ? (data?.id_khach_hang || user?.id_khach_hang || user?.idKhachHang)
+        : (data?.id_nhan_vien || user?.id_nhan_vien || user?.idNhanVien);
 
       if (!userId) {
         toast.error("Không tìm thấy thông tin tài khoản. Vui lòng đăng nhập lại!");
@@ -134,25 +156,33 @@ const ThongTinCaNhan: React.FC = () => {
         return;
       }
 
-      const isCustomerUser = !!(user?.id_khach_hang || user?.id);
       const endpoint = isCustomerUser
         ? `/api/khach-hang/${userId}`
         : `/api/nhan-vien/${userId}`;
 
       axiosInstance.put(endpoint, formData)
-        .then(() => {
+        .then(res => {
+          const savedData = {
+            ...formData,
+            ...(res.data || {}),
+            id_khach_hang: res.data?.id_khach_hang || formData.id_khach_hang || user?.id_khach_hang || user?.idKhachHang,
+            id_nhan_vien: res.data?.id_nhan_vien || formData.id_nhan_vien || user?.id_nhan_vien || user?.idNhanVien,
+          };
           toast.success("Cập nhật thông tin thành công!");
-          setData(formData);
+          setData(savedData);
+          setFormData(savedData);
           const currentUser = getUserProfile();
           if (currentUser) {
             const nextUser = {
               ...currentUser,
-              ho_ten: formData.ho_ten || formData.ten_khach_hang || currentUser.ho_ten,
-              ten_khach_hang: formData.ten_khach_hang || formData.ho_ten || currentUser.ten_khach_hang,
-              email: formData.email || currentUser.email,
-              sdt: formData.sdt || formData.so_dien_thoai || currentUser.sdt,
-              hinh_anh: formData.hinh_anh || formData.avatar || currentUser.hinh_anh,
-              avatar: formData.avatar || formData.hinh_anh || currentUser.avatar,
+              id_khach_hang: savedData.id_khach_hang || currentUser.id_khach_hang,
+              id_nhan_vien: savedData.id_nhan_vien || currentUser.id_nhan_vien,
+              ho_ten: savedData.ho_ten || savedData.ten_khach_hang || currentUser.ho_ten,
+              ten_khach_hang: savedData.ten_khach_hang || savedData.ho_ten || currentUser.ten_khach_hang,
+              email: savedData.email || currentUser.email,
+              sdt: savedData.sdt || savedData.so_dien_thoai || currentUser.sdt,
+              hinh_anh: savedData.hinh_anh || savedData.avatar || currentUser.hinh_anh,
+              avatar: savedData.avatar || savedData.hinh_anh || currentUser.avatar,
             };
             localStorage.setItem("user", JSON.stringify(nextUser));
           }
@@ -172,7 +202,11 @@ const ThongTinCaNhan: React.FC = () => {
     setIsDeleting(true);
     try {
       const user = getUserProfile();
-      const userId = user?.id_khach_hang || user?.id || data?.id_khach_hang;
+      const userId = data?.id_khach_hang || user?.id_khach_hang || user?.idKhachHang;
+      if (!userId) {
+        toast.error("Không tìm thấy thông tin tài khoản. Vui lòng đăng nhập lại!");
+        return;
+      }
       await axiosInstance.delete(`/api/khach-hang/${userId}`);
       toast.success("Tài khoản của bạn đã được vô hiệu hóa. Chào tạm biệt!");
       localStorage.clear();
@@ -188,7 +222,7 @@ const ThongTinCaNhan: React.FC = () => {
   const handleToggleMarketing = async (type: "email" | "sms", currentValue: boolean) => {
     try {
       const user = getUserProfile();
-      const userId = user?.id_khach_hang || user?.id;
+      const userId = data?.id_khach_hang || data?.idKhachHang || user?.id_khach_hang || user?.idKhachHang;
       if (!userId) {
         toast.error("Không tìm thấy thông tin tài khoản. Vui lòng đăng nhập lại!");
         return;
@@ -215,7 +249,9 @@ const ThongTinCaNhan: React.FC = () => {
 
   if (loading) return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}><div className="dot-pulse"></div></div>;
 
-  const isCustomer = data && (data.id_khach_hang != null || data.id != null || getUserProfile()?.id_khach_hang != null);
+  const localUser = getUserProfile();
+  const profile = { ...(localUser || {}), ...(data || {}) };
+  const isCustomer = !!(profile.id_khach_hang || normalizeUserRole(localUser) === "khach_hang");
 
   return (
     <div className="animate-fade-in">
@@ -285,7 +321,7 @@ const ThongTinCaNhan: React.FC = () => {
                 {isEditing ? (
                   <input data-ai-id="input-thongtincanhan-yly7" type="text" name={isCustomer ? "ten_khach_hang" : "ho_ten"} value={formData.ten_khach_hang || formData.ho_ten || ''} onChange={handleChange} style={{ width: '100%', padding: '14px 18px', borderRadius: '14px', border: '1px solid var(--gray-200)', background: 'var(--gray-50)', color: 'var(--ink)', fontWeight: 600, outline: 'none' }} />
                 ) : (
-                  <div style={{ fontSize: '1.4rem', fontWeight: 900, color: 'var(--ink)' }}>{data?.ten_khach_hang || data?.ho_ten || "Khách hàng"}</div>
+                  <div style={{ fontSize: '1.4rem', fontWeight: 900, color: 'var(--ink)' }}>{profile?.ten_khach_hang || profile?.ho_ten || profile?.displayName || "Khách hàng"}</div>
                 )}
               </div>
               <div>
@@ -392,8 +428,8 @@ const ThongTinCaNhan: React.FC = () => {
               </div>
             )}
             <div>
-              <h3 style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--ink)', margin: 0 }}>{data?.ten_khach_hang || data?.ho_ten}</h3>
-              <p style={{ color: 'var(--gray-400)', fontWeight: 800, fontSize: '0.75rem', marginTop: '8px' }}>ID: #{data?.id_khach_hang || data?.id_nhan_vien || data?.id}</p>
+              <h3 style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--ink)', margin: 0 }}>{profile?.ten_khach_hang || profile?.ho_ten || profile?.displayName || "Khách hàng"}</h3>
+              <p style={{ color: 'var(--gray-400)', fontWeight: 800, fontSize: '0.75rem', marginTop: '8px' }}>ID: #{profile?.id_khach_hang || profile?.id_nhan_vien || profile?.id || "—"}</p>
             </div>
           </div>
 

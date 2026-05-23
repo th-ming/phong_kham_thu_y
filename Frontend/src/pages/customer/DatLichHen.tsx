@@ -150,7 +150,8 @@ const DatLichHen: React.FC = () => {
       if (idKhachHang) {
           axiosInstance.get(`/api/thu-cung/khach/${idKhachHang}`, { params: { page: 0, size: 999 } }).then(res => {
             const data = res.data;
-            setPets(Array.isArray(data) ? data : (data.content || data.data || []));
+            const petList = Array.isArray(data) ? data : (data.content || data.data || []);
+            setPets(petList.filter((pet: any) => pet?.da_xoa !== true && pet?.daXoa !== true));
           }).catch(e => console.error(e));
       }
       axiosInstance.get("/api/dich-vu/active").then(res => setServices(res.data)).catch(e => console.error(e));
