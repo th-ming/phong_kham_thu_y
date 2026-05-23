@@ -36,7 +36,52 @@ export const normalizeSearchText = (value: unknown): string => {
     .replace(/đ/g, "d")
     .replace(/Đ/g, "D")
     .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
     .trim();
+}
+
+const tokenizeSearchText = (value: unknown): string[] => {
+  return normalizeSearchText(value)
+    .split(" ")
+    .map(token => token.trim())
+    .filter(token => token.length > 0);
+}
+
+const getEditDistance = (a: string, b: string): number => {
+  if (a === b) return 0;
+  if (!a || !b) return Math.max(a.length, b.length);
+  if (Math.abs(a.length - b.length) > 2) return 3;
+
+  const previous = Array.from({ length: b.length + 1 }, (_, i) => i);
+  const current = new Array(b.length + 1).fill(0);
+
+  for (let i = 1; i <= a.length; i++) {
+    current[0] = i;
+    let rowMin = current[0];
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      current[j] = Math.min(
+        previous[j] + 1,
+        current[j - 1] + 1,
+        previous[j - 1] + cost
+      );
+      rowMin = Math.min(rowMin, current[j]);
+    }
+    if (rowMin > 2) return 3;
+    for (let j = 0; j <= b.length; j++) previous[j] = current[j];
+  }
+
+  return previous[b.length];
+}
+
+const isCloseSearchToken = (queryToken: string, fieldToken: string): boolean => {
+  if (!queryToken || !fieldToken) return false;
+  if (fieldToken.includes(queryToken) || queryToken.includes(fieldToken)) return true;
+  if (queryToken.length < 4 || fieldToken.length < 4) return false;
+
+  const tolerance = queryToken.length >= 7 ? 2 : 1;
+  return getEditDistance(queryToken, fieldToken) <= tolerance;
 }
 
 export type UserRoleCode = "admin" | "quan_ly" | "bac_si" | "ke_toan" | "tiep_tan" | "y_ta" | "staff" | "khach_hang" | "guest";
@@ -70,15 +115,27 @@ export const hasAnyRole = (user: any, roles: string[]): boolean => {
 };
 
 export const includesSearch = (value: unknown, query: string): boolean => {
-  const normalizedQuery = normalizeSearchText(query);
-  if (!normalizedQuery) return true;
-  return normalizeSearchText(value).includes(normalizedQuery);
+  return matchesSearchFields(query, [value]);
 }
 
 export const matchesSearchFields = (query: string, fields: unknown[]): boolean => {
   const normalizedQuery = normalizeSearchText(query);
   if (!normalizedQuery) return true;
-  return fields.some(field => normalizeSearchText(field).includes(normalizedQuery));
+
+  const normalizedFields = fields.map(field => normalizeSearchText(field)).filter(Boolean);
+  if (normalizedFields.some(field => field.includes(normalizedQuery))) return true;
+
+  const queryTokens = tokenizeSearchText(query);
+  if (queryTokens.length === 0) return true;
+
+  const combinedFieldText = normalizedFields.join(" ");
+  const fieldTokens = tokenizeSearchText(combinedFieldText);
+  if (fieldTokens.length === 0) return false;
+
+  return queryTokens.every(queryToken =>
+    combinedFieldText.includes(queryToken) ||
+    fieldTokens.some(fieldToken => isCloseSearchToken(queryToken, fieldToken))
+  );
 }
 
 export const chuyenNgayISO_SangVN = (dateString: string): string => {

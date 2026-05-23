@@ -5,7 +5,7 @@ import axiosInstance from "@services/axios";
 import { useTheme } from "../contexts/ThemeContextV2";
 
 interface DoctorData {
-    id_nhan_vien: number;
+    id_nhan_vien: number | string;
     ho_ten: string;
     chuyen_mon: string;
     hinh_anh: string;
@@ -13,11 +13,39 @@ interface DoctorData {
     ngay_vao_lam: string;
 }
 
+const FALLBACK_DOCTORS: DoctorData[] = [
+    {
+        id_nhan_vien: "fallback-ma",
+        ho_ten: "BS. Minh Anh",
+        chuyen_mon: "Nội khoa & Bệnh truyền nhiễm",
+        hinh_anh: "/img/bac_si_minh_anh.png",
+        gioi_thieu: "Chuyên gia về bệnh truyền nhiễm và nội khoa thú y.",
+        ngay_vao_lam: "2021-01-01",
+    },
+    {
+        id_nhan_vien: "fallback-kl",
+        ho_ten: "BS. Khánh Linh",
+        chuyen_mon: "Phẫu thuật tổng quát",
+        hinh_anh: "/img/bac_si_khanh_linh.png",
+        gioi_thieu: "Tận tâm trong phẫu thuật và chăm sóc hồi phục sau mổ.",
+        ngay_vao_lam: "2020-01-01",
+    },
+    {
+        id_nhan_vien: "fallback-tt",
+        ho_ten: "BS. Thu Thủy",
+        chuyen_mon: "Dinh dưỡng & Nội tiết",
+        hinh_anh: "/img/bac_si_thu_thuy.png",
+        gioi_thieu: "Tư vấn dinh dưỡng và điều trị các bệnh nội tiết phức tạp.",
+        ngay_vao_lam: "2022-01-01",
+    },
+];
+
 const BacSi: React.FC = () => {
     const { theme } = useTheme();
     const isDark = theme === 'dark';
     const [doctors, setDoctors] = useState<DoctorData[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState(false);
 
     useEffect(() => {
 
@@ -26,9 +54,13 @@ const BacSi: React.FC = () => {
             if (showLoading) setLoading(true);
             try {
                 const res = await axiosInstance.get("/api/bac-si");
-                setDoctors(res.data || []);
+                const nextDoctors = Array.isArray(res.data) ? res.data : [];
+                setDoctors(nextDoctors);
+                setLoadError(false);
             } catch (err) {
                 console.error("Lỗi lấy danh sách bác sĩ:", err);
+                setLoadError(true);
+                setDoctors((current) => current.length > 0 ? current : FALLBACK_DOCTORS);
             } finally {
                 if (showLoading) setLoading(false);
             }
@@ -48,7 +80,7 @@ const BacSi: React.FC = () => {
         if (!dateStr) return "Chuyên gia giàu kinh nghiệm";
         const start = new Date(dateStr);
         const now = new Date();
-        let years = now.getFullYear() - start.getFullYear();
+        const years = now.getFullYear() - start.getFullYear();
         if (isNaN(years)) return "Chuyên gia giàu kinh nghiệm"; // Fix: Tránh lỗi NaN khi ngày tháng bị sai định dạng
         return `${years > 0 ? years : 1} năm kinh nghiệm`;
     };
@@ -84,6 +116,12 @@ const BacSi: React.FC = () => {
                         <span style={{ color: '#0f9d8a' }}>BÁC SĨ</span>
                     </div>
 
+                    {loadError && (
+                        <div style={{ background: 'rgba(245, 158, 11, 0.12)', border: '1px solid rgba(245, 158, 11, 0.28)', color: 'var(--ink)', borderRadius: '20px', padding: '16px 20px', marginBottom: '28px', fontWeight: 700, lineHeight: 1.5 }}>
+                            Danh sách đang hiển thị thông tin tham khảo vì hệ thống chưa tải được dữ liệu mới nhất. Vui lòng liên hệ hotline để xác nhận lịch làm việc của bác sĩ.
+                        </div>
+                    )}
+
                     {loading ? (
                         <div style={{ textAlign: 'center', padding: '100px' }}>
                             <div className="dot-pulse" style={{ margin: '0 auto' }}></div>
@@ -94,15 +132,15 @@ const BacSi: React.FC = () => {
                             <p style={{ fontWeight: 700, color: 'var(--gray-400)' }}>Hiện chưa có danh sách bác sĩ. Vui lòng quay lại sau.</p>
                         </div>
                     ) : (
-                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "40px" }}>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))", gap: "40px" }}>
                             {doctors.map((d) => (
                                 <div key={d.id_nhan_vien} className="doctor-card" style={{ borderRadius: "32px", overflow: "hidden", border: '1px solid var(--gray-200)', background: 'var(--surface)', position: 'relative', transition: 'all 0.4s ease', boxShadow: 'var(--shadow-md)' }}>
                                     <div style={{ height: "360px", overflow: 'hidden', position: 'relative', backgroundColor: 'var(--gray-50)' }}>
                                         {/* hình ảnh mặc định avatar nếu bác sĩ chưa có ảnh */}
                                         <img
-                                            src={d.hinh_anh || "/img/avtpkty.png"}
+                                            src={d.hinh_anh?.trim() || "/img/avtpkty.png"}
                                             alt={d.ho_ten}
-                                            style={{ width: "100%", height: "100%", objectFit: d.hinh_anh ? "cover" : "contain", padding: d.hinh_anh ? '0' : '40px' }}
+                                            style={{ width: "100%", height: "100%", objectFit: d.hinh_anh?.trim() ? "cover" : "contain", padding: d.hinh_anh?.trim() ? '0' : '40px' }}
                                         />
                                         <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '40px 24px 20px', background: 'linear-gradient(to top, rgba(15,23,42,0.85), transparent)', color: 'white' }}>
                                             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)', padding: '6px 12px', borderRadius: '20px', fontSize: '0.65rem', fontWeight: 900, border: '1px solid rgba(255,255,255,0.1)' }}>

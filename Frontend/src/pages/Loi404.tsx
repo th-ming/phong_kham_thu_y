@@ -84,12 +84,12 @@ const Loi404: React.FC = () => {
                         </div>
 
                         <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>
-                            <div style={{ transform: 'translateY(-12%)', width: '100%', display: 'flex', justifyContent: 'center' }}>
-                                <TransparentVideo src="/img/video_loi_404.webm" style={{ width: '85%', height: '85%', objectFit: 'contain', position: 'relative', zIndex: 2 }} />
+                            <div style={{ transform: 'translateY(5%)', width: '100%', display: 'flex', justifyContent: 'center' }}>
+                                <TransparentVideo src="/img/video_loi_404.mp4" style={{ width: '85%', height: '85%', objectFit: 'contain', position: 'relative', zIndex: 2, filter: 'drop-shadow(0px 25px 20px rgba(0, 0, 0, 0.2))' }} />
                             </div>
 
                             <div style={{
-                                position: 'absolute', top: '22%', right: '15%',
+                                position: 'absolute', top: '8%', right: '15%',
                                 background: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',
                                 width: '60px', height: '60px', borderRadius: '50%',
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',

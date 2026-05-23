@@ -114,11 +114,16 @@ public class ChatController {
             // Lấy nội dung câu hỏi cuối cùng của khách hàng
             ChatMessage lastMsg = history.get(history.size() - 1);
             String userQuery = lastMsg.getContent() != null ? lastMsg.getContent() : "";
+            String normalizedUserQuery = normalizeVietnamese(userQuery.toLowerCase());
 
             // BẢO MẬT: Chặn đứng các đoạn chat siêu dài (Tránh tấn công Token Exhaustion)
             if (userQuery.length() > 1000) {
                 return Map.of("reply",
                         "Sen ơi tin nhắn hơi dài quá òi! 😿 Sen tóm tắt lại tình trạng của bé ngắn gọn (dưới 1000 ký tự) để Rexi đọc và tư vấn chuẩn xác nhất nha!");
+            }
+
+            if (isEmergencyQuery(normalizedUserQuery)) {
+                return Map.of("reply", buildEmergencyReply(normalizedUserQuery));
             }
 
             // Lấy bối cảnh dữ liệu THÔNG MINH (Cần gì lấy nấy dựa trên userQuery)
@@ -168,125 +173,6 @@ public class ChatController {
                     + ">>> " + currentActivityLogs + "\n\n"
                     + "HƯỚNG DẪN AUTOPILOT (LÁI TỰ ĐỘNG THAO TÁC TRỰC QUAN):\n"
                     + "1. Bạn có quyền điều khiển trình duyệt của người dùng để thực hiện các thao tác click, điền form, chọn select, bấm nút. Để thực hiện, hãy trả về các thẻ lệnh Autopilot dạng sau ở cuối câu trả lời của bạn:\n"
-                    + "   - Click một phần tử: [CLICK:data-ai-id]\n"
-                    + "   - Điền giá trị vào ô input/textarea: [FILL:data-ai-id|giá_trị_cần_điền]\n"
-                    + "   - Chọn tùy chọn của thẻ select: [SELECT:data-ai-id|giá_trị_option]\n"
-                    + "   - Bật/tắt nút toggle: [TOGGLE:data-ai-id]\n"
-                    + "   - Xác nhận xóa: [DELETE:data-ai-id]\n"
-                    + "2. CHỈ ĐƯỢC PHÉP sử dụng các giá trị data-ai-id thực sự tồn tại trong danh sách 'Interactive Elements' hiển thị ở bối cảnh giao diện trên. Tuyệt đối KHÔNG tự nghĩ ra data-ai-id không tồn tại.\n"
-                    + "3. Ví dụ: Nếu người dùng ở trang Đặt lịch hẹn (/khach-hang/dat-lich-hen) và nhờ bạn đặt lịch giúp hoặc điền giúp, bạn hãy phân tích các data-ai-id của thú cưng, dịch vụ, ngày, giờ rảnh, ghi chú và xuất ra chuỗi thẻ lệnh Autopilot liên tiếp như:\n"
-                    + "   \"Dạ để tôi giúp Sen chọn thú cưng, chọn dịch vụ khám và điền thông tin đặt lịch nhé! [SELECT:select-datlichhen-688p|id_thú_cưng_của_sen] [CLICK:div-datlichhen-service-id_dịch_vụ] [FILL:input-datlichhen-mc0h|2026-05-20] [CLICK:button-datlichhen-rvj4_giờ_khám] [FILL:textarea-datlichhen-note|Triệu chứng của bé] [CLICK:button-datlichhen-66iq]\"\n"
-                    + "4. THÔNG TIN CHẨN ĐOÁN VÀ ĐIỀU TRỊ Y KHOA: Khi người dùng hoặc bác sĩ hỏi về thông tin chẩn đoán, cách hoạt động của thuốc, phác đồ điều trị, bạn phải cung cấp thông tin y khoa chính xác cao. ĐẶC BIỆT, TUYỆT ĐỐI không tự bịa ra link URL tham khảo giả mạo. Chỉ trích dẫn link nguồn thực tế nếu nguồn tin có sẵn hoặc nếu bạn tìm kiếm web thực tế trả về các URL thật uy tín (như Vinmec, Pethealth, WHO). Nếu không có, tuyệt đối KHÔNG đưa link bịa.\n"
-                    + "5. Hãy phân tích LỊCH SỬ THAO TÁC gần đây để thấu hiểu người dùng vừa thực hiện thao tác gì, vừa nhấp chuột ở đâu, có gặp lỗi hay cuộn trang ở đâu không để tư vấn và chủ động gợi ý hỗ trợ thông minh, tinh tế nhất.\n";
-
-            // Tự động nhận diện nhu cầu Tìm kiếm Web thời gian thực
-            String normalizedQuery = normalizeVietnamese(userQuery.toLowerCase());
-            boolean isSearchQuery = false;
-            String[] searchKeywords = {
-                "tin moi", "moi nhat", "tin tuc", "hom nay", "nam nay", "nam 2026", "hien tai", "luot web", "tim kiem", "tra cuu", "google", "search", "web"
-            };
-            for (String skw : searchKeywords) {
-                if (normalizedQuery.contains(skw)) {
-                    isSearchQuery = true;
-                    break;
-                }
-            }
-
-            String webSearchContext = "";
-            if (isSearchQuery) {
-                List<Map<String, String>> webResults = searchWebDuckDuckGo(userQuery);
-                if (!webResults.isEmpty()) {
-                    StringBuilder sb = new StringBuilder();
-                    sb.append("\n--- KẾT QUẢ TÌM KIẾM WEB THỜI GIAN THỰC (DUCKDUCKGO) ---\n");
-                    sb.append("Dưới đây là các bài viết và tin tức mới nhất từ internet cho câu hỏi của người dùng. Hãy ưu tiên sử dụng thông tin này để trả lời chính xác, và hiển thị nguồn (Link) một cách thân thiện ở cuối câu trả lời:\n");
-                    for (int i = 0; i < webResults.size(); i++) {
-                        Map<String, String> res = webResults.get(i);
-                        sb.append("[").append(i + 1).append("] Tiêu đề: ").append(res.get("title")).append("\n");
-                        sb.append("    Link: ").append(res.get("url")).append("\n");
-                        sb.append("    Nội dung tóm tắt: ").append(res.get("snippet")).append("\n\n");
-                    }
-                    webSearchContext = sb.toString();
-                    logger.info("[WEB SEARCH] Đã thực hiện tìm kiếm web và bổ sung bối cảnh thành công!");
-                }
-            }
-
-            // Xác định trạng thái đăng nhập để AI biết đường tư vấn
-            boolean isLoggedIn = (realUsername != null);
-            String loginContext = isLoggedIn 
-                ? "Sen hiện ĐÃ ĐĂNG NHẬP với tài khoản: " + realUsername + ". Bạn CÓ QUYỀN đặt lịch khám ngay cho Sen."
-                : "Sen HIỆN CHƯA ĐĂNG NHẬP. Bạn TUYỆT ĐỐI KHÔNG ĐƯỢC trả về tag [AUTO_BOOK]. Nếu Sen muốn đặt lịch, hãy yêu cầu Sen đăng nhập trước nhé.";
-
-            boolean isStaff = false;
-            String userRoleName = "Khách hàng";
-            if (auth != null) {
-                for (org.springframework.security.core.GrantedAuthority ga : auth.getAuthorities()) {
-                    String r = ga.getAuthority().replace("ROLE_", "").toUpperCase();
-                    if (r.equals("ADMIN") || r.equals("QUAN_LY") || r.equals("BAC_SI") || r.equals("KE_TOAN") || r.equals("TIEP_TAN") || r.equals("Y_TA") || r.equals("STAFF")) {
-                        isStaff = true;
-                        if (r.equals("ADMIN")) userRoleName = "Quản trị viên";
-                        else if (r.equals("QUAN_LY")) userRoleName = "Quản lý";
-                        else if (r.equals("BAC_SI")) userRoleName = "Bác sĩ";
-                        else if (r.equals("KE_TOAN")) userRoleName = "Kế toán";
-                        else if (r.equals("TIEP_TAN")) userRoleName = "Tiếp tân";
-                        else if (r.equals("Y_TA")) userRoleName = "Y tá";
-                        else if (r.equals("STAFF")) userRoleName = "Nhân viên";
-                        break;
-                    }
-                }
-            }
-
-            String systemPrompt;
-            if (isStaff) {
-                systemPrompt = "BẠN LÀ BÁC SĨ THÚ Y REXI - ĐỒNG NGHIỆP VÀ TRỢ LÝ HỖ TRỢ CHUYÊN NGHIỆP CỦA PHÒNG KHÁM.\n"
-                        + "1. VAI TRÒ: Bạn đang trò chuyện với một thành viên trong đội ngũ nhân viên phòng khám (" + userRoleName + "). Bạn là đồng nghiệp đắc lực hỗ trợ cho họ.\n"
-                        + "2. PHẠM VI HỖ TRỢ: Hỗ trợ tra cứu kiến thức chuyên môn y khoa, quy trình làm việc, tư vấn phác đồ điều trị nâng cao, quản lý danh mục thuốc, quy định nghiệp vụ hoặc giải đáp thắc mắc chuyên môn.\n"
-                        + "3. PHONG CÁCH: Chuyên nghiệp, đồng nghiệp, ngắn gọn, súc tích, không vòng vo. Gọi họ là 'sếp' hoặc 'đồng nghiệp'. Tuyệt đối KHÔNG gọi họ là 'Sen', không xưng hô kiểu bán hàng.\n"
-                        + "4. HOTLINE & ĐỊA CHỈ: Dùng số hotline phòng khám: 0353.374.156 và địa chỉ: Gia Lâm, Hà Nội khi đồng nghiệp cần thông tin.\n"
-                        + "5. SƠ CỨU KHẨN CẤP (HEIMLICH): Sẵn sàng cung cấp hướng dẫn sơ cứu nhanh khi có ca khẩn cấp.\n"
-                        + "6. QUY TẮC QUAN TRỌNG NHẤT - ƯU TIÊN TRẢ LỜI TRỰC TIẾP:\n"
-                        + "   Khi đồng nghiệp đặt câu hỏi bất kỳ (ví dụ: 'khóa tài khoản khách hàng thì sao?', 'làm thế nào để thêm nhân viên?'...), bạn BẮT BUỘC phải TRẢ LỜI THẲNG VÀO NỘI DUNG CÂU HỎI trước. TUYỆT ĐỐI KHÔNG tự nhảy vào chế độ Autopilot/điều hướng khi đồng nghiệp chỉ hỏi thông tin.\n"
-                        + "7. BẢO MẬT & TRUY CẬP DỮ LIỆU (CỰC KỲ QUAN TRỌNG):\n"
-                        + "   Ở chế độ chat này, bạn KHÔNG CÓ CÔNG CỤ TRUY CẬP TRỰC TIẾP VÀO DATABASE để tìm khách hàng, bệnh án, hóa đơn... Nếu đồng nghiệp yêu cầu tìm kiếm dữ liệu (ví dụ: 'có khách hàng nào tên X không?'), TUYỆT ĐỐI KHÔNG BỊA ĐẶT DỮ LIỆU HOẶC BÁO KHÔNG TÌM THẤY. Bắt buộc phải trả lời: 'Dạ sếp ơi, ở chế độ Trợ lý cơ bản này em chưa được gắn công cụ tra cứu Database. Sếp vui lòng bấm sang tab **Tác vụ Agent v2** ở góc trên cùng của khung chat để em dùng công cụ AI Level 5 quét dữ liệu thực tế cho sếp nhé!'.\n"
-                        + "8. HƯỚNG DẪN ĐIỀU HƯỚNG (NAVIGATE) - CHỈ DÙNG KHI ĐƯỢC YÊU CẦU RÕ RÀNG:\n"
-                        + "   Bạn CHỈ đính kèm thẻ [NAVIGATE:đường_dẫn] khi đồng nghiệp dùng từ ngữ yêu cầu MỞ/CHUYỂN TRANG rõ ràng (ví dụ: 'mở trang...', 'đưa tôi đến...', 'chuyển sang...'). Danh sách đường dẫn hợp lệ:\n"
-                        + "   - Quản lý Nhân viên/Thêm nhân sự/Phân quyền: /quan-ly/nhan-vien-phan-quyen\n"
-                        + "   - Bảng điều khiển Quản lý nội bộ: /quan-ly/dashboard\n"
-                        + "   - Quản lý Khách hàng & Thú cưng: /quan-ly/khach-hang-thu-cung\n"
-                        + "   - Quản lý Lịch hẹn khám: /quan-ly/lich-hen\n"
-                        + "   - Quản lý Lịch làm việc Bác sĩ: /quan-ly/lich-lam-viec\n"
-                        + "   - Quản lý Hồ sơ bệnh án: /quan-ly/ho-so-benh-an\n"
-                        + "   - Phân hệ Khám bệnh Bác sĩ: /quan-ly/kham-benh\n"
-                        + "   - Quản lý Đơn thuốc: /quan-ly/don-thuoc\n"
-                        + "   - Quản lý Tài liệu đính kèm: /quan-ly/file-dinh-kem\n"
-                        + "   - Thông tin cá nhân nhân viên: /quan-ly/thong-tin-ca-nhan\n"
-                        + "   - Quản lý Hóa đơn & Thu phí: /quan-ly/hoa-don\n"
-                        + "   - Bảng điều khiển Kế toán: /quan-ly/ke-toan\n"
-                        + "   - Báo cáo tài chính & Thống kê doanh thu: /quan-ly/bao-cao-thong-ke\n"
-                        + "   - Quản lý Nhập kho thuốc: /quan-ly/nhap-kho\n"
-                        + "   - Quản lý Kho thuốc & Vật tư: /quan-ly/kho-thuoc\n"
-                        + "   - Cấu hình hệ thống: /quan-ly/cau-hinh\n"
-                        + "   - Quản lý chức năng: /quan-ly/chuc-nang\n"
-                        + "   - Quản lý Dịch vụ: /quan-ly/dich-vu\n"
-                        + "   - Quản lý Xét nghiệm: /quan-ly/xet-nghiem\n"
-                        + "   - Chiến dịch Email Marketing: /quan-ly/marketing\n"
-                        + "\n--- DỮ LIỆU PHÒNG KHÁM THỰC TẾ (BÁC SĨ, DỊCH VỤ, BẢNG GIÁ) ---\n"
-                        + globalContext
-                        + "\n--- BỐI CẢNH NGƯỜI DÙNG & TÀI LIỆU ---\n"
-                        + userContext
-                        + "\n" + knowledgeContext
-                        + "\n" + webSearchContext
-                        + domContextBlock;
-            } else {
-                systemPrompt = "BẠN LÀ BÁC SĨ THÚ Y REXI - CHUYÊN GIA TOÀN NĂNG TRONG LĨNH VỰC CHĂM SÓC THÚ CƯNG.\n"
-                        + "1. PHẠM VI TRI THỨC: Bạn có kiến thức sâu rộng về MỌI mặt của thú y: Y khoa (bệnh lý, điều trị), Dinh dưỡng, Hành vi, Chăm sóc hằng ngày. Đừng ngần ngại tư vấn chi tiết cho Sen bất kể câu hỏi là gì.\n"
-                        + "2. NGUỒN TRI THỨC: \n"
-                        + "   - Nếu Sen hỏi về các chủ đề có trong [TÀI LIỆU CHUYÊN MÔN REXI] bên dưới, bạn BẮT BUỘC phải trả lời theo đúng tài liệu đó.\n"
-                        + "   - Với mọi câu hỏi khác, hãy sử dụng kho tri thức thú y khổng lồ mà bạn đã được huấn luyện để tư vấn một cách chuyên nghiệp, chính xác và đầy yêu thương.\n"
-                        + "3. HOTLINE & ĐỊA CHỈ: Luôn dùng số điện thoại: 0353.374.156 và địa chỉ: Gia Lâm, Hà Nội khi khách cần liên hệ hoặc trong trường hợp khẩn cấp.\n"
-                        + "4. PHONG CÁCH: Một bác sĩ thông thái, hóm hỉnh, luôn gọi khách là 'Sen' và thú cưng là 'Bé/Boss'.\n"
-                        + "5. SƠ CỨU KHẨN CẤP (HEIMLICH, NGỘ ĐỘC, TAI NẠN, CHẢY MÁU): Khi Sen hỏi về tình trạng khẩn cấp, KHÔNG dọa dẫm gây hoảng loạn. BẮT BUỘC bắt đầu bằng tag [EMERGENCY], hướng dẫn sơ cứu cơ bản trước, sau đó CHỦ ĐỘNG HỎI VỊ TRÍ của Sen để chỉ hướng đến phòng khám gần nhất.\n"
-                        + "6. ĐẶT LỊCH HẸN: " + loginContext + " Khi Sen chốt lịch, BẮT BUỘC in ra chuỗi [AUTO_BOOK:Ngày|Giờ|TênThúCưng|DịchVụ|TênBácSĩ]. Định dạng ngày YYYY-MM-DD, giờ HH:mm.\n"
-                        + "7. THU THẬP TIỂU SỬ THÚ CƯNG: Bắt buộc chủ động hỏi Sen về Giống (chó/mèo/...), Độ tuổi và Cân nặng của thú cưng nếu chưa có thông tin, để đưa ra tư vấn sát thực tế nhất.\n"
                         + "8. TRÁNH KÊ ĐƠN THUỐC TÙY TIỆN: Chỉ tư vấn dinh dưỡng, hành vi, và hướng dẫn sơ cứu. TUYỆT ĐỐI KHÔNG TỰ TIỆN KÊ ĐƠN THUỐC.\n"
                         + "9. TRUY CẬP DỮ LIỆU HỆ THỐNG (CỰC KỲ QUAN TRỌNG):\n"
                         + "   Ở chế độ này, bạn KHÔNG CÓ CÔNG CỤ tra cứu CSDL (tìm khách hàng, bệnh án). Nếu Sen yêu cầu tra cứu thông tin cụ thể trong hệ thống, TUYỆT ĐỐI KHÔNG BỊA ĐẶT DỮ LIỆU HOẶC TỰ NHẬN LÀ KHÔNG TÌM THẤY. Bắt buộc trả lời: 'Dạ Sen ơi, ở chế độ này em không thể xem dữ liệu hệ thống ạ. Sen bấm chuyển sang tab **Tác vụ Agent v2** ở trên cùng khung chat để em dùng siêu năng lực quét dữ liệu thực tế giúp Sen nha!'.\n"
@@ -544,5 +430,53 @@ public class ChatController {
                 .replaceAll("[ùúụủũưừứựửữ]", "u")
                 .replaceAll("[ỳýỵỷỹ]", "y")
                 .replaceAll("[đ]", "d");
+    }
+
+    private boolean isEmergencyQuery(String normalizedQuery) {
+        if (normalizedQuery == null || normalizedQuery.isBlank()) {
+            return false;
+        }
+        String[] emergencyKeywords = {
+                "cap cuu", "hoc", "ngat tho", "kho tho", "khong tho", "di vat",
+                "ngo doc", "co giat", "chay mau", "tai nan", "bat tinh", "soc"
+        };
+        for (String kw : emergencyKeywords) {
+            if (normalizedQuery.contains(kw)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private String buildEmergencyReply(String normalizedQuery) {
+        StringBuilder reply = new StringBuilder();
+        reply.append("[EMERGENCY] Sen bình tĩnh làm ngay các bước sơ cứu dưới đây và gọi Rexi theo hotline 0353.374.156.\n\n");
+
+        if (normalizedQuery.contains("hoc") || normalizedQuery.contains("ngat tho")
+                || normalizedQuery.contains("khong tho") || normalizedQuery.contains("di vat")) {
+            reply.append("**Nghi hóc dị vật/ngạt thở:**\n")
+                    .append("1. Mở miệng bé kiểm tra nhanh. Chỉ lấy dị vật ra nếu nhìn thấy rõ và gắp được an toàn.\n")
+                    .append("2. Không móc tay sâu vì có thể đẩy dị vật vào trong.\n")
+                    .append("3. Nếu bé không thở hoặc tím tái, thực hiện Heimlich cho thú cưng: đặt hai tay ngay sau xương sườn, ép nhanh hướng lên trên 3-5 lần, rồi kiểm tra miệng.\n")
+                    .append("4. Nếu bé nhỏ, có thể nâng phần thân sau cao hơn đầu và vỗ chắc 3-5 cái giữa hai bả vai.\n\n");
+        } else if (normalizedQuery.contains("ngo doc")) {
+            reply.append("**Nghi ngộ độc:**\n")
+                    .append("1. Ngừng cho ăn/uống thêm và đưa bé tránh xa nguồn độc.\n")
+                    .append("2. Không tự gây nôn nếu chưa có bác sĩ hướng dẫn.\n")
+                    .append("3. Mang theo bao bì/chất nghi độc khi đến phòng khám.\n\n");
+        } else if (normalizedQuery.contains("co giat")) {
+            reply.append("**Co giật:**\n")
+                    .append("1. Dọn vật cứng quanh bé, không giữ chặt miệng hoặc kéo lưỡi.\n")
+                    .append("2. Ghi lại thời gian co giật và quay video ngắn nếu an toàn.\n")
+                    .append("3. Nếu cơn kéo dài hơn 2-3 phút hoặc lặp lại, đưa bé đi cấp cứu ngay.\n\n");
+        } else if (normalizedQuery.contains("chay mau") || normalizedQuery.contains("tai nan")) {
+            reply.append("**Chảy máu/tai nạn:**\n")
+                    .append("1. Dùng gạc sạch ép trực tiếp lên điểm chảy máu 5-10 phút.\n")
+                    .append("2. Hạn chế di chuyển bé nếu nghi gãy xương hoặc chấn thương nặng.\n")
+                    .append("3. Không tự bôi thuốc dân gian lên vết thương.\n\n");
+        }
+
+        reply.append("Sen cho Rexi biết vị trí hiện tại của Sen để Rexi hướng dẫn đường đến cơ sở thú y gần nhất. Nếu ở Gia Lâm/Hà Nội, đưa bé tới Phòng khám Thú y Rexi, Số 68, Ngõ 10, Đường Ngô Xuân Quảng, Trâu Quỳ, Gia Lâm, Hà Nội.");
+        return reply.toString();
     }
 }

@@ -141,23 +141,23 @@ public class EmailService {
     /**
      * Gửi email OTP lấy lại mật khẩu
      */
-    public void sendOtpEmail(String toEmail, String otp) {
+    public boolean sendOtpEmail(String toEmail, String otp) {
         JavaMailSender sender = getDynamicMailSender();
-        if (sender == null) return;
-        CompletableFuture.runAsync(() -> {
-            try {
-                SimpleMailMessage message = new SimpleMailMessage();
-                message.setTo(toEmail);
-                message.setSubject("🔒 Mã xác minh OTP - Rexi Vet");
-                String text = "Xin chào,\n\nMã OTP để đặt lại mật khẩu của bạn là: " + otp + "\n" +
-                        "Mã này sẽ hết hạn sau 5 phút. Vui lòng không chia sẻ mã này cho bất kỳ ai!\n\nCảm ơn bạn! 🐾";
-                message.setText(text);
-                sender.send(message);
-                logger.info("Đã gửi OTP tới: " + toEmail);
-            } catch (Exception e) {
-                logger.severe("Lỗi gửi mail OTP: " + e.getMessage());
-            }
-        });
+        if (sender == null) return false;
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setTo(toEmail);
+            message.setSubject("🔒 Mã xác minh OTP - Rexi Vet");
+            String text = "Xin chào,\n\nMã OTP để đặt lại mật khẩu của bạn là: " + otp + "\n" +
+                    "Mã này sẽ hết hạn sau 5 phút. Vui lòng không chia sẻ mã này cho bất kỳ ai!\n\nCảm ơn bạn! 🐾";
+            message.setText(text);
+            sender.send(message);
+            logger.info("Đã gửi OTP tới: " + toEmail);
+            return true;
+        } catch (Exception e) {
+            logger.severe("Lỗi gửi mail OTP: " + e.getMessage());
+            return false;
+        }
     }
 
     /**

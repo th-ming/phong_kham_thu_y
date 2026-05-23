@@ -44,6 +44,43 @@ public class NhanVienController {
     @Autowired
     private AuditLogService auditLogService;
 
+    private Optional<com.rexi.pkty.entity.TaiKhoan> getAuthenticatedAccount() {
+        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
+                .getContext().getAuthentication();
+        String username = (auth != null) ? auth.getName() : null;
+        if (username == null || username.equals("anonymousUser")) {
+            return Optional.empty();
+        }
+        return taiKhoanRepository.findByTenDangNhap(username);
+    }
+
+    private boolean isAdmin(org.springframework.security.core.Authentication auth,
+            com.rexi.pkty.entity.TaiKhoan tk) {
+        String authorities = (auth != null && auth.getAuthorities() != null)
+                ? auth.getAuthorities().toString().toUpperCase()
+                : "";
+        String role = tk.getId_vai_tro() != null ? tk.getId_vai_tro().toUpperCase() : "";
+        return authorities.contains("ADMIN") || role.equals("VT-ADMIN") || role.equals("VT-1");
+    }
+
+    private boolean canManageNhanVien(String id) {
+        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
+                .getContext().getAuthentication();
+        Optional<com.rexi.pkty.entity.TaiKhoan> tkOpt = getAuthenticatedAccount();
+        if (tkOpt.isEmpty()) {
+            return false;
+        }
+        com.rexi.pkty.entity.TaiKhoan tk = tkOpt.get();
+        return isAdmin(auth, tk) || (tk.getId_nhan_vien() != null && tk.getId_nhan_vien().equals(id));
+    }
+
+    private boolean isSelfNhanVien(String id) {
+        Optional<com.rexi.pkty.entity.TaiKhoan> tkOpt = getAuthenticatedAccount();
+        return tkOpt.isPresent()
+                && tkOpt.get().getId_nhan_vien() != null
+                && tkOpt.get().getId_nhan_vien().equals(id);
+    }
+
     @GetMapping("/nhan-vien")
     public List<NhanVien> getAllNhanVien() {
         return nhanVienRepository.findAll()
@@ -268,12 +305,38 @@ public class NhanVienController {
 
     @PutMapping("/nhan-vien/{id}")
     @org.springframework.cache.annotation.CacheEvict(value = "bacSiCache", allEntries = true)
-    @PreAuthorize("hasRole('ADMIN')")
     public org.springframework.http.ResponseEntity<?> updateNhanVien(@PathVariable String id,
             @RequestBody NhanVien nv) {
         try {
-            nv.setId_nhan_vien(id);
-            return org.springframework.http.ResponseEntity.ok(nhanVienRepository.save(nv));
+            if (!canManageNhanVien(id)) {
+                return org.springframework.http.ResponseEntity.status(403)
+                        .body(Map.of("message", "Bạn chỉ được cập nhật hồ sơ của chính mình."));
+            }
+
+            Optional<NhanVien> existingOpt = nhanVienRepository.findById(id);
+            if (existingOpt.isEmpty()) {
+                return org.springframework.http.ResponseEntity.status(404)
+                        .body(Map.of("message", "Không tìm thấy nhân viên!"));
+            }
+
+            NhanVien existing = existingOpt.get();
+            boolean selfUpdate = isSelfNhanVien(id);
+            org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
+                    .getContext().getAuthentication();
+            boolean adminUpdate = getAuthenticatedAccount().map(tk -> isAdmin(auth, tk)).orElse(false);
+
+            if (adminUpdate && !selfUpdate) {
+                nv.setId_nhan_vien(id);
+                return org.springframework.http.ResponseEntity.ok(nhanVienRepository.save(nv));
+            }
+
+            existing.setHo_ten(nv.getHo_ten());
+            existing.setEmail(nv.getEmail());
+            existing.setSo_dien_thoai(nv.getSo_dien_thoai());
+            existing.setDia_chi(nv.getDia_chi());
+            existing.setHinh_anh(nv.getHinh_anh());
+            existing.setGioi_thieu(nv.getGioi_thieu());
+            return org.springframework.http.ResponseEntity.ok(nhanVienRepository.save(existing));
         } catch (Exception e) {
             return org.springframework.http.ResponseEntity.status(500)
                     .body(Map.of("message", "Lỗi khi cập nhật nhân viên: " + e.getMessage()));
@@ -393,21 +456,27 @@ public class NhanVienController {
 
     @DeleteMapping("/nhan-vien/{id}")
     @org.springframework.cache.annotation.CacheEvict(value = "bacSiCache", allEntries = true)
-    @PreAuthorize("hasRole('ADMIN')")
     public org.springframework.http.ResponseEntity<?> deleteNhanVien(@PathVariable String id) {
         try {
+            if (!canManageNhanVien(id)) {
+                return org.springframework.http.ResponseEntity.status(403)
+                        .body(Map.of("message", "Bạn chỉ được vô hiệu hóa tài khoản của chính mình."));
+            }
+
             Optional<NhanVien> nvOpt = nhanVienRepository.findById(id);
             if (nvOpt.isPresent()) {
                 NhanVien nv = nvOpt.get();
                 nv.setDa_xoa(true);
                 nv.setTrang_thai("INACTIVE");
                 nhanVienRepository.save(nv);
-                if (nv.getId_tai_khoan() != null && !nv.getId_tai_khoan().isEmpty()) {
-                    taiKhoanRepository.findById(nv.getId_tai_khoan()).ifPresent(tk -> {
-                        tk.setTrang_thai("inactive");
-                        taiKhoanRepository.save(tk);
-                    });
-                }
+                Optional<com.rexi.pkty.entity.TaiKhoan> tkToLock =
+                        nv.getId_tai_khoan() != null && !nv.getId_tai_khoan().isEmpty()
+                                ? taiKhoanRepository.findById(nv.getId_tai_khoan())
+                                : taiKhoanRepository.findByIdNhanVien(id);
+                tkToLock.ifPresent(tk -> {
+                    tk.setTrang_thai("inactive");
+                    taiKhoanRepository.save(tk);
+                });
                 return org.springframework.http.ResponseEntity.ok(Map.of("message", "Đã xóa nhân viên thành công!"));
             }
             return org.springframework.http.ResponseEntity.status(404)

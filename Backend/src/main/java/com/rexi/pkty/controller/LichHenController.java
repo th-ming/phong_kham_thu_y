@@ -393,22 +393,15 @@ public class LichHenController {
             where.append(" AND lh.trang_thai = ?");
             params.add(status.toUpperCase());
         }
-        if (search != null && !search.trim().isEmpty()) {
-            String likePattern = "%" + search.trim() + "%";
-            where.append(" AND (")
-                    .append("CAST(lh.id_lich_hen AS NVARCHAR(50)) LIKE ? ")
-                    .append("OR tc.ten_thu_cung COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI ")
-                    .append("OR kh.ten_khach_hang COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI ")
-                    .append("OR kh.sdt LIKE ? ")
-                    .append("OR nv.ho_ten COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI ")
-                    .append("OR dv.ten_dich_vu COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI ")
-                    .append("OR lh.ly_do COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI ")
-                    .append("OR lh.ghi_chu COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI")
-                    .append(")");
-            for (int i = 0; i < 8; i++) {
-                params.add(likePattern);
-            }
-        }
+        com.rexi.pkty.util.SmartSearchSql.appendTokenSearch(where, params, search,
+                "CAST(lh.id_lich_hen AS NVARCHAR(50)) LIKE ?",
+                "tc.ten_thu_cung COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI",
+                "kh.ten_khach_hang COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI",
+                "kh.sdt LIKE ?",
+                "nv.ho_ten COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI",
+                "dv.ten_dich_vu COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI",
+                "lh.ly_do COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI",
+                "lh.ghi_chu COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI");
 
         String baseSelect = "SELECT lh.*, kh.ten_khach_hang, kh.sdt, tc.ten_thu_cung, nv.ho_ten as ten_bac_si, dv.ten_dich_vu " +
                 "FROM LichHen lh " +

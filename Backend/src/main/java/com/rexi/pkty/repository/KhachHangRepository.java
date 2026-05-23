@@ -13,7 +13,6 @@ import java.util.Map;
 @Repository
 public interface KhachHangRepository extends JpaRepository<KhachHang, String> {
     java.util.Optional<KhachHang> findByEmail(String email);
-    List<KhachHang> findBySdtContaining(String sdt);
 
     // Gọi Stored Procedure cập nhật thông tin khách hàng
     @Query(value = "EXEC sp_CapNhatThongTinKhachHang :id, :name, :email, :phone, :address", nativeQuery = true)

@@ -127,16 +127,28 @@ public class GeminiService {
 
             if (msg.getImages() != null && !msg.getImages().isEmpty()) {
                 if (textContent.isBlank())
-                    textContent = "Phân tích các ảnh này giúp tôi.";
+                    textContent = "Phân tích các ảnh này theo góc nhìn bác sĩ thú y. Nêu rõ những dấu hiệu nhìn thấy, mức độ khẩn cấp, khả năng nguyên nhân, khuyến nghị chăm sóc ban đầu và khi nào cần đưa bé đi khám. Không chẩn đoán chắc chắn chỉ dựa trên ảnh.";
                 parts.add(Map.of("text", textContent));
                 for (String imgBase64 : msg.getImages()) {
+                    String mimeType = "image/jpeg";
+                    String base64Data = imgBase64;
+                    if (base64Data != null && base64Data.startsWith("data:")) {
+                        int semicolonIdx = base64Data.indexOf(";");
+                        if (semicolonIdx != -1) {
+                            mimeType = base64Data.substring(5, semicolonIdx);
+                        }
+                        int commaIdx = base64Data.indexOf(",");
+                        if (commaIdx != -1) {
+                            base64Data = base64Data.substring(commaIdx + 1);
+                        }
+                    }
                     parts.add(Map.of("inlineData", Map.of(
-                            "mimeType", "image/jpeg",
-                            "data", imgBase64)));
+                            "mimeType", mimeType,
+                            "data", base64Data)));
                 }
             } else if (msg.getVideos() != null && !msg.getVideos().isEmpty()) {
                 if (textContent.isBlank())
-                    textContent = "Phân tích video này giúp tôi.";
+                    textContent = "Phân tích video này theo góc nhìn bác sĩ thú y. Mô tả chuyển động/hành vi bất thường, mức độ khẩn cấp, khả năng nguyên nhân, khuyến nghị chăm sóc ban đầu và khi nào cần đưa bé đi khám. Không chẩn đoán chắc chắn chỉ dựa trên video.";
                 parts.add(Map.of("text", textContent));
 
                 for (String vidData : msg.getVideos()) {

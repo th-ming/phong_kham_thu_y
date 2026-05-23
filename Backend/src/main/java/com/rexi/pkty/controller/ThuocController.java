@@ -31,7 +31,19 @@ public class ThuocController {
     public List<Thuoc> searchThuoc(@RequestParam String keyword) {
         if (keyword == null || keyword.trim().isEmpty())
             return List.of();
-        return thuocRepository.searchThuoc(keyword);
+        return thuocRepository.findAll().stream()
+                .filter(t -> t.getDa_xoa() == null || !t.getDa_xoa())
+                .filter(t -> com.rexi.pkty.util.SmartSearchSql.matchesFields(keyword,
+                        t.getId_thuoc(),
+                        t.getTen_thuoc(),
+                        t.getThanh_phan(),
+                        t.getDang_bao_che(),
+                        t.getDon_vi(),
+                        t.getMo_ta(),
+                        t.getGia_ban(),
+                        t.getTrang_thai()))
+                .limit(20)
+                .toList();
     }
 
     @PostMapping

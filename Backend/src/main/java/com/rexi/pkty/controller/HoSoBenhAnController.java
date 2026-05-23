@@ -64,22 +64,15 @@ public class HoSoBenhAnController {
         int offset = page * size;
         StringBuilder where = new StringBuilder("WHERE 1=1");
         java.util.List<Object> params = new java.util.ArrayList<>();
-        if (search != null && !search.trim().isEmpty()) {
-            String likePattern = "%" + search.trim() + "%";
-            where.append(" AND (")
-                    .append("CAST(hs.id_ho_so_benh_an AS NVARCHAR(50)) LIKE ? ")
-                    .append("OR tc.ten_thu_cung COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI ")
-                    .append("OR tc.giong COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI ")
-                    .append("OR kh.ten_khach_hang COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI ")
-                    .append("OR nv.ho_ten COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI ")
-                    .append("OR hs.trieu_chung COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI ")
-                    .append("OR hs.chan_doan COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI ")
-                    .append("OR hs.trang_thai_ho_so COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI")
-                    .append(")");
-            for (int i = 0; i < 8; i++) {
-                params.add(likePattern);
-            }
-        }
+        com.rexi.pkty.util.SmartSearchSql.appendTokenSearch(where, params, search,
+                "CAST(hs.id_ho_so_benh_an AS NVARCHAR(50)) LIKE ?",
+                "tc.ten_thu_cung COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI",
+                "tc.giong COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI",
+                "kh.ten_khach_hang COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI",
+                "nv.ho_ten COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI",
+                "hs.trieu_chung COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI",
+                "hs.chan_doan COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI",
+                "hs.trang_thai_ho_so COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI");
 
         String fromSql = "FROM HoSoBenhAn hs " +
                 "LEFT JOIN ThuCung tc ON hs.id_thu_cung = tc.id_thu_cung " +

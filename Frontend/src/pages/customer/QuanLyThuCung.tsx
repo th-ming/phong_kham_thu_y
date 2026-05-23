@@ -25,6 +25,8 @@ const tinhTuoi = (ngaySinh: string) => {
   return `Dưới 1 tháng tuổi`;
 };
 
+const isPetActive = (pet: any) => pet?.da_xoa !== true && pet?.daXoa !== true;
+
 const QuanLyThuCung: React.FC = () => {
   const [thuCung, setThuCung] = useState<any[]>([]);
   const [lichHen, setLichHen] = useState<any[]>([]);
@@ -61,7 +63,7 @@ const QuanLyThuCung: React.FC = () => {
         return [];
       };
 
-      if (thuCungRes.status === 'fulfilled') setThuCung(extractArray(thuCungRes.value));
+      if (thuCungRes.status === 'fulfilled') setThuCung(extractArray(thuCungRes.value).filter(isPetActive));
       if (lichHenRes.status === 'fulfilled') setLichHen(extractArray(lichHenRes.value));
     } catch (err) {
       console.error("Lỗi lấy dữ liệu thú cưng:", err);

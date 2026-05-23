@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { Link } from "react-router-dom";
 import { MemeCat, ScrollToTop, RevealSection } from "@components/SpecialEffects";
 import { useTheme } from "../contexts/ThemeContextV2";
@@ -7,11 +7,10 @@ const LienHe: React.FC = () => {
     const { theme } = useTheme();
     const isDark = theme === 'dark';
 
-    useEffect(() => {
-
-    }, []);
-
-    const mapUrl = "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3724.8471526438833!2d105.92823617596856!3d21.00243438879685!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3135a90022370c67%3A0xe2128b9d453303d3!2zUGjDsm5nIEtow6FtIFRoxdynamicWIFkgUmV4aQ!5e0!3m2!1svi!2s!4v1714421111111!5m2!1svi!2s";
+    const clinicAddress = "Số 68, Ngô Xuân Quảng, Trâu Quỳ, Gia Lâm, Hà Nội";
+    const mapQuery = encodeURIComponent(`Phòng khám thú y Rexi, ${clinicAddress}`);
+    const mapUrl = `https://maps.google.com/maps?q=${mapQuery}&z=16&output=embed`;
+    const directionsUrl = `https://www.google.com/maps/search/?api=1&query=${mapQuery}`;
 
     return (
         <div style={{ background: 'var(--background)', minHeight: '100vh' }}>
@@ -85,17 +84,17 @@ const LienHe: React.FC = () => {
                     {/* bản đồ google maps */}
                     <RevealSection>
                         <div style={{ background: 'var(--surface)', borderRadius: '40px', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.08)', border: '1px solid var(--gray-200)' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '24px 40px', background: 'var(--surface)', borderBottom: '1px solid var(--gray-200)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap', padding: '24px 40px', background: 'var(--surface)', borderBottom: '1px solid var(--gray-200)' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                     <span className="material-symbols-outlined" style={{ color: 'var(--primary)', fontSize: '28px' }}>map</span>
                                     <h3 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 900, color: 'var(--ink)' }}>Bản Đồ Chỉ Đường</h3>
                                 </div>
-                                <a href="https://www.google.com/maps/search/?api=1&query=Phòng+khám+thú+y+Rexi+Gia+Lâm" target="_blank" rel="noreferrer" className="btn-primary" style={{ padding: '10px 24px', borderRadius: '50px', textDecoration: 'none', fontWeight: 800, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <a href={directionsUrl} target="_blank" rel="noreferrer" className="btn-primary" style={{ padding: '10px 24px', borderRadius: '50px', textDecoration: 'none', fontWeight: 800, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                     <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>navigation</span>
                                     Mở Google Maps
                                 </a>
                             </div>
-                            <div style={{ width: '100%', height: '550px', background: 'var(--gray-100)' }}>
+                            <div style={{ width: '100%', height: 'clamp(320px, 52vw, 550px)', background: 'var(--gray-100)' }}>
                                 <iframe
                                     src={mapUrl}
                                     width="100%" height="100%" style={{ border: 0, filter: isDark ? 'invert(90%) hue-rotate(180deg) brightness(95%) contrast(85%)' : 'none', transition: 'filter 0.3s ease' }} allowFullScreen={true} loading="lazy" referrerPolicy="no-referrer-when-downgrade"
