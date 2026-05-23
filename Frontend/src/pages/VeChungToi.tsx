@@ -4,7 +4,7 @@ import { MemeCat, ScrollToTop, RevealSection } from "@components/SpecialEffects"
 
 const VeChungToi: React.FC = () => {
     useEffect(() => {
-        window.scrollTo(0, 0);
+
     }, []);
 
     return (

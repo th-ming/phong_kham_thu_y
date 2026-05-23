@@ -8,8 +8,8 @@ import { toast } from "@components/Toast";
 const MOCK_SERVICES = [
     { id_dich_vu: 201, ten_dich_vu: "Khám Đa Khoa", icon: "stethoscope", gia: 150000, mo_ta: "Kiểm tra sức khỏe toàn diện, xét nghiệm máu, chẩn đoán hình ảnh. Phát hiện sớm vấn đề sức khỏe.", badge: "Phổ biến" },
     { id_dich_vu: 202, ten_dich_vu: "Tiêm Chủng", icon: "vaccines", gia: 200000, mo_ta: "Lịch tiêm chủng cá nhân hóa theo tuổi và lối sống. Vaccine nhập khẩu chính hãng từ Châu Âu." },
-    { id_dich_vu: 203, ten_dich_vu: "Chẩn đoán hình ảnh", icon: "biotech", gia: 300000, mo_ta: "X-quang kỹ thuật số, siêu âm bụng, nội soi. Kết quả rõ nét trong thời gian ngắn.", badge: "Mới" },
-    { id_dich_vu: 204, ten_dich_vu: "Phẫu thuật", icon: "surgical", gia: 1500000, mo_ta: "Phòng mổ vô trùng đạt chuẩn quốc tế, gây mê an toàn, theo dõi sau phẫu thuật 24/7." },
+    { id_dich_vu: 203, ten_dich_vu: "Chẩn đoán hình ảnh", icon: "biotech", gia: 300000, mo_ta: "X-quang kỹ thuật số, siêu âm bụng, nội soi. Kết quả rõ nét trong thời gian ngắn." },
+    { id_dich_vu: 204, ten_dich_vu: "Phẫu thuật", icon: "surgical", gia: 1500000, mo_ta: "Phòng mổ vô trùng đạt chuẩn quốc tế, gây mê an toàn, theo dõi sau phẫu thuật 24/7.", badge: "Mới" },
     { id_dich_vu: 205, ten_dich_vu: "Xét nghiệm máu & Sinh hóa", icon: "science", gia: 250000, mo_ta: "Xét nghiệm máu, nước tiểu, tầm soát bệnh lý nội tạng. Kết quả chính xác nhờ hệ thống máy hiện đại." },
     { id_dich_vu: 206, ten_dich_vu: "Spa & Grooming", icon: "spa", gia: 100000, mo_ta: "Tắm rửa, vệ sinh, cắt tỉa lông tạo kiểu chuyên nghiệp. Sử dụng sữa tắm cao cấp nhập khẩu." },
     { id_dich_vu: 207, ten_dich_vu: "Nha Khoa Thú Cưng", icon: "dentistry", gia: 180000, mo_ta: "Lấy cao răng siêu âm, nhổ răng sâu, điều trị viêm nướu giúp hơi thở thơm tho." }
@@ -40,7 +40,14 @@ const PhanDichVu: React.FC = () => {
                 const response = await axiosInstance.get('/api/dich-vu/active');
                 const data = response.data;
                 if (data && data.length > 0) {
-                    const filtered = data.filter((s: any) => s.trang_thai);
+                    const filtered = data.filter((s: any) => s.trang_thai).map((s: any) => {
+                        let badge = s.badge;
+                        const lower = s.ten_dich_vu.toLowerCase();
+                        if (lower.includes("phẫu thuật") || lower.includes("mổ")) badge = "Mới";
+                        else if (lower.includes("khám đa khoa")) badge = "Phổ biến";
+                        else if (lower.includes("chẩn đoán hình ảnh")) badge = undefined;
+                        return { ...s, badge };
+                    });
                     if (filtered.length > 0) {
                         setServices(filtered);
                     }
@@ -215,7 +222,7 @@ const PhanDichVu: React.FC = () => {
                         {/* cột danh sách dịch vụ cuộn slider cao cấp */}
                         <div className="service-list-container" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '14px' }}>
                             {services.map((s, i) => (
-                                <div key={i} className={`service-tab ${activeIdx === i ? 'active' : ''}`} onClick={() => setActiveIdx(i)}>
+                                <div key={i} className={`service-tab ${activeIdx === i ? 'active' : ''}`} onClick={() => setActiveIdx(i)} onDoubleClick={() => navigate(`/dich-vu/${generateSlug(s.ten_dich_vu)}`)}>
                                     <div style={{ width: '50px', height: '50px', background: activeIdx === i ? 'var(--primary)' : 'var(--primary-light)', color: activeIdx === i ? 'white' : 'var(--primary)', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all 0.3s' }}>
                                         <span className="material-symbols-outlined" style={{ fontSize: '24px' }}>{s.icon || getServiceInfo(s.ten_dich_vu).icon}</span>
                                     </div>
@@ -224,7 +231,11 @@ const PhanDichVu: React.FC = () => {
                                         <div style={{ color: 'var(--gray-400)', fontSize: '0.78rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.gia ? formatTienVND(s.gia) : s.price}</div>
                                     </div>
                                     {s.badge && <div style={{ background: s.badge === 'Mới' ? 'rgba(14, 165, 233, 0.15)' : 'rgba(245, 158, 11, 0.15)', color: s.badge === 'Mới' ? '#0ea5e9' : '#f59e0b', padding: '3px 10px', borderRadius: '50px', fontSize: '0.7rem', fontWeight: 900, flexShrink: 0 }}>{s.badge}</div>}
-                                    <span className="material-symbols-outlined" style={{ fontSize: '18px', color: activeIdx === i ? 'var(--primary)' : '#cbd5e1', transition: 'all 0.3s' }}>chevron_right</span>
+                                    <span 
+                                        className="material-symbols-outlined" 
+                                        onClick={(e) => { e.stopPropagation(); navigate(`/dich-vu/${generateSlug(s.ten_dich_vu)}`); }}
+                                        style={{ fontSize: '18px', color: activeIdx === i ? 'var(--primary)' : '#cbd5e1', transition: 'all 0.3s', cursor: 'pointer' }}
+                                    >chevron_right</span>
                                 </div>
                             ))}
                         </div>

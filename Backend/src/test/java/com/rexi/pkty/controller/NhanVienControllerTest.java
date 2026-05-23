@@ -8,6 +8,8 @@ import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -27,6 +29,8 @@ public class NhanVienControllerTest extends BaseControllerTest {
 
         when(nhanVienRepository.save(any(NhanVien.class))).thenReturn(nhanVien);
         when(taiKhoanRepository.save(any())).thenReturn(new com.rexi.pkty.entity.TaiKhoan());
+        // Ensure jdbcTemplate returns 0 for generated ID existence checks to avoid NPE
+        when(jdbcTemplate.queryForObject(anyString(), eq(Integer.class), (Object) any())).thenReturn(0);
 
         mockMvc.perform(post("/api/nhan-vien")
                 .with(csrf())

@@ -33,7 +33,7 @@ const ChiTietDichVu: React.FC = () => {
   };
 
   useEffect(() => {
-    window.scrollTo(0, 0);
+
     const fetchService = async () => {
       try {
         const response = await axiosInstance.get('/api/dich-vu');

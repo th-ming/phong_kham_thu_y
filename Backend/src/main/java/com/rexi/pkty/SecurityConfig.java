@@ -23,13 +23,13 @@ import java.util.Arrays;
 @EnableMethodSecurity
 public class SecurityConfig {
 
-    @Autowired
+    @Autowired(required = false)
     private JwtFilter jwtFilter;
 
-    @Autowired
+    @Autowired(required = false)
     private ActionAuthFilter actionAuthFilter;
 
-    @Autowired
+    @Autowired(required = false)
     private RateLimitFilter rateLimitFilter;
 
     @Bean
@@ -45,16 +45,36 @@ public class SecurityConfig {
                     "/api/lich-hen/khach-vang-lai", "/api/dich-vu/**", "/api/bac-si/**",
                     "/public/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/api/test-doanh-thu"
                 ).permitAll()
-                .requestMatchers("/api/system/**").authenticated() // Yêu cầu đăng nhập mới được vào system
-                .requestMatchers("/api/admin/**").authenticated() // Quản lý tài khoản - chỉ Admin
+                .requestMatchers("/api/system/**").authenticated()
+                .requestMatchers("/api/admin/**").authenticated()
                 .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                 .anyRequest().authenticated()
             )
             .httpBasic(b -> b.disable())
-            .formLogin(f -> f.disable())
-            .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
-            .addFilterAfter(jwtFilter, RateLimitFilter.class)
-            .addFilterAfter(actionAuthFilter, JwtFilter.class);
+            .formLogin(f -> f.disable());
+
+        if (rateLimitFilter != null) {
+            http.addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class);
+        }
+
+        if (jwtFilter != null) {
+            if (rateLimitFilter != null) {
+                http.addFilterAfter(jwtFilter, RateLimitFilter.class);
+            } else {
+                http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+            }
+        }
+
+        if (actionAuthFilter != null) {
+            if (jwtFilter != null) {
+                http.addFilterAfter(actionAuthFilter, JwtFilter.class);
+            } else if (rateLimitFilter != null) {
+                http.addFilterAfter(actionAuthFilter, RateLimitFilter.class);
+            } else {
+                http.addFilterAfter(actionAuthFilter, UsernamePasswordAuthenticationFilter.class);
+            }
+        }
+
         return http.build();
     }
 

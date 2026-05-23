@@ -8,7 +8,7 @@ const LienHe: React.FC = () => {
     const isDark = theme === 'dark';
 
     useEffect(() => {
-        window.scrollTo(0, 0);
+
     }, []);
 
     const mapUrl = "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3724.8471526438833!2d105.92823617596856!3d21.00243438879685!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3135a90022370c67%3A0xe2128b9d453303d3!2zUGjDsm5nIEtow6FtIFRoxdynamicWIFkgUmV4aQ!5e0!3m2!1svi!2s!4v1714421111111!5m2!1svi!2s";
