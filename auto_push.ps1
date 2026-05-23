@@ -1,4 +1,4 @@
-git add .
-git commit -m "Auto commit"
-$branch = git branch --show-current
-git push origin $branch
+git.exe add .
+git.exe commit -m "Auto commit"
+$branch = git.exe branch --show-current
+git.exe push origin $branch
