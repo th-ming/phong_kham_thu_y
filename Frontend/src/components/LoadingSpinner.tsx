@@ -23,6 +23,7 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
 
   return (
     <div className={`animate-spin rounded-full border-2 border-transparent border-t-2 ${sizeClasses[size]}`}
+         role="presentation"
          style={{ borderTopColor: spinnerColor }} />
   );
 };
