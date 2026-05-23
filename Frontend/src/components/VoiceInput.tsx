@@ -20,7 +20,7 @@ export const VoiceInput = ({ onSend, onTyping }: { onSend: (text: string) => voi
       rec.interimResults = true; // Hiện chữ ngay khi đang nói
       rec.maxAlternatives = 1;
       
-      let silenceTimer: NodeJS.Timeout;
+      let silenceTimer: ReturnType<typeof window.setTimeout>;
       let finalTranscriptAccumulated = '';
 
       rec.onresult = (event: any) => {
