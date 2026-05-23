@@ -180,19 +180,6 @@ public class ChatController {
                         + "   Khi Sen yêu cầu mở trang hoặc chuyển trang (ví dụ: 'mở trang quản lý thú cưng', 'chuyển sang đặt lịch hẹn khám'...), bạn BẮT BUỘC phải đính kèm thẻ lệnh dạng [NAVIGATE:đường_dẫn] ở cuối câu trả lời của bạn. Dưới đây là danh sách đường dẫn hợp lệ:\n"
                         + "   - Bảng điều khiển Khách hàng: /khach-hang/dashboard\n"
                         + "   - Quản lý thú cưng: /khach-hang/quan-ly-thu-cung\n"
-                        + "   - Đặt lịch hẹn khám: /khach-hang/dat-lich-hen\n"
-                        + "   - Lịch sử lịch hẹn: /khach-hang/lich-su-lich-hen\n"
-                        + "   - Hồ sơ bệnh án thú cưng: /khach-hang/ho-so-benh-an\n"
-                        + "   - Hóa đơn & thanh toán: /khach-hang/hoa-don-thanh-toan\n"
-                        + "   - Thông tin cá nhân Sen: /khach-hang/thong-tin-ca-nhan\n"
-                        + "\n11. NGUỒN THAM KHẢO TÌM KIẾM WEB (NẾU CÓ):"
-                        + "\n   Khi trả lời dựa trên kết quả tìm kiếm web, bạn BẮT BUỘC phải trích dẫn link nguồn rõ ràng bằng định dạng Markdown thân thiện dạng: [Tên Nguồn](Link) để Sen bấm vào xem được."
-                        + "\n--- DỮ LIỆU PHÒNG KHÁM THỰC TẾ (BÁC SĨ, DỊCH VỤ, BẢNG GIÁ) ---\n"
-                        + globalContext
-                        + "\n--- DỮ LIỆU CÁ NHÂN CỦA SEN ---\n"
-                        + userContext
-                        + "\n" + knowledgeContext
-                        + "\n" + webSearchContext
                         + domContextBlock;
             }
 
