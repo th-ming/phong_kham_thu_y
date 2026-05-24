@@ -1486,7 +1486,7 @@ html {
   }
 
   /* 3. Phát sáng nút bong bóng Chatbot nổi */
-  #chatbotBtn {
+  #chatBtn {
     box-shadow: 0 0 22px rgba(34, 211, 238, 0.45) !important;
     animation: neonPulse 3.5s infinite ease-in-out !important;
   }

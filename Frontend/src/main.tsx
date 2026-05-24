@@ -5,6 +5,9 @@ import App from './App'
 import './styles/index.css'
 import { toast } from '@components/Toast'
 import { WebSocketProvider } from './contexts/WebSocketProvider'
+import { installClientErrorReporter, reportAxiosError } from './services/clientErrorReporter'
+
+installClientErrorReporter();
 
 // Cấu hình Axios Interceptor để tự động gắn Token vào tất cả request
 axios.interceptors.request.use((config) => {
@@ -33,6 +36,7 @@ axios.interceptors.response.use(
       const errorMessage = error.response.data?.message || error.response.data || "Cảnh báo bảo mật: Bạn không có quyền thực hiện hành động này!";
       toast.error(typeof errorMessage === 'string' ? errorMessage : "Bạn không có quyền thực thi tác vụ AI này!");
     }
+    reportAxiosError(error);
     return Promise.reject(error);
   }
 );

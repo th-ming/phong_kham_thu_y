@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axiosInstance from "@services/axios";
 import { normalizeUserRole } from "@utils/index";
+import { isValidPassword, PASSWORD_POLICY_MESSAGE } from "@utils/passwordPolicy";
 
 const API_URL = `/api/auth`;
 
@@ -128,6 +129,11 @@ const DangNhapDangKy: React.FC = () => {
     setSuccess("");
 
     if (!isLogin) {
+      if (!isValidPassword(password)) {
+        setError(PASSWORD_POLICY_MESSAGE);
+        setLoading(false);
+        return;
+      }
       if (password !== confirmPassword) {
         setError("Mật khẩu xác nhận không khớp!");
         setLoading(false);

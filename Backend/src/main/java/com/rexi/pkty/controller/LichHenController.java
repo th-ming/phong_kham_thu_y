@@ -129,6 +129,9 @@ public class LichHenController {
             if (lichHen.getNgay_kham().isBefore(today)) {
                 throw new RuntimeException("Sếp ơi, ngày khám không được ở quá khứ đâu ạ!");
             }
+            if (lichHen.getNgay_kham().isAfter(today.plusDays(90))) {
+                throw new RuntimeException("Chỉ được đặt lịch trong vòng 90 ngày tới!");
+            }
             if (lichHen.getNgay_kham().isEqual(today) && !newStart.isAfter(LocalTime.now(vnZone))) {
                 throw new RuntimeException("Khung giờ này đã qua rồi. Vui lòng chọn giờ khám muộn hơn!");
             }
@@ -329,7 +332,7 @@ public class LichHenController {
 
             if (existingKh.isEmpty()) {
                 String idTaiKhoan = "TK-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-                String generatedPass = UUID.randomUUID().toString().substring(0, 6);
+                String generatedPass = "Rexi@" + UUID.randomUUID().toString().substring(0, 8);
 
                 jdbcTemplate.update(
                         "INSERT INTO TaiKhoan (id_tai_khoan, ten_dang_nhap, mat_khau, mat_khau_hash, id_vai_tro, trang_thai, ngay_tao) VALUES (?, ?, ?, ?, 'VT-5', N'Hoạt động', GETDATE())",
@@ -535,31 +538,23 @@ public class LichHenController {
         }
 
         try {
+            int safeSize = Math.max(1, Math.min(size, 100));
+            int safePage = Math.max(0, page);
             Integer total = jdbcTemplate.queryForObject(
                     "SELECT COUNT(*) FROM LichHen lh " + where, Integer.class, params.toArray());
-            int totalPages = (int) Math.ceil((double) (total != null ? total : 0) / size);
+            int totalPages = (int) Math.ceil((double) (total != null ? total : 0) / safeSize);
 
             java.util.List<Object> dataParams = new java.util.ArrayList<>(params);
             
-            String sql;
-            if (size > 500) {
-                sql = "SELECT lh.*, tc.ten_thu_cung, nv.ho_ten as ten_bac_si, dv.ten_dich_vu " +
-                      "FROM LichHen lh " +
-                      "LEFT JOIN ThuCung tc ON lh.id_thu_cung = tc.id_thu_cung " +
-                      "LEFT JOIN NhanVien nv ON lh.id_bac_si = nv.id_nhan_vien " +
-                      "LEFT JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu " +
-                      where + " ORDER BY lh.ngay_tao DESC";
-            } else {
-                dataParams.add(page * size);
-                dataParams.add(size);
-                sql = "SELECT lh.*, tc.ten_thu_cung, nv.ho_ten as ten_bac_si, dv.ten_dich_vu " +
-                      "FROM LichHen lh " +
-                      "LEFT JOIN ThuCung tc ON lh.id_thu_cung = tc.id_thu_cung " +
-                      "LEFT JOIN NhanVien nv ON lh.id_bac_si = nv.id_nhan_vien " +
-                      "LEFT JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu " +
-                      where + " ORDER BY lh.ngay_tao DESC " +
-                      "OFFSET CAST(? AS INT) ROWS FETCH NEXT CAST(? AS INT) ROWS ONLY";
-            }
+            dataParams.add(safePage * safeSize);
+            dataParams.add(safeSize);
+            String sql = "SELECT lh.*, tc.ten_thu_cung, nv.ho_ten as ten_bac_si, dv.ten_dich_vu " +
+                  "FROM LichHen lh " +
+                  "LEFT JOIN ThuCung tc ON lh.id_thu_cung = tc.id_thu_cung " +
+                  "LEFT JOIN NhanVien nv ON lh.id_bac_si = nv.id_nhan_vien " +
+                  "LEFT JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu " +
+                  where + " ORDER BY lh.ngay_tao DESC " +
+                  "OFFSET CAST(? AS INT) ROWS FETCH NEXT CAST(? AS INT) ROWS ONLY";
             
             List<Map<String, Object>> content = jdbcTemplate.queryForList(sql, dataParams.toArray());
 
@@ -567,7 +562,7 @@ public class LichHenController {
                     "content", content,
                     "totalPages", totalPages,
                     "totalElements", total != null ? total : 0,
-                    "currentPage", page
+                    "currentPage", safePage
             ));
         } catch (Exception e) {
             e.printStackTrace();

@@ -29,6 +29,10 @@ PKTY_Temp.sql
 /scratch/
 /brain/
 /.agent/
+scratch*.py
+*.local.py
+Backend/src/main/resources/knowledge/*.md
+Backend/src/main/resources/knowledge/vnua_docs/
 
 # 5. Biến môi trường & Thông tin nhạy cảm
 .env

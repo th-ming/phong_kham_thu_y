@@ -1,4 +1,5 @@
 import axios, { AxiosInstance, AxiosError, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
+import { reportAxiosError } from './clientErrorReporter';
 
 /**
  * Cấu hình Axios Interceptor - Hệ thống kết nối API
@@ -48,6 +49,7 @@ axiosInstance.interceptors.request.use(
     return config;
   },
   (error: AxiosError) => {
+    reportAxiosError(error);
     return Promise.reject(error);
   }
 );

@@ -19,6 +19,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
 public class GroqService {
@@ -98,6 +99,7 @@ public class GroqService {
     }
 
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final AtomicInteger keyCursor = new AtomicInteger(0);
 
     // Sử dụng chung 1 HttpClient cho toàn bộ service để tận dụng Connection Pooling
     private final HttpClient client = HttpClient.newBuilder()
@@ -133,7 +135,7 @@ public class GroqService {
                 for (String imgBase64 : msg.getImages()) {
                     content.add(Map.of(
                             "type", "image_url",
-                            "image_url", Map.of("url", "data:image/jpeg;base64," + imgBase64)));
+                            "image_url", Map.of("url", normalizeImageDataUrl(imgBase64))));
                 }
                 messagesForApi.add(Map.of("role", msg.getRole(), "content", content));
             } else if (!msgContent.isBlank()) {
@@ -154,7 +156,9 @@ public class GroqService {
         }
 
         Exception lastException = null;
-        for (int i = 0; i < apiKeys.size(); i++) {
+        int keyStart = Math.floorMod(keyCursor.getAndIncrement(), apiKeys.size());
+        for (int offset = 0; offset < apiKeys.size(); offset++) {
+            int i = (keyStart + offset) % apiKeys.size();
             String currentApiKey = apiKeys.get(i);
             try {
                 HttpRequest request = HttpRequest.newBuilder()
@@ -209,7 +213,7 @@ public class GroqService {
                 for (String imgBase64 : msg.getImages()) {
                     content.add(Map.of(
                             "type", "image_url",
-                            "image_url", Map.of("url", "data:image/jpeg;base64," + imgBase64)));
+                            "image_url", Map.of("url", normalizeImageDataUrl(imgBase64))));
                 }
                 messagesForApi.add(Map.of("role", msg.getRole(), "content", content));
             } else if (!msgContent.isBlank()) {
@@ -225,11 +229,12 @@ public class GroqService {
 
         String requestBody = objectMapper.writeValueAsString(requestBodyMap);
 
-        String currentApiKey = getApiKey();
-        if (currentApiKey == null || currentApiKey.trim().isEmpty()) {
+        List<String> apiKeys = getApiKeys();
+        if (apiKeys.isEmpty()) {
             emitter.completeWithError(new RuntimeException("Không tìm thấy Groq API Key nào được cấu hình!"));
             return;
         }
+        String currentApiKey = apiKeys.get(Math.floorMod(keyCursor.getAndIncrement(), apiKeys.size()));
 
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(GROQ_API_URL))
@@ -289,5 +294,15 @@ public class GroqService {
                 .replaceAll("[ỳýỵỷỹ]", "y")
                 .replaceAll("[đ]", "d");
         return result;
+    }
+
+    private String normalizeImageDataUrl(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return "data:image/jpeg;base64,";
+        }
+        if (raw.startsWith("data:")) {
+            return raw;
+        }
+        return "data:image/jpeg;base64," + raw;
     }
 }

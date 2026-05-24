@@ -72,7 +72,7 @@ const SystemTitle: React.FC = () => {
 
   useEffect(() => {
     let mounted = true;
-    axiosInstance.get("/api/system/cau-hinh")
+    axiosInstance.get("/api/system/public-cau-hinh")
       .then((res) => {
         const configuredName = String(res.data?.app_name || "").trim();
         if (mounted && configuredName) {

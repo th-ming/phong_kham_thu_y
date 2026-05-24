@@ -1,2 +1,0 @@
-# TÀI LIỆU VNUA: ASSOCIATE-PROFESSOR.-HUYNH-THI-MY-LE
-(Tài liệu dạng ảnh quét)

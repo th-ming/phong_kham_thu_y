@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.util.StringUtils;
 
+import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.nio.file.*;
 import java.util.*;
@@ -25,6 +26,17 @@ public class FileDinhKemController {
     private static final Logger logger = Logger.getLogger(FileDinhKemController.class.getName());
     private static final String UPLOAD_DIR = "uploads";
     private static final long MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+    private static final Map<String, Set<String>> ALLOWED_FILE_TYPES = Map.of(
+            ".jpg", Set.of("image/jpeg"),
+            ".jpeg", Set.of("image/jpeg"),
+            ".png", Set.of("image/png"),
+            ".gif", Set.of("image/gif"),
+            ".pdf", Set.of("application/pdf"),
+            ".doc", Set.of("application/msword"),
+            ".docx", Set.of("application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
+            ".mp4", Set.of("video/mp4"),
+            ".mov", Set.of("video/quicktime")
+    );
 
     @Autowired
     private FileDinhKemRepository fileDinhKemRepository;
@@ -82,16 +94,18 @@ public class FileDinhKemController {
             String fileExtension = originalFilename.contains(".")
                     ? originalFilename.substring(originalFilename.lastIndexOf(".")).toLowerCase()
                     : "";
-            List<String> allowedExtensions = Arrays.asList(".jpg", ".jpeg", ".png", ".gif", ".pdf", ".doc", ".docx",
-                    ".mp4", ".mov");
-
-            if (!allowedExtensions.contains(fileExtension)) {
+            if (!ALLOWED_FILE_TYPES.containsKey(fileExtension)) {
                 return ResponseEntity.badRequest().body(Map.of("message",
                         "Định dạng file không được phép tải lên! Hệ thống chỉ hỗ trợ Ảnh, Video ngắn và Tài liệu."));
             }
 
+            String contentType = detectFileType(file);
+            if (!ALLOWED_FILE_TYPES.get(fileExtension).contains(contentType)) {
+                return ResponseEntity.badRequest().body(Map.of("message",
+                        "Nội dung file không khớp với định dạng khai báo!"));
+            }
+
             // Phân loại thư mục
-            String contentType = file.getContentType();
             String subFolder = "others/";
             String loaiFile = "Khác";
 
@@ -186,5 +200,46 @@ public class FileDinhKemController {
             logger.severe("Lỗi khi xóa file: " + e.getMessage());
             return ResponseEntity.status(500).body(Map.of("message", "Đã xảy ra lỗi hệ thống khi xóa file."));
         }
+    }
+
+    private String detectFileType(MultipartFile file) throws IOException {
+        byte[] header = new byte[12];
+        int read;
+        try (BufferedInputStream input = new BufferedInputStream(file.getInputStream())) {
+            read = input.read(header);
+        }
+        if (read >= 3 && (header[0] & 0xFF) == 0xFF && (header[1] & 0xFF) == 0xD8 && (header[2] & 0xFF) == 0xFF) {
+            return "image/jpeg";
+        }
+        if (read >= 8
+                && (header[0] & 0xFF) == 0x89 && header[1] == 0x50 && header[2] == 0x4E && header[3] == 0x47
+                && header[4] == 0x0D && header[5] == 0x0A && header[6] == 0x1A && header[7] == 0x0A) {
+            return "image/png";
+        }
+        if (read >= 6
+                && header[0] == 0x47 && header[1] == 0x49 && header[2] == 0x46
+                && header[3] == 0x38 && (header[4] == 0x37 || header[4] == 0x39) && header[5] == 0x61) {
+            return "image/gif";
+        }
+        if (read >= 4 && header[0] == 0x25 && header[1] == 0x50 && header[2] == 0x44 && header[3] == 0x46) {
+            return "application/pdf";
+        }
+        if (read >= 8
+                && (header[0] & 0xFF) == 0xD0 && (header[1] & 0xFF) == 0xCF
+                && (header[2] & 0xFF) == 0x11 && (header[3] & 0xFF) == 0xE0
+                && (header[4] & 0xFF) == 0xA1 && (header[5] & 0xFF) == 0xB1
+                && header[6] == 0x1A && (header[7] & 0xFF) == 0xE1) {
+            return "application/msword";
+        }
+        if (read >= 4 && header[0] == 0x50 && header[1] == 0x4B && header[2] == 0x03 && header[3] == 0x04) {
+            return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+        }
+        if (read >= 12 && header[4] == 0x66 && header[5] == 0x74 && header[6] == 0x79 && header[7] == 0x70) {
+            if (header[8] == 0x71 && header[9] == 0x74 && header[10] == 0x20 && header[11] == 0x20) {
+                return "video/quicktime";
+            }
+            return "video/mp4";
+        }
+        return "application/octet-stream";
     }
 }

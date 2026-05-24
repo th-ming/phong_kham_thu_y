@@ -6,6 +6,7 @@ import com.rexi.pkty.dto.GoogleAuthRequest;
 import com.rexi.pkty.repository.TaiKhoanRepository;
 import com.rexi.pkty.repository.KhachHangRepository;
 import com.rexi.pkty.security.JwtUtil;
+import com.rexi.pkty.security.PasswordPolicy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -671,6 +672,9 @@ public class AuthController {
         String clientIp = httpRequest.getRemoteAddr();
         String userAgent = httpRequest.getHeader("User-Agent");
         boolean isTest = userAgent != null && userAgent.toLowerCase().contains("playwright");
+        if (!PasswordPolicy.isValid(request.getMat_khau())) {
+            return ResponseEntity.badRequest().body(Map.of("message", PasswordPolicy.message()));
+        }
         Long lastTime = lastRegisterTime.get(clientIp);
         if (!isTest && lastTime != null && System.currentTimeMillis() - lastTime < 60000) {
             logger.warning("Spam registration blocked for IP: " + clientIp);
@@ -804,12 +808,13 @@ public class AuthController {
             kh.setNgay_cap_nhat(java.time.LocalDateTime.now());
             kh = khachHangRepository.save(kh);
 
-            // Tạo Tài Khoản (Lấy SĐT làm username, pass: rexi@123)
+            // Tao tai khoan nhanh voi mat khau tam thoi ngau nhien.
             com.rexi.pkty.entity.TaiKhoan tk = new com.rexi.pkty.entity.TaiKhoan();
             tk.setId_tai_khoan("TK-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase());
             tk.setTen_dang_nhap(request.get("sdt"));
+            String tempPassword = "Rexi@" + java.util.UUID.randomUUID().toString().substring(0, 8);
             tk.setMat_khau("[ENCRYPTED]");
-            tk.setMat_khau_hash(passwordEncoder.encode("rexi@123"));
+            tk.setMat_khau_hash(passwordEncoder.encode(tempPassword));
             tk.setId_khach_hang(kh.getId_khach_hang());
             tk.setId_vai_tro("VT-5"); // Mã chuẩn của Khách hàng trong Database là VT-5
             tk.setTrang_thai("active");
@@ -818,6 +823,13 @@ public class AuthController {
 
             Map<String, Object> user = new java.util.HashMap<>();
             user.put("id_khach_hang", kh.getId_khach_hang());
+            if (tempPassword != null) {
+                Map<String, Object> response = new java.util.HashMap<>();
+                response.put("user", user);
+                response.put("mat_khau_tam_thoi", tempPassword);
+                response.put("message", "Tao nhanh thanh cong!");
+                return ResponseEntity.ok(response);
+            }
 
             return ResponseEntity.ok(Map.of("user", user, "message", "Tạo nhanh thành công!"));
         } catch (org.springframework.dao.DataIntegrityViolationException e) {
@@ -860,8 +872,8 @@ public class AuthController {
         if (currentPass == null || currentPass.trim().isEmpty()) {
             return ResponseEntity.status(400).body(Map.of("message", "Vui lòng nhập mật khẩu hiện tại!"));
         }
-        if (newPass == null || newPass.length() < 6) {
-            return ResponseEntity.status(400).body(Map.of("message", "Mật khẩu mới phải có ít nhất 6 ký tự!"));
+        if (!PasswordPolicy.isValid(newPass)) {
+            return ResponseEntity.status(400).body(Map.of("message", PasswordPolicy.message()));
         }
         if (currentPass.equals(newPass)) {
             return ResponseEntity.status(400).body(Map.of("message", "Mật khẩu mới không được trùng mật khẩu hiện tại!"));
@@ -886,7 +898,7 @@ public class AuthController {
 
             if (isMatch) {
                 String newHashedPassword = passwordEncoder.encode(newPass);
-                taiKhoanRepository.changePassword(username, newPass, newHashedPassword);
+                taiKhoanRepository.changePassword(username, newHashedPassword);
                 logger.info("Đã đổi mật khẩu thành công cho: " + username);
                 return ResponseEntity.ok(Map.of("message", "Đổi mật khẩu thành công!"));
             } else {
@@ -952,8 +964,8 @@ public class AuthController {
         if (providedEmail != null) {
             providedEmail = providedEmail.trim().toLowerCase();
         }
-        if (newPass == null || newPass.length() < 6) {
-            return ResponseEntity.status(400).body(Map.of("message", "Mật khẩu mới phải có ít nhất 6 ký tự!"));
+        if (!PasswordPolicy.isValid(newPass)) {
+            return ResponseEntity.status(400).body(Map.of("message", PasswordPolicy.message()));
         }
 
         com.rexi.pkty.entity.TaiKhoan tk = null;
@@ -1029,7 +1041,7 @@ public class AuthController {
         }
 
         String newHashedPassword = passwordEncoder.encode(newPass);
-        taiKhoanRepository.changePassword(tk.getTen_dang_nhap(), newPass, newHashedPassword);
+        taiKhoanRepository.changePassword(tk.getTen_dang_nhap(), newHashedPassword);
         logger.info("Đặt lại mật khẩu thành công cho: " + username);
         return ResponseEntity.ok(Map.of("message", "Đặt lại mật khẩu thành công! Hãy đăng nhập lại."));
     }
@@ -1090,3 +1102,4 @@ public class AuthController {
     }
 
 }
+

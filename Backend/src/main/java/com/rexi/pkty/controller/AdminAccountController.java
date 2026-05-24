@@ -2,6 +2,7 @@ package com.rexi.pkty.controller;
 
 import com.rexi.pkty.entity.TaiKhoan;
 import com.rexi.pkty.repository.TaiKhoanRepository;
+import com.rexi.pkty.security.PasswordPolicy;
 import com.rexi.pkty.service.AuditLogService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -118,12 +119,12 @@ public class AdminAccountController {
 
         TaiKhoan tk = opt.get();
 
-        // Sinh mật khẩu tạm thời ngẫu nhiên (6 ký tự)
+        // Sinh mat khau tam thoi dat dung password policy hien tai.
         String matKhauTamThoi = "Rexi@" + UUID.randomUUID().toString().substring(0, 6);
         String matKhauHash = passwordEncoder.encode(matKhauTamThoi);
 
         // Cập nhật mật khẩu mới (đã băm) vào Database
-        tk.setMat_khau(matKhauTamThoi);
+        tk.setMat_khau("[ENCRYPTED]");
         tk.setMat_khau_hash(matKhauHash);
         taiKhoanRepository.save(tk);
 
@@ -176,7 +177,10 @@ public class AdminAccountController {
 
         String newPassword = trimToNull(payload.get("mat_khau"));
         if (newPassword != null) {
-            tk.setMat_khau(newPassword);
+            if (!PasswordPolicy.isValid(newPassword)) {
+                return ResponseEntity.badRequest().body(Map.of("message", PasswordPolicy.message()));
+            }
+            tk.setMat_khau("[ENCRYPTED]");
             tk.setMat_khau_hash(passwordEncoder.encode(newPassword));
         }
 
@@ -201,17 +205,9 @@ public class AdminAccountController {
         m.put("id_tai_khoan", tk.getId_tai_khoan());
         m.put("id_nhan_vien", tk.getId_nhan_vien());
         m.put("id_khach_hang", tk.getId_khach_hang());
-        m.put("mat_khau_hien_thi", getDisplayPassword(tk.getMat_khau()));
+        m.put("mat_khau_hien_thi", null);
         m.put("nhan_vien", getNhanVienInfo(tk.getId_nhan_vien(), tk.getId_tai_khoan()));
         return m;
-    }
-
-    private String getDisplayPassword(String passwordValue) {
-        if (passwordValue == null || passwordValue.isBlank()) return null;
-        if (passwordValue.startsWith("$2a$") || passwordValue.startsWith("$2b$") || passwordValue.startsWith("$2y$")) {
-            return null;
-        }
-        return passwordValue;
     }
 
     private Map<String, Object> getNhanVienInfo(String idNhanVien, String idTaiKhoan) {

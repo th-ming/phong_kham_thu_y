@@ -2,10 +2,11 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import axiosInstance from "@services/axios";
 import { useTheme } from "../contexts/ThemeContextV2";
-import { getUserProfile, matchesSearchFields, normalizeSearchText, normalizeUserRole } from "../utils/index";
+import { getUserProfile, matchesSearchFields, normalizeSearchText, normalizeUserRole, scoreSearchFields } from "../utils/index";
 import { ADMIN_ROUTE_ROLES, canAccessAdminPath } from "../utils/permissions";
 import { executeAction } from "./ActionExecutor";
 import { toast } from "@components/Toast";
+import { reportClientError } from "@services/clientErrorReporter";
 
 interface SwarmStep {
     agent: string;
@@ -113,13 +114,22 @@ const extractTaggedJsonPayload = (replyText: string, tag: string): { cleanedText
 };
 
 const stripChatControlTags = (text: string): string => {
-    return text
+    let cleaned = text;
+    ["[AUTO_BOOK:", "[GENERATE_TREATMENT_PDF:", "[SWARM_ORCHESTRATION:"].forEach((tag) => {
+        while (cleaned.includes(tag)) {
+            const extracted = extractTaggedJsonPayload(cleaned, tag);
+            if (extracted.cleanedText === cleaned) break;
+            cleaned = extracted.cleanedText;
+        }
+    });
+
+    return cleaned
         .replace(/\[EMERGENCY\]/gi, "")
         .replace(/\[NAVIGATE:[^\]]+\]/gi, "")
-        .replace(/\[(CLICK|FILL|TOGGLE|SELECT|DELETE):[^\]]+\]/gi, "")
-        .replace(/\[AUTO_BOOK:[\s\S]+?\]/gi, "")
-        .replace(/\[GENERATE_TREATMENT_PDF:[\s\S]+?\]/gi, "")
-        .replace(/\[SWARM_ORCHESTRATION:[\s\S]+?\]/gi, "")
+        .replace(/\[(CLICK|FILL|TOGGLE|SELECT|DELETE|SCROLL):[^\]]+\]/gi, "")
+        .replace(/\[AUTO_BOOK:[^\]]*\]/gi, "")
+        .replace(/\[GENERATE_TREATMENT_PDF:[^\]]*\]/gi, "")
+        .replace(/\[SWARM_ORCHESTRATION:[^\]]*\]/gi, "")
         .replace(/[ \t]{2,}/g, " ")
         .replace(/\n{3,}/g, "\n\n")
         .trim();
@@ -444,6 +454,22 @@ export const ChatBot: React.FC = () => {
         return () => window.removeEventListener("resize", handleResize);
     }, []);
 
+    useEffect(() => {
+        const updateViewportHeight = () => {
+            const height = window.visualViewport?.height || window.innerHeight;
+            document.documentElement.style.setProperty("--rexi-viewport-height", `${height}px`);
+        };
+        updateViewportHeight();
+        window.addEventListener("resize", updateViewportHeight);
+        window.visualViewport?.addEventListener("resize", updateViewportHeight);
+        window.visualViewport?.addEventListener("scroll", updateViewportHeight);
+        return () => {
+            window.removeEventListener("resize", updateViewportHeight);
+            window.visualViewport?.removeEventListener("resize", updateViewportHeight);
+            window.visualViewport?.removeEventListener("scroll", updateViewportHeight);
+        };
+    }, []);
+
     // 1. THÔNG TIN KHÁCH HÀNG & PHÂN QUYỀN
     const cleanName = (name: string) => name ? name.replace(/^\d+\.\s*/, '').trim() : '';
 
@@ -593,6 +619,7 @@ export const ChatBot: React.FC = () => {
     const userName = cleanName(rawName);
 
     const normalizedRoleCode = normalizeUserRole(user);
+    const isAdminAccount = normalizedRoleCode === "admin";
     const isCustomerRoute = location.pathname.startsWith("/khach-hang");
     const isStaffRoute = location.pathname.startsWith("/quan-ly");
     const roleDisplayName: Record<string, string> = {
@@ -821,7 +848,8 @@ export const ChatBot: React.FC = () => {
         const actionWords = [
             "mo", "mo trang", "vao trang", "chuyen sang", "dieu huong", "truy cap", "di toi",
             "xem danh sach", "loc", "tim", "tra cuu", "kiem tra", "thong ke", "tao", "them",
-            "sua", "xoa", "dat lich", "lap lich", "xuat", "in", "gui", "dien", "tu dong"
+            "sua", "xoa", "dat lich", "lap lich", "xuat", "in", "gui", "dien", "tu dong",
+            "bam", "nhan", "click", "cuon", "keo xuong", "keo len"
         ];
         return actionWords.some(word => normalized.includes(word));
     };
@@ -870,8 +898,8 @@ export const ChatBot: React.FC = () => {
     const createAgentGreeting = () => ({
         type: "ai",
         text: isClinicStaff
-            ? `${timeGreeting} **Đồng nghiệp ${userRoleName} ${userName}**! 🐾 Tôi là **Rexi Agent v2** - Trợ lý Tác vụ AI. Tôi được tích hợp sâu để giúp bạn tự động hóa nghiệp vụ: tra cứu thông tin khách hàng nhanh, lập lịch khám nhanh, xem bệnh án, hoặc kiểm tra thuốc. Hãy cho tôi biết tác vụ bạn cần nhé!`
-            : `${timeGreeting} Sen **${userName || "nhà mình"}**! 🐾 Tôi là **Rexi Agent v2** - Trợ lý Tác vụ AI. Tôi có thể hỗ trợ đặt lịch khám, tra cứu lịch trực bác sĩ và tìm tài liệu thú y chuẩn xác. Sen muốn Rexi làm gì hôm nay ạ?`
+            ? `${timeGreeting} **Đồng nghiệp ${userRoleName} ${userName}**! 🐾 Tôi là **Rexi Agent** - trợ lý tác vụ AI. Tôi được tích hợp sâu để giúp bạn tự động hóa nghiệp vụ: tra cứu thông tin khách hàng nhanh, lập lịch khám nhanh, xem bệnh án, hoặc kiểm tra thuốc. Hãy cho tôi biết tác vụ bạn cần nhé!`
+            : `${timeGreeting} Sen **${userName || "nhà mình"}**! 🐾 Tôi là **Rexi Agent** - trợ lý tác vụ AI. Tôi có thể hỗ trợ đặt lịch khám, tra cứu lịch trực bác sĩ và tìm tài liệu thú y chuẩn xác. Sen muốn Rexi làm gì hôm nay ạ?`
     });
 
     const readScopedChatHistory = (key: string, fallback: any[]) => {
@@ -934,7 +962,7 @@ export const ChatBot: React.FC = () => {
     };
 
     useEffect(() => {
-        if (!isClinicStaff) return;
+        if (!isAdminAccount) return;
 
         const handleSecurityAlert = (event: Event) => {
             const alert = (event as CustomEvent).detail || {};
@@ -960,9 +988,31 @@ export const ChatBot: React.FC = () => {
             });
         };
 
+        const handleWebErrorAlert = (event: Event) => {
+            const alert = (event as CustomEvent).detail || {};
+            const recommendations = Array.isArray(alert.recommendedActions)
+                ? alert.recommendedActions.map((item: string, index: number) => `${index + 1}. ${item}`).join("\n")
+                : "1. Mở lại đúng trang bị lỗi.\n2. Kiểm tra Console/Network và log backend cùng thời điểm.\n3. Ưu tiên lỗi liên quan đăng nhập, đặt lịch, thanh toán, bệnh án.";
+
+            setProactiveMessage({
+                id: `web-error-${alert.id || Date.now()}`,
+                text: `LỖI WEB/DOM CHO ADMIN: ${alert.errorType || "CLIENT_ERROR"} tại ${alert.path || "không rõ trang"}. Mức độ ${alert.severity || "MEDIUM"}.`,
+                action: () => {
+                    const message = `Cảnh báo lỗi web dành riêng cho Admin/IT:\n- Loại lỗi: ${alert.errorType || "CLIENT_ERROR"}\n- Mức độ: ${alert.severity || "MEDIUM"}\n- Trang: ${alert.path || "không rõ"}\n- API/URL: ${alert.method || ""} ${alert.url || ""}\n- HTTP status: ${alert.status || "không có"}\n- Nguồn: ${alert.source || "không rõ"}\n- Nội dung: ${alert.message || "không có"}\n\nPhân tích: ${alert.riskSummary || "Frontend/API vừa phát sinh lỗi thật trong phiên admin."}\n\nGợi ý xử lý:\n${recommendations}\n\nQuyết định đề xuất: ${alert.adminDecision || "Admin/IT kiểm tra nếu lỗi lặp lại hoặc ảnh hưởng nghiệp vụ chính."}`;
+                    setActiveTab("agent");
+                    setIsOpen(true);
+                    setAgentMessages(prev => [...prev, { type: "ai", text: message }]);
+                }
+            });
+        };
+
         window.addEventListener("rexi-security-alert", handleSecurityAlert);
-        return () => window.removeEventListener("rexi-security-alert", handleSecurityAlert);
-    }, [isClinicStaff]);
+        window.addEventListener("rexi-web-error-alert", handleWebErrorAlert);
+        return () => {
+            window.removeEventListener("rexi-security-alert", handleSecurityAlert);
+            window.removeEventListener("rexi-web-error-alert", handleWebErrorAlert);
+        };
+    }, [isAdminAccount]);
 
     const getElementAgentLabel = (el: Element) => {
         const input = el as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
@@ -1369,8 +1419,8 @@ export const ChatBot: React.FC = () => {
     const [agentLoading, setAgentLoading] = useState(false);
 
     // Khai báo state quản lý bước suy nghĩ hiện tại của Rexi Chatbot
-    const [, setThoughtStep] = useState(0);
-    const [, setAgentThoughtStep] = useState(0);
+    const [thoughtStep, setThoughtStep] = useState(0);
+    const [agentThoughtStep, setAgentThoughtStep] = useState(0);
 
     // Tự động xoay vòng bước suy nghĩ Standard mỗi 1800ms để người dùng đọc không bị chán
     useEffect(() => {
@@ -1388,7 +1438,7 @@ export const ChatBot: React.FC = () => {
         };
     }, [loading]);
 
-    // Tự động xoay vòng bước suy nghĩ Agent v2 mỗi 1800ms khi tác tử đang xử lý dữ liệu
+    // Tự động xoay vòng bước suy nghĩ Rexi Agent mỗi 1800ms khi tác tử đang xử lý dữ liệu
     useEffect(() => {
         let interval: any;
         if (agentLoading) {
@@ -1460,6 +1510,8 @@ export const ChatBot: React.FC = () => {
     const lastVoiceResultAtRef = useRef(0);
     const pendingVoiceQueueRef = useRef<string[]>([]);
     const lastInterimVoiceTextRef = useRef("");
+    const lastMicAudioAtRef = useRef(0);
+    const recognitionRunningRef = useRef(false);
     const loadingRef = useRef(false);
     const agentLoadingRef = useRef(false);
     const pendingSensitiveCommandRef = useRef<string | null>(null);
@@ -1553,6 +1605,16 @@ export const ChatBot: React.FC = () => {
         .trim();
 
     // 3. ĐỌC THÀNH TIẾNG (TEXT-TO-SPEECH VIETNAMESE)
+    const finishSpeechTurn = useCallback(() => {
+        setTimeout(() => {
+            if ("speechSynthesis" in window && (window.speechSynthesis.speaking || window.speechSynthesis.pending)) return;
+            isAiSpeakingRef.current = false;
+            if (recognitionRef.current && voiceSessionActiveRef.current && isOpen) {
+                startRecognitionSafe("speechSynthesis.onend");
+            }
+        }, 800);
+    }, [isOpen]);
+
     const speakText = useCallback((text: string) => {
         if (!isVoiceEnabled || !('speechSynthesis' in window)) return;
         
@@ -1583,19 +1645,39 @@ export const ChatBot: React.FC = () => {
                 try { recognitionRef.current.abort(); } catch(e){}
             }
         };
-        utterance.onend = () => { 
-            setTimeout(() => { 
-                isAiSpeakingRef.current = false; 
-                // Khởi động lại mic nếu session voice vẫn đang active
-                if (recognitionRef.current && voiceSessionActiveRef.current && isOpen) {
-                    try { recognitionRef.current.start(); } catch(e){}
-                }
-            }, 800); 
-        };
+        utterance.onend = finishSpeechTurn;
         utterance.onerror = () => { isAiSpeakingRef.current = false; };
         
         window.speechSynthesis.speak(utterance);
-    }, [isVoiceEnabled]);
+    }, [finishSpeechTurn, isVoiceEnabled]);
+
+    const speakStreamingText = useCallback((text: string) => {
+        if (!isVoiceEnabled || !('speechSynthesis' in window)) return false;
+        const cleanText = polishTextForSpeech(text);
+        if (!cleanText) return false;
+
+        const utterance = new SpeechSynthesisUtterance(cleanText);
+        utterance.lang = "vi-VN";
+        const voices = window.speechSynthesis.getVoices();
+        const bestVoice = preferredVoiceRef.current || [...voices].sort((a, b) => scoreAssistantVoice(b) - scoreAssistantVoice(a))[0];
+        if (bestVoice && scoreAssistantVoice(bestVoice) > 0) {
+            preferredVoiceRef.current = bestVoice;
+            utterance.voice = bestVoice;
+        }
+        utterance.rate = voiceModeRef.current === "fast" ? 1.08 : 0.92;
+        utterance.pitch = 1.12;
+        utterance.volume = 1;
+        utterance.onstart = () => {
+            isAiSpeakingRef.current = true;
+            if (recognitionRef.current && voiceSessionActiveRef.current) {
+                try { recognitionRef.current.abort(); } catch (e) {}
+            }
+        };
+        utterance.onend = finishSpeechTurn;
+        utterance.onerror = () => { isAiSpeakingRef.current = false; };
+        window.speechSynthesis.speak(utterance);
+        return true;
+    }, [finishSpeechTurn, isVoiceEnabled]);
 
     useEffect(() => {
         if (!('speechSynthesis' in window)) return;
@@ -2108,16 +2190,16 @@ export const ChatBot: React.FC = () => {
     const getContextualTip = useCallback((path: string) => {
         const lowerPath = path.toLowerCase();
         if (isClinicStaff) {
-            if (lowerPath.includes("/quan-ly-kho-thuoc")) {
+            if (lowerPath.includes("/quan-ly/kho-thuoc")) {
                 return isMobile ? "Tra cứu thuốc? 💊" : "Cần lọc thuốc sắp hết hạn hay tìm nhanh loại thuốc nào không sếp? 💊";
             }
-            if (lowerPath.includes("/quan-ly-hoa-don")) {
+            if (lowerPath.includes("/quan-ly/hoa-don")) {
                 return isMobile ? "Check hóa đơn? 💳" : "Cần hỗ trợ tìm nhanh hóa đơn hay lọc doanh thu ca trực không sếp? 💳";
             }
-            if (lowerPath.includes("/quan-ly-xet-nghiem")) {
+            if (lowerPath.includes("/quan-ly/xet-nghiem")) {
                 return isMobile ? "Chỉ số máu? 🧪" : "Cần tra cứu nhanh chỉ số sinh hóa máu chuẩn để đối chiếu không sếp? 🧪";
             }
-            if (lowerPath.includes("/quan-ly-benh-an") || lowerPath.includes("/ho-so-benh-an")) {
+            if (lowerPath.includes("/quan-ly/ho-so-benh-an") || lowerPath.includes("/ho-so-benh-an")) {
                 return isMobile ? "Xem bệnh án? 🩺" : "Cần em tìm lại lịch sử điều trị hay phác đồ ca bệnh này không sếp? 🩺";
             }
             if (lowerPath.includes("/tiep-tan") || lowerPath.includes("/quan-ly-lich-hen")) {
@@ -2203,6 +2285,7 @@ export const ChatBot: React.FC = () => {
         try {
             recognitionRef.current?.stop();
         } catch (e) { }
+        recognitionRunningRef.current = false;
         setIsListening(false);
         setVoiceStatus(statusText);
         setVoiceLiveText("");
@@ -2219,13 +2302,38 @@ export const ChatBot: React.FC = () => {
         if (shouldSpeak) speakText(text);
     };
 
+    const reportVoiceIssueToAdmin = (
+        code: string,
+        message: string,
+        severity: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL" = "MEDIUM",
+        source = "ChatBot voice"
+    ) => {
+        reportClientError({
+            type: "VOICE_MIC_ERROR",
+            severity,
+            message: `${code}: ${message}`,
+            source,
+            path: `${location.pathname}${location.search}`,
+        });
+    };
+
     const scheduleNoSpeechPrompt = () => {
         clearVoiceNoSpeechTimer();
         voiceNoSpeechTimerRef.current = setTimeout(() => {
             if (!voiceSessionActiveRef.current) return;
             if (voiceDraftRef.current.trim() || lastInterimVoiceTextRef.current.trim()) return;
-            const text = "Tôi đang bật micro nhưng chưa nghe thấy giọng nói. Bạn kiểm tra quyền micro rồi nói lại nhé.";
-            setVoiceStatus("Chưa nghe thấy giọng nói.");
+            const heardAudioRecently = Date.now() - lastMicAudioAtRef.current < 6000;
+            const text = heardAudioRecently
+                ? "Micro có nhận âm thanh nhưng trình duyệt chưa chuyển được thành chữ. Bạn thử nói chậm hơn, dùng Chrome/Edge, hoặc tắt rồi bật lại micro."
+                : "Tôi đang bật micro nhưng chưa thấy tín hiệu âm thanh đi vào. Bạn kiểm tra đúng thiết bị micro và quyền micro rồi nói lại nhé.";
+            setVoiceStatus(heardAudioRecently ? "Có âm thanh, chưa ra chữ." : "Chưa có tín hiệu mic.");
+            reportVoiceIssueToAdmin(
+                heardAudioRecently ? "SPEECH_ENGINE_NO_TRANSCRIPT" : "MIC_NO_AUDIO_SIGNAL",
+                heardAudioRecently
+                    ? "Audio analyser có tín hiệu âm thanh nhưng SpeechRecognition không trả transcript/interim text sau 5.5 giây."
+                    : "Mic đã bật nhưng sau 5.5 giây không có transcript/interim text và audio analyser không thấy tín hiệu âm thanh rõ.",
+                "MEDIUM"
+            );
             notifyVoiceMessage(text, false);
         }, 5500);
     };
@@ -2250,6 +2358,14 @@ export const ChatBot: React.FC = () => {
         const text = heardText
             ? `Tôi nghe chưa rõ câu "${heardText}". Bạn nói lại chậm hơn hoặc ngắn hơn giúp tôi nhé.`
             : "Tôi nghe chưa rõ. Bạn nói lại chậm hơn hoặc ngắn hơn giúp tôi nhé.";
+        reportVoiceIssueToAdmin(
+            "LOW_CONFIDENCE_TRANSCRIPT",
+            heardText
+                ? `SpeechRecognition có transcript nhưng bị loại vì độ tin cậy thấp/ngắn: "${heardText}".`
+                : "SpeechRecognition trả transcript rỗng hoặc quá yếu.",
+            "LOW",
+            "voice confidence gate"
+        );
         notifyVoiceMessage(text, true);
         scheduleNoSpeechPrompt();
     };
@@ -2277,6 +2393,21 @@ export const ChatBot: React.FC = () => {
     const isVoiceNormalCommand = (text: string) => {
         const normalized = normalizeSearchText(text);
         return ["noi binh thuong", "lam binh thuong", "cham lai", "tu tu", "che do binh thuong"].some(kw => normalized.includes(kw));
+    };
+
+    const startRecognitionSafe = (source = "voice") => {
+        if (!recognitionRef.current || recognitionRunningRef.current || !voiceSessionActiveRef.current) return;
+        try {
+            recognitionRef.current.start();
+            recognitionRunningRef.current = true;
+            resetMicIdleTimeout();
+        } catch (e: any) {
+            const message = String(e?.message || e || "");
+            if (!message.toLowerCase().includes("already started")) {
+                console.warn("SpeechRecognition start failed:", e);
+                reportVoiceIssueToAdmin("SPEECH_START_FAILED", message || "Không khởi động được SpeechRecognition.", "MEDIUM", source);
+            }
+        }
     };
 
     const getAdaptiveVoiceDelay = (text: string) => {
@@ -2378,6 +2509,92 @@ export const ChatBot: React.FC = () => {
         return sensitivePhrases.some(phrase => normalized.includes(phrase));
     };
 
+    const getDirectClickTarget = (text: string) => {
+        let normalized = normalizeSearchText(text).trim();
+        if (!/(^|\s)(bam|nhan|click)(\s|$)/.test(normalized)) return "";
+        normalized = normalized
+            .replace(/\b(lam on|giup toi|giup minh|ho toi|cho toi|vao|vao nut|nut|cai|o|tren trang|tren man hinh|nay|do|kia)\b/g, " ")
+            .replace(/\b(bam|nhan|click)\b/g, " ")
+            .replace(/\s+/g, " ")
+            .trim();
+        return normalized;
+    };
+
+    const isAmbiguousClickTarget = (target: string) => {
+        if (!target) return true;
+        return ["bat ky", "dau cung duoc", "cho nay", "cai nay", "do", "nay"].some(phrase => target.includes(phrase));
+    };
+
+    const isSensitiveVisibleElement = (el: HTMLElement) => {
+        const label = getElementAgentLabel(el);
+        return [
+            "xoa", "delete", "huy", "khoa", "thanh toan", "thu tien",
+            "gui hang loat", "gui dong loat", "xac nhan", "duyet"
+        ].some(phrase => label.includes(phrase));
+    };
+
+    const handleLocalAgentPageAction = async (text: string) => {
+        const normalized = normalizeSearchText(text);
+        const reply = (message: string) => {
+            const aiReply = { type: "ai", text: message };
+            setAgentMessages(prev => [...prev, aiReply]);
+            speakText(message);
+        };
+
+        if (/(cuon|keo|scroll)/.test(normalized)) {
+            let tag = "[SCROLL:down|small]";
+            let message = "Đã cuộn xuống một chút.";
+            if (/(len|nguoc len)/.test(normalized)) {
+                tag = "[SCROLL:up|small]";
+                message = "Đã cuộn lên một chút.";
+            } else if (/(dau trang|len dau|ve dau)/.test(normalized)) {
+                tag = "[SCROLL:top]";
+                message = "Đã cuộn về đầu trang.";
+            } else if (/(cuoi trang|xuong cuoi|ve cuoi)/.test(normalized)) {
+                tag = "[SCROLL:bottom]";
+                message = "Đã cuộn xuống cuối trang.";
+            } else if (/(nhieu|manh|xa)/.test(normalized)) {
+                tag = "[SCROLL:down|large]";
+                message = "Đã cuộn xuống nhiều hơn.";
+            }
+            await executeAction(tag);
+            reply(message);
+            return true;
+        }
+
+        const clickTarget = getDirectClickTarget(text);
+        if (!clickTarget) return false;
+        if (isAmbiguousClickTarget(clickTarget)) {
+            reply("Tôi chưa bấm vì câu lệnh chưa rõ nút nào. Bạn nói rõ tên nút, ví dụ: nhấn nút Lưu, nhấn nút Tìm kiếm, hoặc nhấn Đăng nhập.");
+            return true;
+        }
+
+        const button = findAgentButtonByKeywords([clickTarget]);
+        if (!button) {
+            reply(`Tôi chưa thấy nút "${clickTarget}" đang hiển thị trên trang này.`);
+            return true;
+        }
+
+        const label = button.textContent?.trim() || button.getAttribute("aria-label") || button.getAttribute("data-ai-id") || clickTarget;
+        if (isSensitiveVisibleElement(button)) {
+            pendingSensitiveCommandRef.current = text;
+            reply(`Tôi thấy nút "${label}" là thao tác nhạy cảm. Tôi chưa bấm. Nếu muốn làm tiếp, hãy nói "xác nhận"; nếu không, nói "hủy".`);
+            return true;
+        }
+
+        const aiId = button.getAttribute("data-ai-id");
+        if (aiId) {
+            await executeAction(`[CLICK:${aiId}]`);
+        } else {
+            button.click();
+            window.dispatchEvent(new CustomEvent('agent-action', {
+                detail: { type: 'SUCCESS', tag: `[CLICK_TEXT:${clickTarget}]`, message: `Đã bấm nút: ${label}` }
+            }));
+        }
+        reply(`Đã bấm nút "${label}".`);
+        return true;
+    };
+
     const processVoiceTranscript = (rawText: string, options: { isFinal?: boolean; confidence?: number | null; source?: "speech" | "test" } = {}) => {
         const text = rawText.trim();
         if (!text) return;
@@ -2466,7 +2683,9 @@ export const ChatBot: React.FC = () => {
             state: () => ({
                 mode: voiceModeRef.current,
                 liveText: voiceLiveText,
-                activeTab: activeTabRef.current
+                activeTab: activeTabRef.current,
+                recognitionRunning: recognitionRunningRef.current,
+                lastMicAudioAgoMs: lastMicAudioAtRef.current ? Date.now() - lastMicAudioAtRef.current : null
             })
         };
         return () => {
@@ -2480,14 +2699,26 @@ export const ChatBot: React.FC = () => {
             return;
         }
 
-        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-        if (!SpeechRecognition) {
-            const text = "Trình duyệt này chưa hỗ trợ nhận diện giọng nói. Bạn hãy dùng Chrome hoặc Microsoft Edge, hoặc nhập bằng bàn phím.";
-            setVoiceStatus("Không hỗ trợ voice.");
+        if (!window.isSecureContext && !["localhost", "127.0.0.1"].includes(window.location.hostname)) {
+            const text = "Trình duyệt chỉ cho mở micro trên HTTPS hoặc localhost. Bạn hãy mở web bằng HTTPS để dùng giọng nói.";
+            setVoiceStatus("Cần HTTPS để mở mic.");
+            reportVoiceIssueToAdmin("MIC_INSECURE_CONTEXT", text, "HIGH", "browser security");
             notifyVoiceMessage(text, true);
             alert(text);
             return;
         }
+
+        if (!navigator.mediaDevices?.getUserMedia) {
+            const text = "Trình duyệt này chưa hỗ trợ mở micro cho web. Bạn hãy dùng Chrome, Microsoft Edge hoặc Safari bản mới.";
+            setVoiceStatus("Không hỗ trợ micro.");
+            reportVoiceIssueToAdmin("GET_USER_MEDIA_UNSUPPORTED", text, "HIGH", navigator.userAgent);
+            notifyVoiceMessage(text, true);
+            alert(text);
+            return;
+        }
+
+        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+        const hasSpeechRecognition = Boolean(SpeechRecognition);
 
         try {
             setVoiceStatus("Đang xin quyền micro...");
@@ -2495,14 +2726,34 @@ export const ChatBot: React.FC = () => {
             setIsVoiceEnabled(true);
             localStorage.setItem("rexi_is_voice_enabled", "true");
 
-            if (!recognitionRef.current) {
+            if (hasSpeechRecognition && !recognitionRef.current) {
                 recognitionRef.current = new SpeechRecognition();
-                recognitionRef.current.continuous = true; // NGHE LIÊN TỤC KHÔNG TỰ TẮT
+                // Mobile Safari/Android WebView thường kém ổn định với continuous=true.
+                recognitionRef.current.continuous = !isMobile;
                 recognitionRef.current.interimResults = true;
                 recognitionRef.current.lang = "vi-VN";
+                recognitionRef.current.maxAlternatives = 3;
+
+                recognitionRef.current.onstart = () => {
+                    recognitionRunningRef.current = true;
+                    setVoiceStatus("Đang nghe...");
+                };
+                recognitionRef.current.onaudiostart = () => {
+                    lastMicAudioAtRef.current = Date.now();
+                    setVoiceStatus("Micro đã mở.");
+                };
+                recognitionRef.current.onsoundstart = () => {
+                    lastMicAudioAtRef.current = Date.now();
+                    setVoiceStatus("Đã nghe âm thanh...");
+                };
+                recognitionRef.current.onspeechstart = () => {
+                    lastMicAudioAtRef.current = Date.now();
+                    setVoiceStatus("Đang nhận giọng nói...");
+                };
 
                 recognitionRef.current.onresult = (event: any) => {
                     resetMicIdleTimeout(); // Có tiếng động là reset timer
+                    lastMicAudioAtRef.current = Date.now();
                     if (isAiSpeakingRef.current) return; // Bỏ qua âm thanh khi AI đang nói để tránh echo
 
                     let interimText = "";
@@ -2533,11 +2784,13 @@ export const ChatBot: React.FC = () => {
 
                 recognitionRef.current.onerror = (e: any) => {
                     console.error("Speech Error:", e);
+                    recognitionRunningRef.current = false;
                     clearMicIdleTimeout();
                     const errorCode = e?.error || "unknown";
                     if (errorCode === "not-allowed" || errorCode === "service-not-allowed") {
                         stopVoiceSession("Trình duyệt đang chặn quyền micro.");
                         const text = "Trình duyệt đang chặn quyền micro. Bạn hãy bấm biểu tượng ổ khóa trên thanh địa chỉ và cho phép Microphone cho trang này.";
+                        reportVoiceIssueToAdmin(`SPEECH_${String(errorCode).toUpperCase()}`, text, "HIGH", "SpeechRecognition.onerror");
                         toast.error(text);
                         notifyVoiceMessage(text, true);
                         return;
@@ -2545,12 +2798,27 @@ export const ChatBot: React.FC = () => {
                     if (errorCode === "network") {
                         setVoiceStatus("Nhận diện giọng nói bị lỗi mạng.");
                         const text = "Nhận diện giọng nói đang lỗi mạng. Bạn thử lại trên Chrome hoặc Edge có kết nối mạng ổn định nhé.";
+                        reportVoiceIssueToAdmin("SPEECH_NETWORK", text, "HIGH", "SpeechRecognition.onerror");
                         toast.error(text);
                         notifyVoiceMessage(text, true);
+                        stopVoiceSession("Voice bị lỗi mạng.");
                         return;
                     }
                     if (errorCode === "no-speech") {
-                        setVoiceStatus("Chưa nghe thấy giọng nói.");
+                        const heardAudioRecently = Date.now() - lastMicAudioAtRef.current < 6000;
+                        setVoiceStatus(heardAudioRecently ? "Có âm thanh, chưa ra chữ." : "Chưa nghe thấy giọng nói.");
+                        reportVoiceIssueToAdmin(
+                            heardAudioRecently ? "SPEECH_NO_TRANSCRIPT_AFTER_AUDIO" : "SPEECH_NO_SPEECH",
+                            heardAudioRecently
+                                ? "SpeechRecognition báo no-speech dù audio analyser/event đã nhận âm thanh; có thể engine trình duyệt không chuyển giọng Việt thành text."
+                                : "SpeechRecognition báo no-speech: trình duyệt mở mic được nhưng engine không nhận được lời nói đủ rõ để tạo transcript.",
+                            "MEDIUM",
+                            "SpeechRecognition.onerror"
+                        );
+                        if (voiceSessionActiveRef.current) {
+                            window.setTimeout(() => startRecognitionSafe("SpeechRecognition.no-speech"), 500);
+                        }
+                        return;
                     }
                     if (!voiceSessionActiveRef.current) {
                         stopVoiceSession();
@@ -2558,14 +2826,14 @@ export const ChatBot: React.FC = () => {
                 };
 
                 recognitionRef.current.onend = () => {
+                    recognitionRunningRef.current = false;
                     clearMicIdleTimeout();
                     if (voiceSessionActiveRef.current && isOpen) {
                         setTimeout(() => {
                             try {
                                 // Chỉ bật lại mic nếu AI không đang nói
                                 if (!isAiSpeakingRef.current) {
-                                    recognitionRef.current?.start();
-                                    resetMicIdleTimeout();
+                                    startRecognitionSafe("SpeechRecognition.onend");
                                 }
                             } catch (e) {
                                 console.error("Speech restart failed:", e);
@@ -2579,12 +2847,21 @@ export const ChatBot: React.FC = () => {
             }
 
             // Kích hoạt micro & vẽ sóng âm
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const stream = await navigator.mediaDevices.getUserMedia({
+                audio: {
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    autoGainControl: true
+                }
+            });
             mediaStreamRef.current = stream;
 
             const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
             const audioCtx = new AudioContextClass();
             audioContextRef.current = audioCtx;
+            if (audioCtx.state === "suspended") {
+                await audioCtx.resume().catch(() => {});
+            }
 
             const source = audioCtx.createMediaStreamSource(stream);
             const analyser = audioCtx.createAnalyser();
@@ -2600,6 +2877,10 @@ export const ChatBot: React.FC = () => {
                 const vol1 = dataArray[5] || 0;
                 const vol2 = dataArray[15] || 0;
                 const vol3 = dataArray[30] || 0;
+                const maxVol = Math.max(...Array.from(dataArray));
+                if (maxVol > 8) {
+                    lastMicAudioAtRef.current = Date.now();
+                }
                 const scale = 20 / 255;
 
                 if (waveBar1Ref.current) { waveBar1Ref.current.style.height = `${6 + vol1 * scale}px`; waveBar1Ref.current.style.opacity = `${0.5 + (vol1 / 255) * 0.5}`; }
@@ -2611,18 +2892,37 @@ export const ChatBot: React.FC = () => {
 
             voiceSessionActiveRef.current = true;
             setIsListening(true);
-            setVoiceStatus("Đang nghe...");
-            recognitionRef.current.start();
-            resetMicIdleTimeout(); // Bắt đầu đếm ngược 15s khi vừa bật mic
             updateVolume();
-            scheduleNoSpeechPrompt();
-            notifyVoiceMessage(isClinicStaff
-                ? "Rexi đang nghe đồng nghiệp. Bạn cứ nói lệnh, tôi sẽ tự gửi khi bạn ngừng nói."
-                : "Rexi đang nghe Sen. Bạn cứ nói tự nhiên, tôi sẽ tự gửi khi bạn ngừng nói.", false);
+            if (hasSpeechRecognition) {
+                setVoiceStatus("Đang nghe...");
+                startRecognitionSafe("toggleListening");
+                scheduleNoSpeechPrompt();
+                notifyVoiceMessage(isClinicStaff
+                    ? "Rexi đang nghe đồng nghiệp. Bạn cứ nói lệnh, tôi sẽ tự gửi khi bạn ngừng nói."
+                    : "Rexi đang nghe Sen. Bạn cứ nói tự nhiên, tôi sẽ tự gửi khi bạn ngừng nói.", false);
+            } else {
+                const isOpera = /\bOPR\/|Opera/i.test(navigator.userAgent);
+                const text = isOpera
+                    ? "Opera đã mở được micro nhưng trình duyệt này không cung cấp engine nhận diện giọng nói ổn định cho web. Tôi sẽ báo lỗi này cho admin; bạn có thể dùng Chrome hoặc Edge để ra chữ ngay."
+                    : "Trình duyệt đã mở được micro nhưng không hỗ trợ nhận diện giọng nói thành chữ. Tôi đã báo admin để cấu hình giải pháp chuyển âm thanh thành văn bản.";
+                setVoiceStatus("Mic mở, thiếu voice engine.");
+                reportVoiceIssueToAdmin("SPEECH_RECOGNITION_UNSUPPORTED_AFTER_MIC_OPEN", text, "HIGH", navigator.userAgent);
+                notifyVoiceMessage(text, true);
+                scheduleNoSpeechPrompt();
+            }
         } catch (err) {
             console.error("Microphone Access Blocked:", err);
+            const errorName = (err as any)?.name || "";
+            let text = "Không mở được micro. Bạn kiểm tra quyền Microphone của trình duyệt rồi thử lại nhé.";
+            if (errorName === "NotAllowedError" || errorName === "SecurityError") {
+                text = "Trình duyệt đang chặn quyền micro. Bạn bấm biểu tượng ổ khóa trên thanh địa chỉ và cho phép Microphone cho trang này.";
+            } else if (errorName === "NotFoundError" || errorName === "DevicesNotFoundError") {
+                text = "Không tìm thấy micro trên thiết bị. Bạn kiểm tra tai nghe, micro rời hoặc quyền thiết bị rồi thử lại.";
+            } else if (errorName === "NotReadableError" || errorName === "TrackStartError") {
+                text = "Micro đang bị ứng dụng khác sử dụng hoặc hệ điều hành đang chặn. Bạn đóng ứng dụng đang dùng micro rồi thử lại.";
+            }
             setVoiceStatus("Không mở được micro.");
-            const text = "Không mở được micro. Bạn kiểm tra quyền Microphone của trình duyệt rồi thử lại nhé.";
+            reportVoiceIssueToAdmin(`GET_USER_MEDIA_${String(errorName || "UNKNOWN").toUpperCase()}`, text, "HIGH", "navigator.mediaDevices.getUserMedia");
             notifyVoiceMessage(text, true);
             alert(text);
         }
@@ -2644,6 +2944,110 @@ export const ChatBot: React.FC = () => {
     const detectEmergencyKeywords = (text: string) => {
         const lower = text.toLowerCase();
         return ["hóc", "ngạt thở", "ngộ độc", "chảy máu", "co giật", "khó thở", "bị cắn", "cấp cứu"].some(kw => lower.includes(kw));
+    };
+
+    const isMedicalLikeQuery = (text: string) => {
+        const normalized = normalizeSearchText(text);
+        return ["benh", "trieu chung", "thuoc", "dau", "sot", "non", "tieu chay", "dieu tri", "chan doan", "kham", "cap cuu", "tai nan", "co giat", "kho tho"].some(kw => normalized.includes(kw));
+    };
+
+    const isWebLikeQuery = (text: string) => {
+        const normalized = normalizeSearchText(text);
+        return ["google", "len mang", "tra cuu mang", "tim tai lieu", "tim tren web", "tim kiem web", "nguon tham khao", "link nguon", "moi nhat"].some(kw => normalized.includes(kw));
+    };
+
+    const shouldOfferAgentHandoff = (replyText: string, userText: string) => {
+        if (!isClinicStaff || activeTabRef.current !== "standard") return false;
+        const normalized = normalizeSearchText(`${replyText} ${userText}`);
+        return [
+            "tro ly co ban",
+            "chua duoc gan cong cu",
+            "khong co cong cu truy cap",
+            "khong co cong cu tra cuu",
+            "khong the xem du lieu he thong",
+            "database",
+            "co so du lieu",
+            "tac vu agent",
+            "rexi agent"
+        ].some(keyword => normalized.includes(keyword));
+    };
+
+    const queueSpeechBySentence = (text: string) => {
+        if (!isVoiceEnabled) return false;
+        const cleanText = polishTextForSpeech(stripChatControlTags(text));
+        if (!cleanText) return false;
+        const segments = cleanText
+            .split(/(?<=[.!?])\s+/)
+            .flatMap(segment => segment.length > 180 ? segment.match(/.{1,170}(?:\s|$)/g) || [segment] : [segment])
+            .map(segment => segment.trim())
+            .filter(Boolean);
+        let spoken = false;
+        segments.forEach(segment => {
+            if (speakStreamingText(segment)) spoken = true;
+        });
+        return spoken;
+    };
+
+    const shouldUseRealtimeStream = (text: string, hasMedia: boolean) => {
+        if (hasMedia) return false;
+        if (!("ReadableStream" in window) || typeof TextDecoder === "undefined") return false;
+        if (hasExplicitAgentActionIntent(text) || hasExplicitNavigationIntent(text)) return false;
+        if (isMedicalLikeQuery(text) || isWebLikeQuery(text) || detectEmergencyKeywords(text)) return false;
+        return true;
+    };
+
+    const streamStandardChat = async (apiHistory: any[], onLiveSpeech?: (segment: string) => void) => {
+        const token = localStorage.getItem("token");
+        let fullText = "";
+        let speechBuffer = "";
+        setMessages(prev => [...prev, { type: "ai", text: "" }]);
+
+        const response = await fetch("/api/chat", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "text/event-stream",
+                ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                "X-User-Name": userName || "",
+                "X-Current-Path": toSafeContextHeader(location.pathname, 500) || "",
+                "X-Current-DOM-Context": toSafeContextHeader(getPageDomContext()) || "",
+                "X-User-Activity-Logs": toSafeContextHeader(JSON.stringify(userActivityLogs.slice(-8)), 1500) || ""
+            },
+            body: JSON.stringify(apiHistory)
+        });
+
+        if (!response.ok || !response.body) {
+            throw new Error(`Stream chat failed: ${response.status}`);
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            const chunk = decoder.decode(value, { stream: true });
+            if (!chunk) continue;
+            fullText += chunk;
+            if (onLiveSpeech) {
+                speechBuffer += chunk;
+                const cleanSpeechBuffer = polishTextForSpeech(stripChatControlTags(speechBuffer));
+                if (cleanSpeechBuffer && (/[.!?]$/.test(cleanSpeechBuffer) || cleanSpeechBuffer.length >= 150)) {
+                    onLiveSpeech(cleanSpeechBuffer);
+                    speechBuffer = "";
+                }
+            }
+            setMessages(prev => {
+                const updated = [...prev];
+                const last = updated[updated.length - 1];
+                if (last && last.type === "ai") {
+                    updated[updated.length - 1] = { ...last, text: stripChatControlTags(fullText) };
+                }
+                return updated;
+            });
+        }
+        const finalSpeechBuffer = polishTextForSpeech(stripChatControlTags(speechBuffer));
+        if (onLiveSpeech && finalSpeechBuffer) onLiveSpeech(finalSpeechBuffer);
+        return fullText;
     };
 
     // 6. GỬI TIN NHẮN TẬP TRUNG (SEND SERVICES)
@@ -2692,11 +3096,6 @@ export const ChatBot: React.FC = () => {
             speakText("Đang phân tích tin nhắn của bạn.");
         }
 
-        if (newMsg.isEmergency) {
-            setLoading(false);
-            return;
-        }
-
         try {
             const apiHistory = messages.slice(-10).map((msg) => ({
                 role: msg.type === "ai" ? "assistant" : "user",
@@ -2727,8 +3126,27 @@ export const ChatBot: React.FC = () => {
 
             let response;
             let streamedMessage = false;
+            let liveSpeechQueued = false;
             if (isMarketingCampaign) {
                 response = await axiosInstance.post("/api/agent/swarm-orchestration", { query: textToSend });
+            } else if (shouldUseRealtimeStream(textToSend, images.length > 0 || videos.length > 0)) {
+                try {
+                    const streamReply = await streamStandardChat(apiHistory, (segment) => {
+                        if (speakStreamingText(segment)) liveSpeechQueued = true;
+                    });
+                    response = { data: { reply: streamReply || "Tôi đang bận một chút, bạn thử lại sau nhé!" } };
+                    streamedMessage = true;
+                } catch (streamError) {
+                    console.warn("Realtime stream không khả dụng, fallback sang request thường:", streamError);
+                    response = await axiosInstance.post("/api/chat", apiHistory, {
+                        headers: {
+                            "X-User-Name": userName || "",
+                            "X-Current-Path": toSafeContextHeader(location.pathname, 500) || "",
+                            "X-Current-DOM-Context": toSafeContextHeader(getPageDomContext()) || "",
+                            "X-User-Activity-Logs": toSafeContextHeader(JSON.stringify(userActivityLogs.slice(-8)), 1500) || ""
+                        }
+                    });
+                }
             } else {
                 response = await axiosInstance.post("/api/chat", apiHistory, {
                     headers: {
@@ -2807,7 +3225,7 @@ export const ChatBot: React.FC = () => {
             }
             
             // Phát hiện các lệnh ACTION khác từ backend
-            const actionTagRegex = /\[(CLICK|FILL|TOGGLE|SELECT|DELETE):([^\]]+)\]/g;
+            const actionTagRegex = /\[(CLICK|FILL|TOGGLE|SELECT|DELETE|SCROLL):([^\]]+)\]/g;
             const actionTags = [];
             let matchAction;
             while ((matchAction = actionTagRegex.exec(cleanedReplyText)) !== null) {
@@ -2848,7 +3266,13 @@ export const ChatBot: React.FC = () => {
                 text: cleanedReplyText,
                 isEmergency: replyText.includes("[EMERGENCY]") || detectEmergencyKeywords(cleanedReplyText),
                 treatmentData: treatmentData,
-                swarmData: swarmData
+                swarmData: swarmData,
+                agentHandoff: shouldOfferAgentHandoff(cleanedReplyText, textToSend)
+                    ? {
+                        prompt: textToSend,
+                        label: "Chuyển sang Rexi Agent"
+                    }
+                    : null
             };
 
             if (streamedMessage) {
@@ -2862,7 +3286,7 @@ export const ChatBot: React.FC = () => {
                     }
                     return updated;
                 });
-                speakText(cleanedReplyText);
+                if (!liveSpeechQueued) speakText(cleanedReplyText);
             } else {
                 // Thêm tin nhắn với text rỗng, sau đó stream từng ký tự (typewriter effect)
                 setMessages(prev => {
@@ -2872,6 +3296,7 @@ export const ChatBot: React.FC = () => {
                 // Stream từng ký tự với tốc độ 6ms/ký tự — cảm giác như ChatGPT
                 let charIdx = 0;
                 const fullText = cleanedReplyText;
+                liveSpeechQueued = queueSpeechBySentence(cleanedReplyText);
                 const streamInterval = setInterval(() => {
                     if (charIdx < fullText.length) {
                         const chunk = fullText.slice(0, charIdx + 1);
@@ -2886,8 +3311,7 @@ export const ChatBot: React.FC = () => {
                         charIdx++;
                     } else {
                         clearInterval(streamInterval);
-                        // Đọc to sau khi stream xong
-                        speakText(cleanedReplyText);
+                        if (!liveSpeechQueued) speakText(cleanedReplyText);
                     }
                 }, 6);
             }
@@ -2917,7 +3341,7 @@ export const ChatBot: React.FC = () => {
                     { type: "user", text: textToSend },
                     {
                         type: "ai",
-                        text: "Dạ, Rexi Agent v2 xin chào Sen! Em là quản lý trợ lý ảo thông minh chạy ngầm chuyên nghiệp của phòng khám. Các tác vụ tự động hóa lâm sàng nâng cao (như lập lịch khám tự động, truy vấn bệnh án thú y hay chạy chiến dịch marketing đa Agent) yêu cầu quyền đăng nhập tài khoản bảo mật của Bệnh viện Thú y Rexi. Sen đăng nhập nhanh chỉ trong 10 giây để cùng Rexi chăm sóc bé yêu nhé! 🐾✨",
+                        text: "Dạ, Rexi Agent xin chào Sen! Em là quản lý trợ lý ảo thông minh chạy ngầm chuyên nghiệp của phòng khám. Các tác vụ tự động hóa lâm sàng nâng cao (như lập lịch khám tự động, truy vấn bệnh án thú y hay chạy chiến dịch marketing đa Agent) yêu cầu quyền đăng nhập tài khoản bảo mật của Bệnh viện Thú y Rexi. Sen đăng nhập nhanh chỉ trong 10 giây để cùng Rexi chăm sóc bé yêu nhé! 🐾✨",
                         isLoginPrompt: true
                     }
                 ]);
@@ -2926,7 +3350,7 @@ export const ChatBot: React.FC = () => {
             } else {
                 setAgentMessages(prev => [...prev, {
                     type: "ai",
-                    text: "Sen ơi, các tác vụ tự động hóa nâng cao của Rexi Agent v2 yêu cầu đăng nhập tài khoản bảo mật.",
+                    text: "Sen ơi, các tác vụ tự động hóa nâng cao của Rexi Agent yêu cầu đăng nhập tài khoản bảo mật.",
                     isLoginPrompt: true
                 }]);
                 return;
@@ -2999,6 +3423,10 @@ export const ChatBot: React.FC = () => {
                  normalizedAgentQuery.includes("biet duoc") ||
                  normalizedAgentQuery.includes("co biet"));
 
+            if (await handleLocalAgentPageAction(textToSend)) {
+                return;
+            }
+
             if (isLocationPrivacyQuestion && !hasActionIntent) {
                 const aiReply = {
                     type: "ai",
@@ -3010,7 +3438,7 @@ export const ChatBot: React.FC = () => {
                 return;
             }
 
-            // KỸ NĂNG 1: TRA CỨU TÀI LIỆU Y KHOA THÚ Y / TRA CỨU MẠNG THẬT 100%
+            // KỸ NĂNG 1: TRA CỨU TÀI LIỆU Y KHOA THÚ Y / TRA CỨU MẠNG CÓ NGUỒN
             if (shouldUseDirectToolRule && ["lên mạng", "tìm tài liệu", "google", "tra cứu mạng", "tài liệu thú y", "giảm bạch cầu", "bạch cầu"].some(kw => query.includes(kw))) {
                 // Gọi API backend thật để lấy câu trả lời chuyên sâu sinh động của mô hình AI (Gemini/DeepSeek)
                 const response = await axiosInstance.post("/api/chat", [
@@ -3025,27 +3453,34 @@ export const ChatBot: React.FC = () => {
                 
                 const replyText = response.data.reply || "Không tìm thấy dữ liệu y học phù hợp.";
 
-                // Tạo các kết quả tìm kiếm Google Search động dựa trên từ khóa thực tế sếp đã nhập!
+                // Ưu tiên nguồn web thật backend trả về; Google Search chỉ là link dự phòng để người dùng tự mở rộng.
                 const searchKeywords = encodeURIComponent(textToSend);
-                const results = [
+                const backendWebResults = Array.isArray(response.data.webResults) ? response.data.webResults : [];
+                const results = backendWebResults.length > 0 ? backendWebResults.map((item: any) => ({
+                    title: item.title || "Nguồn web",
+                    snippet: item.snippet || "Kết quả tìm kiếm web thực tế từ backend.",
+                    url: item.url,
+                    isVerified: true
+                })) : [
                     {
                         title: `Tài liệu điều trị thực tế cho: "${textToSend}" - Google Search`,
-                        snippet: `Nhấp để mở trực tiếp kết quả tìm kiếm trực tiếp trên Google nhằm tra cứu toàn bộ phác đồ, giáo trình lâm sàng và tài liệu học thuật thú y liên quan đến "${textToSend}".`,
+                        snippet: `Backend chưa lấy được nguồn web chi tiết; nhấp để mở kết quả Google và kiểm chứng thủ công.`,
                         url: `https://www.google.com/search?q=${searchKeywords}`,
-                        isVerified: true
+                        isVerified: false
                     },
                     {
                         title: `Hướng dẫn chẩn đoán lâm sàng & Phác đồ hỗ trợ Rexi: "${textToSend}"`,
-                        snippet: `Tra cứu các chỉ dẫn sơ cứu nhanh, hướng dẫn dùng thuốc điều trị bổ trợ và cẩm nang kiểm soát dịch bệnh của Bệnh viện Thú y Rexi.`,
+                        snippet: `Link Google dự phòng, không coi là nguồn đã được Agent đọc trực tiếp.`,
                         url: `https://www.google.com/search?q=phac+do+dieu+tri+${searchKeywords}+benh+vien+thu+y+rexi`,
-                        isVerified: true
+                        isVerified: false
                     }
                 ];
 
                 const aiReply = {
                     type: "ai",
-                    // Tích hợp câu trả lời phân tích thật của AI kết hợp danh sách link search thực tế
-                    text: `Dạ sếp! Tôi đã kích hoạt AI kết hợp Google Search để tra cứu mạng thật 100%. Dưới đây là phân tích y khoa chuyên môn từ mô hình AI, kèm theo các liên kết dẫn trực tiếp sếp đến cổng kết quả tìm kiếm Google Search thực tế:\n\n${replyText}`,
+                    text: backendWebResults.length > 0
+                        ? `Dạ sếp! Tôi đã tra cứu web và lấy được nguồn thật để đối chiếu. Dưới đây là phân tích kèm nguồn tham khảo:\n\n${replyText}`
+                        : `Dạ sếp! Tôi chưa lấy được nguồn web chi tiết từ backend, nên chỉ gửi link Google dự phòng để sếp tự kiểm chứng thêm. Phần phân tích bên dưới là từ mô hình AI và không coi là nguồn web đã xác thực:\n\n${replyText}`,
                     isSearchResult: true,
                     searchResults: results
                 };
@@ -3207,7 +3642,7 @@ export const ChatBot: React.FC = () => {
                     const pageName = getPageDisplayName(location.pathname);
                     const aiReply = {
                         type: "ai",
-                        text: `Dạ báo cáo ${isClinicStaff ? `đồng nghiệp ${userRoleName}` : "Sen"}! Tôi đang "mở to mắt" quan sát và biết cực kỳ chính xác là **sếp/bạn đang ở trang: ${pageName}** (đường dẫn: \`${location.pathname}\`) đấy nhé! 😉\n\nRexi Agent v2 luôn có mắt để hỗ trợ sếp thực hiện các tác vụ tự động tại trang này đấy ạ!`
+                        text: `Dạ báo cáo ${isClinicStaff ? `đồng nghiệp ${userRoleName}` : "Sen"}! Tôi đang "mở to mắt" quan sát và biết cực kỳ chính xác là **sếp/bạn đang ở trang: ${pageName}** (đường dẫn: \`${location.pathname}\`) đấy nhé! 😉\n\nRexi Agent luôn có mắt để hỗ trợ sếp thực hiện các tác vụ tự động tại trang này đấy ạ!`
                     };
                     setAgentMessages(prev => [...prev, aiReply]);
                     speakText(aiReply.text);
@@ -3218,7 +3653,7 @@ export const ChatBot: React.FC = () => {
 
             // ==========================================
             // SIÊU CÔNG CỤ: BỘ ĐIỀU HƯỚNG TỰ ĐỘNG TOÀN NĂNG (UNIVERSAL AUTOPILOT ENGINE)
-            // HỖ TRỢ 100% CÁC TRANG CỦA ADMIN, NHÂN VIÊN VÀ KHÁCH HÀNG KHÔNG BỎ SÓT!
+            // Hỗ trợ điều hướng các trang chính của admin, nhân viên và khách hàng.
             // ==========================================
             const navigationRules = [
                 // 1. PUBLIC PAGES
@@ -3549,8 +3984,9 @@ export const ChatBot: React.FC = () => {
                         } else {
                             // Mặc định đặt lịch rảnh tay siêu tốc trong 1 giây qua API
                             const petName = userName ? `Boss của ${userName}` : "Mimi";
+                            const suggestedDate = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split("T")[0];
                             const fakeBooking = {
-                                date: "2026-05-20",
+                                date: suggestedDate,
                                 time: "09:30",
                                 petName: petName,
                                 service: "Khám bệnh tổng quát & Tiêm vaccine",
@@ -3568,7 +4004,7 @@ export const ChatBot: React.FC = () => {
             if (isClinicStaff && shouldUseDirectToolRule && (query.includes("kho thuốc") || query.includes("tồn kho") || query.includes("còn thuốc") || query.includes("tìm thuốc") || query.includes("kiểm tra thuốc"))) {
                 (async () => {
                     try {
-                        const response = await axiosInstance.get("/api/thuoc");
+                        const response = await axiosInstance.get("/api/kho/thuoc");
                         const data = response.data;
                         if (Array.isArray(data) && data.length > 0) {
                             // Lọc theo từ khóa nếu có
@@ -3577,17 +4013,24 @@ export const ChatBot: React.FC = () => {
                                 .replace(/kho thuốc|tồn kho|còn thuốc|tìm thuốc|kiểm tra thuốc/g, "")
                                 .trim();
                             if (searchKw) {
-                                filtered = data.filter((t: any) => matchesSearchFields(searchKw, [
-                                    t.id_thuoc,
-                                    t.ten_thuoc,
-                                    t.hoat_chat,
-                                    t.thanh_phan,
-                                    t.dang_bao_che,
-                                    t.don_vi,
-                                    t.mo_ta,
-                                    t.so_luong_ton,
-                                    t.gia_ban
-                                ]));
+                                filtered = data
+                                    .map((t: any) => ({
+                                        item: t,
+                                        score: scoreSearchFields(searchKw, [
+                                            t.id_thuoc,
+                                            t.ten_thuoc,
+                                            t.hoat_chat,
+                                            t.thanh_phan,
+                                            t.dang_bao_che,
+                                            t.don_vi,
+                                            t.mo_ta,
+                                            t.so_luong_ton,
+                                            t.gia_ban
+                                        ])
+                                    }))
+                                    .filter(({ score }: any) => score > 0)
+                                    .sort((a: any, b: any) => b.score - a.score)
+                                    .map(({ item }: any) => item);
                             }
                             if (filtered.length === 0) filtered = data.slice(0, 10);
                             const rows = filtered.slice(0, 15).map((t: any) => [
@@ -3621,14 +4064,15 @@ export const ChatBot: React.FC = () => {
                 (async () => {
                     try {
                         const [statsRes, scheduleRes] = await Promise.all([
-                            axiosInstance.get("/api/finance/summary").catch(() => ({ data: null })),
+                            axiosInstance.get("/api/bao-cao/tong-quan-tai-chinh").catch(() => ({ data: null })),
                             axiosInstance.get("/api/lich-hen/hom-nay").catch(() => ({ data: [] }))
                         ]);
                         const today = new Date().toLocaleDateString("vi-VN");
                         const schedule = scheduleRes.data || [];
                         const stats = statsRes.data;
-                        const doanhThu = stats?.tong_doanh_thu_hom_nay
-                            ? `${Number(stats.tong_doanh_thu_hom_nay).toLocaleString("vi-VN")}đ`
+                        const revenueValue = stats?.TongDoanhThu ?? stats?.tongDoanhThu ?? stats?.tong_doanh_thu_hom_nay;
+                        const doanhThu = revenueValue !== undefined && revenueValue !== null
+                            ? `${Number(revenueValue).toLocaleString("vi-VN")}đ`
                             : "Chưa có dữ liệu";
                         const soLich = schedule.length;
                         const daHoan = schedule.filter((l: any) => ["DA_KHAM", "HOAN_THANH", "DA_THANH_TOAN"].includes(l.trang_thai)).length;
@@ -3650,38 +4094,48 @@ export const ChatBot: React.FC = () => {
             if (isClinicStaff && shouldUseDirectToolRule && (query.includes("tìm bé") || query.includes("tìm pet") || query.includes("tìm thú cưng") || query.includes("danh sách thú cưng"))) {
                 (async () => {
                     try {
-                        const response = await axiosInstance.get("/api/thu-cung");
+                        const searchKw = query
+                            .replace(/tìm bé|tìm pet|tìm thú cưng|danh sách thú cưng/g, "")
+                            .trim();
+                        const response = await axiosInstance.get("/api/thu-cung", {
+                            params: { page: 0, size: 50, search: searchKw || undefined }
+                        });
                         const data = response.data;
-                        if (Array.isArray(data) && data.length > 0) {
+                        const petRows = Array.isArray(data) ? data : (data?.content || []);
+                        if (Array.isArray(petRows) && petRows.length > 0) {
                             // Lọc thông minh: loài, tên, giống
-                            let filtered = data;
-                            const searchKw = query
-                                .replace(/tìm bé|tìm pet|tìm thú cưng|danh sách thú cưng/g, "")
-                                .trim();
+                            let filtered = petRows;
                             if (searchKw) {
-                                filtered = data.filter((p: any) => matchesSearchFields(searchKw, [
-                                    p.id_thu_cung,
-                                    p.ten_thu_cung,
-                                    p.loai,
-                                    p.giong,
-                                    p.gioi_tinh,
-                                    p.mau_sac,
-                                    p.ten_khach_hang
-                                ]));
+                                filtered = petRows
+                                    .map((p: any) => ({
+                                        item: p,
+                                        score: scoreSearchFields(searchKw, [
+                                            p.id_thu_cung,
+                                            p.ten_thu_cung,
+                                            p.loai,
+                                            p.giong,
+                                            p.gioi_tinh,
+                                            p.mau_sac,
+                                            p.ten_khach_hang
+                                        ])
+                                    }))
+                                    .filter(({ score }: any) => score > 0)
+                                    .sort((a: any, b: any) => b.score - a.score)
+                                    .map(({ item }: any) => item);
                             }
-                            if (filtered.length === 0) filtered = data.slice(0, 10);
+                            if (filtered.length === 0) filtered = petRows.slice(0, 10);
                             const rows = filtered.slice(0, 15).map((p: any) => [
                                 p.ten_thu_cung || "---",
                                 p.loai || "---",
                                 p.giong || "---",
-                                p.tuoi ? `${p.tuoi} tuổi` : "---",
+                                p.ngay_sinh ? new Date(p.ngay_sinh).toLocaleDateString("vi-VN") : "---",
                                 p.ten_khach_hang || "---"
                             ]);
                             setAgentMessages(prev => [...prev, {
                                 type: "ai",
                                 text: `Tôi đã tra cứu cơ sở dữ liệu và tìm thấy **${filtered.length} thú cưng** khớp với yêu cầu:`,
                                 isTableData: true,
-                                tableHeader: ["Tên Bé", "Loài", "Giống", "Tuổi", "Chủ Nuôi"],
+                                tableHeader: ["Tên Bé", "Loài", "Giống", "Ngày Sinh", "Chủ Nuôi"],
                                 tableRows: rows
                             }]);
                         } else {
@@ -3700,7 +4154,7 @@ export const ChatBot: React.FC = () => {
             if (isClinicStaff && shouldUseDirectToolRule && (query.includes("sắp hết") || query.includes("hết thuốc") || query.includes("cảnh báo kho") || query.includes("thuốc cần nhập"))) {
                 (async () => {
                     try {
-                        const response = await axiosInstance.get("/api/thuoc");
+                        const response = await axiosInstance.get("/api/kho/thuoc");
                         const data = response.data;
                         if (Array.isArray(data) && data.length > 0) {
                             // Lọc thuốc có tồn kho thấp (dưới 10 đơn vị hoặc có trường canh_bao)
@@ -3741,27 +4195,34 @@ export const ChatBot: React.FC = () => {
             if (isClinicStaff && shouldUseDirectToolRule && (query.includes("bệnh án") || query.includes("ca khám") || query.includes("khám gần đây") || query.includes("lịch sử khám"))) {
                 (async () => {
                     try {
-                        const response = await axiosInstance.get("/api/benh-an");
-                        const data = response.data;
+                        const searchKw = query
+                            .replace(/bệnh án|ca khám|khám gần đây|lịch sử khám/g, "")
+                            .trim();
+                        const response = await axiosInstance.get("/api/ho-so-benh-an", { params: { page: 0, size: 30, search: searchKw || undefined } });
+                        const data = Array.isArray(response.data) ? response.data : (response.data?.content || []);
                         if (Array.isArray(data) && data.length > 0) {
                             // Sắp xếp mới nhất lên đầu và lọc theo keyword nếu có
                             let filtered = data;
-                            const searchKw = query
-                                .replace(/bệnh án|ca khám|khám gần đây|lịch sử khám/g, "")
-                                .trim();
                             if (searchKw) {
-                                filtered = data.filter((ba: any) => matchesSearchFields(searchKw, [
-                                    ba.id_ho_so,
-                                    ba.id_ho_so_benh_an,
-                                    ba.ten_thu_cung,
-                                    ba.ten_khach_hang,
-                                    ba.chan_doan,
-                                    ba.trieu_chung,
-                                    ba.phac_do_dieu_tri,
-                                    ba.bac_si,
-                                    ba.ten_bac_si,
-                                    ba.ngay_kham
-                                ]));
+                                filtered = data
+                                    .map((ba: any) => ({
+                                        item: ba,
+                                        score: scoreSearchFields(searchKw, [
+                                            ba.id_ho_so,
+                                            ba.id_ho_so_benh_an,
+                                            ba.ten_thu_cung,
+                                            ba.ten_khach_hang,
+                                            ba.chan_doan,
+                                            ba.trieu_chung,
+                                            ba.phac_do_dieu_tri,
+                                            ba.bac_si,
+                                            ba.ten_bac_si,
+                                            ba.ngay_kham
+                                        ])
+                                    }))
+                                    .filter(({ score }: any) => score > 0)
+                                    .sort((a: any, b: any) => b.score - a.score)
+                                    .map(({ item }: any) => item);
                             }
                             if (filtered.length === 0) filtered = data.slice(0, 10);
                             const rows = filtered.slice(0, 15).map((ba: any) => [
@@ -3769,7 +4230,7 @@ export const ChatBot: React.FC = () => {
                                 ba.ten_khach_hang || "---",
                                 ba.chan_doan || "---",
                                 ba.ngay_kham ? new Date(ba.ngay_kham).toLocaleDateString("vi-VN") : "---",
-                                ba.bac_si || "---"
+                                ba.ten_bac_si || ba.bac_si || "---"
                             ]);
                             setAgentMessages(prev => [...prev, {
                                 type: "ai",
@@ -3846,7 +4307,7 @@ export const ChatBot: React.FC = () => {
                     query: pageContext
                 });
             }
-            let replyText = response.data.finalAnswer || response.data.reply || "Rexi Agent v2 đã ghi nhận tác vụ!";
+            let replyText = response.data.finalAnswer || response.data.reply || "Rexi Agent đã ghi nhận tác vụ!";
             
             // Xử lý trường hợp Agent vô tình trả về raw JSON string
             if (typeof replyText === 'string' && replyText.trim().startsWith('{')) {
@@ -3949,7 +4410,7 @@ export const ChatBot: React.FC = () => {
             }
 
             // Phát hiện các lệnh ACTION khác từ backend trong tab Agent
-            const actionTagRegex = /\[(CLICK|FILL|TOGGLE|SELECT|DELETE):([^\]]+)\]/g;
+            const actionTagRegex = /\[(CLICK|FILL|TOGGLE|SELECT|DELETE|SCROLL):([^\]]+)\]/g;
             const actionTags = [];
             let matchAction;
             while ((matchAction = actionTagRegex.exec(cleanedReplyText)) !== null) {
@@ -4082,7 +4543,7 @@ export const ChatBot: React.FC = () => {
             
             const bookingMessage = {
                 type: "ai",
-                text: `🎉 **Rexi Agent v2 đã đặt lịch khám bệnh thành công cho bé!**\n\n- **Khách hàng:** ${clientName} (SĐT: ${clientPhone})\n- **Bé cưng:** ${info.petName}\n- **Thời gian:** ${info.time} ngày ${info.date}\n- **Dịch vụ:** ${info.service}\n- **Bác sĩ phụ trách:** ${info.doctorName}\n\nĐể bảo đảm vị trí giữ chỗ cho bé, sếp vui lòng chuyển khoản đặt cọc **50.000 VND** qua mã VietQR thông minh dưới đây nha sếp! ✨🐾\n${depositQrHtml}`,
+                text: `🎉 **Rexi Agent đã đặt lịch khám bệnh thành công cho bé!**\n\n- **Khách hàng:** ${clientName} (SĐT: ${clientPhone})\n- **Bé cưng:** ${info.petName}\n- **Thời gian:** ${info.time} ngày ${info.date}\n- **Dịch vụ:** ${info.service}\n- **Bác sĩ phụ trách:** ${info.doctorName}\n\nĐể bảo đảm vị trí giữ chỗ cho bé, sếp vui lòng chuyển khoản đặt cọc **50.000 VND** qua mã VietQR thông minh dưới đây nha sếp! ✨🐾\n${depositQrHtml}`,
                 isHtml: true
             };
             if (activeTab === 'standard') setMessages(prev => [...prev, bookingMessage]);
@@ -4121,8 +4582,8 @@ export const ChatBot: React.FC = () => {
                 {
                     type: "ai",
                     text: isClinicStaff
-                        ? `${timeGreeting} **Đồng nghiệp ${userRoleName} ${userName}**! 🐾 Tôi là **Rexi Agent v2** đã được khởi động lại. Hãy cho tôi biết tác vụ nghiệp vụ bạn cần xử lý ngay nhé!`
-                        : `${timeGreeting} Sen **${userName || "nhà mình"}**! 🐾 Rexi Agent v2 đã sẵn sàng. Hãy nhập yêu cầu như tìm kiếm tài liệu thú y trên mạng, hay đăng ký đặt lịch nhanh nha!`
+                        ? `${timeGreeting} **Đồng nghiệp ${userRoleName} ${userName}**! 🐾 Tôi là **Rexi Agent** đã được khởi động lại. Hãy cho tôi biết tác vụ nghiệp vụ bạn cần xử lý ngay nhé!`
+                        : `${timeGreeting} Sen **${userName || "nhà mình"}**! 🐾 Rexi Agent đã sẵn sàng. Hãy nhập yêu cầu như tìm kiếm tài liệu thú y trên mạng, hay đăng ký đặt lịch nhanh nha!`
                 }
             ]);
         }
@@ -4137,21 +4598,39 @@ export const ChatBot: React.FC = () => {
 
     const processFiles = async (files: File[]) => {
         setIsCompressing(true);
-        for (const file of files) {
-            if (file.size > 20 * 1024 * 1024) {
-                alert(`File ${file.name} vượt quá dung lượng cho phép 20MB.`);
-                continue;
-            }
+        try {
+            const loadedFiles = await Promise.all(files.map(file => new Promise<{ data: string, type: 'image' | 'video' } | null>((resolve) => {
+                if (file.size > 20 * 1024 * 1024) {
+                    alert(`File ${file.name} vượt quá dung lượng cho phép 20MB.`);
+                    resolve(null);
+                    return;
+                }
+                if (!file.type.startsWith('image') && !file.type.startsWith('video')) {
+                    alert(`File ${file.name} không phải ảnh hoặc video hợp lệ.`);
+                    resolve(null);
+                    return;
+                }
 
-            const reader = new FileReader();
-            reader.onload = (event: any) => {
-                const dataUrl = event.target.result;
-                const isVideo = file.type.startsWith('video');
-                setSelectedFiles(prev => [...prev, { data: dataUrl, type: isVideo ? 'video' : 'image' }]);
-            };
-            reader.readAsDataURL(file);
+                const reader = new FileReader();
+                reader.onload = (event: any) => {
+                    const dataUrl = String(event.target?.result || "");
+                    const isVideo = file.type.startsWith('video');
+                    resolve({ data: dataUrl, type: isVideo ? 'video' : 'image' });
+                };
+                reader.onerror = () => {
+                    alert(`Không đọc được file ${file.name}. Vui lòng thử lại.`);
+                    resolve(null);
+                };
+                reader.readAsDataURL(file);
+            })));
+            const validFiles = loadedFiles.filter(Boolean) as { data: string, type: 'image' | 'video' }[];
+            if (validFiles.length > 0) {
+                setSelectedFiles(prev => [...prev, ...validFiles]);
+            }
+        } finally {
+            setIsCompressing(false);
+            if (fileInputRef.current) fileInputRef.current.value = "";
         }
-        setIsCompressing(false);
     };
 
     // Drag-Drop handlers
@@ -4202,6 +4681,37 @@ export const ChatBot: React.FC = () => {
         });
 
         return <>{parts}</>;
+    };
+
+    const handleShareCurrentLocation = () => {
+        if (!("geolocation" in navigator)) {
+            const text = "Trình duyệt này chưa hỗ trợ định vị GPS. Bạn mở Google Maps và tìm Phòng khám Thú y Rexi, Gia Lâm giúp tôi nhé.";
+            setMessages(prev => [...prev, { type: "ai", text }]);
+            speakText(text);
+            return;
+        }
+
+        const waitingText = "Tôi đang xin quyền định vị từ trình duyệt. Bạn bấm Cho phép nếu muốn gửi vị trí hiện tại.";
+        setMessages(prev => [...prev, { type: "ai", text: waitingText }]);
+
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const { latitude, longitude } = position.coords;
+                const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`;
+                const text = `Đã nhận vị trí hiện tại của bạn: [Mở vị trí trên Google Maps](${mapsUrl}). Nếu đây là ca khẩn cấp, hãy gọi hotline 0353.374.156 và đưa bé đến cơ sở thú y gần nhất.`;
+                setMessages(prev => [...prev, { type: "ai", text }]);
+                speakText("Đã nhận vị trí hiện tại của bạn.");
+            },
+            (error) => {
+                const denied = error.code === error.PERMISSION_DENIED;
+                const text = denied
+                    ? "Bạn chưa cấp quyền định vị nên tôi không lấy được vị trí hiện tại. Bạn có thể bấm biểu tượng ổ khóa trên thanh địa chỉ để cho phép vị trí, hoặc mở Google Maps tìm Phòng khám Thú y Rexi Gia Lâm."
+                    : "Không lấy được vị trí hiện tại. Bạn kiểm tra GPS/kết nối mạng rồi thử lại, hoặc mở Google Maps tìm Phòng khám Thú y Rexi Gia Lâm.";
+                setMessages(prev => [...prev, { type: "ai", text }]);
+                speakText(text);
+            },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+        );
     };
 
     // 8. CLINICAL EMERGENCY INTERACTIVE BOARD
@@ -4264,13 +4774,20 @@ export const ChatBot: React.FC = () => {
                             <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>call</span>
                             GỌI HOTLINE KHẨN
                         </a>
-                        <a href="https://maps.google.com" target="_blank" rel="noreferrer" style={{
+                        <a href="https://www.google.com/maps/search/?api=1&query=Ph%C3%B2ng+kh%C3%A1m+th%C3%BA+y+Rexi+S%E1%BB%91+68+Ng%C3%B5+10+Ng%C3%B4+Xu%C3%A2n+Qu%E1%BA%A3ng+Tr%C3%A2u+Qu%E1%BB%B3+Gia+L%C3%A2m+H%C3%A0+N%E1%BB%99i" target="_blank" rel="noreferrer" style={{
                             textDecoration: 'none', background: 'transparent', border: '1.5px solid #fb7185', color: '#fb7185',
                             borderRadius: '10px', padding: '10px', fontWeight: 800, fontSize: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
                         }}>
                             <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>explore</span>
                             ĐƯỜNG ĐẾN PHÒNG KHÁM
                         </a>
+                        <button data-ai-id="button-chatbot-share-location" type="button" onClick={handleShareCurrentLocation} style={{
+                            background: '#0ea5e9', color: 'white', border: 'none',
+                            borderRadius: '10px', padding: '10px', fontWeight: 800, fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
+                        }}>
+                            <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>my_location</span>
+                            GỬI VỊ TRÍ CỦA TÔI
+                        </button>
                     </div>
                 </div>
             );
@@ -4403,15 +4920,16 @@ export const ChatBot: React.FC = () => {
                         height: 56px !important; 
                     }
                     #chatWindow { 
-                        right: 0 !important; 
-                        bottom: 0 !important; 
-                        width: 100vw !important; 
-                        height: 100dvh !important; 
-                        max-height: 100dvh !important; 
-                        border-radius: 0 !important;
+                        right: max(10px, env(safe-area-inset-right, 0px)) !important; 
+                        bottom: max(82px, env(safe-area-inset-bottom, 0px) + 76px) !important; 
+                        width: calc(100vw - 20px) !important; 
+                        height: min(650px, calc(var(--rexi-viewport-height, 100dvh) - max(180px, env(safe-area-inset-bottom, 0px) + 172px))) !important; 
+                        max-height: min(650px, calc(var(--rexi-viewport-height, 100dvh) - max(180px, env(safe-area-inset-bottom, 0px) + 172px))) !important; 
+                        border-radius: 24px !important;
+                        padding-bottom: env(safe-area-inset-bottom, 0px);
                     }
-                    .glass-card {
-                        border-radius: 0 !important;
+                    #chatWindow textarea {
+                        font-size: 16px !important;
                     }
                 }
                 @keyframes chatSoftWave {
@@ -4629,7 +5147,7 @@ export const ChatBot: React.FC = () => {
                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                 <div style={{ width: '10px', height: '10px', background: '#4ade80', borderRadius: '50%', boxShadow: '0 0 10px #4ade80' }}></div>
                                 <span style={{ fontWeight: 900, fontSize: '1.05rem', letterSpacing: '0.3px' }}>
-                                    {activeTab === 'agent' ? 'Rexi Agent v2 🤖' : 'Trợ lý Rexi 🐾'}
+                                    {activeTab === 'agent' ? 'Rexi Agent' : (isMobile ? 'Trợ lý Rexi' : 'Trợ lý Rexi 🐾')}
                                 </span>
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
@@ -4665,11 +5183,11 @@ export const ChatBot: React.FC = () => {
 
                             <button data-ai-id="button-chatbot-6hgf" onClick={() => setActiveTab('standard')} className={`chat-tab-btn ${activeTab === 'standard' ? 'active-tab' : ''}`} style={{ zIndex: 2 }}>
                                 <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>chat</span>
-                                Trợ lý Rexi
+                                {isMobile ? 'Trợ lý' : 'Trợ lý Rexi'}
                             </button>
                             <button data-ai-id="button-chatbot-jdzj" onClick={() => setActiveTab('agent')} className={`chat-tab-btn ${activeTab === 'agent' ? 'active-tab' : ''}`} style={{ zIndex: 2 }}>
                                 <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>smart_toy</span>
-                                Tác vụ Agent v2
+                                Rexi Agent
                             </button>
                         </div>
 
@@ -4733,6 +5251,36 @@ export const ChatBot: React.FC = () => {
                                                     </div>
                                                 )}
 
+                                                {msg.agentHandoff && (
+                                                    <button
+                                                        data-ai-id="button-chatbot-agent-handoff"
+                                                        onClick={() => {
+                                                            setActiveTab("agent");
+                                                            setAgentInput("");
+                                                            setTimeout(() => handleAgentSend(msg.agentHandoff.prompt), 180);
+                                                        }}
+                                                        style={{
+                                                            marginTop: '12px',
+                                                            width: '100%',
+                                                            border: '1px solid rgba(244, 63, 94, 0.55)',
+                                                            background: isDark ? 'rgba(244, 63, 94, 0.16)' : 'rgba(255, 241, 242, 0.95)',
+                                                            color: isDark ? '#fb7185' : '#be123c',
+                                                            borderRadius: '14px',
+                                                            padding: '10px 12px',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            gap: '8px',
+                                                            fontWeight: 900,
+                                                            cursor: 'pointer',
+                                                            boxShadow: 'var(--shadow-sm)'
+                                                        }}
+                                                    >
+                                                        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>smart_toy</span>
+                                                        {msg.agentHandoff.label}
+                                                    </button>
+                                                )}
+
                                                 {msg.isLoginPrompt && (
                                                     <div style={{
                                                         marginTop: '12px', padding: '16px', borderRadius: '16px',
@@ -4768,13 +5316,13 @@ export const ChatBot: React.FC = () => {
                                             </div>
                                             
                                             {/* Dynamic Clinical Triage Card */}
-                                            {msg.isEmergency && renderEmergencyBoard(isClinicStaff)}
+                                            {msg.type === "ai" && msg.isEmergency && renderEmergencyBoard(isClinicStaff)}
                                         </div>
                                     ))}
                                     {loading && (
                                         <ThoughtLoader 
                                             steps={standardThoughtSteps} 
-                                            activeStep={0} 
+                                            activeStep={thoughtStep} 
                                             isDark={isDark} 
                                         />
                                     )}
@@ -5004,13 +5552,13 @@ export const ChatBot: React.FC = () => {
                                             </div>
 
                                             {/* Dynamic Clinical Triage Card */}
-                                            {msg.isEmergency && renderEmergencyBoard(isClinicStaff)}
+                                            {msg.type === "ai" && msg.isEmergency && renderEmergencyBoard(isClinicStaff)}
                                         </div>
                                     ))}
                                     {agentLoading && (
                                         <ThoughtLoader 
                                             steps={agentThoughtSteps} 
-                                            activeStep={0} 
+                                            activeStep={agentThoughtStep} 
                                             isDark={isDark} 
                                         />
                                     )}
@@ -5048,7 +5596,8 @@ export const ChatBot: React.FC = () => {
 
                         {/* 5. Ô NHẬP TIN NHẮN TẬP TRUNG (CONSOLIDATED INPUT DYNAMIC STYLING) */}
                         <div style={{
-                            padding: '16px 20px', background: 'var(--surface)', borderTop: '1px solid var(--gray-200)', display: 'flex', alignItems: 'flex-end', gap: '12px'
+                            padding: isMobile ? '12px 14px max(12px, env(safe-area-inset-bottom, 0px))' : '16px 20px',
+                            background: 'var(--surface)', borderTop: '1px solid var(--gray-200)', display: 'flex', alignItems: 'flex-end', gap: isMobile ? '8px' : '12px'
                         }}>
                             {/* Nút File Đính kèm (Chỉ cho Tab 1) */}
                             {activeTab === 'standard' && (
@@ -5061,7 +5610,7 @@ export const ChatBot: React.FC = () => {
                                         style={{ display: 'none' }}
                                         onChange={handleFileChange}
                                     />
-                                    <button data-ai-id="button-chatbot-veod" onClick={() => fileInputRef.current?.click()} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', display: 'flex', padding: 0 }}>
+                                    <button data-ai-id="button-chatbot-veod" onClick={() => fileInputRef.current?.click()} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, flexShrink: 0, width: isMobile ? '40px' : '28px', height: isMobile ? '42px' : '28px' }}>
                                         <span className="material-symbols-outlined" style={{ fontSize: '28px' }}>add_circle</span>
                                     </button>
                                 </>
@@ -5070,13 +5619,13 @@ export const ChatBot: React.FC = () => {
                             {/* MICROPHONE NHẬN DIỆN GIỌNG NÓI */}
                             <button data-ai-id="button-chatbot-4mbq"
                                 onClick={toggleListening}
-                                style={{ background: 'none', border: 'none', color: isListening ? (voiceMode === 'hold' ? '#f59e0b' : voiceMode === 'fast' ? '#22c55e' : '#ef4444') : '#94a3b8', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', padding: 0 }}
+                                style={{ background: 'none', border: 'none', color: isListening ? (voiceMode === 'hold' ? '#f59e0b' : voiceMode === 'fast' ? '#22c55e' : '#ef4444') : '#94a3b8', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: isMobile ? '3px' : '6px', padding: 0, flexShrink: 0, width: isMobile ? '40px' : '28px', height: isMobile ? '42px' : '28px' }}
                                 title={isListening ? `Đang nghe liên tục (${voiceMode === 'fast' ? 'nhanh' : voiceMode === 'hold' ? 'đang chờ' : 'bình thường'})` : "Bấm một lần để nói chuyện liên tục với Rexi"}
                             >
                                 <span className="material-symbols-outlined" style={{ fontSize: '28px', animation: isListening ? 'blink 1.5s infinite' : 'none' }}>
                                     {isListening ? 'mic' : 'mic_none'}
                                 </span>
-                                {isListening && (
+                                {isListening && !isMobile && (
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '3px', height: '28px', paddingRight: '8px' }}>
                                         <div ref={waveBar1Ref} className="wave-bar" style={{ height: '6px', opacity: 0.6 }}></div>
                                         <div ref={waveBar2Ref} className="wave-bar" style={{ height: '6px', opacity: 0.6 }}></div>
@@ -5087,7 +5636,7 @@ export const ChatBot: React.FC = () => {
                                     </div>
                                 )}
                             </button>
-                            {isListening && voiceStatus && (
+                            {isListening && voiceStatus && !isMobile && (
                                 <span style={{ fontSize: '0.72rem', fontWeight: 800, color: voiceMode === 'hold' ? '#f59e0b' : '#64748b', whiteSpace: 'nowrap', maxWidth: '90px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                     {voiceStatus}
                                 </span>
@@ -5117,10 +5666,10 @@ export const ChatBot: React.FC = () => {
                                             }
                                         }
                                     }}
-                                    placeholder={activeTab === 'agent' ? "Lệnh tác vụ cho Agent (e.g. đặt lịch, tra cứu mạng)..." : "Nhắn tin cho Bác sĩ Thú y Rexi..."}
+                                    placeholder={activeTab === 'agent' ? (isMobile ? "Lệnh" : "Lệnh tác vụ cho Agent (e.g. đặt lịch, tra cứu mạng)...") : (isMobile ? "Tin nhắn" : "Nhắn tin cho Bác sĩ Thú y Rexi...")}
                                     rows={1}
                                     style={{
-                                        width: '100%', border: '1px solid var(--gray-300)', borderRadius: '18px', padding: '10px 16px',
+                                        width: '100%', minWidth: 0, border: '1px solid var(--gray-300)', borderRadius: '18px', padding: '10px 16px',
                                         resize: 'none', background: 'var(--background)', color: 'var(--ink)', fontSize: '0.88rem',
                                         outline: 'none', maxHeight: '120px', lineHeight: '1.4'
                                     }}
@@ -5145,14 +5694,23 @@ export const ChatBot: React.FC = () => {
                             {/* NÚT GỬI KHỚP DYNAMIC THEO TAB */}
                             <button data-ai-id="button-chatbot-5x21"
                                 onClick={() => activeTab === 'standard' ? handleSend() : handleAgentSend()}
+                                disabled={loading || agentLoading || isCompressing}
                                 style={{
                                     background: activeTab === 'agent' ? 'linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)' : 'var(--chat-gradient)',
-                                    color: 'white', border: 'none', borderRadius: '50%', width: '42px', height: '42px',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                                    color: 'white', border: 'none', borderRadius: '50%', width: '42px', height: '42px', flexShrink: 0,
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    cursor: (loading || agentLoading || isCompressing) ? 'not-allowed' : 'pointer',
+                                    opacity: (loading || agentLoading || isCompressing) ? 0.72 : 1,
                                     boxShadow: 'var(--shadow-md)', transition: 'all 0.3s ease'
                                 }}
                             >
-                                <span className="material-symbols-outlined" style={{ fontSize: '20px', transform: 'rotate(-30deg)' }}>send</span>
+                                <span className="material-symbols-outlined" style={{
+                                    fontSize: '20px',
+                                    transform: (loading || agentLoading || isCompressing) ? 'none' : 'rotate(-30deg)',
+                                    animation: (loading || agentLoading || isCompressing) ? 'spin 1.2s linear infinite' : 'none'
+                                }}>
+                                    {(loading || agentLoading || isCompressing) ? 'progress_activity' : 'send'}
+                                </span>
                             </button>
                         </div>
                     </div>

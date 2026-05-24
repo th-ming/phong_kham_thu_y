@@ -57,7 +57,7 @@ public class ReActAgentService {
         }
 
         if (normalizedQuery.matches("^(hi|hello|helo|chao|xin chao|alo|hey|test)$")) {
-            String greeting = "Dạ, Rexi Agent v2 đang hoạt động bình thường. Bạn cần tôi hỗ trợ đặt lịch, xem hồ sơ, tra cứu lịch hẹn hay tìm thông tin thú y nào?";
+            String greeting = "Dạ, Rexi Agent đang hoạt động bình thường. Bạn cần tôi hỗ trợ đặt lịch, xem hồ sơ, tra cứu lịch hẹn hay tìm thông tin thú y nào?";
             steps.add(new ReActStep("FINAL", greeting, null, null, null));
             return new ReActResult(greeting, steps);
         }
@@ -86,7 +86,7 @@ public class ReActAgentService {
                 rawResponse = callBestAvailableModel(history);
             } catch (Exception e) {
                 logger.severe("[ReAct] Lỗi gọi LLM: " + e.getMessage());
-                String fallback = "Rexi Agent v2 đang bị lỗi kết nối tới nhà cung cấp AI bên ngoài. Các tác vụ tra cứu dữ liệu nội bộ vẫn cần cấu hình lại API key hoặc mạng trước khi chạy tiếp.";
+                String fallback = "Rexi Agent đang bị lỗi kết nối tới nhà cung cấp AI bên ngoài. Các tác vụ tra cứu dữ liệu nội bộ vẫn cần cấu hình lại API key hoặc mạng trước khi chạy tiếp.";
                 steps.add(new ReActStep("ERROR", fallback, null, null, e.getMessage()));
                 return new ReActResult(fallback, steps);
             }

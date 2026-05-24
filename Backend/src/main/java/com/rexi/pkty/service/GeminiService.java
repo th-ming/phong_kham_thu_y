@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
 public class GeminiService {
@@ -80,6 +81,8 @@ public class GeminiService {
     }
 
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final AtomicInteger keyCursor = new AtomicInteger(0);
+    private final AtomicInteger modelCursor = new AtomicInteger(0);
 
     // Sử dụng chung 1 HttpClient cho toàn bộ service để tăng hiệu suất
     private final HttpClient client = HttpClient.newBuilder()
@@ -207,44 +210,52 @@ public class GeminiService {
 
         String requestBody = objectMapper.writeValueAsString(requestBodyMap);
 
-        // Duyệt qua danh sách các API Key để thử kết nối
-        for (int i = 0; i < keys.size(); i++) {
-            String currentKey = keys.get(i).trim();
-            if (currentKey.isEmpty()) continue;
+        List<String> modelCandidates = getModelCandidates();
+        int keyStart = Math.floorMod(keyCursor.getAndIncrement(), keys.size());
+        int modelStart = Math.floorMod(modelCursor.getAndIncrement(), modelCandidates.size());
 
-            String apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/" + getModelName() + ":generateContent?key="
-                    + currentKey;
+        // Duyệt round-robin qua danh sách model/key để tránh dồn tải vào key đầu.
+        for (int modelOffset = 0; modelOffset < modelCandidates.size(); modelOffset++) {
+            String selectedModel = modelCandidates.get((modelStart + modelOffset) % modelCandidates.size());
+            for (int keyOffset = 0; keyOffset < keys.size(); keyOffset++) {
+                int keyIndex = (keyStart + keyOffset) % keys.size();
+                String currentKey = keys.get(keyIndex).trim();
+                if (currentKey.isEmpty()) continue;
 
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(apiUrl))
-                    .header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(requestBody, StandardCharsets.UTF_8))
-                    .timeout(Duration.ofMinutes(3)) // Gemini xử lý video có thể lâu, cho phép tối đa 3 phút
-                    .build();
+                String apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/" + selectedModel + ":generateContent?key="
+                        + currentKey;
 
-            try {
-                logger.info("Đang gọi Gemini API sử dụng Key index: " + i);
-                HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(URI.create(apiUrl))
+                        .header("Content-Type", "application/json")
+                        .POST(HttpRequest.BodyPublishers.ofString(requestBody, StandardCharsets.UTF_8))
+                        .timeout(Duration.ofMinutes(3)) // Gemini xử lý video có thể lâu, cho phép tối đa 3 phút
+                        .build();
 
-                if (response.statusCode() == 200) {
-                    JsonNode rootNode = objectMapper.readTree(response.body());
-                    try {
-                        return rootNode.path("candidates").get(0).path("content").path("parts").get(0).path("text").asText();
-                    } catch (Exception e) {
-                        logger.severe("Lỗi phân tích phản hồi từ Gemini (Key index " + i + "). Nội dung: " + response.body());
-                        lastException = new RuntimeException("Lỗi Parse Gemini: " + response.body());
-                        continue; // Thử key tiếp theo
+                try {
+                    logger.info("Đang gọi Gemini API model=" + selectedModel + " keyIndex=" + keyIndex);
+                    HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+                    if (response.statusCode() == 200) {
+                        JsonNode rootNode = objectMapper.readTree(response.body());
+                        try {
+                            return rootNode.path("candidates").get(0).path("content").path("parts").get(0).path("text").asText();
+                        } catch (Exception e) {
+                            logger.severe("Lỗi phân tích phản hồi từ Gemini (model " + selectedModel + ", keyIndex " + keyIndex + "). Nội dung: " + response.body());
+                            lastException = new RuntimeException("Lỗi Parse Gemini: " + response.body());
+                            continue; // Thử key tiếp theo
+                        }
+                    } else {
+                        logger.severe("=== LỖI KẾT NỐI GEMINI API (model " + selectedModel + ", keyIndex " + keyIndex + ") ===");
+                        logger.severe("Trạng thái: " + response.statusCode());
+                        logger.severe("Nội dung lỗi: " + response.body());
+                        lastException = new RuntimeException("Gemini API gặp lỗi " + response.statusCode() + ": " + response.body());
+                        // Tiếp tục thử key/model tiếp theo.
                     }
-                } else {
-                    logger.severe("=== LỖI KẾT NỐI GEMINI API (Key index " + i + ") ===");
-                    logger.severe("Trạng thái: " + response.statusCode());
-                    logger.severe("Nội dung lỗi: " + response.body());
-                    lastException = new RuntimeException("Gemini API gặp lỗi " + response.statusCode() + ": " + response.body());
-                    // Tiếp tục thử key tiếp theo (nếu bị quá tải 429 hoặc lỗi khác)
+                } catch (Exception e) {
+                    logger.severe("Lỗi kết nối mạng với Gemini API (model " + selectedModel + ", keyIndex " + keyIndex + "): " + e.getMessage());
+                    lastException = e;
                 }
-            } catch (Exception e) {
-                logger.severe("Lỗi kết nối mạng với Gemini API (Key index " + i + "): " + e.getMessage());
-                lastException = e;
             }
         }
 
@@ -252,5 +263,17 @@ public class GeminiService {
             throw lastException;
         }
         throw new RuntimeException("Tất cả các Gemini API Key đều thất bại hoặc không hợp lệ!");
+    }
+
+    private List<String> getModelCandidates() {
+        Set<String> models = new LinkedHashSet<>();
+        String configured = getModelName();
+        if (configured != null && !configured.trim().isEmpty()) {
+            models.add(configured.trim());
+        }
+        models.add("gemini-2.5-flash");
+        models.add("gemini-2.0-flash");
+        models.add("gemini-1.5-flash");
+        return new ArrayList<>(models);
     }
 }

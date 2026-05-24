@@ -27,7 +27,7 @@ public class JwtUtil {
     private static final Logger logger = Logger.getLogger(JwtUtil.class.getName());
 
     // Khóa bí mật dùng để ký tên lên Token (lấy từ cấu hình hoặc dùng mặc định)
-    @Value("${jwt.secret:RexiVeterinaryClinicManagementSystemSuperSecretKey1234567890!!!}")
+    @Value("${jwt.secret:}")
     private String secretKey;
 
     // Thời gian hết hạn của Token (mặc định 7 ngày)
@@ -40,7 +40,13 @@ public class JwtUtil {
 
     // Lấy khóa ký tên (Đảm bảo độ dài tối thiểu 32 bytes để an toàn)
     private Key getSigningKey() {
+        if (secretKey == null || secretKey.isBlank()) {
+            throw new IllegalStateException("JWT_SECRET chua duoc cau hinh.");
+        }
         byte[] keyBytes = secretKey.getBytes();
+        if (keyBytes.length < 32) {
+            throw new IllegalStateException("JWT_SECRET phai co it nhat 32 bytes.");
+        }
         if (keyBytes.length < 32) {
             logger.warning("CẢNH BÁO: Khóa bí mật JWT quá ngắn, không an toàn!");
         }

@@ -4,6 +4,7 @@ import { toast } from '@components/Toast';
 import { RevealSection } from '@components/SpecialEffects';
 import { getUserProfile, normalizeUserRole } from '@utils/index';
 import { Modal } from '@components/CommonUI';
+import { isValidPassword, PASSWORD_POLICY_MESSAGE } from '@utils/passwordPolicy';
 
 const ThongTinCaNhanNhanVien: React.FC = () => {
     const user = getUserProfile() || {};
@@ -118,8 +119,8 @@ const ThongTinCaNhanNhanVien: React.FC = () => {
             toast.error("Mật khẩu xác nhận không khớp!");
             return;
         }
-        if (passwords.newPass.length < 6) {
-            toast.error("Mật khẩu mới phải có ít nhất 6 ký tự!");
+        if (!isValidPassword(passwords.newPass)) {
+            toast.error(PASSWORD_POLICY_MESSAGE);
             return;
         }
 
@@ -408,7 +409,7 @@ const ThongTinCaNhanNhanVien: React.FC = () => {
                                             required 
                                             value={passwords.newPass}
                                             onChange={e => setPasswords({...passwords, newPass: e.target.value})}
-                                            placeholder="Nhập mật khẩu mới (ít nhất 6 ký tự)"
+                                            placeholder="Nhập mật khẩu mới (7-20 ký tự, có ký tự đặc biệt)"
                                             style={{ width: '100%', padding: '14px 48px 14px 48px', borderRadius: '12px', border: '1px solid var(--gray-200)', background: 'var(--background)', outline: 'none' }}
                                         />
                                         <span className="material-symbols-outlined" onClick={() => setShowNewPass(!showNewPass)} style={{ position: "absolute", right: "16px", top: "50%", transform: "translateY(-50%)", cursor: "pointer", color: "var(--gray-400)", userSelect: "none", zIndex: 10 }}>

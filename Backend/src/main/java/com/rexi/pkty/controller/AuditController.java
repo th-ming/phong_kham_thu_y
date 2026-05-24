@@ -2,6 +2,7 @@ package com.rexi.pkty.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
@@ -15,13 +16,11 @@ public class AuditController {
     private JdbcTemplate jdbcTemplate;
 
     @GetMapping("/data")
+    @PreAuthorize("hasRole('ADMIN')")
     public Map<String, Object> audit() {
         Map<String, Object> result = new HashMap<>();
         try {
             // SỬA LỖI: Chuẩn hóa tên vai trò để khớp với Repository
-            jdbcTemplate.update("UPDATE VaiTroHeThong SET ten_vai_tro = N'Bác sĩ' WHERE id_vai_tro = 'VT-8'");
-            jdbcTemplate.update("UPDATE VaiTroHeThong SET ten_vai_tro = N'Kế toán' WHERE id_vai_tro = 'VT-9'");
-            jdbcTemplate.update("UPDATE VaiTroHeThong SET ten_vai_tro = N'Admin' WHERE id_vai_tro = 'VT-1'");
             
             result.put("VaiTroHeThong", jdbcTemplate.queryForList("SELECT * FROM VaiTroHeThong"));
             result.put("Doctor_Links", jdbcTemplate.queryForList("SELECT ho_ten, id_tai_khoan FROM NhanVien WHERE chuyen_mon LIKE N'%Bác sĩ%' OR chuyen_mon LIKE N'%bác sĩ%'"));
