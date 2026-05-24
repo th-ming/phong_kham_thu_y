@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
 const srcDir = path.join(__dirname, '../src');
 const outputFile = path.join(__dirname, '../src/ai-elements.json');
@@ -27,23 +28,29 @@ const toSlug = (str) => {
         .replace(/(^-|-$)+/g, '');
 };
 
+const shortHash = (value) => crypto
+  .createHash('sha1')
+  .update(value)
+  .digest('hex')
+  .slice(0, 8);
+
 function processFile(filePath) {
   let content = fs.readFileSync(filePath, 'utf8');
   let hasChanges = false;
   
-  // Regex tìm các thẻ button, input, select chưa có data-ai-id
+  // Regex tìm các thẻ tương tác chưa có data-ai-id.
   // Giới hạn ở mức cơ bản để tránh làm hỏng JSX
-  const tagRegex = /<(button|input|select)(\s+[^>]*?)?>/g;
+  const tagRegex = /<(button|input|select|textarea|a)(\s+[^>]*?)?>/g;
   
-  content = content.replace(tagRegex, (match, tag, attrs) => {
+  content = content.replace(tagRegex, (match, tag, attrs, offset) => {
     if (attrs && attrs.includes('data-ai-id=')) {
         return match; // Đã có
     }
     
-    // Tạo id ngẫu nhiên kết hợp tên file
     const fileName = path.basename(filePath, path.extname(filePath));
-    const randomId = Math.random().toString(36).substring(2, 6);
-    const aiId = `${tag}-${toSlug(fileName)}-${randomId}`;
+    const relativePath = path.relative(srcDir, filePath).replace(/\\/g, '/');
+    const stableSource = `${relativePath}:${tag}:${attrs || ''}:${offset}`;
+    const aiId = `${tag}-${toSlug(fileName)}-${shortHash(stableSource)}`;
     
     elementsDb.push({
         id: aiId,

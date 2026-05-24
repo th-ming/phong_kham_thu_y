@@ -289,6 +289,137 @@ const SwarmConsole: React.FC<{ data: SwarmData; isDark: boolean }> = ({ data, is
                             )}
                         </div>
                     )}
+                </div>
+            )}
+        </div>
+    );
+};
+
+const standardThoughtSteps = [
+    "🐾 Rexi đang đón nhận yêu cầu của Sen...",
+    "🔍 Đang rà soát lại thông tin trang hiện tại...",
+    "🧠 Đang chẩn đoán triệu chứng & xem hồ sơ bệnh...",
+    "📖 Đối chiếu thư viện y khoa & dữ liệu phòng khám...",
+    "🌐 Đang kết nối tới mô hình AI (Groq/Gemini/DeepSeek)...",
+    "✍️ Đang hoàn thiện câu trả lời gửi đến Sen..."
+];
+
+const agentThoughtSteps = [
+    "🤖 Siêu tác tử Rexi v2 đang được kích hoạt...",
+    "🔐 Khởi tạo môi trường Sandbox an toàn...",
+    "📂 Đang thực hiện truy vấn các bảng dữ liệu (Khách Hàng, Thú Cưng, Hóa Đơn, Lịch Hẹn)...",
+    "🛠️ Đang xây dựng luồng Autopilot & tối ưu hóa kịch bản thao tác...",
+    "⚡ Đang kiểm tra ràng buộc nghiệp vụ & chống Spam...",
+    "🏁 Đang đóng gói dữ liệu và phản hồi kết quả hành động..."
+];
+
+interface ThoughtLoaderProps {
+    steps: string[];
+    activeStep: number;
+    isDark: boolean;
+}
+
+const ThoughtLoader: React.FC<ThoughtLoaderProps> = ({ steps, activeStep, isDark }) => {
+    const stepIcons = [
+        "pets",           // pets
+        "pageview",       // context
+        "psychology",     // logic / medical
+        "local_library",  // knowledge base
+        "dns",            // model routing
+        "edit_note"       // finalizing response
+    ];
+
+    const currentText = steps[activeStep] || steps[0];
+    const currentIcon = stepIcons[activeStep] || stepIcons[0];
+
+    return (
+        <div 
+            data-ai-id="chatbot-thought-loader"
+            style={{
+                alignSelf: 'flex-start',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                padding: '12px 18px',
+                borderRadius: '20px 20px 20px 4px',
+                background: isDark ? 'rgba(30, 41, 59, 0.75)' : 'rgba(241, 245, 249, 0.95)',
+                backdropFilter: 'blur(12px)',
+                border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(0, 0, 0, 0.05)',
+                boxShadow: isDark ? '0 8px 32px rgba(0, 0, 0, 0.25)' : '0 8px 32px rgba(0, 0, 0, 0.05)',
+                maxWidth: '85%',
+                marginTop: '6px',
+                animation: 'pulse-soft 2s infinite ease-in-out',
+                transition: 'all 0.3s ease'
+            }}
+        >
+            {/* Spinning/pulsing action icon */}
+            <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                background: isDark ? 'rgba(59, 130, 246, 0.15)' : 'rgba(59, 130, 246, 0.1)',
+                border: '1px solid rgba(59, 130, 246, 0.25)',
+                color: '#3b82f6',
+                flexShrink: 0
+            }}>
+                <span className="material-symbols-outlined" style={{ 
+                    fontSize: '18px', 
+                    animation: 'spin 3s infinite linear' 
+                }}>
+                    {currentIcon === "pets" ? "progress_activity" : currentIcon}
+                </span>
+            </div>
+
+            {/* Thought content */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                <span style={{ 
+                    fontSize: '0.68rem', 
+                    fontWeight: 800, 
+                    color: '#3b82f6', 
+                    letterSpacing: '0.05em',
+                    textTransform: 'uppercase'
+                }}>
+                    Rexi đang suy nghĩ
+                </span>
+                <span style={{ 
+                    fontSize: '0.78rem', 
+                    color: isDark ? '#cbd5e1' : '#334155',
+                    fontWeight: 600,
+                    lineHeight: 1.35
+                }}>
+                    {currentText}
+                </span>
+            </div>
+
+            {/* Pulse dots loader */}
+            <div className="dot-pulse" style={{ marginLeft: '4px', transform: 'scale(0.8)', border: 'none', background: 'transparent', padding: 0 }}>
+                <span style={{ background: '#3b82f6', width: '6px', height: '6px', borderRadius: '50%' }}></span>
+                <span style={{ background: '#3b82f6', width: '6px', height: '6px', borderRadius: '50%', animationDelay: '0.2s' }}></span>
+                <span style={{ background: '#3b82f6', width: '6px', height: '6px', borderRadius: '50%', animationDelay: '0.4s' }}></span>
+            </div>
+        </div>
+    );
+};
+
+export const ChatBot: React.FC = () => {
+    const { theme } = useTheme();
+    const isDark = theme === 'dark';
+    const navigate = useNavigate();
+    const location = useLocation();
+
+    // Lắng nghe thay đổi kích thước màn hình để tối ưu hóa Mobile UI
+    const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth <= 768);
+        window.addEventListener("resize", handleResize);
+        return () => window.removeEventListener("resize", handleResize);
+    }, []);
+
+    // 1. THÔNG TIN KHÁCH HÀNG & PHÂN QUYỀN
+    const cleanName = (name: string) => name ? name.replace(/^\d+\.\s*/, '').trim() : '';
 
     const getPageDisplayName = (pathname: string): string => {
         if (pathname === "/") return "Trang chủ";
@@ -789,37 +920,11 @@ const SwarmConsole: React.FC<{ data: SwarmData; isDark: boolean }> = ({ data, is
         window.setTimeout(() => {
             navigate(targetPath);
             window.setTimeout(async () => {
-                if (isClinicStaff) {
-                    if (isDelete) {
-                        await executeAction("[DELETE:button-quanlykhachhangthucung-nf2l]");
-                    } else if (isEdit) {
-                        await executeAction("[CLICK:button-quanlykhachhangthucung-plw0]");
-                        await executeAction(`[FILL:input-quanlykhachhangthucung-ub0z|${petName}]`);
-                        await executeAction("[FILL:input-quanlykhachhangthucung-y0af|Corgi]");
-                    } else {
-                        await executeAction("[CLICK:button-quanlykhachhangthucung-324x]");
-                        await executeAction("[SELECT:select-quanlykhachhangthucung-nqxg|__FIRST_VALID__]");
-                        await executeAction(`[FILL:input-quanlykhachhangthucung-ub0z|${petName}]`);
-                        await executeAction(`[SELECT:select-quanlykhachhangthucung-36r6|${species}]`);
-                        await executeAction("[FILL:input-quanlykhachhangthucung-y0af|Corgi]");
-                        await executeAction("[FILL:input-quanlykhachhangthucung-ccuw|5.5]");
-                        await executeAction("[SELECT:select-quanlykhachhangthucung-1av9|Đực]");
-                    }
-                } else {
-                    if (isDelete) {
-                        await executeAction("[DELETE:button-quanlythucung-zykg]");
-                    } else if (isEdit) {
-                        await executeAction("[CLICK:button-quanlythucung-7v0f]");
-                        await executeAction(`[FILL:input-quanlythucung-u5s4|${petName}]`);
-                        await executeAction("[FILL:input-quanlythucung-16e1|Corgi]");
-                    } else {
-                        await executeAction("[CLICK:button-quanlythucung-h990]");
-                        await executeAction(`[FILL:input-quanlythucung-u5s4|${petName}]`);
-                        await executeAction(`[FILL:input-quanlythucung-dk38|${species}]`);
-                        await executeAction("[FILL:input-quanlythucung-16e1|Corgi]");
-                        await executeAction("[FILL:input-quanlythucung-nrh9|5.5]");
-                        await executeAction("[SELECT:select-quanlythucung-ewxq|Đực]");
-                    }
+                const result = await executeGenericUiTask(`${isDelete ? "xóa" : isEdit ? "sửa" : "thêm"} thú cưng ${petName} loài ${species} giống Corgi cân nặng 5.5 giới tính Đực`);
+                if (!result.ok) {
+                    window.dispatchEvent(new CustomEvent("agent-action", {
+                        detail: { type: "ERROR", tag: "PET_AUTOPILOT", message: result.message }
+                    }));
                 }
             }, 1400);
         }, 700);
@@ -1619,12 +1724,6 @@ const SwarmConsole: React.FC<{ data: SwarmData; isDark: boolean }> = ({ data, is
                         if (isProactiveDismissed(reminderId)) return;
                         setProactiveMessage({
                             id: reminderId,
-                            text: reminder.message,
-                            action: () => {
-                                setActiveTab("agent");
-                                setIsOpen(true);
-                                setTimeout(() => {
-                                    const command = `Rexi hãy đặt lịch nhanh dịch vụ cho bé ${reminder.ten_thu_cung} của khách hàng ${reminder.ten_khach_hang} (SĐT: ${reminder.sdt}) vào ngày ${reminder.suggested_date} lúc ${reminder.suggested_time}`;
                                     handleAgentSend(command);
                                 }, 600);
                             }
@@ -1716,6 +1815,39 @@ const SwarmConsole: React.FC<{ data: SwarmData; isDark: boolean }> = ({ data, is
     const [agentInput, setAgentInput] = useState("");
     const [loading, setLoading] = useState(false);
     const [agentLoading, setAgentLoading] = useState(false);
+
+    const [thoughtStep, setThoughtStep] = useState(0);
+    const [agentThoughtStep, setAgentThoughtStep] = useState(0);
+
+    useEffect(() => {
+        let interval: any;
+        if (loading) {
+            setThoughtStep(0);
+            interval = setInterval(() => {
+                setThoughtStep(prev => (prev + 1) % 6);
+            }, 1800);
+        } else {
+            setThoughtStep(0);
+        }
+        return () => {
+            if (interval) clearInterval(interval);
+        };
+    }, [loading]);
+
+    useEffect(() => {
+        let interval: any;
+        if (agentLoading) {
+            setAgentThoughtStep(0);
+            interval = setInterval(() => {
+                setAgentThoughtStep(prev => (prev + 1) % 6);
+            }, 1800);
+        } else {
+            setAgentThoughtStep(0);
+        }
+        return () => {
+            if (interval) clearInterval(interval);
+        };
+    }, [agentLoading]);
 
     // Media & Voice States
     const [selectedFiles, setSelectedFiles] = useState<{ data: string, type: 'image' | 'video' }[]>([]);
@@ -4512,42 +4644,6 @@ const SwarmConsole: React.FC<{ data: SwarmData; isDark: boolean }> = ({ data, is
                         {/* 1. TIÊU ĐỀ KHỚP MÀU DYNAMIC GIỮA HAI CHẾ ĐỘ */}
                         <div style={{
                             background: activeTab === 'agent' ? 'linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)' : 'var(--chat-gradient)',
-                            padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: 'white',
-                            transition: 'all 0.4s ease'
-                        }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                <div style={{ width: '10px', height: '10px', background: '#4ade80', borderRadius: '50%', boxShadow: '0 0 10px #4ade80' }}></div>
-                                <span style={{ fontWeight: 900, fontSize: '1.05rem', letterSpacing: '0.3px' }}>
-                                    {activeTab === 'agent' ? 'Rexi Agent v2 🤖' : 'Trợ lý Rexi 🐾'}
-                                </span>
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                                {/* Volume Switch */}
-                                <span className="material-symbols-outlined" style={{ fontSize: '22px', cursor: 'pointer', color: isVoiceEnabled ? '#4ade80' : 'white', opacity: isVoiceEnabled ? 1 : 0.7 }}
-                                      onClick={() => setIsVoiceEnabled(!isVoiceEnabled)} title={isVoiceEnabled ? "Tắt đọc thành tiếng" : "Bật đọc thành tiếng"}>
-                                    {isVoiceEnabled ? 'volume_up' : 'volume_off'}
-                                </span>
-                                {/* Reset Chat */}
-                                <span className="material-symbols-outlined" style={{ fontSize: '22px', cursor: 'pointer', opacity: 0.8 }} onClick={handleResetChat} title="Làm mới cuộc hội thoại">
-                                    restart_alt
-                                </span>
-                                <span className="material-symbols-outlined" style={{ fontSize: '22px', cursor: 'pointer', opacity: 0.8 }} onClick={() => setIsOpen(false)}>
-                                    close
-                                </span>
-                            </div>
-                        </div>
-
-                        {/* 2. DYNAMIC GLASSMORPHIC TAB BAR SELECTOR */}
-                        <div style={{
-                            display: 'flex', background: isDark ? 'rgba(30, 41, 59, 0.8)' : 'rgba(241, 245, 249, 0.9)',
-                            borderBottom: '1px solid var(--gray-200)', position: 'relative', padding: '6px', gap: '6px'
-                        }}>
-                            {/* Sliding Active Overlay */}
-                            <div style={{
-                                position: 'absolute', top: '6px', bottom: '6px',
-                                left: activeTab === 'standard' ? '6px' : 'calc(50% + 3px)',
-                                width: 'calc(50% - 9px)',
-                                background: activeTab === 'agent' ? 'linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)' : 'var(--chat-gradient)',
                                 borderRadius: '14px', transition: 'all 0.35s cubic-bezier(0.25, 1, 0.5, 1)', zIndex: 1,
                                 boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
                             }}></div>
@@ -4661,9 +4757,11 @@ const SwarmConsole: React.FC<{ data: SwarmData; isDark: boolean }> = ({ data, is
                                         </div>
                                     ))}
                                     {loading && (
-                                        <div className="dot-pulse" style={{ alignSelf: 'flex-start' }}>
-                                            <span></span><span></span><span></span>
-                                        </div>
+                                        <ThoughtLoader 
+                                            steps={standardThoughtSteps} 
+                                            activeStep={thoughtStep} 
+                                            isDark={isDark} 
+                                        />
                                     )}
                                     <div ref={standardEndRef} />
                                 </div>
@@ -4895,9 +4993,11 @@ const SwarmConsole: React.FC<{ data: SwarmData; isDark: boolean }> = ({ data, is
                                         </div>
                                     ))}
                                     {agentLoading && (
-                                        <div className="dot-pulse" style={{ alignSelf: 'flex-start' }}>
-                                            <span></span><span></span><span></span>
-                                        </div>
+                                        <ThoughtLoader 
+                                            steps={agentThoughtSteps} 
+                                            activeStep={agentThoughtStep} 
+                                            isDark={isDark} 
+                                        />
                                     )}
                                     <div ref={agentEndRef} />
                                 </div>
