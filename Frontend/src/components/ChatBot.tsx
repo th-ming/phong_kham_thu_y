@@ -1180,6 +1180,34 @@ export const ChatBot: React.FC = () => {
         }));
     };
 
+    const findVisibleControlByKeywords = <T extends HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>(
+        selector: string,
+        keywords: string[]
+    ): T | null => {
+        const normalizedKeywords = keywords.map(normalizeSearchText);
+        const root = getUiActionRoot();
+        return Array.from(root.querySelectorAll<T>(selector))
+            .filter(isVisibleAiElement)
+            .find(el => {
+                const label = normalizeSearchText(getAiElementLabel(el));
+                return normalizedKeywords.some(keyword => label.includes(keyword));
+            }) || null;
+    };
+
+    const findVisibleControlsByKeywords = <T extends HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>(
+        selector: string,
+        keywords: string[]
+    ): T[] => {
+        const normalizedKeywords = keywords.map(normalizeSearchText);
+        const root = getUiActionRoot();
+        return Array.from(root.querySelectorAll<T>(selector))
+            .filter(isVisibleAiElement)
+            .filter(el => {
+                const label = normalizeSearchText(getAiElementLabel(el));
+                return normalizedKeywords.some(keyword => label.includes(keyword));
+            });
+    };
+
     const clickUiElement = async (el: HTMLElement, actionType: "CLICK" | "DELETE" = "CLICK") => {
         const aiId = el.getAttribute("data-ai-id");
         if (aiId && actionType === "DELETE") {
