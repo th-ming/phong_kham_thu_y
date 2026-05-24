@@ -130,7 +130,7 @@ const BaoCaoThongKe: React.FC = () => {
     const current = getRevenueValue(list[list.length - 1]);
     const previous = getRevenueValue(list[list.length - 2]);
     const diff = current - previous;
-    const percent = previous > 0 ? (diff / previous) * 100 : current > 0 ? 100 : 0;
+    const percent = previous > 0 ? (diff / previous) * 100 : current > 0 ? null : 0;
     return { current, previous, diff, percent };
   }, [dailyRevenueData]);
 
@@ -144,13 +144,16 @@ const BaoCaoThongKe: React.FC = () => {
     const current = dates.length ? counts[dates[dates.length - 1]] : totalApps;
     const previous = dates.length > 1 ? counts[dates[dates.length - 2]] : 0;
     const diff = current - previous;
-    const percent = previous > 0 ? (diff / previous) * 100 : current > 0 ? 100 : 0;
+    const percent = previous > 0 ? (diff / previous) * 100 : current > 0 ? null : 0;
     return { current, previous, diff, percent };
   }, [medicalRecords, totalApps]);
 
-  const formatTrend = (diff: number, percent: number, unit: string) => {
+  const formatTrend = (diff: number, percent: number | null, unit: string) => {
     const direction = diff > 0 ? "Tăng" : diff < 0 ? "Giảm" : "Không đổi";
     const absDiff = Math.abs(diff);
+    if (percent === null) {
+      return `Phát sinh mới (+${unit === "đ" ? formatMoney(absDiff) : `${absDiff} ${unit}`})`;
+    }
     const percentText = `${Math.abs(percent).toFixed(1)}%`;
     return `${direction} ${percentText} (${diff >= 0 ? "+" : "-"}${unit === "đ" ? formatMoney(absDiff) : `${absDiff} ${unit}`})`;
   };

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rexi.pkty.dto.ChatMessage;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -25,6 +26,7 @@ public class ReActAgentService {
     @Autowired private GroqService groqService;
     @Autowired private AiToolService toolService;
     @Autowired private AiMemoryService memoryService;
+    @Autowired private JdbcTemplate jdbcTemplate;
 
     private final ObjectMapper mapper = new ObjectMapper();
 
@@ -38,7 +40,18 @@ public class ReActAgentService {
         List<ReActStep> steps = new ArrayList<>();
         String originalUserIntent = extractOriginalUserIntent(userQuery);
         String normalizedQuery = normalizeVietnamese(originalUserIntent.trim().toLowerCase());
-        if (normalizedQuery.matches("^(hi|hello|helo|chao|xin chao|alo|hey|test|ok)$")) {
+
+        ReActResult pendingConfirmationResult = handleDeterministicPendingConfirmation(
+                userQuery,
+                originalUserIntent,
+                normalizedQuery,
+                steps
+        );
+        if (pendingConfirmationResult != null) {
+            return pendingConfirmationResult;
+        }
+
+        if (normalizedQuery.matches("^(hi|hello|helo|chao|xin chao|alo|hey|test)$")) {
             String greeting = "Dạ, Rexi Agent v2 đang hoạt động bình thường. Bạn cần tôi hỗ trợ đặt lịch, xem hồ sơ, tra cứu lịch hẹn hay tìm thông tin thú y nào?";
             steps.add(new ReActStep("FINAL", greeting, null, null, null));
             return new ReActResult(greeting, steps);
@@ -153,6 +166,114 @@ public class ReActAgentService {
             }
         }
         return userQuery.trim();
+    }
+
+    private ReActResult handleDeterministicPendingConfirmation(
+            String fullQuery,
+            String originalUserIntent,
+            String normalizedQuery,
+            List<ReActStep> steps
+    ) {
+        if (!isAffirmation(normalizedQuery) || fullQuery == null) {
+            return null;
+        }
+
+        String normalizedFullQuery = normalizeVietnamese(fullQuery.toLowerCase());
+        boolean hasSpecificPendingUnlockTarget = normalizedFullQuery.contains("da xac dinh duoc tai khoan")
+                || normalizedFullQuery.contains("tai khoan ban muon mo khoa")
+                || normalizedFullQuery.contains("sep xac nhan co muon mo khoa");
+        boolean hasPendingUnlock = normalizedFullQuery.contains("mo khoa")
+                && (normalizedFullQuery.contains("xac nhan") || normalizedFullQuery.contains("co muon") || normalizedFullQuery.contains("trang thai"))
+                && normalizedFullQuery.contains("lich su chat gan nhat")
+                && hasSpecificPendingUnlockTarget;
+
+        if (!hasPendingUnlock) {
+            return null;
+        }
+
+        Map<String, Object> params = new HashMap<>();
+        String customerId = extractFirstGroup(fullQuery, "(?i)(?:ID khách hàng|ID khach hang)\\s*:?\\s*([A-Za-z0-9_-]+)");
+        String accountId = extractFirstGroup(fullQuery, "(?i)(?:ID tài khoản|ID tai khoan|Tên đăng nhập|Ten dang nhap)\\s*:?\\s*([A-Za-z0-9_.@-]+)");
+        String phone = extractFirstGroup(fullQuery, "(?:SĐT|SDT|Sdt|sdt)\\s*:?\\s*([0-9]{8,12})");
+        String name = extractPendingName(fullQuery);
+
+        if (customerId != null && !customerId.isBlank() && !"N".equalsIgnoreCase(customerId)) {
+            params.put("id_khach_hang", customerId);
+        } else if (accountId != null && !accountId.isBlank()) {
+            params.put("id_tai_khoan", accountId);
+        } else {
+            String foundCustomerId = findLockedCustomerId(name, phone);
+            if (foundCustomerId != null && !foundCustomerId.isBlank()) {
+                params.put("id_khach_hang", foundCustomerId);
+            }
+        }
+
+        if (!params.containsKey("id_khach_hang") && !params.containsKey("id_tai_khoan")) {
+            String answer = "Tôi hiểu đây là xác nhận mở khóa, nhưng chưa xác định được ID tài khoản trong ngữ cảnh trước. Sếp gửi lại tên hoặc SĐT tài khoản cần mở khóa giúp tôi.";
+            steps.add(new ReActStep("FINAL", answer, null, null, null));
+            return new ReActResult(answer, steps);
+        }
+
+        params.put("hanh_dong", "MO_KHOA");
+        steps.add(new ReActStep("TOOL_CALL", "Xác nhận trước đó hợp lệ, gọi tool mở khóa tài khoản.", "thao_tac_tai_khoan", params, null));
+        String observation = toolService.executeTool("thao_tac_tai_khoan", params);
+        steps.set(steps.size() - 1, new ReActStep("TOOL_CALL", "Xác nhận trước đó hợp lệ, gọi tool mở khóa tài khoản.", "thao_tac_tai_khoan", params, observation));
+
+        String answer = observation.startsWith("✅")
+                ? observation + " Sếp có thể kiểm tra lại danh sách tài khoản bị khóa để xác nhận."
+                : observation;
+        steps.add(new ReActStep("FINAL", answer, null, null, null));
+        return new ReActResult(answer, steps);
+    }
+
+    private boolean isAffirmation(String normalizedQuery) {
+        return normalizedQuery.matches("^(ok|oke|okay|dong y|xac nhan|chot|lam di|mo di|duoc|yes|y)$");
+    }
+
+    private String extractFirstGroup(String input, String regex) {
+        java.util.regex.Matcher matcher = java.util.regex.Pattern.compile(regex).matcher(input);
+        return matcher.find() ? matcher.group(1).trim() : null;
+    }
+
+    private String extractPendingName(String input) {
+        String name = extractFirstGroup(input, "(?i)(?:Tên|Ten)\\s*:?\\s*([^\\n\\r|*]+)");
+        if (name == null || name.isBlank()) {
+            name = extractFirstGroup(input, "(?i)mở khóa(?: cho)?(?: tài khoản)?\\s+([^\\n\\r|?.!]+)");
+        }
+        return name != null ? name.replaceAll("\\s+", " ").trim() : null;
+    }
+
+    private String findLockedCustomerId(String name, String phone) {
+        StringBuilder sql = new StringBuilder(
+                "SELECT TOP 1 tk.id_khach_hang FROM TaiKhoan tk " +
+                "LEFT JOIN KhachHang kh ON tk.id_khach_hang = kh.id_khach_hang " +
+                "WHERE tk.id_khach_hang IS NOT NULL " +
+                "AND (tk.trang_thai = N'Đã khóa' OR tk.trang_thai = 'inactive')"
+        );
+        List<Object> params = new ArrayList<>();
+        if (phone != null && !phone.isBlank()) {
+            sql.append(" AND kh.sdt = ?");
+            params.add(phone);
+        } else if (name != null && !name.isBlank()) {
+            sql.append(" AND LOWER(kh.ten_khach_hang) LIKE LOWER(?)");
+            params.add("%" + name + "%");
+        } else {
+            return null;
+        }
+
+        try {
+            var rows = toolServiceJdbcQuery(sql.toString(), params.toArray());
+            if (rows.isEmpty()) return null;
+            Object value = rows.get(0).get("id_khach_hang");
+            return value != null ? value.toString() : null;
+        } catch (Exception e) {
+            logger.warning("[ReAct] Không tìm được tài khoản bị khóa từ pending confirmation: " + e.getMessage());
+            return null;
+        }
+    }
+
+    private List<Map<String, Object>> toolServiceJdbcQuery(String sql, Object[] params) {
+        return jdbcTemplate.queryForList(sql, params);
     }
 
     private String callBestAvailableModel(List<ChatMessage> history) throws Exception {

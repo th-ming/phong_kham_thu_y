@@ -27,6 +27,12 @@ const ACTIONS = [
     { id: 'DELETE', name: 'Tự thao tác xóa sau xác nhận' }
 ];
 
+const AI_PROVIDERS = [
+    { id: 'groq', name: 'Groq', keyField: 'groq_api_key', modelField: 'groq_model', color: '#10b981' },
+    { id: 'gemini', name: 'Gemini', keyField: 'gemini_api_key', modelField: 'gemini_model', color: '#f59e0b' },
+    { id: 'openrouter', name: 'OpenRouter', keyField: 'openrouter_api_key', modelField: 'openrouter_model', color: '#22d3ee' }
+];
+
 const DEFAULT_AI_POLICY: Record<string, string[]> = {
     admin: ['CLICK', 'FILL', 'SELECT', 'TOGGLE', 'DELETE'],
     quan_ly: ['CLICK', 'FILL', 'SELECT', 'TOGGLE'],
@@ -53,6 +59,8 @@ const CauHinhHeThong: React.FC = () => {
     const [testEmailTo, setTestEmailTo] = useState('');
     const [testingEmail, setTestingEmail] = useState(false);
     const [testEmailResult, setTestEmailResult] = useState<{success: boolean, message: string} | null>(null);
+    const [testingAiProvider, setTestingAiProvider] = useState<string | null>(null);
+    const [aiTestResults, setAiTestResults] = useState<Record<string, any>>({});
 
     // Trạng thái ma trận Phân quyền AI
     const [aiPolicy, setAiPolicy] = useState<Record<string, string[]>>({});
@@ -143,6 +151,38 @@ const CauHinhHeThong: React.FC = () => {
             });
         } finally {
             setTestingEmail(false);
+        }
+    };
+
+    const handleTestAiProvider = async (providerId: string) => {
+        const provider = AI_PROVIDERS.find(item => item.id === providerId);
+        if (!provider) return;
+        setTestingAiProvider(providerId);
+        try {
+            const res = await axiosInstance.post('/api/system/ai-provider/test', {
+                provider: provider.id,
+                apiKey: configs[provider.keyField] || '',
+                model: configs[provider.modelField] || ''
+            });
+            setAiTestResults(prev => ({ ...prev, [providerId]: res.data }));
+            if (res.data?.success) {
+                toast.success(`${provider.name} hoạt động bình thường`);
+            } else {
+                toast.error(res.data?.message || `${provider.name} kiểm tra thất bại`);
+            }
+        } catch (error: any) {
+            const result = {
+                success: false,
+                provider: provider.id,
+                providerLabel: provider.name,
+                errorCode: 'request_failed',
+                message: error.response?.data?.message || 'Không gọi được endpoint kiểm tra AI.',
+                technicalMessage: error.message
+            };
+            setAiTestResults(prev => ({ ...prev, [providerId]: result }));
+            toast.error(result.message);
+        } finally {
+            setTestingAiProvider(null);
         }
     };
 
@@ -265,6 +305,50 @@ const CauHinhHeThong: React.FC = () => {
             {label}
         </button>
     );
+
+    const renderAiTestPanel = (providerId: string) => {
+        const provider = AI_PROVIDERS.find(item => item.id === providerId);
+        const result = aiTestResults[providerId];
+        if (!provider) return null;
+        return (
+            <div style={{ marginTop: '16px', display: 'grid', gap: '10px' }}>
+                <button
+                    data-ai-id={`button-cauhinhhethong-test-ai-${providerId}`}
+                    type="button"
+                    className="btn btn-outline"
+                    onClick={() => handleTestAiProvider(providerId)}
+                    disabled={testingAiProvider === providerId}
+                    style={{ width: '100%', justifyContent: 'center', display: 'flex', alignItems: 'center', gap: '8px', borderRadius: '12px' }}
+                >
+                    <span className="material-symbols-outlined" style={{ fontSize: '20px', animation: testingAiProvider === providerId ? 'spinBtn 1s linear infinite' : 'none' }}>
+                        {testingAiProvider === providerId ? 'sync' : 'health_and_safety'}
+                    </span>
+                    {testingAiProvider === providerId ? 'Đang kiểm tra...' : `Kiểm tra ${provider.name}`}
+                </button>
+                {result && (
+                    <div style={{
+                        padding: '12px',
+                        borderRadius: '12px',
+                        background: result.success ? 'var(--success-light)' : 'var(--danger-light)',
+                        color: result.success ? 'var(--success)' : 'var(--danger)',
+                        border: `1px solid ${result.success ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'}`,
+                        fontSize: '0.85rem',
+                        fontWeight: 650,
+                        display: 'grid',
+                        gap: '6px'
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 900 }}>
+                            <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>{result.success ? 'check_circle' : 'error'}</span>
+                            {result.success ? 'Đang hoạt động' : `Lỗi: ${result.errorCode || 'unknown'}`}
+                        </div>
+                        <div>{result.message}</div>
+                        {result.statusCode && <div>HTTP: {result.statusCode}</div>}
+                        {result.checkedAt && <div>Kiểm tra lúc: {chuyenNgayGioISO_SangVN(result.checkedAt)}</div>}
+                    </div>
+                )}
+            </div>
+        );
+    };
 
     return (
         <div className="animate-fade-in" style={{ maxWidth: '1200px', margin: '0 auto', paddingBottom: '60px' }}>
@@ -437,6 +521,7 @@ const CauHinhHeThong: React.FC = () => {
                                     <input type="text" className="form-input" value={configs.groq_model || ''} onChange={e => setConfigs({...configs, groq_model: e.target.value})} placeholder="llama-3.3-70b-versatile" />
                                     <label style={{ display: 'block', margin: '14px 0 8px', fontWeight: 700, color: 'var(--gray-600)' }}>Model phân tích ảnh</label>
                                     <input type="text" className="form-input" value={configs.groq_vision_model || ''} onChange={e => setConfigs({...configs, groq_vision_model: e.target.value})} placeholder="meta-llama/llama-4-scout-17b-16e-instruct" />
+                                    {renderAiTestPanel('groq')}
                                 </div>
 
                                 <div style={{ padding: '20px', border: '1px solid var(--gray-200)', borderRadius: '16px', background: 'var(--surface)' }}>
@@ -448,6 +533,7 @@ const CauHinhHeThong: React.FC = () => {
                                     <input type="password" className="form-input" value={configs.gemini_api_key || ''} onChange={e => setConfigs({...configs, gemini_api_key: e.target.value})} placeholder="AIza... hoặc nhiều key cách nhau bằng dấu phẩy" />
                                     <label style={{ display: 'block', margin: '14px 0 8px', fontWeight: 700, color: 'var(--gray-600)' }}>Model</label>
                                     <input type="text" className="form-input" value={configs.gemini_model || ''} onChange={e => setConfigs({...configs, gemini_model: e.target.value})} placeholder="gemini-3.5-flash" />
+                                    {renderAiTestPanel('gemini')}
                                 </div>
 
                                 <div style={{ padding: '20px', border: '1px solid var(--gray-200)', borderRadius: '16px', background: 'var(--surface)' }}>
@@ -459,6 +545,7 @@ const CauHinhHeThong: React.FC = () => {
                                     <input type="password" className="form-input" value={configs.openrouter_api_key || ''} onChange={e => setConfigs({...configs, openrouter_api_key: e.target.value})} placeholder="sk-or-..." />
                                     <label style={{ display: 'block', margin: '14px 0 8px', fontWeight: 700, color: 'var(--gray-600)' }}>Model</label>
                                     <input type="text" className="form-input" value={configs.openrouter_model || ''} onChange={e => setConfigs({...configs, openrouter_model: e.target.value})} placeholder="deepseek/deepseek-v4-flash:free" />
+                                    {renderAiTestPanel('openrouter')}
                                 </div>
                             </div>
                         </div>

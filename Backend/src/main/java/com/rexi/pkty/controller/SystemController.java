@@ -15,6 +15,15 @@ import java.util.HashMap;
 import java.security.SecureRandom;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Locale;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @RestController
 @RequestMapping("/api/system")
@@ -52,6 +61,10 @@ public class SystemController {
     private static final int MAX_OTP_SENDS_PER_WINDOW = 3;
     private static final int MAX_OTP_VERIFY_FAILURES = 5;
     private static final SecureRandom OTP_RANDOM = new SecureRandom();
+    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final HttpClient aiTestClient = HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(8))
+            .build();
 
     @GetMapping("/health")
     public ResponseEntity<?> health() {
@@ -305,6 +318,181 @@ public class SystemController {
             logger.severe("Lỗi kết nối test SMTP: " + e.getMessage());
             return ResponseEntity.status(500).body(Map.of("success", false, "message", "Kết nối thất bại: " + e.getMessage()));
         }
+    }
+
+    @PostMapping("/ai-provider/test")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> testAiProvider(@RequestBody Map<String, String> payload) {
+        String provider = normalizeProvider(payload.get("provider"));
+        if (provider == null) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "errorCode", "invalid_provider",
+                    "message", "Provider AI không hợp lệ. Chỉ hỗ trợ groq, gemini, openrouter."));
+        }
+
+        String apiKey = firstNonBlank(payload.get("apiKey"), readConfig(provider + "_api_key"));
+        String model = firstNonBlank(payload.get("model"), readConfig(provider + "_model"));
+        if (apiKey == null || apiKey.isBlank()) {
+            return ResponseEntity.ok(buildAiTestResult(false, provider, model, null, "missing_api_key",
+                    "Chưa cấu hình API key cho " + providerLabel(provider) + ".",
+                    "Chưa có API key để kiểm tra. Vui lòng nhập key rồi kiểm tra lại."));
+        }
+        if (model == null || model.isBlank()) {
+            return ResponseEntity.ok(buildAiTestResult(false, provider, model, null, "missing_model",
+                    "Chưa cấu hình model cho " + providerLabel(provider) + ".",
+                    "Chưa có model để kiểm tra. Vui lòng nhập model rồi kiểm tra lại."));
+        }
+
+        try {
+            HttpRequest request = buildAiProviderRequest(provider, apiKey, model);
+            HttpResponse<String> response = aiTestClient.send(request, HttpResponse.BodyHandlers.ofString());
+            boolean ok = response.statusCode() >= 200 && response.statusCode() < 300;
+            String errorCode = ok ? "ok" : classifyAiProviderError(response.statusCode(), response.body());
+            String technicalMessage = ok
+                    ? "Provider phản hồi thành công."
+                    : "Provider trả lỗi " + response.statusCode() + ": " + abbreviate(response.body(), 500);
+            return ResponseEntity.ok(buildAiTestResult(ok, provider, model, response.statusCode(), errorCode,
+                    technicalMessage, roleAwareAiConfigMessage(errorCode, provider, model)));
+        } catch (java.net.http.HttpTimeoutException e) {
+            return ResponseEntity.ok(buildAiTestResult(false, provider, model, null, "timeout",
+                    "Timeout khi kiểm tra provider: " + e.getMessage(),
+                    roleAwareAiConfigMessage("timeout", provider, model)));
+        } catch (Exception e) {
+            String errorCode = classifyAiException(e);
+            return ResponseEntity.ok(buildAiTestResult(false, provider, model, null, errorCode,
+                    "Không thể kết nối provider: " + e.getMessage(),
+                    roleAwareAiConfigMessage(errorCode, provider, model)));
+        }
+    }
+
+    private HttpRequest buildAiProviderRequest(String provider, String apiKey, String model) throws Exception {
+        if ("gemini".equals(provider)) {
+            String key = apiKey.split(",")[0].trim();
+            String url = "https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent?key=" + key;
+            String body = objectMapper.writeValueAsString(Map.of(
+                    "contents", List.of(Map.of(
+                            "role", "user",
+                            "parts", List.of(Map.of("text", "Ping. Reply with OK."))))));
+            return HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
+                    .timeout(Duration.ofSeconds(20))
+                    .build();
+        }
+
+        String url = "groq".equals(provider)
+                ? "https://api.groq.com/openai/v1/chat/completions"
+                : "https://openrouter.ai/api/v1/chat/completions";
+        String body = objectMapper.writeValueAsString(Map.of(
+                "model", model,
+                "messages", List.of(Map.of("role", "user", "content", "Ping. Reply with OK.")),
+                "max_tokens", 8));
+        HttpRequest.Builder builder = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .header("Content-Type", "application/json")
+                .header("Authorization", "Bearer " + apiKey.trim())
+                .POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
+                .timeout(Duration.ofSeconds(20));
+        if ("openrouter".equals(provider)) {
+            builder.header("HTTP-Referer", "http://localhost:3000")
+                    .header("X-Title", "Rexi Vet Clinic");
+        }
+        return builder.build();
+    }
+
+    private Map<String, Object> buildAiTestResult(boolean success, String provider, String model,
+            Integer statusCode, String errorCode, String technicalMessage, String adminMessage) {
+        return Map.of(
+                "success", success,
+                "provider", provider,
+                "providerLabel", providerLabel(provider),
+                "model", model == null ? "" : model,
+                "statusCode", statusCode == null ? "" : statusCode,
+                "errorCode", errorCode,
+                "message", adminMessage,
+                "technicalMessage", technicalMessage,
+                "checkedAt", Instant.now().toString());
+    }
+
+    private String roleAwareAiConfigMessage(String errorCode, String provider, String model) {
+        String label = providerLabel(provider);
+        return switch (errorCode) {
+            case "ok" -> label + " đang hoạt động với model `" + model + "`.";
+            case "quota_exceeded" -> label + " đang hết quota hoặc bị giới hạn tốc độ. Admin nên nâng quota, đổi key hoặc chuyển provider/model dự phòng.";
+            case "invalid_api_key" -> "API key của " + label + " không hợp lệ hoặc đã bị thu hồi. Key không được hiển thị thô; vui lòng cập nhật key mới.";
+            case "model_not_found", "model_not_supported" -> "Model `" + model + "` của " + label + " không tồn tại hoặc không được key hiện tại hỗ trợ. Vui lòng chọn model khác.";
+            case "timeout" -> label + " phản hồi quá lâu. Có thể provider đang nghẽn hoặc mạng máy chủ không ổn định.";
+            case "missing_api_key" -> "Chưa có API key cho " + label + ".";
+            case "missing_model" -> "Chưa có model cho " + label + ".";
+            default -> label + " chưa kiểm tra thành công. Vui lòng xem mã lỗi kỹ thuật và thử provider/model khác nếu cần.";
+        };
+    }
+
+    private String classifyAiProviderError(int statusCode, String body) {
+        String text = (body == null ? "" : body).toLowerCase(Locale.ROOT);
+        if (statusCode == 401 || statusCode == 403 || text.contains("api key") || text.contains("unauthorized")) {
+            return "invalid_api_key";
+        }
+        if (statusCode == 429 || text.contains("quota") || text.contains("rate limit") || text.contains("too many requests")) {
+            return "quota_exceeded";
+        }
+        if (statusCode == 404 || text.contains("model not found")) {
+            return "model_not_found";
+        }
+        if (statusCode == 400 && (text.contains("model") || text.contains("unsupported"))) {
+            return "model_not_supported";
+        }
+        return "provider_error";
+    }
+
+    private String classifyAiException(Exception e) {
+        String text = e.getMessage() == null ? "" : e.getMessage().toLowerCase(Locale.ROOT);
+        if (text.contains("timeout") || text.contains("timed out")) return "timeout";
+        if (text.contains("429") || text.contains("quota") || text.contains("rate limit")) return "quota_exceeded";
+        if (text.contains("401") || text.contains("403") || text.contains("api key") || text.contains("unauthorized")) return "invalid_api_key";
+        if (text.contains("model not found") || text.contains("404")) return "model_not_found";
+        if (text.contains("model") || text.contains("unsupported")) return "model_not_supported";
+        return "network_error";
+    }
+
+    private String normalizeProvider(String provider) {
+        if (provider == null) return null;
+        String normalized = provider.trim().toLowerCase(Locale.ROOT);
+        return switch (normalized) {
+            case "groq", "gemini", "openrouter" -> normalized;
+            default -> null;
+        };
+    }
+
+    private String providerLabel(String provider) {
+        return switch (provider) {
+            case "groq" -> "Groq";
+            case "gemini" -> "Gemini";
+            case "openrouter" -> "OpenRouter";
+            default -> "AI Provider";
+        };
+    }
+
+    private String readConfig(String key) {
+        try {
+            return jdbcTemplate.queryForObject("SELECT gia_tri FROM CauHinhHeThong WHERE ten_cau_hinh = ?", String.class, key);
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    private String firstNonBlank(String first, String second) {
+        if (first != null && !first.trim().isEmpty()) return first.trim();
+        if (second != null && !second.trim().isEmpty()) return second.trim();
+        return "";
+    }
+
+    private String abbreviate(String value, int maxLength) {
+        if (value == null) return "";
+        String normalized = value.replaceAll("\\s+", " ").trim();
+        return normalized.length() <= maxLength ? normalized : normalized.substring(0, maxLength) + "...";
     }
 
     @PostMapping("/send-otp")

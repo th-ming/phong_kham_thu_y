@@ -91,8 +91,8 @@ public class AiToolService {
                 Params: {"trang_thai": "CHO_THANH_TOAN | DA_THANH_TOAN | all"}
             
             14. thao_tac_tai_khoan
-                Mô tả: Khóa hoặc Xóa tài khoản khách hàng (Soft Delete). [QUAN TRỌNG: ĐÂY LÀ HÀNH ĐỘNG NGUY HIỂM. Trước tiên bạn phải dùng tool tim_khach_hang. Sau khi có kết quả, BẠN PHẢI TRÌNH BÀY RÕ THÔNG TIN (Tên, SĐT) VÀ HỎI: "Có đúng là người này không? Sếp có chắc chắn muốn khóa/xóa không?". CHỈ KHI SẾP XÁC NHẬN RÕ RÀNG thì mới được gọi tool này].
-                Params: {"id_khach_hang": "...", "hanh_dong": "KHOA | XOA"}
+                Mô tả: Khóa, Xóa mềm hoặc Mở khóa tài khoản khách hàng. [QUAN TRỌNG: ĐÂY LÀ HÀNH ĐỘNG NHẠY CẢM. Trước tiên bạn phải dùng tool tim_khach_hang hoặc tim_tai_khoan_bi_khoa. Sau khi có kết quả, BẠN PHẢI TRÌNH BÀY RÕ THÔNG TIN (Tên, SĐT, ID) VÀ HỎI XÁC NHẬN. CHỈ KHI SẾP XÁC NHẬN RÕ RÀNG như "ok", "đồng ý", "xác nhận", "làm đi" thì mới được gọi tool này].
+                Params: {"id_khach_hang": "...", "id_tai_khoan": "...", "hanh_dong": "KHOA | XOA | MO_KHOA"}
 
             15. tim_tai_khoan_bi_khoa
                 Mô tả: Xem danh sách các tài khoản đang bị khóa trong hệ thống.
@@ -216,7 +216,7 @@ public class AiToolService {
     }
 
     private String toolTimTaiKhoanBiKhoa() {
-        String sql = "SELECT tk.ten_dang_nhap, tk.trang_thai, kh.ten_khach_hang, kh.sdt, nv.ho_ten " +
+        String sql = "SELECT tk.id_tai_khoan, tk.ten_dang_nhap, tk.id_khach_hang, tk.id_nhan_vien, tk.trang_thai, kh.ten_khach_hang, kh.sdt, nv.ho_ten " +
                      "FROM TaiKhoan tk " +
                      "LEFT JOIN KhachHang kh ON tk.id_khach_hang = kh.id_khach_hang " +
                      "LEFT JOIN NhanVien nv ON tk.id_nhan_vien = nv.id_nhan_vien " +
@@ -230,6 +230,8 @@ public class AiToolService {
                          (r.get("ten_khach_hang") != null ? r.get("ten_khach_hang").toString() : "N/A");
             String sdt = r.get("sdt") != null ? r.get("sdt").toString() : "N/A";
             sb.append("- Tên đăng nhập: ").append(r.get("ten_dang_nhap"))
+              .append(" | ID tài khoản: ").append(r.get("id_tai_khoan"))
+              .append(" | ID khách hàng: ").append(r.get("id_khach_hang") != null ? r.get("id_khach_hang") : "N/A")
               .append(" | Chủ tài khoản: ").append(ten)
               .append(" | SĐT: ").append(sdt)
               .append(" | Trạng thái: ").append(r.get("trang_thai")).append("\n");
@@ -509,17 +511,45 @@ public class AiToolService {
     private String toolThaoTacTaiKhoan(Map<String, Object> p) {
         try {
             String id = (String) p.get("id_khach_hang");
+            String idTaiKhoan = (String) p.get("id_tai_khoan");
             String action = (String) p.get("hanh_dong");
-            if (id == null || id.isBlank()) return "Lỗi: Thiếu ID khách hàng.";
-            if ("XOA".equalsIgnoreCase(action) || "KHOA".equalsIgnoreCase(action)) {
-                String sql = "UPDATE KhachHang SET da_xoa = 1 WHERE id_khach_hang = ?";
-                int rows = jdbcTemplate.update(sql, id);
-                if (rows > 0) return "✅ Đã " + action.toLowerCase() + " tài khoản khách hàng " + id + " thành công.";
-                else return "Lỗi: Không tìm thấy khách hàng ID " + id;
+            if ((id == null || id.isBlank()) && (idTaiKhoan == null || idTaiKhoan.isBlank())) {
+                return "Lỗi: Thiếu ID khách hàng hoặc ID tài khoản.";
             }
-            return "Lỗi: Hành động không hợp lệ. Chỉ hỗ trợ KHOA hoặc XOA.";
+            if ("XOA".equalsIgnoreCase(action) || "KHOA".equalsIgnoreCase(action)) {
+                String customerId = resolveCustomerId(id, idTaiKhoan);
+                if (customerId == null || customerId.isBlank()) return "Lỗi: Không tìm thấy khách hàng cần thao tác.";
+                int rows = jdbcTemplate.update("UPDATE KhachHang SET da_xoa = 1 WHERE id_khach_hang = ?", customerId);
+                jdbcTemplate.update("UPDATE TaiKhoan SET trang_thai = N'Đã khóa' WHERE id_khach_hang = ?", customerId);
+                if (rows > 0) return "✅ Đã " + action.toLowerCase() + " tài khoản khách hàng " + customerId + " thành công.";
+                else return "Lỗi: Không tìm thấy khách hàng ID " + customerId;
+            }
+            if ("MO_KHOA".equalsIgnoreCase(action) || "MOKHOA".equalsIgnoreCase(action) || "UNLOCK".equalsIgnoreCase(action)) {
+                String customerId = resolveCustomerId(id, idTaiKhoan);
+                if (customerId == null || customerId.isBlank()) return "Lỗi: Không tìm thấy khách hàng cần mở khóa.";
+                int customerRows = jdbcTemplate.update("UPDATE KhachHang SET da_xoa = 0 WHERE id_khach_hang = ?", customerId);
+                int accountRows = jdbcTemplate.update("UPDATE TaiKhoan SET trang_thai = N'Hoạt động' WHERE id_khach_hang = ?", customerId);
+                if (customerRows > 0 || accountRows > 0) {
+                    return "✅ Đã mở khóa tài khoản khách hàng " + customerId + " thành công.";
+                }
+                return "Lỗi: Không tìm thấy tài khoản khách hàng ID " + customerId;
+            }
+            return "Lỗi: Hành động không hợp lệ. Chỉ hỗ trợ KHOA, XOA hoặc MO_KHOA.";
         } catch (Exception e) {
             return "Lỗi thao tác tài khoản: " + e.getMessage();
         }
+    }
+
+    private String resolveCustomerId(String idKhachHang, String idTaiKhoan) {
+        if (idKhachHang != null && !idKhachHang.isBlank()) return idKhachHang;
+        if (idTaiKhoan == null || idTaiKhoan.isBlank()) return null;
+        var rows = jdbcTemplate.queryForList(
+            "SELECT id_khach_hang FROM TaiKhoan WHERE id_tai_khoan = ? OR ten_dang_nhap = ?",
+            idTaiKhoan,
+            idTaiKhoan
+        );
+        if (rows.isEmpty()) return null;
+        Object value = rows.get(0).get("id_khach_hang");
+        return value != null ? value.toString() : null;
     }
 }

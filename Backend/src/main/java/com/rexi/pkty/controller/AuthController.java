@@ -790,6 +790,7 @@ public class AuthController {
 
             // Tạo Khách Hàng
             com.rexi.pkty.entity.KhachHang kh = new com.rexi.pkty.entity.KhachHang();
+            kh.setId_khach_hang("KH-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase());
             kh.setTen_khach_hang(request.get("ten_khach_hang"));
             kh.setSdt(request.get("sdt"));
             // email đã được khai báo ở trên (dòng 478), reuse luôn
@@ -805,6 +806,7 @@ public class AuthController {
 
             // Tạo Tài Khoản (Lấy SĐT làm username, pass: rexi@123)
             com.rexi.pkty.entity.TaiKhoan tk = new com.rexi.pkty.entity.TaiKhoan();
+            tk.setId_tai_khoan("TK-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase());
             tk.setTen_dang_nhap(request.get("sdt"));
             tk.setMat_khau("[ENCRYPTED]");
             tk.setMat_khau_hash(passwordEncoder.encode("rexi@123"));

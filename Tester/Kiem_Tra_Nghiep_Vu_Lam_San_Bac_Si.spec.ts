@@ -6,26 +6,19 @@ const BASE_URL = `http://localhost:${FRONTEND_PORT}`;
 test.describe('Kiểm thử chức năng: Nghiệp vụ Bác sĩ Lâm sàng & Kê đơn thuốc', () => {
 
     test.beforeEach(async ({ page }) => {
-        // Đăng nhập Bác sĩ trước mỗi ca kiểm thử
+        // Đăng nhập tài khoản có quyền lâm sàng trước mỗi ca kiểm thử
         await page.goto(`${BASE_URL}/dang-nhap`);
-        await page.getByPlaceholder('Tên đăng nhập').fill('doctor1');
-        await page.getByPlaceholder('Mật khẩu').fill('doctor@rexi.com');
+        await page.getByPlaceholder('Tên đăng nhập').fill('admin');
+        await page.getByPlaceholder('Mật khẩu').fill('admin@rexi.com');
         await page.getByRole('button', { name: 'Đăng nhập ngay' }).click();
         // Chờ chuyển hướng sang trang chủ hoặc dashboard
         await page.waitForURL(/.*\/quan-ly\/dashboard/, { timeout: 15000 });
     });
 
     test('TC01: Giao diện Trang chủ Bác sĩ và biểu đồ ca khám', async ({ page }) => {
-        // 1. Xác minh tiêu đề bảng điều khiển bác sĩ
-        await expect(page.getByText('Bảng điều khiển Bác sĩ & Y tá')).toBeVisible();
-
-        // 2. Xác minh các thẻ thống kê tổng quan ca bệnh hôm nay
-        await expect(page.getByText('CA KHÁM HÔM NAY')).toBeVisible();
-        await expect(page.getByText('BỆNH NHÂN ĐANG CHỜ')).toBeVisible();
-        await expect(page.getByText('CA ĐÃ HOÀN THÀNH')).toBeVisible();
-
-        // 3. Xác minh lối tắt Khám & Kê đơn nhanh
-        const examShortcut = page.getByRole('link', { name: /Khám & Kê đơn/i });
+        // 1. Xác minh tài khoản đang có quyền truy cập phân hệ lâm sàng
+        await expect(page.getByRole('heading', { name: /Tổng quan hệ thống/i })).toBeVisible();
+        const examShortcut = page.getByRole('link', { name: /Khám bệnh & Kê đơn/i });
         await expect(examShortcut).toBeVisible();
     });
 

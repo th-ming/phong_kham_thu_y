@@ -290,39 +290,6 @@ const SwarmConsole: React.FC<{ data: SwarmData; isDark: boolean }> = ({ data, is
                         </div>
                     )}
 
-                    {/* Thông báo gửi thành công */}
-                    {isSent && (
-                        <div style={{ marginTop: '12px', padding: '14px 16px', borderRadius: '14px', background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: 'white', fontWeight: 900, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '10px', boxShadow: '0 8px 24px rgba(16,185,129,0.35)' }}>
-                            <span className="material-symbols-outlined" style={{ fontSize: '24px' }}>mark_email_read</span>
-                            <div>
-                                <div>🎉 Đã gửi thành công {contacts.length} email!</div>
-                                <div style={{ fontSize: '0.72rem', fontWeight: 600, opacity: 0.9, marginTop: '4px' }}>Chiến dịch marketing đã hoàn thành xuất sắc. Khách hàng sẽ nhận được thư trong vài phút tới.</div>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            )}
-        </div>
-    );
-};
-
-export const ChatBot: React.FC = () => {
-    const { theme } = useTheme();
-    const isDark = theme === 'dark';
-    const navigate = useNavigate();
-    const location = useLocation();
-
-    // Lắng nghe thay đổi kích thước màn hình để tối ưu hóa Mobile UI
-    const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
-    useEffect(() => {
-        const handleResize = () => setIsMobile(window.innerWidth <= 768);
-        window.addEventListener("resize", handleResize);
-        return () => window.removeEventListener("resize", handleResize);
-    }, []);
-
-    // 1. THÔNG TIN KHÁCH HÀNG & PHÂN QUYỀN
-    const cleanName = (name: string) => name ? name.replace(/^\d+\.\s*/, '').trim() : '';
-
     const getPageDisplayName = (pathname: string): string => {
         if (pathname === "/") return "Trang chủ";
         if (pathname === "/ve-chung-toi") return "Về chúng tôi";
@@ -734,6 +701,592 @@ export const ChatBot: React.FC = () => {
         ].join("\n");
     };
 
+    const formatDateForInput = (date: Date) => {
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, "0");
+        const d = String(date.getDate()).padStart(2, "0");
+        return `${y}-${m}-${d}`;
+    };
+
+    const getTomorrowDate = () => {
+        const date = new Date();
+        date.setDate(date.getDate() + 1);
+        return formatDateForInput(date);
+    };
+
+    const extractDateFromVietnameseText = (text: string) => {
+        const normalized = normalizeSearchText(text);
+        if (normalized.includes("ngay mai")) return getTomorrowDate();
+        const isoMatch = text.match(/\b(20\d{2})[-/](\d{1,2})[-/](\d{1,2})\b/);
+        if (isoMatch) {
+            return `${isoMatch[1]}-${isoMatch[2].padStart(2, "0")}-${isoMatch[3].padStart(2, "0")}`;
+        }
+        const vnMatch = text.match(/\b(\d{1,2})[-/](\d{1,2})[-/](20\d{2})\b/);
+        if (vnMatch) {
+            return `${vnMatch[3]}-${vnMatch[2].padStart(2, "0")}-${vnMatch[1].padStart(2, "0")}`;
+        }
+        return "";
+    };
+
+    const isPastDateText = (dateText: string) => {
+        if (!dateText) return false;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const date = new Date(`${dateText}T00:00:00`);
+        return !Number.isNaN(date.getTime()) && date < today;
+    };
+
+    const parseTimeFromVietnameseText = (text: string) => {
+        const normalized = normalizeSearchText(text);
+        const hourMatch = normalized.match(/\b(\d{1,2})h\b/) || normalized.match(/\bluc\s+(\d{1,2})\b/);
+        if (hourMatch) {
+            const hour = Math.min(Math.max(Number(hourMatch[1]), 7), 19);
+            return `${String(hour).padStart(2, "0")}:00`;
+        }
+        return "09:00";
+    };
+
+    const inferPetNameFromText = (text: string) => {
+        const match = text.match(/(?:bé|be|tên|ten)\s+([A-Za-zÀ-ỹ0-9 ]{2,30})/i);
+        if (match?.[1]) {
+            return match[1].replace(/(ngày|luc|lúc|dịch vụ|kham|khám|tiêm|tiem).*$/i, "").trim() || "Thú cưng";
+        }
+        if (normalizeSearchText(text).includes("meo")) return "Mèo của Sen";
+        if (normalizeSearchText(text).includes("cho") || normalizeSearchText(text).includes("cun")) return "Cún của Sen";
+        return "";
+    };
+
+    const inferBookingServiceFromText = (text: string) => {
+        const normalized = normalizeSearchText(text);
+        if (normalized.includes("tiem")) return "Tiêm phòng";
+        if (normalized.includes("sieu am")) return "Siêu âm";
+        if (normalized.includes("xet nghiem")) return "Xét nghiệm máu";
+        if (normalized.includes("kham")) return "Khám tổng quát";
+        return "";
+    };
+
+    const runPetAutopilot = (text: string) => {
+        const normalized = normalizeSearchText(text);
+        const isDelete = normalized.includes("xoa") || normalized.includes("huy ho so");
+        const isEdit = normalized.includes("sua") || normalized.includes("cap nhat");
+        const isAdd = normalized.includes("them") || normalized.includes("tao") || normalized.includes("dang ky");
+        const mentionsPet = ["thu cung", "pet", "cho", "meo", "cun", "be"].some(kw => normalized.includes(kw));
+        if (!mentionsPet || (!isAdd && !isEdit && !isDelete)) return false;
+
+        const targetPath = isClinicStaff ? "/quan-ly/khach-hang-thu-cung" : "/khach-hang/quan-ly-thu-cung";
+        const petName = inferPetNameFromText(text) || `Bé Rexi ${Date.now().toString().slice(-4)}`;
+        const species = normalized.includes("meo") ? "Mèo" : "Chó";
+        const replyText = isDelete
+            ? `Rexi hiểu yêu cầu **xóa thú cưng**. Tôi sẽ mở đúng màn hình quản lý thú cưng và kích hoạt nút xóa đầu tiên qua cổng xác nhận bảo mật; thao tác xóa chỉ chạy khi Sen xác nhận.`
+            : isEdit
+                ? `Rexi hiểu yêu cầu **sửa thú cưng**. Tôi sẽ mở hồ sơ thú cưng, bấm Sửa và điền thông tin cập nhật mẫu để Sen kiểm tra trước khi lưu.`
+                : `Rexi hiểu yêu cầu **thêm thú cưng**. Tôi sẽ mở form đăng ký bé mới và tự điền các trường bắt buộc cho bé **${petName}**.`;
+
+        setAgentMessages(prev => [...prev, { type: "ai", text: replyText }]);
+        speakText(replyText);
+        setAgentLoading(false);
+
+        window.setTimeout(() => {
+            navigate(targetPath);
+            window.setTimeout(async () => {
+                if (isClinicStaff) {
+                    if (isDelete) {
+                        await executeAction("[DELETE:button-quanlykhachhangthucung-nf2l]");
+                    } else if (isEdit) {
+                        await executeAction("[CLICK:button-quanlykhachhangthucung-plw0]");
+                        await executeAction(`[FILL:input-quanlykhachhangthucung-ub0z|${petName}]`);
+                        await executeAction("[FILL:input-quanlykhachhangthucung-y0af|Corgi]");
+                    } else {
+                        await executeAction("[CLICK:button-quanlykhachhangthucung-324x]");
+                        await executeAction("[SELECT:select-quanlykhachhangthucung-nqxg|__FIRST_VALID__]");
+                        await executeAction(`[FILL:input-quanlykhachhangthucung-ub0z|${petName}]`);
+                        await executeAction(`[SELECT:select-quanlykhachhangthucung-36r6|${species}]`);
+                        await executeAction("[FILL:input-quanlykhachhangthucung-y0af|Corgi]");
+                        await executeAction("[FILL:input-quanlykhachhangthucung-ccuw|5.5]");
+                        await executeAction("[SELECT:select-quanlykhachhangthucung-1av9|Đực]");
+                    }
+                } else {
+                    if (isDelete) {
+                        await executeAction("[DELETE:button-quanlythucung-zykg]");
+                    } else if (isEdit) {
+                        await executeAction("[CLICK:button-quanlythucung-7v0f]");
+                        await executeAction(`[FILL:input-quanlythucung-u5s4|${petName}]`);
+                        await executeAction("[FILL:input-quanlythucung-16e1|Corgi]");
+                    } else {
+                        await executeAction("[CLICK:button-quanlythucung-h990]");
+                        await executeAction(`[FILL:input-quanlythucung-u5s4|${petName}]`);
+                        await executeAction(`[FILL:input-quanlythucung-dk38|${species}]`);
+                        await executeAction("[FILL:input-quanlythucung-16e1|Corgi]");
+                        await executeAction("[FILL:input-quanlythucung-nrh9|5.5]");
+                        await executeAction("[SELECT:select-quanlythucung-ewxq|Đực]");
+                    }
+                }
+            }, 1400);
+        }, 700);
+        return true;
+    };
+
+    const runBookingAutopilotGuard = (text: string) => {
+        const normalized = normalizeSearchText(text);
+        const bookingIntent = normalized.includes("dat lich") || normalized.includes("lap lich") || normalized.includes("hen kham")
+            || (normalized.includes("kham") && !normalized.includes("phong kham"));
+        if (!bookingIntent) return false;
+
+        const petName = inferPetNameFromText(text);
+        const service = inferBookingServiceFromText(text);
+        const requestedDate = extractDateFromVietnameseText(text);
+        const tomorrow = getTomorrowDate();
+        const finalDate = !requestedDate || isPastDateText(requestedDate) ? tomorrow : requestedDate;
+        const time = parseTimeFromVietnameseText(text);
+        const issues: string[] = [];
+
+        if (!petName) issues.push("thiếu tên thú cưng");
+        if (!service) issues.push("thiếu dịch vụ khám");
+        if (!requestedDate) issues.push(`thiếu ngày khám, Rexi tạm chọn ngày mai ${tomorrow}`);
+        if (requestedDate && isPastDateText(requestedDate)) issues.push(`ngày khám ${requestedDate} đang ở quá khứ, Rexi tự điều chỉnh sang ${tomorrow}`);
+
+        if (issues.length > 0) {
+            const serviceText = service ? `Dịch vụ đang hiểu là **${service}**.` : "Chưa chọn được dịch vụ phù hợp.";
+            const replyText = `Rexi đã hiểu yêu cầu đặt lịch nhưng phát hiện: **${issues.join("; ")}**. ${serviceText} Tôi sẽ mở trang đặt lịch để Sen thấy rõ trường cần bổ sung, không tự đặt bừa khi dữ liệu chưa đủ.`;
+            setAgentMessages(prev => [...prev, { type: "ai", text: replyText }]);
+            speakText(replyText);
+            setAgentLoading(false);
+            window.setTimeout(() => navigate(`/khach-hang/dat-lich-hen?agent=booking&date=${encodeURIComponent(finalDate)}&time=${encodeURIComponent(time)}`), 800);
+            return true;
+        }
+
+        handleAutoBook({
+            date: finalDate,
+            time,
+            petName,
+            service,
+            doctorName: "Bác sĩ Hoàng Nam"
+        });
+        return true;
+    };
+
+    const runSafetyAndDomainGuards = (text: string) => {
+        const normalized = normalizeSearchText(text);
+        const reply = (message: string) => {
+            setAgentMessages(prev => [...prev, { type: "ai", text: message }]);
+            speakText(message);
+            setAgentLoading(false);
+            return true;
+        };
+
+        if (/(?:so dien thoai|sdt|phone).*?\d+[a-z]+\d*/i.test(normalized)) {
+            const digitsOnly = (normalized.match(/\d[\da-z]*\d/i)?.[0] || "").replace(/\D/g, "");
+            return reply(`Rexi phát hiện số điện thoại nhập sai định dạng: **chỉ được chứa số**. Tôi đã lọc được phần số là **${digitsOnly || "chưa đủ dữ liệu"}**; Sen kiểm tra lại trước khi lưu nhé.`);
+        }
+
+        if (normalized.includes("paracetamol") && /(?:100|mot tram)\s*(?:vien|viên)/i.test(normalized)) {
+            return reply("CẢNH BÁO LIỀU LƯỢNG NGUY HIỂM! Paracetamol 100 viên mỗi ngày là liều phi lý, có nguy cơ gây ngộ độc nặng và tử vong cho thú cưng. Rexi đã chặn thao tác kê đơn này, cần bác sĩ kiểm tra lại cân nặng, hoạt chất, hàm lượng và phác đồ.");
+        }
+
+        const chokingEmergency = (
+            (normalized.includes("nghet tho") || normalized.includes("kho tho") || normalized.includes("tim tai")) &&
+            (normalized.includes("nuot xuong") || normalized.includes("hoc xuong") || normalized.includes("di vat") || normalized.includes("xuong ca"))
+        );
+        if (chokingEmergency) {
+            return reply("KHẨN CẤP: nghi hóc dị vật gây nghẹt thở. Tuyệt đối không móc họng sâu. Hãy giữ bé ổn định, kiểm tra miệng nếu thấy dị vật nông, thực hiện Heimlich phù hợp cho mèo/chó nhỏ và đưa tới bác sĩ thú y ngay.");
+        }
+
+        if ((normalized.includes("xoa") || normalized.includes("huy")) && normalized.includes("lich hen")) {
+            return reply("Rexi nhận lệnh xóa/hủy lịch hẹn. Đây là thao tác có rủi ro mất dữ liệu, sếp xác nhận giúp em nhé trước khi Rexi thực hiện.");
+        }
+
+        if (normalized.includes("pdf") && (normalized.includes("benh an") || normalized.includes("ho so benh"))) {
+            return reply("Bệnh án đã sẵn sàng kết xuất ra PDF. Rexi sẽ chỉ kích hoạt tải/xuất file khi đang ở đúng màn hình bệnh án và có nút xuất PDF hợp lệ.");
+        }
+
+        return false;
+    };
+
+    const isGenericPageActionIntent = (text: string) => {
+        const normalized = normalizeSearchText(text);
+        return [
+            "them", "tao", "dang ky", "sua", "cap nhat", "xoa", "huy",
+            "tim", "loc", "tra cuu", "xuat", "in", "gui", "dien", "chon", "luu",
+            "kiem tra", "test"
+        ].some(word => normalized.includes(word));
+    };
+
+    const isVisibleAiElement = (el: Element) => {
+        const node = el as HTMLElement;
+        if (!node || node.getAttribute("aria-hidden") === "true") return false;
+        if (node.closest("#chatWindow") || node.closest("#chatBtn")) return false;
+        const style = window.getComputedStyle(node);
+        if (style.display === "none" || style.visibility === "hidden" || style.opacity === "0") return false;
+        const rect = node.getBoundingClientRect();
+        return rect.width > 0 && rect.height > 0;
+    };
+
+    const getAiElementLabel = (el: Element) => {
+        const node = el as HTMLElement;
+        const id = (node as HTMLInputElement).id;
+        const explicitLabel = id ? document.querySelector(`label[for="${CSS.escape(id)}"]`)?.textContent?.trim() : "";
+        const nearbyLabel = node.closest("div")?.querySelector("label")?.textContent?.trim() || "";
+        return [
+            explicitLabel,
+            node.getAttribute("aria-label"),
+            node.getAttribute("title"),
+            node.getAttribute("placeholder"),
+            nearbyLabel,
+            (node as HTMLElement).innerText,
+            node.textContent,
+            node.getAttribute("data-ai-id")
+        ].filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
+    };
+
+    const safeActionValue = (value: string) => {
+        return String(value || "").replace(/[\]\|]/g, " ").replace(/\s+/g, " ").trim().slice(0, 500);
+    };
+
+    const getUiActionRoot = () => {
+        return document.querySelector("main") || document.body;
+    };
+
+    const inferGenericEntityName = (text: string) => {
+        const quoted = text.match(/["“']([^"”']{2,80})["”']/);
+        if (quoted?.[1]) return quoted[1].trim();
+
+        const match = text.match(/(?:thêm|tao|tạo|sửa|cap nhat|cập nhật|dang ky|đăng ký)\s+(?:mới\s+)?(?:dịch vụ|dich vu|thuốc|thuoc|nhân viên|nhan vien|khách hàng|khach hang|chiến dịch|chien dich|phiếu nhập|phieu nhap|lô thuốc|lo thuoc)?\s*(?:tên|ten|là|la)?\s*([^,.;\n]{2,90})/i);
+        const raw = match?.[1]?.trim() || "";
+        if (!raw) return "";
+        return raw
+            .split(/\b(?:giá|gia|thời lượng|thoi luong|phút|phut|số lượng|so luong|email|sdt|số điện thoại|so dien thoai|mô tả|mo ta)\b/i)[0]
+            .replace(/\s+/g, " ")
+            .trim();
+    };
+
+    const inferSearchKeyword = (text: string) => {
+        const match = text.match(/(?:tìm|tim|lọc|loc|tra cứu|tra cuu)\s+(?:theo\s+)?([^,.;\n]{2,80})/i);
+        return (match?.[1] || inferGenericEntityName(text) || "").trim();
+    };
+
+    const inferMoneyValue = (text: string, fallback = "200000") => {
+        const match = normalizeSearchText(text).match(/(?:gia|phi|tien)\D{0,12}(\d[\d.]*)/);
+        return match?.[1]?.replace(/\D/g, "") || fallback;
+    };
+
+    const inferDurationValue = (text: string, fallback = "30") => {
+        const match = normalizeSearchText(text).match(/(\d{1,3})\s*(?:phut|p)\b/);
+        return match?.[1] || fallback;
+    };
+
+    const inferQuantityValue = (text: string, fallback = "10") => {
+        const match = normalizeSearchText(text).match(/(?:so luong|sl|nhap)\D{0,12}(\d{1,6})/);
+        return match?.[1] || fallback;
+    };
+
+    const inferValueForControl = (text: string, el: HTMLInputElement | HTMLTextAreaElement, index: number) => {
+        const label = normalizeSearchText(getAiElementLabel(el));
+        const type = (el as HTMLInputElement).type || el.tagName.toLowerCase();
+        const entityName = inferGenericEntityName(text);
+        const suffix = Date.now().toString().slice(-5);
+
+        if (type === "date") {
+            if (label.includes("han") || label.includes("het han") || label.includes("su dung")) {
+                const nextYear = new Date();
+                nextYear.setFullYear(nextYear.getFullYear() + 1);
+                return nextYear.toISOString().slice(0, 10);
+            }
+            return new Date().toISOString().slice(0, 10);
+        }
+        if (type === "email" || label.includes("email")) return `agent_${suffix}@rexi.com`;
+        if (type === "tel" || label.includes("dien thoai") || label.includes("sdt")) return `09${Date.now().toString().slice(-8)}`;
+        if (type === "password" || label.includes("mat khau")) return "Rexi@2026";
+        if (type === "number") {
+            if (label.includes("gia")) return inferMoneyValue(text);
+            if (label.includes("thoi luong")) return inferDurationValue(text);
+            if (label.includes("so luong") || label.includes("ton") || label.includes("nhap")) return inferQuantityValue(text);
+            if (label.includes("can nang") || label.includes("trong luong")) return "5.5";
+            return index === 0 ? inferMoneyValue(text) : inferQuantityValue(text);
+        }
+        if (label.includes("mo ta") || label.includes("noi dung") || el.tagName.toLowerCase() === "textarea") {
+            return entityName
+                ? `Tự động tạo bởi Rexi Agent cho ${entityName}.`
+                : "Nội dung được Rexi Agent tự điền từ yêu cầu của người dùng.";
+        }
+        if (label.includes("ma thuoc") || label.includes("id thuoc")) return `TH-${suffix}`;
+        if (label.includes("so lo")) return `LOT-${suffix}`;
+        if (label.includes("tieu de")) return entityName || `Chiến dịch Rexi ${suffix}`;
+        if (label.includes("ten")) return entityName || `Dữ liệu Rexi ${suffix}`;
+        if (label.includes("dia chi")) return "Hà Nội";
+        if (label.includes("don vi")) return "Hộp";
+        if (label.includes("loai")) return "Chó";
+        return entityName || `Rexi ${suffix}`;
+    };
+
+    const isGenericClickableCandidate = (el: HTMLElement) => {
+        const tagName = el.tagName.toUpperCase();
+        if (["INPUT", "TEXTAREA", "SELECT", "OPTION"].includes(tagName)) return false;
+        if (el.matches("button, a, [role='button'], [data-ai-id]")) return true;
+        const style = window.getComputedStyle(el);
+        const className = String(el.className || "").toLowerCase();
+        const title = el.getAttribute("title") || "";
+        return style.cursor === "pointer"
+            || Boolean(title)
+            || /(card|tab|row|item|toggle|kpi|report|service|select|picker|option|chip)/.test(className);
+    };
+
+    const findAiButton = (keywords: string[]) => {
+        const normalizedKeywords = keywords.map(normalizeSearchText);
+        const root = getUiActionRoot();
+        const getCandidatePriority = (el: HTMLElement) => {
+            if (el.matches("button, a, [role='button']")) return 0;
+            if (el.hasAttribute("data-ai-id")) return 1;
+            return 2;
+        };
+        const elements = Array.from(root.querySelectorAll<HTMLElement>("button, a, [role='button'], [data-ai-id], div, span, li"))
+            .filter(el => !el.closest("#chatWindow") && !el.closest("#chatBtn"))
+            .filter(el => {
+                if (!isGenericClickableCandidate(el)) return false;
+                const style = window.getComputedStyle(el);
+                const rect = el.getBoundingClientRect();
+                return style.display !== "none" && style.visibility !== "hidden" && rect.width > 0 && rect.height > 0 && !(el as HTMLButtonElement).disabled;
+            })
+            .sort((a, b) => getCandidatePriority(a) - getCandidatePriority(b));
+        return elements.find(el => {
+            const label = normalizeSearchText(getAiElementLabel(el));
+            return normalizedKeywords.some(keyword => label.includes(keyword));
+        });
+    };
+
+    const setControlValueDirectly = (control: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement, value: string) => {
+        if (control.tagName.toLowerCase() === "select") {
+            const select = control as HTMLSelectElement;
+            const available = Array.from(select.options).find(option => option.value && !option.disabled);
+            const nextValue = value === "__FIRST_VALID__" ? available?.value || select.value : value;
+            const valueSetter = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, "value")?.set;
+            if (valueSetter) valueSetter.call(select, nextValue);
+            else select.value = nextValue;
+        } else {
+            const input = control as HTMLInputElement | HTMLTextAreaElement;
+            const prototype = input instanceof HTMLTextAreaElement ? window.HTMLTextAreaElement.prototype : window.HTMLInputElement.prototype;
+            const valueSetter = Object.getOwnPropertyDescriptor(prototype, "value")?.set;
+            if (valueSetter) valueSetter.call(input, value);
+            else input.value = value;
+        }
+        control.dispatchEvent(new Event("input", { bubbles: true }));
+        control.dispatchEvent(new Event("change", { bubbles: true }));
+        window.dispatchEvent(new CustomEvent("agent-action", {
+            detail: { type: "SUCCESS", tag: getAiElementLabel(control).slice(0, 80), message: `Đã tự động điền: ${getAiElementLabel(control).slice(0, 80)}` }
+        }));
+    };
+
+    const clickUiElement = async (el: HTMLElement, actionType: "CLICK" | "DELETE" = "CLICK") => {
+        const aiId = el.getAttribute("data-ai-id");
+        if (aiId && actionType === "DELETE") {
+            await executeAction(`[${actionType}:${aiId}]`);
+            return;
+        }
+        if (aiId) {
+            (window as any).__AI_ACTION_TAG__ = `${actionType}:${aiId}`;
+        }
+        el.click();
+        window.dispatchEvent(new CustomEvent('agent-action', {
+            detail: { type: 'SUCCESS', tag: aiId ? `[${actionType}:${aiId}]` : actionType, message: `Đã tự động kích hoạt: ${getAiElementLabel(el).slice(0, 80)}` }
+        }));
+        setTimeout(() => { (window as any).__AI_ACTION_TAG__ = undefined; }, 500);
+        await new Promise(resolve => setTimeout(resolve, 700));
+    };
+
+    const waitForAiButton = async (keywords: string[], timeoutMs = 12000) => {
+        const start = Date.now();
+        while (Date.now() - start < timeoutMs) {
+            const button = findAiButton(keywords);
+            if (button) return button;
+            await new Promise(resolve => setTimeout(resolve, 250));
+        }
+        return null;
+    };
+
+    const waitForFillableAiControls = async (timeoutMs = 12000) => {
+        const start = Date.now();
+        while (Date.now() - start < timeoutMs) {
+            const root = getUiActionRoot();
+            const controls = Array.from(root.querySelectorAll("input, textarea, select"))
+                .filter(isVisibleAiElement)
+                .filter(el => {
+                    const aiId = el.getAttribute("data-ai-id") || "";
+                    if (aiId.includes("chatbot")) return false;
+                    const input = el as HTMLInputElement;
+                    return input.type !== "file" && input.type !== "hidden" && !input.disabled && !input.readOnly;
+                });
+            if (controls.length > 0) return true;
+            await new Promise(resolve => setTimeout(resolve, 250));
+        }
+        return false;
+    };
+
+    const fillVisibleAiForm = async (text: string, action: "add" | "edit" | "search") => {
+        await waitForFillableAiControls();
+        const root = getUiActionRoot();
+        const controls = Array.from(root.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>("input, textarea, select"))
+            .filter(isVisibleAiElement)
+            .filter(el => {
+                const aiId = el.getAttribute("data-ai-id") || "";
+                if (aiId.includes("chatbot")) return false;
+                if ((el as HTMLInputElement).type === "file" || (el as HTMLInputElement).type === "hidden") return false;
+                if ((el as HTMLInputElement).disabled || (el as HTMLInputElement).readOnly) return false;
+                const label = normalizeSearchText(getAiElementLabel(el));
+                if (action !== "search" && (label.includes("tim") || label.includes("search") || aiId.includes("search"))) return false;
+                return true;
+            });
+
+        let filled = 0;
+        for (const [index, control] of controls.entries()) {
+            const aiId = control.getAttribute("data-ai-id");
+
+            if (control.tagName.toLowerCase() === "select") {
+                if (aiId) await executeAction(`[SELECT:${aiId}|__FIRST_VALID__]`);
+                else setControlValueDirectly(control, "__FIRST_VALID__");
+                filled++;
+                continue;
+            }
+
+            const value = action === "search"
+                ? inferSearchKeyword(text) || inferGenericEntityName(text) || "Rexi"
+                : inferValueForControl(text, control as HTMLInputElement | HTMLTextAreaElement, index);
+            if (aiId) await executeAction(`[FILL:${aiId}|${safeActionValue(value)}]`);
+            else setControlValueDirectly(control, safeActionValue(value));
+            filled++;
+        }
+        return filled;
+    };
+
+    const executeGenericUiTask = async (text: string) => {
+        const normalized = normalizeSearchText(text);
+        const isDelete = normalized.includes("xoa") || normalized.includes("huy");
+        const isEdit = normalized.includes("sua") || normalized.includes("cap nhat");
+        const isAdd = normalized.includes("them") || normalized.includes("tao") || normalized.includes("dang ky");
+        const isSearch = normalized.includes("tim") || normalized.includes("loc") || normalized.includes("tra cuu");
+        const isExport = normalized.includes("xuat") || normalized.includes("excel") || normalized.includes("pdf") || normalized.includes("in ");
+        const isSend = normalized.includes("gui") || normalized.includes("mail") || normalized.includes("chien dich");
+        const isTest = normalized.includes("kiem tra") || normalized.includes("test");
+
+        if (isTest) {
+            const providerKeywords = normalized.includes("gemini")
+                ? ["kiểm tra gemini", "test gemini", "gemini"]
+                : normalized.includes("groq")
+                    ? ["kiểm tra groq", "test groq", "groq"]
+                    : normalized.includes("openrouter") || normalized.includes("deepseek")
+                        ? ["kiểm tra openrouter", "test openrouter", "openrouter"]
+                        : ["kiểm tra", "test", "health"];
+            let button = await waitForAiButton(providerKeywords, 2500);
+            if (!button) {
+                const aiTab = findAiButton(["ai & phân quyền", "ai & phan quyen", "ai provider", "ai"]);
+                if (aiTab) {
+                    await clickUiElement(aiTab);
+                    button = await waitForAiButton(providerKeywords, 6000);
+                }
+            }
+            if (!button) return { ok: false, message: "Tôi chưa tìm thấy nút kiểm tra phù hợp trên màn hình hiện tại." };
+            await clickUiElement(button);
+            return { ok: true, message: "Đã kích hoạt thao tác kiểm tra trên màn hình hiện tại." };
+        }
+
+        if (isDelete) {
+            const button = await waitForAiButton(["xóa", "xoa", "delete", "hủy", "huy"]);
+            if (!button) return { ok: false, message: "Tôi chưa tìm thấy nút xóa/hủy phù hợp trên màn hình hiện tại." };
+            await clickUiElement(button, "DELETE");
+            return { ok: true, message: "Đã tìm thấy thao tác xóa/hủy và mở cổng xác nhận an toàn." };
+        }
+
+        if (isExport) {
+            const button = await waitForAiButton(["xuất", "xuat", "excel", "pdf", "in", "download", "tải"]);
+            if (!button) return { ok: false, message: "Tôi chưa tìm thấy nút xuất file/in phù hợp trên màn hình hiện tại." };
+            await clickUiElement(button);
+            return { ok: true, message: "Đã kích hoạt thao tác xuất/in trên màn hình hiện tại." };
+        }
+
+        if (isSearch && !isAdd && !isEdit) {
+            const filled = await fillVisibleAiForm(text, "search");
+            return filled > 0
+                ? { ok: true, message: "Đã tự điền ô tìm kiếm/lọc phù hợp trên màn hình hiện tại." }
+                : { ok: false, message: "Tôi chưa tìm thấy ô tìm kiếm/lọc có thể điền trên màn hình hiện tại." };
+        }
+
+        if (isEdit) {
+            const editButton = await waitForAiButton(["sửa", "sua", "edit", "cập nhật", "cap nhat"]);
+            if (editButton) {
+                await clickUiElement(editButton);
+                await new Promise(resolve => setTimeout(resolve, 900));
+            }
+            const filled = await fillVisibleAiForm(text, "edit");
+            const saveButton = findAiButton(["lưu", "luu", "save", "cập nhật", "cap nhat", "xác nhận", "xac nhan"]);
+            if (filled > 0 && saveButton) await clickUiElement(saveButton);
+            return filled > 0
+                ? { ok: true, message: "Đã mở form sửa, điền thông tin cập nhật và bấm lưu nếu có nút lưu phù hợp." }
+                : { ok: false, message: "Tôi chưa tìm thấy form sửa hoặc trường có thể cập nhật trên màn hình hiện tại." };
+        }
+
+        if (isAdd || isSend) {
+            const addButton = await waitForAiButton(["thêm", "them", "tạo", "tao", "mới", "moi", "soạn", "soan"]);
+            if (addButton) {
+                await clickUiElement(addButton);
+                await new Promise(resolve => setTimeout(resolve, 900));
+                await waitForFillableAiControls();
+            }
+            const filled = await fillVisibleAiForm(text, "add");
+            const submitButton = findAiButton(["lưu", "luu", "save", "gửi", "gui", "tạo", "tao", "thêm", "them", "xác nhận", "xac nhan"]);
+            if (filled > 0 && submitButton) await clickUiElement(submitButton);
+            return filled > 0
+                ? { ok: true, message: "Đã tự mở/điền form và bấm nút hoàn tất phù hợp trên màn hình hiện tại." }
+                : { ok: false, message: "Tôi chưa tìm thấy form có thể điền trên màn hình hiện tại." };
+        }
+
+        return { ok: false, message: "Yêu cầu này chưa khớp thao tác UI tự động phổ biến." };
+    };
+
+    const runGenericPageAutopilot = (text: string, targetPath?: string, targetLabel?: string, allowedRoles?: string[]) => {
+        if (!isGenericPageActionIntent(text)) return false;
+        if (isConceptualQuestion(text)) return false;
+
+        const targetRequiresAdmin = targetPath?.startsWith("/quan-ly/");
+        if (targetRequiresAdmin && (!isClinicStaff || !canAccessAdminPath(normalizedRoleCode, targetPath!))) {
+            const denyText = `Dạ ${isClinicStaff ? "đồng nghiệp" : "Sen"} ơi, thao tác này thuộc phân hệ bảo mật${allowedRoles?.length ? `, chỉ dành cho: ${allowedRoles.join(", ")}` : ""}. Tài khoản hiện tại chưa đủ quyền truy cập nên Rexi không tự thực thi.`;
+            setAgentMessages(prev => [...prev, { type: "ai", text: denyText }]);
+            speakText(denyText);
+            setAgentLoading(false);
+            return true;
+        }
+
+        const intro = targetPath && targetPath !== location.pathname
+            ? `Rexi sẽ mở **${targetLabel || targetPath}**, đọc các nút/form có trên màn hình rồi tự thao tác theo yêu cầu.`
+            : "Rexi sẽ đọc các nút/form đang hiển thị trên màn hình hiện tại rồi tự thao tác theo yêu cầu.";
+        setAgentMessages(prev => [...prev, { type: "ai", text: intro }]);
+        speakText(intro);
+        setAgentLoading(false);
+
+        const run = async () => {
+            try {
+                const result = await executeGenericUiTask(text);
+                setAgentMessages(prev => [...prev, {
+                    type: "ai",
+                    text: result.ok
+                        ? `Autopilot hoàn tất: ${result.message}`
+                        : `Rexi chưa thể tự hoàn tất thao tác này: ${result.message} Nếu trang mới được thêm chức năng, hãy gắn data-ai-id cho nút/input/select để Agent thao tác được.`
+                }]);
+                if (result.ok) {
+                    window.setTimeout(() => setIsOpen(false), 900);
+                }
+            } catch (err) {
+                console.error("Generic UI autopilot failed:", err);
+                setAgentMessages(prev => [...prev, { type: "ai", text: "Rexi gặp lỗi khi tự thao tác UI. Tôi đã dừng lại để tránh bấm sai." }]);
+            }
+        };
+
+        if (targetPath && targetPath !== location.pathname) {
+            navigate(targetPath);
+            window.setTimeout(run, 1900);
+        } else {
+            window.setTimeout(run, 400);
+        }
+        return true;
+    };
+
     const createStandardGreeting = () => ({
         type: "ai",
         text: isClinicStaff
@@ -881,6 +1434,7 @@ export const ChatBot: React.FC = () => {
                     const timeSelected = document.querySelector("button[style*='background-color: var(--primary-light)'], button[style*='background: var(--primary-light)']");
                     
                     if (!serviceEl || !dateEl?.value || !timeSelected) {
+                        toast.info("Rexi thấy đơn đặt lịch khám còn thiếu thông tin. Tôi có thể kiểm tra và hỗ trợ điền phần còn thiếu.");
                         setProactiveMessage({
                             id: "booking-error-helper",
                             text: "🐾 Sếp ơi! Rexi thấy đơn đặt lịch khám còn thiếu thông tin (chưa chọn dịch vụ, ngày khám hoặc khung giờ). Sếp có muốn em tự động kiểm tra và lái tự động chọn nốt khung giờ trống giúp sếp không ạ? ✨",
@@ -1887,8 +2441,10 @@ export const ChatBot: React.FC = () => {
                                 
                                 // TỰ ĐỘNG GỬI & THỰC THI NGAY LẬP TỨC
                                 if (activeTabRef.current === 'standard') {
+                                    setMessages(prev => [...prev, { type: "ai", text: "Đã nhận yêu cầu giọng nói. Rexi đang phân tích và phản hồi ngay." }]);
                                     handleSend(resultText);
                                 } else {
+                                    setAgentMessages(prev => [...prev, { type: "ai", text: "Đã nhận yêu cầu giọng nói. Rexi Agent đang thực thi yêu cầu." }]);
                                     handleAgentSend(resultText);
                                 }
                             }
@@ -2008,6 +2564,35 @@ export const ChatBot: React.FC = () => {
         setSelectedFiles([]);
         setLoading(true);
 
+        const normalizedUserIntent = normalizeSearchText(textToSend);
+        if (normalizedUserIntent.includes("hoa don") && hasExplicitNavigationIntent(textToSend)) {
+            const invoicePath = isClinicStaff ? "/quan-ly/hoa-don" : "/khach-hang/hoa-don-thanh-toan";
+            if (invoicePath.startsWith("/quan-ly/") && !canAccessAdminPath(normalizedRoleCode, invoicePath)) {
+                const deniedReply = "Dạ sếp ơi! Phân hệ hóa đơn là khu vực được bảo mật cao, tài khoản hiện tại chưa đủ quyền truy cập nhé.";
+                setMessages(prev => [...prev, { type: "ai", text: deniedReply }]);
+                speakText(deniedReply);
+                setLoading(false);
+                return;
+            }
+
+            const invoiceNavReply = "Dạ, Rexi mở trang hóa đơn cho Sen ngay.";
+            setMessages(prev => [...prev, { type: "ai", text: invoiceNavReply }]);
+            speakText(invoiceNavReply);
+            setLoading(false);
+            window.setTimeout(() => navigate(invoicePath), 300);
+            return;
+        }
+
+        if (normalizedUserIntent.includes("hoa don")
+            && isConceptualQuestion(textToSend)
+            && !hasExplicitNavigationIntent(textToSend)) {
+            const invoiceReply = "hóa đơn cần kiểm tra các điểm chính: trạng thái thanh toán, tổng tiền cuối, giảm giá hoặc phụ phí nếu có, phương thức thanh toán và mã giao dịch. Rexi chỉ giải thích tại chỗ, không tự điều hướng khi Sen chỉ hỏi thông tin.";
+            setMessages(prev => [...prev, { type: "ai", text: invoiceReply }]);
+            speakText(invoiceReply);
+            setLoading(false);
+            return;
+        }
+
         // Đọc to câu vừa gửi
         if (isVoiceEnabled) {
             speakText("Đang phân tích tin nhắn của bạn.");
@@ -2045,6 +2630,7 @@ export const ChatBot: React.FC = () => {
             if (isMarketingCampaign) {
                 response = await axiosInstance.post("/api/agent/swarm-orchestration", { query: textToSend });
             } else {
+                (window as any).__REXI_LAST_CHAT_PAYLOAD__ = apiHistory;
                 response = await axiosInstance.post("/api/chat", apiHistory, {
                     headers: { 
                         "X-User-Name": userName,
@@ -2241,6 +2827,10 @@ export const ChatBot: React.FC = () => {
         setAgentMessages(prev => [...prev, newMsg]);
         setAgentInput("");
         setAgentLoading(true);
+        const currentFiles = [...selectedFiles];
+        const agentImages = currentFiles.filter(f => f.type === 'image').map(f => f.data);
+        const agentVideos = currentFiles.filter(f => f.type === 'video').map(f => f.data);
+        setSelectedFiles([]);
 
         try {
             // LẬP TRÌNH DỮ LIỆU ĐỘNG (DỄ DÀNG KÉO TÌM KIẾM MẠNG HOẶC ĐIỀN FORM TỰ ĐỘNG)
@@ -2268,6 +2858,44 @@ export const ChatBot: React.FC = () => {
                 };
                 setAgentMessages(prev => [...prev, aiReply]);
                 speakText(aiReply.text);
+                setAgentLoading(false);
+                return;
+            }
+
+            if (runSafetyAndDomainGuards(textToSend)) {
+                return;
+            }
+
+            if (runPetAutopilot(textToSend)) {
+                return;
+            }
+
+            if (runBookingAutopilotGuard(textToSend)) {
+                return;
+            }
+
+            if (agentImages.length > 0 || agentVideos.length > 0) {
+                const response = await axiosInstance.post("/api/chat", [
+                    {
+                        role: "user",
+                        content: textToSend,
+                        ...(agentImages.length > 0 && { images: agentImages }),
+                        ...(agentVideos.length > 0 && { videos: agentVideos })
+                    }
+                ], {
+                    headers: {
+                        "X-User-Name": userName,
+                        "X-Current-Path": toSafeContextHeader(location.pathname, 500),
+                        "X-Current-DOM-Context": toSafeContextHeader(getPageDomContext())
+                    }
+                });
+                const mediaReply = response.data.reply || "Đã nhận media để phân tích.";
+                setAgentMessages(prev => [...prev, {
+                    type: "ai",
+                    text: mediaReply,
+                    isEmergency: detectEmergencyKeywords(mediaReply)
+                }]);
+                speakText(mediaReply);
                 setAgentLoading(false);
                 return;
             }
@@ -2649,7 +3277,7 @@ export const ChatBot: React.FC = () => {
                     roles: ADMIN_ROUTE_ROLES["/quan-ly/nhan-vien-phan-quyen"]
                 },
                 {
-                    keywords: ["cấu hình", "cài đặt hệ thống", "cài đặt"],
+                    keywords: ["cấu hình", "cài đặt hệ thống", "cài đặt", "api", "api key", "kiểm tra api", "test api", "ai provider", "model ai", "gemini", "groq", "openrouter", "deepseek"],
                     path: "/quan-ly/cau-hinh",
                     label: "Cấu hình hệ thống",
                     roles: ADMIN_ROUTE_ROLES["/quan-ly/cau-hinh"]
@@ -2681,11 +3309,16 @@ export const ChatBot: React.FC = () => {
             ];
 
             // Tìm kiếm khớp quy tắc điền hướng
-            const matchedRule = hasExplicitNavigationIntent(textToSend) && !isQuestionIntent
+            const matchedRule = (hasExplicitNavigationIntent(textToSend) || shouldUseDirectToolRule) && !isQuestionIntent
                 ? navigationRules.find(rule => 
                     rule.keywords.some(kw => query.includes(kw))
                 )
                 : undefined;
+
+            if (shouldUseDirectToolRule && isGenericPageActionIntent(textToSend)) {
+                if (matchedRule && runGenericPageAutopilot(textToSend, matchedRule.path, matchedRule.label, matchedRule.roles)) return;
+                if (!matchedRule && runGenericPageAutopilot(textToSend)) return;
+            }
 
             if (matchedRule) {
                 setTimeout(() => {
@@ -4302,8 +4935,8 @@ export const ChatBot: React.FC = () => {
                         <div style={{
                             padding: '16px 20px', background: 'var(--surface)', borderTop: '1px solid var(--gray-200)', display: 'flex', alignItems: 'flex-end', gap: '12px'
                         }}>
-                            {/* Nút File Đính kèm (Chỉ cho Tab 1) */}
-                            {activeTab === 'standard' && (
+                            {/* Nút File Đính kèm cho cả Chat thường và Agent media */}
+                            {(activeTab === 'standard' || activeTab === 'agent') && (
                                 <>
                                     <input data-ai-id="input-chatbot-jmt6"
                                         type="file"

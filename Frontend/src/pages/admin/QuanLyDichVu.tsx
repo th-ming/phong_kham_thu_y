@@ -4,7 +4,7 @@ import { formatTienVND, getUserProfile, matchesSearchFields, normalizeUserRole }
 import { toast } from "@components/Toast";
 
 interface DichVu {
-  id_dich_vu: number;
+  id_dich_vu: number | string;
   ten_dich_vu: string;
   mo_ta: string;
   gia: number;
@@ -15,7 +15,7 @@ interface DichVu {
 const QuanLyDichVu: React.FC = () => {
   const [dichVus, setDichVus] = useState<DichVu[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<number | string | null>(null);
   const [formData, setFormData] = useState<Partial<DichVu>>({});
   const [isSaving, setIsSaving] = useState(false);
   const [searchDichVu, setSearchDichVu] = useState("");
@@ -41,7 +41,8 @@ const QuanLyDichVu: React.FC = () => {
   const fetchDichVus = async () => {
     try {
       const res = await axiosInstance.get("/api/dich-vu");
-      setDichVus(res.data);
+      const rows = Array.isArray(res.data) ? res.data.filter((dv: DichVu) => dv.trang_thai !== false) : [];
+      setDichVus(rows);
     } catch (err) {
       console.error("Lỗi lấy danh sách dịch vụ:", err);
       toast.error("Không thể tải danh sách dịch vụ!");
@@ -94,10 +95,11 @@ const QuanLyDichVu: React.FC = () => {
     finally { setIsSaving(false); }
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: number | string) => {
     if (window.confirm("Bạn có chắc chắn muốn xóa dịch vụ này?")) {
       try {
         await axiosInstance.delete(`/api/dich-vu/${id}`);
+        setDichVus(prev => prev.filter(dv => String(dv.id_dich_vu) !== String(id)));
         toast.success("Đã xóa dịch vụ!");
         fetchDichVus();
       } catch (err: any) {
@@ -164,7 +166,7 @@ const QuanLyDichVu: React.FC = () => {
           </div>
           <div style={{ display: 'grid', gap: '8px', marginBottom: '32px' }}>
             <label style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gray-400)' }}>MÔ TẢ CHI TIẾT</label>
-            <textarea className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left', cursor: 'text', minHeight: '100px', lineHeight: '1.5', padding: '16px' }} value={formData.mo_ta} onChange={e => setFormData({ ...formData, mo_ta: e.target.value })} />
+            <textarea data-ai-id="textarea-quanlydichvu-mota" className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left', cursor: 'text', minHeight: '100px', lineHeight: '1.5', padding: '16px' }} value={formData.mo_ta} onChange={e => setFormData({ ...formData, mo_ta: e.target.value })} />
           </div>
           <div style={{ display: 'flex', gap: '12px' }}>
             <button data-ai-id="button-quanlydichvu-zqdb" className="btn btn-primary btn-pill" style={{ padding: '12px 40px' }} onClick={editingId ? handleSave : handleAdd} disabled={isSaving}>

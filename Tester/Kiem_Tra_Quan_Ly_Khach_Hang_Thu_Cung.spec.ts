@@ -26,12 +26,14 @@ test.describe('Kiểm thử chức năng: Quản lý Khách hàng & Thú cưng',
         // 3. Nhập dữ liệu khách hàng mới
         const ts = Date.now();
         const tenKhachHang = `Khách Hàng Kiểm Thử ${ts}`;
-        await page.locator('input').nth(0).fill(tenKhachHang); // Tên
-        await page.locator('input').nth(1).fill(`09${ts.toString().slice(-8)}`); // SĐT ngẫu nhiên
-        await page.locator('input').nth(2).fill(`tester_${ts}@rexi.com`); // Email
+        await page.locator('[data-ai-id="input-quanlykhachhangthucung-3mat"]').fill(tenKhachHang); // Tên
+        await page.locator('[data-ai-id="input-quanlykhachhangthucung-3m6n"]').fill(`09${ts.toString().slice(-8)}`); // SĐT ngẫu nhiên
+        await page.locator('[data-ai-id="input-quanlykhachhangthucung-j4ng"]').fill(`tester_${ts}@rexi.com`); // Email
 
         // 4. Lưu thông tin
-        await page.getByRole('button', { name: 'Lưu thông tin' }).click();
+        const registerResponse = page.waitForResponse(res => res.url().includes('/api/auth/register-simple'), { timeout: 15000 });
+        await page.locator('[data-ai-id="button-quanlykhachhangthucung-30dl"]').click({ force: true });
+        await expect((await registerResponse).ok()).toBeTruthy();
 
         // 5. Xác nhận hiển thị thông báo thành công
         await expect(page.getByText('Thêm khách hàng thành công!')).toBeVisible({ timeout: 10000 });
@@ -48,13 +50,13 @@ test.describe('Kiểm thử chức năng: Quản lý Khách hàng & Thú cưng',
         // 3. Điền thông tin bé thú cưng
         const ts = Date.now();
         // Chọn chủ nuôi đầu tiên có sẵn trong dropdown
-        await page.locator('select').first().selectOption({ index: 1 });
-        await page.locator('input').nth(3).fill(`Cún Cưng VIP ${ts}`); // Tên bé
-        await page.locator('select').nth(1).selectOption('Chó');       // Loài
-        await page.locator('input').nth(4).fill('Corgi');              // Giống
-        await page.locator('input').nth(5).fill('8.5');                // Cân nặng
-        await page.locator('select').nth(2).selectOption('Đực');       // Giới tính
-        await page.locator('input').nth(7).fill('Vàng Trắng');          // Màu sắc
+        await page.locator('[data-ai-id="select-quanlykhachhangthucung-nqxg"]').selectOption({ index: 1 });
+        await page.locator('[data-ai-id="input-quanlykhachhangthucung-ub0z"]').fill(`Cún Cưng VIP ${ts}`); // Tên bé
+        await page.locator('[data-ai-id="select-quanlykhachhangthucung-36r6"]').selectOption('Chó');       // Loài
+        await page.locator('[data-ai-id="input-quanlykhachhangthucung-y0af"]').fill('Corgi');              // Giống
+        await page.locator('[data-ai-id="input-quanlykhachhangthucung-ccuw"]').fill('8.5');                // Cân nặng
+        await page.locator('[data-ai-id="select-quanlykhachhangthucung-1av9"]').selectOption('Đực');       // Giới tính
+        await page.locator('[data-ai-id="input-quanlykhachhangthucung-h9m1"]').fill('Vàng Trắng');          // Màu sắc
 
         // 4. Đăng ký bé
         await page.getByRole('button', { name: 'Đăng ký bé' }).click();

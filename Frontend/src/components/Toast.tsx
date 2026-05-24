@@ -41,7 +41,7 @@ export const ToastContainer: React.FC = () => {
                     border: '1px solid rgba(255, 255, 255, 0.2)',
                     display: 'flex', alignItems: 'center', gap: '16px',
                     minWidth: '320px',
-                    pointerEvents: 'auto',
+                    pointerEvents: 'none',
                     animation: 'toastSlideIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards, toastFadeOut 0.5s cubic-bezier(0.16, 1, 0.3, 1) 2.5s forwards'
                 }}>
                     <div style={{ background: 'rgba(255,255,255,0.2)', width: '40px', height: '40px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

@@ -16,8 +16,8 @@ test.describe('Kiểm thử chức năng Kế toán & Quản lý Hóa đơn', ()
 
     test('TC01: Kiểm tra giao diện Dashboard Kế toán & Biểu đồ doanh thu', async ({ page }) => {
         // 1. Đi tới trang Bảng điều khiển Kế toán
-        await page.goto(`${BASE_URL}/quan-ly/ketoan-dashboard`);
-        await expect(page.getByText('Bảng Điều Khiển Kế Toán')).toBeVisible();
+        await page.goto(`${BASE_URL}/quan-ly/ke-toan`);
+        await expect(page.getByRole('heading', { name: /Bảng Điều Khiển.*Kế Toán/i })).toBeVisible();
 
         // 2. Kiểm tra các thẻ thống kê tài chính
         await expect(page.getByText('DOANH THU HÔM NAY')).toBeVisible();
@@ -34,7 +34,7 @@ test.describe('Kiểm thử chức năng Kế toán & Quản lý Hóa đơn', ()
 
     test('TC02: Xem chi tiết hóa đơn và In hóa đơn', async ({ page }) => {
         // 1. Đi tới trang Kế toán
-        await page.goto(`${BASE_URL}/quan-ly/ketoan-dashboard`);
+        await page.goto(`${BASE_URL}/quan-ly/ke-toan`);
 
         // 2. Tìm hóa đơn đầu tiên trong danh sách và bấm Xem chi tiết
         const firstViewBtn = page.locator('button:has-text("Xem chi tiết")').first();
