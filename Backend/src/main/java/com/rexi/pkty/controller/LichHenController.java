@@ -66,7 +66,7 @@ public class LichHenController {
 
             if (username != null && !username.equals("anonymousUser")) {
                 taiKhoanRepository.findByTenDangNhap(username).ifPresent(tk -> {
-                    // Phân quyền đặt lịch: Nếu tài khoản là Khách hàng thì chỉ được đặt lịch cho chính mình thôi (khách A không được tạo lịch cho khách B)
+                    // Chỉ cho khách hàng đặt lịch của chính mình thui (khách A cấm đặt hộ hay dòm lịch khách B nha)
                     if (tk.getId_vai_tro() != null && "VT-5".equals(tk.getId_vai_tro())) { 
                         if (lichHen.getId_khach_hang() == null || lichHen.getId_khach_hang().isEmpty()) {
                             lichHen.setId_khach_hang(tk.getId_khach_hang());
@@ -208,7 +208,7 @@ public class LichHenController {
                         + " phút) với một khách hàng khác. Vui lòng chọn khung giờ rộng hơn nhé!");
             }
 
-            // Kiểm tra xem bé cưng (thú cưng) này đã có lịch hẹn nào trùng thời gian trong cùng ngày chưa để tránh đặt lịch chồng chéo
+            // Ktra xem bé cưng này có bị trùng lịch hẹn nào khác cùng giờ cùng ngày k để tránh chồng chéo
             boolean isPetConflict = false;
             if (lichHen.getId_thu_cung() != null && !lichHen.getId_thu_cung().isEmpty()) {
                 List<Map<String, Object>> existingPetApps = jdbcTemplate.queryForList(
@@ -386,7 +386,7 @@ public class LichHenController {
             return ResponseEntity.status(403).body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền truy cập danh sách lịch hẹn tổng quát!"));
         }
 
-        // Tự động xây dựng câu lệnh SQL lọc dữ liệu dựa trên trạng thái (status) hoặc từ khóa tìm kiếm (search) do người dùng chọn
+        // Tự xây câu SQL lọc dữ liệu theo trạng thái (status) hoặc thanh tìm kiếm (search) sếp chọn
         StringBuilder where = new StringBuilder("WHERE 1=1");
         java.util.List<Object> params = new java.util.ArrayList<>();
         if (status != null && !status.isEmpty()) {
@@ -410,7 +410,7 @@ public class LichHenController {
                 "LEFT JOIN NhanVien nv ON lh.id_bac_si = nv.id_nhan_vien " +
                 "LEFT JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu ";
 
-        // Thực hiện phân trang nếu Frontend truyền lên tham số page và size (giúp tải trang nhanh hơn đối với danh sách lớn)
+        // Phân trang nếu frontend truyền page/size để load danh sách nhanh hơn sếp nha
         if (page != null && size != null && size > 0) {
             try {
                 Integer total = jdbcTemplate.queryForObject(
@@ -443,7 +443,7 @@ public class LichHenController {
             }
         }
 
-        // Nếu Frontend không gửi tham số phân trang, lấy toàn bộ danh sách lịch hẹn để tương thích với code cũ
+        // Nếu k có page/size thì lấy hết danh sách ra luôn cho tương thích code cũ
         String sql = baseSelect + where + " ORDER BY lh.ngay_kham DESC, lh.gio_kham DESC";
         java.util.List<Map<String, Object>> all = jdbcTemplate.queryForList(sql, params.toArray());
         return ResponseEntity.ok(all);
@@ -650,7 +650,7 @@ public class LichHenController {
                 }
             }
 
-            // Kiểm tra xem lịch hẹn này đã liên kết với hóa đơn hay bệnh án nào chưa, nếu có rồi thì tuyệt đối không được xóa để tránh mất dữ liệu
+            // Ktra xem lịch hẹn này có hóa đơn hay bệnh án chưa, có r thì cấm xóa kẻo mất dữ liệu đối soát
             int usageCount = 0;
             try {
                 usageCount += jdbcTemplate.queryForObject("SELECT COUNT(*) FROM HoSoBenhAn WHERE id_lich_hen = ?", Integer.class, id);
@@ -661,7 +661,7 @@ public class LichHenController {
                 return ResponseEntity.status(409).body(Map.of("message", "Không thể hủy lịch hẹn vì đã có Hóa đơn hoặc Hồ sơ Bệnh án liên kết. Nếu có sai sót, vui lòng liên hệ Quản lý để xử lý."));
             }
 
-            // Áp dụng xóa mềm: Chỉ cập nhật trạng thái lịch hẹn thành 'DA_HUY' chứ không xóa hoàn toàn khỏi DB để giữ lại dữ liệu đối soát
+            // Xóa mềm nè sếp: chỉ đổi trạng thái sang 'DA_HUY' chứ k xóa cứng khỏi DB để sếp còn đối soát
             lh.setTrang_thai("DA_HUY");
             lichHenRepository.save(lh);
 
