@@ -341,7 +341,7 @@ const BaoCaoThongKe: React.FC = () => {
 
   const handleExportExcel = () => {
     try {
-      // BẢO MẬT: Chống lỗi CSV Injection bằng cách khử các ký tự nhạy cảm ở đầu dữ liệu
+      // Khử các ký tự nhạy cảm ở đầu ô để tránh lỗi CSV Injection khi sếp xuất file
       const sanitizeCSV = (val: string) => {
         if (/^[=+\-@]/.test(val)) return `'${val}`;
         return val;

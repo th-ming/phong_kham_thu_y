@@ -606,7 +606,28 @@ const CauHinhHeThong: React.FC = () => {
                                         {securityState.alerts.map((alert) => (
                                             <div key={alert.id || `${alert.ip}-${alert.detectedAt}`} style={{ padding: '14px 16px', borderBottom: '1px solid var(--gray-100)', display: 'grid', gap: '6px' }}>
                                                 <div style={{ fontWeight: 900, color: 'var(--danger)' }}>{alert.attackType || 'Tấn công chưa phân loại'} - IP {alert.ip || 'không rõ'}</div>
+                                                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                                                    <span style={{ padding: '2px 8px', borderRadius: '999px', background: 'var(--danger-light)', color: 'var(--danger)', fontSize: '0.75rem', fontWeight: 900 }}>
+                                                        {alert.severity || 'HIGH'}
+                                                    </span>
+                                                    <span style={{ fontSize: '0.78rem', color: 'var(--gray-500)', fontWeight: 750 }}>{alert.analysisSource || 'Rexi Security'}</span>
+                                                </div>
                                                 <div style={{ fontSize: '0.84rem', color: 'var(--gray-600)', fontWeight: 650, wordBreak: 'break-word' }}>{alert.method} {alert.path}</div>
+                                                {alert.riskSummary && (
+                                                    <div style={{ fontSize: '0.84rem', color: 'var(--ink)', fontWeight: 700, lineHeight: 1.45 }}>{alert.riskSummary}</div>
+                                                )}
+                                                {Array.isArray(alert.recommendedActions) && alert.recommendedActions.length > 0 && (
+                                                    <div style={{ display: 'grid', gap: '4px', padding: '10px 12px', borderRadius: '10px', background: 'var(--gray-50)', border: '1px solid var(--gray-100)' }}>
+                                                        {alert.recommendedActions.slice(0, 3).map((item: string, index: number) => (
+                                                            <div key={`${alert.id}-action-${index}`} style={{ fontSize: '0.8rem', color: 'var(--gray-600)', fontWeight: 650, lineHeight: 1.35 }}>
+                                                                {index + 1}. {item}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                                {alert.adminDecision && (
+                                                    <div style={{ fontSize: '0.8rem', color: 'var(--danger)', fontWeight: 850 }}>{alert.adminDecision}</div>
+                                                )}
                                                 <div style={{ fontSize: '0.8rem', color: 'var(--gray-500)', wordBreak: 'break-word' }}>{alert.locationHint || 'Không rõ vị trí'} • {alert.detectedAt ? chuyenNgayGioISO_SangVN(alert.detectedAt) : 'Không rõ thời gian'}</div>
                                             </div>
                                         ))}

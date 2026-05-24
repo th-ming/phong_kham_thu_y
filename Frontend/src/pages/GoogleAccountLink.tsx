@@ -40,7 +40,7 @@ const GoogleAccountLink: React.FC = () => {
     setError(null);
 
     try {
-      // BẢO MẬT CAO: Gửi kèm Token JWT được Google mã hóa
+      // Gửi Token JWT của Google để tạo tài khoản mới an toàn
       const token = window.sessionStorage.getItem("pending_google_token");
       const res = await axiosInstance.post("/api/auth/google-register", {
         token: token

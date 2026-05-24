@@ -263,6 +263,10 @@ public class EmailService {
                         "User-Agent: " + alert.getOrDefault("userAgent", "") + "\n" +
                         "Bằng chứng: " + alert.getOrDefault("evidence", "") + "\n" +
                         "Thời gian: " + alert.getOrDefault("detectedAt", "") + "\n\n" +
+                        "Mức độ: " + alert.getOrDefault("severity", "") + "\n" +
+                        "Phân tích: " + alert.getOrDefault("riskSummary", "") + "\n" +
+                        "Hướng xử lý: " + alert.getOrDefault("recommendedActions", "") + "\n" +
+                        "Quyết định đề xuất: " + alert.getOrDefault("adminDecision", "") + "\n\n" +
                         "IP này chỉ được gỡ chặn khi Admin xóa khỏi danh sách chặn trong hệ thống."
                 );
                 sender.send(message);

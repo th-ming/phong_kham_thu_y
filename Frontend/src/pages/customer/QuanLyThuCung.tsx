@@ -7,7 +7,7 @@ import { confirmAction } from "@components/ConfirmModal";
 
 const chuyenNgayISO_SangVN = (dateString: string) => {
   if (!dateString || typeof dateString !== 'string') return "—";
-  // BẢO MẬT GIAO DIỆN: Ép kiểu chuỗi thay vì dùng new Date() để chống lỗi nhảy lùi ngày do múi giờ
+  // Ép kiểu chuỗi thay vì dùng new Date() để tránh bị nhảy lùi 1 ngày do lệch múi giờ
   const parts = dateString.split('T')[0].split('-');
   if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
   return dateString;
