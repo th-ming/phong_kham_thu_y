@@ -243,7 +243,7 @@ public class AiToolService {
         if (tuKhoa == null || tuKhoa.trim().isEmpty()) return "Vui lòng cung cấp từ khóa tìm kiếm.";
         
         String sql = "SELECT tc.id_thu_cung, tc.ten_thu_cung, tc.loai, tc.giong, " +
-                     "tc.can_nang, tc.tuoi, kh.ten_khach_hang, kh.sdt " +
+                     "tc.trong_luong, tc.ngay_sinh, kh.ten_khach_hang, kh.sdt " +
                      "FROM ThuCung tc JOIN KhachHang kh ON tc.id_khach_hang = kh.id_khach_hang " +
                      "WHERE (tc.da_xoa = 0 OR tc.da_xoa IS NULL)";
         var allRows = jdbcTemplate.queryForList(sql);
@@ -275,7 +275,8 @@ public class AiToolService {
             sb.append("- ID: ").append(r.get("id_thu_cung"))
               .append(" | Tên: ").append(r.get("ten_thu_cung"))
               .append(" | Loài: ").append(r.get("loai")).append(" - ").append(r.get("giong"))
-              .append(" | ").append(r.get("can_nang")).append("kg, ").append(r.get("tuoi")).append(" tháng")
+              .append(" | ").append(r.get("trong_luong") != null ? r.get("trong_luong") : "chưa rõ").append("kg")
+              .append(" | Sinh: ").append(r.get("ngay_sinh") != null ? r.get("ngay_sinh") : "chưa rõ")
               .append(" | Chủ: ").append(r.get("ten_khach_hang")).append(" (").append(r.get("sdt")).append(")\n");
             count++;
         }
@@ -332,7 +333,11 @@ public class AiToolService {
     }
 
     private String toolXemKhoThuoc(String tuKhoa) {
-        String sql = "SELECT ten_thuoc, don_vi, so_luong_ton, gia_ban, han_su_dung FROM Thuoc WHERE (da_xoa = 0 OR da_xoa IS NULL)";
+        String sql = "SELECT t.ten_thuoc, t.don_vi, t.gia_ban, "
+                + "COALESCE(SUM(l.so_luong_ton), 0) AS so_luong_ton, MAX(l.han_su_dung) AS han_su_dung "
+                + "FROM Thuoc t LEFT JOIN LoThuoc l ON t.id_thuoc = l.id_thuoc "
+                + "WHERE (t.da_xoa = 0 OR t.da_xoa IS NULL) "
+                + "GROUP BY t.id_thuoc, t.ten_thuoc, t.don_vi, t.gia_ban";
         var allRows = jdbcTemplate.queryForList(sql);
         
         List<Map<String, Object>> matchedRows = new ArrayList<>();
@@ -385,8 +390,9 @@ public class AiToolService {
             default          -> "CAST(ngay_lap_hoa_don AS DATE) = CAST(GETDATE() AS DATE)"; // hom_nay
         };
         try {
-            String sql = "SELECT COUNT(*) AS so_hoa_don, SUM(tong_tien) AS tong_doanh_thu, " +
-                         "AVG(tong_tien) AS trung_binh FROM HoaDon WHERE " + dateFilter + " AND trang_thai = 'DA_THANH_TOAN'";
+            String sql = "SELECT COUNT(*) AS so_hoa_don, SUM(tong_tien_cuoi) AS tong_doanh_thu, " +
+                         "AVG(tong_tien_cuoi) AS trung_binh FROM HoaDon WHERE " + dateFilter +
+                         " AND (trang_thai = 'DA_THANH_TOAN' OR trang_thai_thanh_toan = 'DA_THANH_TOAN')";
             var row = jdbcTemplate.queryForMap(sql);
             return String.format("Thống kê %s: %s hóa đơn | Doanh thu: %s VNĐ | TB/hóa đơn: %s VNĐ",
                 khoang.replace("_", " "), row.get("so_hoa_don"), row.get("tong_doanh_thu"), row.get("trung_binh"));
