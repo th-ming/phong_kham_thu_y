@@ -50,7 +50,7 @@ const PhanGioiThieu: React.FC = () => {
     return (
         <RevealSection>
             <section id="home" className="hero-section" ref={heroRef} style={{
-                padding: "90px 0 80px",
+                padding: "72px 0 62px",
                 position: "relative",
                 overflow: "hidden",
                 background: "var(--background)",
@@ -264,8 +264,8 @@ const PhanGioiThieu: React.FC = () => {
                                         playbackRate={0.6} 
                                         isDark={isDark} 
                                         style={{
-                                            width: '180%', height: '180%', objectFit: 'contain',
-                                            position: 'absolute', bottom: '-8%', left: '50%', transform: 'translateX(-50%)',
+                                            width: '170%', height: '170%', objectFit: 'contain',
+                                            position: 'absolute', bottom: '-3%', left: '50%', transform: 'translateX(-50%)',
                                             objectPosition: 'center',
                                             filter: 'contrast(1.1) saturate(1.05)'
                                         }} 
@@ -281,8 +281,8 @@ const PhanGioiThieu: React.FC = () => {
                                         playbackRate={0.6} 
                                         isDark={isDark} 
                                         style={{
-                                            width: '180%', height: '180%', objectFit: 'contain',
-                                            position: 'absolute', bottom: '-8%', left: '50%', transform: 'translateX(-50%)',
+                                            width: '170%', height: '170%', objectFit: 'contain',
+                                            position: 'absolute', bottom: '-3%', left: '50%', transform: 'translateX(-50%)',
                                             objectPosition: 'center',
                                             filter: 'contrast(1.1) saturate(1.05)'
                                         }} 

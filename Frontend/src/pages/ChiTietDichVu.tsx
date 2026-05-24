@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { MemeCat, ScrollToTop } from "@components/SpecialEffects";
 import axiosInstance from "@services/axios";
 import { formatTienVND, generateSlug, getUserProfile, normalizeUserRole } from "@utils/index";
 import { toast } from "@components/Toast";
+import { useAutoRefresh } from "@hooks/useAutoRefresh";
 
 interface ServiceData {
   id_dich_vu: number;
@@ -32,27 +33,25 @@ const ChiTietDichVu: React.FC = () => {
     navigate('/khach-hang/dat-lich-hen');
   };
 
-  useEffect(() => {
+  const fetchService = useCallback(async () => {
+    try {
+      const response = await axiosInstance.get('/api/dich-vu');
+      const data: any[] = response.data || [];
 
-    const fetchService = async () => {
-      try {
-        const response = await axiosInstance.get('/api/dich-vu');
-        const data: any[] = response.data || [];
-
-        const found = data.find(s =>
-          String(s.id_dich_vu) === slug ||
-          generateSlug(s.ten_dich_vu) === slug
-        );
-        setService(found || null);
-      } catch (error) {
-        console.error("Lỗi lấy chi tiết dịch vụ:", error);
-        setService(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchService();
+      const found = data.find(s =>
+        String(s.id_dich_vu) === slug ||
+        generateSlug(s.ten_dich_vu) === slug
+      );
+      setService(found || null);
+    } catch (error) {
+      console.error("Lỗi lấy chi tiết dịch vụ:", error);
+      setService(null);
+    } finally {
+      setLoading(false);
+    }
   }, [slug]);
+
+  useAutoRefresh(fetchService);
 
   // Dữ liệu hình ảnh và icon dự phòng để trang web luôn đẹp
   const getServiceAssets = (name: string) => {

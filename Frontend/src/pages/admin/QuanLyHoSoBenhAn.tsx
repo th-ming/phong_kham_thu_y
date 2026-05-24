@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import axiosInstance from "@services/axios";
 import { matchesSearchFields } from "@utils/index";
+import { useAutoRefresh } from "@hooks/useAutoRefresh";
 
 const chuyenNgayISO_SangVN = (dateString: string) => {
   if (!dateString) return "—";
@@ -24,7 +25,7 @@ const QuanLyHoSoBenhAn: React.FC = () => {
   const ITEMS_PER_PAGE = 10;
 
   const fetchData = () => {
-    setLoading(true);
+    if (hoSos.length === 0) setLoading(true);
     axiosInstance.get("/api/ho-so-benh-an", {
       params: { page: currentPage - 1, size: ITEMS_PER_PAGE, search: searchHoSo.trim() || undefined }
     })
@@ -48,6 +49,8 @@ const QuanLyHoSoBenhAn: React.FC = () => {
   useEffect(() => {
     fetchData();
   }, [currentPage, searchHoSo]);
+
+  useAutoRefresh(fetchData, { runImmediately: false });
 
   useEffect(() => {
     setCurrentPage(1);

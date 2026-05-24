@@ -3,6 +3,7 @@ import axiosInstance from '@services/axios';
 import { toast } from '@components/Toast';
 import { RevealSection } from '@components/SpecialEffects';
 import { getUserProfile, includesSearch, normalizeSearchText, normalizeUserRole } from '@utils/index';
+import { useAutoRefresh } from '@hooks/useAutoRefresh';
 
 const HOURS = Array.from({ length: 13 }).map((_, i) => i + 8); // 8:00 đến 20:00
 const DAYS = [
@@ -87,6 +88,11 @@ const QuanLyLichLamViec: React.FC = () => {
             toast.error("Lỗi tải dữ liệu lịch trực");
         }
     };
+
+    useAutoRefresh(() => {
+        if (showAddModal || selectedSlot || draggedShift || isCopying) return;
+        return fetchData();
+    }, { runImmediately: false });
 
     // Tính toán ngày trong tuần dựa trên weekOffset
     const weekDates = useMemo(() => {

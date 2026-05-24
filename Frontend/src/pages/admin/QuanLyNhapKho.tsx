@@ -3,6 +3,7 @@ import axiosInstance from "@services/axios";
 import { Modal } from "@components/CommonUI";
 import { toast } from "@components/Toast";
 import { matchesSearchFields } from "@utils/index";
+import { useAutoRefresh } from "@hooks/useAutoRefresh";
 
 const chuyenNgayISO_SangVN = (dateString: string) => {
   if (!dateString) return "—";
@@ -28,7 +29,7 @@ const QuanLyNhapKho: React.FC = () => {
   });
 
   const fetchData = async () => {
-    setLoading(true);
+    if (loThuocs.length === 0) setLoading(true);
     try {
       const [loRes, thuocRes] = await Promise.all([
         axiosInstance.get("/api/kho/lo-thuoc"),
@@ -46,6 +47,8 @@ const QuanLyNhapKho: React.FC = () => {
   useEffect(() => {
     fetchData();
   }, []);
+
+  useAutoRefresh(fetchData, { runImmediately: false });
 
   const filteredLoThuocs = React.useMemo(() => {
     if (!searchLo.trim()) return loThuocs;

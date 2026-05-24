@@ -1,10 +1,11 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useCallback, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { MemeCat, ScrollToTop, RevealSection } from "@components/SpecialEffects";
 import axiosInstance from "@services/axios";
 import { formatTienVND, getUserProfile, normalizeUserRole } from "@utils/index";
 import { toast } from "@components/Toast";
 import { useTheme } from "../contexts/ThemeContextV2";
+import { useAutoRefresh } from "@hooks/useAutoRefresh";
 
 interface ServiceData {
     id_dich_vu: number | string;
@@ -50,33 +51,22 @@ const BangGiaDichVu: React.FC = () => {
         navigate('/khach-hang/dat-lich-hen');
     };
 
-    useEffect(() => {
-
-        const fetchServices = async (showLoading = true) => {
-            if (showLoading) setLoading(true);
-            try {
-                const response = await axiosInstance.get('/api/dich-vu/active');
-                const nextServices = Array.isArray(response.data) ? response.data : [];
-                setServices(nextServices);
-                setLoadError(false);
-            } catch (error) {
-                console.error("Lỗi lấy bảng giá:", error);
-                setLoadError(true);
-                setServices((current) => current.length > 0 ? current : FALLBACK_SERVICES);
-            } finally {
-                if (showLoading) setLoading(false);
-            }
-        };
-        
-        fetchServices(true);
-
-        // Smart Polling: Lấy dữ liệu ngầm mỗi 10 giây. Không load lại trang, không nháy màn hình, số tự nhảy cực kỳ êm ái!
-        const interval = setInterval(() => {
-            fetchServices(false);
-        }, 10000);
-
-        return () => clearInterval(interval);
+    const fetchServices = useCallback(async () => {
+        try {
+            const response = await axiosInstance.get('/api/dich-vu/active');
+            const nextServices = Array.isArray(response.data) ? response.data : [];
+            setServices(nextServices);
+            setLoadError(false);
+        } catch (error) {
+            console.error("Lỗi lấy bảng giá:", error);
+            setLoadError(true);
+            setServices((current) => current.length > 0 ? current : FALLBACK_SERVICES);
+        } finally {
+            setLoading(false);
+        }
     }, []);
+
+    useAutoRefresh(fetchServices);
 
     // Logic phân loại dịch vụ động
     const categorizedServices = useMemo(() => {

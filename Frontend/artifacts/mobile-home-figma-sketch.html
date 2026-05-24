@@ -1,0 +1,899 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Rexi Vet - Mobile Home Layout Sketch</title>
+  <style>
+    :root {
+      --teal: #0f9f94;
+      --teal-dark: #08766f;
+      --mint: #e7fbf8;
+      --ink: #12333f;
+      --muted: #6f8790;
+      --line: #dce9ec;
+      --card: #ffffff;
+      --amber: #ff9f1c;
+      --rose: #ff5a76;
+      --navy: #071625;
+      --bg: #f6fbfb;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 10% 8%, rgba(15, 159, 148, 0.10), transparent 28%),
+        linear-gradient(180deg, #edf8f8 0%, #ffffff 36%, #f3fbfb 100%);
+      color: var(--ink);
+      font-family: Inter, Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      padding: 28px 18px;
+    }
+
+    .frame {
+      width: 390px;
+      background: var(--bg);
+      border: 1px solid rgba(18, 51, 63, 0.12);
+      border-radius: 34px;
+      box-shadow: 0 26px 70px rgba(8, 43, 57, 0.18);
+      overflow: hidden;
+    }
+
+    .status {
+      height: 28px;
+      padding: 8px 22px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #23434e;
+      font-size: 11px;
+      font-weight: 800;
+      background: #fff;
+    }
+
+    .top-alert {
+      background: var(--teal);
+      color: #fff;
+      padding: 8px 16px;
+      display: grid;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .alert-row {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      min-width: 0;
+    }
+
+    .dot {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      background: rgba(255, 255, 255, 0.2);
+      font-size: 11px;
+    }
+
+    .nav {
+      height: 58px;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      min-width: 0;
+    }
+
+    .logo {
+      width: 34px;
+      height: 34px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      color: #fff;
+      background: linear-gradient(135deg, var(--teal), #31c7b8);
+      font-weight: 900;
+    }
+
+    .brand-text strong {
+      display: block;
+      font-size: 14px;
+      line-height: 1;
+    }
+
+    .brand-text span {
+      display: block;
+      font-size: 9px;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+
+    .hamburger {
+      width: 36px;
+      height: 36px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+      display: grid;
+      place-items: center;
+      gap: 3px;
+      padding: 9px;
+    }
+
+    .hamburger i {
+      display: block;
+      width: 17px;
+      height: 2px;
+      background: var(--ink);
+      border-radius: 99px;
+    }
+
+    .section {
+      padding: 24px 18px;
+    }
+
+    .hero {
+      background: #fff;
+      padding-top: 18px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      height: 24px;
+      padding: 0 10px;
+      border-radius: 999px;
+      color: var(--teal-dark);
+      background: var(--mint);
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+
+    h1, h2, h3, p { margin: 0; }
+
+    .hero h1 {
+      margin-top: 12px;
+      max-width: 310px;
+      font-size: 32px;
+      line-height: 1.04;
+      letter-spacing: 0;
+      font-family: Georgia, "Times New Roman", serif;
+    }
+
+    .hero h1 span { color: var(--teal); }
+
+    .hero p {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .hero-art {
+      margin-top: 18px;
+      min-height: 230px;
+      border-radius: 26px;
+      background:
+        radial-gradient(circle at 70% 18%, rgba(255, 159, 28, 0.25), transparent 24%),
+        linear-gradient(160deg, #efffff, #d8fbf5 54%, #fff);
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(15, 159, 148, 0.12);
+    }
+
+    .pet {
+      position: absolute;
+      left: 50%;
+      top: 44%;
+      transform: translate(-50%, -50%);
+      width: 138px;
+      height: 138px;
+      border-radius: 44% 48% 42% 46%;
+      background:
+        radial-gradient(circle at 42% 44%, #111 0 5px, transparent 6px),
+        radial-gradient(circle at 60% 44%, #111 0 5px, transparent 6px),
+        radial-gradient(circle at 51% 57%, #3b2420 0 6px, transparent 7px),
+        radial-gradient(circle at 50% 60%, #f5d7ce 0 20px, transparent 21px),
+        linear-gradient(180deg, #fff 0%, #f1e6d9 100%);
+      box-shadow: 0 20px 42px rgba(18, 51, 63, 0.18);
+    }
+
+    .pet::before,
+    .pet::after {
+      content: "";
+      position: absolute;
+      top: -7px;
+      width: 42px;
+      height: 48px;
+      border-radius: 18px 18px 8px 8px;
+      background: #f7eee2;
+      z-index: -1;
+    }
+
+    .pet::before { left: 11px; transform: rotate(-18deg); }
+    .pet::after { right: 11px; transform: rotate(18deg); }
+
+    .bubble {
+      position: absolute;
+      border-radius: 18px;
+      background: #fff;
+      border: 1px solid rgba(15, 159, 148, 0.16);
+      box-shadow: 0 12px 24px rgba(18, 51, 63, 0.10);
+      padding: 10px;
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--ink);
+    }
+
+    .bubble.left { left: 14px; bottom: 18px; width: 132px; }
+    .bubble.right { right: 14px; top: 18px; width: 118px; }
+
+    .cta-row {
+      margin-top: 16px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .btn {
+      height: 46px;
+      border-radius: 15px;
+      border: 0;
+      font-weight: 900;
+      font-size: 12px;
+    }
+
+    .btn.primary {
+      background: var(--teal);
+      color: #fff;
+      box-shadow: 0 10px 22px rgba(15, 159, 148, 0.25);
+    }
+
+    .btn.secondary {
+      background: #fff;
+      color: var(--ink);
+      border: 1px solid var(--line);
+    }
+
+    .quick-strip {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      padding: 12px 18px 20px;
+      background: #fff;
+    }
+
+    .quick-item {
+      min-height: 70px;
+      border-radius: 16px;
+      background: var(--mint);
+      padding: 10px 8px;
+      text-align: center;
+      color: var(--teal-dark);
+      font-size: 10px;
+      font-weight: 900;
+      display: grid;
+      place-items: center;
+      gap: 5px;
+    }
+
+    .quick-icon {
+      width: 26px;
+      height: 26px;
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      background: #fff;
+      color: var(--teal);
+      font-size: 14px;
+    }
+
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .section-head h2 {
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 22px;
+      line-height: 1.08;
+    }
+
+    .section-head small {
+      color: var(--teal);
+      font-size: 10px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .service-card {
+      border-radius: 24px;
+      padding: 18px;
+      background: linear-gradient(145deg, var(--teal), #13b8ab);
+      color: #fff;
+      min-height: 180px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .service-card::after {
+      content: "";
+      position: absolute;
+      right: -22px;
+      bottom: -28px;
+      width: 140px;
+      height: 140px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.13);
+    }
+
+    .service-card h3 {
+      font-size: 22px;
+      font-family: Georgia, "Times New Roman", serif;
+    }
+
+    .service-card p {
+      margin-top: 8px;
+      max-width: 230px;
+      font-size: 12px;
+      line-height: 1.5;
+      opacity: 0.92;
+    }
+
+    .service-card strong {
+      position: absolute;
+      left: 18px;
+      bottom: 18px;
+      font-size: 18px;
+    }
+
+    .service-list {
+      display: grid;
+      gap: 9px;
+      margin-top: 12px;
+    }
+
+    .list-row {
+      height: 52px;
+      border-radius: 16px;
+      background: #fff;
+      border: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 12px;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .list-row span {
+      width: 28px;
+      height: 28px;
+      border-radius: 10px;
+      background: var(--mint);
+      display: grid;
+      place-items: center;
+      color: var(--teal);
+      flex: 0 0 auto;
+    }
+
+    .stats {
+      background: var(--teal);
+      color: #fff;
+      text-align: center;
+      padding: 30px 18px;
+    }
+
+    .stats h2 {
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 24px;
+      line-height: 1.1;
+    }
+
+    .stats-grid {
+      margin-top: 18px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .stat-card {
+      min-height: 104px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      padding: 14px 10px;
+      display: grid;
+      align-content: center;
+      gap: 6px;
+    }
+
+    .stat-card strong {
+      font-size: 22px;
+    }
+
+    .stat-card span {
+      font-size: 11px;
+      opacity: 0.9;
+      font-weight: 700;
+    }
+
+    .steps {
+      display: grid;
+      gap: 10px;
+    }
+
+    .step {
+      display: grid;
+      grid-template-columns: 42px 1fr;
+      gap: 12px;
+      align-items: center;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 13px;
+    }
+
+    .step-number {
+      width: 42px;
+      height: 42px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      background: var(--mint);
+      color: var(--teal);
+      font-weight: 900;
+    }
+
+    .step strong {
+      display: block;
+      font-size: 13px;
+    }
+
+    .step span {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .doctor-stack {
+      display: grid;
+      gap: 12px;
+    }
+
+    .doctor-main {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      padding: 14px;
+      display: grid;
+      grid-template-columns: 96px 1fr;
+      gap: 13px;
+      align-items: center;
+    }
+
+    .avatar {
+      height: 116px;
+      border-radius: 19px;
+      background:
+        linear-gradient(180deg, rgba(15, 159, 148, 0.05), rgba(15, 159, 148, 0.16)),
+        linear-gradient(135deg, #d8e7e8, #fff);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .avatar::before {
+      content: "";
+      position: absolute;
+      left: 25px;
+      top: 22px;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: #c99772;
+      box-shadow: 0 42px 0 18px #e8f4f3;
+    }
+
+    .doctor-main h3 {
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 17px;
+    }
+
+    .doctor-main p {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    .mini-doctors {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 9px;
+    }
+
+    .mini-doctor {
+      min-height: 98px;
+      border-radius: 18px;
+      background: #fff;
+      border: 1px solid var(--line);
+      padding: 10px;
+      display: grid;
+      align-content: end;
+      font-size: 10px;
+      font-weight: 900;
+    }
+
+    .partner-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .partner,
+    .review,
+    .faq-row {
+      border-radius: 18px;
+      background: #fff;
+      border: 1px solid var(--line);
+    }
+
+    .partner {
+      min-height: 84px;
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .reviews {
+      display: grid;
+      grid-auto-flow: column;
+      grid-auto-columns: 78%;
+      gap: 12px;
+      overflow: hidden;
+    }
+
+    .review {
+      padding: 14px;
+      min-height: 126px;
+    }
+
+    .stars {
+      color: var(--amber);
+      font-size: 13px;
+      letter-spacing: 0;
+      margin-bottom: 8px;
+    }
+
+    .review p {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.48;
+    }
+
+    .faq {
+      display: grid;
+      gap: 9px;
+    }
+
+    .faq-row {
+      min-height: 52px;
+      padding: 0 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .cta {
+      background: linear-gradient(145deg, var(--teal), #17b8aa);
+      color: #fff;
+      text-align: center;
+      padding: 28px 18px;
+    }
+
+    .cta h2 {
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 25px;
+      line-height: 1.08;
+    }
+
+    .cta p {
+      margin: 9px auto 16px;
+      max-width: 300px;
+      font-size: 12px;
+      line-height: 1.5;
+      opacity: 0.88;
+    }
+
+    .cta .btn {
+      width: 100%;
+      background: var(--amber);
+      color: #fff;
+    }
+
+    .contact-card {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      padding: 16px;
+      display: grid;
+      gap: 13px;
+    }
+
+    .contact-row {
+      display: grid;
+      grid-template-columns: 34px 1fr;
+      gap: 10px;
+      align-items: center;
+      font-size: 12px;
+    }
+
+    .contact-row span:first-child {
+      width: 34px;
+      height: 34px;
+      border-radius: 12px;
+      background: var(--mint);
+      color: var(--teal);
+      display: grid;
+      place-items: center;
+    }
+
+    .contact-row strong {
+      display: block;
+      font-size: 12px;
+    }
+
+    .contact-row small {
+      display: block;
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .footer {
+      background: var(--navy);
+      color: #dce9ec;
+      padding: 24px 18px 30px;
+    }
+
+    .footer-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .footer p {
+      color: #8ca2aa;
+      font-size: 11px;
+      line-height: 1.55;
+    }
+
+    .footer-links {
+      margin-top: 18px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+      font-size: 11px;
+      color: #c8d6da;
+    }
+  </style>
+</head>
+<body>
+  <main class="frame">
+    <div class="status">
+      <span>9:41</span>
+      <span>5G 100%</span>
+    </div>
+
+    <div class="top-alert">
+      <div class="alert-row"><span class="dot">!</span><span>Đường dây cấp cứu 24/7: 0353.374.156</span></div>
+      <div class="alert-row"><span class="dot">*</span><span>Phục vụ không nghỉ lễ - ưu tiên ca khẩn cấp</span></div>
+    </div>
+
+    <nav class="nav">
+      <div class="brand">
+        <div class="logo">R</div>
+        <div class="brand-text">
+          <strong>Rexi Vet</strong>
+          <span>Sức khỏe trọn vẹn cho thú cưng</span>
+        </div>
+      </div>
+      <button class="hamburger" aria-label="Menu"><i></i><i></i><i></i></button>
+    </nav>
+
+    <section class="section hero">
+      <span class="eyebrow">Top care 10+ năm</span>
+      <h1>Sức Khỏe <span>Trọn Vẹn</span> Cho Chó</h1>
+      <p>Bản mobile nên ưu tiên hero ngắn, CTA rõ, hình thú cưng lớn nhưng không đẩy nút đặt lịch xuống quá sâu.</p>
+      <div class="hero-art">
+        <div class="bubble right">Tận tâm 24/7<br><small>đặt lịch ngay</small></div>
+        <div class="pet"></div>
+        <div class="bubble left">4.9/5 đánh giá<br><small>từ khách hàng</small></div>
+      </div>
+      <div class="cta-row">
+        <button class="btn primary">Đặt lịch ngay</button>
+        <button class="btn secondary">Xem dịch vụ</button>
+      </div>
+    </section>
+
+    <div class="quick-strip">
+      <div class="quick-item"><span class="quick-icon">+</span>Cấp cứu</div>
+      <div class="quick-item"><span class="quick-icon">$</span>Bảng giá</div>
+      <div class="quick-item"><span class="quick-icon">24</span>Tư vấn</div>
+    </div>
+
+    <section class="section">
+      <div class="section-head">
+        <div>
+          <small>Dịch vụ toàn diện</small>
+          <h2>Chăm Sóc Toàn Diện</h2>
+        </div>
+      </div>
+      <article class="service-card">
+        <h3>Phẫu thuật nhỏ</h3>
+        <p>Card dịch vụ nổi bật chiếm toàn chiều ngang để dễ quét trên mobile.</p>
+        <strong>1.500.000 đ</strong>
+      </article>
+      <div class="service-list">
+        <div class="list-row"><span>1</span>Phẫu thuật nhỏ</div>
+        <div class="list-row"><span>2</span>Chẩn đoán hình ảnh</div>
+        <div class="list-row"><span>3</span>Cấp cứu 24/7</div>
+        <div class="list-row"><span>4</span>Khám đa khoa</div>
+      </div>
+    </section>
+
+    <section class="stats">
+      <span class="eyebrow">Con số ấn tượng</span>
+      <h2>Hơn 10 Năm Đồng Hành</h2>
+      <div class="stats-grid">
+        <div class="stat-card"><strong>5,000+</strong><span>Thú cưng</span></div>
+        <div class="stat-card"><strong>10+</strong><span>Năm kinh nghiệm</span></div>
+        <div class="stat-card"><strong>15+</strong><span>Bác sĩ chuyên khoa</span></div>
+        <div class="stat-card"><strong>98%</strong><span>Khách hài lòng</span></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <div>
+          <small>Quy trình đặt lịch</small>
+          <h2>Chỉ 4 Bước Đơn Giản</h2>
+        </div>
+      </div>
+      <div class="steps">
+        <div class="step"><div class="step-number">01</div><div><strong>Tạo tài khoản</strong><span>Đăng ký nhanh bằng điện thoại hoặc email.</span></div></div>
+        <div class="step"><div class="step-number">02</div><div><strong>Chọn dịch vụ</strong><span>Lọc dịch vụ theo nhu cầu khám.</span></div></div>
+        <div class="step"><div class="step-number">03</div><div><strong>Đặt lịch hẹn</strong><span>Chọn bác sĩ, ngày và khung giờ.</span></div></div>
+        <div class="step"><div class="step-number">04</div><div><strong>Đi khám</strong><span>Theo dõi hồ sơ và hóa đơn sau khám.</span></div></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <div>
+          <small>Đội ngũ bác sĩ</small>
+          <h2>Chuyên Gia Tận Tâm</h2>
+        </div>
+      </div>
+      <div class="doctor-stack">
+        <article class="doctor-main">
+          <div class="avatar"></div>
+          <div>
+            <h3>BS. Minh Anh</h3>
+            <p>Card chính giới thiệu bác sĩ nổi bật. Các bác sĩ khác chuyển thành mini cards bên dưới.</p>
+          </div>
+        </article>
+        <div class="mini-doctors">
+          <div class="mini-doctor">BS. Khánh Linh</div>
+          <div class="mini-doctor">BS. Hoàng Nam</div>
+          <div class="mini-doctor">BS. Thu Thủy</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <div>
+          <small>Hệ sinh thái</small>
+          <h2>Đối Tác Uy Tín</h2>
+        </div>
+      </div>
+      <div class="partner-grid">
+        <div class="partner">Rexi Veterinary</div>
+        <div class="partner">PetCare Express</div>
+        <div class="partner">GreenVet Supply</div>
+        <div class="partner">CarePlus Pharmacy</div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <div>
+          <small>Khách hàng nói gì</small>
+          <h2>Tin Yêu Từ Mọi Nhà</h2>
+        </div>
+      </div>
+      <div class="reviews">
+        <article class="review"><div class="stars">★★★★★</div><p>Thiết kế mobile nên để review kéo ngang, tiết kiệm chiều cao hơn.</p></article>
+        <article class="review"><div class="stars">★★★★★</div><p>Giữ rating nổi bật và avatar nhỏ ở cuối card nếu có ảnh thật.</p></article>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <div>
+          <small>Hỏi đáp</small>
+          <h2>Câu Hỏi Thường Gặp</h2>
+        </div>
+      </div>
+      <div class="faq">
+        <div class="faq-row">Rexi có khám ngoài giờ không?<span>+</span></div>
+        <div class="faq-row">Có xét nghiệm tại chỗ không?<span>+</span></div>
+        <div class="faq-row">Có đặt lịch online không?<span>+</span></div>
+      </div>
+    </section>
+
+    <section class="cta">
+      <h2>Đặt Lịch Hẹn Cho Bé Ngay Hôm Nay!</h2>
+      <p>CTA mobile nên là một khối rõ ràng, nút lớn và đủ khoảng chạm.</p>
+      <button class="btn">Đặt lịch ngay</button>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <div>
+          <small>Liên hệ</small>
+          <h2>Kết Nối Với Rexi</h2>
+        </div>
+      </div>
+      <div class="contact-card">
+        <div class="contact-row"><span>@</span><div><strong>56E2, ngõ 19, đường Ngô Xuân Quảng</strong><small>Trâu Quỳ, Gia Lâm, Hà Nội</small></div></div>
+        <div class="contact-row"><span>☎</span><div><strong>0353.374.156</strong><small>Hỗ trợ khẩn cấp 24/7</small></div></div>
+        <div class="contact-row"><span>✉</span><div><strong>rexivet@gmail.com</strong><small>Phản hồi trong ngày</small></div></div>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <div class="footer-brand">
+        <div class="logo">R</div>
+        <strong>Rexi Vet</strong>
+      </div>
+      <p>Footer mobile gom thông tin quan trọng trước, link phụ thu gọn phía dưới.</p>
+      <div class="footer-links">
+        <span>Trang chủ</span>
+        <span>Dịch vụ</span>
+        <span>Bác sĩ</span>
+        <span>Liên hệ</span>
+      </div>
+    </footer>
+  </main>
+</body>
+</html>

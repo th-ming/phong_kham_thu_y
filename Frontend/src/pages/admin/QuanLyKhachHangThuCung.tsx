@@ -3,6 +3,7 @@ import axiosInstance from "@services/axios";
 import { Modal } from "@components/CommonUI";
 import { toast } from "@components/Toast";
 import { matchesSearchFields } from "@utils/index";
+import { useAutoRefresh } from "@hooks/useAutoRefresh";
 
 const QuanLyKhachHangThuCung: React.FC = () => {
   const [thuCung, setThuCung] = useState<any[]>([]);
@@ -104,6 +105,8 @@ const QuanLyKhachHangThuCung: React.FC = () => {
   useEffect(() => {
     fetchData();
   }, [currentPage, searchThuCung]);
+
+  useAutoRefresh(fetchData, { runImmediately: false });
 
   const handleAddCustomer = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import axiosInstance from "@services/axios";
 import { Skeleton } from "@components/CommonUI";
+import { useAutoRefresh } from "@hooks/useAutoRefresh";
 
 const ChiTietHoSoBenhAn: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -10,10 +11,10 @@ const ChiTietHoSoBenhAn: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [loadingConsult, setLoadingConsult] = useState(false);
 
-  useEffect(() => {
+  const fetchRecord = async () => {
     if (id) {
       // FIX N+1: Gọi đúng API lấy 1 bản ghi thay vì tải toàn bộ danh sách
-      axiosInstance.get(`/api/ho-so-benh-an/${id}`)
+      await axiosInstance.get(`/api/ho-so-benh-an/${id}`)
         .then(res => {
           setRecord(res.data);
           setLoading(false);
@@ -33,7 +34,13 @@ const ChiTietHoSoBenhAn: React.FC = () => {
     } else {
       setLoading(false);
     }
+  };
+
+  useEffect(() => {
+    fetchRecord();
   }, [id]);
+
+  useAutoRefresh(fetchRecord, { runImmediately: false });
 
   if (loading) {
     return (

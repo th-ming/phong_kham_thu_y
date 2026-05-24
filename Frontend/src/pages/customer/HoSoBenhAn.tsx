@@ -1,6 +1,7 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useCallback, useMemo, useRef, useState, useEffect } from "react";
 import axiosInstance from "@services/axios";
 import { getUserProfile, matchesSearchFields } from "@utils/index";
+import { useAutoRefresh } from "@hooks/useAutoRefresh";
 
 const chuyenNgayISO_SangVN = (dateString: string) => {
   if (!dateString) return "—";
@@ -23,6 +24,7 @@ const getCustomerId = (user: any) => user?.id_khach_hang ?? user?.idKhachHang ??
 const getPetId = (item: any) => item?.id_thu_cung ?? item?.idThuCung ?? item?.id;
 const getPetName = (item: any) => item?.ten_thu_cung ?? item?.tenThuCung ?? "—";
 const getMedicalRecordId = (item: any) => item?.id_ho_so ?? item?.idHoSo ?? item?.id;
+const isPetActive = (pet: any) => pet?.da_xoa !== true && pet?.daXoa !== true;
 
 const HoSoBenhAn: React.FC = () => {
   const [petFilter, setPetFilter] = useState("all");
@@ -35,12 +37,13 @@ const HoSoBenhAn: React.FC = () => {
   // State hỗ trợ Phân trang Server-side
   const [totalServerPages, setTotalServerPages] = useState(1);
   const [isServerPaginated, setIsServerPaginated] = useState(false);
+  const hasLoadedRef = useRef(false);
 
   // Phân trang
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 5;
 
-  useEffect(() => {
+  const fetchMedicalRecords = useCallback(async () => {
     const user = getUserProfile();
     if (!user) {
       setLoading(false);
@@ -52,8 +55,10 @@ const HoSoBenhAn: React.FC = () => {
       return;
     }
 
-    setLoading(true);
-    Promise.allSettled([
+    if (!hasLoadedRef.current) {
+      setLoading(true);
+    }
+    await Promise.allSettled([
       axiosInstance.get(`/api/ho-so-benh-an/khach/${id}`, {
         params: { page: currentPage - 1, size: ITEMS_PER_PAGE, search: debouncedSearch, petId: petFilter !== 'all' ? petFilter : undefined }
       }),
@@ -74,15 +79,23 @@ const HoSoBenhAn: React.FC = () => {
 
       // Xử lý danh sách thú cưng
       if (thuCungRes.status === 'fulfilled') {
-        setThuCungs(extractArray(thuCungRes.value.data));
+        setThuCungs(extractArray(thuCungRes.value.data).filter(isPetActive));
       }
 
+      hasLoadedRef.current = true;
       setLoading(false);
     }).catch(err => {
       console.error("Lỗi đồng bộ dữ liệu:", err);
+      hasLoadedRef.current = true;
       setLoading(false);
     });
   }, [currentPage, debouncedSearch, petFilter]);
+
+  useEffect(() => {
+    fetchMedicalRecords();
+  }, [fetchMedicalRecords]);
+
+  useAutoRefresh(fetchMedicalRecords, { runImmediately: false });
 
   // Hiệu ứng Debounce cho ô tìm kiếm
   useEffect(() => {

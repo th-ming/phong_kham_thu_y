@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import axiosInstance from "@services/axios";
 import { formatTienVND, getUserProfile, matchesSearchFields, normalizeUserRole } from "@utils/index";
 import { toast } from "@components/Toast";
+import { useAutoRefresh } from "@hooks/useAutoRefresh";
 
 interface DichVu {
   id_dich_vu: number | string;
@@ -50,6 +51,8 @@ const QuanLyDichVu: React.FC = () => {
       setLoading(false);
     }
   };
+
+  useAutoRefresh(fetchDichVus, { runImmediately: false });
 
   const handleEdit = (dichVu: DichVu) => {
     setEditingId(dichVu.id_dich_vu);

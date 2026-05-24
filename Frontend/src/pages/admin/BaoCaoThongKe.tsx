@@ -2,6 +2,7 @@
 import axiosInstance from "@services/axios";
 import { toast } from "@components/Toast";
 import { Modal } from "@components/CommonUI";
+import { useAutoRefresh } from "@hooks/useAutoRefresh";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -49,8 +50,7 @@ const BaoCaoThongKe: React.FC = () => {
   const [petDetails, setPetDetails] = useState<any[]>([]);
   const [loadingDetails, setLoadingDetails] = useState(false);
 
-  useEffect(() => {
-    const fetchData = async () => {
+  const fetchData = async () => {
       try {
         const [
           revRes,
@@ -102,9 +102,13 @@ const BaoCaoThongKe: React.FC = () => {
       } finally {
         setLoading(false);
       }
-    };
+  };
+
+  useEffect(() => {
     fetchData();
   }, []);
+
+  useAutoRefresh(fetchData, { runImmediately: false });
 
   const totalRevenue = useMemo(() => {
     const directTotal = financeSummary?.TongDoanhThu ?? financeSummary?.tongDoanhThu ?? financeSummary?.tong_doanh_thu;

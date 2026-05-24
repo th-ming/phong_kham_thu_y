@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import axiosInstance from "@services/axios";
 import { Modal, InfoRow } from "@components/CommonUI";
 import { matchesSearchFields } from "@utils/index";
+import { useAutoRefresh } from "@hooks/useAutoRefresh";
 
 const chuyenNgayISO_SangVN = (dateString: string) => {
   if (!dateString) return "—";
@@ -16,7 +17,7 @@ const QuanLyXetNghiem: React.FC = () => {
   const [viewingXN, setViewingXN] = useState<any>(null);
   const [searchXetNghiem, setSearchXetNghiem] = useState("");
 
-  useEffect(() => {
+  const fetchXetNghiems = () => {
     axiosInstance.get("/api/ho-so-benh-an/xet-nghiem")
       .then(res => {
         setXetNghiems(res.data);
@@ -26,7 +27,13 @@ const QuanLyXetNghiem: React.FC = () => {
         console.error("Lỗi lấy danh sách xét nghiệm:", err);
         setLoading(false);
       });
+  };
+
+  useEffect(() => {
+    fetchXetNghiems();
   }, []);
+
+  useAutoRefresh(fetchXetNghiems, { runImmediately: false });
 
   const filteredXetNghiems = React.useMemo(() => {
     if (!searchXetNghiem.trim()) return xetNghiems;

@@ -1,8 +1,9 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useCallback, useState, useMemo } from "react";
 import axiosInstance from "@services/axios";
 import { getUserProfile, matchesSearchFields } from "@utils/index";
 import ModalTaoLichHenAdmin from "./ModalTaoLichHenAdmin";
 import { toast } from "@components/Toast";
+import { useAutoRefresh } from "@hooks/useAutoRefresh";
 
 const TiepTanDashboard: React.FC = () => {
     const [appointments, setAppointments] = useState<any[]>([]);
@@ -13,12 +14,12 @@ const TiepTanDashboard: React.FC = () => {
     const [lastUpdated, setLastUpdated] = useState<string>("");
     const user = useMemo(() => getUserProfile() || {}, []);
 
-    const fetchData = (showLoading = true) => {
-        if (showLoading) {
+    const fetchData = useCallback(async (showLoading = true) => {
+        if (showLoading && appointments.length === 0) {
             setLoading(true);
         }
         const todayStr = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
-        Promise.all([
+        await Promise.all([
             axiosInstance.get(`/api/lich-hen?page=0&size=200`),
             axiosInstance.get('/api/hoa-don')
         ]).then(([appsRes, invoicesRes]) => {
@@ -50,17 +51,9 @@ const TiepTanDashboard: React.FC = () => {
         }).finally(() => {
             setLoading(false);
         });
-    };
+    }, [appointments.length]);
 
-    useEffect(() => {
-        fetchData();
-
-        const interval = setInterval(() => {
-            fetchData(false); // Làm mới ngầm, không hiện loading
-        }, 30000); // 30 giây
-
-        return () => clearInterval(interval); // Dọn dẹp interval khi rời khỏi trang
-    }, []);
+    useAutoRefresh(() => fetchData(false), { intervalMs: 10_000 });
 
     const filteredAppointments = useMemo(() => {
         if (!searchTerm.trim()) return appointments;

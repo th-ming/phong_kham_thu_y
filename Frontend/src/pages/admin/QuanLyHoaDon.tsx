@@ -5,6 +5,7 @@ import { Modal } from "@components/CommonUI";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { toast } from "@components/Toast";
+import { useAutoRefresh } from "@hooks/useAutoRefresh";
 
 const chuyenNgayISO_SangVN = (dateString: string) => {
   if (!dateString) return "—";
@@ -38,7 +39,7 @@ const QuanLyHoaDon: React.FC = () => {
 
 
   const fetchHoaDons = () => {
-    setLoading(true);
+    if (hoaDons.length === 0) setLoading(true);
     axiosInstance.get("/api/hoa-don")
       .then(res => {
         setHoaDons(res.data);
@@ -75,6 +76,8 @@ const QuanLyHoaDon: React.FC = () => {
       }
     }
   }, []);
+
+  useAutoRefresh(fetchHoaDons, { runImmediately: false });
 
   const handleConfirmPayment = async (id: number) => {
     if (!window.confirm(`Xác nhận đã nhận đủ tiền cho hóa đơn #HD-${id}?`)) return;

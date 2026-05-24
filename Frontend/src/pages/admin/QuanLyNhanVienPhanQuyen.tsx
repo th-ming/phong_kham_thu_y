@@ -4,6 +4,7 @@ import { Modal } from "@components/CommonUI";
 import { toast } from "@components/Toast";
 import { getUserProfile, matchesSearchFields, normalizeSearchText, normalizeUserRole } from "@utils/index";
 import { isValidPassword, PASSWORD_POLICY_MESSAGE } from "@utils/passwordPolicy";
+import { useAutoRefresh } from "@hooks/useAutoRefresh";
 
 const QuanLyNhanVienPhanQuyen: React.FC = () => {
   const [nhanViens, setNhanViens] = useState<any[]>([]);
@@ -45,7 +46,7 @@ const QuanLyNhanVienPhanQuyen: React.FC = () => {
   };
 
   const fetchNhanViens = () => {
-    setLoading(true);
+    if (nhanViens.length === 0) setLoading(true);
     axiosInstance.get("/api/nhan-vien", { params: { includeDeleted: isAdmin } })
       .then(res => {
         setNhanViens(res.data);
@@ -71,6 +72,12 @@ const QuanLyNhanVienPhanQuyen: React.FC = () => {
     fetchNhanViens();
     fetchAccounts();
   }, [isAdmin]);
+
+  useAutoRefresh(() => {
+    if (showModal || showAccountModal) return;
+    fetchNhanViens();
+    fetchAccounts();
+  }, { runImmediately: false });
 
   const handleOpenEdit = (nv: any) => {
     setEditingId(nv.id_nhan_vien);

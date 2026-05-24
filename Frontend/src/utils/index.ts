@@ -189,6 +189,22 @@ export const getUserProfile = () => {
   }
 };
 
+export const getCustomerIdFromProfile = (user: any): string | undefined => {
+  const candidates = [
+    user?.id_khach_hang,
+    user?.idKhachHang,
+    user?.khachHangId,
+    user?.customerId,
+    normalizeUserRole(user) === "khach_hang" ? user?.id : undefined,
+  ];
+
+  const id = candidates
+    .map(value => value === null || value === undefined ? "" : String(value).trim())
+    .find(value => value && value.toLowerCase() !== "null" && value.toLowerCase() !== "undefined");
+
+  return id;
+};
+
 /**
  * Tạo Slug chuẩn SEO từ tên dịch vụ
  * Loại bỏ dấu, ký tự đặc biệt và khoảng trắng

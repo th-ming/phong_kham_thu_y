@@ -1,8 +1,9 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useCallback, useMemo, useRef, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axiosInstance from "@services/axios";
 import { getUserProfile } from "@utils/index";
 import { toast } from "@components/Toast";
+import { useAutoRefresh } from "@hooks/useAutoRefresh";
 
 const chuyenNgayISO_SangVN = (dateString: string) => {
   if (!dateString) return "—";
@@ -30,6 +31,7 @@ const getAppointmentStatus = (item: any) => String(item?.trang_thai ?? item?.tra
 const getPetId = (item: any) => item?.id_thu_cung ?? item?.idThuCung;
 const getServiceId = (item: any) => item?.id_dich_vu ?? item?.idDichVu;
 const getDoctorId = (item: any) => item?.id_bac_si ?? item?.idBacSi;
+const isPetActive = (pet: any) => pet?.da_xoa !== true && pet?.daXoa !== true;
 const getPetName = (item: any, thuCungs: any[]) => {
   const petId = getPetId(item);
   const pet = thuCungs.find(p => String(p.id_thu_cung ?? p.idThuCung ?? p.id) === String(petId));
@@ -151,9 +153,10 @@ const LichSuLichHen: React.FC = () => {
   const [serverError, setServerError] = useState<string | null>(null);
   const [totalServerPages, setTotalServerPages] = useState(1);
   const [isServerPaginated, setIsServerPaginated] = useState(false);
+  const hasLoadedRef = useRef(false);
   const ITEMS_PER_PAGE = 5;
 
-  const fetchLichHen = () => {
+  const fetchLichHen = useCallback(async () => {
     const user = getUserProfile();
     const id = getCustomerId(user);
     if (!id) {
@@ -161,9 +164,11 @@ const LichSuLichHen: React.FC = () => {
       setServerError("Không xác định được tài khoản khách hàng hiện tại. Vui lòng đăng nhập lại.");
       return;
     }
-    setLoading(true);
+    if (!hasLoadedRef.current) {
+      setLoading(true);
+    }
     setServerError(null);
-    Promise.allSettled([
+    await Promise.allSettled([
       axiosInstance.get(`/api/lich-hen/khach/${id}`, {
         params: { page: currentPage - 1, size: ITEMS_PER_PAGE, status: status !== 'all' ? status : undefined, petId: petId !== 'all' ? petId : undefined }
       }),
@@ -187,7 +192,8 @@ const LichSuLichHen: React.FC = () => {
 
       if (thuCungRes.status === 'fulfilled') {
           const petData = thuCungRes.value.data;
-          setThuCungs(petData?.content || petData?.data || petData?.result || petData || []);
+          const petList = petData?.content || petData?.data || petData?.result || petData || [];
+          setThuCungs(Array.isArray(petList) ? petList.filter(isPetActive) : []);
       } else {
         console.error("Lỗi lấy danh sách thú cưng:", thuCungRes.reason);
         failed = true;
@@ -197,13 +203,16 @@ const LichSuLichHen: React.FC = () => {
         setServerError("Rất tiếc! Hệ thống đang gặp chút sự cố khi tải dữ liệu. Sếp thử lại sau nhé! 🐾");
         toast.error("Lỗi kết nối máy chủ!");
       }
+      hasLoadedRef.current = true;
       setLoading(false);
     });
-  };
+  }, [currentPage, petId, status]);
 
   useEffect(() => {
     fetchLichHen();
-  }, [currentPage, status, petId]);
+  }, [fetchLichHen]);
+
+  useAutoRefresh(fetchLichHen, { runImmediately: false });
 
   const handleCancelAppointment = async (id: number | string) => {
     if (window.confirm("Sếp chắc chắn muốn hủy lịch hẹn này chứ? Bé cưng sẽ buồn lắm đấy... 😿")) {

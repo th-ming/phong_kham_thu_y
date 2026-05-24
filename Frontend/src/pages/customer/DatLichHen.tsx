@@ -1,8 +1,9 @@
-import React, { useMemo, useState, useEffect, useRef } from "react";
+import React, { useCallback, useMemo, useState, useEffect, useRef } from "react";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import axiosInstance from "@services/axios";
-import { formatTienVND, getUserProfile, normalizeUserRole } from "@utils/index";
+import { formatTienVND, getCustomerIdFromProfile, getUserProfile, normalizeUserRole } from "@utils/index";
 import { toast } from "@components/Toast";
+import { useAutoRefresh } from "@hooks/useAutoRefresh";
 
 const DatLichHen: React.FC = () => {
   const navigate = useNavigate();
@@ -31,7 +32,7 @@ const DatLichHen: React.FC = () => {
   const user = useMemo(() => getUserProfile(), []);
   const userRole = normalizeUserRole(user);
   const isCustomerUser = userRole === "khach_hang";
-  const idKhachHang = user?.id_khach_hang || (isCustomerUser ? user?.id : undefined);
+  const idKhachHang = getCustomerIdFromProfile(user);
 
   const bookingStateRef = useRef({
     idThuCung,
@@ -145,27 +146,22 @@ const DatLichHen: React.FC = () => {
 
   }, [pets, services]);
 
-  useEffect(() => {
-    const fetchBaseData = async () => {
-      if (idKhachHang) {
-          axiosInstance.get(`/api/thu-cung/khach/${idKhachHang}`, { params: { page: 0, size: 999 } }).then(res => {
-            const data = res.data;
-            const petList = Array.isArray(data) ? data : (data.content || data.data || []);
-            setPets(petList.filter((pet: any) => pet?.da_xoa !== true && pet?.daXoa !== true));
-          }).catch(e => console.error(e));
-      }
-      axiosInstance.get("/api/dich-vu/active").then(res => setServices(res.data)).catch(e => console.error(e));
-    };
+  const fetchBaseData = useCallback(async () => {
+    const requests: Promise<any>[] = [];
 
-    fetchBaseData();
+    if (idKhachHang) {
+      requests.push(axiosInstance.get(`/api/thu-cung/khach/${idKhachHang}`, { params: { page: 0, size: 999 } }).then(res => {
+        const data = res.data;
+        const petList = Array.isArray(data) ? data : (data.content || data.data || []);
+        setPets(petList.filter((pet: any) => pet?.da_xoa !== true && pet?.daXoa !== true));
+      }).catch(e => console.error(e)));
+    }
+    requests.push(axiosInstance.get("/api/dich-vu/active").then(res => setServices(res.data)).catch(e => console.error(e)));
 
-    // Smart Polling: Cập nhật ngầm mỗi 10 giây để nhận giá/dịch vụ/thú cưng mới
-    const interval = setInterval(() => {
-      fetchBaseData();
-    }, 10000);
-
-    return () => clearInterval(interval);
+    await Promise.allSettled(requests);
   }, [idKhachHang]);
+
+  useAutoRefresh(fetchBaseData);
 
   useEffect(() => {
     if (!date) {

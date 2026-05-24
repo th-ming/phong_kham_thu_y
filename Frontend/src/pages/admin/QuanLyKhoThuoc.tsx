@@ -5,6 +5,7 @@ import { getUserProfile, matchesSearchFields, normalizeUserRole } from "@utils/i
 import { Modal } from "@components/CommonUI";
 import { toast } from "@components/Toast";
 import thuocService from "@services/thuocService";
+import { useAutoRefresh } from "@hooks/useAutoRefresh";
 
 const chuyenNgayISO_SangVN = (dateString: string) => {
   if (!dateString) return "—";
@@ -31,7 +32,7 @@ const QuanLyKhoThuoc: React.FC = () => {
     da_xoa: false
   });
 
-  useEffect(() => {
+  const fetchData = () => {
     Promise.all([
       axiosInstance.get("/api/kho/thuoc"),
       axiosInstance.get("/api/kho/lo-thuoc")
@@ -45,7 +46,13 @@ const QuanLyKhoThuoc: React.FC = () => {
         console.error("Lỗi lấy dữ liệu kho thuốc:", err);
         setLoading(false);
       });
+  };
+
+  useEffect(() => {
+    fetchData();
   }, []);
+
+  useAutoRefresh(fetchData, { runImmediately: false });
 
   const user = getUserProfile();
   const userRole = normalizeUserRole(user);

@@ -3,6 +3,7 @@ import axiosInstance from "@services/axios";
 import { Modal } from "@components/CommonUI";
 import { toast } from "@components/Toast";
 import { matchesSearchFields } from "@utils/index";
+import { useAutoRefresh } from "@hooks/useAutoRefresh";
 
 interface FileDinhKem {
   id: number;
@@ -36,7 +37,7 @@ const QuanLyFileDinhKem: React.FC = () => {
   }, [files, searchQuery]);
 
   const fetchFiles = () => {
-    setLoading(true);
+    if (files.length === 0) setLoading(true);
     axiosInstance.get("/api/file-dinh-kem")
       .then(res => {
         setFiles(res.data);
@@ -51,6 +52,8 @@ const QuanLyFileDinhKem: React.FC = () => {
   useEffect(() => {
     fetchFiles();
   }, []);
+
+  useAutoRefresh(fetchFiles, { runImmediately: false });
 
   const handleOpenUploadModal = () => {
     setSelectedFile(null);
