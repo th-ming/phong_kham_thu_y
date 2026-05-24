@@ -19,7 +19,7 @@ const PublicLayout: React.FC = () => {
   return (
     <>
       <Header />
-      <main style={{ flex: 1 }}>
+      <main className="public-main" style={{ flex: 1 }}>
         <React.Suspense fallback={
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
             <div className="dot-pulse"></div>

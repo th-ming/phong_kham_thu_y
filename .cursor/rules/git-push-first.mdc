@@ -1,0 +1,29 @@
+---
+description: Luôn git push trước mọi lệnh git khác; hoàn tất hết yêu cầu trước khi dừng
+alwaysApply: true
+---
+
+# Git — luôn push trước
+
+## Quy tắc bắt buộc
+
+Trước khi chạy **bất kỳ** lệnh `git` nào khác (`status`, `pull`, `checkout`, `merge`, `branch`, `diff`, …):
+
+1. **`git push`** lên `origin` (branch hiện tại). Nếu branch chưa có upstream: `git push -u origin <branch>`.
+2. Chỉ khi push báo lỗi hoặc còn commit local chưa đẩy: xử lý (pull/rebase nếu cần) rồi **push lại** cho tới khi remote đồng bộ hoặc báo rõ blocker cho user.
+3. **Sau khi push xong** (hoặc `Everything up-to-date`), mới được chạy lệnh `git` tiếp theo.
+
+Remote dự án: `https://github.com/tranminh09818/phong_kham_thu_y.git`
+
+Máy user có wrapper **`[REX-AI-AUTO-PUSH]`** (tự push trước khi gọi git) — **không bypass**, giữ cùng thứ tự: push trước → rồi mới git khác.
+
+## Commit
+
+- **`git commit`** chỉ khi user **yêu cầu rõ** commit (quy tắc repo).
+- Push trước **không** có nghĩa tự ý commit mọi thay đổi; nếu cần commit để push được, hỏi user hoặc chỉ commit khi user đã yêu cầu lưu/push code.
+
+## Hoàn thành công việc — không dừng giữa chừng
+
+- Rà lại các yêu cầu trước trong hội thoại: đã làm xong chưa?
+- Chạy hết chuỗi bước liên quan (sửa code, build/test nếu cần, **push trước git**, rồi git khác) trước khi báo xong.
+- Lệnh bị interrupt hoặc Cursor bắt Run: **thử lại** hoặc nêu rõ còn thiếu gì — không kết thúc sớm.
