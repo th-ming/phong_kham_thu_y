@@ -2721,6 +2721,7 @@ export const ChatBot: React.FC = () => {
                                        normalizedText.includes("tìm chó bị");
 
             let response;
+            let streamedMessage = false;
             if (isMarketingCampaign) {
                 response = await axiosInstance.post("/api/agent/swarm-orchestration", { query: textToSend });
             } else {
@@ -2749,6 +2750,7 @@ export const ChatBot: React.FC = () => {
                 const reader = res.body?.getReader();
                 const decoder = new TextDecoder("utf-8");
                 let replyText = "";
+                let sseBuffer = "";
 
                 // Add an empty AI message first to hold the stream
                 setMessages(prev => {
@@ -2757,24 +2759,52 @@ export const ChatBot: React.FC = () => {
                     return newMessages;
                 });
                 setLoading(false);
+                streamedMessage = true;
+
+                const appendStreamText = (text: string) => {
+                    if (!text) return;
+                    replyText += text;
+                    setMessages(prev => {
+                        const newMessages = [...prev];
+                        if (newMessages.length > 0) {
+                            newMessages[newMessages.length - 1].text = replyText;
+                        }
+                        return newMessages;
+                    });
+                };
+
+                const flushSseEvents = (force = false) => {
+                    const parts = sseBuffer.split(/\r?\n\r?\n/);
+                    sseBuffer = force ? "" : (parts.pop() || "");
+                    const events = force ? parts.filter(Boolean).concat(sseBuffer ? [sseBuffer] : []) : parts;
+
+                    events.forEach(eventText => {
+                        const dataLines = eventText
+                            .split(/\r?\n/)
+                            .filter(line => line.startsWith("data:"))
+                            .map(line => line.replace(/^data:\s?/, ""));
+
+                        if (dataLines.length > 0) {
+                            const data = dataLines.join("\n");
+                            if (data !== "[DONE]") appendStreamText(data);
+                            return;
+                        }
+
+                        appendStreamText(eventText);
+                    });
+                };
 
                 if (reader) {
                     while (true) {
                         const { done, value } = await reader.read();
                         if (done) break;
-                        const chunk = decoder.decode(value, { stream: true });
-                        replyText += chunk;
-                        
-                        setMessages(prev => {
-                            const newMessages = [...prev];
-                            if (newMessages.length > 0) {
-                                newMessages[newMessages.length - 1].text = replyText;
-                            }
-                            return newMessages;
-                        });
+                        sseBuffer += decoder.decode(value, { stream: true });
+                        flushSseEvents();
                     }
+                    sseBuffer += decoder.decode();
+                    flushSseEvents(true);
                 }
-                
+                 
                 response = { data: { reply: replyText } };
             }
             const replyText = response.data.reply || "Tôi đang bận một chút, bạn thử lại sau nhé!";
@@ -2889,32 +2919,46 @@ export const ChatBot: React.FC = () => {
                 swarmData: swarmData
             };
 
-            // Thêm tin nhắn với text rỗng, sau đó stream từng ký tự (typewriter effect)
-            setMessages(prev => {
-                return [...prev, { ...aiResponseMsg, text: "" }];
-            });
+            if (streamedMessage) {
+                setMessages(prev => {
+                    const updated = [...prev];
+                    const last = updated[updated.length - 1];
+                    if (last && last.type === "ai") {
+                        updated[updated.length - 1] = aiResponseMsg;
+                    } else {
+                        updated.push(aiResponseMsg);
+                    }
+                    return updated;
+                });
+                speakText(cleanedReplyText);
+            } else {
+                // Thêm tin nhắn với text rỗng, sau đó stream từng ký tự (typewriter effect)
+                setMessages(prev => {
+                    return [...prev, { ...aiResponseMsg, text: "" }];
+                });
 
-            // Stream từng ký tự với tốc độ 6ms/ký tự — cảm giác như ChatGPT
-            let charIdx = 0;
-            const fullText = cleanedReplyText;
-            const streamInterval = setInterval(() => {
-                if (charIdx < fullText.length) {
-                    const chunk = fullText.slice(0, charIdx + 1);
-                    setMessages(prev => {
-                        const updated = [...prev];
-                        const last = updated[updated.length - 1];
-                        if (last && last.type === "ai") {
-                            updated[updated.length - 1] = { ...last, text: chunk };
-                        }
-                        return updated;
-                    });
-                    charIdx++;
-                } else {
-                    clearInterval(streamInterval);
-                                        // Đọc to sau khi stream xong
-                    speakText(cleanedReplyText);
-                }
-            }, 6);
+                // Stream từng ký tự với tốc độ 6ms/ký tự — cảm giác như ChatGPT
+                let charIdx = 0;
+                const fullText = cleanedReplyText;
+                const streamInterval = setInterval(() => {
+                    if (charIdx < fullText.length) {
+                        const chunk = fullText.slice(0, charIdx + 1);
+                        setMessages(prev => {
+                            const updated = [...prev];
+                            const last = updated[updated.length - 1];
+                            if (last && last.type === "ai") {
+                                updated[updated.length - 1] = { ...last, text: chunk };
+                            }
+                            return updated;
+                        });
+                        charIdx++;
+                    } else {
+                        clearInterval(streamInterval);
+                        // Đọc to sau khi stream xong
+                        speakText(cleanedReplyText);
+                    }
+                }, 6);
+            }
 
         } catch (err) {
             console.error("Chat API request failed:", err);
