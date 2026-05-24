@@ -38,6 +38,7 @@ const KeToanDashboard: React.FC = () => {
     const [chiTietHD, setChiTietHD] = useState<any[]>([]);
     const [loadingDetails, setLoadingDetails] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
+    const [lastUpdated, setLastUpdated] = useState<string>("");
     const ITEMS_PER_PAGE = 10;
 
     const fetchData = async () => {
@@ -49,6 +50,11 @@ const KeToanDashboard: React.FC = () => {
             ]);
             setInvoices(invRes.data || []);
             setRevenueData(revRes.data || []);
+            
+            // Cập nhật nhãn thời gian thực khi tải dữ liệu thành công
+            const now = new Date();
+            const formatTime = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+            setLastUpdated(formatTime);
         } catch (error) {
             console.error("Lỗi tải dữ liệu kế toán:", error);
             toast.error("Không thể tải dữ liệu hóa đơn!");
@@ -329,6 +335,12 @@ const KeToanDashboard: React.FC = () => {
                   <span style={{ filter: 'drop-shadow(0 5px 15px rgba(0,0,0,0.2))' }}>📊</span>
                 </h1>
                 <p style={{ fontWeight: 700, color: 'rgba(255,255,255,0.95)', position: 'relative', zIndex: 1, margin: 0, fontSize: '1.2rem', textShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>Theo dõi dòng tiền, hóa đơn và vận hành tài chính hôm nay.</p>
+                {lastUpdated && (
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', fontWeight: 800, background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)', padding: '6px 14px', borderRadius: '999px', marginTop: '14px', border: '1px solid rgba(255,255,255,0.2)', position: 'relative', zIndex: 1, boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: '15px', color: '#5eead4', animation: 'spin 3s infinite linear' }}>sync</span>
+                        <span>Dữ liệu thời gian thực cập nhật lúc: {lastUpdated}</span>
+                    </div>
+                )}
             </div>
 
             {/* Các thẻ thống kê */}

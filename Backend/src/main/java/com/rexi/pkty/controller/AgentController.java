@@ -30,6 +30,9 @@ public class AgentController {
     @Autowired
     private com.rexi.pkty.service.ReActAgentService reactAgentService;
 
+    @Autowired
+    private com.rexi.pkty.service.AiToolService aiToolService;
+
     private final com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
 
     /**
@@ -483,6 +486,56 @@ public class AgentController {
             return ResponseEntity.internalServerError().body(Map.of(
                 "success", false,
                 "error", e.getMessage()
+            ));
+        }
+    }
+
+    /**
+     * Fast path cho voice/agent: frontend đã phân loại chắc chắn thì gọi tool trực tiếp,
+     * không cần đi qua vòng LLM ReAct. Các tool đọc dữ liệu nội bộ vẫn yêu cầu tài khoản nhân sự.
+     */
+    @PostMapping("/tool")
+    public ResponseEntity<?> runDirectTool(@RequestBody Map<String, Object> body) {
+        String toolName = body.getOrDefault("tool", "").toString().trim();
+        if (toolName.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Tool không được để trống."));
+        }
+
+        org.springframework.security.core.Authentication auth =
+            org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        boolean authenticated = auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getName());
+        String userRole = "";
+        if (auth != null) {
+            userRole = auth.getAuthorities().stream()
+                .findFirst().map(g -> g.getAuthority().replace("ROLE_", "")).orElse("");
+        }
+        boolean isStaff = userRole != null && !userRole.isBlank()
+            && !userRole.equalsIgnoreCase("CUSTOMER")
+            && !userRole.equalsIgnoreCase("KHACH_HANG");
+
+        Set<String> customerSafeTools = Set.of("tim_lich_trong", "tim_kiem_web", "kiem_tra_phan_he");
+        if (!authenticated || (!isStaff && !customerSafeTools.contains(toolName))) {
+            return ResponseEntity.status(403).body(Map.of(
+                "error", "Tool này chỉ dành cho tài khoản nhân sự nội bộ."
+            ));
+        }
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> params = body.get("params") instanceof Map<?, ?>
+            ? new HashMap<>((Map<String, Object>) body.get("params"))
+            : new HashMap<>();
+
+        try {
+            String observation = aiToolService.executeTool(toolName, params);
+            return ResponseEntity.ok(Map.of(
+                "finalAnswer", observation,
+                "tool", toolName,
+                "params", params
+            ));
+        } catch (Exception e) {
+            logger.severe("[DIRECT TOOL] Lỗi: " + e.getMessage());
+            return ResponseEntity.internalServerError().body(Map.of(
+                "error", "Lỗi chạy tool trực tiếp: " + e.getMessage()
             ));
         }
     }

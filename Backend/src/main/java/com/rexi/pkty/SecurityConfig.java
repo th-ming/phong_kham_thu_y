@@ -45,6 +45,7 @@ public class SecurityConfig {
                     "/api/system/send-otp", "/api/system/verify-otp",
                     "/api/payment/**", "/api/lich-hen/gio-ranh",
                     "/api/lich-hen/khach-vang-lai", "/api/dich-vu/**", "/api/bac-si/**",
+                    "/ws/**",
                     "/public/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/api/test-doanh-thu"
                 ).permitAll()
                 .requestMatchers("/api/system/**").authenticated()

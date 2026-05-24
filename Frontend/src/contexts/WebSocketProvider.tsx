@@ -17,7 +17,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     useEffect(() => {
         // Khởi tạo STOMP client
         const client = new Client({
-            webSocketFactory: () => new SockJS('http://localhost:8081/ws'), // URL tới Spring Boot
+            webSocketFactory: () => new SockJS('/ws'),
             debug: () => {
                 // console.log(str);
             },

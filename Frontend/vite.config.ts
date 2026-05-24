@@ -7,7 +7,7 @@ export default defineConfig({
   plugins: [react(),     VitePWA({
       registerType: 'autoUpdate',
       devOptions: {
-        enabled: true
+        enabled: false
       },
       manifest: {
         name: 'Rexi Clinic',
@@ -57,6 +57,11 @@ export default defineConfig({
     },
     proxy: {
       '/api': {
+        target: 'http://localhost:8081',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/ws': {
         target: 'http://localhost:8081',
         changeOrigin: true,
         secure: false,
