@@ -40,16 +40,10 @@ const PhanDichVu: React.FC = () => {
                 const response = await axiosInstance.get('/api/dich-vu/active');
                 const data = response.data;
                 if (data && data.length > 0) {
-                    const filtered = data.filter((s: any) => s.trang_thai).map((s: any) => {
-                        let badge = s.badge;
-                        const lower = s.ten_dich_vu.toLowerCase();
-                        if (lower.includes("phẫu thuật") || lower.includes("mổ")) badge = "Mới";
-                        else if (lower.includes("khám đa khoa")) badge = "Phổ biến";
-                        else if (lower.includes("chẩn đoán hình ảnh")) badge = undefined;
-                        return { ...s, badge };
-                    });
+                    const filtered = data.filter((s: any) => s.trang_thai);
                     if (filtered.length > 0) {
                         setServices(filtered);
+                        setActiveIdx(0);
                     }
                 }
             } catch (error) {

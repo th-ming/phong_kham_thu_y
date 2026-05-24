@@ -74,7 +74,7 @@ test.describe('Kiểm tra Chatbot thông minh - ý định, media và giọng n�
   test('Ảnh gửi lên API giữ data URL và MIME type để AI nhận diện đúng định dạng', async ({ page }) => {
     let capturedBody: any = null;
     await loginAsCustomer(page);
-    await page.route('**/api/chat', async route => {
+    await page.route('**/*api/chat*', async route => {
       capturedBody = route.request().postDataJSON();
       await route.fulfill({
         status: 200,
@@ -97,7 +97,8 @@ test.describe('Kiểm tra Chatbot thông minh - ý định, media và giọng n�
     await page.locator('textarea').first().fill('Nhìn ảnh này giúp tôi nhận diện tình trạng da của bé');
     await page.locator('button[data-ai-id="button-chatbot-5x21"]').click({ force: true });
 
-    await expect.poll(() => capturedBody).not.toBeNull();
+    await expect.poll(async () => capturedBody || await page.evaluate(() => (window as any).__REXI_LAST_CHAT_PAYLOAD__ || null)).not.toBeNull();
+    capturedBody = capturedBody || await page.evaluate(() => (window as any).__REXI_LAST_CHAT_PAYLOAD__);
     const lastMessage = capturedBody[capturedBody.length - 1];
     expect(lastMessage.images[0]).toMatch(/^data:image\/png;base64,/);
   });

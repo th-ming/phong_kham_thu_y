@@ -15,16 +15,57 @@ const toLocalDateKey = (date: Date) => new Date(date.getTime() - date.getTimezon
 
 const getDateKey = (value: any) => {
   if (!value) return "";
-  return String(value).substring(0, 10);
+  if (Array.isArray(value) && value.length >= 3) {
+    const [year, month, day] = value;
+    return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  }
+  const text = String(value);
+  if (/^\d{4},\d{1,2},\d{1,2}/.test(text)) {
+    const [year, month, day] = text.split(",");
+    return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  }
+  return text.substring(0, 10);
 };
 
-const getPercentChange = (today: number, yesterday: number) => {
-  if (yesterday === 0 && today === 0) return { text: "Không đổi", tone: "neutral" as const };
-  if (yesterday === 0) return { text: "+100%", tone: "up" as const };
+const getFirstDateKey = (item: any, fields: string[]) => {
+  for (const field of fields) {
+    const dateKey = getDateKey(item?.[field]);
+    if (dateKey) return dateKey;
+  }
+  return "";
+};
+
+const isActiveCustomerRecord = (item: any) => {
+  if (!item) return false;
+  if (item.id_nhan_vien || item.idNhanVien) return false;
+  const customerId = item.id_khach_hang || item.idKhachHang;
+  const customerName = item.ten_khach_hang || item.tenKhachHang;
+  if (!customerId && !customerName) return false;
+  const deleted = item.da_xoa ?? item.daXoa;
+  if (deleted === true || deleted === 1 || deleted === "1" || String(deleted).toLowerCase() === "true") return false;
+  return true;
+};
+
+const getPercentChange = (
+  today: number,
+  yesterday: number,
+  zeroBaseText: string,
+  zeroBaseComparison: string
+) => {
+  if (yesterday === 0 && today === 0) {
+    return { text: "Không đổi", tone: "neutral" as const, comparisonText: "Không đổi so với hôm qua" };
+  }
+  if (yesterday === 0) {
+    return { text: zeroBaseText, tone: "up" as const, comparisonText: zeroBaseComparison };
+  }
   const percent = ((today - yesterday) / yesterday) * 100;
   const sign = percent > 0 ? "+" : "";
   const tone = percent > 0 ? "up" : percent < 0 ? "down" : "neutral";
-  return { text: `${sign}${percent.toFixed(0)}%`, tone: tone as "up" | "down" | "neutral" };
+  return {
+    text: `${sign}${percent.toFixed(0)}%`,
+    tone: tone as "up" | "down" | "neutral",
+    comparisonText: `${sign}${percent.toFixed(0)}% so với hôm qua`
+  };
 };
 
 const DashboardQuanLy: React.FC = () => {
@@ -90,10 +131,11 @@ const DashboardQuanLy: React.FC = () => {
         };
 
         if (customers.data !== null) {
-          const arr = extractArray(customers.data);
+          const arr = extractArray(customers.data).filter(isActiveCustomerRecord);
           setCustomerCount(arr.length);
-          const customersToday = arr.filter((c: any) => getDateKey(c.ngay_tao || c.created_at || c.ngay_dang_ky) === todayStr).length;
-          const customersYesterday = arr.filter((c: any) => getDateKey(c.ngay_tao || c.created_at || c.ngay_dang_ky) === yesterdayStr).length;
+          const customerDateFields = ['ngay_tao', 'ngayTao', 'created_at', 'createdAt', 'ngay_dang_ky', 'ngayDangKy'];
+          const customersToday = arr.filter((c: any) => getFirstDateKey(c, customerDateFields) === todayStr).length;
+          const customersYesterday = arr.filter((c: any) => getFirstDateKey(c, customerDateFields) === yesterdayStr).length;
           setKpiCompare(prev => ({ ...prev, customers: { today: customersToday, yesterday: customersYesterday } }));
 
           const last6Months = Array.from({ length: 6 }, (_, i) => {
@@ -104,7 +146,7 @@ const DashboardQuanLy: React.FC = () => {
 
           const growthData = last6Months.map(m => {
             const count = arr.filter((c: any) => {
-              const dateStr = c.ngay_tao || c.created_at || c.ngay_dang_ky;
+              const dateStr = getFirstDateKey(c, customerDateFields);
               if (!dateStr) return false;
               const d = new Date(dateStr);
               return d.getMonth() + 1 === m.month && d.getFullYear() === m.year;
@@ -118,11 +160,11 @@ const DashboardQuanLy: React.FC = () => {
           const arr = extractArray(apps.data);
           // BUG FIX: Backend có thể trả "2025-05-20T00:00:00" nên dùng startsWith thay vì ===
           const homNay = arr.filter((l: any) => {
-            const ngay = l.ngay_kham ? String(l.ngay_kham).substring(0, 10) : '';
+            const ngay = getFirstDateKey(l, ['ngay_kham', 'ngayKham']);
             return ngay === todayStr;
           });
           const homQua = arr.filter((l: any) => {
-            const ngay = l.ngay_kham ? String(l.ngay_kham).substring(0, 10) : '';
+            const ngay = getFirstDateKey(l, ['ngay_kham', 'ngayKham']);
             return ngay === yesterdayStr;
           });
           setAppointments(homNay);
@@ -147,10 +189,10 @@ const DashboardQuanLy: React.FC = () => {
           const invArray = extractArray(invoices.data);
           const paidInvoices = invArray.filter((inv: any) => (inv.trang_thai || inv.trangThai || '').toUpperCase() === 'DA_THANH_TOAN');
           const todayRevenue = paidInvoices.reduce((sum: number, inv: any) => {
-            return getDateKey(inv.ngay_lap_hoa_don || inv.ngay_lap) === todayStr ? sum + Number(inv.tong_tien_cuoi || inv.tongTienCuoi || 0) : sum;
+            return getFirstDateKey(inv, ['ngay_lap_hoa_don', 'ngayLapHoaDon', 'ngay_lap', 'ngayLap']) === todayStr ? sum + Number(inv.tong_tien_cuoi || inv.tongTienCuoi || 0) : sum;
           }, 0);
           const yesterdayRevenue = paidInvoices.reduce((sum: number, inv: any) => {
-            return getDateKey(inv.ngay_lap_hoa_don || inv.ngay_lap) === yesterdayStr ? sum + Number(inv.tong_tien_cuoi || inv.tongTienCuoi || 0) : sum;
+            return getFirstDateKey(inv, ['ngay_lap_hoa_don', 'ngayLapHoaDon', 'ngay_lap', 'ngayLap']) === yesterdayStr ? sum + Number(inv.tong_tien_cuoi || inv.tongTienCuoi || 0) : sum;
           }, 0);
           setRevenue(todayRevenue);
           setKpiCompare(prev => ({ ...prev, revenue: { today: todayRevenue, yesterday: yesterdayRevenue } }));
@@ -163,10 +205,32 @@ const DashboardQuanLy: React.FC = () => {
   }, [userRole]);
 
   const stats = useMemo(() => {
-    const allStats = [];
-    const customerChange = getPercentChange(kpiCompare.customers.today, kpiCompare.customers.yesterday);
-    const appointmentChange = getPercentChange(kpiCompare.appointments.today, kpiCompare.appointments.yesterday);
-    const revenueChange = getPercentChange(kpiCompare.revenue.today, kpiCompare.revenue.yesterday);
+    const allStats: Array<{
+      label: string;
+      value: number | string;
+      icon: string;
+      color: string;
+      trend: { text: string; tone: "up" | "down" | "neutral"; comparisonText: string };
+      caption: string;
+    }> = [];
+    const customerChange = getPercentChange(
+      kpiCompare.customers.today,
+      kpiCompare.customers.yesterday,
+      `+${kpiCompare.customers.today} mới`,
+      `Hôm qua chưa có khách mới, hôm nay phát sinh ${kpiCompare.customers.today} khách mới`
+    );
+    const appointmentChange = getPercentChange(
+      kpiCompare.appointments.today,
+      kpiCompare.appointments.yesterday,
+      `+${kpiCompare.appointments.today} ca`,
+      `Hôm qua chưa có lịch hẹn, hôm nay phát sinh ${kpiCompare.appointments.today} ca`
+    );
+    const revenueChange = getPercentChange(
+      kpiCompare.revenue.today,
+      kpiCompare.revenue.yesterday,
+      "Phát sinh",
+      `Hôm qua chưa có doanh thu, hôm nay phát sinh ${formatTienVND(kpiCompare.revenue.today)}`
+    );
     if (['admin', 'quan_ly', 'tiep_tan'].includes(userRole)) {
       allStats.push({ label: "Khách Hàng", value: customerCount, icon: "groups", color: "#0f9d8a", trend: customerChange, caption: `${kpiCompare.customers.today} mới hôm nay / ${kpiCompare.customers.yesterday} hôm qua` });
     }
@@ -177,7 +241,18 @@ const DashboardQuanLy: React.FC = () => {
       allStats.push({ label: "Doanh Thu", value: formatTienVND(revenue), icon: "payments", color: "#f59e0b", trend: revenueChange, caption: `${formatTienVND(kpiCompare.revenue.yesterday)} hôm qua` });
     }
     if (['admin', 'quan_ly', 'y_ta', 'staff'].includes(userRole)) {
-      allStats.push({ label: "Kho Thuốc", value: inventoryAlerts.length, icon: "inventory_2", color: "#ef4444", trend: { text: inventoryAlerts.length > 0 ? "Cần xử lý" : "Ổn định", tone: inventoryAlerts.length > 0 ? "down" as const : "up" as const }, caption: "Cảnh báo tồn kho thấp hiện tại" });
+      allStats.push({
+        label: "Kho Thuốc",
+        value: inventoryAlerts.length,
+        icon: "inventory_2",
+        color: "#ef4444",
+        trend: {
+          text: inventoryAlerts.length > 0 ? "Cần xử lý" : "Ổn định",
+          tone: inventoryAlerts.length > 0 ? "down" as const : "up" as const,
+          comparisonText: inventoryAlerts.length > 0 ? "Đang có cảnh báo tồn kho thấp" : "Kho thuốc đang ổn định"
+        },
+        caption: "Cảnh báo tồn kho thấp hiện tại"
+      });
     }
     return allStats;
   }, [customerCount, appointments.length, revenue, inventoryAlerts.length, userRole, kpiCompare]);
@@ -323,7 +398,7 @@ const DashboardQuanLy: React.FC = () => {
             <div className="kpi-trend-popover">
               <div className="kpi-popover-title">{item.label}</div>
               <div className="kpi-popover-value">
-                {item.trend.text} so với hôm qua
+                {item.trend.comparisonText}
                 <br />
                 {item.caption}
               </div>

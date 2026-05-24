@@ -20,12 +20,12 @@ test.describe('Kiểm thử chức năng: Quản lý Hồ sơ bệnh án điện
         await expect(page.getByRole('heading', { name: 'Hồ sơ bệnh án' })).toBeVisible();
 
         // 2. Xác minh các cột chính trong bảng hiển thị đầy đủ
-        await expect(page.getByText('MÃ HỒ SƠ')).toBeVisible();
-        await expect(page.getByText('NGÀY KHÁM')).toBeVisible();
-        await expect(page.getByText('THÚ CƯNG')).toBeVisible();
-        await expect(page.getByText('BÁC SĨ ĐIỀU TRỊ')).toBeVisible();
-        await expect(page.getByText('CHẨN ĐOÁN')).toBeVisible();
-        await expect(page.getByText('TRẠNG THÁI')).toBeVisible();
+        await expect(page.getByRole('columnheader', { name: 'MÃ HỒ SƠ' })).toBeVisible();
+        await expect(page.getByRole('columnheader', { name: 'NGÀY KHÁM' })).toBeVisible();
+        await expect(page.getByRole('columnheader', { name: 'THÚ CƯNG' })).toBeVisible();
+        await expect(page.getByRole('columnheader', { name: 'BÁC SĨ ĐIỀU TRỊ' })).toBeVisible();
+        await expect(page.getByRole('columnheader', { name: 'CHẨN ĐOÁN' })).toBeVisible();
+        await expect(page.getByRole('columnheader', { name: 'TRẠNG THÁI' })).toBeVisible();
     });
 
     test('TC02: Truy cập xem chi tiết Hồ sơ bệnh án', async ({ page }) => {

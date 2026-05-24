@@ -17,7 +17,7 @@ test.describe('Kiểm thử chức năng: Quản lý Danh mục Dịch vụ & Kh
     test('TC01: Luồng Thêm mới, Sửa và Xóa Dịch vụ thú y', async ({ page }) => {
         // 1. Đi tới trang Quản lý dịch vụ
         await page.goto(`${BASE_URL}/quan-ly/dich-vu`);
-        await expect(page.getByText('Danh mục dịch vụ')).toBeVisible();
+        await expect(page.getByRole('heading', { name: 'Danh mục dịch vụ' })).toBeVisible();
 
         // 2. Click nút "Thêm dịch vụ" để mở form định nghĩa
         await page.getByRole('button', { name: /Thêm dịch vụ/i }).click();
@@ -26,13 +26,13 @@ test.describe('Kiểm thử chức năng: Quản lý Danh mục Dịch vụ & Kh
         // 3. Nhập dữ liệu dịch vụ mới
         const ts = Date.now();
         const tenDichVu = `Siêu âm màu 4D ${ts}`;
-        await page.locator('input').nth(0).fill(tenDichVu); // Tên dịch vụ
-        await page.locator('input').nth(1).fill('180000'); // Giá niêm yết
-        await page.locator('input').nth(2).fill('30');     // Thời lượng phút
+        await page.locator('[data-ai-id="input-quanlydichvu-9ned"]').fill(tenDichVu); // Tên dịch vụ
+        await page.locator('[data-ai-id="input-quanlydichvu-mv4q"]').fill('180000'); // Giá niêm yết
+        await page.locator('[data-ai-id="input-quanlydichvu-q3n9"]').fill('30');     // Thời lượng phút
         await page.locator('textarea').fill('Siêu âm thai kiểm tra và đếm số thai cho thú cưng bằng công nghệ 4D VIP.');
 
         // 4. Lưu thông tin
-        await page.getByRole('button', { name: /Lưu dịch vụ/i }).click();
+        await page.locator('[data-ai-id="button-quanlydichvu-zqdb"]').click();
 
         // 5. Xác nhận thêm thành công và tìm thấy trong bảng
         await expect(page.getByText('Thêm dịch vụ mới thành công!')).toBeVisible({ timeout: 10000 });
@@ -44,10 +44,15 @@ test.describe('Kiểm thử chức năng: Quản lý Danh mục Dịch vụ & Kh
         await expect(page.getByText('Cập nhật dịch vụ')).toBeVisible();
 
         // 7. Thay đổi giá niêm yết lên 200,000đ
-        await page.locator('input').nth(1).fill('200000');
-        await page.getByRole('button', { name: /Lưu dịch vụ/i }).click();
+        await page.locator('[data-ai-id="input-quanlydichvu-mv4q"]').fill('200000');
+        await page.locator('[data-ai-id="button-quanlydichvu-zqdb"]').click();
         await expect(page.getByText('Đã cập nhật dịch vụ thành công!')).toBeVisible({ timeout: 10000 });
-        await expect(page.getByText('200.000 đ')).toBeVisible();
+        await expect(page.locator(`tr:has-text("${tenDichVu}")`)).toContainText('200.000 ₫');
+
+        page.once('dialog', dialog => dialog.accept());
+        await page.locator(`tr:has-text("${tenDichVu}")`).locator('[data-ai-id="button-quanlydichvu-5ywo"]').click();
+        await expect(page.getByText('Đã xóa dịch vụ!')).toBeVisible({ timeout: 10000 });
+        await expect(page.locator(`tr:has-text("${tenDichVu}")`)).toHaveCount(0);
     });
 
     test('TC02: Kiểm tra trang hiển thị tồn kho và lô thuốc', async ({ page }) => {
@@ -63,6 +68,29 @@ test.describe('Kiểm thử chức năng: Quản lý Danh mục Dịch vụ & Kh
 
         // 3. Kiểm tra cột lô thuốc
         await expect(page.getByText('Lô thuốc & Hạn dùng')).toBeVisible();
+    });
+
+    test('TC03: Rexi Agent thao tác thêm dịch vụ ngoài luồng thú cưng bằng manifest chung', async ({ page }) => {
+        const ts = Date.now();
+        const tenDichVu = `Dịch vụ Agent Tổng Quát ${ts}`;
+
+        await page.goto(`${BASE_URL}/quan-ly/dashboard`);
+        await page.locator('#chatBtn').click({ force: true });
+        await expect(page.locator('#chatWindow')).toBeVisible({ timeout: 10000 });
+        await page.locator('button[data-ai-id="button-chatbot-jdzj"]').click({ force: true });
+
+        await page.locator('textarea').first().fill(`Thêm dịch vụ ${tenDichVu} giá 123000 thời lượng 45 phút`);
+        await page.locator('button[data-ai-id="button-chatbot-5x21"]').click({ force: true });
+
+        await page.waitForURL(/.*\/quan-ly\/dich-vu/, { timeout: 10000 });
+        await expect(page.getByText('Thêm dịch vụ mới thành công!')).toBeVisible({ timeout: 20000 });
+        await expect(page.locator(`tr:has-text("${tenDichVu}")`)).toBeVisible({ timeout: 10000 });
+        await expect(page.locator(`tr:has-text("${tenDichVu}")`)).toContainText('123.000 ₫');
+
+        page.once('dialog', dialog => dialog.accept());
+        await page.locator(`tr:has-text("${tenDichVu}")`).locator('[data-ai-id="button-quanlydichvu-5ywo"]').click();
+        await expect(page.getByText('Đã xóa dịch vụ!')).toBeVisible({ timeout: 10000 });
+        await expect(page.locator(`tr:has-text("${tenDichVu}")`)).toHaveCount(0);
     });
 
 });

@@ -48,10 +48,15 @@ export const executeAction = async (tag: string) => {
         const [id, value] = payload.split('|');
         const input = document.querySelector(`[data-ai-id="${id}"]`) as HTMLInputElement;
         if (input) {
-          input.value = value;
+          const prototype = input instanceof HTMLTextAreaElement
+            ? window.HTMLTextAreaElement.prototype
+            : window.HTMLInputElement.prototype;
+          const valueSetter = Object.getOwnPropertyDescriptor(prototype, 'value')?.set;
+          if (valueSetter) valueSetter.call(input, value);
+          else input.value = value;
           (window as any).__AI_ACTION_TAG__ = `FILL:${payload}`;
-          const ev = new Event('input', { bubbles: true });
-          input.dispatchEvent(ev);
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+          input.dispatchEvent(new Event('change', { bubbles: true }));
           setTimeout(() => { (window as any).__AI_ACTION_TAG__ = undefined; }, 500);
           toast.success(`Đã tự động điền: ${value}`);
           window.dispatchEvent(new CustomEvent('agent-action', {
@@ -83,14 +88,29 @@ export const executeAction = async (tag: string) => {
         const [id, option] = payload.split('|');
         const select = document.querySelector(`[data-ai-id="${id}"]`) as HTMLSelectElement;
         if (select) {
-          select.value = option;
+          const requestedOption = option?.trim();
+          const firstValidOption = Array.from(select.options).find(opt => !opt.disabled && opt.value.trim() !== "");
+          const optionToSelect = (!requestedOption || requestedOption === "__FIRST_VALID__")
+            ? firstValidOption?.value
+            : requestedOption;
+
+          if (!optionToSelect) {
+            window.dispatchEvent(new CustomEvent('agent-action', {
+              detail: { type: 'ERROR', tag, message: `Không có lựa chọn hợp lệ trong danh mục: ${id}` }
+            }));
+            break;
+          }
+
+          const valueSetter = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, 'value')?.set;
+          if (valueSetter) valueSetter.call(select, optionToSelect);
+          else select.value = optionToSelect;
           (window as any).__AI_ACTION_TAG__ = `SELECT:${payload}`;
-          const ev = new Event('change', { bubbles: true });
-          select.dispatchEvent(ev);
+          select.dispatchEvent(new Event('input', { bubbles: true }));
+          select.dispatchEvent(new Event('change', { bubbles: true }));
           setTimeout(() => { (window as any).__AI_ACTION_TAG__ = undefined; }, 500);
-          toast.success(`Đã chọn mục: ${option}`);
+          toast.success(`Đã chọn mục: ${optionToSelect}`);
           window.dispatchEvent(new CustomEvent('agent-action', {
-            detail: { type: 'SUCCESS', tag, message: `Đã chọn mục: ${option} tại ${id}` }
+            detail: { type: 'SUCCESS', tag, message: `Đã chọn mục: ${optionToSelect} tại ${id}` }
           }));
         } else {
           window.dispatchEvent(new CustomEvent('agent-action', {

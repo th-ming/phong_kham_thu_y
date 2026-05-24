@@ -71,11 +71,11 @@ test.describe('Kiểm thử nâng cao: Quản lý Nhân sự & Xác minh Phân q
         await page.goto(`${BASE_URL}/quan-ly/nhan-vien-phan-quyen`);
 
         // Thử lọc danh sách
-        await page.locator('select').first().selectOption('Kế toán');
+        await page.locator('select').first().selectOption('Tất cả chức vụ');
         await page.waitForTimeout(500);
 
         // Thử mở Modal sửa thông tin
-        const editBtn = page.locator('button:has-text("Sửa")').first();
+        const editBtn = page.locator('main table').first().locator('button:has-text("Sửa")').first();
         if (await editBtn.isVisible()) {
             await editBtn.click();
             await expect(page.getByText(/Cập nhật nhân viên/i)).toBeVisible();

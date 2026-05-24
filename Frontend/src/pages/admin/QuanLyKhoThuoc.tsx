@@ -92,11 +92,11 @@ const QuanLyKhoThuoc: React.FC = () => {
           </div>
           {canManageInventory && (
             <>
-              <Link to="/quan-ly/nhap-kho" className="btn btn-primary btn-pill" style={{ textDecoration: 'none' }}>
+              <Link data-ai-id="button-quanlykhothuoc-nhapkho" to="/quan-ly/nhap-kho" className="btn btn-primary btn-pill" style={{ textDecoration: 'none' }}>
                 <span className="material-symbols-outlined">add_box</span>
                 Nhập thuốc mới
               </Link>
-              <button type="button" className="btn btn-outline btn-pill" style={{ marginLeft: 8 }} onClick={() => setIsAddModalOpen(true)}>
+              <button data-ai-id="button-quanlykhothuoc-themthuoc" type="button" className="btn btn-outline btn-pill" style={{ marginLeft: 8 }} onClick={() => setIsAddModalOpen(true)}>
                 <span className="material-symbols-outlined">add</span>
                 Thêm thuốc
               </button>
@@ -124,35 +124,35 @@ const QuanLyKhoThuoc: React.FC = () => {
           }} style={{ display: 'grid', gap: 12 }}>
             <div>
               <label style={{ display: 'block', marginBottom: 6, fontWeight: 800, color: 'var(--gray-400)' }}>Mã thuốc (id_thuoc)</label>
-              <input className="form-input" value={newThuoc.id_thuoc} onChange={e => setNewThuoc({ ...newThuoc, id_thuoc: e.target.value })} required />
+              <input data-ai-id="input-quanlykhothuoc-idthuoc" className="form-input" value={newThuoc.id_thuoc} onChange={e => setNewThuoc({ ...newThuoc, id_thuoc: e.target.value })} required />
             </div>
             <div>
               <label style={{ display: 'block', marginBottom: 6, fontWeight: 800, color: 'var(--gray-400)' }}>Tên thuốc</label>
-              <input className="form-input" value={newThuoc.ten_thuoc} onChange={e => setNewThuoc({ ...newThuoc, ten_thuoc: e.target.value })} required />
+              <input data-ai-id="input-quanlykhothuoc-tenthuoc" className="form-input" value={newThuoc.ten_thuoc} onChange={e => setNewThuoc({ ...newThuoc, ten_thuoc: e.target.value })} required />
             </div>
             <div className="responsive-grid-2">
               <div>
                 <label style={{ display: 'block', marginBottom: 6, fontWeight: 800, color: 'var(--gray-400)' }}>Mã thuốc (ma_thuoc)</label>
-                <input className="form-input" value={newThuoc.ma_thuoc} onChange={e => setNewThuoc({ ...newThuoc, ma_thuoc: e.target.value })} />
+                <input data-ai-id="input-quanlykhothuoc-mathuoc" className="form-input" value={newThuoc.ma_thuoc} onChange={e => setNewThuoc({ ...newThuoc, ma_thuoc: e.target.value })} />
               </div>
               <div>
                 <label style={{ display: 'block', marginBottom: 6, fontWeight: 800, color: 'var(--gray-400)' }}>Đơn vị</label>
-                <input className="form-input" value={newThuoc.don_vi} onChange={e => setNewThuoc({ ...newThuoc, don_vi: e.target.value })} />
+                <input data-ai-id="input-quanlykhothuoc-donvi" className="form-input" value={newThuoc.don_vi} onChange={e => setNewThuoc({ ...newThuoc, don_vi: e.target.value })} />
               </div>
             </div>
             <div className="responsive-grid-2">
               <div>
                 <label style={{ display: 'block', marginBottom: 6, fontWeight: 800, color: 'var(--gray-400)' }}>Giá bán</label>
-                <input type="number" className="form-input" value={newThuoc.gia_ban} onChange={e => setNewThuoc({ ...newThuoc, gia_ban: Number(e.target.value) })} />
+                <input data-ai-id="input-quanlykhothuoc-giaban" type="number" className="form-input" value={newThuoc.gia_ban} onChange={e => setNewThuoc({ ...newThuoc, gia_ban: Number(e.target.value) })} />
               </div>
               <div>
                 <label style={{ display: 'block', marginBottom: 6, fontWeight: 800, color: 'var(--gray-400)' }}>Loại</label>
-                <input className="form-input" value={newThuoc.loai_thuoc} onChange={e => setNewThuoc({ ...newThuoc, loai_thuoc: e.target.value })} />
+                <input data-ai-id="input-quanlykhothuoc-loai" className="form-input" value={newThuoc.loai_thuoc} onChange={e => setNewThuoc({ ...newThuoc, loai_thuoc: e.target.value })} />
               </div>
             </div>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}>
-              <button type="button" className="btn btn-pill" onClick={() => setIsAddModalOpen(false)} style={{ background: 'var(--gray-100)', color: 'var(--ink)' }}>Hủy</button>
-              <button type="submit" className="btn btn-primary btn-pill">Tạo thuốc</button>
+              <button data-ai-id="button-quanlykhothuoc-huy" type="button" className="btn btn-pill" onClick={() => setIsAddModalOpen(false)} style={{ background: 'var(--gray-100)', color: 'var(--ink)' }}>Hủy</button>
+              <button data-ai-id="button-quanlykhothuoc-taothuoc" type="submit" className="btn btn-primary btn-pill">Tạo thuốc</button>
             </div>
           </form>
         </Modal>

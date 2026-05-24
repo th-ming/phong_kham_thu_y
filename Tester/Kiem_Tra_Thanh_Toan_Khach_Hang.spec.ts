@@ -20,10 +20,10 @@ test.describe('Kiểm thử chức năng: Cổng Khách hàng - Hóa đơn & Vie
         await expect(page.getByRole('heading', { name: 'Hóa đơn & Thanh toán' })).toBeVisible();
 
         // 2. Kiểm tra sự hiện diện của các khối thống kê chi tiêu
-        await expect(page.getByText('TỔNG HÓA ĐƠN')).toBeVisible();
-        await expect(page.getByText('ĐÃ THANH TOÁN')).toBeVisible();
-        await expect(page.getByText('ĐANG CHỜ')).toBeVisible();
-        await expect(page.getByText('TỔNG CHI TIÊU')).toBeVisible();
+        await expect(page.getByText('TỔNG HÓA ĐƠN', { exact: true })).toBeVisible();
+        await expect(page.getByText('ĐÃ THANH TOÁN', { exact: true })).toBeVisible();
+        await expect(page.getByText('ĐANG CHỜ', { exact: true })).toBeVisible();
+        await expect(page.getByText('TỔNG CHI TIÊU', { exact: true })).toBeVisible();
 
         // 3. Kiểm tra thanh tìm kiếm và bộ lọc hóa đơn
         const filterSelect = page.locator('select').first();

@@ -17,13 +17,13 @@ test.describe('Kiểm thử Trang Bảng điều khiển Admin (Dashboard)', () 
 
     test('TC01: Kiểm tra các thành phần giao diện chính của Dashboard', async ({ page }) => {
         // 1. Kiểm tra tiêu đề chính
-        await expect(page.getByText('Tổng quan hệ thống 📊')).toBeVisible();
+        await expect(page.getByRole('heading', { name: /Tổng quan hệ thống/i })).toBeVisible();
         await expect(page.getByText(/Xin chào Admin/i)).toBeVisible();
 
         // 2. Kiểm tra 4 thẻ thống kê (Stats Cards)
         const statsCards = ['Khách Hàng', 'Lịch Hẹn Nay', 'Doanh Thu', 'Kho Thuốc'];
         for (const label of statsCards) {
-            await expect(page.getByText(label)).toBeVisible();
+            await expect(page.locator('main p').filter({ hasText: new RegExp(`^${label}$`, 'i') }).first()).toBeVisible();
         }
 
         // 3. Kiểm tra bảng "Lịch hẹn hôm nay"
@@ -59,7 +59,7 @@ test.describe('Kiểm thử Trang Bảng điều khiển Admin (Dashboard)', () 
         await page.setViewportSize({ width: 375, height: 667 });
 
         // Kiểm tra xem tiêu đề vẫn hiển thị (hoặc theo logic mobile của bạn)
-        await expect(page.getByText('Tổng quan hệ thống 📊')).toBeVisible();
+        await expect(page.getByRole('heading', { name: /Tổng quan hệ thống/i })).toBeVisible();
 
         // Kiểm tra xem Sidebar có bị ẩn hoặc chuyển thành menu mobile không 
         // (Tùy thuộc vào implementation của SidebarAdmin.tsx)

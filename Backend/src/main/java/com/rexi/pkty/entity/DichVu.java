@@ -3,6 +3,7 @@ package com.rexi.pkty.entity;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "DichVu")
@@ -26,4 +27,17 @@ public class DichVu {
 
     @Column(name = "trang_thai", nullable = false)
     private Boolean trang_thai = true;
+
+    @Column(name = "ngay_tao")
+    private LocalDateTime ngay_tao;
+
+    @PrePersist
+    public void prePersist() {
+        if (this.ngay_tao == null) {
+            this.ngay_tao = LocalDateTime.now();
+        }
+        if (this.trang_thai == null) {
+            this.trang_thai = true;
+        }
+    }
 }

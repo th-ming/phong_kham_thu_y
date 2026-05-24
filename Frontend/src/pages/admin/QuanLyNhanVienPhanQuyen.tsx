@@ -45,7 +45,7 @@ const QuanLyNhanVienPhanQuyen: React.FC = () => {
 
   const fetchNhanViens = () => {
     setLoading(true);
-    axiosInstance.get("/api/nhan-vien")
+    axiosInstance.get("/api/nhan-vien", { params: { includeDeleted: isAdmin } })
       .then(res => {
         setNhanViens(res.data);
         setLoading(false);
@@ -164,8 +164,22 @@ const QuanLyNhanVienPhanQuyen: React.FC = () => {
         await axiosInstance.delete(`/api/nhan-vien/${id}`);
         toast.success("Đã xóa nhân viên thành công!");
         fetchNhanViens();
+        fetchAccounts();
       } catch (err: any) {
         toast.error(err.response?.data?.message || "Lỗi khi xóa nhân viên.");
+      }
+    }
+  };
+
+  const handleRestore = async (id: number) => {
+    if (window.confirm("Phục hồi nhân viên này và mở lại tài khoản đăng nhập liên kết?")) {
+      try {
+        await axiosInstance.put(`/api/nhan-vien/${id}/restore`);
+        toast.success("Đã phục hồi nhân viên thành công!");
+        fetchNhanViens();
+        fetchAccounts();
+      } catch (err: any) {
+        toast.error(err.response?.data?.message || "Lỗi khi phục hồi nhân viên.");
       }
     }
   };
@@ -474,15 +488,15 @@ const QuanLyNhanVienPhanQuyen: React.FC = () => {
           </thead>
           <tbody>
             {filteredNhanViens.map((b) => (
-              <tr key={b.id_nhan_vien} className="table-row" style={{ borderBottom: '1px solid var(--gray-50)', transition: 'all 0.3s ease' }}>
+              <tr key={b.id_nhan_vien} className="table-row" style={{ borderBottom: '1px solid var(--gray-50)', transition: 'all 0.3s ease', opacity: b.da_xoa ? 0.72 : 1 }}>
                 <td style={{ padding: '20px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                     <div style={{ width: '48px', height: '48px', position: 'relative' }}>
                       <img src={b.hinh_anh || "/img/avtpkty.png"} style={{ width: '100%', height: '100%', borderRadius: '14px', objectFit: 'cover' }} alt={b.ho_ten} />
-                      {b.trang_thai === 'Đang làm việc' && <div style={{ position: 'absolute', bottom: '-2px', right: '-2px', width: '14px', height: '14px', background: '#22c55e', border: '3px solid white', borderRadius: '50%' }}></div>}
+                      {!b.da_xoa && b.trang_thai === 'Đang làm việc' && <div style={{ position: 'absolute', bottom: '-2px', right: '-2px', width: '14px', height: '14px', background: '#22c55e', border: '3px solid white', borderRadius: '50%' }}></div>}
                     </div>
                     <div>
-                      <div style={{ fontWeight: 800, color: 'var(--ink)', fontSize: '1rem' }}>{b.ho_ten}</div>
+                      <div style={{ fontWeight: 800, color: b.da_xoa ? 'var(--gray-400)' : 'var(--ink)', fontSize: '1rem', textDecoration: b.da_xoa ? 'line-through' : 'none' }}>{b.ho_ten}</div>
                       <div style={{ fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 900, textTransform: 'uppercase' }}>{b.chuyen_mon || 'Nhân viên'}</div>
                     </div>
                   </div>
@@ -494,11 +508,11 @@ const QuanLyNhanVienPhanQuyen: React.FC = () => {
                 <td style={{ padding: '20px' }}>
                   <span style={{
                     padding: '8px 16px', borderRadius: '50px', fontSize: '0.7rem', fontWeight: 900,
-                    background: b.trang_thai === 'Đang làm việc' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                    color: b.trang_thai === 'Đang làm việc' ? '#16a34a' : '#dc2626',
-                    border: b.trang_thai === 'Đang làm việc' ? '1px solid rgba(34, 197, 94, 0.2)' : '1px solid rgba(239, 68, 68, 0.2)'
+                    background: !b.da_xoa && b.trang_thai === 'Đang làm việc' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                    color: !b.da_xoa && b.trang_thai === 'Đang làm việc' ? '#16a34a' : '#dc2626',
+                    border: !b.da_xoa && b.trang_thai === 'Đang làm việc' ? '1px solid rgba(34, 197, 94, 0.2)' : '1px solid rgba(239, 68, 68, 0.2)'
                   }}>
-                    {b.trang_thai?.toUpperCase() || 'KHÔNG XÁC ĐỊNH'}
+                    {b.da_xoa ? 'ĐÃ XÓA MỀM' : (b.trang_thai?.toUpperCase() || 'KHÔNG XÁC ĐỊNH')}
                   </span>
                 </td>
                 <td style={{ padding: '20px' }}>
@@ -508,15 +522,24 @@ const QuanLyNhanVienPhanQuyen: React.FC = () => {
                 <td style={{ padding: '20px' }}>
                   {canManageStaff ? (
                     <div style={{ display: 'flex', gap: '8px' }}>
-                      <button data-ai-id="button-quanlynhanvienphanquyen-z9sz" className="btn btn-pill" onClick={() => handleOpenEdit(b)} style={{ background: 'var(--gray-50)', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 800 }}>
-                        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>edit</span>
-                        Sửa
-                      </button>
-                      {currentUser?.id_nhan_vien !== b.id_nhan_vien && (
-                        <button data-ai-id="button-quanlynhanvienphanquyen-cjvx" className="btn btn-pill" onClick={() => handleDelete(b.id_nhan_vien)} style={{ background: 'var(--danger-light, rgba(239, 68, 68, 0.15))', color: 'var(--danger)', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 800 }}>
-                          <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>delete</span>
-                          Xóa
+                      {b.da_xoa ? (
+                        <button className="btn btn-pill" onClick={() => handleRestore(b.id_nhan_vien)} style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#16a34a', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 800 }}>
+                          <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>restore</span>
+                          Mở lại
                         </button>
+                      ) : (
+                        <>
+                          <button data-ai-id="button-quanlynhanvienphanquyen-z9sz" className="btn btn-pill" onClick={() => handleOpenEdit(b)} style={{ background: 'var(--gray-50)', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 800 }}>
+                            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>edit</span>
+                            Sửa
+                          </button>
+                          {currentUser?.id_nhan_vien !== b.id_nhan_vien && (
+                            <button data-ai-id="button-quanlynhanvienphanquyen-cjvx" className="btn btn-pill" onClick={() => handleDelete(b.id_nhan_vien)} style={{ background: 'var(--danger-light, rgba(239, 68, 68, 0.15))', color: 'var(--danger)', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 800 }}>
+                              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>delete</span>
+                              Xóa
+                            </button>
+                          )}
+                        </>
                       )}
                     </div>
                   ) : (
