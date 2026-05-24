@@ -114,6 +114,49 @@ public class SecurityAlertService {
         return new ArrayList<>(recentAlerts);
     }
 
+    public Map<String, Object> reportClientError(Map<String, Object> payload, String ip, String userAgent) {
+        Map<String, Object> alert = new LinkedHashMap<>();
+        alert.put("id", "WEB-" + Instant.now().toEpochMilli());
+        alert.put("severity", String.valueOf(payload.getOrDefault("severity", "MEDIUM")));
+        alert.put("errorType", String.valueOf(payload.getOrDefault("type", "CLIENT_ERROR")));
+        alert.put("message", trimForLog(String.valueOf(payload.getOrDefault("message", "Lỗi web không rõ nội dung")), 500));
+        alert.put("path", trimForLog(String.valueOf(payload.getOrDefault("path", "")), 300));
+        alert.put("source", trimForLog(String.valueOf(payload.getOrDefault("source", "")), 300));
+        alert.put("status", payload.getOrDefault("status", ""));
+        alert.put("method", payload.getOrDefault("method", ""));
+        alert.put("url", trimForLog(String.valueOf(payload.getOrDefault("url", "")), 500));
+        alert.put("user", trimForLog(String.valueOf(payload.getOrDefault("user", "")), 200));
+        alert.put("ip", normalizeIp(ip));
+        alert.put("userAgent", userAgent == null ? "" : trimForLog(userAgent, 500));
+        alert.put("detectedAt", Instant.now().toString());
+        alert.put("riskSummary", "Frontend vừa phát hiện lỗi thật từ trình duyệt/API. Admin nên kiểm tra trang, endpoint và thao tác người dùng gây lỗi.");
+        alert.put("recommendedActions", List.of(
+                "Mở đúng trang được báo lỗi và thử lại thao tác vừa xảy ra.",
+                "Kiểm tra Network/Console trên trình duyệt và log backend cùng thời điểm.",
+                "Nếu là API 5xx, kiểm tra controller/service/database của endpoint tương ứng; nếu là JS error, kiểm tra component nguồn."
+        ));
+        alert.put("adminDecision", "Ưu tiên xử lý nếu lỗi lặp lại nhiều lần, ảnh hưởng đặt lịch, thanh toán, đăng nhập hoặc hồ sơ bệnh án.");
+
+        try {
+            jdbcTemplate.update(
+                    "INSERT INTO NhatKyHeThong (nguoi_thao_tac, hanh_dong, bang_du_lieu, chi_tiet, ip_address, device_info) VALUES (?, ?, ?, ?, ?, ?)",
+                    "AUTO_WEB_MONITOR",
+                    "CLIENT_ERROR",
+                    "Frontend",
+                    alert.get("errorType") + " " + alert.get("message") + " Path=" + alert.get("path") + " Url=" + alert.get("url"),
+                    normalizeIp(ip),
+                    userAgent == null ? "" : userAgent
+            );
+        } catch (Exception ignored) {
+            // Không để lỗi ghi log làm hỏng trải nghiệm người dùng.
+        }
+
+        if (messagingTemplate != null) {
+            messagingTemplate.convertAndSend("/topic/web-errors", alert);
+        }
+        return alert;
+    }
+
     public void removeBlockedIp(String ip) {
         String cleanIp = normalizeIp(ip);
         Set<String> next = new LinkedHashSet<>(getBlockedIps());
@@ -229,5 +272,11 @@ public class SecurityAlertService {
     private String normalizeIp(String ip) {
         if (ip == null) return "";
         return ip.trim().replace(" ", "");
+    }
+
+    private String trimForLog(String value, int maxLength) {
+        if (value == null) return "";
+        String cleaned = value.replaceAll("[\\r\\n\\t]+", " ").trim();
+        return cleaned.length() <= maxLength ? cleaned : cleaned.substring(0, maxLength);
     }
 }

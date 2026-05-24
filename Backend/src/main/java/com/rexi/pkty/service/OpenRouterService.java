@@ -18,6 +18,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
 public class OpenRouterService {
@@ -90,6 +91,8 @@ public class OpenRouterService {
     );
 
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final AtomicInteger keyCursor = new AtomicInteger(0);
+    private final AtomicInteger modelCursor = new AtomicInteger(0);
 
     private final HttpClient client = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(20))
@@ -116,8 +119,13 @@ public class OpenRouterService {
         }
 
         Exception lastException = null;
-        for (String currentApiKey : apiKeys) {
-            for (String candidateModel : getCandidateModels()) {
+        List<String> candidateModels = getCandidateModels();
+        int keyStart = Math.floorMod(keyCursor.getAndIncrement(), apiKeys.size());
+        int modelStart = Math.floorMod(modelCursor.getAndIncrement(), candidateModels.size());
+        for (int keyOffset = 0; keyOffset < apiKeys.size(); keyOffset++) {
+            String currentApiKey = apiKeys.get((keyStart + keyOffset) % apiKeys.size());
+            for (int modelOffset = 0; modelOffset < candidateModels.size(); modelOffset++) {
+                String candidateModel = candidateModels.get((modelStart + modelOffset) % candidateModels.size());
                 try {
                     HttpResponse<String> response = callOpenRouter(currentApiKey, candidateModel, messagesForApi);
                     if (response.statusCode() == 200) {

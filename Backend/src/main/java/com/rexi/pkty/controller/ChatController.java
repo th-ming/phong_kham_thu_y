@@ -19,6 +19,9 @@ import java.util.regex.Pattern;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.concurrent.ConcurrentHashMap;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Locale;
@@ -28,6 +31,8 @@ import java.util.Locale;
 public class ChatController {
 
     private static final Logger logger = Logger.getLogger(ChatController.class.getName());
+    private static final ZoneId VN_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
+    private static final DateTimeFormatter VN_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @Autowired
     private GroqService groqService;
@@ -117,6 +122,7 @@ public class ChatController {
             ChatMessage lastMsg = history.get(history.size() - 1);
             String userQuery = lastMsg.getContent() != null ? lastMsg.getContent() : "";
             String normalizedUserQuery = normalizeVietnamese(userQuery.toLowerCase());
+            String realtimeContext = buildRealtimeContext();
 
             // Giới hạn chat max 1000 ký tự để chặn spam tin siêu dài, đỡ tốn token API.
             if (userQuery.length() > 1000) {
@@ -134,6 +140,11 @@ public class ChatController {
             // Ghép thêm dữ liệu thực tế phòng khám Rexi vào bối cảnh giúp AI rep chuẩn chỉ.
             String globalContext = aiMemoryService.getGlobalContext(userQuery);
             String webSearchContext = "";
+            List<Map<String, String>> webResults = java.util.Collections.emptyList();
+            if (isWebSearchQuery(userQuery)) {
+                webResults = searchWebDuckDuckGo(userQuery);
+                webSearchContext = buildWebSearchContext(userQuery, webResults);
+            }
 
             // Đọc bối cảnh màn hình DOM từ frontend gửi lên để AI biết sếp đang ở trang nào.
             String rawPath = request.getHeader("X-Current-Path");
@@ -175,15 +186,16 @@ public class ChatController {
                     + "LỊCH SỬ THAO TÁC VÀ HÀNH VI GẦN ĐÂY CỦA NGƯỜI DÙNG VỚI MÀN HÌNH (Thời gian thực):\n"
                     + ">>> " + currentActivityLogs + "\n\n"
                     + "HƯỚNG DẪN AUTOPILOT (LÁI TỰ ĐỘNG THAO TÁC TRỰC QUAN):\n"
-                    + "1. Bạn có quyền điều khiển trình duyệt của người dùng để thực hiện các thao tác click, điền form, chọn select, bấm nút. Để thực hiện, hãy trả về các thẻ lệnh Autopilot dạng sau ở cuối câu trả lời của bạn:\n"
+                    + "1. Bạn có quyền điều khiển trình duyệt của người dùng để thực hiện các thao tác click, cuộn trang, điền form, chọn select, bấm nút. Để thực hiện, hãy trả về các thẻ lệnh Autopilot dạng sau ở cuối câu trả lời của bạn:\n"
                     + "   - Click một phần tử: [CLICK:data-ai-id]\n"
+                    + "   - Cuộn trang: [SCROLL:down|small], [SCROLL:up|small], [SCROLL:top], [SCROLL:bottom] hoặc [SCROLL:data-ai-id]\n"
                     + "   - Điền giá trị vào ô input/textarea: [FILL:data-ai-id|giá_trị_cần_điền]\n"
                     + "   - Chọn tùy chọn của thẻ select: [SELECT:data-ai-id|giá_trị_option]\n"
                     + "   - Bật/tắt nút toggle: [TOGGLE:data-ai-id]\n"
                     + "   - Xác nhận xóa: [DELETE:data-ai-id]\n"
                     + "2. CHỈ ĐƯỢC PHÉP sử dụng các giá trị data-ai-id thực sự tồn tại trong danh sách 'Interactive Elements' hiển thị ở bối cảnh giao diện trên. Tuyệt đối KHÔNG tự nghĩ ra data-ai-id không tồn tại.\n"
                     + "3. Ví dụ: Nếu người dùng ở trang Đặt lịch hẹn (/khach-hang/dat-lich-hen) và nhờ bạn đặt lịch giúp hoặc điền giúp, bạn hãy phân tích các data-ai-id của thú cưng, dịch vụ, ngày, giờ rảnh, ghi chú và xuất ra chuỗi thẻ lệnh Autopilot liên tiếp như:\n"
-                    + "   \"Dạ để tôi giúp Sen chọn thú cưng, chọn dịch vụ khám và điền thông tin đặt lịch nhé! [SELECT:select-datlichhen-688p|id_thú_cưng_của_sen] [CLICK:div-datlichhen-service-id_dịch_vụ] [FILL:input-datlichhen-mc0h|2026-05-20] [CLICK:button-datlichhen-rvj4_giờ_khám] [FILL:textarea-datlichhen-note|Triệu chứng của bé] [CLICK:button-datlichhen-66iq]\"\n"
+                    + "   \"Dạ để tôi giúp Sen chọn thú cưng, chọn dịch vụ khám và điền thông tin đặt lịch nhé! [SELECT:select-datlichhen-688p|id_thú_cưng_của_sen] [CLICK:div-datlichhen-service-id_dịch_vụ] [FILL:input-datlichhen-mc0h|YYYY-MM-DD_hợp_lệ] [CLICK:button-datlichhen-rvj4_giờ_khám] [FILL:textarea-datlichhen-note|Triệu chứng của bé] [CLICK:button-datlichhen-66iq]\"\n"
                     + "4. THÔNG TIN CHẨN ĐOÁN VÀ ĐIỀU TRỊ Y KHOA: Khi người dùng hoặc bác sĩ hỏi về thông tin chẩn đoán, cách hoạt động của thuốc, phác đồ điều trị, bạn phải cung cấp thông tin y khoa chính xác cao. ĐẶC BIỆT, TUYỆT ĐỐI không tự bịa ra link URL tham khảo giả mạo. Chỉ trích dẫn link nguồn thực tế nếu nguồn tin có sẵn hoặc nếu bạn tìm kiếm web thực tế trả về các URL thật uy tín (như Vinmec, Pethealth, WHO). Nếu không có, tuyệt đối KHÔNG đưa link bịa.\n"
                     + "6. PHÁT HIỆN LỖI SAI VÀ TỰ ĐỘNG SỬA (AUTOPILOT ERROR CORRECTION):\n"
                     + "   Bạn phải giám sát dữ liệu người dùng nhập so với bối cảnh màn hình (DOM Context). Nếu phát hiện họ nhập sai (ví dụ: gõ sai ngày khám, thiếu thông tin bắt buộc, sai chính tả tên thuốc/dịch vụ), hãy thực hiện đủ 3 bước:\n"
@@ -220,6 +232,7 @@ public class ChatController {
             String systemPrompt;
             if (isStaff) {
                 systemPrompt = "BẠN LÀ BÁC SĨ THÚ Y REXI - ĐỒNG NGHIỆP VÀ TRỢ LÝ HỖ TRỢ CHUYÊN NGHIỆP CỦA PHÒNG KHÁM.\n"
+                        + realtimeContext
                         + "1. VAI TRÒ: Bạn đang trò chuyện với một thành viên trong đội ngũ nhân viên phòng khám (" + userRoleName + "). Bạn là đồng nghiệp đắc lực hỗ trợ cho họ.\n"
                         + "2. PHẠM VI HỖ TRỢ: Hỗ trợ tra cứu kiến thức chuyên môn y khoa, quy trình làm việc, tư vấn phác đồ điều trị nâng cao, quản lý danh mục thuốc, quy định nghiệp vụ hoặc giải đáp thắc mắc chuyên môn.\n"
                         + "3. PHONG CÁCH: Chuyên nghiệp, đồng nghiệp, ngắn gọn, súc tích, không vòng vo. Gọi họ là 'sếp' hoặc 'đồng nghiệp'. Tuyệt đối KHÔNG gọi họ là 'Sen', không xưng hô kiểu bán hàng.\n"
@@ -228,7 +241,7 @@ public class ChatController {
                         + "6. QUY TẮC QUAN TRỌNG NHẤT - ƯU TIÊN TRẢ LỜI TRỰC TIẾP:\n"
                         + "   Khi đồng nghiệp đặt câu hỏi bất kỳ (ví dụ: 'khóa tài khoản khách hàng thì sao?', 'làm thế nào để thêm nhân viên?'...), bạn BẮT BUỘC phải TRẢ LỜI THẲNG VÀO NỘI DUNG CÂU HỎI trước. TUYỆT ĐỐI KHÔNG tự nhảy vào chế độ Autopilot/điều hướng khi đồng nghiệp chỉ hỏi thông tin.\n"
                         + "7. BẢO MẬT & TRUY CẬP DỮ LIỆU (CỰC KỲ QUAN TRỌNG):\n"
-                        + "   Ở chế độ chat này, bạn KHÔNG CÓ CÔNG CỤ TRUY CẬP TRỰC TIẾP VÀO DATABASE để tìm khách hàng, bệnh án, hóa đơn... Nếu đồng nghiệp yêu cầu tìm kiếm dữ liệu (ví dụ: 'có khách hàng nào tên X không?'), TUYỆT ĐỐI KHÔNG BỊA ĐẶT DỮ LIỆU HOẶC BÁO KHÔNG TÌM THẤY. Bắt buộc phải trả lời: 'Dạ sếp ơi, ở chế độ Trợ lý cơ bản này em chưa được gắn công cụ tra cứu Database. Sếp vui lòng bấm sang tab **Tác vụ Agent v2** ở góc trên cùng của khung chat để em dùng công cụ AI Level 5 quét dữ liệu thực tế cho sếp nhé!'.\n"
+                        + "   Ở chế độ chat này, bạn KHÔNG CÓ CÔNG CỤ TRUY CẬP TRỰC TIẾP VÀO DATABASE để tìm khách hàng, bệnh án, hóa đơn... Nếu đồng nghiệp yêu cầu tìm kiếm dữ liệu (ví dụ: 'có khách hàng nào tên X không?'), TUYỆT ĐỐI KHÔNG BỊA ĐẶT DỮ LIỆU HOẶC BÁO KHÔNG TÌM THẤY. Bắt buộc phải trả lời: 'Dạ sếp ơi, ở chế độ Trợ lý cơ bản này em chưa được gắn công cụ tra cứu Database. Sếp vui lòng bấm nút **Chuyển sang Rexi Agent** ngay dưới tin nhắn này hoặc mở tab **Rexi Agent** ở góc trên cùng của khung chat để em dùng công cụ quét dữ liệu thực tế cho sếp nhé!'.\n"
                         + "8. QUY TẮC ĐIỀU HƯỚNG TÁC VỤ NGHIÊM NGẶT (STRICT NAVIGATION GATE):\n"
                         + "   TUYỆT ĐỐI CẤM sử dụng thẻ [NAVIGATE] khi đồng nghiệp hỏi các câu hỏi đóng. Bạn CHỈ ĐƯỢC PHÉP dùng thẻ [NAVIGATE] nếu đồng nghiệp sử dụng động từ chỉ định mệnh lệnh rõ ràng (ví dụ: 'mở trang...', 'đưa tôi đến...', 'chuyển sang...'). Danh sách đường dẫn hợp lệ:\n"
                         + "   - Quản lý Nhân viên/Thêm nhân sự/Phân quyền: /quan-ly/nhan-vien-phan-quyen\n"
@@ -260,6 +273,7 @@ public class ChatController {
                         + domContextBlock;
             } else {
                 systemPrompt = "BẠN LÀ BÁC SĨ THÚ Y REXI - CHUYÊN GIA TOÀN NĂNG TRONG LĨNH VỰC CHĂM SÓC THÚ CƯNG.\n"
+                        + realtimeContext
                         + "1. PHẠM VI TRI THỨC: Bạn có kiến thức sâu rộng về MỌI mặt của thú y: Y khoa (bệnh lý, điều trị), Dinh dưỡng, Hành vi, Chăm sóc hằng ngày. Đừng ngần ngại tư vấn chi tiết cho Sen bất kể câu hỏi là gì.\n"
                         + "2. NGUỒN TRI THỨC: \n"
                         + "   - Nếu Sen hỏi về các chủ đề có trong [TÀI LIỆU CHUYÊN MÔN REXI] bên dưới, bạn BẮT BUỘC phải trả lời theo đúng tài liệu đó.\n"
@@ -271,7 +285,7 @@ public class ChatController {
                         + "7. THU THẬP TIỂU SỬ THÚ CƯNG: Bắt buộc chủ động hỏi Sen về Giống (chó/mèo/...), Độ tuổi và Cân nặng của thú cưng nếu chưa có thông tin, để đưa ra tư vấn sát thực tế nhất.\n"
                         + "8. TRÁNH KÊ ĐƠN THUỐC TÙY TIỆN: Chỉ tư vấn dinh dưỡng, hành vi, và hướng dẫn sơ cứu. TUYỆT ĐỐI KHÔNG TỰ TIỆN KÊ ĐƠN THUỐC.\n"
                         + "9. TRUY CẬP DỮ LIỆU HỆ THỐNG (CỰC KỲ QUAN TRỌNG):\n"
-                        + "   Ở chế độ này, bạn KHÔNG CÓ CÔNG CỤ tra cứu CSDL (tìm khách hàng, bệnh án). Nếu Sen yêu cầu tra cứu thông tin cụ thể trong hệ thống, TUYỆT ĐỐI KHÔNG BỊA ĐẶT DỮ LIỆU HOẶC TỰ NHẬN LÀ KHÔNG TÌM THẤY. Bắt buộc trả lời: 'Dạ Sen ơi, ở chế độ này em không thể xem dữ liệu hệ thống ạ. Sen bấm chuyển sang tab **Tác vụ Agent v2** ở trên cùng khung chat để em dùng siêu năng lực quét dữ liệu thực tế giúp Sen nha!'.\n"
+                        + "   Ở chế độ này, bạn KHÔNG CÓ CÔNG CỤ tra cứu CSDL (tìm khách hàng, bệnh án). Nếu Sen yêu cầu tra cứu thông tin cụ thể trong hệ thống, TUYỆT ĐỐI KHÔNG BỊA ĐẶT DỮ LIỆU HOẶC TỰ NHẬN LÀ KHÔNG TÌM THẤY. Bắt buộc trả lời: 'Dạ Sen ơi, ở chế độ này em không thể xem dữ liệu hệ thống ạ. Sen bấm nút **Chuyển sang Rexi Agent** ngay dưới tin nhắn này hoặc mở tab **Rexi Agent** ở trên cùng khung chat để em quét dữ liệu thực tế giúp Sen nha!'.\n"
                         + "10. QUY TẮC ĐIỀU HƯỚNG TÁC VỤ NGHIÊM NGẶT (STRICT NAVIGATION GATE):\n"
                         + "   TUYỆT ĐỐI CẤM sử dụng thẻ [NAVIGATE] khi người dùng hỏi các câu hỏi đóng. Bạn CHỈ ĐƯỢC PHÉP dùng thẻ [NAVIGATE] nếu người dùng sử dụng động từ chỉ định mệnh lệnh rõ ràng (ví dụ: 'mở trang quản lý thú cưng', 'chuyển sang đặt lịch hẹn khám'...), bạn BẮT BUỘC phải đính kèm thẻ lệnh dạng [NAVIGATE:đường_dẫn] ở cuối câu trả lời của bạn. Dưới đây là danh sách đường dẫn hợp lệ:\n"
                         + "   - Bảng điều khiển Khách hàng: /khach-hang/dashboard\n"
@@ -294,12 +308,16 @@ public class ChatController {
 ChatMessage systemMsg = new ChatMessage();
             systemMsg.setRole("system");
             systemMsg.setContent(systemPrompt);
+            history.removeIf(msg -> "system".equalsIgnoreCase(msg.getRole()));
             history.add(0, systemMsg);
 
             ChatMessage latest = history.get(history.size() - 1);
             boolean hasVideo = latest.getVideos() != null && !latest.getVideos().isEmpty();
             boolean hasImage = latest.getImages() != null && !latest.getImages().isEmpty();
             boolean hasMedia = hasVideo || hasImage;
+            if (hasMedia) {
+                latest.setContent(buildMediaPrompt(latest.getContent(), hasImage, hasVideo));
+            }
 
             // Phân tích từ khóa để định tuyến thông minh dựa trên thế mạnh của từng AI
             String userQueryStr = latest.getContent() != null ? latest.getContent() : "";
@@ -338,8 +356,13 @@ ChatMessage systemMsg = new ChatMessage();
                 try {
                     reply = geminiService.chat(history);
                 } catch (Exception geminiEx) {
-                    logger.warning("[AI ROUTER] Gemini lỗi, chuyển hướng dự phòng sang: OpenRouter (DeepSeek V4)...");
-                    reply = openRouterService.chat(history);
+                    if (hasVideo) {
+                        logger.warning("[AI ROUTER] Gemini lỗi khi phân tích video; không fallback sang model text-only để tránh bịa kết quả video: " + geminiEx.getMessage());
+                        reply = "Tôi chưa phân tích được video này vì model đa phương tiện đang lỗi hoặc quá tải. Để tránh nhận định bịa, bạn vui lòng gửi lại video ngắn hơn/rõ hơn hoặc gửi 2-3 ảnh chụp từ video. Nếu bé có dấu hiệu khó thở, co giật, chảy máu nhiều, tím tái hoặc lịm đi thì đưa bé đi cấp cứu ngay.";
+                    } else {
+                        logger.warning("[AI ROUTER] Gemini lỗi khi phân tích ảnh, chuyển dự phòng sang Groq Vision...");
+                        reply = groqService.chat(history);
+                    }
                 }
             } else if (isMedicalQuery) {
                 // 🩺 THẾ MẠNH CỦA DEEPSEEK V4: Tư duy Y khoa, Logic và Chẩn đoán
@@ -391,6 +414,9 @@ ChatMessage systemMsg = new ChatMessage();
                 logger.severe("Không thể lưu lịch sử tư vấn: " + logEx.getMessage());
             }
 
+            if (!webResults.isEmpty()) {
+                return Map.of("reply", reply, "webResults", webResults);
+            }
             return Map.of("reply", reply);
         } catch (Exception e) {
             logger.severe("Chat API error: " + e.getMessage());
@@ -582,15 +608,97 @@ ChatMessage systemMsg = new ChatMessage();
 
             for (int i = 0; i < urls.size() && i < 5; i++) {
                 Map<String, String> item = new java.util.HashMap<>();
-                item.put("url", urls.get(i));
-                item.put("title", titles.get(i));
-                item.put("snippet", i < snippets.size() ? snippets.get(i) : "");
+                item.put("url", cleanDuckDuckGoUrl(urls.get(i)));
+                item.put("title", stripHtmlEntities(titles.get(i)));
+                item.put("snippet", i < snippets.size() ? stripHtmlEntities(snippets.get(i)) : "");
                 results.add(item);
             }
         } catch (Exception e) {
             logger.severe("Lỗi khi tìm kiếm DuckDuckGo: " + e.getMessage());
         }
         return results;
+    }
+
+    private boolean isWebSearchQuery(String query) {
+        String normalized = normalizeVietnamese(query == null ? "" : query).toLowerCase(Locale.ROOT);
+        return normalized.contains("google")
+                || normalized.contains("len mang")
+                || normalized.contains("tra cuu mang")
+                || normalized.contains("tim tai lieu")
+                || normalized.contains("tim tren web")
+                || normalized.contains("tim kiem web")
+                || normalized.contains("nguon tham khao")
+                || normalized.contains("link nguon")
+                || normalized.contains("moi nhat");
+    }
+
+    private String buildWebSearchContext(String query, List<Map<String, String>> results) {
+        if (results == null || results.isEmpty()) {
+            return "\n--- KẾT QUẢ TÌM KIẾM WEB THỰC TẾ ---\n"
+                    + "Không lấy được kết quả web cho truy vấn: \"" + query + "\". Nếu trả lời, hãy nói rõ chưa có nguồn web kiểm chứng, không tự bịa link.\n";
+        }
+        StringBuilder sb = new StringBuilder("\n--- KẾT QUẢ TÌM KIẾM WEB THỰC TẾ ---\n");
+        sb.append("Truy vấn: ").append(query).append("\n");
+        sb.append("Chỉ được trích dẫn các URL dưới đây; không tự tạo link nguồn khác.\n");
+        int index = 1;
+        for (Map<String, String> item : results) {
+            sb.append(index++).append(". ")
+                    .append(item.getOrDefault("title", "Không tiêu đề"))
+                    .append(" | ")
+                    .append(item.getOrDefault("url", ""))
+                    .append(" | ")
+                    .append(item.getOrDefault("snippet", ""))
+                    .append("\n");
+        }
+        return sb.toString();
+    }
+
+    private String buildRealtimeContext() {
+        String now = LocalDateTime.now(VN_ZONE).format(VN_TIME_FORMATTER);
+        return "--- THỜI GIAN HỆ THỐNG HIỆN TẠI ---\n"
+                + "Bây giờ là " + now + " theo múi giờ Việt Nam (Asia/Ho_Chi_Minh). "
+                + "Khi người dùng nói hôm nay/ngày mai/hiện tại, phải hiểu theo thời điểm này; không dùng ngày cũ trong ví dụ hoặc lịch sử chat.\n";
+    }
+
+    private String buildMediaPrompt(String rawPrompt, boolean hasImage, boolean hasVideo) {
+        String userPrompt = rawPrompt == null ? "" : rawPrompt.trim();
+        String mediaType = hasImage && hasVideo ? "ảnh và video" : hasVideo ? "video" : "ảnh";
+        String base = "Bạn đang phân tích " + mediaType + " thú y bằng năng lực đa phương tiện. "
+                + "Hãy mô tả dấu hiệu nhìn thấy được, mức độ khẩn cấp, các khả năng nguyên nhân theo thứ tự ưu tiên, "
+                + "việc chủ nuôi có thể làm ngay, dấu hiệu cần đi cấp cứu và thông tin còn thiếu cần hỏi thêm. "
+                + "Không được chẩn đoán chắc chắn hoặc kê đơn chỉ dựa trên ảnh/video; nếu hình/video mờ hoặc không đủ dữ liệu phải nói rõ.";
+        return userPrompt.isBlank() ? base : userPrompt + "\n\n" + base;
+    }
+
+    private String cleanDuckDuckGoUrl(String rawUrl) {
+        if (rawUrl == null) return "";
+        String decoded = stripHtmlEntities(rawUrl);
+        try {
+            if (decoded.contains("uddg=")) {
+                String query = java.net.URI.create(decoded).getRawQuery();
+                if (query != null) {
+                    for (String part : query.split("&")) {
+                        if (part.startsWith("uddg=")) {
+                            return java.net.URLDecoder.decode(part.substring(5), java.nio.charset.StandardCharsets.UTF_8);
+                        }
+                    }
+                }
+            }
+        } catch (Exception ignored) {
+        }
+        return decoded;
+    }
+
+    private String stripHtmlEntities(String value) {
+        if (value == null) return "";
+        return value.replace("&amp;", "&")
+                .replace("&quot;", "\"")
+                .replace("&#x27;", "'")
+                .replace("&#39;", "'")
+                .replace("&lt;", "<")
+                .replace("&gt;", ">")
+                .replaceAll("<[^>]+>", "")
+                .trim();
     }
 
     private String normalizeVietnamese(String input) {

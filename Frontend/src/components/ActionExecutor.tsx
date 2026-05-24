@@ -3,11 +3,11 @@ import { confirmAction } from './ConfirmModal';
 
 /**
  * Execute a single AI action tag.
- * Supported tags: CLICK, FILL, TOGGLE, SELECT, DELETE
+ * Supported tags: CLICK, FILL, TOGGLE, SELECT, DELETE, SCROLL
  */
 export const executeAction = async (tag: string) => {
   try {
-    const match = tag.match(/^\[(CLICK|FILL|TOGGLE|SELECT|DELETE):([^\]]+)\]$/);
+    const match = tag.match(/^\[(CLICK|FILL|TOGGLE|SELECT|DELETE|SCROLL):([^\]]+)\]$/);
     if (!match) return;
 
     // Helper: Đính kèm thẻ tag vào window để Axios Interceptor có thể chộp lấy
@@ -144,6 +144,52 @@ export const executeAction = async (tag: string) => {
             detail: { type: 'ERROR', tag, message: `Sếp đã từ chối lệnh xóa: ${payload}` }
           }));
         }
+        break;
+      }
+      case 'SCROLL': {
+        const normalizedPayload = payload.toLowerCase().trim();
+        const [target, amountHint] = normalizedPayload.split('|').map(part => part.trim());
+        const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 720;
+        const amountByHint: Record<string, number> = {
+          tiny: Math.round(viewportHeight * 0.2),
+          small: Math.round(viewportHeight * 0.35),
+          medium: Math.round(viewportHeight * 0.65),
+          large: Math.round(viewportHeight * 0.9),
+        };
+        const parseAmount = (hint?: string) => {
+          if (!hint) return amountByHint.small;
+          if (amountByHint[hint]) return amountByHint[hint];
+          const px = hint.match(/^(\d+)\s*px?$/);
+          if (px) return Number(px[1]);
+          const percent = hint.match(/^(\d+)\s*%$/);
+          if (percent) return Math.round(viewportHeight * Number(percent[1]) / 100);
+          return amountByHint.small;
+        };
+
+        if (target === 'top' || target === 'dau-trang' || target === 'dau trang') {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else if (target === 'bottom' || target === 'cuoi-trang' || target === 'cuoi trang') {
+          window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
+        } else if (target === 'up' || target === 'len') {
+          window.scrollBy({ top: -parseAmount(amountHint), behavior: 'smooth' });
+        } else if (target === 'down' || target === 'xuong') {
+          window.scrollBy({ top: parseAmount(amountHint), behavior: 'smooth' });
+        } else {
+          const el = document.querySelector(`[data-ai-id="${payload}"]`) as HTMLElement;
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+          } else {
+            window.dispatchEvent(new CustomEvent('agent-action', {
+              detail: { type: 'ERROR', tag, message: `Không tìm thấy vùng cần cuộn tới: ${payload}` }
+            }));
+            break;
+          }
+        }
+
+        toast.success('Đã cuộn trang theo yêu cầu.');
+        window.dispatchEvent(new CustomEvent('agent-action', {
+          detail: { type: 'SUCCESS', tag, message: 'Đã cuộn trang theo yêu cầu.' }
+        }));
         break;
       }
       default:

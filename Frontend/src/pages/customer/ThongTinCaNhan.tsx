@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { Modal } from "@components/CommonUI";
 import { getUserProfile, normalizeUserRole } from "@utils/index";
 import { toast } from "@components/Toast";
+import { isValidPassword, PASSWORD_POLICY_MESSAGE } from "@utils/passwordPolicy";
 
 const ThongTinCaNhan: React.FC = () => {
   const [data, setData] = useState<any>(null);
@@ -120,8 +121,8 @@ const ThongTinCaNhan: React.FC = () => {
       toast.error("Mật khẩu xác nhận không khớp!");
       return;
     }
-    if (passData.newPass.length < 6) {
-      toast.error("Mật khẩu mới phải có ít nhất 6 ký tự!");
+    if (!isValidPassword(passData.newPass)) {
+      toast.error(PASSWORD_POLICY_MESSAGE);
       return;
     }
     try {

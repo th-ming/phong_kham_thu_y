@@ -14,8 +14,8 @@ public class RegisterRequest {
     private String ten_dang_nhap;
     
     @NotBlank(message = "Mật khẩu không được để trống")
-    @Pattern(regexp = "^(?=.*[!@#$%^&*()_+\\-={}\\[\\]|;:'\",.<>/?]).{6,}$", message = "Mật khẩu phải có ít nhất 6 ký tự và ít nhất một ký tự đặc biệt")
-    @Size(min = 6, max = 100, message = "Mật khẩu phải từ 6-100 ký tự")
+    @Pattern(regexp = "^(?=.*[!@#$%^&*()_+\\-={}\\[\\]|;:'\",.<>/?]).{7,20}$", message = "Mat khau phai tu 7-20 ky tu va co it nhat 1 ky tu dac biet")
+    @Size(min = 7, max = 20, message = "Mat khau phai tu 7-20 ky tu")
     private String mat_khau;
     
     @NotBlank(message = "Tên khách hàng không được để trống")
@@ -32,4 +32,5 @@ public class RegisterRequest {
     @Size(max = 200, message = "Địa chỉ không quá 200 ký tự")
     private String dia_chi;
 }
+
 

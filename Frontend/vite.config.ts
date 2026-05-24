@@ -49,12 +49,9 @@ export default defineConfig({
   cacheDir: 'node_modules/.vite_new',
   server: {
     port: 3005,
-    strictPort: true,
+    strictPort: false,
     host: true,
-    open: true,
-    hmr: {
-      clientPort: 3005,
-    },
+    open: false,
     proxy: {
       '/api': {
         target: 'http://localhost:8081',

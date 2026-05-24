@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.security.access.prepost.PreAuthorize;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
@@ -28,7 +29,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 @RestController
 @RequestMapping("/api/system")
-@CrossOrigin(origins = "*")
 public class SystemController {
 
     private static final Logger logger = Logger.getLogger(SystemController.class.getName());
@@ -75,7 +75,27 @@ public class SystemController {
         return ResponseEntity.ok(Map.of("status", "UP"));
     }
 
+    @PostMapping("/client-error")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> reportClientError(@RequestBody Map<String, Object> payload, HttpServletRequest request) {
+        try {
+            if (securityAlertService == null) {
+                return ResponseEntity.ok(Map.of("received", true, "realtime", false));
+            }
+            String ip = request.getHeader("X-Forwarded-For");
+            if (ip == null || ip.isBlank()) ip = request.getRemoteAddr();
+            if (ip != null && ip.contains(",")) ip = ip.split(",")[0].trim();
+            String userAgent = request.getHeader("User-Agent");
+            Map<String, Object> alert = securityAlertService.reportClientError(payload, ip, userAgent);
+            return ResponseEntity.ok(Map.of("received", true, "alertId", alert.get("id")));
+        } catch (Exception e) {
+            logger.warning("Không thể ghi nhận lỗi frontend: " + e.getMessage());
+            return ResponseEntity.ok(Map.of("received", false));
+        }
+    }
+
     @GetMapping("/cau-hinh")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> getCauHinh() {
         try {
             List<Map<String, Object>> rows = jdbcTemplate.queryForList("SELECT ten_cau_hinh, gia_tri FROM CauHinhHeThong");
@@ -89,7 +109,20 @@ public class SystemController {
         }
     }
 
+    @GetMapping("/public-cau-hinh")
+    public ResponseEntity<?> getPublicCauHinh() {
+        try {
+            String appName = readConfig("app_name");
+            return ResponseEntity.ok(Map.of(
+                    "app_name", appName == null || appName.isBlank() ? "Rexi - Phong Kham Thu Y" : appName
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.ok(Map.of("app_name", "Rexi - Phong Kham Thu Y"));
+        }
+    }
+
     @PostMapping("/cau-hinh")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> saveCauHinh(@RequestBody Map<String, String> payload) {
         try {
             for (Map.Entry<String, String> entry : payload.entrySet()) {
@@ -110,6 +143,7 @@ public class SystemController {
     }
 
     @GetMapping("/nhat-ky")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> getNhatKy() {
         try {
             List<Map<String, Object>> logs = jdbcTemplate.queryForList("SELECT TOP 100 * FROM NhatKyHeThong ORDER BY ngay_tao DESC");
@@ -184,6 +218,7 @@ public class SystemController {
     }
 
     @GetMapping("/chuc-nang")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> getChucNang() {
         List<Map<String, Object>> features = List.of(
             Map.of("id_chuc_nang", "1", "ma_chuc_nang", "TONG_QUAN", "ten_chuc_nang", "Tổng quan quản trị", "mo_ta", "Bảng điều khiển vận hành theo vai trò", "duong_dan", "/quan-ly/dashboard", "vai_tro", "ADMIN, QUAN_LY, BAC_SI, KE_TOAN, TIEP_TAN, Y_TA, STAFF"),
@@ -223,6 +258,7 @@ public class SystemController {
     }
 
     @GetMapping("/backups")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> listBackups() {
         try {
             String backupDirPath = System.getProperty("user.dir") + java.io.File.separator + "backups";
@@ -292,6 +328,7 @@ public class SystemController {
     }
 
     @GetMapping("/newsletter/count")
+    @PreAuthorize("hasAnyRole('ADMIN', 'QUAN_LY')")
     public ResponseEntity<?> getNewsletterCount() {
         try {
             // Lấy từ bảng KhachHang (những người có email và đồng ý nhận email marketing, chưa bị xóa)

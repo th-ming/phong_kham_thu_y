@@ -1,2 +1,0 @@
-# TÀI LIỆU VNUA: ASSOCIATE-PROFESSOR.-NGUYEN-VAN-GIAP
-(Tài liệu dạng ảnh quét)

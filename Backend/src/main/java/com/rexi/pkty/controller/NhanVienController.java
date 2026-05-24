@@ -5,6 +5,7 @@ import com.rexi.pkty.entity.NhanVien;
 import com.rexi.pkty.repository.LichLamViecNhanVienRepository;
 import com.rexi.pkty.repository.NhanVienRepository;
 import com.rexi.pkty.repository.TaiKhoanRepository;
+import com.rexi.pkty.security.PasswordPolicy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -412,6 +413,10 @@ public class NhanVienController {
                     return org.springframework.http.ResponseEntity.status(400)
                             .body(Map.of("message", "Vui lòng nhập tên đăng nhập và mật khẩu khi tạo tài khoản cho nhân sự."));
                 }
+                if (!PasswordPolicy.isValid(requestedPassword)) {
+                    return org.springframework.http.ResponseEntity.status(400)
+                            .body(Map.of("message", PasswordPolicy.message()));
+                }
                 if (taiKhoanRepository.findByTenDangNhap(requestedUsername).isPresent()) {
                     return org.springframework.http.ResponseEntity.status(409)
                             .body(Map.of("message", "Tên đăng nhập đã tồn tại. Vui lòng chọn tên khác."));
@@ -445,7 +450,7 @@ public class NhanVienController {
 
                 tk.setTrang_thai("active");
                 tk.setNgay_tao(LocalDateTime.now());
-                tk.setMat_khau(requestedPassword);
+                tk.setMat_khau("[ENCRYPTED]");
                 tk.setMat_khau_hash(passwordEncoder.encode(requestedPassword));
 
                 taiKhoanRepository.save(tk);

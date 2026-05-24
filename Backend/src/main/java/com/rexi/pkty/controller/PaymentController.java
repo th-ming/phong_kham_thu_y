@@ -72,7 +72,7 @@ public class PaymentController {
         if ("DA_THANH_TOAN".equalsIgnoreCase(status)) {
             return ResponseEntity.ok(Map.of("message", "Hóa đơn đã được thanh toán trước đó.", "success", true));
         }
-        if (!"CHO_THANH_TOAN".equalsIgnoreCase(status)) {
+        if (!"CHO_THANH_TOAN".equalsIgnoreCase(status) && !"DANG_THANH_TOAN".equalsIgnoreCase(status)) {
             return ResponseEntity.status(400).body(Map.of("message", "Hóa đơn không ở trạng thái chờ thanh toán.", "success", false));
         }
 
@@ -85,9 +85,21 @@ public class PaymentController {
         return null;
     }
 
+    private ResponseEntity<?> lockInvoiceForVnPay(String idHoaDon) {
+        int locked = jdbcTemplate.update(
+                "UPDATE HoaDon SET trang_thai = 'DANG_THANH_TOAN' " +
+                        "WHERE id_hoa_don = ? AND trang_thai = 'CHO_THANH_TOAN'",
+                idHoaDon);
+        if (locked == 0) {
+            return ResponseEntity.status(409)
+                    .body(Map.of("message", "Hóa đơn đang được xử lý hoặc đã thanh toán!"));
+        }
+        return null;
+    }
+
     // BẢO MẬT: Secret dùng để xác thực Webhook từ SePay/Casso/PayOS
     // Cấu hình trong application.properties: webhook.secret=YOUR_SECRET
-    @org.springframework.beans.factory.annotation.Value("${webhook.secret:rexi_webhook_secret_2026}")
+    @org.springframework.beans.factory.annotation.Value("${webhook.secret:}")
     private String webhookSecret;
 
     // =========================================================================
@@ -159,6 +171,11 @@ public class PaymentController {
                 return payableError;
             }
 
+            ResponseEntity<?> lockError = lockInvoiceForVnPay(idHoaDon);
+            if (lockError != null) {
+                return lockError;
+            }
+
             long amount = amountFromDb.multiply(new java.math.BigDecimal(100)).longValue();
             
             String vnp_Version = "2.1.0";
@@ -225,7 +242,7 @@ public class PaymentController {
                             "success", false));
                     }
 
-                    int updated = jdbcTemplate.update("UPDATE HoaDon SET trang_thai = 'DA_THANH_TOAN' WHERE id_hoa_don = ? AND trang_thai = 'CHO_THANH_TOAN'",
+                    int updated = jdbcTemplate.update("UPDATE HoaDon SET trang_thai = 'DA_THANH_TOAN' WHERE id_hoa_don = ? AND trang_thai IN ('CHO_THANH_TOAN', 'DANG_THANH_TOAN')",
                             idHoaDon);
                     if (updated == 0) {
                         return ResponseEntity.ok(Map.of("message", "Hóa đơn đã được xử lý trước đó.", "success", true));
@@ -234,6 +251,11 @@ public class PaymentController {
                             "INSERT INTO ThanhToan (id_thanh_toan, id_hoa_don, ngay_tra_tien, so_tien, phuong_thuc, ghi_chu) VALUES (?, ?, GETDATE(), ?, 'VNPay', N'Thanh toán VNPay thành công')",
                             "TT-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase(), idHoaDon, amountPaid);
                     return ResponseEntity.ok(Map.of("message", "Thanh toán thành công!", "success", true));
+                }
+                String idHoaDon = queryParams.get("vnp_TxnRef") != null ? queryParams.get("vnp_TxnRef").split("_")[0] : null;
+                if (idHoaDon != null) {
+                    jdbcTemplate.update("UPDATE HoaDon SET trang_thai = 'CHO_THANH_TOAN' WHERE id_hoa_don = ? AND trang_thai = 'DANG_THANH_TOAN'",
+                            idHoaDon);
                 }
                 return ResponseEntity.ok(Map.of("message", "Giao dịch thất bại.", "success", false));
             }
@@ -325,14 +347,14 @@ public class PaymentController {
 
     // API Webhook - Hệ thống tự động gạch nợ (Hứng từ PayOS / SePay / Casso)
     @PostMapping("/vietqr/webhook")
-    @org.springframework.transaction.annotation.Transactional
     public ResponseEntity<?> vietqrWebhook(
             @RequestBody Map<String, Object> payload,
             @RequestHeader(value = "X-Webhook-Secret", required = false) String receivedSecret) {
         try {
             // BẢO MẬT LỚP 1: Xác thực chữ ký bí mật từ SePay/Casso
             // Nếu không khớp → từ chối ngay, không xử lý gì cả
-            if (receivedSecret == null || !receivedSecret.equals(webhookSecret)) {
+            if (webhookSecret == null || webhookSecret.isBlank()
+                    || receivedSecret == null || !receivedSecret.equals(webhookSecret)) {
                 logger.warning("Webhook bị từ chối: Sai hoặc thiếu X-Webhook-Secret!");
                 return ResponseEntity.status(401).body(Map.of("success", false, "message", "Unauthorized"));
             }
@@ -375,7 +397,7 @@ public class PaymentController {
                     return payableError;
                 }
                 int updated = jdbcTemplate.update(
-                        "UPDATE HoaDon SET trang_thai = 'DA_THANH_TOAN' WHERE id_hoa_don = ? AND trang_thai = 'CHO_THANH_TOAN'",
+                        "UPDATE HoaDon SET trang_thai = 'DA_THANH_TOAN' WHERE id_hoa_don = ? AND trang_thai IN ('CHO_THANH_TOAN', 'DANG_THANH_TOAN')",
                         idHoaDon);
 
                 if (updated > 0) {

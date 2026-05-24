@@ -357,10 +357,6 @@ public class FinanceController {
                     "VALUES (?, ?, ?, ?, ?, ?, ?)";
             jdbcTemplate.update(sqlInsertLo, idThuoc, soLo, ngayNhap, hanSuDung, soLuongNhap, soLuongNhap, giaNhap);
 
-            // Cập nhật số lượng tồn tổng của Thuốc
-            String sqlUpdateThuoc = "UPDATE Thuoc SET so_luong_ton = ISNULL(so_luong_ton, 0) + ? WHERE id_thuoc = ?";
-            jdbcTemplate.update(sqlUpdateThuoc, soLuongNhap, idThuoc);
-
             return ResponseEntity.ok(Map.of("message", "Nhập kho thành công!"));
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of("message", "Lỗi nhập kho: " + e.getMessage()));

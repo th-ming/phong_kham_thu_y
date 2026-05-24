@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axiosInstance from "@services/axios";
 import { toast } from "@components/Toast";
+import { isValidPassword, PASSWORD_POLICY_MESSAGE } from "@utils/passwordPolicy";
 
 const QuenMatKhau: React.FC = () => {
   const [method, setMethod] = useState<"quick" | "otp">("quick");
@@ -73,6 +74,10 @@ const QuenMatKhau: React.FC = () => {
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isValidPassword(passwords.newPass)) {
+      toast.error(PASSWORD_POLICY_MESSAGE);
+      return;
+    }
     if (passwords.newPass !== passwords.confirmPass) {
       toast.error("Mật khẩu không khớp!");
       return;

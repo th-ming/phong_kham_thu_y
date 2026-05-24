@@ -3,6 +3,7 @@ import axiosInstance from "@services/axios";
 import { Modal } from "@components/CommonUI";
 import { toast } from "@components/Toast";
 import { getUserProfile, matchesSearchFields, normalizeSearchText, normalizeUserRole } from "@utils/index";
+import { isValidPassword, PASSWORD_POLICY_MESSAGE } from "@utils/passwordPolicy";
 
 const QuanLyNhanVienPhanQuyen: React.FC = () => {
   const [nhanViens, setNhanViens] = useState<any[]>([]);
@@ -95,6 +96,11 @@ const QuanLyNhanVienPhanQuyen: React.FC = () => {
     try {
       // Fix: Loại bỏ trường ngày rỗng để tránh lỗi Parse Date của Spring Boot
       const payload = { ...formData };
+      if (!editingId && payload.tao_tai_khoan && !isValidPassword(payload.mat_khau)) {
+        toast.error(PASSWORD_POLICY_MESSAGE);
+        setIsSaving(false);
+        return;
+      }
       if (!payload.ngay_vao_lam) delete (payload as any).ngay_vao_lam;
 
       if (editingId) {
@@ -134,6 +140,10 @@ const QuanLyNhanVienPhanQuyen: React.FC = () => {
     if (!editingAccount) return;
     try {
       const payload: any = { ...accountForm };
+      if (payload.mat_khau.trim() && !isValidPassword(payload.mat_khau)) {
+        toast.error(PASSWORD_POLICY_MESSAGE);
+        return;
+      }
       if (!payload.mat_khau.trim()) delete payload.mat_khau;
       if (payload.id_nhan_vien === "") payload.id_nhan_vien = null; // Gửi null nếu không muốn liên kết
       await axiosInstance.put(`/api/admin/tai-khoan/${editingAccount.id_tai_khoan}`, payload);
@@ -558,7 +568,7 @@ const QuanLyNhanVienPhanQuyen: React.FC = () => {
           <div style={{ padding: '24px 24px 10px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
             <div>
               <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 950, color: 'var(--ink)' }}>Tài khoản đăng nhập</h2>
-              <p style={{ margin: '6px 0 0 0', color: 'var(--gray-500)', fontWeight: 600, fontSize: '0.9rem' }}>Chỉ Admin được xem mật khẩu, sửa vai trò, khóa tài khoản và reset mật khẩu.</p>
+              <p style={{ margin: '6px 0 0 0', color: 'var(--gray-500)', fontWeight: 600, fontSize: '0.9rem' }}>Chỉ Admin được sửa vai trò, khóa tài khoản và reset mật khẩu.</p>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
               <div className="glass-card" style={{ display: 'flex', alignItems: 'center', padding: '0 14px', borderRadius: '16px', border: '1px solid var(--gray-200)', background: 'var(--surface)', width: '320px' }}>
@@ -614,7 +624,7 @@ const QuanLyNhanVienPhanQuyen: React.FC = () => {
                   <td style={{ padding: '18px 20px', fontWeight: 900, color: 'var(--primary)' }}>{account.id_vai_tro}</td>
                   <td style={{ padding: '18px 20px' }}>
                     <code style={{ padding: '6px 10px', borderRadius: '10px', background: 'var(--gray-50)', color: account.mat_khau_hien_thi ? 'var(--ink)' : 'var(--gray-400)', fontWeight: 800 }}>
-                      {account.mat_khau_hien_thi || 'Cần reset để xem'}
+                      {account.mat_khau_hien_thi || 'Không hiển thị'}
                     </code>
                   </td>
                   <td style={{ padding: '18px 20px' }}>

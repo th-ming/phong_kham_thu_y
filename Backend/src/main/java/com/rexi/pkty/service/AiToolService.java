@@ -6,6 +6,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.logging.Logger;
 
@@ -17,6 +18,7 @@ import java.util.logging.Logger;
 public class AiToolService {
 
     private static final Logger logger = Logger.getLogger(AiToolService.class.getName());
+    private static final ZoneId VN_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -115,7 +117,7 @@ public class AiToolService {
                 case "tim_khach_hang"        -> toolTimKhachHang((String) params.getOrDefault("tu_khoa", ""));
                 case "tim_thu_cung"          -> toolTimThuCung((String) params.getOrDefault("tu_khoa", ""));
                 case "xem_benh_an"           -> toolXemBenhAn((String) params.getOrDefault("id_thu_cung", ""));
-                case "tim_lich_trong"        -> toolTimLichTrong((String) params.getOrDefault("ngay", LocalDate.now().toString()));
+                case "tim_lich_trong"        -> toolTimLichTrong((String) params.getOrDefault("ngay", LocalDate.now(VN_ZONE).toString()));
                 case "dat_lich_hen"          -> toolDatLichHen(params);
                 case "xem_kho_thuoc"         -> toolXemKhoThuoc((String) params.getOrDefault("tu_khoa", ""));
                 case "thong_ke_doanh_thu"    -> toolThongKeDoanhThu((String) params.getOrDefault("khoang_thoi_gian", "hom_nay"));
@@ -431,7 +433,7 @@ public class AiToolService {
             StringBuilder result = new StringBuilder("Kết quả DuckDuckGo cho \"" + query + "\":\n");
             int count = 0;
             while (m.find() && count < 3) {
-                result.append("- ").append(stripHtmlEntities(m.group(2))).append(" → ").append(m.group(1)).append("\n");
+                result.append("- ").append(stripHtmlEntities(m.group(2))).append(" → ").append(cleanDuckDuckGoUrl(m.group(1))).append("\n");
                 count++;
             }
             return count > 0 ? result.toString() : "Không tìm thấy kết quả web.";
@@ -446,7 +448,28 @@ public class AiToolService {
                 .replace("&quot;", "\"")
                 .replace("&#x27;", "'")
                 .replace("&lt;", "<")
-                .replace("&gt;", ">");
+                .replace("&gt;", ">")
+                .replaceAll("<[^>]+>", "")
+                .trim();
+    }
+
+    private String cleanDuckDuckGoUrl(String rawUrl) {
+        if (rawUrl == null) return "";
+        String decoded = stripHtmlEntities(rawUrl);
+        try {
+            if (decoded.contains("uddg=")) {
+                String query = java.net.URI.create(decoded).getRawQuery();
+                if (query != null) {
+                    for (String part : query.split("&")) {
+                        if (part.startsWith("uddg=")) {
+                            return java.net.URLDecoder.decode(part.substring(5), java.nio.charset.StandardCharsets.UTF_8);
+                        }
+                    }
+                }
+            }
+        } catch (Exception ignored) {
+        }
+        return decoded;
     }
 
     private String toolGuiEmailDonLe(Map<String, Object> p) {

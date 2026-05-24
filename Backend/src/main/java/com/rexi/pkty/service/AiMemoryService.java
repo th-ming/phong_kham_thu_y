@@ -13,18 +13,22 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.time.LocalDate;
+import java.time.ZoneId;
 
 @Service
 public class AiMemoryService {
 
     private static final int KNOWLEDGE_MAX_CONTEXT_CHARS = 3800;
     private static final int KNOWLEDGE_SNIPPET_RADIUS = 520;
+    private static final long KNOWLEDGE_CACHE_TTL_MS = 60_000L;
+    private static final ZoneId VN_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
     private static final Set<String> KNOWLEDGE_STOP_WORDS = Set.of(
         "toi", "ban", "cho", "cua", "voi", "nay", "kia", "thi", "la", "va", "hoac", "nhung",
         "mot", "cac", "gi", "nao", "sao", "the", "can", "hay", "giup", "duoc",
@@ -42,6 +46,22 @@ public class AiMemoryService {
             this.score = score;
         }
     }
+
+    private static class KnowledgeFileCache {
+        private final long lastModified;
+        private final String content;
+        private final String normalizedContent;
+
+        private KnowledgeFileCache(long lastModified, String content, String normalizedContent) {
+            this.lastModified = lastModified;
+            this.content = content;
+            this.normalizedContent = normalizedContent;
+        }
+    }
+
+    private final Map<String, KnowledgeFileCache> knowledgeFileCache = new HashMap<>();
+    private final Map<String, String> knowledgeQueryCache = new HashMap<>();
+    private final Map<String, Long> knowledgeQueryCacheAt = new HashMap<>();
 
     @Autowired
     private TaiKhoanRepository taiKhoanRepository;
@@ -122,6 +142,12 @@ public class AiMemoryService {
         List<String> searchTerms = extractSearchTerms(normalizedQuery);
         if (searchTerms.isEmpty()) return "";
 
+        String cacheKey = String.join("|", searchTerms);
+        Long cachedAt = knowledgeQueryCacheAt.get(cacheKey);
+        if (cachedAt != null && System.currentTimeMillis() - cachedAt < KNOWLEDGE_CACHE_TTL_MS) {
+            return knowledgeQueryCache.getOrDefault(cacheKey, "");
+        }
+
         try {
             Path path = Paths.get("src/main/resources/knowledge");
             File folder = path.toFile();
@@ -130,9 +156,10 @@ public class AiMemoryService {
             List<KnowledgeSnippet> matches = new ArrayList<>();
 
             for (File file : folder.listFiles()) {
-                if (file.isFile() && file.getName().endsWith(".md")) {
-                    String content = Files.readString(file.toPath());
-                    String normalizedContent = normalizeForSearch(content);
+                if (file.isFile() && file.getName().endsWith(".md") && !isPersonalKnowledgeFile(file.getName())) {
+                    KnowledgeFileCache cachedFile = readKnowledgeFile(file);
+                    String content = cachedFile.content;
+                    String normalizedContent = cachedFile.normalizedContent;
                     int score = scoreKnowledgeFile(file.getName(), normalizedContent, searchTerms);
                     if (score <= 0) continue;
 
@@ -159,10 +186,37 @@ public class AiMemoryService {
                 }
                 context.append(block);
             }
-            return context.length() > 80 ? context.toString() : "";
+            String result = context.length() > 80 ? context.toString() : "";
+            knowledgeQueryCache.put(cacheKey, result);
+            knowledgeQueryCacheAt.put(cacheKey, System.currentTimeMillis());
+            return result;
         } catch (Exception e) {
             return "";
         }
+    }
+
+    private boolean isPersonalKnowledgeFile(String fileName) {
+        String normalized = normalizeForSearch(fileName);
+        return normalized.contains("cv")
+                || normalized.contains("profile ca nhan")
+                || normalized.contains("professor")
+                || normalized.contains("phd")
+                || normalized.contains("master")
+                || normalized.contains("associate professor");
+    }
+
+    private KnowledgeFileCache readKnowledgeFile(File file) throws java.io.IOException {
+        String key = file.getAbsolutePath();
+        long lastModified = file.lastModified();
+        KnowledgeFileCache cached = knowledgeFileCache.get(key);
+        if (cached != null && cached.lastModified == lastModified) {
+            return cached;
+        }
+
+        String content = Files.readString(file.toPath());
+        KnowledgeFileCache next = new KnowledgeFileCache(lastModified, content, normalizeForSearch(content));
+        knowledgeFileCache.put(key, next);
+        return next;
     }
 
     private String normalizeForSearch(String value) {
@@ -250,7 +304,7 @@ public class AiMemoryService {
             var schedules = lichLamViecNhanVienRepository.findAll();
             var doctors = nhanVienRepository.findAllBacSi();
             
-            LocalDate today = LocalDate.now();
+            LocalDate today = LocalDate.now(VN_ZONE);
             LocalDate nextWeek = today.plusDays(7);
             boolean hasSchedule = false;
             

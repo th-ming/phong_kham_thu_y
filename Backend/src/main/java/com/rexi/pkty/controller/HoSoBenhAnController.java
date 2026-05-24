@@ -328,6 +328,14 @@ public class HoSoBenhAnController {
         try {
             String idLichHen = String.valueOf(payload.get("id_lich_hen"));
 
+            Integer existingInvoiceCount = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM HoaDon WHERE id_lich_hen = ?",
+                    Integer.class, idLichHen);
+            if (existingInvoiceCount != null && existingInvoiceCount > 0) {
+                return org.springframework.http.ResponseEntity.status(409)
+                        .body(Map.of("message", "Hóa đơn đã được tạo trước đó!"));
+            }
+
             String sqlInfo = "SELECT lh.id_khach_hang, lh.id_bac_si, dv.gia as gia_kham, kh.sdt, kh.ten_khach_hang " +
                     "FROM LichHen lh " +
                     "LEFT JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu " +

@@ -4,8 +4,16 @@ import java.text.Normalizer;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 public final class SmartSearchSql {
+    private static final int MAX_TOKENS = 8;
+    private static final Set<String> STOP_WORDS = Set.of(
+            "toi", "ban", "cho", "cua", "voi", "nay", "kia", "thi", "la", "va", "hoac", "nhung",
+            "mot", "cac", "gi", "nao", "sao", "the", "can", "hay", "giup", "duoc", "khong",
+            "tim", "kiem", "loc", "xem", "danh", "sach", "thong", "tin"
+    );
+
     private SmartSearchSql() {
     }
 
@@ -41,7 +49,10 @@ public final class SmartSearchSql {
 
         return Arrays.stream(normalized.split("\\s+"))
                 .filter(token -> !token.isBlank())
+                .filter(token -> token.length() >= 2 || token.matches("\\d+"))
+                .filter(token -> !STOP_WORDS.contains(token))
                 .distinct()
+                .limit(MAX_TOKENS)
                 .toList();
     }
 

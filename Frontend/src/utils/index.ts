@@ -42,10 +42,19 @@ export const normalizeSearchText = (value: unknown): string => {
 }
 
 const tokenizeSearchText = (value: unknown): string[] => {
+  const stopWords = new Set([
+    "toi", "ban", "cho", "cua", "voi", "nay", "kia", "thi", "la", "va", "hoac", "nhung",
+    "mot", "cac", "gi", "nao", "sao", "the", "can", "hay", "giup", "duoc", "khong",
+    "tim", "kiem", "loc", "xem", "danh", "sach", "thong", "tin"
+  ]);
+
   return normalizeSearchText(value)
     .split(" ")
     .map(token => token.trim())
-    .filter(token => token.length > 0);
+    .filter(token => token.length >= 2 || /^\d+$/.test(token))
+    .filter(token => !stopWords.has(token))
+    .filter((token, index, arr) => arr.indexOf(token) === index)
+    .slice(0, 8);
 }
 
 const getEditDistance = (a: string, b: string): number => {
@@ -136,6 +145,32 @@ export const matchesSearchFields = (query: string, fields: unknown[]): boolean =
     combinedFieldText.includes(queryToken) ||
     fieldTokens.some(fieldToken => isCloseSearchToken(queryToken, fieldToken))
   );
+}
+
+export const scoreSearchFields = (query: string, fields: unknown[]): number => {
+  const normalizedQuery = normalizeSearchText(query);
+  if (!normalizedQuery) return 1;
+
+  const normalizedFields = fields.map(field => normalizeSearchText(field)).filter(Boolean);
+  const combinedFieldText = normalizedFields.join(" ");
+  if (!combinedFieldText) return 0;
+  if (combinedFieldText.includes(normalizedQuery)) return 100;
+
+  const queryTokens = tokenizeSearchText(query);
+  const fieldTokens = tokenizeSearchText(combinedFieldText);
+  if (queryTokens.length === 0 || fieldTokens.length === 0) return 0;
+
+  let score = 0;
+  for (const queryToken of queryTokens) {
+    if (combinedFieldText.includes(queryToken)) {
+      score += 10;
+      continue;
+    }
+    if (fieldTokens.some(fieldToken => isCloseSearchToken(queryToken, fieldToken))) {
+      score += 4;
+    }
+  }
+  return score;
 }
 
 export const chuyenNgayISO_SangVN = (dateString: string): string => {
