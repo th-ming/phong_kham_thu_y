@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -40,19 +41,18 @@ public class SecurityAlertService {
 
         addBlockedIp(cleanIp);
 
-        Map<String, Object> alert = Map.of(
-                "id", "SEC-" + Instant.now().toEpochMilli(),
-                "ip", cleanIp,
-                "attackType", attackType,
-                "path", path == null ? "" : path,
-                "method", method == null ? "" : method,
-                "userAgent", userAgent == null ? "" : userAgent,
-                "evidence", evidence == null ? "" : evidence,
-                "locationHint", locationHint == null || locationHint.isBlank() ? "Không xác định; chỉ có thể suy đoán qua IP/proxy header" : locationHint,
-                "blocked", true,
-                "message", "Phát hiện IP " + cleanIp + " có dấu hiệu " + attackType + ". Hệ thống đã tự động chặn vĩnh viễn cho tới khi Admin gỡ.",
-                "detectedAt", Instant.now().toString()
-        );
+        Map<String, Object> alert = new LinkedHashMap<>();
+        alert.put("id", "SEC-" + Instant.now().toEpochMilli());
+        alert.put("ip", cleanIp);
+        alert.put("attackType", attackType);
+        alert.put("path", path == null ? "" : path);
+        alert.put("method", method == null ? "" : method);
+        alert.put("userAgent", userAgent == null ? "" : userAgent);
+        alert.put("evidence", evidence == null ? "" : evidence);
+        alert.put("locationHint", locationHint == null || locationHint.isBlank() ? "Không xác định; chỉ có thể suy đoán qua IP/proxy header" : locationHint);
+        alert.put("blocked", true);
+        alert.put("message", "Phát hiện IP " + cleanIp + " có dấu hiệu " + attackType + ". Hệ thống đã tự động chặn vĩnh viễn cho tới khi Admin gỡ.");
+        alert.put("detectedAt", Instant.now().toString());
 
         recentAlerts.add(0, alert);
         while (recentAlerts.size() > MAX_ALERTS) {
@@ -61,10 +61,13 @@ public class SecurityAlertService {
 
         try {
             jdbcTemplate.update(
-                    "INSERT INTO NhatKyHeThong (hanh_dong, bang_tac_dong, mo_ta, ngay_tao) VALUES (?, ?, ?, GETDATE())",
+                    "INSERT INTO NhatKyHeThong (nguoi_thao_tac, hanh_dong, bang_du_lieu, chi_tiet, ip_address, device_info) VALUES (?, ?, ?, ?, ?, ?)",
+                    "AUTO_SECURITY",
                     "SECURITY_BLOCK",
                     "Security",
-                    alert.get("message") + " Path=" + path + " Evidence=" + evidence
+                    alert.get("message") + " Path=" + path + " Evidence=" + evidence,
+                    cleanIp,
+                    userAgent == null ? "" : userAgent
             );
         } catch (Exception ignored) {
             // Nhật ký là phụ trợ; không được làm hỏng luồng chặn.

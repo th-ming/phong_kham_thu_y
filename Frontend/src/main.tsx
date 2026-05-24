@@ -4,7 +4,7 @@ import { ThemeProvider } from '@contexts/ThemeContextV2'
 import App from './App'
 import './styles/index.css'
 import { toast } from '@components/Toast'
-import { WebSocketProvider } from './context/WebSocketProvider'
+import { WebSocketProvider } from './contexts/WebSocketProvider'
 
 // Cấu hình Axios Interceptor để tự động gắn Token vào tất cả request
 axios.interceptors.request.use((config) => {
