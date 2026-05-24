@@ -920,6 +920,55 @@ export const ChatBot: React.FC = () => {
         setProactiveMessage(null);
     };
 
+    const getElementAgentLabel = (el: Element) => {
+        const input = el as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
+        const labelByFor = input.id ? document.querySelector(`label[for="${input.id}"]`)?.textContent || "" : "";
+        const parentLabel = el.closest("label")?.textContent || "";
+        return normalizeSearchText([
+            labelByFor,
+            parentLabel,
+            input.getAttribute("aria-label"),
+            input.getAttribute("placeholder"),
+            input.getAttribute("title"),
+            input.getAttribute("data-ai-id"),
+            input.textContent
+        ].filter(Boolean).join(" "));
+    };
+
+    const isVisibleAgentElement = (el: Element) => {
+        const htmlEl = el as HTMLElement;
+        const style = window.getComputedStyle(htmlEl);
+        const rect = htmlEl.getBoundingClientRect();
+        return style.display !== "none" && style.visibility !== "hidden" && rect.width > 0 && rect.height > 0;
+    };
+
+    const findAgentControlByKeywords = <T extends HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement,>(
+        selector: string,
+        keywords: string[]
+    ): T | null => {
+        const normalizedKeywords = keywords.map(normalizeSearchText);
+        return Array.from(document.querySelectorAll<T>(selector))
+            .filter(isVisibleAgentElement)
+            .find(el => normalizedKeywords.some(keyword => getElementAgentLabel(el).includes(keyword))) || null;
+    };
+
+    const findAgentControlsByKeywords = <T extends HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement,>(
+        selector: string,
+        keywords: string[]
+    ): T[] => {
+        const normalizedKeywords = keywords.map(normalizeSearchText);
+        return Array.from(document.querySelectorAll<T>(selector))
+            .filter(isVisibleAgentElement)
+            .filter(el => normalizedKeywords.some(keyword => getElementAgentLabel(el).includes(keyword)));
+    };
+
+    const findAgentButtonByKeywords = (keywords: string[]): HTMLElement | null => {
+        const normalizedKeywords = keywords.map(normalizeSearchText);
+        return Array.from(document.querySelectorAll<HTMLElement>("button, a, [role='button'], [data-ai-id]"))
+            .filter(isVisibleAgentElement)
+            .find(el => normalizedKeywords.some(keyword => getElementAgentLabel(el).includes(keyword))) || null;
+    };
+
     // LẮNG NGHE HÀNH VI NGƯỜI DÙNG TOÀN CỤC (USER ACTIVITY TRACING)
     useEffect(() => {
         const handleGlobalClick = (e: MouseEvent) => {
@@ -961,10 +1010,11 @@ export const ChatBot: React.FC = () => {
 
                 // CẢNH BÁO Y KHOA: LƯU BỆNH ÁN KHI ĐƠN THUỐC TRỐNG CHO CA FPV NẶNG
                 if (aiId === "button-quanlybenhan-1pce") {
-                    const chanDoanEl = document.querySelector('[data-ai-id="textarea-quanlybenhan-chandoan"]') as HTMLTextAreaElement;
+                    const chanDoanEl = findAgentControlByKeywords<HTMLTextAreaElement>("textarea", ["chẩn đoán", "chan doan", "diagnosis"])
+                        || document.querySelector('[data-ai-id="textarea-quanlybenhan-chandoan"]') as HTMLTextAreaElement;
                     const diagnosis = chanDoanEl?.value?.toLowerCase() || "";
                     if (diagnosis.includes("fpv") || diagnosis.includes("parvo") || diagnosis.includes("giảm bạch cầu") || diagnosis.includes("giam bach cau")) {
-                        const selectEls = document.querySelectorAll('[data-ai-id="select-quanlybenhan-dttd"]');
+                        const selectEls = findAgentControlsByKeywords<HTMLSelectElement>("select", ["thuốc", "thuoc", "dược", "duoc", "đơn thuốc", "don thuoc"]);
                         if (selectEls.length === 0) {
                             e.preventDefault();
                             e.stopPropagation();
@@ -1275,8 +1325,8 @@ export const ChatBot: React.FC = () => {
     const [agentLoading, setAgentLoading] = useState(false);
 
     // Khai báo state quản lý bước suy nghĩ hiện tại của Rexi Chatbot
-    const [thoughtStep, setThoughtStep] = useState(0);
-    const [agentThoughtStep, setAgentThoughtStep] = useState(0);
+    const [, setThoughtStep] = useState(0);
+    const [, setAgentThoughtStep] = useState(0);
 
     // Tự động xoay vòng bước suy nghĩ Standard mỗi 1800ms để người dùng đọc không bị chán
     useEffect(() => {
@@ -1682,7 +1732,8 @@ export const ChatBot: React.FC = () => {
             // Bước 1: Điền triệu chứng lâm sàng
             dispatchHud('START', 'FILL', 'textarea-quanlybenhan-trieuchung', 'Đang tự động nhập triệu chứng lâm sàng...');
             await sleep(800);
-            const trieuChungEl = document.querySelector('[data-ai-id="textarea-quanlybenhan-trieuchung"]') as HTMLTextAreaElement;
+            const trieuChungEl = findAgentControlByKeywords<HTMLTextAreaElement>("textarea", ["triệu chứng", "trieu chung", "symptom"])
+                || document.querySelector('[data-ai-id="textarea-quanlybenhan-trieuchung"]') as HTMLTextAreaElement;
             if (trieuChungEl) {
                 trieuChungEl.value = "Bé mèo lờ đờ, sốt cao liên tục (40.5°C), nôn ra dịch vàng xanh có bọt, mất nước nặng, da kém đàn hồi, tiêu chảy cấp có mùi tanh nghiêm trọng.";
                 trieuChungEl.dispatchEvent(new Event('input', { bubbles: true }));
@@ -1695,7 +1746,8 @@ export const ChatBot: React.FC = () => {
             await sleep(600);
             dispatchHud('START', 'FILL', 'textarea-quanlybenhan-chandoan', 'Đang nhập kết quả chẩn đoán bệnh án...');
             await sleep(800);
-            const chanDoanEl = document.querySelector('[data-ai-id="textarea-quanlybenhan-chandoan"]') as HTMLTextAreaElement;
+            const chanDoanEl = findAgentControlByKeywords<HTMLTextAreaElement>("textarea", ["chẩn đoán", "chan doan", "diagnosis"])
+                || document.querySelector('[data-ai-id="textarea-quanlybenhan-chandoan"]') as HTMLTextAreaElement;
             if (chanDoanEl) {
                 chanDoanEl.value = "FPV (Feline Panleukopenia) - Giảm bạch cầu mèo truyền nhiễm. Xác nhận dương tính qua Test Kit nhanh.";
                 chanDoanEl.dispatchEvent(new Event('input', { bubbles: true }));
@@ -1708,7 +1760,8 @@ export const ChatBot: React.FC = () => {
             await sleep(600);
             dispatchHud('START', 'FILL', 'textarea-quanlybenhan-loidang', 'Đang nhập lời dặn của bác sĩ điều trị...');
             await sleep(800);
-            const loiDanEl = document.querySelector('[data-ai-id="textarea-quanlybenhan-loidang"]') as HTMLTextAreaElement;
+            const loiDanEl = findAgentControlByKeywords<HTMLTextAreaElement>("textarea", ["lời dặn", "loi dan", "dặn dò", "dan do", "ghi chú", "ghi chu"])
+                || document.querySelector('[data-ai-id="textarea-quanlybenhan-loidang"]') as HTMLTextAreaElement;
             if (loiDanEl) {
                 loiDanEl.value = "Khẩn cấp cách ly triệt để bé mèo khỏi khu vực chung. Ủ ấm cơ thể bằng túi sưởi. Truyền tĩnh mạch chậm Ringer Lactate để bù điện giải (20-30ml/kg/ngày). Tiêm dưới da Convenia (Cefovecin) ngừa nhiễm khuẩn thứ phát. Tiêm Cerenia (Maropitant) để kiểm soát nôn ói. Tuyệt đối kiêng ăn uống trong 24 giờ đầu.";
                 loiDanEl.dispatchEvent(new Event('input', { bubbles: true }));
@@ -1721,7 +1774,8 @@ export const ChatBot: React.FC = () => {
             await sleep(600);
             dispatchHud('START', 'CLICK', 'button-quanlybenhan-8zw3', 'Đang bấm thêm 3 dòng thuốc mới vào đơn thuốc...');
             await sleep(800);
-            const addDrugBtn = document.querySelector('[data-ai-id="button-quanlybenhan-8zw3"]') as HTMLButtonElement;
+            const addDrugBtn = findAgentButtonByKeywords(["thêm thuốc", "them thuoc", "thêm dòng thuốc", "them dong thuoc", "thêm đơn thuốc", "them don thuoc"])
+                || document.querySelector('[data-ai-id="button-quanlybenhan-8zw3"]') as HTMLButtonElement;
             if (addDrugBtn) {
                 addDrugBtn.click();
                 await sleep(200);
@@ -1739,9 +1793,9 @@ export const ChatBot: React.FC = () => {
             dispatchHud('START', 'SELECT', 'select-quanlybenhan-dttd', 'Đang tự động tra cứu danh mục và kê đơn thuốc hỗ trợ...');
             await sleep(800);
 
-            const selectEls = document.querySelectorAll('[data-ai-id="select-quanlybenhan-dttd"]');
-            const qtyEls = document.querySelectorAll('[data-ai-id="input-quanlybenhan-nj8p"]');
-            const noteEls = document.querySelectorAll('[data-ai-id="input-quanlybenhan-vgla"]');
+            const selectEls = findAgentControlsByKeywords<HTMLSelectElement>("select", ["thuốc", "thuoc", "dược", "duoc", "đơn thuốc", "don thuoc"]);
+            const qtyEls = findAgentControlsByKeywords<HTMLInputElement>("input", ["số lượng", "so luong", "liều", "lieu", "sl"]);
+            const noteEls = findAgentControlsByKeywords<HTMLInputElement>("input", ["ghi chú", "ghi chu", "cách dùng", "cach dung", "liều dùng", "lieu dung"]);
 
             const drugTemplates = [
                 { keyword: "cefovecin", qty: "1", note: "Tiêm dưới da liều đơn" },
@@ -4183,7 +4237,7 @@ export const ChatBot: React.FC = () => {
                                     {loading && (
                                         <ThoughtLoader 
                                             steps={standardThoughtSteps} 
-                                            activeStep={thoughtStep} 
+                                            activeStep={0} 
                                             isDark={isDark} 
                                         />
                                     )}
@@ -4419,7 +4473,7 @@ export const ChatBot: React.FC = () => {
                                     {agentLoading && (
                                         <ThoughtLoader 
                                             steps={agentThoughtSteps} 
-                                            activeStep={agentThoughtStep} 
+                                            activeStep={0} 
                                             isDark={isDark} 
                                         />
                                     )}
