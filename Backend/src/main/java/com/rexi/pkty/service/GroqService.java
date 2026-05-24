@@ -4,6 +4,7 @@ import java.util.logging.Logger;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rexi.pkty.dto.ChatMessage;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -155,6 +156,95 @@ public class GroqService {
         } catch (Exception e) {
             return "Tôi rất lo cho bé nhưng hệ thống đang trục trặc. Bạn hãy đưa bé đến Rexi sớm để bác sĩ kiểm tra cho yên tâm nhé!";
         }
+    }
+
+    public void streamChat(List<ChatMessage> history, SseEmitter emitter) throws Exception {
+        ChatMessage latest = history.get(history.size() - 1);
+        String latestContent = latest.getContent() != null ? latest.getContent() : "";
+
+        boolean hasImage = latest.getImages() != null && !latest.getImages().isEmpty();
+        String selectedModel = hasImage ? getVisionModelName() : getModelName();
+
+        List<Map<String, Object>> messagesForApi = new ArrayList<>();
+
+        for (int i = 0; i < history.size(); i++) {
+            ChatMessage msg = history.get(i);
+            String msgContent = msg.getContent() != null && !msg.getContent().isBlank() ? msg.getContent() : "";
+            boolean isLatest = (i == history.size() - 1);
+
+            if (isLatest && msg.getImages() != null && !msg.getImages().isEmpty()) {
+                String textForImage = msgContent.isBlank() ? "Phân tích các ảnh này và nhận định sức khỏe của bé."
+                        : msgContent;
+                List<Map<String, Object>> content = new ArrayList<>();
+                content.add(Map.of("type", "text", "text", textForImage));
+                
+                for (String imgBase64 : msg.getImages()) {
+                    content.add(Map.of(
+                            "type", "image_url",
+                            "image_url", Map.of("url", "data:image/jpeg;base64," + imgBase64)));
+                }
+                messagesForApi.add(Map.of("role", msg.getRole(), "content", content));
+            } else if (!msgContent.isBlank()) {
+                messagesForApi.add(Map.of("role", msg.getRole(), "content", msgContent));
+            }
+        }
+
+        Map<String, Object> requestBodyMap = Map.of(
+                "model", selectedModel,
+                "messages", messagesForApi,
+                "stream", true
+        );
+
+        String requestBody = objectMapper.writeValueAsString(requestBodyMap);
+
+        String currentApiKey = getApiKey();
+        if (currentApiKey == null || currentApiKey.trim().isEmpty()) {
+            emitter.completeWithError(new RuntimeException("Không tìm thấy Groq API Key nào được cấu hình!"));
+            return;
+        }
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(GROQ_API_URL))
+                .header("Content-Type", "application/json")
+                .header("Authorization", "Bearer " + currentApiKey)
+                .POST(HttpRequest.BodyPublishers.ofString(requestBody, java.nio.charset.StandardCharsets.UTF_8))
+                .timeout(java.time.Duration.ofSeconds(60))
+                .build();
+
+        client.sendAsync(request, HttpResponse.BodyHandlers.ofLines())
+            .thenAccept(response -> {
+                if (response.statusCode() != 200) {
+                    logger.severe("Groq API Error - Status: " + response.statusCode());
+                    emitter.completeWithError(new RuntimeException("Groq API Error " + response.statusCode()));
+                    return;
+                }
+                response.body().forEach(line -> {
+                    try {
+                        if (line.startsWith("data: ")) {
+                            String data = line.substring(6).trim();
+                            if ("[DONE]".equals(data)) {
+                                emitter.complete();
+                                return;
+                            }
+                            JsonNode rootNode = objectMapper.readTree(data);
+                            JsonNode deltaNode = rootNode.path("choices").get(0).path("delta");
+                            if (deltaNode.has("content")) {
+                                String content = deltaNode.path("content").asText();
+                                if (content != null && !content.isEmpty()) {
+                                    emitter.send(content);
+                                }
+                            }
+                        }
+                    } catch (Exception e) {
+                        logger.warning("Lỗi phân tích stream Groq: " + e.getMessage());
+                    }
+                });
+            })
+            .exceptionally(ex -> {
+                logger.severe("Groq Streaming Exception: " + ex.getMessage());
+                emitter.completeWithError(ex);
+                return null;
+            });
     }
 
     /**
