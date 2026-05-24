@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axiosInstance from "@services/axios";
+import { useAutoRefresh } from "@hooks/useAutoRefresh";
 
 const QuanLyChucNang: React.FC = () => {
   const [chucNangs, setChucNangs] = useState<any[]>([]);
@@ -18,7 +19,7 @@ const QuanLyChucNang: React.FC = () => {
     return "extension";
   };
 
-  useEffect(() => {
+  const fetchChucNangs = () => {
     axiosInstance.get("/api/system/chuc-nang")
       .then(res => {
         setChucNangs(res.data);
@@ -28,7 +29,13 @@ const QuanLyChucNang: React.FC = () => {
         console.error("Lỗi lấy danh sách chức năng:", err);
         setLoading(false);
       });
+  };
+
+  useEffect(() => {
+    fetchChucNangs();
   }, []);
+
+  useAutoRefresh(fetchChucNangs, { runImmediately: false });
 
   if (loading) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>

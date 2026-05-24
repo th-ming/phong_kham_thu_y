@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useState } from "react";
 import { Link } from "react-router-dom";
 import { MemeCat, ScrollToTop, RevealSection } from "@components/SpecialEffects";
 import axiosInstance from "@services/axios";
 import { useTheme } from "../contexts/ThemeContextV2";
+import { useAutoRefresh } from "@hooks/useAutoRefresh";
 
 interface DoctorData {
     id_nhan_vien: number | string;
@@ -47,34 +48,22 @@ const BacSi: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState(false);
 
-    useEffect(() => {
-
-
-        const fetchDoctors = async (showLoading = true) => {
-            if (showLoading) setLoading(true);
-            try {
-                const res = await axiosInstance.get("/api/bac-si");
-                const nextDoctors = Array.isArray(res.data) ? res.data : [];
-                setDoctors(nextDoctors);
-                setLoadError(false);
-            } catch (err) {
-                console.error("Lỗi lấy danh sách bác sĩ:", err);
-                setLoadError(true);
-                setDoctors((current) => current.length > 0 ? current : FALLBACK_DOCTORS);
-            } finally {
-                if (showLoading) setLoading(false);
-            }
-        };
-
-        fetchDoctors(true);
-
-        // Smart Polling: Lấy danh sách bác sĩ ngầm mỗi 10 giây. Không reload trang, tự động hiển thị bác sĩ mới cực êm!
-        const interval = setInterval(() => {
-            fetchDoctors(false);
-        }, 10000);
-
-        return () => clearInterval(interval);
+    const fetchDoctors = useCallback(async () => {
+        try {
+            const res = await axiosInstance.get("/api/bac-si");
+            const nextDoctors = Array.isArray(res.data) ? res.data : [];
+            setDoctors(nextDoctors);
+            setLoadError(false);
+        } catch (err) {
+            console.error("Lỗi lấy danh sách bác sĩ:", err);
+            setLoadError(true);
+            setDoctors((current) => current.length > 0 ? current : FALLBACK_DOCTORS);
+        } finally {
+            setLoading(false);
+        }
     }, []);
+
+    useAutoRefresh(fetchDoctors);
 
     const calculateExp = (dateStr: string) => {
         if (!dateStr) return "Chuyên gia giàu kinh nghiệm";

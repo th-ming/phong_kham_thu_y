@@ -232,18 +232,41 @@ public class ThuCungController {
                     }
                 }
  
-                tc.setDa_xoa(true);
-                thuCungRepository.save(tc);
-                
-                auditLogService.logAction("XÓA", "ThuCung",
-                        "Xóa thú cưng: " + tc.getTen_thu_cung() + " (ID: " + tc.getId_thu_cung() + ") bởi " + (username != null ? username : "Hệ thống"));
-                
-                return ResponseEntity.ok(Map.of("message", "Đã xóa thú cưng thành công!"));
+                if (hasBusinessData(id)) {
+                    tc.setDa_xoa(true);
+                    tc.setNgay_cap_nhat(java.time.LocalDateTime.now());
+                    thuCungRepository.save(tc);
+
+                    auditLogService.logAction("XÓA MỀM", "ThuCung",
+                            "Ẩn thú cưng có dữ liệu liên kết: " + tc.getTen_thu_cung() + " (ID: " + tc.getId_thu_cung() + ") bởi " + (username != null ? username : "Hệ thống"));
+                    return ResponseEntity.ok(Map.of("message", "Bé đã có lịch sử nghiệp vụ nên hệ thống đã ẩn thay vì xóa vĩnh viễn."));
+                }
+
+                thuCungRepository.delete(tc);
+                auditLogService.logAction("XÓA CỨNG", "ThuCung",
+                        "Xóa vĩnh viễn thú cưng chưa có dữ liệu liên kết: " + tc.getTen_thu_cung() + " (ID: " + tc.getId_thu_cung() + ") bởi " + (username != null ? username : "Hệ thống"));
+                return ResponseEntity.ok(Map.of("message", "Đã xóa vĩnh viễn thú cưng chưa có dữ liệu nghiệp vụ."));
             } else {
                 return ResponseEntity.status(404).body(Map.of("message", "Không tìm thấy thú cưng này!"));
             }
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of("message", "Lỗi khi xóa thú cưng: " + e.getMessage()));
         }
+    }
+
+    private boolean hasBusinessData(String idThuCung) {
+        Integer count = jdbcTemplate.queryForObject(
+                "SELECT " +
+                "(SELECT COUNT(1) FROM LichHen WHERE id_thu_cung = ?) + " +
+                "(SELECT COUNT(1) FROM HoSoBenhAn WHERE id_thu_cung = ?) + " +
+                "(SELECT COUNT(1) FROM LichSuTuVan WHERE id_thu_cung = ?) + " +
+                "(SELECT COUNT(1) FROM TiemChung WHERE id_thu_cung = ?)",
+                Integer.class,
+                idThuCung,
+                idThuCung,
+                idThuCung,
+                idThuCung
+        );
+        return count != null && count > 0;
     }
 }

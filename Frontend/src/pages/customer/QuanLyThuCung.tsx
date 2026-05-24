@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import axiosInstance from "@services/axios";
-import { getUserProfile, matchesSearchFields } from "@utils/index";
+import { getCustomerIdFromProfile, getUserProfile, matchesSearchFields } from "@utils/index";
 import { toast } from "@components/Toast";
 import { Skeleton } from "@components/CommonUI";
 import { confirmAction } from "@components/ConfirmModal";
+import { useAutoRefresh } from "@hooks/useAutoRefresh";
 
 const chuyenNgayISO_SangVN = (dateString: string) => {
   if (!dateString || typeof dateString !== 'string') return "—";
@@ -26,6 +27,7 @@ const tinhTuoi = (ngaySinh: string) => {
 };
 
 const isPetActive = (pet: any) => pet?.da_xoa !== true && pet?.daXoa !== true;
+const AUTO_REFRESH_MS = 10_000;
 
 const QuanLyThuCung: React.FC = () => {
   const [thuCung, setThuCung] = useState<any[]>([]);
@@ -42,8 +44,18 @@ const QuanLyThuCung: React.FC = () => {
 
   const fetchUserData = useCallback(async () => {
     const user = getUserProfile();
-    if (!user) return;
-    const id = user.id_khach_hang || user.id_tai_khoan || user.id;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+    const id = getCustomerIdFromProfile(user);
+    if (!id) {
+      console.warn("Không xác định được id_khach_hang từ hồ sơ đăng nhập:", user);
+      setThuCung([]);
+      setLichHen([]);
+      setLoading(false);
+      return;
+    }
 
     try {
       const [thuCungRes, lichHenRes] = await Promise.allSettled([
@@ -72,7 +84,7 @@ const QuanLyThuCung: React.FC = () => {
     }
   }, []);
 
-  useEffect(() => { fetchUserData(); }, [fetchUserData]);
+  useAutoRefresh(fetchUserData, { intervalMs: AUTO_REFRESH_MS });
 
   const handleOpenForm = (pet: any = null) => {
     if (pet) {
@@ -100,7 +112,11 @@ const QuanLyThuCung: React.FC = () => {
       toast.error("Phiên làm việc hết hạn. Vui lòng đăng nhập lại.");
       return;
     }
-    const idKhachHang = user.id_khach_hang || user.id_tai_khoan || user.id;
+    const idKhachHang = getCustomerIdFromProfile(user);
+    if (!idKhachHang) {
+      toast.error("Không xác định được mã khách hàng. Vui lòng đăng nhập lại.");
+      return;
+    }
 
     if (!formData.ten_thu_cung.trim()) {
       toast.error("Vui lòng nhập tên cho bé cưng của bạn nhé!");

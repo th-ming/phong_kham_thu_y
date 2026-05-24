@@ -54,3 +54,7 @@ export const canAccessAdminPath = (role: UserRoleCode, path: string): boolean =>
 
   return false;
 };
+
+export const isInternalRole = (role: UserRoleCode): boolean => {
+  return ROLE_GROUPS.allInternal.includes(role);
+};

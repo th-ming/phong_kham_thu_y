@@ -1,0 +1,1025 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Rexi Vet - Mobile Home Layout Sketch V2</title>
+  <style>
+    :root {
+      --teal: #0a9c90;
+      --teal-2: #13b8a9;
+      --deep: #102a36;
+      --muted: #6f838a;
+      --line: #dce9e9;
+      --soft: #eef9f7;
+      --cream: #fff8ed;
+      --amber: #ff9f1c;
+      --rose: #ff5f7a;
+      --navy: #071723;
+      --paper: #fbfdfc;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: start center;
+      padding: 26px 16px;
+      color: var(--deep);
+      background:
+        radial-gradient(circle at 15% 0%, rgba(19, 184, 169, 0.16), transparent 30%),
+        radial-gradient(circle at 90% 8%, rgba(255, 159, 28, 0.14), transparent 28%),
+        linear-gradient(180deg, #eef9f8, #ffffff 42%, #eef7f7);
+      font-family: Inter, Arial, sans-serif;
+    }
+
+    .phone {
+      width: 390px;
+      border-radius: 36px;
+      overflow: hidden;
+      background: var(--paper);
+      box-shadow: 0 28px 80px rgba(7, 23, 35, 0.22);
+      border: 1px solid rgba(16, 42, 54, 0.12);
+    }
+
+    .status {
+      height: 28px;
+      padding: 8px 22px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      font-weight: 800;
+      background: #ffffff;
+    }
+
+    .promo {
+      padding: 8px 16px;
+      background: var(--teal);
+      color: #fff;
+      display: flex;
+      gap: 10px;
+      overflow: hidden;
+      font-size: 10px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .promo span {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      min-width: max-content;
+    }
+
+    .promo i,
+    .icon {
+      width: 22px;
+      height: 22px;
+      border-radius: 9px;
+      display: inline-grid;
+      place-items: center;
+      font-style: normal;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .promo i { background: rgba(255, 255, 255, 0.18); }
+
+    .nav {
+      height: 60px;
+      padding: 0 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(255, 255, 255, 0.95);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .brand img {
+      width: 36px;
+      height: 36px;
+      border-radius: 12px;
+      object-fit: contain;
+      background: #effaf8;
+    }
+
+    .brand strong {
+      display: block;
+      font-size: 14px;
+      line-height: 1;
+    }
+
+    .brand small {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 9px;
+      font-weight: 700;
+    }
+
+    .menu {
+      width: 38px;
+      height: 38px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: #fff;
+      display: grid;
+      place-items: center;
+      gap: 3px;
+      padding: 10px;
+    }
+
+    .menu span {
+      width: 16px;
+      height: 2px;
+      border-radius: 99px;
+      background: var(--deep);
+    }
+
+    .hero {
+      padding: 18px 16px 22px;
+      background:
+        linear-gradient(180deg, #ffffff 0%, #f3fbfa 100%);
+    }
+
+    .pill {
+      width: max-content;
+      max-width: 100%;
+      height: 26px;
+      border-radius: 999px;
+      padding: 0 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #e8faf6;
+      color: #078578;
+      font-size: 10px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    h1, h2, h3, p { margin: 0; }
+
+    .hero h1 {
+      margin-top: 11px;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 34px;
+      line-height: 1.02;
+      letter-spacing: 0;
+      max-width: 330px;
+    }
+
+    .hero h1 span { color: var(--teal); }
+
+    .hero p {
+      margin-top: 10px;
+      max-width: 330px;
+      color: #657b83;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .hero-stage {
+      margin-top: 18px;
+      min-height: 252px;
+      position: relative;
+      border-radius: 28px;
+      overflow: hidden;
+      background:
+        linear-gradient(135deg, rgba(255,255,255,0.72), rgba(255,255,255,0.10)),
+        url("../public/img/hinh-nen-rexi.png") center / cover;
+      box-shadow: 0 18px 38px rgba(11, 91, 84, 0.15);
+      border: 1px solid rgba(10, 156, 144, 0.14);
+    }
+
+    .hero-stage::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(255,255,255,0.24), rgba(238,249,247,0.42));
+    }
+
+    .greeting-pets {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: end;
+      justify-content: center;
+      gap: 0;
+      padding: 38px 18px 6px;
+      pointer-events: none;
+    }
+
+    .greeting-pets video {
+      width: 148px;
+      height: 190px;
+      object-fit: contain;
+      filter: drop-shadow(0 22px 26px rgba(16, 42, 54, 0.18));
+    }
+
+    .greeting-pets video:first-child {
+      transform: translateX(15px) scale(1.08);
+      z-index: 2;
+    }
+
+    .greeting-pets video:last-child {
+      transform: translateX(-10px) scale(0.98);
+      z-index: 1;
+    }
+
+    .hero-card {
+      position: absolute;
+      left: 14px;
+      bottom: 14px;
+      width: 158px;
+      padding: 12px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.92);
+      border: 1px solid rgba(255, 255, 255, 0.72);
+      box-shadow: 0 16px 28px rgba(16, 42, 54, 0.14);
+    }
+
+    .hero-card strong {
+      display: block;
+      font-size: 18px;
+      color: var(--teal);
+    }
+
+    .hero-card span {
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 800;
+    }
+
+    .emergency {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      padding: 9px 10px;
+      border-radius: 17px;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 10px;
+      font-weight: 900;
+      box-shadow: 0 14px 28px rgba(16, 42, 54, 0.12);
+    }
+
+    .emergency .icon {
+      color: #fff;
+      background: var(--rose);
+    }
+
+    .actions {
+      margin-top: 16px;
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 10px;
+    }
+
+    .btn {
+      height: 48px;
+      border: 0;
+      border-radius: 17px;
+      font-size: 12px;
+      font-weight: 900;
+      font-family: inherit;
+    }
+
+    .btn.primary {
+      color: #fff;
+      background: linear-gradient(135deg, var(--teal), var(--teal-2));
+      box-shadow: 0 12px 22px rgba(10, 156, 144, 0.26);
+    }
+
+    .btn.ghost {
+      color: var(--deep);
+      background: #fff;
+      border: 1px solid var(--line);
+    }
+
+    .quick {
+      padding: 0 16px 18px;
+      background: #f3fbfa;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+
+    .quick button {
+      min-height: 72px;
+      border: 1px solid rgba(10, 156, 144, 0.10);
+      border-radius: 18px;
+      background: #fff;
+      color: var(--deep);
+      font-size: 9px;
+      font-weight: 900;
+      display: grid;
+      place-items: center;
+      align-content: center;
+      gap: 7px;
+      font-family: inherit;
+      box-shadow: 0 8px 18px rgba(16, 42, 54, 0.04);
+    }
+
+    .quick .icon {
+      color: var(--teal);
+      background: #e9faf7;
+    }
+
+    .section {
+      padding: 25px 16px;
+    }
+
+    .section.alt { background: #f2faf9; }
+    .section.white { background: #fff; }
+
+    .head {
+      margin-bottom: 15px;
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .kicker {
+      display: block;
+      color: var(--teal);
+      font-size: 10px;
+      font-weight: 950;
+      text-transform: uppercase;
+      margin-bottom: 5px;
+    }
+
+    .head h2 {
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 24px;
+      line-height: 1.06;
+      letter-spacing: 0;
+    }
+
+    .head a {
+      color: var(--teal);
+      font-size: 11px;
+      font-weight: 900;
+      text-decoration: none;
+      flex: 0 0 auto;
+    }
+
+    .service-hero {
+      min-height: 206px;
+      border-radius: 28px;
+      overflow: hidden;
+      position: relative;
+      background: url("../public/img/phong_phau_thuat.png") center / cover;
+      box-shadow: 0 18px 35px rgba(16, 42, 54, 0.14);
+    }
+
+    .service-hero::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(5, 60, 56, 0.08), rgba(5, 60, 56, 0.88));
+    }
+
+    .service-copy {
+      position: absolute;
+      left: 16px;
+      right: 16px;
+      bottom: 16px;
+      z-index: 1;
+      color: #fff;
+    }
+
+    .service-copy h3 {
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 24px;
+      line-height: 1;
+    }
+
+    .service-copy p {
+      margin-top: 7px;
+      font-size: 11px;
+      line-height: 1.45;
+      opacity: 0.9;
+    }
+
+    .price {
+      margin-top: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 18px;
+      font-weight: 950;
+    }
+
+    .price span {
+      height: 28px;
+      padding: 0 10px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      color: #fff;
+      background: var(--amber);
+      font-size: 10px;
+    }
+
+    .service-grid {
+      margin-top: 12px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .mini-service {
+      min-height: 126px;
+      padding: 12px;
+      border-radius: 22px;
+      background: #fff;
+      border: 1px solid var(--line);
+      box-shadow: 0 10px 22px rgba(16, 42, 54, 0.04);
+      display: grid;
+      align-content: space-between;
+    }
+
+    .mini-service .icon {
+      color: var(--teal);
+      background: #e9faf7;
+    }
+
+    .mini-service strong {
+      display: block;
+      margin-top: 12px;
+      font-size: 12px;
+      line-height: 1.25;
+    }
+
+    .mini-service small {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 9px;
+      font-weight: 800;
+    }
+
+    .stats {
+      padding: 30px 16px;
+      color: #fff;
+      background:
+        radial-gradient(circle at 90% 10%, rgba(255,255,255,0.22), transparent 24%),
+        linear-gradient(145deg, #09887e, #16b4a7);
+      text-align: center;
+    }
+
+    .stats h2 {
+      margin-top: 7px;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 25px;
+    }
+
+    .stats-grid {
+      margin-top: 18px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    .stat {
+      min-height: 108px;
+      border-radius: 22px;
+      background: rgba(255, 255, 255, 0.13);
+      border: 1px solid rgba(255, 255, 255, 0.19);
+      display: grid;
+      place-items: center;
+      align-content: center;
+      gap: 6px;
+    }
+
+    .stat strong { font-size: 24px; }
+    .stat span { font-size: 10px; font-weight: 800; opacity: 0.9; }
+
+    .timeline {
+      display: grid;
+      gap: 0;
+      position: relative;
+    }
+
+    .timeline::before {
+      content: "";
+      position: absolute;
+      left: 21px;
+      top: 20px;
+      bottom: 20px;
+      width: 2px;
+      background: #d8efec;
+    }
+
+    .step {
+      position: relative;
+      display: grid;
+      grid-template-columns: 44px 1fr;
+      gap: 12px;
+      padding: 9px 0;
+    }
+
+    .step-num {
+      width: 44px;
+      height: 44px;
+      border-radius: 16px;
+      background: #fff;
+      border: 1px solid var(--line);
+      color: var(--teal);
+      display: grid;
+      place-items: center;
+      font-weight: 950;
+      z-index: 1;
+    }
+
+    .step-copy {
+      min-height: 72px;
+      padding: 13px 14px;
+      border-radius: 20px;
+      background: #fff;
+      border: 1px solid var(--line);
+      box-shadow: 0 10px 22px rgba(16, 42, 54, 0.035);
+    }
+
+    .step-copy strong { font-size: 13px; }
+    .step-copy p { margin-top: 5px; color: var(--muted); font-size: 11px; line-height: 1.4; }
+
+    .doctor-card {
+      border-radius: 28px;
+      background: #fff;
+      border: 1px solid var(--line);
+      overflow: hidden;
+      box-shadow: 0 14px 30px rgba(16, 42, 54, 0.08);
+    }
+
+    .doctor-card img {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      object-position: center top;
+      display: block;
+    }
+
+    .doctor-info {
+      padding: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .doctor-info h3 {
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 20px;
+    }
+
+    .doctor-info p {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .badge {
+      flex: 0 0 auto;
+      height: 32px;
+      border-radius: 999px;
+      padding: 0 10px;
+      display: inline-flex;
+      align-items: center;
+      background: var(--cream);
+      color: #b86a00;
+      font-size: 10px;
+      font-weight: 950;
+    }
+
+    .doctor-strip {
+      margin-top: 12px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 9px;
+    }
+
+    .doctor-mini {
+      min-height: 120px;
+      border-radius: 20px;
+      overflow: hidden;
+      background: #fff;
+      border: 1px solid var(--line);
+    }
+
+    .doctor-mini img {
+      width: 100%;
+      height: 76px;
+      object-fit: cover;
+      object-position: center top;
+      display: block;
+    }
+
+    .doctor-mini strong {
+      display: block;
+      padding: 8px;
+      font-size: 9px;
+      line-height: 1.2;
+    }
+
+    .trust {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .trust-card {
+      min-height: 100px;
+      border-radius: 22px;
+      background: #fff;
+      border: 1px solid var(--line);
+      padding: 14px;
+      display: grid;
+      align-content: center;
+      gap: 5px;
+    }
+
+    .trust-card strong {
+      color: var(--teal);
+      font-size: 22px;
+    }
+
+    .trust-card span {
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 850;
+      line-height: 1.35;
+    }
+
+    .partners {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .partner {
+      height: 78px;
+      border-radius: 20px;
+      background: #fff;
+      border: 1px solid var(--line);
+      display: grid;
+      place-items: center;
+      padding: 12px;
+    }
+
+    .partner img {
+      max-width: 92px;
+      max-height: 42px;
+      object-fit: contain;
+    }
+
+    .reviews {
+      display: grid;
+      grid-auto-flow: column;
+      grid-auto-columns: 82%;
+      gap: 12px;
+      overflow: hidden;
+    }
+
+    .review {
+      min-height: 154px;
+      padding: 15px;
+      border-radius: 24px;
+      background: #fff;
+      border: 1px solid var(--line);
+      box-shadow: 0 10px 22px rgba(16, 42, 54, 0.04);
+    }
+
+    .stars { color: var(--amber); font-size: 13px; }
+    .review p { margin-top: 9px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+    .review strong { display: block; margin-top: 12px; font-size: 12px; }
+
+    .faq {
+      display: grid;
+      gap: 10px;
+    }
+
+    .faq-row {
+      min-height: 54px;
+      padding: 0 14px;
+      border-radius: 18px;
+      background: #fff;
+      border: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .faq-row span {
+      width: 26px;
+      height: 26px;
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      background: #eef9f7;
+      color: var(--teal);
+      flex: 0 0 auto;
+    }
+
+    .booking {
+      padding: 28px 16px;
+      color: #fff;
+      background:
+        linear-gradient(135deg, rgba(7, 23, 35, 0.10), rgba(7, 23, 35, 0)),
+        linear-gradient(145deg, #0b958a, #17b8aa);
+    }
+
+    .booking-card {
+      padding: 18px;
+      border-radius: 28px;
+      background: rgba(255, 255, 255, 0.13);
+      border: 1px solid rgba(255,255,255,0.2);
+      text-align: center;
+    }
+
+    .booking h2 {
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 27px;
+      line-height: 1.04;
+    }
+
+    .booking p {
+      margin: 10px auto 16px;
+      max-width: 300px;
+      font-size: 12px;
+      line-height: 1.5;
+      opacity: 0.88;
+    }
+
+    .booking .btn {
+      width: 100%;
+      color: #fff;
+      background: var(--amber);
+    }
+
+    .contact {
+      display: grid;
+      gap: 10px;
+    }
+
+    .contact-row {
+      min-height: 62px;
+      display: grid;
+      grid-template-columns: 38px 1fr;
+      align-items: center;
+      gap: 11px;
+      padding: 11px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 19px;
+    }
+
+    .contact-row .icon {
+      color: var(--teal);
+      background: #e9faf7;
+      width: 38px;
+      height: 38px;
+      border-radius: 14px;
+    }
+
+    .contact-row strong { font-size: 12px; }
+    .contact-row small { display: block; margin-top: 3px; color: var(--muted); font-size: 10px; }
+
+    .footer {
+      padding: 25px 16px 30px;
+      background: var(--navy);
+      color: #e7f0f2;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .footer .brand img { background: rgba(255,255,255,0.08); }
+    .footer p {
+      margin-top: 12px;
+      color: #8fa5ac;
+      font-size: 11px;
+      line-height: 1.55;
+    }
+
+    .footer-links {
+      margin-top: 18px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+      color: #cbdade;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .footer-cat {
+      position: absolute;
+      right: 18px;
+      bottom: 18px;
+      width: 70px;
+      opacity: 0.95;
+      filter: drop-shadow(0 12px 18px rgba(0,0,0,0.24));
+    }
+  </style>
+</head>
+<body>
+  <main class="phone">
+    <div class="status">
+      <span>9:41</span>
+      <span>5G 100%</span>
+    </div>
+
+    <div class="promo">
+      <span><i>!</i>Cấp cứu 24/7: 0353.374.156</span>
+      <span><i>*</i>Không nghỉ lễ</span>
+    </div>
+
+    <nav class="nav">
+      <div class="brand">
+        <img src="../public/img/rexi_brand_logo.png" alt="Rexi Vet" />
+        <div>
+          <strong>Rexi Vet</strong>
+          <small>Chăm sóc thú cưng toàn diện</small>
+        </div>
+      </div>
+      <button class="menu" aria-label="Menu"><span></span><span></span><span></span></button>
+    </nav>
+
+    <section class="hero">
+      <span class="pill">Vet care tại Hà Nội</span>
+      <h1>Sức Khỏe <span>Trọn Vẹn</span> Cho Bé Cưng</h1>
+      <p>Mobile nên bắt đầu bằng lợi ích rõ ràng, hình ảnh ấm áp và hành động đặt lịch luôn nằm trong tầm tay.</p>
+      <div class="hero-stage">
+        <div class="emergency"><span class="icon">+</span>Khám nhanh</div>
+        <div class="greeting-pets" aria-label="Chó mèo chào Rexi">
+          <video src="../public/img/video_cho_chao.webm" autoplay muted loop playsinline></video>
+          <video src="../public/img/video_meo_chao.webm" autoplay muted loop playsinline></video>
+        </div>
+        <div class="hero-card"><strong>4.9/5</strong><span>1.200+ đánh giá tốt</span></div>
+      </div>
+      <div class="actions">
+        <button class="btn primary">Đặt lịch ngay</button>
+        <button class="btn ghost">Xem bảng giá</button>
+      </div>
+    </section>
+
+    <div class="quick">
+      <button><span class="icon">+</span>Cấp cứu</button>
+      <button><span class="icon">$</span>Bảng giá</button>
+      <button><span class="icon">D</span>Bác sĩ</button>
+      <button><span class="icon">☎</span>Liên hệ</button>
+    </div>
+
+    <section class="section white">
+      <div class="head">
+        <div><span class="kicker">Dịch vụ nổi bật</span><h2>Chăm Sóc Toàn Diện</h2></div>
+        <a href="#">Tất cả</a>
+      </div>
+      <article class="service-hero">
+        <div class="service-copy">
+          <h3>Phẫu thuật nhỏ</h3>
+          <p>Phòng phẫu thuật sạch, quy trình theo dõi sau điều trị và tư vấn phục hồi rõ ràng.</p>
+          <div class="price">1.500.000 đ <span>Đặt ngay</span></div>
+        </div>
+      </article>
+      <div class="service-grid">
+        <div class="mini-service"><span class="icon">✚</span><div><strong>Khám đa khoa</strong><small>Tư vấn tình trạng ban đầu</small></div></div>
+        <div class="mini-service"><span class="icon">▣</span><div><strong>Chẩn đoán hình ảnh</strong><small>Hỗ trợ đọc kết quả</small></div></div>
+        <div class="mini-service"><span class="icon">★</span><div><strong>Spa grooming</strong><small>Tắm, cắt tỉa, vệ sinh</small></div></div>
+        <div class="mini-service"><span class="icon">24</span><div><strong>Cấp cứu 24/7</strong><small>Ưu tiên ca khẩn cấp</small></div></div>
+      </div>
+    </section>
+
+    <section class="stats">
+      <span class="pill">Con số ấn tượng</span>
+      <h2>Hơn 10 Năm Đồng Hành</h2>
+      <div class="stats-grid">
+        <div class="stat"><strong>5,000+</strong><span>Thú cưng</span></div>
+        <div class="stat"><strong>10+</strong><span>Năm kinh nghiệm</span></div>
+        <div class="stat"><strong>15+</strong><span>Bác sĩ chuyên khoa</span></div>
+        <div class="stat"><strong>98%</strong><span>Khách hài lòng</span></div>
+      </div>
+    </section>
+
+    <section class="section alt">
+      <div class="head">
+        <div><span class="kicker">Quy trình</span><h2>Đặt Lịch Trong 4 Bước</h2></div>
+      </div>
+      <div class="timeline">
+        <div class="step"><div class="step-num">01</div><div class="step-copy"><strong>Chọn dịch vụ</strong><p>Lọc nhanh theo nhu cầu khám, spa, tiêm phòng hoặc cấp cứu.</p></div></div>
+        <div class="step"><div class="step-num">02</div><div class="step-copy"><strong>Chọn bác sĩ</strong><p>Xem lịch trống và chuyên môn phù hợp với tình trạng của bé.</p></div></div>
+        <div class="step"><div class="step-num">03</div><div class="step-copy"><strong>Xác nhận lịch</strong><p>Nhận thông tin lịch hẹn, địa chỉ và hướng dẫn chuẩn bị.</p></div></div>
+        <div class="step"><div class="step-num">04</div><div class="step-copy"><strong>Theo dõi hồ sơ</strong><p>Lưu bệnh án, hóa đơn và nhắc lịch tái khám trên tài khoản.</p></div></div>
+      </div>
+    </section>
+
+    <section class="section white">
+      <div class="head">
+        <div><span class="kicker">Bác sĩ Rexi</span><h2>Chuyên Gia Tận Tâm</h2></div>
+        <a href="#">Xem thêm</a>
+      </div>
+      <article class="doctor-card">
+        <img src="../public/img/bac_si_minh_anh.png" alt="BS. Minh Anh" />
+        <div class="doctor-info">
+          <div><h3>BS. Minh Anh</h3><p>10+ năm kinh nghiệm thú y</p></div>
+          <span class="badge">Được yêu thích</span>
+        </div>
+      </article>
+      <div class="doctor-strip">
+        <div class="doctor-mini"><img src="../public/img/bac_si_khanh_linh.png" alt="BS. Khánh Linh" /><strong>BS. Khánh Linh</strong></div>
+        <div class="doctor-mini"><img src="../public/img/bac_si_hoang_nam.png" alt="BS. Hoàng Nam" /><strong>BS. Hoàng Nam</strong></div>
+        <div class="doctor-mini"><img src="../public/img/bac_si_thu_thuy.png" alt="BS. Thu Thủy" /><strong>BS. Thu Thủy</strong></div>
+      </div>
+    </section>
+
+    <section class="section alt">
+      <div class="head">
+        <div><span class="kicker">Uy tín</span><h2>Đồng Hành Cùng Thương Hiệu Tin Cậy</h2></div>
+      </div>
+      <div class="trust">
+        <div class="trust-card"><strong>120+</strong><span>Đối tác thú y và nhà cung cấp</span></div>
+        <div class="trust-card"><strong>95%</strong><span>Hài lòng sau lần đầu sử dụng</span></div>
+      </div>
+      <div class="partners">
+        <div class="partner"><img src="../public/img/doi-tac-rexi.png" alt="Rexi partner" /></div>
+        <div class="partner"><img src="../public/img/doi-tac-petcare.png" alt="PetCare" /></div>
+        <div class="partner"><img src="../public/img/doi-tac-greenvet.png" alt="GreenVet" /></div>
+        <div class="partner"><img src="../public/img/doi-tac-careplus.png" alt="CarePlus" /></div>
+      </div>
+    </section>
+
+    <section class="section white">
+      <div class="head">
+        <div><span class="kicker">Đánh giá</span><h2>Tin Yêu Từ Mọi Nhà</h2></div>
+      </div>
+      <div class="reviews">
+        <article class="review"><div class="stars">★★★★★</div><p>Đội ngũ nhẹ nhàng, tư vấn kỹ, bé nhà mình đỡ căng thẳng hơn khi đi khám.</p><strong>Chị Thảo Minh</strong></article>
+        <article class="review"><div class="stars">★★★★★</div><p>Đặt lịch nhanh, nhắc hẹn rõ ràng, sau khám có hồ sơ để theo dõi.</p><strong>Anh Quốc Huy</strong></article>
+      </div>
+    </section>
+
+    <section class="section alt">
+      <div class="head">
+        <div><span class="kicker">Hỏi đáp</span><h2>Câu Hỏi Thường Gặp</h2></div>
+      </div>
+      <div class="faq">
+        <div class="faq-row">Rexi có khám ngoài giờ không?<span>+</span></div>
+        <div class="faq-row">Có xét nghiệm tại chỗ không?<span>+</span></div>
+        <div class="faq-row">Có cần đặt lịch trước không?<span>+</span></div>
+      </div>
+    </section>
+
+    <section class="booking">
+      <div class="booking-card">
+        <h2>Đặt Lịch Hẹn Cho Bé Ngay Hôm Nay</h2>
+        <p>Ưu tiên lịch gần nhất, có nhân viên xác nhận và hướng dẫn chuẩn bị trước khi đến.</p>
+        <button class="btn">Đặt lịch ngay</button>
+      </div>
+    </section>
+
+    <section class="section white">
+      <div class="head">
+        <div><span class="kicker">Liên hệ</span><h2>Kết Nối Với Rexi</h2></div>
+      </div>
+      <div class="contact">
+        <div class="contact-row"><span class="icon">⌖</span><div><strong>56E2, ngõ 19, đường Ngô Xuân Quảng</strong><small>Trâu Quỳ, Gia Lâm, Hà Nội</small></div></div>
+        <div class="contact-row"><span class="icon">☎</span><div><strong>0353.374.156</strong><small>Hỗ trợ khẩn cấp 24/7</small></div></div>
+        <div class="contact-row"><span class="icon">@</span><div><strong>rexivet@gmail.com</strong><small>Phản hồi trong ngày</small></div></div>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <div class="brand">
+        <img src="../public/img/rexi_white_cat_logo.png" alt="Rexi Vet" />
+        <div><strong>Rexi Vet</strong><small>Sức khỏe trọn vẹn cho thú cưng</small></div>
+      </div>
+      <p>Footer mobile gọn, giữ thông tin liên hệ và các link chính, tránh kéo quá dài.</p>
+      <div class="footer-links">
+        <span>Trang chủ</span>
+        <span>Dịch vụ</span>
+        <span>Bác sĩ</span>
+        <span>Liên hệ</span>
+      </div>
+      <img class="footer-cat" src="../public/img/anh_meo_nhay.png" alt="Mèo Rexi ở footer" />
+    </footer>
+  </main>
+</body>
+</html>

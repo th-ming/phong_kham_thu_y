@@ -1,6 +1,7 @@
 package com.rexi.pkty.controller;
 
 import com.rexi.pkty.dto.ChatMessage;
+import com.rexi.pkty.security.RoleAccessPolicy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.http.ResponseEntity;
@@ -127,6 +128,12 @@ public class AgentController {
      */
     @PostMapping("/swarm-orchestration")
     public ResponseEntity<?> handleSwarmOrchestration(@RequestBody Map<String, String> payload) {
+        if (!isCurrentUserStaff()) {
+            return ResponseEntity.status(403).body(Map.of(
+                "reply", "Tài khoản khách hàng không được chạy Swarm Agent hoặc truy vấn danh sách khách hàng nội bộ."
+            ));
+        }
+
         String query = payload.get("query") != null ? payload.get("query") : "";
         logger.info("[SWARM] Tiếp nhận yêu cầu điều phối đa Agent Swarm: " + query);
 
@@ -412,6 +419,13 @@ public class AgentController {
      */
     @PostMapping("/bulk-send-email")
     public ResponseEntity<?> bulkSendEmail(@RequestBody Map<String, Object> request) {
+        if (!isCurrentUserStaff()) {
+            return ResponseEntity.status(403).body(Map.of(
+                "success", false,
+                "error", "Tài khoản khách hàng không được gửi email hàng loạt."
+            ));
+        }
+
         try {
             @SuppressWarnings("unchecked")
             List<Map<String, Object>> contacts = (List<Map<String, Object>>) request.get("contacts");
@@ -509,12 +523,9 @@ public class AgentController {
             userRole = auth.getAuthorities().stream()
                 .findFirst().map(g -> g.getAuthority().replace("ROLE_", "")).orElse("");
         }
-        boolean isStaff = userRole != null && !userRole.isBlank()
-            && !userRole.equalsIgnoreCase("CUSTOMER")
-            && !userRole.equalsIgnoreCase("KHACH_HANG");
+        boolean isStaff = RoleAccessPolicy.isInternalStaffRole(userRole);
 
-        Set<String> customerSafeTools = Set.of("tim_lich_trong", "tim_kiem_web", "kiem_tra_phan_he");
-        if (!authenticated || (!isStaff && !customerSafeTools.contains(toolName))) {
+        if (!authenticated || (!isStaff && !RoleAccessPolicy.canUseAgentTool(userRole, toolName))) {
             return ResponseEntity.status(403).body(Map.of(
                 "error", "Tool này chỉ dành cho tài khoản nhân sự nội bộ."
             ));
@@ -586,5 +597,16 @@ public class AgentController {
             logger.severe("[ReAct] Lỗi: " + e.getMessage());
             return ResponseEntity.internalServerError().body(Map.of("error", "Lỗi ReAct Agent: " + e.getMessage()));
         }
+    }
+
+    private boolean isCurrentUserStaff() {
+        org.springframework.security.core.Authentication auth =
+            org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getName())) {
+            return false;
+        }
+        String userRole = auth.getAuthorities().stream()
+            .findFirst().map(g -> g.getAuthority().replace("ROLE_", "")).orElse("");
+        return RoleAccessPolicy.isInternalStaffRole(userRole);
     }
 }

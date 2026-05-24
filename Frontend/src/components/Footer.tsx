@@ -180,7 +180,7 @@ const Footer: React.FC<{ isSimple?: boolean }> = ({ isSimple }) => {
             {!isSimple && !isMemePlaying && (
                 <div style={{
                     position: 'absolute',
-                    bottom: '260px', // Đặt vừa khít trên đỉnh đầu ảnh tĩnh 130px
+                    bottom: '273px', // Đặt vừa khít trên đỉnh đầu ảnh tĩnh 130px
                     left: '50%',
                     transform: 'translateX(-50%)',
                     zIndex: 11,
@@ -199,7 +199,7 @@ const Footer: React.FC<{ isSimple?: boolean }> = ({ isSimple }) => {
             {!isSimple && (
                 <div style={{
                     position: 'absolute',
-                    bottom: '130px', 
+                    bottom: '143px', 
                     left: '50%',
                     transform: 'translateX(-50%)',
                     zIndex: 10,

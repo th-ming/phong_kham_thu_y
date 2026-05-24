@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axiosInstance from '@services/axios';
+import { useAutoRefresh } from '@hooks/useAutoRefresh';
 
 const QuanLyMarketing: React.FC = () => {
     const [subscribersCount, setSubscribersCount] = useState(0);
@@ -15,7 +16,7 @@ const QuanLyMarketing: React.FC = () => {
         return () => { document.title = 'Rexi – Phòng Khám Thú Y Chuyên Nghiệp'; };
     }, []);
 
-    useEffect(() => {
+    const fetchSubscribersCount = () => {
         axiosInstance.get('/api/system/newsletter/count')
             .then(res => {
                 setSubscribersCount(res.data.count || 0);
@@ -24,7 +25,13 @@ const QuanLyMarketing: React.FC = () => {
                 console.error("Lỗi lấy số lượng sub:", err);
                 setSubscribersCount(0);
             });
+    };
+
+    useEffect(() => {
+        fetchSubscribersCount();
     }, []);
+
+    useAutoRefresh(fetchSubscribersCount, { runImmediately: false });
 
     const handleSend = async () => {
         if (!subject || !content) {

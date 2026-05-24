@@ -1,8 +1,9 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axiosInstance from "@services/axios";
 import { Modal } from "@components/CommonUI";
 import { getUserProfile } from "@utils/index";
+import { useAutoRefresh } from "@hooks/useAutoRefresh";
 
 const formatTienVND = (tien: number) => {
   return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(tien);
@@ -19,6 +20,9 @@ const PET_CARE_TIPS = [
   { title: "Chải lông", content: "Chải lông hàng ngày giúp giảm tình trạng rụng lông và búi lông ở mèo.", icon: "content_cut" }
 ];
 
+const isPetActive = (pet: any) => pet?.da_xoa !== true && pet?.daXoa !== true;
+const AUTO_REFRESH_MS = 10_000;
+
 const DashboardKhachHang: React.FC = () => {
   const navigate = useNavigate();
   const [pets, setPets] = useState<any[]>([]);
@@ -30,6 +34,7 @@ const DashboardKhachHang: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [isTipsModalOpen, setIsTipsModalOpen] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<string>("");
+  const [petRowsForTrend, setPetRowsForTrend] = useState<any[]>([]);
 
   const randomTip = useMemo(() => PET_CARE_TIPS[Math.floor(Math.random() * PET_CARE_TIPS.length)], []);
 
@@ -38,7 +43,7 @@ const DashboardKhachHang: React.FC = () => {
   const userAvatar = user?.hinh_anh || user?.avatar || "";
   const userInitial = String(userName).replace(/^\d+\.\s*/, '').trim().charAt(0).toUpperCase() || "S";
 
-  useEffect(() => {
+  const fetchDashboardData = React.useCallback(async () => {
     if (!user) {
       navigate("/dang-nhap");
       return;
@@ -51,70 +56,95 @@ const DashboardKhachHang: React.FC = () => {
       return;
     }
 
-    const fetchData = async () => {
-      try {
-        // Bổ sung params phân trang (page, size) để tránh lỗi 400 Bad Request từ Backend
-        const [petRes, appRes, invRes] = await Promise.allSettled([
-          axiosInstance.get(`/api/thu-cung/khach/${idKhachHang}`, { params: { page: 0, size: 999 } }),
-          axiosInstance.get(`/api/lich-hen/khach/${idKhachHang}`, { params: { page: 0, size: 999 } }),
-          axiosInstance.get(`/api/hoa-don/khach/${idKhachHang}`, { params: { page: 0, size: 999 } })
-        ]);
+    try {
+      // Bổ sung params phân trang (page, size) để tránh lỗi 400 Bad Request từ Backend
+      const [petRes, appRes, invRes] = await Promise.allSettled([
+        axiosInstance.get(`/api/thu-cung/khach/${idKhachHang}`, { params: { page: 0, size: 999 } }),
+        axiosInstance.get(`/api/lich-hen/khach/${idKhachHang}`, { params: { page: 0, size: 999 } }),
+        axiosInstance.get(`/api/hoa-don/khach/${idKhachHang}`, { params: { page: 0, size: 999 } })
+      ]);
 
-        const extractArray = (data: any): any[] => {
-          if (!data) return [];
-          if (Array.isArray(data)) return data;
-          const possibleArrays = [data.data, data.content, data.result, data.items, data.records];
-          for (const arr of possibleArrays) {
-            if (Array.isArray(arr)) return arr;
-            if (arr && typeof arr === 'object' && Array.isArray(arr.content)) return arr.content;
-            if (arr && typeof arr === 'object' && Array.isArray(arr.data)) return arr.data;
-          }
-          return [];
-        };
-
-        if (petRes.status === 'fulfilled') setPets(extractArray(petRes.value));
-        if (appRes.status === 'fulfilled') {
-          const appointments = extractArray(appRes.value);
-          setAllAppointments(appointments);
-          const upcomingList = appointments.filter((l: any) => {
-            const st = String(l.trang_thai || l.trangThai || '').toUpperCase();
-            return st === 'CHO_XAC_NHAN' || st === 'DA_XAC_NHAN' || st === 'DANG_KHAM';
-          });
-          // Lưu toàn bộ danh sách lịch hẹn sắp tới để hiển thị đúng số lượng ở thẻ thống kê
-          setUpcoming(upcomingList);
-
-          const hoanTatCount = appointments.filter((l: any) => {
-            const st = String(l.trang_thai || l.trangThai || '').toUpperCase();
-            return st === 'DA_KHAM' || st === 'HOAN_THANH' || st === 'HOAN_TAT';
-          }).length;
-          setHoanTat(hoanTatCount);
+      const extractArray = (data: any): any[] => {
+        if (!data) return [];
+        if (Array.isArray(data)) return data;
+        const possibleArrays = [data.data, data.content, data.result, data.items, data.records];
+        for (const arr of possibleArrays) {
+          if (Array.isArray(arr)) return arr;
+          if (arr && typeof arr === 'object' && Array.isArray(arr.content)) return arr.content;
+          if (arr && typeof arr === 'object' && Array.isArray(arr.data)) return arr.data;
         }
-        if (invRes.status === 'fulfilled') {
-          const invoices = extractArray(invRes.value);
-          const paidInvs = invoices.filter((inv: any) => (inv.trang_thai || inv.trangThai)?.toLowerCase() === 'da_thanh_toan');
-          setPaidInvoices(paidInvs);
-          const parseCurrency = (val: any) => {
-            if (!val) return 0;
-            if (typeof val === 'number') return val;
-            const cleanStr = String(val).replace(/[^0-9.-]+/g, "");
-            return Number(cleanStr) || 0;
-          };
-          const total = paidInvs.reduce((sum: number, inv: any) => sum + parseCurrency(inv.tong_tien_cuoi || inv.tongTienCuoi || inv.tong_tien_ban_dau || inv.tongTienBanDau), 0);
-          setTotalSpent(total);
-        }
-      } catch (err) {
-        console.error("Lỗi đồng bộ dữ liệu Dashboard Khách:", err);
-      } finally {
-        setLoading(false);
-        
-        // Cập nhật nhãn thời gian thực khi tải dữ liệu thành công
-        const now = new Date();
-        const formatTime = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
-        setLastUpdated(formatTime);
+        return [];
+      };
+
+      if (petRes.status === 'fulfilled') {
+        const allPetRows = extractArray(petRes.value);
+        setPetRowsForTrend(allPetRows);
+        setPets(allPetRows.filter(isPetActive));
       }
-    };
-    fetchData();
-  }, [navigate]);
+      if (appRes.status === 'fulfilled') {
+        const appointments = extractArray(appRes.value);
+        setAllAppointments(appointments);
+        const upcomingList = appointments.filter((l: any) => {
+          const st = String(l.trang_thai || l.trangThai || '').toUpperCase();
+          return st === 'CHO_XAC_NHAN' || st === 'DA_XAC_NHAN' || st === 'DANG_KHAM';
+        });
+        setUpcoming(upcomingList);
+
+        const hoanTatCount = appointments.filter((l: any) => {
+          const st = String(l.trang_thai || l.trangThai || '').toUpperCase();
+          return st === 'DA_KHAM' || st === 'HOAN_THANH' || st === 'HOAN_TAT';
+        }).length;
+        setHoanTat(hoanTatCount);
+      }
+      if (invRes.status === 'fulfilled') {
+        const invoices = extractArray(invRes.value);
+        const paidInvs = invoices.filter((inv: any) => (inv.trang_thai || inv.trangThai)?.toLowerCase() === 'da_thanh_toan');
+        setPaidInvoices(paidInvs);
+        const parseCurrency = (val: any) => {
+          if (!val) return 0;
+          if (typeof val === 'number') return val;
+          const cleanStr = String(val).replace(/[^0-9.-]+/g, "");
+          return Number(cleanStr) || 0;
+        };
+        const total = paidInvs.reduce((sum: number, inv: any) => sum + parseCurrency(inv.tong_tien_cuoi || inv.tongTienCuoi || inv.tong_tien_ban_dau || inv.tongTienBanDau), 0);
+        setTotalSpent(total);
+      }
+    } catch (err) {
+      console.error("Lỗi đồng bộ dữ liệu Dashboard Khách:", err);
+    } finally {
+      setLoading(false);
+
+      const now = new Date();
+      const formatTime = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+      setLastUpdated(formatTime);
+    }
+  }, [navigate, user]);
+
+  useAutoRefresh(fetchDashboardData, { intervalMs: AUTO_REFRESH_MS });
+
+  const isDateInThisMonth = (value: any) => {
+    if (!value) return false;
+    const date = new Date(value);
+    if (isNaN(date.getTime())) return false;
+    const now = new Date();
+    return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+  };
+
+  const calculatePetNetTrend = (allPetRows: any[]) => {
+    if (!allPetRows || allPetRows.length === 0) return { trend: "Chưa có", tone: "neutral" };
+
+    const addedThisMonth = allPetRows.filter(pet =>
+      isPetActive(pet) && isDateInThisMonth(pet.ngay_tao || pet.ngayTao)
+    ).length;
+    const deletedThisMonth = allPetRows.filter(pet =>
+      !isPetActive(pet) && isDateInThisMonth(pet.ngay_cap_nhat || pet.ngayCapNhat || pet.ngay_xoa || pet.ngayXoa)
+    ).length;
+    const net = addedThisMonth - deletedThisMonth;
+
+    if (net > 0) return { trend: `+${net} tháng này`, tone: "up" };
+    if (net < 0) return { trend: `${net} tháng này`, tone: "down" };
+    return { trend: "Không đổi", tone: "neutral" };
+  };
 
   const calculateRealGrowth = (dataArray: any[], dateFields: string[], amountField?: string) => {
     if (!dataArray || dataArray.length === 0) return { trend: "Chưa có", tone: "neutral" };
@@ -165,7 +195,7 @@ const DashboardKhachHang: React.FC = () => {
   };
 
   const stats = useMemo(() => {
-    const petsTrend = calculateRealGrowth(pets, ['ngay_tao', 'ngayTao', 'ngay_cap_nhat']);
+    const petsTrend = calculatePetNetTrend(petRowsForTrend);
     const upcTrend = calculateRealGrowth(allAppointments.filter((l: any) => {
       const st = String(l.trang_thai || l.trangThai || '').toUpperCase();
       return st === 'CHO_XAC_NHAN' || st === 'DA_XAC_NHAN' || st === 'DANG_KHAM';
@@ -231,7 +261,7 @@ const DashboardKhachHang: React.FC = () => {
       { label: "ĐÃ KHÁM", value: hoanTat, icon: "verified", color: "#f59e0b", trendData: hoanTatTrend, summary: hoanTatSummary },
       { label: "CHI TIÊU", value: formatTienVND(totalSpent), icon: "payments", color: "#14b8a6", trendData: spentTrend, summary: spentSummary },
     ];
-  }, [pets, upcoming, allAppointments, hoanTat, paidInvoices, totalSpent]);
+  }, [pets, petRowsForTrend, upcoming, allAppointments, hoanTat, paidInvoices, totalSpent]);
 
   if (loading) return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}><div className="dot-pulse"></div></div>;
 

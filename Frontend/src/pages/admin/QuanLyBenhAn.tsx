@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import axiosInstance from "@services/axios";
 import { toast } from "@components/Toast";
 import { matchesSearchFields } from "@utils/index";
+import { useAutoRefresh } from "@hooks/useAutoRefresh";
 
 const getTodayLocalISO = () => {
     const d = new Date();
@@ -32,8 +33,7 @@ const QuanLyBenhAn: React.FC = () => {
 
     const [chiTietDonThuoc, setChiTietDonThuoc] = useState<any[]>([]);
 
-    useEffect(() => {
-        const fetchData = async () => {
+    const fetchData = async () => {
             try {
                 const extractArray = (data: any): any[] => {
                     if (!data) return [];
@@ -62,9 +62,16 @@ const QuanLyBenhAn: React.FC = () => {
             } finally {
                 setLoading(false);
             }
-        };
+    };
+
+    useEffect(() => {
         fetchData();
     }, []);
+
+    useAutoRefresh(() => {
+        if (selectedLich || trieuChung || chanDoan || chiTietDonThuoc.length > 0) return;
+        return fetchData();
+    }, { runImmediately: false });
 
     const filteredLichHens = useMemo(() => {
         return lichHens.filter(l => matchesSearchFields(appointmentSearch, [

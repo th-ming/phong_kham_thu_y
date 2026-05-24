@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useCallback, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import axiosInstance from "@services/axios";
 import { getUserProfile, normalizeUserRole } from "@utils/index";
@@ -6,6 +6,7 @@ import KeToanDashboard from "./KeToanDashboard";
 import BacSiDashboard from "./BacSiDashboard";
 import TiepTanDashboard from "./TiepTanDashboard";
 import CanhBaoThuoc from "@components/admin/CanhBaoThuoc";
+import { useAutoRefresh } from "@hooks/useAutoRefresh";
 
 const formatTienVND = (tien: number) => {
   return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(tien);
@@ -84,12 +85,11 @@ const DashboardQuanLy: React.FC = () => {
   const user = useMemo(() => getUserProfile() || {}, []);
   const userRole = normalizeUserRole(user);
 
-  useEffect(() => {
+  const fetchData = useCallback(async () => {
     // Nếu role có dashboard riêng, không cần fetch data cho dashboard chung
     if (['ke_toan', 'bac_si', 'y_ta', 'tiep_tan'].includes(userRole)) return;
 
-    const fetchData = async () => {
-      try {
+    try {
         const fetchSafety = async (url: string) => {
           try {
             return await axiosInstance.get(url);
@@ -203,12 +203,12 @@ const DashboardQuanLy: React.FC = () => {
         const now = new Date();
         const formatTime = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
         setLastUpdated(formatTime);
-      } catch (err) {
-        console.error("Lỗi đồng bộ dữ liệu Dashboard:", err);
-      }
-    };
-    fetchData();
+    } catch (err) {
+      console.error("Lỗi đồng bộ dữ liệu Dashboard:", err);
+    }
   }, [userRole]);
+
+  useAutoRefresh(fetchData);
 
   const stats = useMemo(() => {
     const allStats: Array<{

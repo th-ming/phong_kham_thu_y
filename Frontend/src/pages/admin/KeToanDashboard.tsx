@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useCallback, useState, useEffect, useMemo } from 'react';
 import axiosInstance from '@services/axios';
 import { formatTienVND } from '@utils/index';
 import { toast } from '@components/Toast';
 import { Modal } from '@components/CommonUI';
+import { useAutoRefresh } from '@hooks/useAutoRefresh';
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -41,8 +42,8 @@ const KeToanDashboard: React.FC = () => {
     const [lastUpdated, setLastUpdated] = useState<string>("");
     const ITEMS_PER_PAGE = 10;
 
-    const fetchData = async () => {
-        setLoading(true);
+    const fetchData = useCallback(async (showLoading = true) => {
+        if (showLoading && invoices.length === 0) setLoading(true);
         try {
             const [invRes, revRes] = await Promise.all([
                 axiosInstance.get('/api/hoa-don'),
@@ -61,11 +62,9 @@ const KeToanDashboard: React.FC = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [invoices.length]);
 
-    useEffect(() => {
-        fetchData();
-    }, []);
+    useAutoRefresh(() => fetchData(false));
 
     useEffect(() => {
         setCurrentPage(1);

@@ -1,9 +1,10 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useCallback, useMemo, useRef, useState, useEffect } from "react";
 import axiosInstance from "@services/axios";
 import { formatTienVND, getUserProfile, matchesSearchFields } from "@utils/index";
 import { Modal } from "@components/CommonUI";
 import { useLocation } from "react-router-dom";
 import { toast } from "@components/Toast";
+import { useAutoRefresh } from "@hooks/useAutoRefresh";
 
 const chuyenNgayISO_SangVN = (dateString: string) => {
   if (!dateString) return "—";
@@ -65,6 +66,7 @@ const HoaDonThanhToan: React.FC = () => {
   // State hỗ trợ Phân trang Server-side
   const [totalServerPages, setTotalServerPages] = useState(1);
   const [isServerPaginated, setIsServerPaginated] = useState(false);
+  const hasLoadedRef = useRef(false);
 
   // Phân trang
   const [currentPage, setCurrentPage] = useState(1);
@@ -89,7 +91,7 @@ const HoaDonThanhToan: React.FC = () => {
     }
   }, [location.search]);
 
-  useEffect(() => {
+  const fetchInvoices = useCallback(async () => {
     const user = getUserProfile();
     if (user) {
       const userId = getCustomerId(user);
@@ -97,8 +99,10 @@ const HoaDonThanhToan: React.FC = () => {
         setLoading(false);
         return;
       }
-      setLoading(true);
-      axiosInstance.get(`/api/hoa-don/khach/${userId}`, {
+      if (!hasLoadedRef.current) {
+        setLoading(true);
+      }
+      await axiosInstance.get(`/api/hoa-don/khach/${userId}`, {
         params: { page: currentPage - 1, size: ITEMS_PER_PAGE, status: status !== 'all' ? status : undefined, search: debouncedSearch }
       })
         .then(res => {
@@ -110,14 +114,23 @@ const HoaDonThanhToan: React.FC = () => {
             setHoaDons(res.data || []);
             setIsServerPaginated(false);
           }
+          hasLoadedRef.current = true;
           setLoading(false);
         })
         .catch(err => {
           console.error("Lỗi tải hóa đơn:", err);
+          hasLoadedRef.current = true;
           setLoading(false);
         });
     }
+    setLoading(false);
   }, [currentPage, status, debouncedSearch, refreshTrigger]);
+
+  useEffect(() => {
+    fetchInvoices();
+  }, [fetchInvoices]);
+
+  useAutoRefresh(fetchInvoices, { runImmediately: false });
 
   // Hiệu ứng Debounce cho ô tìm kiếm
   useEffect(() => {

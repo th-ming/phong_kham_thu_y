@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import axiosInstance from "@services/axios";
 import { Modal } from "@components/CommonUI";
 import { matchesSearchFields } from "@utils/index";
+import { useAutoRefresh } from "@hooks/useAutoRefresh";
 
 const QuanLyDonThuoc: React.FC = () => {
   const [donThuocs, setDonThuocs] = useState<any[]>([]);
@@ -9,7 +10,7 @@ const QuanLyDonThuoc: React.FC = () => {
   const [viewingDT, setViewingDT] = useState<any>(null);
   const [searchDonThuoc, setSearchDonThuoc] = useState("");
 
-  useEffect(() => {
+  const fetchDonThuocs = () => {
     axiosInstance.get("/api/ho-so-benh-an/don-thuoc")
       .then(res => {
         setDonThuocs(res.data);
@@ -19,7 +20,13 @@ const QuanLyDonThuoc: React.FC = () => {
         console.error("Lỗi lấy danh sách đơn thuốc:", err);
         setLoading(false);
       });
+  };
+
+  useEffect(() => {
+    fetchDonThuocs();
   }, []);
+
+  useAutoRefresh(fetchDonThuocs, { runImmediately: false });
 
   const filteredDonThuocs = React.useMemo(() => {
     if (!searchDonThuoc.trim()) return donThuocs;

@@ -4,6 +4,7 @@ import ModalTaoLichHenAdmin from "./ModalTaoLichHenAdmin";
 import { Modal, InfoRow } from "@components/CommonUI";
 import { toast } from "@components/Toast";
 import { matchesSearchFields } from "@utils/index";
+import { useAutoRefresh } from "@hooks/useAutoRefresh";
 
 const chuyenNgayISO_SangVN = (dateString: string) => {
   if (!dateString) return "—";
@@ -37,7 +38,7 @@ const QuanLyLichHen: React.FC = () => {
   const ITEMS_PER_PAGE = 10;
 
   const fetchData = () => {
-    setLoading(true);
+    if (lichHens.length === 0) setLoading(true);
     // Truyền page/size để backend có thể phân trang nếu hỗ trợ (tránh lấy toàn bộ 10k+ bản ghi)
     axiosInstance.get("/api/lich-hen", {
       params: {
@@ -81,6 +82,8 @@ const QuanLyLichHen: React.FC = () => {
   useEffect(() => {
     fetchData();
   }, [currentPage, filterStatus, searchLichHen]);
+
+  useAutoRefresh(fetchData, { runImmediately: false });
 
   // Reset về trang 1 mỗi khi đổi bộ lọc
   useEffect(() => {

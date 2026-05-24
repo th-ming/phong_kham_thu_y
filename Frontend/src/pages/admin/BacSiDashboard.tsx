@@ -1,7 +1,8 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useCallback, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import axiosInstance from "@services/axios";
 import { getUserProfile } from "@utils/index";
+import { useAutoRefresh } from "@hooks/useAutoRefresh";
 
 const BacSiDashboard: React.FC = () => {
     const [myAppointments, setMyAppointments] = useState<any[]>([]);
@@ -12,15 +13,13 @@ const BacSiDashboard: React.FC = () => {
     const user = useMemo(() => getUserProfile() || {}, []);
     const currentUserId = user?.id_nhan_vien || user?.id;
 
-    useEffect(() => {
-        const fetchData = async (showLoading = true) => {
-            if (!currentUserId) {
-                setLoading(false);
-                return;
-            }
-            if (showLoading) setLoading(true);
-            try {
-                const todayStr = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
+    const fetchData = useCallback(async () => {
+        if (!currentUserId) {
+            setLoading(false);
+            return;
+        }
+        try {
+            const todayStr = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
 
                 const [appsRes, recordsRes] = await Promise.all([
                     axiosInstance.get(`/api/lich-hen?page=0&size=200`), // Fetch a large number
@@ -67,21 +66,14 @@ const BacSiDashboard: React.FC = () => {
                 const now = new Date();
                 const formatTime = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
                 setLastUpdated(formatTime);
-            } catch (err) {
-                console.error("Lỗi tải dữ liệu dashboard bác sĩ:", err);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchData();
-
-        // Tự động làm mới danh sách bệnh nhân đang chờ ngầm
-        const interval = setInterval(() => {
-            fetchData(false);
-        }, 30000);
-
-        return () => clearInterval(interval);
+        } catch (err) {
+            console.error("Lỗi tải dữ liệu dashboard bác sĩ:", err);
+        } finally {
+            setLoading(false);
+        }
     }, [currentUserId]);
+
+    useAutoRefresh(fetchData);
 
     const waitingPatients = myAppointments.filter(a => a.trang_thai?.toUpperCase() === 'DA_XAC_NHAN').length;
     const completedPatients = myAppointments.filter(a => a.trang_thai?.toUpperCase() === 'HOAN_THANH').length;

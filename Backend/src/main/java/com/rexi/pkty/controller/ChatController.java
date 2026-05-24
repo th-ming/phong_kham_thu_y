@@ -123,6 +123,9 @@ public class ChatController {
             String userQuery = lastMsg.getContent() != null ? lastMsg.getContent() : "";
             String normalizedUserQuery = normalizeVietnamese(userQuery.toLowerCase());
             String realtimeContext = buildRealtimeContext();
+            boolean hasVideo = lastMsg.getVideos() != null && !lastMsg.getVideos().isEmpty();
+            boolean hasImage = lastMsg.getImages() != null && !lastMsg.getImages().isEmpty();
+            boolean hasMedia = hasVideo || hasImage;
 
             // Giới hạn chat max 1000 ký tự để chặn spam tin siêu dài, đỡ tốn token API.
             if (userQuery.length() > 1000) {
@@ -134,14 +137,28 @@ public class ChatController {
                 return Map.of("reply", buildEmergencyReply(normalizedUserQuery));
             }
 
+            if (!hasMedia && isQuickLocalQuery(normalizedUserQuery)) {
+                return Map.of("reply", buildQuickLocalReply(normalizedUserQuery));
+            }
+
+            boolean medicalQuery = isMedicalQuery(normalizedUserQuery);
+            boolean webSearchRequested = isWebSearchQuery(userQuery);
+            boolean autopilotRequested = isAutopilotQuery(normalizedUserQuery);
+            boolean clinicContextNeeded = medicalQuery || hasMedia || webSearchRequested
+                    || autopilotRequested || isClinicInfoQuery(normalizedUserQuery);
+
             // Lọc ngữ cảnh thông minh dựa vào câu chat để AI biết đường trả lời cho chuẩn.
-            String userContext = aiMemoryService.getUserContext(realUsername);
-            String knowledgeContext = aiMemoryService.getKnowledgeBaseContext(userQuery);
+            String userContext = (realUsername != null && clinicContextNeeded)
+                    ? aiMemoryService.getUserContext(realUsername)
+                    : "";
+            String knowledgeContext = (medicalQuery || hasMedia || webSearchRequested)
+                    ? aiMemoryService.getKnowledgeBaseContext(userQuery)
+                    : "";
             // Ghép thêm dữ liệu thực tế phòng khám Rexi vào bối cảnh giúp AI rep chuẩn chỉ.
-            String globalContext = aiMemoryService.getGlobalContext(userQuery);
+            String globalContext = clinicContextNeeded ? aiMemoryService.getGlobalContext(userQuery) : "";
             String webSearchContext = "";
             List<Map<String, String>> webResults = java.util.Collections.emptyList();
-            if (isWebSearchQuery(userQuery)) {
+            if (webSearchRequested) {
                 webResults = searchWebDuckDuckGo(userQuery);
                 webSearchContext = buildWebSearchContext(userQuery, webResults);
             }
@@ -163,7 +180,7 @@ public class ChatController {
                 }
             }
             
-            if (rawDomContext != null && !rawDomContext.isEmpty()) {
+            if (autopilotRequested && rawDomContext != null && !rawDomContext.isEmpty()) {
                 try {
                     currentDomContext = java.net.URLDecoder.decode(rawDomContext, java.nio.charset.StandardCharsets.UTF_8);
                 } catch (Exception e) {
@@ -171,7 +188,7 @@ public class ChatController {
                 }
             }
 
-            if (rawActivityLogs != null && !rawActivityLogs.isEmpty()) {
+            if (autopilotRequested && rawActivityLogs != null && !rawActivityLogs.isEmpty()) {
                 try {
                     currentActivityLogs = java.net.URLDecoder.decode(rawActivityLogs, java.nio.charset.StandardCharsets.UTF_8);
                 } catch (Exception e) {
@@ -179,7 +196,8 @@ public class ChatController {
                 }
             }
             
-            String domContextBlock = "\n--- THÔNG TIN TRANG & BỐI CẢNH GIAO DIỆN (EYES & DOM CONTEXT) ---\n"
+            String domContextBlock = autopilotRequested
+                    ? "\n--- THÔNG TIN TRANG & BỐI CẢNH GIAO DIỆN (EYES & DOM CONTEXT) ---\n"
                     + "Người dùng hiện đang ở màn hình: " + currentPath + "\n"
                     + "Các dữ liệu chỉ số, bảng biểu và phần tử tương tác (Interactive Elements) có thuộc tính data-ai-id đang hiển thị trên màn hình hiện tại:\n"
                     + ">>> " + currentDomContext + "\n\n"
@@ -202,7 +220,9 @@ public class ChatController {
                     + "   - Chỉ ra lỗi sai một cách tinh tế, nhẹ nhàng.\n"
                     + "   - Nói: 'Để Rexi tự động sửa lỗi và điền lại giúp Sen nhé'.\n"
                     + "   - TUYỆT ĐỐI PHẢI phát ra chuỗi lệnh Autopilot như [FILL:data-ai-id|giá_trị_đúng] hoặc [SELECT:data-ai-id|giá_trị_đúng] ngay cuối câu.\n"
-                    + "5. Hãy phân tích LỊCH SỬ THAO TÁC gần đây để thấu hiểu người dùng vừa thực hiện thao tác gì, vừa nhấp chuột ở đâu, có gặp lỗi hay cuộn trang ở đâu không để tư vấn và chủ động gợi ý hỗ trợ thông minh, tinh tế nhất.\n";
+                    + "5. Hãy phân tích LỊCH SỬ THAO TÁC gần đây để thấu hiểu người dùng vừa thực hiện thao tác gì, vừa nhấp chuột ở đâu, có gặp lỗi hay cuộn trang ở đâu không để tư vấn và chủ động gợi ý hỗ trợ thông minh, tinh tế nhất.\n"
+                    : "\n--- BỐI CẢNH GIAO DIỆN TỐI GIẢN ---\n"
+                    + "Người dùng hiện đang ở màn hình: " + currentPath + ". Chỉ hướng dẫn bằng lời, không dùng thẻ Autopilot trừ khi người dùng yêu cầu thao tác giao diện rõ ràng.\n";
 
             // Xác định trạng thái đăng nhập để AI biết đường tư vấn
             boolean isLoggedIn = (realUsername != null);
@@ -312,9 +332,6 @@ ChatMessage systemMsg = new ChatMessage();
             history.add(0, systemMsg);
 
             ChatMessage latest = history.get(history.size() - 1);
-            boolean hasVideo = latest.getVideos() != null && !latest.getVideos().isEmpty();
-            boolean hasImage = latest.getImages() != null && !latest.getImages().isEmpty();
-            boolean hasMedia = hasVideo || hasImage;
             if (hasMedia) {
                 latest.setContent(buildMediaPrompt(latest.getContent(), hasImage, hasVideo));
             }
@@ -324,18 +341,7 @@ ChatMessage systemMsg = new ChatMessage();
             String normalizedQuery = normalizeVietnamese(userQueryStr.toLowerCase());
 
             // Tập hợp từ khóa y tế mở rộng bao gồm cả viết tắt, tiếng lóng, từ địa phương và gõ sai bộ gõ telex
-            String[] medicalKeywords = {
-                "benh", "trieu chung", "trieu chuong", "thuoc", "thuooc", "dau", "daau", "sot", "soot", 
-                "non", "tieu chay", "tieu chai", "dieu tri", "chan doan", "toa thuoc", "ke don", "suc khoe", 
-                "kham", "bnh", "bsi", "bac si", "bac sy", "cap cuu", "tai nan", "chong mat", "oi", "ia", "phan", "cut"
-            };
-            boolean isMedicalQuery = false;
-            for (String kw : medicalKeywords) {
-                if (normalizedQuery.contains(kw)) {
-                    isMedicalQuery = true;
-                    break;
-                }
-            }
+            boolean isMedicalQuery = isMedicalQuery(normalizedQuery);
 
             if (acceptHeader != null && acceptHeader.contains("text/event-stream")) {
                 org.springframework.web.servlet.mvc.method.annotation.SseEmitter emitter = new org.springframework.web.servlet.mvc.method.annotation.SseEmitter(-1L);
@@ -658,6 +664,83 @@ ChatMessage systemMsg = new ChatMessage();
         return "--- THỜI GIAN HỆ THỐNG HIỆN TẠI ---\n"
                 + "Bây giờ là " + now + " theo múi giờ Việt Nam (Asia/Ho_Chi_Minh). "
                 + "Khi người dùng nói hôm nay/ngày mai/hiện tại, phải hiểu theo thời điểm này; không dùng ngày cũ trong ví dụ hoặc lịch sử chat.\n";
+    }
+
+    private boolean isQuickLocalQuery(String normalizedQuery) {
+        if (normalizedQuery == null) return false;
+        String q = normalizedQuery.trim().replaceAll("[!?.\\s]+$", "");
+        if (q.isEmpty()) return true;
+        String[] quickPhrases = {
+                "hi", "hello", "helo", "hey", "alo", "chao", "xin chao", "chao rexi",
+                "ok", "oke", "okay", "cam on", "thanks", "thank you", "test", "thu xem"
+        };
+        for (String phrase : quickPhrases) {
+            if (q.equals(phrase)) {
+                return true;
+            }
+        }
+        return q.length() <= 12 && (q.startsWith("hi ") || q.startsWith("chao "));
+    }
+
+    private String buildQuickLocalReply(String normalizedQuery) {
+        String q = normalizedQuery == null ? "" : normalizedQuery.trim();
+        if (q.contains("cam on") || q.contains("thank")) {
+            return "Dạ không có gì ạ. Sen cần Rexi hỗ trợ thêm việc gì cứ nhắn nhé.";
+        }
+        if (q.equals("ok") || q.equals("oke") || q.equals("okay")) {
+            return "Dạ, Rexi nghe đây ạ.";
+        }
+        if (q.equals("test") || q.equals("thu xem")) {
+            return "Rexi đang hoạt động bình thường ạ.";
+        }
+        return "Dạ Rexi đây ạ. Sen cần hỗ trợ gì hôm nay?";
+    }
+
+    private boolean isAutopilotQuery(String normalizedQuery) {
+        if (normalizedQuery == null || normalizedQuery.isBlank()) return false;
+        String[] actionKeywords = {
+                "mo trang", "dua toi den", "chuyen sang", "di toi", "vao trang",
+                "dat lich", "lap lich", "tao lich", "huy lich", "doi lich",
+                "them", "sua", "xoa", "dien", "fill", "chon", "bam", "click",
+                "tim khach", "tim ho so", "tra cuu khach", "quet du lieu"
+        };
+        for (String kw : actionKeywords) {
+            if (normalizedQuery.contains(kw)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isClinicInfoQuery(String normalizedQuery) {
+        if (normalizedQuery == null || normalizedQuery.isBlank()) return false;
+        String[] clinicKeywords = {
+                "bang gia", "gia tien", "chi phi", "dich vu", "lich lam viec",
+                "bac si", "bsi", "dia chi", "hotline", "so dien thoai", "phong kham",
+                "gio mo cua", "gio lam viec", "rexi"
+        };
+        for (String kw : clinicKeywords) {
+            if (normalizedQuery.contains(kw)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isMedicalQuery(String normalizedQuery) {
+        if (normalizedQuery == null || normalizedQuery.isBlank()) return false;
+        String[] medicalKeywords = {
+                "benh", "trieu chung", "trieu chuong", "thuoc", "thuooc", "dau", "daau",
+                "sot", "soot", "non", "tieu chay", "tieu chai", "dieu tri", "chan doan",
+                "toa thuoc", "ke don", "suc khoe", "kham", "bnh", "bsi", "bac si",
+                "bac sy", "cap cuu", "tai nan", "chong mat", "oi", "ia", "phan", "cut"
+        };
+        for (String kw : medicalKeywords) {
+            if (normalizedQuery.contains(kw)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private String buildMediaPrompt(String rawPrompt, boolean hasImage, boolean hasVideo) {
