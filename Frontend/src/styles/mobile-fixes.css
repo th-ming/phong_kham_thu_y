@@ -1,0 +1,252 @@
+/**
+ * Rexi — Mobile / iPad hardening
+ * Sửa tràn ngang, padding quá lớn, header/bảng vỡ trên điện thoại.
+ */
+
+html {
+  -webkit-text-size-adjust: 100%;
+  overflow-x: hidden;
+}
+
+#root {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+/* Shell admin / khách hàng */
+.app-shell {
+  display: flex;
+  width: 100%;
+  max-width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--background);
+}
+
+.app-shell > main {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: clamp(12px, 3.5vw, 40px);
+  padding-bottom: max(16px, env(safe-area-inset-bottom, 16px));
+  position: relative;
+}
+
+.app-shell main img,
+.app-shell main video,
+.app-shell main iframe {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Trang công khai */
+.public-main {
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+/* Header gọn trên mobile — để lộ hero */
+@media (max-width: 768px) {
+  header > div:first-of-type {
+    padding: 8px 0 !important;
+    font-size: 0.75rem !important;
+  }
+
+  header > div:nth-of-type(2) {
+    padding: 8px 0 !important;
+    font-size: 0.7rem !important;
+    line-height: 1.35 !important;
+  }
+
+  header .header-disease-alert a {
+    display: block;
+    width: 100%;
+    text-align: center;
+    margin-top: 4px;
+  }
+}
+
+/* Header — banner & menu */
+.header-emergency-bar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 8px 16px;
+  text-align: center;
+  line-height: 1.35;
+}
+
+.header-disease-alert {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 6px 8px;
+  line-height: 1.45;
+  padding: 0 12px;
+}
+
+.header-disease-alert a {
+  margin-left: 0 !important;
+}
+
+@media (max-width: 768px) {
+  .header-emergency-bar {
+    font-size: 0.78rem !important;
+    padding: 0 10px;
+  }
+
+  .header-disease-alert {
+    font-size: 0.72rem !important;
+  }
+
+  header nav.header-nav-row {
+    height: auto !important;
+    min-height: 60px;
+    padding: 8px 0 !important;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .header-action-group {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 380px) {
+  .header-emergency-bar span:not(.material-symbols-outlined) {
+    font-size: 0.72rem;
+  }
+}
+
+/* Cảnh báo bảo mật admin */
+.security-alert-banner {
+  flex-wrap: wrap !important;
+  align-items: flex-start !important;
+  gap: 12px !important;
+}
+
+.security-alert-banner > button {
+  align-self: flex-end;
+}
+
+/* Bảng — cuộn ngang rõ, không đẩy vỡ layout */
+.table-responsive-wrapper {
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  border-radius: var(--radius-md);
+}
+
+@media (max-width: 768px) {
+  .table-responsive-wrapper {
+    margin-left: -4px;
+    margin-right: -4px;
+    padding-bottom: 4px;
+  }
+
+  .table-responsive-wrapper table {
+    min-width: 680px !important;
+  }
+
+  .table-responsive-wrapper > div[style*="minWidth"] {
+    min-width: 680px !important;
+  }
+
+  .table-responsive-wrapper table {
+    font-size: 0.82rem;
+  }
+
+  .table-responsive-wrapper th,
+  .table-responsive-wrapper td {
+    padding: 10px 8px !important;
+  }
+}
+
+/* Nút / hàng hành động admin */
+@media (max-width: 600px) {
+  .page-actions-row,
+  .toolbar-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    width: 100% !important;
+    gap: 10px !important;
+  }
+
+  .page-actions-row > *,
+  .toolbar-row > * {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .page-actions-row .btn,
+  .toolbar-row .btn {
+    justify-content: center;
+  }
+}
+
+/* Sidebar FAB — tránh che home indicator iPhone */
+@media (max-width: 1024px) {
+  .sidebar-fab {
+    bottom: max(20px, env(safe-area-inset-bottom, 20px)) !important;
+    left: max(16px, env(safe-area-inset-left, 16px)) !important;
+  }
+}
+
+/* Modal full width mobile */
+@media (max-width: 600px) {
+  .modal-wrapper {
+    padding: 10px !important;
+    align-items: flex-end !important;
+  }
+
+  .modal-wrapper .glass-card {
+    max-height: 92dvh !important;
+    border-radius: 20px 20px 0 0 !important;
+  }
+
+  .modal-content {
+    padding: 16px !important;
+  }
+}
+
+/* Grid auto-fit — điện thoại hẹp */
+@media (max-width: 480px) {
+  .responsive-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+
+  .container {
+    padding-left: max(12px, env(safe-area-inset-left, 12px));
+    padding-right: max(12px, env(safe-area-inset-right, 12px));
+  }
+
+  .glass-card:hover {
+    transform: none;
+  }
+
+  h1 {
+    font-size: clamp(1.75rem, 8vw, 2.5rem) !important;
+  }
+}
+
+/* iPad portrait */
+@media (min-width: 481px) and (max-width: 1024px) {
+  .admin-main-content,
+  .customer-main-content,
+  .app-shell > main {
+    padding: 18px 16px !important;
+  }
+}
+
+/* Hero: xem home-responsive.css (phone / iPad / laptop) */

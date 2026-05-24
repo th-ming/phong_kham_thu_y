@@ -96,7 +96,7 @@ const SidebarAdmin: React.FC = () => {
     <>
       {/* Nút Hamburger nổi trên mobile */}
       <button data-ai-id="button-sidebaradmin-mobile"
-        className="mobile-show"
+        className="mobile-show sidebar-fab"
         onClick={() => setIsMobileOpen(!isMobileOpen)}
         style={{
           position: 'fixed', bottom: '24px', left: '24px', zIndex: 1001,

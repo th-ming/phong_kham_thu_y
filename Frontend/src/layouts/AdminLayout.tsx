@@ -38,11 +38,11 @@ const AdminLayout: React.FC = () => {
 
   return (
     // Đổi minHeight thành height và chặn cuộn tổng thể để Sidebar được ghim cố định
-    <div style={{ display: "flex", height: "100vh", overflow: "hidden", background: "var(--background)" }}>
+    <div className="app-shell admin-shell">
       <SidebarAdmin />
-      <main className="main-content admin-main-content" style={{ flex: 1, padding: "40px", overflowY: "auto", position: 'relative' }}>
+      <main className="main-content admin-main-content">
         {securityAlert && (
-          <div style={{
+          <div className="security-alert-banner" style={{
             position: "sticky",
             top: 0,
             zIndex: 50,
