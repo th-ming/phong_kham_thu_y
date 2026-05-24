@@ -3,6 +3,7 @@ package com.rexi.pkty.controller;
 import com.rexi.pkty.service.EmailService;
 import com.rexi.pkty.service.DatabaseBackupService;
 import com.rexi.pkty.service.AuditLogService;
+import com.rexi.pkty.service.SecurityAlertService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.http.ResponseEntity;
@@ -43,6 +44,9 @@ public class SystemController {
 
     @Autowired
     private AuditLogService auditLogService;
+
+    @Autowired(required = false)
+    private SecurityAlertService securityAlertService;
 
     // Các biến dùng chung cho AuthController (Duy trì tính tương thích)
     public static final Map<String, Long> verifiedEmails = new ConcurrentHashMap<>();
@@ -136,6 +140,47 @@ public class SystemController {
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of("message", "Lỗi xóa bản ghi: " + e.getMessage()));
         }
+    }
+
+    @GetMapping("/security/blocked-ips")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> getBlockedIps() {
+        if (securityAlertService == null) {
+            return ResponseEntity.ok(Map.of("blockedIps", List.of(), "alerts", List.of()));
+        }
+        return ResponseEntity.ok(Map.of(
+                "blockedIps", securityAlertService.getBlockedIps(),
+                "alerts", securityAlertService.getRecentAlerts()
+        ));
+    }
+
+    @DeleteMapping("/security/blocked-ips/{ip}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> unblockIp(@PathVariable String ip) {
+        if (securityAlertService == null) {
+            return ResponseEntity.status(503).body(Map.of("message", "Security service chưa sẵn sàng"));
+        }
+        securityAlertService.removeBlockedIp(ip);
+        auditLogService.logAction("UNBLOCK_IP", "Security", "Admin gỡ chặn IP: " + ip);
+        return ResponseEntity.ok(Map.of("message", "Đã gỡ chặn IP " + ip));
+    }
+
+    @PostMapping("/security/simulate-alert")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> simulateSecurityAlert(@RequestBody Map<String, String> payload) {
+        if (securityAlertService == null) {
+            return ResponseEntity.status(503).body(Map.of("message", "Security service chưa sẵn sàng"));
+        }
+        Map<String, Object> alert = securityAlertService.reportAndBlock(
+                payload.getOrDefault("ip", "203.0.113.10"),
+                payload.getOrDefault("attackType", "SQL injection"),
+                payload.getOrDefault("path", "/api/demo?id=1 OR 1=1"),
+                payload.getOrDefault("method", "GET"),
+                payload.getOrDefault("userAgent", "sqlmap"),
+                payload.getOrDefault("evidence", "simulate"),
+                payload.getOrDefault("locationHint", "Mô phỏng kiểm thử nội bộ")
+        );
+        return ResponseEntity.ok(alert);
     }
 
     @GetMapping("/chuc-nang")

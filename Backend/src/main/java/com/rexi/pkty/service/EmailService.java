@@ -245,4 +245,30 @@ public class EmailService {
             }
         });
     }
+
+    public void sendSecurityAlertEmail(String toEmail, java.util.Map<String, Object> alert) {
+        JavaMailSender sender = getDynamicMailSender();
+        if (sender == null) return;
+        CompletableFuture.runAsync(() -> {
+            try {
+                SimpleMailMessage message = new SimpleMailMessage();
+                message.setTo(toEmail);
+                message.setSubject("🚨 Rexi Security Alert - IP đã bị chặn tự động");
+                message.setText(
+                        "Rexi Security phát hiện hành vi tấn công và đã tự động chặn IP.\n\n" +
+                        "IP: " + alert.getOrDefault("ip", "") + "\n" +
+                        "Vị trí suy đoán: " + alert.getOrDefault("locationHint", "") + "\n" +
+                        "Hình thức: " + alert.getOrDefault("attackType", "") + "\n" +
+                        "Method/Path: " + alert.getOrDefault("method", "") + " " + alert.getOrDefault("path", "") + "\n" +
+                        "User-Agent: " + alert.getOrDefault("userAgent", "") + "\n" +
+                        "Bằng chứng: " + alert.getOrDefault("evidence", "") + "\n" +
+                        "Thời gian: " + alert.getOrDefault("detectedAt", "") + "\n\n" +
+                        "IP này chỉ được gỡ chặn khi Admin xóa khỏi danh sách chặn trong hệ thống."
+                );
+                sender.send(message);
+            } catch (Exception e) {
+                logger.severe("Lỗi gửi mail cảnh báo bảo mật: " + e.getMessage());
+            }
+        });
+    }
 }

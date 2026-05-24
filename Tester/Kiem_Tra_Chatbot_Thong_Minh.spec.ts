@@ -4,6 +4,12 @@ const FRONTEND_PORT = 3005;
 const BASE_URL = `http://localhost:${FRONTEND_PORT}`;
 
 async function loginAsCustomer(page: any) {
+  await page.context().clearCookies();
+  await page.goto(BASE_URL, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await page.evaluate(() => {
+    localStorage.clear();
+    sessionStorage.clear();
+  });
   await page.goto(`${BASE_URL}/dang-nhap`, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await expect(page.getByPlaceholder('Tên đăng nhập')).toBeVisible({ timeout: 15000 });
   await page.getByPlaceholder('Tên đăng nhập').fill('testcustomer2');
@@ -87,11 +93,12 @@ test.describe('Kiểm tra Chatbot thông minh - ý định, media và giọng n�
     await page.locator('textarea').first().fill('Bé khó thở tím tái phải làm sao');
     await page.locator('button[data-ai-id="button-chatbot-5x21"]').click({ force: true });
 
-    await expect(page.locator('#chatWindow')).toContainText('Bé đang khó thở');
+    await expect(page.locator('#chatWindow')).toContainText(/sơ cứu|khẩn cấp/i);
     await expect(page.locator('#chatWindow')).not.toContainText('[EMERGENCY]');
     await expect(page.locator('#chatWindow')).not.toContainText('[NAVIGATE:');
     await expect(page.locator('#chatWindow')).not.toContainText('[CLICK:');
-    await expect(page.getByText(/Cấp cứu|khẩn cấp|sơ cứu/i).first()).toBeVisible({ timeout: 8000 });
+    await expect(page.getByRole('link', { name: /GỌI HOTLINE KHẨN/i })).toBeVisible({ timeout: 8000 });
+    await expect(page.getByRole('link', { name: /ĐƯỜNG ĐẾN PHÒNG KHÁM/i })).toBeVisible({ timeout: 8000 });
   });
 
   test('Ảnh gửi lên API giữ data URL và MIME type để AI nhận diện đúng định dạng', async ({ page }) => {
