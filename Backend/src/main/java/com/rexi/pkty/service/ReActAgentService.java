@@ -20,6 +20,11 @@ public class ReActAgentService {
 
     private static final Logger logger = Logger.getLogger(ReActAgentService.class.getName());
     private static final int MAX_ITERATIONS = 6;
+    private static final Set<String> CUSTOMER_SAFE_TOOLS = Set.of(
+            "tim_lich_trong",
+            "tim_kiem_web",
+            "kiem_tra_phan_he"
+    );
 
     @Autowired private OpenRouterService openRouterService;
     @Autowired private GeminiService geminiService;
@@ -121,8 +126,11 @@ public class ReActAgentService {
                         steps.add(new ReActStep("TOOL_CALL", "Gọi tool: " + toolName, toolName, params, null));
                         logger.info("[ReAct] Gọi tool: " + toolName + " | Params: " + params);
 
-                        // Thực thi tool
-                        String observation = toolService.executeTool(toolName, params);
+                        // Thực thi tool, nhưng không cho khách/ẩn danh quét dữ liệu nội bộ.
+                        String observation = canUseTool(userRole, toolName)
+                                ? toolService.executeTool(toolName, params)
+                                : "Từ chối chạy tool nội bộ '" + toolName
+                                        + "'. Tool này chỉ dành cho tài khoản nhân sự đã đăng nhập.";
                         logger.info("[ReAct] Kết quả tool: " + observation.substring(0, Math.min(200, observation.length())));
 
                         // Thêm kết quả vào steps
@@ -342,5 +350,12 @@ public class ReActAgentService {
             + "- Sau khi có đủ thông tin từ tools, trả về final_answer bằng tiếng Việt rõ, ngắn, đúng vai trò hiện tại.\n"
             + "- Nếu câu hỏi đơn giản (chào hỏi, hỏi thông tin chung) → trả final_answer ngay, không cần dùng tool.\n"
             + "- KHÔNG bịa đặt dữ liệu. Chỉ dùng thông tin từ tool, bối cảnh màn hình được gửi lên hoặc kiến thức y khoa thực tế.\n";
+    }
+
+    private boolean canUseTool(String userRole, String toolName) {
+        boolean isStaff = userRole != null && !userRole.isBlank()
+                && !userRole.equalsIgnoreCase("CUSTOMER")
+                && !userRole.equalsIgnoreCase("KHACH_HANG");
+        return isStaff || CUSTOMER_SAFE_TOOLS.contains(toolName);
     }
 }
