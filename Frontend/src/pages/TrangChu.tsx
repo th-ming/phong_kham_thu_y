@@ -25,7 +25,7 @@ const TrangChu: React.FC = () => {
     <>
       <Preloader />
 
-      <main className="trang-chu-main">
+      <main>
         {/* phần banner chính */}
         <PhanGioiThieu />
 

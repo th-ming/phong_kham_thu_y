@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { LottiePlayer, Typewriter, TransparentVideo } from "@components/SpecialEffects";
+import { RevealSection, LottiePlayer, Typewriter, TransparentVideo } from "@components/SpecialEffects";
 import { useCountUp } from "@hooks/useCountUp";
 import { useTheme } from "../../contexts/ThemeContextV2";
 import { getUserProfile, normalizeUserRole } from "@utils/index";
@@ -48,6 +48,7 @@ const PhanGioiThieu: React.FC = () => {
     }, []);
 
     return (
+        <RevealSection>
             <section id="home" className="hero-section" ref={heroRef} style={{
                 padding: "90px 0 80px",
                 position: "relative",
@@ -223,12 +224,38 @@ const PhanGioiThieu: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* ảnh video + thẻ cấp cứu (tách stack để mobile không chồng) */}
-                        <div className="hero-media-stack">
+                        {/* ảnh video banner */}
                         <div className="hero-image-container">
+                            {/* ========================================================================= */}
+                            {/* ĐÂY LÀ THẺ "TẬN TÂM 24/7 - CẤP CỨU KỊP THỜI" HIỂN THỊ NỔI TRÊN BANNER      */}
+                            {/* ========================================================================= */}
+                            <div className="glass-card floating-glass-card" style={{
+                                position: 'absolute',
+                                bottom: '20px',
+                                left: '10px',
+                                background: 'var(--glass)',
+                                backdropFilter: 'var(--glass-blur)',
+                                padding: '14px 20px',
+                                borderRadius: '22px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '14px',
+                                zIndex: 10,
+                                boxShadow: 'var(--shadow-xl)',
+                                border: '1px solid var(--glass-border)'
+                            }}>
+                                <div style={{ background: 'linear-gradient(135deg, var(--rose-500), var(--rose-400))', width: '44px', height: '44px', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 8px 15px var(--rose-shadow)' }}>
+                                    <span className="material-symbols-outlined" style={{ color: 'var(--white)', fontSize: '24px' }}>volunteer_activism</span>
+                                </div>
+                                <div style={{ textAlign: 'left' }}>
+                                    <div className="glow-text-title" style={{ fontWeight: 950, color: 'var(--ink)', fontSize: '1.15rem', lineHeight: 1.2 }}>Tận Tâm 24/7</div>
+                                    <div className="glow-text-sub" style={{ color: 'var(--ink)', opacity: 0.9, fontSize: '0.85rem', fontWeight: 800 }}>Cấp cứu kịp thời</div>
+                                </div>
+                            </div>
+
                             {/* khung chứa vật nuôi trong suốt */}
-                            <div className="hero-pet-stage">
-                                <div className="hero-pet-layer" style={{
+                            <div style={{ position: "relative", width: "100%", height: "100%", overflow: "visible" }}>
+                                <div style={{
                                     position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
                                     zIndex: 2, animation: 'crossFade 10s infinite'
                                 }}>
@@ -245,7 +272,7 @@ const PhanGioiThieu: React.FC = () => {
                                     />
                                 </div>
 
-                                <div className="hero-pet-layer" style={{
+                                <div style={{
                                     position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
                                     zIndex: 1, animation: 'crossFadeReverse 10s infinite'
                                 }}>
@@ -263,20 +290,10 @@ const PhanGioiThieu: React.FC = () => {
                                 </div>
                             </div>
                         </div>
-
-                            <div className="glass-card floating-glass-card hero-emergency-card">
-                                <div style={{ background: 'linear-gradient(135deg, var(--rose-500), var(--rose-400))', width: '44px', height: '44px', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 8px 15px var(--rose-shadow)' }}>
-                                    <span className="material-symbols-outlined" style={{ color: 'var(--white)', fontSize: '24px' }}>volunteer_activism</span>
-                                </div>
-                                <div style={{ textAlign: 'left' }}>
-                                    <div className="glow-text-title" style={{ fontWeight: 950, color: 'var(--ink)', fontSize: '1.05rem', lineHeight: 1.2 }}>Tận Tâm 24/7</div>
-                                    <div className="glow-text-sub" style={{ color: 'var(--ink)', opacity: 0.9, fontSize: '0.82rem', fontWeight: 800 }}>Cấp cứu kịp thời</div>
-                                </div>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </section>
+        </RevealSection>
     );
 };
 

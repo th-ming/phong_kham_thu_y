@@ -80,7 +80,7 @@ const Header: React.FC<{ hideMenu?: boolean }> = ({ hideMenu }) => {
     }}>
       {/* đường dây cấp cứu 24/7 trên header */}
       <div style={{ background: 'var(--primary)', color: 'white', padding: '12px 0', fontSize: '0.9rem', fontWeight: 800, position: 'relative', overflow: 'hidden' }}>
-        <div className="container header-emergency-bar" style={{ position: 'relative', zIndex: 1 }}>
+        <div className="container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '25px', position: 'relative', zIndex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span className="material-symbols-outlined animate-pulse" style={{ fontSize: '20px' }}>support_agent</span>
             <span>Đường dây cấp cứu 24/7: <a href="tel:***REMOVED***-VIETQR_ACCOUNT_NO" style={{ color: 'white', textDecoration: 'none' }}>0353.374.156</a></span>
@@ -107,14 +107,14 @@ const Header: React.FC<{ hideMenu?: boolean }> = ({ hideMenu }) => {
         backdropFilter: 'var(--glass-blur)',
         transition: 'all 0.3s ease'
       }}>
-        <span className="text-blink-red header-disease-alert">
+        <span className="text-blink-red" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
           <span className="material-symbols-outlined" style={{ fontSize: '18px', color: 'var(--alert-icon-color)' }}>warning</span>
           Mùa bệnh dại đang gia tăng — Nhớ tiêm phòng trước 30/06! 
           <a href="#" onClick={handleBookingRedirect} style={{ color: 'var(--alert-link)', fontWeight: 950, textDecoration: 'underline', marginLeft: '10px' }}>Đặt lịch ngay →</a>
         </span>
       </div>
 
-      <nav className="container header-nav-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <nav className="container" style={{ height: '80px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '14px', textDecoration: 'none' }}>
           <div className="logo-icon" style={{
             background: 'var(--primary)',
