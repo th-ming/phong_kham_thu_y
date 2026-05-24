@@ -481,7 +481,7 @@ const MemeCatCore: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
 /**
  * TRÌNH PHÁT VIDEO NỀN TRONG SUỐT (TÍCH HỢP TẨY PHÔNG XANH)
  */
-export const TransparentVideo: React.FC<{ src: string, className?: string, style?: React.CSSProperties, playbackRate?: number, isDark?: boolean, loop?: boolean, muted?: boolean, onEnded?: () => void, removeBlack?: boolean }> = ({ src, className, style, playbackRate = 1, isDark = false, loop = true, muted = true, onEnded, removeBlack = false }) => {
+export const TransparentVideo: React.FC<{ src: string, style?: React.CSSProperties, playbackRate?: number, isDark?: boolean, loop?: boolean, muted?: boolean, onEnded?: () => void, removeBlack?: boolean }> = ({ src, style, playbackRate = 1, isDark = false, loop = true, muted = true, onEnded, removeBlack = false }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [inView, setInView] = useState(false);
@@ -564,7 +564,7 @@ export const TransparentVideo: React.FC<{ src: string, className?: string, style
         onEnded={onEnded}
         style={{ display: 'none' }}
       />
-      <canvas ref={canvasRef} className={className} style={{ ...style, background: 'transparent' }} />
+      <canvas ref={canvasRef} style={{ ...style, background: 'transparent' }} />
     </>
   );
 };
@@ -625,39 +625,20 @@ export const ScrollToTop: React.FC = () => {
  * HIỆU ỨNG HIỆN DẦN KHI CUỘN TRANG (REVEAL)
  */
 export const RevealSection: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef<HTMLDivElement>(null);
-  const [isVisible, setIsVisible] = useState(() => {
-    if (typeof window === 'undefined') return true;
-    return window.matchMedia('(max-width: 768px)').matches;
-  });
-
   useEffect(() => {
-    if (isVisible) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) setIsVisible(true);
-        });
-      },
-      { threshold: 0.05, rootMargin: '0px 0px -8% 0px' }
-    );
-    const node = sectionRef.current;
-    if (node) observer.observe(node);
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => { if (entry.isIntersecting) setIsVisible(true); });
+    }, { threshold: 0.1 });
+    if (sectionRef.current) observer.observe(sectionRef.current);
     return () => observer.disconnect();
-  }, [isVisible]);
-
+  }, []);
   return (
-    <div
-      ref={sectionRef}
-      className={`reveal-section${isVisible ? ' reveal-section--visible' : ''}`}
-      style={{
-        opacity: isVisible ? 1 : 0,
-        transform: isVisible ? 'translateY(0)' : 'translateY(16px)',
-        transition: 'opacity 0.5s ease-out, transform 0.5s ease-out',
-      }}
-    >
-      {children}
-    </div>
+    <div ref={sectionRef} style={{
+      opacity: isVisible ? 1 : 0, transform: isVisible ? 'translateY(0)' : 'translateY(30px)',
+      transition: 'all 0.8s ease-out'
+    }}>{children}</div>
   );
 };
 

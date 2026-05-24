@@ -11,7 +11,7 @@ const PhanTienIch: React.FC = () => {
 
     return (
         <>
-            <section className="premium-fluid-gradient tien-ich-section" style={{
+            <section className="premium-fluid-gradient" style={{
                 padding: "22px 0",
                 color: "white",
                 position: 'relative',

@@ -4,16 +4,11 @@ import React, { useEffect, useState, useRef } from 'react';
  * MÀN HÌNH CHỜ (PRELOADER) "MÈO CHẠY" - ĐÃ SỬA LỖI MÉO VÀ NGƯỢC HƯỚNG
  * Khắc phục tỉ lệ khung hình và hướng chạy của mèo để trông tự nhiên nhất.
  */
-const shouldSkipPreloader = () => {
-    if (typeof window === 'undefined') return true;
-    if (sessionStorage.getItem("rexi_preloader_loaded")) return true;
-    // Điện thoại / màn hẹp: bỏ màn hình chờ để không che trang chủ
-    if (window.matchMedia('(max-width: 768px)').matches) return true;
-    return false;
-};
-
 export const Preloader: React.FC = () => {
-    const [isVisible, setIsVisible] = useState(() => !shouldSkipPreloader());
+    const [isVisible, setIsVisible] = useState(() => {
+        // Chỉ hiện preloader khi vào trang lần đầu tiên trong phiên làm việc
+        return !sessionStorage.getItem("rexi_preloader_loaded");
+    });
     const [isExiting, setIsExiting] = useState(false);
     const [progress, setProgress] = useState(0);
     const [message, setMessage] = useState("Đang đi mua pate...");
@@ -32,10 +27,14 @@ export const Preloader: React.FC = () => {
     ];
 
     useEffect(() => {
-        if (shouldSkipPreloader()) {
+        const hasLoaded = sessionStorage.getItem("rexi_preloader_loaded");
+        if (hasLoaded) {
             setIsVisible(false);
             return;
         }
+
+        // Đánh dấu đã load lần đầu
+        sessionStorage.setItem("rexi_preloader_loaded", "true");
 
         const msgInterval = setInterval(() => {
             setMessage(messages[Math.floor(Math.random() * messages.length)]);
@@ -48,20 +47,15 @@ export const Preloader: React.FC = () => {
             });
         }, 80);
 
-        const finish = () => {
-            sessionStorage.setItem("rexi_preloader_loaded", "true");
+        const timer = setTimeout(() => {
             setIsExiting(true);
-            window.setTimeout(() => setIsVisible(false), 400);
-        };
-
-        const timer = window.setTimeout(finish, 1400);
-        const safety = window.setTimeout(finish, 3500);
+            setTimeout(() => setIsVisible(false), 400);
+        }, 1200);
 
         return () => {
             clearInterval(msgInterval);
             clearInterval(interval);
             clearTimeout(timer);
-            clearTimeout(safety);
         };
     }, []);
 
