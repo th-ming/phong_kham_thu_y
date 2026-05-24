@@ -1409,6 +1409,9 @@ export const ChatBot: React.FC = () => {
     // Media & Voice States
     const [selectedFiles, setSelectedFiles] = useState<{ data: string, type: 'image' | 'video' }[]>([]);
     const [isListening, setIsListening] = useState(false);
+    const [voiceMode, setVoiceMode] = useState<"normal" | "fast" | "hold">("normal");
+    const [voiceStatus, setVoiceStatus] = useState("");
+    const [voiceLiveText, setVoiceLiveText] = useState("");
     const [isVoiceEnabled, setIsVoiceEnabled] = useState(() => {
         try {
             const saved = localStorage.getItem("rexi_is_voice_enabled");
@@ -1448,6 +1451,31 @@ export const ChatBot: React.FC = () => {
     const waveBar3Ref = useRef<HTMLDivElement>(null);
     const isAiSpeakingRef = useRef<boolean>(false);
     const micIdleTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const voiceSendTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const voiceHoldTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const voiceNoSpeechTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const voiceSessionActiveRef = useRef(false);
+    const voiceModeRef = useRef<"normal" | "fast" | "hold">("normal");
+    const voiceDraftRef = useRef("");
+    const lastVoiceResultAtRef = useRef(0);
+    const pendingVoiceQueueRef = useRef<string[]>([]);
+    const lastInterimVoiceTextRef = useRef("");
+    const loadingRef = useRef(false);
+    const agentLoadingRef = useRef(false);
+    const pendingSensitiveCommandRef = useRef<string | null>(null);
+    const preferredVoiceRef = useRef<SpeechSynthesisVoice | null>(null);
+
+    useEffect(() => {
+        voiceModeRef.current = voiceMode;
+    }, [voiceMode]);
+
+    useEffect(() => {
+        loadingRef.current = loading;
+    }, [loading]);
+
+    useEffect(() => {
+        agentLoadingRef.current = agentLoading;
+    }, [agentLoading]);
 
     // XÓA TIMEOUT CHỜ MIC
     const clearMicIdleTimeout = () => {
@@ -1457,19 +1485,72 @@ export const ChatBot: React.FC = () => {
         }
     };
 
+    const clearVoiceSendTimer = () => {
+        if (voiceSendTimerRef.current) {
+            clearTimeout(voiceSendTimerRef.current);
+            voiceSendTimerRef.current = null;
+        }
+    };
+
+    const clearVoiceNoSpeechTimer = () => {
+        if (voiceNoSpeechTimerRef.current) {
+            clearTimeout(voiceNoSpeechTimerRef.current);
+            voiceNoSpeechTimerRef.current = null;
+        }
+    };
+
+    const setVoiceModeSafe = (mode: "normal" | "fast" | "hold") => {
+        voiceModeRef.current = mode;
+        setVoiceMode(mode);
+    };
+
     // ĐẶT LẠI TIMEOUT 15 GIÂY CHO MIC
     const resetMicIdleTimeout = useCallback(() => {
         clearMicIdleTimeout();
+        const timeoutMs = voiceModeRef.current === "hold" ? 90000 : 15000;
         micIdleTimeoutRef.current = setTimeout(() => {
             if (recognitionRef.current) {
                 recognitionRef.current.stop();
             }
+            voiceSessionActiveRef.current = false;
             setIsListening(false);
             if (activeTabRef.current === 'standard') setInput("");
             else setAgentInput("");
-            toast.info("Micro đã tự động tắt do không có âm thanh.");
-        }, 15000);
+            toast.info(voiceModeRef.current === "hold"
+                ? "Micro đã tự tắt sau thời gian chờ."
+                : "Micro đã tự động tắt do không có âm thanh.");
+        }, timeoutMs);
     }, []);
+
+    const scoreAssistantVoice = (voice: SpeechSynthesisVoice) => {
+        const name = `${voice.name} ${voice.voiceURI}`.toLowerCase();
+        const lang = voice.lang.toLowerCase();
+        let score = 0;
+
+        if (lang === "vi-vn") score += 160;
+        else if (lang.includes("vi")) score += 120;
+        if (/natural|neural|online|premium/.test(name)) score += 55;
+        if (/hoaimy|hoai my|linh|an|mai|female|woman|zira/.test(name)) score += 38;
+        if (/microsoft/.test(name)) score += 28;
+        if (/google/.test(name)) score += 18;
+        if (/namminh|nam minh|male|desktop|legacy/.test(name)) score -= 18;
+        if (voice.default) score += 4;
+
+        return score;
+    };
+
+    const polishTextForSpeech = (text: string) => text
+        .replace(/\[([^\]]+)\]\([^\)]+\)/g, "$1")
+        .replace(/<[^>]*>/g, "")
+        .replace(/[\*\_`#]/g, "")
+        .replace(/^-+\s*/gm, "")
+        .replace(/[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF]/g, "")
+        .replace(/\bAI\b/g, "trợ lý")
+        .replace(/\bRexi\b/g, "Rếch xi")
+        .replace(/([.!?])\s+/g, "$1 ")
+        .replace(/[,;:]\s+/g, ", ")
+        .replace(/\s+/g, " ")
+        .trim();
 
     // 3. ĐỌC THÀNH TIẾNG (TEXT-TO-SPEECH VIETNAMESE)
     const speakText = useCallback((text: string) => {
@@ -1477,31 +1558,57 @@ export const ChatBot: React.FC = () => {
         
         window.speechSynthesis.cancel(); // Tắt các phát âm cũ đang chạy dở
 
-        // Loại bỏ markdown, emoji để đọc tự nhiên, chuyên nghiệp
-        const cleanText = text
-            .replace(/[\*\_`#\-]/g, "")
-            .replace(/\[([^\]]+)\]\([^\)]+\)/g, "$1") 
-            .replace(/<[^>]*>/g, "")
-            .replace(/[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF]/g, "")
-            .trim();
+        // Loại bỏ markdown, emoji và chỉnh câu cho giọng đọc mềm hơn.
+        const cleanText = polishTextForSpeech(text);
 
         if (!cleanText) return;
 
         const utterance = new SpeechSynthesisUtterance(cleanText);
         utterance.lang = "vi-VN";
         
-        // Cố gắng tìm giọng đọc tiếng Việt chuẩn nhất
         const voices = window.speechSynthesis.getVoices();
-        const viVoice = voices.find(v => v.lang.includes("vi-VN") || v.lang.includes("vi_VN"));
-        if (viVoice) utterance.voice = viVoice;
-        utterance.rate = 1.05; // Đọc nhanh hơn một chút để tạo cảm giác linh hoạt
+        const bestVoice = preferredVoiceRef.current || [...voices].sort((a, b) => scoreAssistantVoice(b) - scoreAssistantVoice(a))[0];
+        if (bestVoice && scoreAssistantVoice(bestVoice) > 0) {
+            preferredVoiceRef.current = bestVoice;
+            utterance.voice = bestVoice;
+        }
+        utterance.rate = voiceModeRef.current === "fast" ? 1.08 : 0.92;
+        utterance.pitch = 1.12;
+        utterance.volume = 1;
         
-        utterance.onstart = () => { isAiSpeakingRef.current = true; };
-        utterance.onend = () => { setTimeout(() => { isAiSpeakingRef.current = false; }, 800); };
+        utterance.onstart = () => { 
+            isAiSpeakingRef.current = true; 
+            // Tạm ngắt mic ngay lập tức để không thu âm giọng AI
+            if (recognitionRef.current && voiceSessionActiveRef.current) {
+                try { recognitionRef.current.abort(); } catch(e){}
+            }
+        };
+        utterance.onend = () => { 
+            setTimeout(() => { 
+                isAiSpeakingRef.current = false; 
+                // Khởi động lại mic nếu session voice vẫn đang active
+                if (recognitionRef.current && voiceSessionActiveRef.current && isOpen) {
+                    try { recognitionRef.current.start(); } catch(e){}
+                }
+            }, 800); 
+        };
         utterance.onerror = () => { isAiSpeakingRef.current = false; };
         
         window.speechSynthesis.speak(utterance);
     }, [isVoiceEnabled]);
+
+    useEffect(() => {
+        if (!('speechSynthesis' in window)) return;
+        const refreshVoices = () => {
+            const voices = window.speechSynthesis.getVoices();
+            preferredVoiceRef.current = [...voices].sort((a, b) => scoreAssistantVoice(b) - scoreAssistantVoice(a))[0] || null;
+        };
+        refreshVoices();
+        window.speechSynthesis.onvoiceschanged = refreshVoices;
+        return () => {
+            window.speechSynthesis.onvoiceschanged = null;
+        };
+    }, []);
 
     // Đồng bộ cài đặt giọng nói
     useEffect(() => {
@@ -2084,21 +2191,306 @@ export const ChatBot: React.FC = () => {
         if (waveBar3Ref.current) { waveBar3Ref.current.style.height = '6px'; waveBar3Ref.current.style.opacity = '0.6'; }
     }, []);
 
+    const stopVoiceSession = useCallback((statusText = "") => {
+        voiceSessionActiveRef.current = false;
+        clearMicIdleTimeout();
+        clearVoiceSendTimer();
+        clearVoiceNoSpeechTimer();
+        if (voiceHoldTimeoutRef.current) {
+            clearTimeout(voiceHoldTimeoutRef.current);
+            voiceHoldTimeoutRef.current = null;
+        }
+        try {
+            recognitionRef.current?.stop();
+        } catch (e) { }
+        setIsListening(false);
+        setVoiceStatus(statusText);
+        setVoiceLiveText("");
+        stopAudioAnalysis();
+    }, [stopAudioAnalysis]);
+
+    const notifyVoiceMessage = (text: string, shouldSpeak = false) => {
+        const msg = { type: "ai", text };
+        if (activeTabRef.current === 'standard') {
+            setMessages(prev => [...prev, msg]);
+        } else {
+            setAgentMessages(prev => [...prev, msg]);
+        }
+        if (shouldSpeak) speakText(text);
+    };
+
+    const scheduleNoSpeechPrompt = () => {
+        clearVoiceNoSpeechTimer();
+        voiceNoSpeechTimerRef.current = setTimeout(() => {
+            if (!voiceSessionActiveRef.current) return;
+            if (voiceDraftRef.current.trim() || lastInterimVoiceTextRef.current.trim()) return;
+            const text = "Tôi đang bật micro nhưng chưa nghe thấy giọng nói. Bạn kiểm tra quyền micro rồi nói lại nhé.";
+            setVoiceStatus("Chưa nghe thấy giọng nói.");
+            notifyVoiceMessage(text, false);
+        }, 5500);
+    };
+
+    const shouldRejectUnclearVoice = (text: string, confidence: number | null) => {
+        const normalized = normalizeSearchText(text).trim();
+        const words = normalized.split(/\s+/).filter(Boolean);
+        if (!normalized) return true;
+        if (confidence !== null && confidence > 0 && confidence < 0.52) return true;
+        if (activeTabRef.current === "agent" && words.length <= 1) return true;
+        if (activeTabRef.current === "agent" && confidence !== null && confidence > 0 && confidence < 0.68 && words.length < 4) return true;
+        return false;
+    };
+
+    const askRepeatUnclearVoice = (heardText: string) => {
+        clearVoiceSendTimer();
+        voiceDraftRef.current = "";
+        lastInterimVoiceTextRef.current = "";
+        if (activeTabRef.current === 'standard') setInput("");
+        else setAgentInput("");
+        setVoiceStatus("Nghe chưa rõ.");
+        const text = heardText
+            ? `Tôi nghe chưa rõ câu "${heardText}". Bạn nói lại chậm hơn hoặc ngắn hơn giúp tôi nhé.`
+            : "Tôi nghe chưa rõ. Bạn nói lại chậm hơn hoặc ngắn hơn giúp tôi nhé.";
+        notifyVoiceMessage(text, true);
+        scheduleNoSpeechPrompt();
+    };
+
+    const isVoiceStopCommand = (text: string) => {
+        const normalized = normalizeSearchText(text);
+        return ["tat mic", "tat micro", "dung nghe", "ngung nghe", "ket thuc voice"].some(kw => normalized.includes(kw));
+    };
+
+    const isVoiceHoldCommand = (text: string) => {
+        const normalized = normalizeSearchText(text);
+        return ["doi toi", "doi toi ti", "cho chut", "cho toi ti", "khoan", "de toi nghi", "dung gui voi"].some(kw => normalized.includes(kw));
+    };
+
+    const isVoiceResumeCommand = (text: string) => {
+        const normalized = normalizeSearchText(text);
+        return ["tiep tuc", "roi tiep", "ok tiep", "lam tiep", "gui di", "xong roi"].some(kw => normalized.includes(kw));
+    };
+
+    const isVoiceFastCommand = (text: string) => {
+        const normalized = normalizeSearchText(text);
+        return ["noi nhanh", "lam nhanh", "tra loi ngan", "khoi giai thich", "che do nhanh", "thuc hien nhanh"].some(kw => normalized.includes(kw));
+    };
+
+    const isVoiceNormalCommand = (text: string) => {
+        const normalized = normalizeSearchText(text);
+        return ["noi binh thuong", "lam binh thuong", "cham lai", "tu tu", "che do binh thuong"].some(kw => normalized.includes(kw));
+    };
+
+    const getAdaptiveVoiceDelay = (text: string) => {
+        const normalized = normalizeSearchText(text);
+        const wordCount = normalized.split(/\s+/).filter(Boolean).length;
+        const hasTrailingConnector = /\b(cho|voi|ten|la|vao|ngay|luc|va|roi|de|theo|o)$/i.test(normalized.trim());
+        const hasActionVerb = ["mo", "tim", "xem", "loc", "dat", "tao", "kiem tra", "thong ke", "gui"].some(kw => normalized.includes(kw));
+        const elapsedFromLastResult = Date.now() - lastVoiceResultAtRef.current;
+
+        if (voiceModeRef.current === "fast") {
+            if (wordCount <= 5 && hasActionVerb && !hasTrailingConnector) return 520;
+            return hasTrailingConnector ? 1050 : 760;
+        }
+        if (hasTrailingConnector) return 2200;
+        if (elapsedFromLastResult < 900 && wordCount > 10) return 1700;
+        if (wordCount <= 5 && hasActionVerb) return 850;
+        return 1250;
+    };
+
+    const flushVoiceQueue = () => {
+        const busy = activeTabRef.current === 'standard' ? loadingRef.current : agentLoadingRef.current;
+        if (busy || pendingVoiceQueueRef.current.length === 0) return;
+
+        const next = pendingVoiceQueueRef.current.shift();
+        if (!next) return;
+        if (activeTabRef.current === 'standard') {
+            handleSend(next);
+        } else {
+            handleAgentSend(next);
+        }
+    };
+
+    useEffect(() => {
+        if (!loading && !agentLoading) {
+            flushVoiceQueue();
+        }
+    }, [loading, agentLoading]);
+
+    const submitVoiceDraft = (text: string) => {
+        const clean = text.trim();
+        if (!clean) return;
+        setVoiceLiveText("");
+        const busy = activeTabRef.current === 'standard' ? loadingRef.current : agentLoadingRef.current;
+        if (busy) {
+            pendingVoiceQueueRef.current.push(clean);
+            toast.info("Đã xếp lệnh vào hàng chờ voice.");
+            return;
+        }
+        if (activeTabRef.current === 'standard') {
+            handleSend(clean);
+        } else {
+            handleAgentSend(clean);
+        }
+    };
+
+    const scheduleVoiceAutoSend = (text: string) => {
+        clearVoiceSendTimer();
+        const clean = text.trim();
+        if (!clean || voiceModeRef.current === "hold") return;
+        const delayMs = getAdaptiveVoiceDelay(clean);
+        voiceSendTimerRef.current = setTimeout(() => {
+            voiceDraftRef.current = "";
+            submitVoiceDraft(clean);
+        }, delayMs);
+    };
+
+    const scheduleInterimVoiceFallback = (text: string) => {
+        clearVoiceSendTimer();
+        const clean = text.trim();
+        if (!clean || voiceModeRef.current === "hold") return;
+        const delayMs = getAdaptiveVoiceDelay(clean) + 650;
+        voiceSendTimerRef.current = setTimeout(() => {
+            if (voiceDraftRef.current.trim()) return;
+            const fallbackText = lastInterimVoiceTextRef.current.trim();
+            if (!fallbackText) return;
+            lastInterimVoiceTextRef.current = "";
+            submitVoiceDraft(fallbackText);
+        }, delayMs);
+    };
+
+    const isAffirmationCommand = (text: string) => {
+        const normalized = normalizeSearchText(text).trim();
+        return /^(ok|oke|okay|dong y|xac nhan|chot|lam di|duoc|yes|y|tiep tuc|toi dong y)$/.test(normalized);
+    };
+
+    const isCancelCommand = (text: string) => {
+        const normalized = normalizeSearchText(text).trim();
+        return /^(huy|bo qua|khong|khong lam nua|dung lai|thoi)$/.test(normalized);
+    };
+
+    const isSensitiveAgentCommand = (text: string) => {
+        const normalized = normalizeSearchText(text);
+        const sensitivePhrases = [
+            "xoa", "xoa mem", "xoa tai khoan", "xoa khach hang", "xoa hoa don",
+            "khoa tai khoan", "mo khoa tai khoan", "gui hang loat", "gui dong loat",
+            "xac nhan thu tien", "xac nhan thanh toan", "doi trang thai hoa don",
+            "cap nhat hoa don", "sua hoa don", "huy lich", "huy lich hen"
+        ];
+        return sensitivePhrases.some(phrase => normalized.includes(phrase));
+    };
+
+    const processVoiceTranscript = (rawText: string, options: { isFinal?: boolean; confidence?: number | null; source?: "speech" | "test" } = {}) => {
+        const text = rawText.trim();
+        if (!text) return;
+
+        clearVoiceNoSpeechTimer();
+        const isFinal = options.isFinal ?? true;
+        const heardText = `${voiceDraftRef.current} ${text}`.trim();
+        if (activeTabRef.current === 'standard') setInput(heardText);
+        else setAgentInput(heardText);
+        setVoiceLiveText(heardText);
+        setVoiceStatus(voiceModeRef.current === "hold" ? "Đang chờ..." : "Đang nghe...");
+        lastVoiceResultAtRef.current = Date.now();
+
+        if (isVoiceStopCommand(text)) {
+            stopVoiceSession("Đã tắt mic.");
+            if (activeTabRef.current === 'standard') setInput("");
+            else setAgentInput("");
+            setVoiceLiveText("");
+            speakText("Đã tắt micro.");
+            return;
+        }
+
+        if (isVoiceFastCommand(text)) {
+            setVoiceModeSafe("fast");
+            toast.success("Đã bật chế độ nói nhanh.");
+        } else if (isVoiceNormalCommand(text)) {
+            setVoiceModeSafe("normal");
+            toast.info("Đã về chế độ bình thường.");
+        }
+
+        if (isVoiceHoldCommand(text)) {
+            clearVoiceSendTimer();
+            setVoiceModeSafe("hold");
+            voiceDraftRef.current = "";
+            if (activeTabRef.current === 'standard') setInput("");
+            else setAgentInput("");
+            setVoiceLiveText("");
+            toast.info("Rexi đang chờ, nói 'tiếp tục' khi bạn muốn gửi tiếp.");
+            if (voiceHoldTimeoutRef.current) clearTimeout(voiceHoldTimeoutRef.current);
+            voiceHoldTimeoutRef.current = setTimeout(() => {
+                if (voiceModeRef.current === "hold") {
+                    stopVoiceSession("Micro đã tự tắt sau thời gian chờ.");
+                    toast.info("Micro đã tự tắt sau thời gian chờ.");
+                }
+            }, 90000);
+            resetMicIdleTimeout();
+            return;
+        }
+
+        if (voiceModeRef.current === "hold") {
+            if (isVoiceResumeCommand(text)) {
+                if (voiceHoldTimeoutRef.current) clearTimeout(voiceHoldTimeoutRef.current);
+                setVoiceModeSafe("normal");
+                voiceDraftRef.current = "";
+                if (activeTabRef.current === 'standard') setInput("");
+                else setAgentInput("");
+                setVoiceLiveText("");
+                toast.success("Đã tiếp tục nghe lệnh.");
+            }
+            return;
+        }
+
+        if (isFinal) {
+            if (shouldRejectUnclearVoice(text, options.confidence ?? null)) {
+                askRepeatUnclearVoice(text);
+                return;
+            }
+            voiceDraftRef.current = `${voiceDraftRef.current} ${text}`.trim();
+            lastInterimVoiceTextRef.current = "";
+            scheduleVoiceAutoSend(voiceDraftRef.current);
+        } else {
+            lastInterimVoiceTextRef.current = heardText;
+            scheduleInterimVoiceFallback(heardText);
+        }
+    };
+
+    useEffect(() => {
+        if (window.location.hostname !== "127.0.0.1" && window.location.hostname !== "localhost") return;
+        (window as any).__REXI_VOICE_TEST__ = {
+            say: (text: string, options: { final?: boolean; confidence?: number } = {}) => {
+                voiceSessionActiveRef.current = true;
+                setIsListening(true);
+                processVoiceTranscript(text, { isFinal: options.final ?? true, confidence: options.confidence ?? 0.95, source: "test" });
+            },
+            stop: () => stopVoiceSession("Đã tắt mic."),
+            state: () => ({
+                mode: voiceModeRef.current,
+                liveText: voiceLiveText,
+                activeTab: activeTabRef.current
+            })
+        };
+        return () => {
+            delete (window as any).__REXI_VOICE_TEST__;
+        };
+    }, [voiceLiveText, stopVoiceSession]);
+
     const toggleListening = async () => {
         if (isListening) {
-            if (recognitionRef.current) recognitionRef.current.stop();
-            setIsListening(false);
-            stopAudioAnalysis();
+            stopVoiceSession("Đã tắt mic.");
             return;
         }
 
         const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
         if (!SpeechRecognition) {
-            alert("Trình duyệt của bạn không hỗ trợ nhận diện giọng nói. Hãy dùng Google Chrome hoặc Microsoft Edge.");
+            const text = "Trình duyệt này chưa hỗ trợ nhận diện giọng nói. Bạn hãy dùng Chrome hoặc Microsoft Edge, hoặc nhập bằng bàn phím.";
+            setVoiceStatus("Không hỗ trợ voice.");
+            notifyVoiceMessage(text, true);
+            alert(text);
             return;
         }
 
         try {
+            setVoiceStatus("Đang xin quyền micro...");
             // TỰ ĐỘNG BẬT LOA PHẢN HỒI KHI DÙNG GIỌNG NÓI
             setIsVoiceEnabled(true);
             localStorage.setItem("rexi_is_voice_enabled", "true");
@@ -2106,52 +2498,81 @@ export const ChatBot: React.FC = () => {
             if (!recognitionRef.current) {
                 recognitionRef.current = new SpeechRecognition();
                 recognitionRef.current.continuous = true; // NGHE LIÊN TỤC KHÔNG TỰ TẮT
-                recognitionRef.current.interimResults = false;
+                recognitionRef.current.interimResults = true;
                 recognitionRef.current.lang = "vi-VN";
 
                 recognitionRef.current.onresult = (event: any) => {
                     resetMicIdleTimeout(); // Có tiếng động là reset timer
                     if (isAiSpeakingRef.current) return; // Bỏ qua âm thanh khi AI đang nói để tránh echo
 
-                    // Duyệt qua các kết quả mới nhận được từ sau resultIndex
+                    let interimText = "";
+                    let finalText = "";
+                    let finalConfidence: number | null = null;
                     for (let i = event.resultIndex; i < event.results.length; ++i) {
+                        const alternative = event.results[i][0];
                         if (event.results[i].isFinal) {
-                            const resultText = event.results[i][0].transcript.trim();
-                            if (resultText) {
-                                const lowerText = resultText.toLowerCase();
-                                
-                                // LỆNH GIỌNG NÓI: TẮT MIC
-                                if (lowerText.includes("tắt mic") || lowerText.includes("tắt micro") || lowerText.includes("dừng nghe")) {
-                                    clearMicIdleTimeout();
-                                    if (recognitionRef.current) recognitionRef.current.stop();
-                                    setIsListening(false);
-                                    stopAudioAnalysis();
-                                    if (activeTabRef.current === 'standard') setInput("");
-                                    else setAgentInput("");
-                                    speakText("Đã tắt micro.");
-                                    return;
-                                }
-                                
-                                // TỰ ĐỘNG GỬI & THỰC THI NGAY LẬP TỨC
-                                if (activeTabRef.current === 'standard') {
-                                    handleSend(resultText);
-                                } else {
-                                    handleAgentSend(resultText);
-                                }
+                            finalText += " " + alternative.transcript.trim();
+                            if (typeof alternative.confidence === "number") {
+                                finalConfidence = finalConfidence === null
+                                    ? alternative.confidence
+                                    : Math.min(finalConfidence, alternative.confidence);
                             }
+                        } else {
+                            interimText += " " + alternative.transcript.trim();
                         }
+                    }
+
+                    // Tách luồng xử lý: Ghi nhận Final trước, sau đó nối thêm Interim nếu có (đảm bảo không rớt chữ)
+                    if (finalText.trim()) {
+                        processVoiceTranscript(finalText.trim(), { isFinal: true, confidence: finalConfidence, source: "speech" });
+                    }
+                    if (interimText.trim()) {
+                        processVoiceTranscript(interimText.trim(), { isFinal: false, confidence: finalConfidence, source: "speech" });
                     }
                 };
 
                 recognitionRef.current.onerror = (e: any) => {
                     console.error("Speech Error:", e);
                     clearMicIdleTimeout();
-                    setIsListening(false);
-                    stopAudioAnalysis();
+                    const errorCode = e?.error || "unknown";
+                    if (errorCode === "not-allowed" || errorCode === "service-not-allowed") {
+                        stopVoiceSession("Trình duyệt đang chặn quyền micro.");
+                        const text = "Trình duyệt đang chặn quyền micro. Bạn hãy bấm biểu tượng ổ khóa trên thanh địa chỉ và cho phép Microphone cho trang này.";
+                        toast.error(text);
+                        notifyVoiceMessage(text, true);
+                        return;
+                    }
+                    if (errorCode === "network") {
+                        setVoiceStatus("Nhận diện giọng nói bị lỗi mạng.");
+                        const text = "Nhận diện giọng nói đang lỗi mạng. Bạn thử lại trên Chrome hoặc Edge có kết nối mạng ổn định nhé.";
+                        toast.error(text);
+                        notifyVoiceMessage(text, true);
+                        return;
+                    }
+                    if (errorCode === "no-speech") {
+                        setVoiceStatus("Chưa nghe thấy giọng nói.");
+                    }
+                    if (!voiceSessionActiveRef.current) {
+                        stopVoiceSession();
+                    }
                 };
 
                 recognitionRef.current.onend = () => {
                     clearMicIdleTimeout();
+                    if (voiceSessionActiveRef.current && isOpen) {
+                        setTimeout(() => {
+                            try {
+                                // Chỉ bật lại mic nếu AI không đang nói
+                                if (!isAiSpeakingRef.current) {
+                                    recognitionRef.current?.start();
+                                    resetMicIdleTimeout();
+                                }
+                            } catch (e) {
+                                console.error("Speech restart failed:", e);
+                            }
+                        }, 250);
+                        return;
+                    }
                     setIsListening(false);
                     stopAudioAnalysis();
                 };
@@ -2188,20 +2609,31 @@ export const ChatBot: React.FC = () => {
                 animationFrameRef.current = requestAnimationFrame(updateVolume);
             };
 
+            voiceSessionActiveRef.current = true;
             setIsListening(true);
+            setVoiceStatus("Đang nghe...");
             recognitionRef.current.start();
             resetMicIdleTimeout(); // Bắt đầu đếm ngược 15s khi vừa bật mic
             updateVolume();
+            scheduleNoSpeechPrompt();
+            notifyVoiceMessage(isClinicStaff
+                ? "Rexi đang nghe đồng nghiệp. Bạn cứ nói lệnh, tôi sẽ tự gửi khi bạn ngừng nói."
+                : "Rexi đang nghe Sen. Bạn cứ nói tự nhiên, tôi sẽ tự gửi khi bạn ngừng nói.", false);
         } catch (err) {
             console.error("Microphone Access Blocked:", err);
-            alert("Vui lòng cấp quyền sử dụng Microphone để nói chuyện trực tiếp với Rexi!");
+            setVoiceStatus("Không mở được micro.");
+            const text = "Không mở được micro. Bạn kiểm tra quyền Microphone của trình duyệt rồi thử lại nhé.";
+            notifyVoiceMessage(text, true);
+            alert(text);
         }
     };
 
     // Đảm bảo dừng micro khi tắt cửa sổ chat
     useEffect(() => {
         if (!isOpen && isListening) {
+            voiceSessionActiveRef.current = false;
             clearMicIdleTimeout();
+            clearVoiceSendTimer();
             if (recognitionRef.current) recognitionRef.current.stop();
             setIsListening(false);
             stopAudioAnalysis();
@@ -2494,7 +2926,7 @@ export const ChatBot: React.FC = () => {
 
     // ĐỘC QUYỀN REXI AGENT V2: HÀM XỬ LÝ AGENT VỚI SEARCH & HỒ SƠ ĐỘNG
     const handleAgentSend = async (textOverride?: string) => {
-        const textToSend = textOverride || agentInput;
+        let textToSend = textOverride || agentInput;
         if (!textToSend.trim()) return;
         if (agentLoading) return;
 
@@ -2523,6 +2955,43 @@ export const ChatBot: React.FC = () => {
                 }]);
                 return;
             }
+        }
+
+        const pendingSensitiveCommand = pendingSensitiveCommandRef.current;
+        if (pendingSensitiveCommand) {
+            if (isAffirmationCommand(textToSend)) {
+                pendingSensitiveCommandRef.current = null;
+                textToSend = `${pendingSensitiveCommand}\nNgười dùng đã xác nhận rõ ràng bằng giọng nói: "${textToSend}". Chỉ thực hiện đúng tác vụ đã xác nhận, không mở rộng thêm.`;
+            } else if (isCancelCommand(textToSend)) {
+                pendingSensitiveCommandRef.current = null;
+                const aiReply = {
+                    type: "ai",
+                    text: "Đã hủy lệnh nhạy cảm. Tôi chưa thực hiện thay đổi nào."
+                };
+                setAgentMessages(prev => [...prev, { type: "user", text: textToSend }, aiReply]);
+                setAgentInput("");
+                speakText(aiReply.text);
+                return;
+            } else {
+                const aiReply = {
+                    type: "ai",
+                    text: "Tôi đang chờ xác nhận cho lệnh nhạy cảm trước đó. Bạn nói 'xác nhận' để làm tiếp hoặc 'hủy' để bỏ qua."
+                };
+                setAgentMessages(prev => [...prev, { type: "user", text: textToSend }, aiReply]);
+                setAgentInput("");
+                speakText(aiReply.text);
+                return;
+            }
+        } else if (isSensitiveAgentCommand(textToSend)) {
+            pendingSensitiveCommandRef.current = textToSend;
+            const aiReply = {
+                type: "ai",
+                text: `Tôi phát hiện đây là lệnh nhạy cảm: "${textToSend}". Tôi chưa thực hiện. Nếu muốn làm tiếp, hãy nói "xác nhận"; nếu không, nói "hủy".`
+            };
+            setAgentMessages(prev => [...prev, { type: "user", text: textToSend }, aiReply]);
+            setAgentInput("");
+            speakText(aiReply.text);
+            return;
         }
 
         const newMsg = {
@@ -4625,8 +5094,8 @@ export const ChatBot: React.FC = () => {
                             {/* MICROPHONE NHẬN DIỆN GIỌNG NÓI */}
                             <button data-ai-id="button-chatbot-4mbq"
                                 onClick={toggleListening}
-                                style={{ background: 'none', border: 'none', color: isListening ? '#ef4444' : '#94a3b8', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', padding: 0 }}
-                                title="Nói chuyện trực tiếp với Rexi"
+                                style={{ background: 'none', border: 'none', color: isListening ? (voiceMode === 'hold' ? '#f59e0b' : voiceMode === 'fast' ? '#22c55e' : '#ef4444') : '#94a3b8', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', padding: 0 }}
+                                title={isListening ? `Đang nghe liên tục (${voiceMode === 'fast' ? 'nhanh' : voiceMode === 'hold' ? 'đang chờ' : 'bình thường'})` : "Bấm một lần để nói chuyện liên tục với Rexi"}
                             >
                                 <span className="material-symbols-outlined" style={{ fontSize: '28px', animation: isListening ? 'blink 1.5s infinite' : 'none' }}>
                                     {isListening ? 'mic' : 'mic_none'}
@@ -4636,41 +5105,66 @@ export const ChatBot: React.FC = () => {
                                         <div ref={waveBar1Ref} className="wave-bar" style={{ height: '6px', opacity: 0.6 }}></div>
                                         <div ref={waveBar2Ref} className="wave-bar" style={{ height: '6px', opacity: 0.6 }}></div>
                                         <div ref={waveBar3Ref} className="wave-bar" style={{ height: '6px', opacity: 0.6 }}></div>
+                                        <span style={{ fontSize: '0.72rem', fontWeight: 800, marginLeft: '4px' }}>
+                                            {voiceMode === 'fast' ? 'FAST' : voiceMode === 'hold' ? 'WAIT' : 'LIVE'}
+                                        </span>
                                     </div>
                                 )}
                             </button>
+                            {isListening && voiceStatus && (
+                                <span style={{ fontSize: '0.72rem', fontWeight: 800, color: voiceMode === 'hold' ? '#f59e0b' : '#64748b', whiteSpace: 'nowrap', maxWidth: '90px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                    {voiceStatus}
+                                </span>
+                            )}
 
                             {/* Ô Nhập Dữ Liệu Tự Động Co Giãn */}
-                            <textarea
-                                ref={textInputRef}
-                                value={activeTab === 'standard' ? input : agentInput}
-                                onChange={(e) => {
-                                    if (activeTab === 'standard') {
-                                        setInput(e.target.value);
-                                    } else {
-                                        setAgentInput(e.target.value);
-                                    }
-                                    e.target.style.height = 'auto';
-                                    e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
-                                }}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter' && !e.shiftKey) {
-                                        e.preventDefault();
+                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <textarea
+                                    ref={textInputRef}
+                                    value={activeTab === 'standard' ? input : agentInput}
+                                    onChange={(e) => {
                                         if (activeTab === 'standard') {
-                                            handleSend();
+                                            setInput(e.target.value);
                                         } else {
-                                            handleAgentSend();
+                                            setAgentInput(e.target.value);
                                         }
-                                    }
-                                }}
-                                placeholder={activeTab === 'agent' ? "Lệnh tác vụ cho Agent (e.g. đặt lịch, tra cứu mạng)..." : "Nhắn tin cho Bác sĩ Thú y Rexi..."}
-                                rows={1}
-                                style={{
-                                    flex: 1, border: '1px solid var(--gray-300)', borderRadius: '18px', padding: '10px 16px',
-                                    resize: 'none', background: 'var(--background)', color: 'var(--ink)', fontSize: '0.88rem',
-                                    outline: 'none', maxHeight: '120px', lineHeight: '1.4'
-                                }}
-                            />
+                                        e.target.style.height = 'auto';
+                                        e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
+                                    }}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && !e.shiftKey) {
+                                            e.preventDefault();
+                                            if (activeTab === 'standard') {
+                                                handleSend();
+                                            } else {
+                                                handleAgentSend();
+                                            }
+                                        }
+                                    }}
+                                    placeholder={activeTab === 'agent' ? "Lệnh tác vụ cho Agent (e.g. đặt lịch, tra cứu mạng)..." : "Nhắn tin cho Bác sĩ Thú y Rexi..."}
+                                    rows={1}
+                                    style={{
+                                        width: '100%', border: '1px solid var(--gray-300)', borderRadius: '18px', padding: '10px 16px',
+                                        resize: 'none', background: 'var(--background)', color: 'var(--ink)', fontSize: '0.88rem',
+                                        outline: 'none', maxHeight: '120px', lineHeight: '1.4'
+                                    }}
+                                />
+                                {isListening && (
+                                    <div style={{
+                                        minHeight: '18px',
+                                        padding: '0 6px',
+                                        fontSize: '0.72rem',
+                                        fontWeight: 800,
+                                        lineHeight: 1.35,
+                                        color: voiceLiveText ? 'var(--primary)' : 'var(--gray-400)',
+                                        whiteSpace: 'nowrap',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis'
+                                    }}>
+                                        {voiceLiveText ? `Đã nghe: ${voiceLiveText}` : 'Đang chờ giọng nói...'}
+                                    </div>
+                                )}
+                            </div>
 
                             {/* NÚT GỬI KHỚP DYNAMIC THEO TAB */}
                             <button data-ai-id="button-chatbot-5x21"

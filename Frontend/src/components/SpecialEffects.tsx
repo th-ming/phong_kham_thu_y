@@ -609,15 +609,12 @@ export const ScrollToTop: React.FC = () => {
   if (!show) return null;
   return (
     <button data-ai-id="button-specialeffects-bkru"
+      className="scroll-to-top-glass"
       onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
       style={{
         position: "fixed", bottom: "30px", left: "30px", width: "56px", height: "56px", borderRadius: "50%",
-        background: "var(--surface)", color: "var(--primary)", border: "1px solid var(--gray-200)",
         cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000,
-        boxShadow: "var(--shadow-md)", backdropFilter: "var(--glass-blur)", transition: "all 0.3s"
       }}
-      onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-5px)'; e.currentTarget.style.boxShadow = 'var(--shadow-lg)'; e.currentTarget.style.color = 'white'; e.currentTarget.style.background = 'var(--primary)'; }}
-      onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'var(--shadow-md)'; e.currentTarget.style.color = 'var(--primary)'; e.currentTarget.style.background = 'var(--surface)'; }}
     >
       <span className="material-symbols-outlined">arrow_upward</span>
     </button>

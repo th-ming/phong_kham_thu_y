@@ -188,9 +188,9 @@ const Footer: React.FC<{ isSimple?: boolean }> = ({ isSimple }) => {
                     flexDirection: 'column',
                     alignItems: 'center',
                     cursor: 'pointer'
-                }} onClick={() => setIsMemePlaying(true)}>
+                    }} onClick={() => setIsMemePlaying(true)}>
                     <div className="footer-chat-bubble">
-                        Click xem tôi nhảy nè! 🐾
+                        Click đi sen, trẫm múa nè! 🐾
                     </div>
                 </div>
             )}

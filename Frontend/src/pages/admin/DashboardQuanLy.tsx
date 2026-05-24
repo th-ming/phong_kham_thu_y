@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import axiosInstance from "@services/axios";
 import { getUserProfile, normalizeUserRole } from "@utils/index";
@@ -79,6 +79,7 @@ const DashboardQuanLy: React.FC = () => {
     revenue: { today: 0, yesterday: 0 }
   });
   const [customerGrowthData, setCustomerGrowthData] = useState<{ month: string, count: number }[]>([]);
+  const [lastUpdated, setLastUpdated] = useState<string>("");
 
   const user = useMemo(() => getUserProfile() || {}, []);
   const userRole = normalizeUserRole(user);
@@ -197,6 +198,11 @@ const DashboardQuanLy: React.FC = () => {
           setRevenue(todayRevenue);
           setKpiCompare(prev => ({ ...prev, revenue: { today: todayRevenue, yesterday: yesterdayRevenue } }));
         }
+
+        // Cập nhật nhãn thời gian thực khi tải dữ liệu thành công
+        const now = new Date();
+        const formatTime = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+        setLastUpdated(formatTime);
       } catch (err) {
         console.error("Lỗi đồng bộ dữ liệu Dashboard:", err);
       }
@@ -260,12 +266,10 @@ const DashboardQuanLy: React.FC = () => {
   const cleanName = (name: string) => name ? name.replace(/^\d+\.\s*/, '').trim() : '';
   const currentName = cleanName(user.ho_ten || user.displayName || user.display_name || 'Admin Rexi');
 
-  // ĐIỀU HƯỚNG DASHBOARD THEO VAI TRÒ (đặt SAU tất cả hooks để tuân thủ Rules of Hooks)
   if (userRole === 'ke_toan') return <KeToanDashboard />;
   if (userRole === 'bac_si' || userRole === 'y_ta') return <BacSiDashboard />;
   if (userRole === 'tiep_tan') return <TiepTanDashboard />;
 
-  // Hàm lấy màu theo trạng thái để đồng bộ UI
   const getStatusColor = (status: string) => {
     const s = status?.toUpperCase() || '';
     if (s === 'DA_DAT' || s === 'CHỜ XÁC NHẬN') return '#f59e0b';
@@ -310,27 +314,6 @@ const DashboardQuanLy: React.FC = () => {
         .kpi-trend-badge.up { color: #16a34a; background: rgba(240, 253, 244, 0.92); border-color: rgba(34, 197, 94, 0.28); }
         .kpi-trend-badge.down { color: #e11d48; background: rgba(255, 241, 242, 0.92); border-color: rgba(244, 63, 94, 0.26); }
         .kpi-trend-badge.neutral { color: var(--gray-500); background: rgba(248, 250, 252, 0.92); }
-        [data-theme='dark'] .kpi-trend-badge {
-          background: rgba(15, 23, 42, 0.82);
-          border-color: rgba(148, 163, 184, 0.22);
-          box-shadow: 0 14px 30px rgba(0, 0, 0, 0.24), inset 0 1px 0 rgba(255,255,255,0.04);
-          backdrop-filter: blur(10px);
-        }
-        [data-theme='dark'] .kpi-trend-badge.up {
-          color: #86efac;
-          background: rgba(20, 83, 45, 0.34);
-          border-color: rgba(74, 222, 128, 0.32);
-        }
-        [data-theme='dark'] .kpi-trend-badge.down {
-          color: #fda4af;
-          background: rgba(136, 19, 55, 0.34);
-          border-color: rgba(251, 113, 133, 0.32);
-        }
-        [data-theme='dark'] .kpi-trend-badge.neutral {
-          color: #cbd5e1;
-          background: rgba(30, 41, 59, 0.72);
-          border-color: rgba(148, 163, 184, 0.28);
-        }
         .kpi-trend-popover {
           position: absolute;
           top: 58px;
@@ -378,6 +361,7 @@ const DashboardQuanLy: React.FC = () => {
           <span style={{ filter: 'drop-shadow(0 5px 15px rgba(0,0,0,0.2))' }}>📊</span>
         </h1>
         <p style={{ fontWeight: 700, color: 'rgba(255,255,255,0.95)', position: 'relative', zIndex: 1, margin: 0, fontSize: '1.2rem', textShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>Xin chào {currentName}, đây là báo cáo hoạt động và vận hành hôm nay.</p>
+        {lastUpdated && <p style={{ margin: '10px 0 0', fontSize: '0.9rem', fontWeight: 700, opacity: 0.9 }}>Cập nhật lúc {lastUpdated}</p>}
       </div>
 
       <CanhBaoThuoc />

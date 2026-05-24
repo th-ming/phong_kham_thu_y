@@ -354,6 +354,51 @@ h2 {
   color: white;
 }
 
+.scroll-to-top-glass {
+  color: var(--primary);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.06));
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  box-shadow:
+    0 12px 32px rgba(15, 23, 42, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.38);
+  backdrop-filter: blur(18px) saturate(1.35);
+  -webkit-backdrop-filter: blur(18px) saturate(1.35);
+  transition: transform 0.3s ease, background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, color 0.3s ease;
+}
+
+.scroll-to-top-glass:hover {
+  color: #ffffff;
+  transform: translateY(-5px);
+  background:
+    linear-gradient(135deg, rgba(13, 148, 136, 0.34), rgba(255, 255, 255, 0.1));
+  border-color: rgba(13, 148, 136, 0.4);
+  box-shadow:
+    0 16px 36px rgba(15, 23, 42, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.42);
+}
+
+[data-theme='dark'] .scroll-to-top-glass {
+  color: #67e8f9;
+  background:
+    linear-gradient(135deg, rgba(15, 23, 42, 0.34), rgba(255, 255, 255, 0.06));
+  border-color: rgba(103, 232, 249, 0.24);
+  box-shadow:
+    0 14px 34px rgba(0, 0, 0, 0.26),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+[data-theme='dark'] .scroll-to-top-glass:hover {
+  color: #ffffff;
+  background:
+    linear-gradient(135deg, rgba(34, 211, 238, 0.28), rgba(15, 23, 42, 0.16));
+  border-color: rgba(103, 232, 249, 0.42);
+  box-shadow:
+    0 16px 38px rgba(0, 0, 0, 0.34),
+    0 0 18px rgba(34, 211, 238, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
 .hero-cta-grid {
   display: flex;
   flex-wrap: wrap;

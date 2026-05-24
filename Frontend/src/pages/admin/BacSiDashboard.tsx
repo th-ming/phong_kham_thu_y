@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import axiosInstance from "@services/axios";
 import { getUserProfile } from "@utils/index";
@@ -8,6 +8,7 @@ const BacSiDashboard: React.FC = () => {
     const [myMedicalRecords, setMyMedicalRecords] = useState<any[]>([]);
     const [weeklyStats, setWeeklyStats] = useState<{ date: string, count: number }[]>([]);
     const [loading, setLoading] = useState(true);
+    const [lastUpdated, setLastUpdated] = useState<string>("");
     const user = useMemo(() => getUserProfile() || {}, []);
     const currentUserId = user?.id_nhan_vien || user?.id;
 
@@ -62,6 +63,10 @@ const BacSiDashboard: React.FC = () => {
                 const myRecentRecords = allRecords.filter(r => String(r.id_bac_si) === String(currentUserId)).slice(0, 5);
                 setMyMedicalRecords(myRecentRecords);
 
+                // Cập nhật nhãn thời gian thực khi tải dữ liệu thành công
+                const now = new Date();
+                const formatTime = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+                setLastUpdated(formatTime);
             } catch (err) {
                 console.error("Lỗi tải dữ liệu dashboard bác sĩ:", err);
             } finally {
@@ -104,6 +109,12 @@ const BacSiDashboard: React.FC = () => {
                     <span style={{ filter: 'drop-shadow(0 5px 15px rgba(0,0,0,0.2))' }}>🩺</span>
                 </h1>
                 <p style={{ fontWeight: 700, color: 'rgba(255,255,255,0.95)', position: 'relative', zIndex: 1, margin: 0, fontSize: '1.2rem', textShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>Chào mừng trở lại, {user.ho_ten || 'Bác sĩ'}. Dưới đây là lịch trình và công việc của bạn hôm nay.</p>
+                {lastUpdated && (
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', fontWeight: 800, background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)', padding: '6px 14px', borderRadius: '999px', marginTop: '14px', border: '1px solid rgba(255,255,255,0.2)', position: 'relative', zIndex: 1, boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: '15px', color: '#5eead4', animation: 'spin 3s infinite linear' }}>sync</span>
+                        <span>Dữ liệu thời gian thực cập nhật lúc: {lastUpdated}</span>
+                    </div>
+                )}
             </div>
 
             {/* Các thẻ thống kê */}
