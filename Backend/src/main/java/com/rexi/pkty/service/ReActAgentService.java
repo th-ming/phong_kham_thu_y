@@ -47,6 +47,7 @@ public class ReActAgentService {
                 originalUserIntent,
                 normalizedQuery,
                 isStaff,
+                userRole,
                 steps
         );
         if (pendingConfirmationResult != null) {
@@ -125,13 +126,13 @@ public class ReActAgentService {
 
                         // Thực thi tool, nhưng không cho khách/ẩn danh quét dữ liệu nội bộ.
                         if (!canUseTool(userRole, toolName)) {
-                            String denial = "Tài khoản hiện tại không có quyền truy vấn dữ liệu nội bộ phòng khám. Khách hàng chỉ được dùng Agent để đặt lịch, tra cứu thông tin thú y công khai và xem dữ liệu cá nhân qua các trang khách hàng.";
+                            String denial = RoleAccessPolicy.permissionDeniedMessage(toolName);
                             steps.set(steps.size() - 1, new ReActStep("TOOL_CALL", "Từ chối tool không đúng vai trò: " + toolName, toolName, params, denial));
                             steps.add(new ReActStep("FINAL", denial, null, null, null));
                             return new ReActResult(denial, steps);
                         }
 
-                        String observation = toolService.executeTool(toolName, params);
+                        String observation = toolService.executeTool(toolName, params, userRole);
                         logger.info("[ReAct] Kết quả tool: " + observation.substring(0, Math.min(200, observation.length())));
 
                         // Thêm kết quả vào steps
@@ -182,6 +183,7 @@ public class ReActAgentService {
             String originalUserIntent,
             String normalizedQuery,
             boolean isStaff,
+            String userRole,
             List<ReActStep> steps
     ) {
         if (!isAffirmation(normalizedQuery) || fullQuery == null) {
@@ -205,6 +207,12 @@ public class ReActAgentService {
 
         if (!hasPendingUnlock) {
             return null;
+        }
+
+        if (!RoleAccessPolicy.canUseAgentTool(userRole, "thao_tac_tai_khoan")) {
+            String answer = RoleAccessPolicy.permissionDeniedMessage("thao_tac_tai_khoan");
+            steps.add(new ReActStep("FINAL", answer, null, null, null));
+            return new ReActResult(answer, steps);
         }
 
         Map<String, Object> params = new HashMap<>();
@@ -232,7 +240,7 @@ public class ReActAgentService {
 
         params.put("hanh_dong", "MO_KHOA");
         steps.add(new ReActStep("TOOL_CALL", "Xác nhận trước đó hợp lệ, gọi tool mở khóa tài khoản.", "thao_tac_tai_khoan", params, null));
-        String observation = toolService.executeTool("thao_tac_tai_khoan", params);
+        String observation = toolService.executeTool("thao_tac_tai_khoan", params, userRole);
         steps.set(steps.size() - 1, new ReActStep("TOOL_CALL", "Xác nhận trước đó hợp lệ, gọi tool mở khóa tài khoản.", "thao_tac_tai_khoan", params, observation));
 
         String answer = observation.startsWith("✅")
@@ -340,10 +348,10 @@ public class ReActAgentService {
         boolean isStaff = isStaffRole(userRole);
 
         String roleContext = isStaff
-            ? "Bạn đang hỗ trợ nhân viên nội bộ (vai trò: " + userRole + "). Có thể truy cập đầy đủ dữ liệu phòng khám."
-            : "Bạn đang hỗ trợ khách hàng (username: " + username + "). Chỉ truy cập dữ liệu liên quan đến họ.";
+            ? "Bạn đang hỗ trợ nhân viên nội bộ (vai trò: " + userRole + "). CHỈ được dùng tool trong danh sách — không truy vấn dữ liệu ngoài quyền vai trò."
+            : "Bạn đang hỗ trợ khách hàng (username: " + username + "). Chỉ dùng tool khách được phép; dữ liệu cá nhân qua trang khách hàng.";
 
-        String toolsSchema = isStaff ? toolService.getToolsSchema() : toolService.getCustomerToolsSchema();
+        String toolsSchema = toolService.getToolsSchemaForRole(userRole);
 
         return toolsSchema
             + "\n\n=== NGỮ CẢNH PHÒNG KHÁM ===\n" + globalCtx

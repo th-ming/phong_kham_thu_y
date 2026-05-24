@@ -1,6 +1,7 @@
 package com.rexi.pkty.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.rexi.pkty.security.RoleAccessPolicy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -105,6 +106,67 @@ public class AiToolService {
             """;
     }
 
+    public String getToolsSchemaForRole(String userRole) {
+        if (RoleAccessPolicy.isCustomerRole(userRole)) {
+            return getCustomerToolsSchema();
+        }
+        return getStaffToolsSchemaForRole(userRole);
+    }
+
+    private String getStaffToolsSchemaForRole(String userRole) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("""
+            Bạn là agent nội bộ phòng khám. CHỈ được gọi các tool trong danh sách dưới đây (theo quyền vai trò).
+            Khi cần thực hiện, trả về JSON: {"tool": "<tên_tool>", "params": {<tham_số>}}
+            
+            TOOLS ĐƯỢC PHÉP VỚI VAI TRÒ HIỆN TẠI:
+            """);
+        appendToolIfAllowed(sb, userRole, "tim_lich_hen_hom_nay",
+            "Lấy danh sách lịch hẹn khám hôm nay.", "{}");
+        appendToolIfAllowed(sb, userRole, "tim_khach_hang",
+            "Tìm khách hàng theo tên hoặc SĐT.", "{\"tu_khoa\": \"...\"}");
+        appendToolIfAllowed(sb, userRole, "tim_thu_cung",
+            "Tìm thú cưng theo tên, loài hoặc ID.", "{\"tu_khoa\": \"...\"}");
+        appendToolIfAllowed(sb, userRole, "xem_benh_an",
+            "Xem lịch sử bệnh án thú cưng.", "{\"id_thu_cung\": \"...\"}");
+        appendToolIfAllowed(sb, userRole, "tim_lich_trong",
+            "Tìm khung giờ trống theo ngày.", "{\"ngay\": \"YYYY-MM-DD\"}");
+        appendToolIfAllowed(sb, userRole, "dat_lich_hen",
+            "Tạo lịch hẹn mới (phải hỏi xác nhận trước).",
+            "{\"id_khach_hang\":\"...\",\"id_thu_cung\":\"...\",\"id_bac_si\":\"...\",\"id_dich_vu\":\"...\",\"ngay_kham\":\"YYYY-MM-DD\",\"gio_kham\":\"HH:mm\",\"ghi_chu\":\"...\"}");
+        appendToolIfAllowed(sb, userRole, "xem_kho_thuoc",
+            "Kiểm tra tồn kho thuốc.", "{\"tu_khoa\": \"\"}");
+        appendToolIfAllowed(sb, userRole, "thong_ke_doanh_thu",
+            "Thống kê doanh thu.", "{\"khoang_thoi_gian\": \"hom_nay|tuan_nay|thang_nay\"}");
+        appendToolIfAllowed(sb, userRole, "tim_kiem_web",
+            "Tìm thông tin y khoa trên web.", "{\"query\": \"...\"}");
+        appendToolIfAllowed(sb, userRole, "gui_email_don_le",
+            "Gửi email (phải hỏi xác nhận trước).", "{\"email\":\"...\",\"tieu_de\":\"...\",\"noi_dung\":\"...\"}");
+        appendToolIfAllowed(sb, userRole, "kiem_tra_cau_hinh_ai",
+            "Kiểm tra cấu hình AI (không tiết lộ API key).", "{}");
+        appendToolIfAllowed(sb, userRole, "kiem_tra_phan_he",
+            "Xem phân hệ và route hệ thống.", "{}");
+        appendToolIfAllowed(sb, userRole, "xem_hoa_don",
+            "Xem hóa đơn theo trạng thái.", "{\"trang_thai\": \"CHO_THANH_TOAN|DA_THANH_TOAN|all\"}");
+        appendToolIfAllowed(sb, userRole, "thao_tac_tai_khoan",
+            "Khóa/mở khóa/xóa mềm tài khoản (bắt buộc xác nhận trước).",
+            "{\"id_khach_hang\":\"...\",\"hanh_dong\":\"KHOA|XOA|MO_KHOA\"}");
+        appendToolIfAllowed(sb, userRole, "tim_tai_khoan_bi_khoa",
+            "Danh sách tài khoản bị khóa.", "{}");
+        sb.append("""
+            
+            Khi đủ thông tin: {"final_answer": "<câu trả lời>"}
+            TUYỆT ĐỐI không gọi tool không có trong danh sách trên. Nếu user yêu cầu dữ liệu ngoài quyền, giải thích và hướng dẫn mở đúng phân hệ trên web.
+            """);
+        return sb.toString();
+    }
+
+    private void appendToolIfAllowed(StringBuilder sb, String userRole, String tool, String desc, String params) {
+        if (RoleAccessPolicy.canUseAgentTool(userRole, tool)) {
+            sb.append("\n- ").append(tool).append(": ").append(desc).append(" Params: ").append(params);
+        }
+    }
+
     public String getCustomerToolsSchema() {
         return """
             Bạn là một agent hỗ trợ khách hàng của phòng khám thú y Rexi.
@@ -136,7 +198,14 @@ public class AiToolService {
     // ─────────────────────────────────────────────
 
     public String executeTool(String toolName, Map<String, Object> params) {
+        return executeTool(toolName, params, null);
+    }
+
+    public String executeTool(String toolName, Map<String, Object> params, String userRole) {
         logger.info("[TOOL EXEC] Đang chạy tool: " + toolName + " | Params: " + params);
+        if (userRole != null && !RoleAccessPolicy.canUseAgentTool(userRole, toolName)) {
+            return RoleAccessPolicy.permissionDeniedMessage(toolName);
+        }
         try {
             return switch (toolName) {
                 case "tim_lich_hen_hom_nay" -> toolTimLichHenHomNay();
