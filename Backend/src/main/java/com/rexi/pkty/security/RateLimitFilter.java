@@ -2,6 +2,7 @@ package com.rexi.pkty.security;
 
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import com.rexi.pkty.service.SecurityAlertService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -9,7 +10,6 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * BỘ LỌC CHỐNG SPAM & RATE LIMITING TOÀN CỤC
@@ -21,6 +21,9 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     @org.springframework.beans.factory.annotation.Autowired
     private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private SecurityAlertService securityAlertService;
 
     private final ConcurrentHashMap<String, java.util.concurrent.atomic.AtomicInteger> requestCounts = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Long> requestTimestamps = new ConcurrentHashMap<>();
@@ -41,6 +44,11 @@ public class RateLimitFilter extends OncePerRequestFilter {
         }
         long currentTime = System.currentTimeMillis();
 
+        if (securityAlertService != null && securityAlertService.isBlocked(ip)) {
+            writeBlockedResponse(response, "Truy cập bị từ chối: IP của bạn đang nằm trong danh sách chặn bảo mật.");
+            return;
+        }
+
         // BẢO MẬT: Kiểm tra Blacklist IP (Cập nhật từ DB mỗi phút 1 lần để không làm
         // chậm hệ thống)
         if (currentTime - lastCheckTime > 60000) {
@@ -60,10 +68,26 @@ public class RateLimitFilter extends OncePerRequestFilter {
         }
 
         if (blockedIps.contains(ip)) {
-            response.setStatus(403);
-            response.setContentType("application/json;charset=UTF-8");
-            response.getWriter().write(
-                    "{\"message\": \"Truy cập bị từ chối: Địa chỉ IP của bạn đã bị đưa vào danh sách đen (Blacklist)!\"}");
+            writeBlockedResponse(response, "Truy cập bị từ chối: Địa chỉ IP của bạn đã bị đưa vào danh sách đen (Blacklist)!");
+            return;
+        }
+
+        AttackSignal attackSignal = detectAttack(request);
+        if (attackSignal != null) {
+            if (securityAlertService != null) {
+                securityAlertService.reportAndBlock(
+                        ip,
+                        attackSignal.attackType,
+                        request.getRequestURI() + (request.getQueryString() == null ? "" : "?" + request.getQueryString()),
+                        request.getMethod(),
+                        request.getHeader("User-Agent"),
+                        attackSignal.evidence,
+                        getLocationHint(request)
+                );
+            } else {
+                persistBlockedIp(ip);
+            }
+            writeBlockedResponse(response, "Cảnh báo bảo mật: Phát hiện hành vi tấn công. IP đã bị chặn cho tới khi Admin gỡ.");
             return;
         }
 
@@ -85,10 +109,22 @@ public class RateLimitFilter extends OncePerRequestFilter {
         java.util.concurrent.atomic.AtomicInteger countObj = requestCounts.get(ip);
         int requests = (countObj != null) ? countObj.get() : 1;
         if (requests > MAX_REQUESTS_PER_MINUTE) {
-            response.setStatus(429); // 429 Too Many Requests
+            if (securityAlertService != null) {
+                securityAlertService.reportAndBlock(
+                        ip,
+                        "Request flood / DDoS",
+                        request.getRequestURI(),
+                        request.getMethod(),
+                        request.getHeader("User-Agent"),
+                        requests + " requests trong vòng 60 giây",
+                        getLocationHint(request)
+                );
+            } else {
+                persistBlockedIp(ip);
+            }
+            response.setStatus(429);
             response.setContentType("application/json;charset=UTF-8");
-            response.getWriter().write(
-                    "{\"message\": \"Cảnh báo bảo mật: Phát hiện dấu hiệu Spam/DDoS. IP của bạn đã bị tạm khóa. Vui lòng thử lại sau 1 phút!\"}");
+            response.getWriter().write("{\"message\": \"Cảnh báo bảo mật: Phát hiện spam/DDoS. IP đã bị chặn cho tới khi Admin gỡ.\"}");
             return;
         }
 
@@ -101,6 +137,89 @@ public class RateLimitFilter extends OncePerRequestFilter {
             return request.getRemoteAddr();
         }
         return xfHeader.split(",")[0].trim();
+    }
+
+    private AttackSignal detectAttack(HttpServletRequest request) {
+        String uri = safe(request.getRequestURI());
+        String query = safe(request.getQueryString());
+        String userAgent = safe(request.getHeader("User-Agent"));
+        String aiAction = safe(request.getHeader("X-AI-ACTION"));
+        String probe = (uri + " " + query + " " + userAgent + " " + aiAction).toLowerCase();
+
+        if (probe.matches(".*(union\\s+select|sleep\\s*\\(|benchmark\\s*\\(|information_schema|xp_cmdshell|or\\s+1\\s*=\\s*1|--|/\\*|\\*/).*")) {
+            return new AttackSignal("SQL injection", truncate(probe));
+        }
+        if (probe.matches(".*(<script|javascript:|onerror\\s*=|onload\\s*=|document\\.cookie|<iframe|<svg).*")) {
+            return new AttackSignal("Cross-site scripting (XSS)", truncate(probe));
+        }
+        if (probe.matches(".*(\\.\\./|\\.\\.\\\\|/etc/passwd|boot\\.ini|win\\.ini|%2e%2e|%252e%252e).*")) {
+            return new AttackSignal("Path traversal / file probing", truncate(probe));
+        }
+        if (probe.matches(".*(/wp-admin|/wp-login|/phpmyadmin|/\\.env|/actuator/env|/server-status|/vendor/phpunit).*")) {
+            return new AttackSignal("Automated vulnerability scanner", truncate(probe));
+        }
+        if (userAgent.isBlank() || userAgent.toLowerCase().matches(".*(sqlmap|nikto|acunetix|nessus|masscan|nmap|zgrab|dirbuster|gobuster|hydra|burp).*")) {
+            return new AttackSignal("Security scanner / non-human client", truncate(userAgent.isBlank() ? "empty user-agent" : userAgent));
+        }
+        return null;
+    }
+
+    private void persistBlockedIp(String ip) {
+        try {
+            String ips = jdbcTemplate.queryForObject(
+                    "SELECT gia_tri FROM CauHinhHeThong WHERE ten_cau_hinh = 'blocked_ips'", String.class);
+            java.util.Set<String> next = new java.util.LinkedHashSet<>();
+            if (ips != null && !ips.isBlank()) {
+                next.addAll(java.util.Arrays.asList(ips.replace(" ", "").split(",")));
+            }
+            next.add(ip);
+            String value = String.join(",", next);
+            int updated = jdbcTemplate.update("UPDATE CauHinhHeThong SET gia_tri = ? WHERE ten_cau_hinh = 'blocked_ips'", value);
+            if (updated == 0) {
+                jdbcTemplate.update("INSERT INTO CauHinhHeThong (ten_cau_hinh, gia_tri) VALUES ('blocked_ips', ?)", value);
+            }
+            blockedIps = new java.util.HashSet<>(next);
+            lastCheckTime = 0;
+        } catch (Exception ignored) {
+        }
+    }
+
+    private String getLocationHint(HttpServletRequest request) {
+        String country = safe(request.getHeader("CF-IPCountry"));
+        String region = safe(request.getHeader("X-Region"));
+        String city = safe(request.getHeader("X-City"));
+        String forwarded = safe(request.getHeader("X-Forwarded-For"));
+        StringBuilder hint = new StringBuilder();
+        if (!city.isBlank()) hint.append(city);
+        if (!region.isBlank()) hint.append(hint.length() > 0 ? ", " : "").append(region);
+        if (!country.isBlank()) hint.append(hint.length() > 0 ? ", " : "").append(country);
+        if (!forwarded.isBlank()) hint.append(hint.length() > 0 ? " | " : "").append("Forwarded: ").append(forwarded);
+        return hint.toString();
+    }
+
+    private void writeBlockedResponse(HttpServletResponse response, String message) throws IOException {
+        response.setStatus(403);
+        response.setContentType("application/json;charset=UTF-8");
+        response.getWriter().write("{\"message\": \"" + message.replace("\"", "'") + "\"}");
+    }
+
+    private String safe(String value) {
+        return value == null ? "" : value;
+    }
+
+    private String truncate(String value) {
+        if (value == null) return "";
+        return value.length() > 500 ? value.substring(0, 500) : value;
+    }
+
+    private static class AttackSignal {
+        private final String attackType;
+        private final String evidence;
+
+        private AttackSignal(String attackType, String evidence) {
+            this.attackType = attackType;
+            this.evidence = evidence;
+        }
     }
 }
 
