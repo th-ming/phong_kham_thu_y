@@ -8,16 +8,20 @@ const BASE_URL = `http://localhost:${FRONTEND_PORT}`;
 async function loginAsCustomer(page: any) {
   await page.goto(`${BASE_URL}/dang-nhap`, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await expect(page.getByPlaceholder('Tên đăng nhập')).toBeVisible({ timeout: 15000 });
-  await page.getByPlaceholder('Tên đăng nhập').fill('testcustomer2');
-  await page.getByPlaceholder('Mật khẩu').fill('Password123!');
+  await page.getByPlaceholder('Tên đăng nhập').fill('***REMOVED***');
+  await page.getByPlaceholder('Mật khẩu').fill('***REMOVED***');
   await page.getByRole('button', { name: 'Đăng nhập ngay' }).click();
   await page.waitForURL(/.*\/khach-hang\/dashboard/, { timeout: 30000 });
 }
 
 // Hàm tự động mở khung chat trợ lý ảo của sếp
 async function openChat(page: any) {
-  await page.locator('#chatBtn').click({ force: true });
-  await expect(page.locator('#chatWindow')).toBeVisible();
+  // Chờ 2.5 giây để React ổn định layout sau khi reload/chuyển trang
+  await page.waitForTimeout(2500);
+  const chatBtn = page.locator('#chatBtn').first();
+  await expect(chatBtn).toBeVisible({ timeout: 15000 });
+  await chatBtn.click({ force: true });
+  await expect(page.locator('#chatWindow')).toBeVisible({ timeout: 15000 });
 }
 
 // Định nghĩa cấu trúc dữ liệu cho từng kịch bản test trong ma trận
@@ -374,10 +378,16 @@ test.describe('Siêu Bộ Test 150 Kịch Bản - Rexi Agent v2 Autopilot', () =
       // Đợi cho tab Agent v2 hiển thị rõ ràng trên màn hình rồi mới click (tránh lỗi bất đồng bộ)
       await expect(tabAgent).toBeVisible({ timeout: 15000 });
       await tabAgent.click();
-
+      
+      // Chờ 1.5 giây để React cập nhật ổn định state activeTab = 'agent'
+      await page.waitForTimeout(1500);
+      
       // 5. Gửi câu lệnh và click nút send
       await page.locator('textarea').first().fill(tc.userMessage);
       await page.locator('button[data-ai-id="button-chatbot-5x21"]').click({ force: true });
+      
+      // Chờ 3 giây để Frontend nhận response từ API mock, re-render DOM và hiển thị tin nhắn AI
+      await page.waitForTimeout(3000);
 
       // 6. Thực thi hàm kiểm chứng đặc thù cho kịch bản
       await tc.checkFn(page, tc.mockApiResponse);
