@@ -52,20 +52,6 @@ public class ChatController {
         RateLimit() {
             this.count = 1;
             this.resetTime = Instant.now().plus(1, ChronoUnit.MINUTES);
-        }
-    }
-
-    private final ConcurrentHashMap<String, RateLimit> rateLimiter = new ConcurrentHashMap<>();
-
-    @PostMapping
-    public Map<String, String> chat(
-            @RequestBody List<ChatMessage> history,
-            HttpServletRequest request) {
-
-        // BẢO MẬT LỚP 1: Rate Limiting chống Spam (20/phút cho text, 15/phút cho video)
-        String clientIp = request.getRemoteAddr();
-        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
-                .getContext().getAuthentication();
         String realUsername = (auth != null && !auth.getName().equals("anonymousUser")) ? auth.getName() : null;
         String rateKey = (realUsername != null) ? realUsername : clientIp;
 
