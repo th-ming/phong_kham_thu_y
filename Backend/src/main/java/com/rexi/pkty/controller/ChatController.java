@@ -52,6 +52,21 @@ public class ChatController {
         RateLimit() {
             this.count = 1;
             this.resetTime = Instant.now().plus(1, ChronoUnit.MINUTES);
+        }
+    }
+
+    private final ConcurrentHashMap<String, RateLimit> rateLimiter = new ConcurrentHashMap<>();
+
+    @PostMapping
+    public Object chat(
+            @RequestBody List<ChatMessage> history,
+            HttpServletRequest request,
+            @RequestHeader(value = "Accept", defaultValue = "application/json") String acceptHeader) {
+
+        // BẢO MẬT LỚP 1: Rate Limiting chống Spam (20/phút cho text, 15/phút cho video)
+        String clientIp = request.getRemoteAddr();
+        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
+                .getContext().getAuthentication();
         String realUsername = (auth != null && !auth.getName().equals("anonymousUser")) ? auth.getName() : null;
         String rateKey = (realUsername != null) ? realUsername : clientIp;
 
@@ -302,6 +317,17 @@ ChatMessage systemMsg = new ChatMessage();
                     isMedicalQuery = true;
                     break;
                 }
+            }
+
+            if (acceptHeader != null && acceptHeader.contains("text/event-stream")) {
+                org.springframework.web.servlet.mvc.method.annotation.SseEmitter emitter = new org.springframework.web.servlet.mvc.method.annotation.SseEmitter(-1L);
+                try {
+                    // Tạm thời bỏ qua lưu log DB cho stream để tối ưu hiệu năng
+                    groqService.streamChat(history, emitter);
+                } catch (Exception e) {
+                    emitter.completeWithError(e);
+                }
+                return emitter;
             }
 
             String reply;

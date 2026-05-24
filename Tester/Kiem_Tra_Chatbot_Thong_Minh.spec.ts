@@ -71,6 +71,29 @@ test.describe('Kiểm tra Chatbot thông minh - ý định, media và giọng n�
     await page.waitForURL(/.*\/khach-hang\/hoa-don-thanh-toan/, { timeout: 5000 });
   });
 
+  test('Không hiển thị raw tag điều khiển, cảnh báo khẩn cấp render thành UI hỗ trợ', async ({ page }) => {
+    await loginAsCustomer(page);
+    await page.route('**/api/chat', async route => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json; charset=utf-8',
+        body: JSON.stringify({
+          reply: '[EMERGENCY] Bé đang khó thở, cần sơ cứu ngay. [NAVIGATE:/khach-hang/dat-lich-hen] [CLICK:button-demo]'
+        })
+      });
+    });
+
+    await openChat(page);
+    await page.locator('textarea').first().fill('Bé khó thở tím tái phải làm sao');
+    await page.locator('button[data-ai-id="button-chatbot-5x21"]').click({ force: true });
+
+    await expect(page.locator('#chatWindow')).toContainText('Bé đang khó thở');
+    await expect(page.locator('#chatWindow')).not.toContainText('[EMERGENCY]');
+    await expect(page.locator('#chatWindow')).not.toContainText('[NAVIGATE:');
+    await expect(page.locator('#chatWindow')).not.toContainText('[CLICK:');
+    await expect(page.getByText(/Cấp cứu|khẩn cấp|sơ cứu/i).first()).toBeVisible({ timeout: 8000 });
+  });
+
   test('Ảnh gửi lên API giữ data URL và MIME type để AI nhận diện đúng định dạng', async ({ page }) => {
     let capturedBody: any = null;
     await loginAsCustomer(page);
