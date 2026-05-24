@@ -1,0 +1,17 @@
+---
+description: Backend tu dong restart khi sua code — khong can user chay lenh
+globs: Backend/**/*
+alwaysApply: true
+---
+
+# Backend — tự động reset (không cần thao tác thủ công)
+
+Hệ thống đã cấu hình sẵn:
+
+1. **Mở project Cursor** → hook `sessionStart` tự bật `scripts/start_backend_dev.ps1` nền (port **8081**).
+2. **Lưu/sửa** file trong `Backend/src` (`.java`, `.properties`, `.yml`, `.xml`) → watcher + hook `afterFileEdit` → `mvn compile` → **Spring DevTools restart**.
+3. **Agent** sau khi sửa Backend: **không** yêu cầu user `taskkill java`, `mvn spring-boot:run`, hay `npm run backend:dev`. Chỉ lưu file; hệ thống tự xử lý.
+
+Log nền: `Backend/logs/backend-dev-runner.log`
+
+Chỉ khi backend không lên sau ~2 phút mới gợi ý user mở log trên hoặc chạy `npm run backend:dev` một lần.

@@ -10,10 +10,16 @@
 
 ## 2. Xử lý lỗi kết nối Backend
 - Nếu lỗi xuất hiện hàng loạt hoặc không tải được dữ liệu, khả năng cao là **Backend chưa chạy** hoặc đang bị treo.
-- **Cách khắc phục:**
+- **Phát triển (tự restart khi sửa code Backend):**
+    ```powershell
+    npm run backend:dev
+    ```
+    Mỗi lần lưu file trong `Backend/src` → tự `compile` → backend restart (Spring DevTools). Không cần tắt Java thủ công.
+- **Cách khắc phục khi treo / lỗi nặng:**
     1. Tắt hoàn toàn các tiến trình Java đang chạy (`taskkill /F /IM java.exe`).
-    2. Chạy lệnh làm sạch và khởi động lại: `.\mvnw.cmd clean spring-boot:run`.
+    2. Chạy lệnh làm sạch và khởi động lại: `cd Backend` rồi `.\mvnw.cmd clean spring-boot:run`.
     3. Đợi cho đến khi thấy dòng chữ `Started PktyApplication in ... seconds` thì mới bắt đầu thao tác trên trình duyệt.
+- **Chạy local không auto-restart:** `npm run backend` hoặc `scripts/run_rexi_backend.ps1`.
 
 ## 3. Quản lý Hệ thống (Admin)
 - **Sao lưu dữ liệu:** Truy cập trang Cấu hình, nhấn "Sao lưu ngay" và nhớ bấm **"Đồng ý" (OK)** trên bảng xác nhận.

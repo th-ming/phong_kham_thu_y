@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .cursor/hooks/session-start-backend.ps1",
+        "timeout": 45
+      }
+    ],
+    "afterFileEdit": [
+      {
+        "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .cursor/hooks/after-backend-edit.ps1",
+        "timeout": 180,
+        "matcher": "Backend[\\\\/]src"
+      }
+    ],
+    "afterTabFileEdit": [
+      {
+        "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .cursor/hooks/after-backend-edit.ps1",
+        "timeout": 180,
+        "matcher": "Backend[\\\\/]src"
+      }
+    ]
+  }
+}
