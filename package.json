@@ -1,4 +1,8 @@
 {
+  "scripts": {
+    "backend": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/ensure_backend_dev_running.ps1",
+    "backend:dev": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start_backend_dev.ps1"
+  },
   "devDependencies": {
     "@playwright/test": "^1.60.0",
     "playwright": "^1.60.0"

@@ -42,6 +42,7 @@ Backend/src/main/resources/knowledge/vnua_docs/
 # 6. Cấu hình IDE & Hệ điều hành
 .idea/
 .vscode/
+.cursor/backend-dev-runner.pid
 *.iml
 .DS_Store
 Thumbs.db

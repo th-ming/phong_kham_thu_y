@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import axiosInstance from "@services/axios";
 import { useTheme } from "../contexts/ThemeContextV2";
 import { getUserProfile, matchesSearchFields, normalizeSearchText, normalizeUserRole, scoreSearchFields } from "../utils/index";
-import { ADMIN_ROUTE_ROLES, canAccessAdminPath } from "../utils/permissions";
+import { ADMIN_ROUTE_ROLES, canAccessAdminPath, isInternalRole } from "../utils/permissions";
 import { executeAction } from "./ActionExecutor";
 import { toast } from "@components/Toast";
 import { reportClientError } from "@services/clientErrorReporter";
@@ -34,6 +34,18 @@ type QuickSuggestion = {
     prompt: string;
     tone?: "default" | "danger" | "warning" | "success" | "info" | "agent";
 };
+
+/** Opera có webkitSpeechRecognition nhưng hầu như không trả transcript — gây hiểu nhầm "có âm thanh, không ra chữ". */
+const isUnreliableSpeechRecognitionBrowser = (): boolean =>
+    /\bOPR\/|Opera/i.test(navigator.userAgent);
+
+const getSpeechRecognitionConstructor = (): (new () => any) | null => {
+    if (isUnreliableSpeechRecognitionBrowser()) return null;
+    return (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition || null;
+};
+
+const OPERA_VOICE_HINT =
+    "Bạn đang dùng Opera: micro bật được nhưng trình duyệt này không chuyển giọng nói thành chữ ổn định. Hãy mở cùng trang bằng Chrome hoặc Microsoft Edge, bấm micro và nói lại.";
 
 const toSafeContextHeader = (value: string, maxLength = 3500): string => {
     return encodeURIComponent(value.slice(0, maxLength));
@@ -440,6 +452,124 @@ const ThoughtLoader: React.FC<ThoughtLoaderProps> = ({ steps, activeStep, isDark
     );
 };
 
+const getBookingServiceCardTitle = (card: HTMLElement) => {
+    const titleDiv = card.children[0] as HTMLElement | undefined;
+    if (titleDiv?.textContent?.trim()) return titleDiv.textContent.trim();
+    return (card.textContent || "")
+        .replace(/\s+/g, " ")
+        .replace(/Tu\s+[\d.,\s₫]+.*$/i, "")
+        .trim();
+};
+
+const extractBookingServiceQuery = (normalized: string) =>
+    normalized
+        .replace(/\b(chon|chon giup|giup chon|dich vu|dichvu|cho toi|giup toi|bat ky|bat ki|ngau nhien|moi|mot|1|giup)\b/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+
+const pickBookingServiceCard = (normalized: string): HTMLElement | null => {
+    const cards = Array.from(document.querySelectorAll(".service-card-select[data-ai-id]")) as HTMLElement[];
+    if (cards.length === 0) return null;
+
+    const query = extractBookingServiceQuery(normalized);
+    if (!query) return cards[0];
+
+    const aliasGroups: { keys: string[]; labelNeedles: string[] }[] = [
+        { keys: ["phau thuat", "phau tha", "phau th", "mo", "surgery"], labelNeedles: ["phau thuat", "phau"] },
+        { keys: ["cat tia", "tao long", "spa", "grooming"], labelNeedles: ["cat tia", "tao long"] },
+        { keys: ["cap cuu", "24/7"], labelNeedles: ["cap cuu"] },
+        { keys: ["xet nghiem", "mau", "sinh hoa"], labelNeedles: ["xet nghiem"] },
+        { keys: ["chan doan", "hinh anh", "sieu am"], labelNeedles: ["chan doan", "hinh anh"] },
+        { keys: ["tiem chung", "vacxin", "vaccine"], labelNeedles: ["tiem chung", "tiem"] },
+        { keys: ["kham tong quat", "kham benh", "kham da khoa"], labelNeedles: ["kham"] },
+    ];
+
+    let best: { card: HTMLElement; score: number } | null = null;
+    for (const card of cards) {
+        const label = normalizeSearchText(getBookingServiceCardTitle(card));
+        let score = scoreSearchFields(query, [label]);
+        for (const group of aliasGroups) {
+            if (group.keys.some(k => query.includes(k))) {
+                if (group.labelNeedles.some(needle => label.includes(needle))) score += 28;
+            }
+        }
+        if (!best || score > best.score) best = { card, score };
+    }
+    if (best && best.score >= 8) return best.card;
+
+    const tokens = query.split(/\s+/).filter(t => t.length >= 3);
+    const partial = cards.find(card => {
+        const label = normalizeSearchText(getBookingServiceCardTitle(card));
+        return tokens.some(t => label.includes(t));
+    });
+    return partial || null;
+};
+
+type BookingPageSummary = {
+    pet: string;
+    service: string;
+    doctor: string;
+    datetime: string;
+    note: string;
+    ready: boolean;
+    missing: string[];
+};
+
+const readBookingSummaryFromPage = (): BookingPageSummary => {
+    const missing: string[] = [];
+    const petSelect = document.querySelector('select[data-ai-id="select-datlichhen-688p"]') as HTMLSelectElement | null;
+    const pet = petSelect?.selectedOptions?.[0]?.textContent?.trim() || "Chưa chọn";
+    if (!petSelect?.value) missing.push("thú cưng");
+
+    const serviceCard = document.querySelector(".service-card-select.selected") as HTMLElement | null;
+    const service = serviceCard ? getBookingServiceCardTitle(serviceCard) : "Chưa chọn";
+    if (!serviceCard) missing.push("dịch vụ");
+
+    const doctorSelect = document.querySelector('select[data-ai-id="select-datlichhen-33v9"]') as HTMLSelectElement | null;
+    const doctor = doctorSelect?.value
+        ? (doctorSelect.selectedOptions?.[0]?.textContent?.trim() || "Đã chọn bác sĩ")
+        : "Bác sĩ bất kỳ";
+
+    const dateInput = document.querySelector('input[data-ai-id="input-datlichhen-mc0h"]') as HTMLInputElement | null;
+    const dateValue = dateInput?.value || "";
+    if (!dateValue) missing.push("ngày khám");
+
+    const slotButtons = Array.from(document.querySelectorAll('button[data-ai-id="button-datlichhen-rvj4"]')) as HTMLButtonElement[];
+    const selectedSlot = slotButtons.find(btn => {
+        const style = btn.getAttribute("style") || "";
+        return style.includes("var(--primary)") || style.includes("background: var(--primary");
+    });
+    const timeLabel = selectedSlot?.textContent?.trim() || "";
+    if (!timeLabel) missing.push("khung giờ");
+
+    const datetime = dateValue
+        ? `${dateValue.split("-").reverse().join("/")}${timeLabel ? ` • ${timeLabel}` : ""}`
+        : "Chưa chọn ngày/giờ";
+
+    const noteInput = document.querySelector('textarea[data-ai-id="textarea-datlichhen-note"]') as HTMLTextAreaElement | null;
+    const note = noteInput?.value?.trim() || "(chưa ghi chú)";
+
+    return {
+        pet,
+        service,
+        doctor,
+        datetime,
+        note,
+        ready: missing.length === 0,
+        missing
+    };
+};
+
+const formatBookingSummaryMessage = (summary: BookingPageSummary) =>
+    [
+        "Tóm tắt lịch trên form:",
+        `• Thú cưng: ${summary.pet}`,
+        `• Dịch vụ: ${summary.service}`,
+        `• Bác sĩ: ${summary.doctor}`,
+        `• Thời gian: ${summary.datetime}`,
+        `• Ghi chú: ${summary.note}`
+    ].join("\n");
+
 export const ChatBot: React.FC = () => {
     const { theme } = useTheme();
     const isDark = theme === 'dark';
@@ -621,7 +751,6 @@ export const ChatBot: React.FC = () => {
     const normalizedRoleCode = normalizeUserRole(user);
     const isAdminAccount = normalizedRoleCode === "admin";
     const isCustomerRoute = location.pathname.startsWith("/khach-hang");
-    const isStaffRoute = location.pathname.startsWith("/quan-ly");
     const roleDisplayName: Record<string, string> = {
         admin: "Quản trị",
         quan_ly: "Quản lý",
@@ -633,8 +762,8 @@ export const ChatBot: React.FC = () => {
         khach_hang: "Khách hàng",
         guest: "Khách",
     };
-    const isCustomerAccount = normalizedRoleCode === "khach_hang" || isCustomerRoute;
-    const isClinicStaff = normalizedRoleCode !== "khach_hang" && normalizedRoleCode !== "guest" && (isStaffRoute || !isCustomerAccount);
+    const isCustomerAccount = normalizedRoleCode === "khach_hang" || isCustomerRoute || Boolean(user?.id_khach_hang && !user?.id_nhan_vien);
+    const isClinicStaff = isInternalRole(normalizedRoleCode) && !isCustomerAccount;
     const userRoleName = isCustomerAccount ? "Khách hàng" : (user?.ten_vai_tro || roleDisplayName[normalizedRoleCode] || "Nhân sự");
 
     const displayGreetingName = (userName.toLowerCase().includes(userRoleName.toLowerCase()) || 
@@ -1511,10 +1640,12 @@ export const ChatBot: React.FC = () => {
     const pendingVoiceQueueRef = useRef<string[]>([]);
     const lastInterimVoiceTextRef = useRef("");
     const lastMicAudioAtRef = useRef(0);
+    const voiceNoSpeechPromptKeyRef = useRef<string | null>(null);
     const recognitionRunningRef = useRef(false);
     const loadingRef = useRef(false);
     const agentLoadingRef = useRef(false);
     const pendingSensitiveCommandRef = useRef<string | null>(null);
+    const pendingCancelAppointmentRef = useRef<{ id: string; label: string } | null>(null);
     const preferredVoiceRef = useRef<SpeechSynthesisVoice | null>(null);
 
     useEffect(() => {
@@ -2275,6 +2406,7 @@ export const ChatBot: React.FC = () => {
 
     const stopVoiceSession = useCallback((statusText = "") => {
         voiceSessionActiveRef.current = false;
+        voiceNoSpeechPromptKeyRef.current = null;
         clearMicIdleTimeout();
         clearVoiceSendTimer();
         clearVoiceNoSpeechTimer();
@@ -2322,7 +2454,19 @@ export const ChatBot: React.FC = () => {
         voiceNoSpeechTimerRef.current = setTimeout(() => {
             if (!voiceSessionActiveRef.current) return;
             if (voiceDraftRef.current.trim() || lastInterimVoiceTextRef.current.trim()) return;
+            if (isUnreliableSpeechRecognitionBrowser()) {
+                const promptKey = "opera-no-stt";
+                if (voiceNoSpeechPromptKeyRef.current === promptKey) return;
+                voiceNoSpeechPromptKeyRef.current = promptKey;
+                setVoiceStatus("Opera — dùng Chrome/Edge");
+                reportVoiceIssueToAdmin("SPEECH_RECOGNITION_UNSUPPORTED_BROWSER", OPERA_VOICE_HINT, "HIGH", navigator.userAgent);
+                notifyVoiceMessage(OPERA_VOICE_HINT, false);
+                return;
+            }
             const heardAudioRecently = Date.now() - lastMicAudioAtRef.current < 6000;
+            const promptKey = heardAudioRecently ? "audio-no-text" : "no-audio";
+            if (voiceNoSpeechPromptKeyRef.current === promptKey) return;
+            voiceNoSpeechPromptKeyRef.current = promptKey;
             const text = heardAudioRecently
                 ? "Micro có nhận âm thanh nhưng trình duyệt chưa chuyển được thành chữ. Bạn thử nói chậm hơn, dùng Chrome/Edge, hoặc tắt rồi bật lại micro."
                 : "Tôi đang bật micro nhưng chưa thấy tín hiệu âm thanh đi vào. Bạn kiểm tra đúng thiết bị micro và quyền micro rồi nói lại nhé.";
@@ -2352,8 +2496,15 @@ export const ChatBot: React.FC = () => {
         clearVoiceSendTimer();
         voiceDraftRef.current = "";
         lastInterimVoiceTextRef.current = "";
-        if (activeTabRef.current === 'standard') setInput("");
-        else setAgentInput("");
+        if (heardText) {
+            if (activeTabRef.current === 'standard') setInput(heardText);
+            else setAgentInput(heardText);
+            setVoiceLiveText(heardText);
+        } else {
+            if (activeTabRef.current === 'standard') setInput("");
+            else setAgentInput("");
+            setVoiceLiveText("");
+        }
         setVoiceStatus("Nghe chưa rõ.");
         const text = heardText
             ? `Tôi nghe chưa rõ câu "${heardText}". Bạn nói lại chậm hơn hoặc ngắn hơn giúp tôi nhé.`
@@ -2421,10 +2572,10 @@ export const ChatBot: React.FC = () => {
             if (wordCount <= 5 && hasActionVerb && !hasTrailingConnector) return 520;
             return hasTrailingConnector ? 1050 : 760;
         }
-        if (hasTrailingConnector) return 2200;
-        if (elapsedFromLastResult < 900 && wordCount > 10) return 1700;
-        if (wordCount <= 5 && hasActionVerb) return 850;
-        return 1250;
+        if (hasTrailingConnector) return 3200;
+        if (elapsedFromLastResult < 900 && wordCount > 10) return 2600;
+        if (wordCount <= 5 && hasActionVerb) return 1800;
+        return 2400;
     };
 
     const flushVoiceQueue = () => {
@@ -2498,13 +2649,25 @@ export const ChatBot: React.FC = () => {
         return /^(huy|bo qua|khong|khong lam nua|dung lai|thoi)$/.test(normalized);
     };
 
+    const isCustomerCancelAppointmentCommand = (text: string) => {
+        const normalized = normalizeSearchText(text);
+        return /(huy|huy bo).*(lich|hen|ca kham)/.test(normalized)
+            || normalized.includes("huy lich")
+            || normalized.includes("huy hen")
+            || normalized.includes("huy ca");
+    };
+
     const isSensitiveAgentCommand = (text: string) => {
         const normalized = normalizeSearchText(text);
+        if (!isClinicStaff && isCustomerCancelAppointmentCommand(text)) return false;
         const sensitivePhrases = [
             "xoa", "xoa mem", "xoa tai khoan", "xoa khach hang", "xoa hoa don",
             "khoa tai khoan", "mo khoa tai khoan", "gui hang loat", "gui dong loat",
             "xac nhan thu tien", "xac nhan thanh toan", "doi trang thai hoa don",
-            "cap nhat hoa don", "sua hoa don", "huy lich", "huy lich hen"
+            "cap nhat hoa don", "sua hoa don",
+            ...(isClinicStaff ? ["huy lich", "huy lich hen"] : []),
+            "tai khoan bi khoa", "danh sach tai khoan", "phan quyen", "nhan su",
+            "khach hang phong kham", "danh sach khach hang", "doanh thu", "cong no"
         ];
         return sensitivePhrases.some(phrase => normalized.includes(phrase));
     };
@@ -2539,6 +2702,259 @@ export const ChatBot: React.FC = () => {
             const aiReply = { type: "ai", text: message };
             setAgentMessages(prev => [...prev, aiReply]);
             speakText(message);
+        };
+        const wait = (ms: number) => new Promise(resolve => window.setTimeout(resolve, ms));
+        const tomorrowText = () => {
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            return `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, "0")}-${String(tomorrow.getDate()).padStart(2, "0")}`;
+        };
+        if (!isClinicStaff && isCustomerCancelAppointmentCommand(text)) {
+            const khId = user?.id_khach_hang;
+            if (!khId) {
+                reply("Sen cần đăng nhập tài khoản khách hàng để hủy lịch hẹn của mình.");
+                return true;
+            }
+            try {
+                const res = await axiosInstance.get(`/api/lich-hen/khach/${khId}`, { params: { page: 0, size: 30 } });
+                const list = (res.data?.content || res.data || []) as any[];
+                const cancellable = list.filter((lh) => {
+                    const st = String(lh.trang_thai || "").toUpperCase();
+                    return st === "CHO_XAC_NHAN" || st === "DA_XAC_NHAN";
+                });
+                if (cancellable.length === 0) {
+                    reply("Sen hiện không có lịch nào ở trạng thái chờ xác nhận / đã xác nhận để hủy. Lịch đã khám hoặc đã hủy thì không hủy thêm được.");
+                    return true;
+                }
+                const sorted = [...cancellable].sort((a, b) => {
+                    const da = `${a.ngay_kham || ""} ${(a.gio_kham || "").slice(0, 5)}`;
+                    const db = `${b.ngay_kham || ""} ${(b.gio_kham || "").slice(0, 5)}`;
+                    return da.localeCompare(db);
+                });
+                const pick = sorted[0];
+                const id = String(pick.id_lich_hen ?? pick.idLichHen ?? pick.id ?? "");
+                const label = `${pick.ten_thu_cung || "Thú cưng"} — ${(pick.ngay_kham || "").split("-").reverse().join("/")} lúc ${(pick.gio_kham || "").slice(0, 5)} — ${pick.ten_dich_vu || pick.ly_do || "Khám"}`;
+                pendingCancelAppointmentRef.current = { id, label };
+                const more = cancellable.length > 1 ? `\n(Còn ${cancellable.length - 1} lịch khác; hủy xong có thể hỏi tiếp.)` : "";
+                reply(
+                    `Tôi thấy lịch có thể hủy:\n• ${label}${more}\n\nNếu đúng lịch Sen muốn hủy, nói "xác nhận hủy lịch". Nói "hủy" để bỏ thao tác.\n\nHoặc vào menu Lịch sử khám → mở chi tiết → bấm "Hủy lịch hẹn".`
+                );
+            } catch {
+                reply("Không kết nối được hệ thống để hủy lịch. Sen vào Lịch sử khám và bấm Hủy lịch hẹn trên từng đơn nhé.");
+            }
+            return true;
+        }
+
+        const onBookingPage = location.pathname === "/khach-hang/dat-lich-hen";
+        const wantsSelectPet = onBookingPage && normalized.includes("thu cung") && (
+            normalized.includes("chon") || normalized.includes("chon giup") || normalized.includes("giup chon")
+        );
+        const mentionsNamedService = [
+            "phau thuat", "phau tha", "cat tia", "cap cuu", "xet nghiem",
+            "tiem chung", "chan doan", "kham tong", "kham da khoa", "noi tru"
+        ].some(k => normalized.includes(k));
+        const wantsSelectService = onBookingPage && (
+            (normalized.includes("chon") && (normalized.includes("dich vu") || mentionsNamedService)) ||
+            (mentionsNamedService && /(chon|muon|can|dat|doi)/.test(normalized))
+        );
+        const wantsConfirmBooking = onBookingPage && (
+            normalized.includes("xac nhan dat lich") ||
+            normalized.includes("dat lich di") ||
+            normalized.includes("chot lich") ||
+            normalized.includes("gui don dat lich") ||
+            (normalized.includes("xac nhan") && /(dat lich|hen kham)/.test(normalized))
+        );
+        const wantsBookingScheduleInfo = onBookingPage && (
+            normalized.includes("bac si") ||
+            normalized.includes("gio ranh") ||
+            normalized.includes("khung gio") ||
+            normalized.includes("trong lich") ||
+            normalized.includes("chong lich") ||
+            normalized.includes("lich trong") ||
+            normalized.includes("co lich") ||
+            (normalized.includes("trong") && normalized.includes("lich"))
+        );
+        const isBookingFormIntent = onBookingPage && (
+            normalized.includes("form dat lich") ||
+            normalized.includes("tu dien lich") ||
+            normalized.includes("dat lich hien tai") ||
+            normalized.includes("hoan tat dung") ||
+            normalized.includes("chon ngay gio") ||
+            normalized.includes("dien het form") ||
+            normalized.includes("hoan tat form")
+        );
+
+        if (wantsConfirmBooking) {
+            const summary = readBookingSummaryFromPage();
+            if (!summary.ready) {
+                reply(
+                    `${formatBookingSummaryMessage(summary)}\n\nChưa đủ để đặt — còn thiếu: ${summary.missing.join(", ")}. Sen bổ sung hoặc bảo tôi "điền form đặt lịch" trước.`
+                );
+                return true;
+            }
+            const submitBtn = document.querySelector('button[data-ai-id="button-datlichhen-66iq"]') as HTMLButtonElement | null;
+            if (!submitBtn) {
+                reply("Tôi chưa thấy nút xác nhận đặt lịch trên trang.");
+                return true;
+            }
+            submitBtn.click();
+            reply(
+                `${formatBookingSummaryMessage(summary)}\n\nTôi đã bấm xác nhận đặt lịch theo đúng thông tin trên. Sen đợi thông báo hệ thống vài giây.`
+            );
+            return true;
+        }
+
+        if (wantsSelectPet && !isBookingFormIntent) {
+            const petSelect = document.querySelector('select[data-ai-id="select-datlichhen-688p"]') as HTMLSelectElement | null;
+            if (!petSelect) {
+                reply("Tôi chưa thấy danh sách thú cưng trên trang đặt lịch. Sen mở trang Đặt lịch hẹn rồi thử lại nhé.");
+                return true;
+            }
+            const options = Array.from(petSelect.options).filter(opt => !opt.disabled && opt.value.trim() !== "");
+            if (options.length === 0) {
+                reply("Sen chưa có hồ sơ thú cưng nào. Vào mục Thú cưng để thêm bé trước khi đặt lịch nhé.");
+                return true;
+            }
+            const pick = options[Math.floor(Math.random() * options.length)];
+            await executeAction(`[SELECT:select-datlichhen-688p|${pick.value}]`);
+            reply(`Đã chọn thú cưng "${pick.textContent?.trim() || pick.value}" trên form đặt lịch.`);
+            return true;
+        }
+
+        if (wantsBookingScheduleInfo && !isBookingFormIntent) {
+            const dateInput = document.querySelector('input[data-ai-id="input-datlichhen-mc0h"]') as HTMLInputElement | null;
+            const serviceSelected = document.querySelector(".service-card-select.selected") as HTMLElement | null;
+            const serviceName = serviceSelected ? getBookingServiceCardTitle(serviceSelected) : "";
+            const dateValue = dateInput?.value || "";
+
+            if (!dateValue) {
+                reply("Để xem bác sĩ và giờ trống, Sen chọn ngày khám ở mục 3 trước (và nên chọn dịch vụ ở mục 2). Sau khi chọn ngày, hỏi lại tôi sẽ đọc lịch trống trên form này.");
+                return true;
+            }
+            if (!serviceSelected) {
+                reply(`Ngày ${dateValue}: tôi cần Sen chọn dịch vụ (mục 2) trước thì hệ thống mới tải khung giờ rảnh.`);
+                return true;
+            }
+
+            const doctorSelect = document.querySelector('select[data-ai-id="select-datlichhen-33v9"]') as HTMLSelectElement | null;
+            const doctors = doctorSelect
+                ? Array.from(doctorSelect.options)
+                    .filter(opt => opt.value.trim() !== "")
+                    .map(opt => opt.textContent?.trim() || opt.value)
+                : [];
+            const slotButtons = Array.from(document.querySelectorAll('button[data-ai-id="button-datlichhen-rvj4"]')) as HTMLButtonElement[];
+            const slots = slotButtons.map(btn => btn.textContent?.trim()).filter(Boolean) as string[];
+            const selectedDoctor = doctorSelect?.selectedOptions?.[0]?.textContent?.trim() || "chưa chọn (bác sĩ bất kỳ)";
+
+            let message = `Ngày ${dateValue}, dịch vụ "${serviceName}":\n`;
+            if (doctors.length > 0) {
+                message += `• Bác sĩ có lịch ngày này (${doctors.length}): ${doctors.slice(0, 6).join("; ")}${doctors.length > 6 ? "…" : ""}.\n`;
+            } else {
+                message += "• Chưa thấy bác sĩ nào trên dropdown (có thể ngày này chưa có lịch trực).\n";
+            }
+            if (slots.length > 0) {
+                message += `• Khung giờ trống (${slots.length}): ${slots.slice(0, 10).join(", ")}${slots.length > 10 ? "…" : ""}.\n`;
+                message += `Bác sĩ đang chọn: ${selectedDoctor}. Sen bấm một giờ ở mục 4 để giữ lịch.`;
+            } else {
+                message += "• Chưa có khung giờ trống hiển thị — thử đổi ngày hoặc bác sĩ khác.\n";
+                message += "Gợi ý: chọn bác sĩ cụ thể ở mục 3 rồi hỏi lại tôi.";
+            }
+            reply(message);
+            return true;
+        }
+
+        if (wantsSelectService && !isBookingFormIntent) {
+            const pick = pickBookingServiceCard(normalized);
+            if (!pick) {
+                reply("Tôi chưa thấy dịch vụ nào trên form. Sen thử tải lại trang hoặc đợi danh sách dịch vụ hiện ra.");
+                return true;
+            }
+            const serviceAiId = pick.getAttribute("data-ai-id");
+            const label = getBookingServiceCardTitle(pick);
+            if (serviceAiId) {
+                await executeAction(`[CLICK:${serviceAiId}]`);
+            } else {
+                pick.click();
+            }
+            reply(`Đã chọn dịch vụ "${label}" trên form đặt lịch.`);
+            return true;
+        }
+
+        if (isBookingFormIntent) {
+            const actions: string[] = [];
+            const missing: string[] = [];
+
+            const petSelect = document.querySelector('select[data-ai-id="select-datlichhen-688p"]') as HTMLSelectElement | null;
+            if (petSelect && !petSelect.value) {
+                const firstPet = Array.from(petSelect.options).find(opt => !opt.disabled && opt.value.trim() !== "");
+                if (firstPet) {
+                    await executeAction(`[SELECT:select-datlichhen-688p|${firstPet.value}]`);
+                    actions.push(`đã chọn thú cưng "${firstPet.textContent?.trim() || firstPet.value}"`);
+                    await wait(250);
+                } else {
+                    missing.push("chưa có hồ sơ thú cưng để chọn");
+                }
+            }
+
+            const selectedService = document.querySelector(".service-card-select.selected");
+            if (!selectedService) {
+                const matchedService = pickBookingServiceCard(normalized) || document.querySelector(".service-card-select[data-ai-id]") as HTMLElement | null;
+                const serviceAiId = matchedService?.getAttribute("data-ai-id");
+                if (matchedService && serviceAiId) {
+                    const serviceLabel = getBookingServiceCardTitle(matchedService) || "đầu tiên";
+                    await executeAction(`[CLICK:${serviceAiId}]`);
+                    actions.push(`đã chọn dịch vụ "${serviceLabel}"`);
+                    await wait(250);
+                } else {
+                    missing.push("chưa có dịch vụ khả dụng để chọn");
+                }
+            }
+
+            const dateInput = document.querySelector('input[data-ai-id="input-datlichhen-mc0h"]') as HTMLInputElement | null;
+            if (dateInput && !dateInput.value) {
+                const dateValue = tomorrowText();
+                await executeAction(`[FILL:input-datlichhen-mc0h|${dateValue}]`);
+                actions.push(`đã chọn ngày khám ${dateValue}`);
+                await wait(1400);
+            }
+
+            let slotButtons = Array.from(document.querySelectorAll('button[data-ai-id="button-datlichhen-rvj4"]')) as HTMLButtonElement[];
+            for (let i = 0; i < 8 && slotButtons.length === 0; i++) {
+                await wait(650);
+                slotButtons = Array.from(document.querySelectorAll('button[data-ai-id="button-datlichhen-rvj4"]')) as HTMLButtonElement[];
+            }
+            const availableSlot = slotButtons.find(btn => !btn.disabled && btn.offsetParent !== null);
+            const hasSelectedSlot = slotButtons.some(btn => {
+                const style = btn.getAttribute("style") || "";
+                return style.includes("var(--primary)") || style.includes("background: var(--primary");
+            });
+            if (!hasSelectedSlot) {
+                if (availableSlot) {
+                    availableSlot.click();
+                    actions.push(`đã chọn khung giờ "${availableSlot.textContent?.trim() || "đầu tiên"}"`);
+                    await wait(250);
+                } else {
+                    missing.push("chưa có khung giờ rảnh sau khi chọn ngày/dịch vụ");
+                }
+            }
+
+            const noteInput = document.querySelector('textarea[data-ai-id="textarea-datlichhen-note"]') as HTMLTextAreaElement | null;
+            if (noteInput && !noteInput.value) {
+                await executeAction("[FILL:textarea-datlichhen-note|Khám sức khỏe tổng quát và tư vấn chăm sóc cho bé.]");
+                actions.push("đã điền ghi chú khám cơ bản");
+            }
+
+            const summary = readBookingSummaryFromPage();
+            const status = actions.length > 0
+                ? `Tôi đã thao tác trên form: ${actions.join("; ")}.`
+                : "Tôi đã kiểm tra form hiện tại.";
+            const nextStep = missing.length > 0
+                ? `\n\nCòn vướng: ${missing.join("; ")}. Sen kiểm tra lại dữ liệu hoặc chọn ngày khác rồi bấm gợi ý này lần nữa.`
+                : summary.ready
+                    ? `\n\n${formatBookingSummaryMessage(summary)}\n\nNếu đúng, Sen nói "xác nhận đặt lịch" — tôi mới gửi đơn (không tự đặt im lặng).`
+                    : `\n\n${formatBookingSummaryMessage(summary)}\n\nCòn thiếu: ${summary.missing.join(", ")}.`;
+            reply(status + nextStep);
+            return true;
         };
 
         if (/(cuon|keo|scroll)/.test(normalized)) {
@@ -2600,6 +3016,7 @@ export const ChatBot: React.FC = () => {
         if (!text) return;
 
         clearVoiceNoSpeechTimer();
+        voiceNoSpeechPromptKeyRef.current = null;
         const isFinal = options.isFinal ?? true;
         const heardText = `${voiceDraftRef.current} ${text}`.trim();
         if (activeTabRef.current === 'standard') setInput(heardText);
@@ -2662,7 +3079,10 @@ export const ChatBot: React.FC = () => {
                 askRepeatUnclearVoice(text);
                 return;
             }
-            voiceDraftRef.current = `${voiceDraftRef.current} ${text}`.trim();
+            voiceDraftRef.current = heardText;
+            if (activeTabRef.current === 'standard') setInput(voiceDraftRef.current);
+            else setAgentInput(voiceDraftRef.current);
+            setVoiceLiveText(voiceDraftRef.current);
             lastInterimVoiceTextRef.current = "";
             scheduleVoiceAutoSend(voiceDraftRef.current);
         } else {
@@ -2717,17 +3137,21 @@ export const ChatBot: React.FC = () => {
             return;
         }
 
-        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-        const hasSpeechRecognition = Boolean(SpeechRecognition);
+        const SpeechRecognitionCtor = getSpeechRecognitionConstructor();
+        const hasSpeechRecognition = Boolean(SpeechRecognitionCtor);
+        const onUnreliableBrowser = isUnreliableSpeechRecognitionBrowser();
 
         try {
             setVoiceStatus("Đang xin quyền micro...");
+            if (onUnreliableBrowser) {
+                toast.info(OPERA_VOICE_HINT);
+            }
             // TỰ ĐỘNG BẬT LOA PHẢN HỒI KHI DÙNG GIỌNG NÓI
             setIsVoiceEnabled(true);
             localStorage.setItem("rexi_is_voice_enabled", "true");
 
-            if (hasSpeechRecognition && !recognitionRef.current) {
-                recognitionRef.current = new SpeechRecognition();
+            if (SpeechRecognitionCtor && hasSpeechRecognition && !recognitionRef.current) {
+                recognitionRef.current = new SpeechRecognitionCtor();
                 // Mobile Safari/Android WebView thường kém ổn định với continuous=true.
                 recognitionRef.current.continuous = !isMobile;
                 recognitionRef.current.interimResults = true;
@@ -2901,13 +3325,17 @@ export const ChatBot: React.FC = () => {
                     ? "Rexi đang nghe đồng nghiệp. Bạn cứ nói lệnh, tôi sẽ tự gửi khi bạn ngừng nói."
                     : "Rexi đang nghe Sen. Bạn cứ nói tự nhiên, tôi sẽ tự gửi khi bạn ngừng nói.", false);
             } else {
-                const isOpera = /\bOPR\/|Opera/i.test(navigator.userAgent);
-                const text = isOpera
-                    ? "Opera đã mở được micro nhưng trình duyệt này không cung cấp engine nhận diện giọng nói ổn định cho web. Tôi sẽ báo lỗi này cho admin; bạn có thể dùng Chrome hoặc Edge để ra chữ ngay."
+                const text = onUnreliableBrowser
+                    ? OPERA_VOICE_HINT
                     : "Trình duyệt đã mở được micro nhưng không hỗ trợ nhận diện giọng nói thành chữ. Tôi đã báo admin để cấu hình giải pháp chuyển âm thanh thành văn bản.";
-                setVoiceStatus("Mic mở, thiếu voice engine.");
-                reportVoiceIssueToAdmin("SPEECH_RECOGNITION_UNSUPPORTED_AFTER_MIC_OPEN", text, "HIGH", navigator.userAgent);
-                notifyVoiceMessage(text, true);
+                setVoiceStatus(onUnreliableBrowser ? "Opera — dùng Chrome/Edge" : "Mic mở, thiếu voice engine.");
+                reportVoiceIssueToAdmin(
+                    onUnreliableBrowser ? "SPEECH_RECOGNITION_UNSUPPORTED_BROWSER" : "SPEECH_RECOGNITION_UNSUPPORTED_AFTER_MIC_OPEN",
+                    text,
+                    "HIGH",
+                    navigator.userAgent
+                );
+                notifyVoiceMessage(text, false);
                 scheduleNoSpeechPrompt();
             }
         } catch (err) {
@@ -3000,7 +3428,47 @@ export const ChatBot: React.FC = () => {
         const token = localStorage.getItem("token");
         let fullText = "";
         let speechBuffer = "";
+        let streamBuffer = "";
         setMessages(prev => [...prev, { type: "ai", text: "" }]);
+
+        const appendStreamText = (segment: string) => {
+            if (!segment) return;
+            fullText += segment;
+            if (onLiveSpeech) {
+                speechBuffer += segment;
+                const cleanSpeechBuffer = polishTextForSpeech(stripChatControlTags(speechBuffer));
+                if (cleanSpeechBuffer && (/[.!?]$/.test(cleanSpeechBuffer) || cleanSpeechBuffer.length >= 150)) {
+                    onLiveSpeech(cleanSpeechBuffer);
+                    speechBuffer = "";
+                }
+            }
+            setMessages(prev => {
+                const updated = [...prev];
+                const last = updated[updated.length - 1];
+                if (last && last.type === "ai") {
+                    updated[updated.length - 1] = { ...last, text: stripChatControlTags(fullText) };
+                }
+                return updated;
+            });
+        };
+
+        const parseSseEvents = (raw: string, flush = false) => {
+            streamBuffer += raw.replace(/\r\n/g, "\n");
+            const events = streamBuffer.split("\n\n");
+            streamBuffer = flush ? "" : events.pop() || "";
+
+            events.forEach(eventText => {
+                const dataLines = eventText
+                    .split("\n")
+                    .filter(line => line.startsWith("data:"))
+                    .map(line => line.replace(/^data:\s?/, ""));
+
+                if (dataLines.length === 0) return;
+                const eventData = dataLines.join("\n");
+                if (!eventData || eventData === "[DONE]") return;
+                appendStreamText(eventData);
+            });
+        };
 
         const response = await fetch("/api/chat", {
             method: "POST",
@@ -3027,24 +3495,11 @@ export const ChatBot: React.FC = () => {
             if (done) break;
             const chunk = decoder.decode(value, { stream: true });
             if (!chunk) continue;
-            fullText += chunk;
-            if (onLiveSpeech) {
-                speechBuffer += chunk;
-                const cleanSpeechBuffer = polishTextForSpeech(stripChatControlTags(speechBuffer));
-                if (cleanSpeechBuffer && (/[.!?]$/.test(cleanSpeechBuffer) || cleanSpeechBuffer.length >= 150)) {
-                    onLiveSpeech(cleanSpeechBuffer);
-                    speechBuffer = "";
-                }
-            }
-            setMessages(prev => {
-                const updated = [...prev];
-                const last = updated[updated.length - 1];
-                if (last && last.type === "ai") {
-                    updated[updated.length - 1] = { ...last, text: stripChatControlTags(fullText) };
-                }
-                return updated;
-            });
+            parseSseEvents(chunk);
         }
+        const tail = decoder.decode();
+        if (tail) parseSseEvents(tail);
+        if (streamBuffer) parseSseEvents("", true);
         const finalSpeechBuffer = polishTextForSpeech(stripChatControlTags(speechBuffer));
         if (onLiveSpeech && finalSpeechBuffer) onLiveSpeech(finalSpeechBuffer);
         return fullText;
@@ -3357,6 +3812,64 @@ export const ChatBot: React.FC = () => {
             }
         }
 
+        if (!isClinicStaff && isSensitiveAgentCommand(textToSend)) {
+            const aiReply = {
+                type: "ai",
+                text: "Tài khoản khách hàng không được truy vấn hoặc thao tác dữ liệu nội bộ như tài khoản, khách hàng, hóa đơn, bệnh án phòng khám. Sen có thể dùng Agent để đặt lịch, xem trang hồ sơ/hóa đơn của mình hoặc tra cứu tài liệu thú y công khai."
+            };
+            setAgentMessages(prev => [...prev, { type: "user", text: textToSend }, aiReply]);
+            setAgentInput("");
+            speakText(aiReply.text);
+            return;
+        }
+
+        const pendingCancel = pendingCancelAppointmentRef.current;
+        if (pendingCancel) {
+            const norm = normalizeSearchText(textToSend);
+            if (norm.includes("xac nhan") || isAffirmationCommand(textToSend)) {
+                try {
+                    setAgentLoading(true);
+                    await axiosInstance.put(`/api/lich-hen/${pendingCancel.id}/status`, { trang_thai: "DA_HUY" });
+                    pendingCancelAppointmentRef.current = null;
+                    const aiReply = {
+                        type: "ai",
+                        text: `Đã hủy lịch: ${pendingCancel.label}. Sen có thể xem lại tại Lịch sử khám.`
+                    };
+                    setAgentMessages(prev => [...prev, { type: "user", text: textToSend }, aiReply]);
+                    setAgentInput("");
+                    speakText(aiReply.text);
+                    setAgentLoading(false);
+                    return;
+                } catch {
+                    const aiReply = {
+                        type: "ai",
+                        text: "Không hủy được lịch lúc này. Sen thử vào Lịch sử khám và bấm Hủy lịch hẹn trên form."
+                    };
+                    setAgentMessages(prev => [...prev, { type: "user", text: textToSend }, aiReply]);
+                    setAgentInput("");
+                    speakText(aiReply.text);
+                    setAgentLoading(false);
+                    return;
+                }
+            }
+            if (isCancelCommand(textToSend)) {
+                pendingCancelAppointmentRef.current = null;
+                const aiReply = { type: "ai", text: "Đã bỏ thao tác hủy lịch. Lịch hẹn vẫn giữ nguyên." };
+                setAgentMessages(prev => [...prev, { type: "user", text: textToSend }, aiReply]);
+                setAgentInput("");
+                speakText(aiReply.text);
+                return;
+            }
+            const aiReply = {
+                type: "ai",
+                text: `Tôi đang chờ xác nhận hủy lịch:\n• ${pendingCancel.label}\n\nNói "xác nhận hủy lịch" để hủy, hoặc "hủy" để bỏ.`
+            };
+            setAgentMessages(prev => [...prev, { type: "user", text: textToSend }, aiReply]);
+            setAgentInput("");
+            speakText(aiReply.text);
+            return;
+        }
+
         const pendingSensitiveCommand = pendingSensitiveCommandRef.current;
         if (pendingSensitiveCommand) {
             if (isAffirmationCommand(textToSend)) {
@@ -3424,6 +3937,7 @@ export const ChatBot: React.FC = () => {
                  normalizedAgentQuery.includes("co biet"));
 
             if (await handleLocalAgentPageAction(textToSend)) {
+                setAgentLoading(false);
                 return;
             }
 
@@ -4279,7 +4793,7 @@ export const ChatBot: React.FC = () => {
                                        query.includes("tìm chó bị");
 
             let response;
-            if (shouldUseDirectToolRule && isMarketingCampaign) {
+            if (isClinicStaff && shouldUseDirectToolRule && isMarketingCampaign) {
                 response = await axiosInstance.post("/api/agent/swarm-orchestration", { query: textToSend });
             } else {
                 const compactHistory = agentMessages
@@ -5686,7 +6200,11 @@ export const ChatBot: React.FC = () => {
                                         overflow: 'hidden',
                                         textOverflow: 'ellipsis'
                                     }}>
-                                        {voiceLiveText ? `Đã nghe: ${voiceLiveText}` : 'Đang chờ giọng nói...'}
+                                        {voiceLiveText
+                                            ? `Đã nghe: ${voiceLiveText}`
+                                            : isUnreliableSpeechRecognitionBrowser()
+                                                ? 'Opera không ra chữ — mở Chrome hoặc Edge'
+                                                : 'Đang chờ giọng nói...'}
                                     </div>
                                 )}
                             </div>
