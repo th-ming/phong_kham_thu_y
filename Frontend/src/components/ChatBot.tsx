@@ -2248,7 +2248,8 @@ export const ChatBot: React.FC = () => {
             // Bước 1: Điền triệu chứng lâm sàng
             dispatchHud('START', 'FILL', 'textarea-quanlybenhan-trieuchung', 'Đang tự động nhập triệu chứng lâm sàng...');
             await sleep(800);
-            const trieuChungEl = document.querySelector('[data-ai-id="textarea-quanlybenhan-trieuchung"]') as HTMLTextAreaElement;
+            const trieuChungEl = findVisibleControlByKeywords<HTMLTextAreaElement>("textarea", ["triệu chứng", "trieu chung", "symptom"])
+                || document.querySelector('[data-ai-id="textarea-quanlybenhan-trieuchung"]') as HTMLTextAreaElement;
             if (trieuChungEl) {
                 trieuChungEl.value = "Bé mèo lờ đờ, sốt cao liên tục (40.5°C), nôn ra dịch vàng xanh có bọt, mất nước nặng, da kém đàn hồi, tiêu chảy cấp có mùi tanh nghiêm trọng.";
                 trieuChungEl.dispatchEvent(new Event('input', { bubbles: true }));
@@ -2261,7 +2262,8 @@ export const ChatBot: React.FC = () => {
             await sleep(600);
             dispatchHud('START', 'FILL', 'textarea-quanlybenhan-chandoan', 'Đang nhập kết quả chẩn đoán bệnh án...');
             await sleep(800);
-            const chanDoanEl = document.querySelector('[data-ai-id="textarea-quanlybenhan-chandoan"]') as HTMLTextAreaElement;
+            const chanDoanEl = findVisibleControlByKeywords<HTMLTextAreaElement>("textarea", ["chẩn đoán", "chan doan", "diagnosis"])
+                || document.querySelector('[data-ai-id="textarea-quanlybenhan-chandoan"]') as HTMLTextAreaElement;
             if (chanDoanEl) {
                 chanDoanEl.value = "FPV (Feline Panleukopenia) - Giảm bạch cầu mèo truyền nhiễm. Xác nhận dương tính qua Test Kit nhanh.";
                 chanDoanEl.dispatchEvent(new Event('input', { bubbles: true }));
@@ -2274,7 +2276,8 @@ export const ChatBot: React.FC = () => {
             await sleep(600);
             dispatchHud('START', 'FILL', 'textarea-quanlybenhan-loidang', 'Đang nhập lời dặn của bác sĩ điều trị...');
             await sleep(800);
-            const loiDanEl = document.querySelector('[data-ai-id="textarea-quanlybenhan-loidang"]') as HTMLTextAreaElement;
+            const loiDanEl = findVisibleControlByKeywords<HTMLTextAreaElement>("textarea", ["lời dặn", "loi dan", "dặn dò", "dan do", "ghi chú", "ghi chu"])
+                || document.querySelector('[data-ai-id="textarea-quanlybenhan-loidang"]') as HTMLTextAreaElement;
             if (loiDanEl) {
                 loiDanEl.value = "Khẩn cấp cách ly triệt để bé mèo khỏi khu vực chung. Ủ ấm cơ thể bằng túi sưởi. Truyền tĩnh mạch chậm Ringer Lactate để bù điện giải (20-30ml/kg/ngày). Tiêm dưới da Convenia (Cefovecin) ngừa nhiễm khuẩn thứ phát. Tiêm Cerenia (Maropitant) để kiểm soát nôn ói. Tuyệt đối kiêng ăn uống trong 24 giờ đầu.";
                 loiDanEl.dispatchEvent(new Event('input', { bubbles: true }));
@@ -2287,7 +2290,8 @@ export const ChatBot: React.FC = () => {
             await sleep(600);
             dispatchHud('START', 'CLICK', 'button-quanlybenhan-8zw3', 'Đang bấm thêm 3 dòng thuốc mới vào đơn thuốc...');
             await sleep(800);
-            const addDrugBtn = document.querySelector('[data-ai-id="button-quanlybenhan-8zw3"]') as HTMLButtonElement;
+            const addDrugBtn = findAiButton(["thêm thuốc", "them thuoc", "thêm dòng thuốc", "them dong thuoc", "thêm đơn thuốc", "them don thuoc"])
+                || document.querySelector('[data-ai-id="button-quanlybenhan-8zw3"]') as HTMLButtonElement;
             if (addDrugBtn) {
                 addDrugBtn.click();
                 await sleep(200);
@@ -2305,9 +2309,9 @@ export const ChatBot: React.FC = () => {
             dispatchHud('START', 'SELECT', 'select-quanlybenhan-dttd', 'Đang tự động tra cứu danh mục và kê đơn thuốc hỗ trợ...');
             await sleep(800);
 
-            const selectEls = document.querySelectorAll('[data-ai-id="select-quanlybenhan-dttd"]');
-            const qtyEls = document.querySelectorAll('[data-ai-id="input-quanlybenhan-nj8p"]');
-            const noteEls = document.querySelectorAll('[data-ai-id="input-quanlybenhan-vgla"]');
+            const selectEls = findVisibleControlsByKeywords<HTMLSelectElement>("select", ["thuốc", "thuoc", "dược", "duoc", "đơn thuốc", "don thuoc"]);
+            const qtyEls = findVisibleControlsByKeywords<HTMLInputElement>("input", ["số lượng", "so luong", "liều", "lieu", "sl"]);
+            const noteEls = findVisibleControlsByKeywords<HTMLInputElement>("input", ["ghi chú", "ghi chu", "cách dùng", "cach dung", "liều dùng", "lieu dung"]);
 
             const drugTemplates = [
                 { keyword: "cefovecin", qty: "1", note: "Tiêm dưới da liều đơn" },
