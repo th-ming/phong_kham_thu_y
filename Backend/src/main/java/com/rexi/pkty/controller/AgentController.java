@@ -128,9 +128,22 @@ public class AgentController {
      */
     @PostMapping("/swarm-orchestration")
     public ResponseEntity<?> handleSwarmOrchestration(@RequestBody Map<String, String> payload) {
+        org.springframework.security.core.Authentication auth =
+            org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        String userRole = "";
+        if (auth != null) {
+            userRole = auth.getAuthorities().stream()
+                .findFirst().map(g -> g.getAuthority().replace("ROLE_", "")).orElse("");
+        }
         if (!isCurrentUserStaff()) {
             return ResponseEntity.status(403).body(Map.of(
                 "reply", "Tài khoản khách hàng không được chạy Swarm Agent hoặc truy vấn danh sách khách hàng nội bộ."
+            ));
+        }
+        String normalizedRole = RoleAccessPolicy.normalizeRole(userRole);
+        if (!Set.of("admin", "quan_ly").contains(normalizedRole)) {
+            return ResponseEntity.status(403).body(Map.of(
+                "reply", "Chỉ Admin và Quản lý được chạy chiến dịch marketing qua Swarm Agent."
             ));
         }
 
@@ -525,9 +538,12 @@ public class AgentController {
         }
         boolean isStaff = RoleAccessPolicy.isInternalStaffRole(userRole);
 
-        if (!authenticated || (!isStaff && !RoleAccessPolicy.canUseAgentTool(userRole, toolName))) {
+        if (!authenticated) {
+            return ResponseEntity.status(401).body(Map.of("error", "Cần đăng nhập để dùng tool Agent."));
+        }
+        if (!RoleAccessPolicy.canUseAgentTool(userRole, toolName)) {
             return ResponseEntity.status(403).body(Map.of(
-                "error", "Tool này chỉ dành cho tài khoản nhân sự nội bộ."
+                "error", RoleAccessPolicy.permissionDeniedMessage(toolName)
             ));
         }
 
@@ -537,7 +553,7 @@ public class AgentController {
             : new HashMap<>();
 
         try {
-            String observation = aiToolService.executeTool(toolName, params);
+            String observation = aiToolService.executeTool(toolName, params, userRole);
             return ResponseEntity.ok(Map.of(
                 "finalAnswer", observation,
                 "tool", toolName,

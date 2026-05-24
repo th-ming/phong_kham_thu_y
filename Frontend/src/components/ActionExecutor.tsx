@@ -45,9 +45,17 @@ export const executeAction = async (tag: string) => {
         break;
       }
       case 'FILL': {
-        const [id, value] = payload.split('|');
+        const separatorIdx = payload.indexOf('|');
+        const id = separatorIdx > -1 ? payload.slice(0, separatorIdx).trim() : payload;
+        let value = separatorIdx > -1 ? payload.slice(separatorIdx + 1) : '';
+        
         const input = document.querySelector(`[data-ai-id="${id}"]`) as HTMLInputElement;
         if (input) {
+          // Ngăn chặn bypass HTML5 Validation (giới hạn độ dài tối đa)
+          const maxLength = input.getAttribute('maxlength');
+          if (maxLength && value.length > Number(maxLength)) {
+            value = value.slice(0, Number(maxLength));
+          }
           const prototype = input instanceof HTMLTextAreaElement
             ? window.HTMLTextAreaElement.prototype
             : window.HTMLInputElement.prototype;
