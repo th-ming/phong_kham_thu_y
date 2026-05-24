@@ -112,6 +112,19 @@ const extractTaggedJsonPayload = (replyText: string, tag: string): { cleanedText
     }
 };
 
+const stripChatControlTags = (text: string): string => {
+    return text
+        .replace(/\[EMERGENCY\]/gi, "")
+        .replace(/\[NAVIGATE:[^\]]+\]/gi, "")
+        .replace(/\[(CLICK|FILL|TOGGLE|SELECT|DELETE):[^\]]+\]/gi, "")
+        .replace(/\[AUTO_BOOK:[\s\S]+?\]/gi, "")
+        .replace(/\[GENERATE_TREATMENT_PDF:[\s\S]+?\]/gi, "")
+        .replace(/\[SWARM_ORCHESTRATION:[\s\S]+?\]/gi, "")
+        .replace(/[ \t]{2,}/g, " ")
+        .replace(/\n{3,}/g, "\n\n")
+        .trim();
+};
+
 const SwarmConsole: React.FC<{ data: SwarmData; isDark: boolean }> = ({ data, isDark }) => {
     const [currentStep, setCurrentStep] = useState<number>(0);
     const [typingText, setTypingText] = useState<string>("");
@@ -2137,7 +2150,60 @@ export const ChatBot: React.FC = () => {
                 const vol3 = dataArray[30] || 0;
                 const scale = 20 / 255;
 
-                if (waveBar1Ref.current) { waveBar1Ref.current.style.height = `${6 + vol1 * scale}px`; waveBar1Ref.current.style.opacity = `${0.5 + (vol1 / 255) * 0.5}`; }
+                // SỬ DỤNG FETCH ĐỂ HỖ TRỢ STREAMING
+                const token = localStorage.getItem("token");
+                const headers: Record<string, string> = {
+                    "Content-Type": "application/json",
+                    "Accept": "text/event-stream",
+                    "X-User-Name": userName || "",
+                    "X-Current-Path": toSafeContextHeader(location.pathname, 500) || "",
+                    "X-Current-DOM-Context": toSafeContextHeader(getPageDomContext()) || "",
+                    "X-User-Activity-Logs": toSafeContextHeader(JSON.stringify(userActivityLogs.slice(-8)), 1500) || ""
+                };
+                if (token) headers["Authorization"] = "Bearer " + token;
+
+                const res = await fetch("/api/chat", {
+                    method: "POST",
+                    headers: headers,
+                    body: JSON.stringify(apiHistory)
+                });
+
+                if (!res.ok) {
+                    throw new Error("HTTP error " + res.status);
+                }
+
+                const reader = res.body?.getReader();
+                const decoder = new TextDecoder("utf-8");
+                let replyText = "";
+
+                // Add an empty AI message first to hold the stream
+                setMessages(prev => {
+                    const newMessages = [...prev];
+                    newMessages.push({ type: "ai", text: "" });
+                    return newMessages;
+                });
+                setLoading(false); // Stop loading indicator since stream started
+
+                if (reader) {
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+                        const chunk = decoder.decode(value, { stream: true });
+                        replyText += chunk;
+                        
+                        setMessages(prev => {
+                            const newMessages = [...prev];
+                            if (newMessages.length > 0) {
+                                newMessages[newMessages.length - 1].text = replyText;
+                            }
+                            return newMessages;
+                        });
+                    }
+                }
+                
+                // Giả lập response cho các logic phía dưới
+                response = { data: { reply: replyText } };
+            }scale}px`; waveBar1Ref.current.style.opacity = `${0.5 + (vol1 / 255) * 0.5}`; }
                 if (waveBar2Ref.current) { waveBar2Ref.current.style.height = `${6 + vol2 * scale * 1.5}px`; waveBar2Ref.current.style.opacity = `${0.5 + (vol2 / 255) * 0.5}`; }
                 if (waveBar3Ref.current) { waveBar3Ref.current.style.height = `${6 + vol3 * scale * 1.2}px`; waveBar3Ref.current.style.opacity = `${0.5 + (vol3 / 255) * 0.5}`; }
 
@@ -2341,7 +2407,7 @@ export const ChatBot: React.FC = () => {
                 const navMatch = replyText.match(/\[NAVIGATE:([^\]]+)\]/);
                 if (navMatch && navMatch[1]) {
                     const navigatePath = navMatch[1].trim();
-                    cleanedReplyText = replyText.replace(/\[NAVIGATE:[^\]]+\]/g, "").trim();
+                    cleanedReplyText = cleanedReplyText.replace(/\[NAVIGATE:[^\]]+\]/g, "").trim();
                     
                     const hasPermission = hasExplicitNavigationIntent(textToSend) && (navigatePath.startsWith("/quan-ly/")
                         ? canAccessAdminPath(normalizedRoleCode, navigatePath)
@@ -2359,10 +2425,12 @@ export const ChatBot: React.FC = () => {
                 }
             }
 
+            cleanedReplyText = stripChatControlTags(cleanedReplyText);
+
             const aiResponseMsg = { 
                 type: "ai", 
                 text: cleanedReplyText,
-                isEmergency: detectEmergencyKeywords(cleanedReplyText),
+                isEmergency: replyText.includes("[EMERGENCY]") || detectEmergencyKeywords(cleanedReplyText),
                 treatmentData: treatmentData,
                 swarmData: swarmData
             };
@@ -3425,10 +3493,12 @@ export const ChatBot: React.FC = () => {
             }
             cleanedReplyText = cleanedReplyText.replace(actionTagRegex, '').trim();
 
+            cleanedReplyText = stripChatControlTags(cleanedReplyText);
+
             const aiResponseMsg = { 
                 type: "ai", 
                 text: cleanedReplyText,
-                isEmergency: detectEmergencyKeywords(cleanedReplyText),
+                isEmergency: replyText.includes("[EMERGENCY]") || detectEmergencyKeywords(cleanedReplyText),
                 treatmentData: treatmentData,
                 swarmData: swarmData
             };
