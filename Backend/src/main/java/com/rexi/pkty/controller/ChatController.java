@@ -63,14 +63,14 @@ public class ChatController {
             HttpServletRequest request,
             @RequestHeader(value = "Accept", defaultValue = "application/json") String acceptHeader) {
 
-        // Chống người dùng spam chat quá nhanh gây nghẽn hệ thống. Cho phép tối đa 20 tin nhắn văn bản hoặc 15 video mỗi phút.
+        // Chặn spam chat nhanh quá gây nghẽn hệ thống. Cho tối đa 20 tin text hoặc 15 video mỗi phút nha sếp.
         String clientIp = request.getRemoteAddr();
         org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
                 .getContext().getAuthentication();
         String realUsername = (auth != null && !auth.getName().equals("anonymousUser")) ? auth.getName() : null;
         String rateKey = (realUsername != null) ? realUsername : clientIp;
 
-        // Giải phóng bộ nhớ RAM nếu danh sách lưu trữ giới hạn Rate Limit trong RAM quá nhiều phần tử (tránh tràn RAM máy sếp).
+        // Dọn rác RAM nếu lưu rate limit quá nhiều (tránh tràn RAM máy sếp cùi 😂)
         if (rateLimiter.size() > 1000) {
             rateLimiter.entrySet().removeIf(entry -> Instant.now().isAfter(entry.getValue().resetTime));
         }
@@ -108,7 +108,7 @@ public class ChatController {
                 return Map.of("reply", welcomeMessage);
             }
 
-            // Chỉ giữ lại tối đa 40 tin nhắn gần nhất của cuộc trò chuyện để gửi lên AI, tránh quá tải số lượng Token và giảm chi phí API.
+            // Chỉ nhớ 40 tin nhắn gần nhất thui kẻo quá tải LLM (token nhiều ➜ load chậm + tốn tiền API sếp ơi)
             if (history.size() > 40) {
                 history = new ArrayList<>(history.subList(history.size() - 40, history.size()));
             }
@@ -118,7 +118,7 @@ public class ChatController {
             String userQuery = lastMsg.getContent() != null ? lastMsg.getContent() : "";
             String normalizedUserQuery = normalizeVietnamese(userQuery.toLowerCase());
 
-            // Giới hạn độ dài tin nhắn tối đa là 1000 ký tự để chặn tin nhắn quá dài từ người dùng, tránh tốn dung lượng Token.
+            // Giới hạn chat max 1000 ký tự để chặn spam tin siêu dài, đỡ tốn token API.
             if (userQuery.length() > 1000) {
                 return Map.of("reply",
                         "Sen ơi tin nhắn hơi dài quá òi! 😿 Sen tóm tắt lại tình trạng của bé ngắn gọn (dưới 1000 ký tự) để Rexi đọc và tư vấn chuẩn xác nhất nha!");
@@ -128,14 +128,14 @@ public class ChatController {
                 return Map.of("reply", buildEmergencyReply(normalizedUserQuery));
             }
 
-            // Lấy dữ liệu ngữ cảnh (Context) dựa vào nội dung câu chat để bổ sung thông tin chính xác cho AI khi trả lời.
+            // Lọc ngữ cảnh thông minh dựa vào câu chat để AI biết đường trả lời cho chuẩn.
             String userContext = aiMemoryService.getUserContext(realUsername);
             String knowledgeContext = aiMemoryService.getKnowledgeBaseContext(userQuery);
-            // Ghép thêm thông tin cấu hình thực tế của phòng khám thú y vào bối cảnh (Context) giúp AI tư vấn chính xác.
+            // Ghép thêm dữ liệu thực tế phòng khám Rexi vào bối cảnh giúp AI rep chuẩn chỉ.
             String globalContext = aiMemoryService.getGlobalContext(userQuery);
             String webSearchContext = "";
 
-            // Đọc các dữ liệu bối cảnh giao diện hiển thị (DOM Context) do phía Frontend truyền lên.
+            // Đọc bối cảnh màn hình DOM từ frontend gửi lên để AI biết sếp đang ở trang nào.
             String rawPath = request.getHeader("X-Current-Path");
             String rawDomContext = request.getHeader("X-Current-DOM-Context");
             String rawActivityLogs = request.getHeader("X-User-Activity-Logs");
@@ -331,7 +331,7 @@ ChatMessage systemMsg = new ChatMessage();
             }
 
             String reply;
-            // Định tuyến câu hỏi sang các dòng AI phù hợp dựa trên thế mạnh: Gemini giải quyết hình ảnh/video, DeepSeek xử lý y tế, Groq chat thông thường.
+            // Định tuyến AI thông minh: Gemini trị ảnh/video, DeepSeek cân y tế, Groq chat thường cho nhanh.
             if (hasMedia) {
                 // 🎥/🖼️ THẾ MẠNH CỦA GEMINI: Đa phương tiện (Video, Hình ảnh)
                 logger.info("[AI ROUTER] Định tuyến câu hỏi Media sang: Gemini");
@@ -373,10 +373,10 @@ ChatMessage systemMsg = new ChatMessage();
 
             reply = sanitizeChatReply(reply);
 
-            // Mã hóa ký tự đặc biệt (HtmlEscape) trong câu hỏi để chặn đứng các cuộc tấn công XSS khi lưu nội dung vào CSDL.
+            // Khử ký tự đặc biệt (HtmlEscape) để chặn đứng lỗi XSS khi lưu tin nhắn vào DB.
             String safeUserQuery = org.springframework.web.util.HtmlUtils.htmlEscape(userQuery);
 
-            // Lưu lại nội dung khách hàng hỏi và AI trả lời vào bảng LichSuTuVan để theo dõi.
+            // Lưu lịch sử chat của sen và Rexi vào DB để tiện đối soát.
             try {
                 String customerId = aiMemoryService.getCurrentCustomerId();
                 if (customerId != null) {
