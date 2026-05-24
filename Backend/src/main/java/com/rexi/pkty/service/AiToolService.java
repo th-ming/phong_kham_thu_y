@@ -396,6 +396,14 @@ public class AiToolService {
     }
 
     private String toolTimKiemWeb(String query) {
+        if (query == null || query.trim().isEmpty()) {
+            return "Vui lòng cung cấp nội dung cần tìm kiếm.";
+        }
+
+        return tryDuckDuckGoSearch(query.trim());
+    }
+
+    private String tryDuckDuckGoSearch(String query) {
         try {
             String encodedQuery = java.net.URLEncoder.encode(query, "UTF-8");
             String urlStr = "https://html.duckduckgo.com/html/";
@@ -405,24 +413,34 @@ public class AiToolService {
             conn.setDoOutput(true);
             conn.setRequestProperty("User-Agent", "Mozilla/5.0");
             conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+            conn.setConnectTimeout(8000);
+            conn.setReadTimeout(12000);
             try (var os = conn.getOutputStream()) { os.write(("q=" + encodedQuery).getBytes()); }
             StringBuilder resp = new StringBuilder();
             try (var br = new java.io.BufferedReader(new java.io.InputStreamReader(conn.getInputStream(), "UTF-8"))) {
                 String line; while ((line = br.readLine()) != null) resp.append(line);
             }
-            // Trích xuất tiêu đề + snippet đơn giản
             var titlePattern = java.util.regex.Pattern.compile("class=\"result__a\" href=\"([^\"]+)\">([^<]+)<");
             var m = titlePattern.matcher(resp.toString());
-            StringBuilder result = new StringBuilder("Kết quả tìm kiếm web cho \"" + query + "\":\n");
+            StringBuilder result = new StringBuilder("Kết quả DuckDuckGo cho \"" + query + "\":\n");
             int count = 0;
             while (m.find() && count < 3) {
-                result.append("- ").append(m.group(2)).append(" → ").append(m.group(1)).append("\n");
+                result.append("- ").append(stripHtmlEntities(m.group(2))).append(" → ").append(m.group(1)).append("\n");
                 count++;
             }
             return count > 0 ? result.toString() : "Không tìm thấy kết quả web.";
         } catch (Exception e) {
             return "Lỗi tìm kiếm web: " + e.getMessage();
         }
+    }
+
+    private String stripHtmlEntities(String value) {
+        if (value == null) return "";
+        return value.replace("&amp;", "&")
+                .replace("&quot;", "\"")
+                .replace("&#x27;", "'")
+                .replace("&lt;", "<")
+                .replace("&gt;", ">");
     }
 
     private String toolGuiEmailDonLe(Map<String, Object> p) {

@@ -43,7 +43,7 @@ public class SecurityConfig {
                 .requestMatchers(
                     "/api/auth/**", "/api/chat", "/api/chat/**",
                     "/api/system/send-otp", "/api/system/verify-otp",
-                    "/api/payment/**", "/api/lich-hen/gio-ranh",
+                    "/api/payment/**", "/api/lich-hen/gio-ranh", "/api/lich-hen/dat-lich-nhanh",
                     "/api/lich-hen/khach-vang-lai", "/api/dich-vu/**", "/api/bac-si/**",
                     "/ws/**",
                     "/public/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/api/test-doanh-thu"
@@ -90,6 +90,11 @@ public class SecurityConfig {
             "http://localhost:3005", 
             "http://localhost:5173", 
             "http://localhost:5174", 
+            "http://127.0.0.1:3000",
+            "http://127.0.0.1:3001",
+            "http://127.0.0.1:3005",
+            "http://127.0.0.1:5173",
+            "http://127.0.0.1:5174",
             "https://accounts.google.com"
         ));
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));

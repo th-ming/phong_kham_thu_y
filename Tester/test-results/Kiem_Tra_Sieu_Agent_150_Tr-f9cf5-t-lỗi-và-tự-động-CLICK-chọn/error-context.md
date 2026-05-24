@@ -16,14 +16,14 @@ Error: expect(locator).toContainText(expected) failed
 
 Locator: locator('#chatWindow')
 Expected pattern: /dịch vụ|chưa chọn|thành công/i
-Received string:  "Rexi Agent v2 🤖volume_offrestart_altclosechatTrợ lý Rexismart_toyTác vụ Agent v2Chào buổi tối Sen Trần Minh! 🐾 Tôi là Rexi Agent v2 - Trợ lý Tác vụ AI. Tôi có thể hỗ trợ đặt lịch khám, tra cứu lịch trực bác sĩ và tìm tài liệu thú y chuẩn xác. Sen muốn Rexi làm gì hôm nay ạ?Đặt lịch khám cho bé mèo MựcTự điền lịch khámTìm hóa đơnMở hồ sơ y tếTìm tài liệu mèo mang thaiSơ cứu hóc xươngmic_nonesend"
+Received string:  "Rexi Agent v2 🤖volume_offrestart_altclosechatTrợ lý Rexismart_toyTác vụ Agent v2Chào buổi tối Sen Trần Minh! 🐾 Tôi là Rexi Agent v2 - Trợ lý Tác vụ AI. Tôi có thể hỗ trợ đặt lịch khám, tra cứu lịch trực bác sĩ và tìm tài liệu thú y chuẩn xác. Sen muốn Rexi làm gì hôm nay ạ?Đặt lịch khám cho bé mèo MựcXin lỗi, đã xảy ra lỗi từ hệ thống khi tạo lịch hẹn. Bạn vui lòng thử lại sau nhé!Tự điền lịch khámTìm hóa đơnMở hồ sơ y tếTìm tài liệu mèo mang thaiSơ cứu hóc xươngmic_nonesend"
 Timeout: 5000ms
 
 Call log:
   - Expect "toContainText" with timeout 5000ms
   - waiting for locator('#chatWindow')
     13 × locator resolved to <div id="chatWindow" class="glass-card animate-fade-in">…</div>
-       - unexpected value "Rexi Agent v2 🤖volume_offrestart_altclosechatTrợ lý Rexismart_toyTác vụ Agent v2Chào buổi tối Sen Trần Minh! 🐾 Tôi là Rexi Agent v2 - Trợ lý Tác vụ AI. Tôi có thể hỗ trợ đặt lịch khám, tra cứu lịch trực bác sĩ và tìm tài liệu thú y chuẩn xác. Sen muốn Rexi làm gì hôm nay ạ?Đặt lịch khám cho bé mèo MựcTự điền lịch khámTìm hóa đơnMở hồ sơ y tếTìm tài liệu mèo mang thaiSơ cứu hóc xươngmic_nonesend"
+       - unexpected value "Rexi Agent v2 🤖volume_offrestart_altclosechatTrợ lý Rexismart_toyTác vụ Agent v2Chào buổi tối Sen Trần Minh! 🐾 Tôi là Rexi Agent v2 - Trợ lý Tác vụ AI. Tôi có thể hỗ trợ đặt lịch khám, tra cứu lịch trực bác sĩ và tìm tài liệu thú y chuẩn xác. Sen muốn Rexi làm gì hôm nay ạ?Đặt lịch khám cho bé mèo MựcXin lỗi, đã xảy ra lỗi từ hệ thống khi tạo lịch hẹn. Bạn vui lòng thử lại sau nhé!Tự điền lịch khámTìm hóa đơnMở hồ sơ y tếTìm tài liệu mèo mang thaiSơ cứu hóc xươngmic_nonesend"
 
 ```
 
@@ -38,6 +38,7 @@ Call log:
   - strong: Rexi Agent v2
   - text: "- Trợ lý Tác vụ AI. Tôi có thể hỗ trợ đặt lịch khám, tra cứu lịch trực bác sĩ và tìm tài liệu thú y chuẩn xác. Sen muốn Rexi làm gì hôm nay ạ?"
 - paragraph: Đặt lịch khám cho bé mèo Mực
+- paragraph: Xin lỗi, đã xảy ra lỗi từ hệ thống khi tạo lịch hẹn. Bạn vui lòng thử lại sau nhé!
 - button "Tự điền lịch khám"
 - button "Tìm hóa đơn"
 - button "Mở hồ sơ y tế"

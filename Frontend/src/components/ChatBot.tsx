@@ -2692,6 +2692,11 @@ export const ChatBot: React.FC = () => {
             speakText("Đang phân tích tin nhắn của bạn.");
         }
 
+        if (newMsg.isEmergency) {
+            setLoading(false);
+            return;
+        }
+
         try {
             const apiHistory = messages.slice(-10).map((msg) => ({
                 role: msg.type === "ai" ? "assistant" : "user",
@@ -2725,87 +2730,14 @@ export const ChatBot: React.FC = () => {
             if (isMarketingCampaign) {
                 response = await axiosInstance.post("/api/agent/swarm-orchestration", { query: textToSend });
             } else {
-                // SỬ DỤNG FETCH ĐỂ HỖ TRỢ STREAMING
-                const token = localStorage.getItem("token");
-                const headers: Record<string, string> = {
-                    "Content-Type": "application/json",
-                    "Accept": "text/event-stream",
-                    "X-User-Name": userName || "",
-                    "X-Current-Path": toSafeContextHeader(location.pathname, 500) || "",
-                    "X-Current-DOM-Context": toSafeContextHeader(getPageDomContext()) || "",
-                    "X-User-Activity-Logs": toSafeContextHeader(JSON.stringify(userActivityLogs.slice(-8)), 1500) || ""
-                };
-                if (token) headers["Authorization"] = "Bearer " + token;
-
-                const res = await fetch("/api/chat", {
-                    method: "POST",
-                    headers: headers,
-                    body: JSON.stringify(apiHistory)
-                });
-
-                if (!res.ok) {
-                    throw new Error("HTTP error " + res.status);
-                }
-
-                const reader = res.body?.getReader();
-                const decoder = new TextDecoder("utf-8");
-                let replyText = "";
-                let sseBuffer = "";
-
-                // Add an empty AI message first to hold the stream
-                setMessages(prev => {
-                    const newMessages = [...prev];
-                    newMessages.push({ type: "ai", text: "" });
-                    return newMessages;
-                });
-                setLoading(false);
-                streamedMessage = true;
-
-                const appendStreamText = (text: string) => {
-                    if (!text) return;
-                    replyText += text;
-                    setMessages(prev => {
-                        const newMessages = [...prev];
-                        if (newMessages.length > 0) {
-                            newMessages[newMessages.length - 1].text = replyText;
-                        }
-                        return newMessages;
-                    });
-                };
-
-                const flushSseEvents = (force = false) => {
-                    const parts = sseBuffer.split(/\r?\n\r?\n/);
-                    sseBuffer = force ? "" : (parts.pop() || "");
-                    const events = force ? parts.filter(Boolean).concat(sseBuffer ? [sseBuffer] : []) : parts;
-
-                    events.forEach(eventText => {
-                        const dataLines = eventText
-                            .split(/\r?\n/)
-                            .filter(line => line.startsWith("data:"))
-                            .map(line => line.replace(/^data:\s?/, ""));
-
-                        if (dataLines.length > 0) {
-                            const data = dataLines.join("\n");
-                            if (data !== "[DONE]") appendStreamText(data);
-                            return;
-                        }
-
-                        appendStreamText(eventText);
-                    });
-                };
-
-                if (reader) {
-                    while (true) {
-                        const { done, value } = await reader.read();
-                        if (done) break;
-                        sseBuffer += decoder.decode(value, { stream: true });
-                        flushSseEvents();
+                response = await axiosInstance.post("/api/chat", apiHistory, {
+                    headers: {
+                        "X-User-Name": userName || "",
+                        "X-Current-Path": toSafeContextHeader(location.pathname, 500) || "",
+                        "X-Current-DOM-Context": toSafeContextHeader(getPageDomContext()) || "",
+                        "X-User-Activity-Logs": toSafeContextHeader(JSON.stringify(userActivityLogs.slice(-8)), 1500) || ""
                     }
-                    sseBuffer += decoder.decode();
-                    flushSseEvents(true);
-                }
-                 
-                response = { data: { reply: replyText } };
+                });
             }
             const replyText = response.data.reply || "Tôi đang bận một chút, bạn thử lại sau nhé!";
 
@@ -2962,7 +2894,7 @@ export const ChatBot: React.FC = () => {
 
         } catch (err) {
             console.error("Chat API request failed:", err);
-            setMessages(prev => [...prev, { type: "ai", text: "Kết nối gián đoạn. Đừng lo, Bác sĩ Rexi vẫn ở đây và sẵn sàng hỗ trợ bé!" }]);
+            setMessages(prev => [...prev, { type: "ai", text: "Rexi chưa nhận được phản hồi từ hệ thống tư vấn. Tôi đã ghi nhận yêu cầu, bạn thử gửi lại sau vài giây hoặc chọn gợi ý nhanh bên dưới." }]);
         } finally {
             setLoading(false);
         }

@@ -14,8 +14,10 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Logger;
 
 @Service
@@ -47,15 +49,34 @@ public class GeminiService {
     private String modelName;
 
     private String getApiKey() {
+        List<String> keys = getApiKeys();
+        return keys.isEmpty() ? "" : keys.get(0);
+    }
+
+    private List<String> getApiKeys() {
+        Set<String> keys = new LinkedHashSet<>();
         try {
-            String dbKey = jdbcTemplate.queryForObject(
-                "SELECT gia_tri FROM CauHinhHeThong WHERE ten_cau_hinh = 'gemini_api_key'", 
-                String.class);
-            if (dbKey != null && !dbKey.trim().isEmpty()) {
-                return dbKey.trim();
+            List<String> dbKeys = jdbcTemplate.queryForList(
+                    "SELECT gia_tri FROM CauHinhHeThong "
+                            + "WHERE ten_cau_hinh LIKE 'gemini_api_key%' "
+                            + "ORDER BY CASE WHEN ten_cau_hinh = 'gemini_api_key' THEN 0 ELSE 1 END, ten_cau_hinh",
+                    String.class);
+            for (String dbKey : dbKeys) {
+                addKeys(keys, dbKey);
             }
         } catch (Exception e) {}
-        return apiKey;
+        addKeys(keys, apiKey);
+        return new ArrayList<>(keys);
+    }
+
+    private void addKeys(Set<String> keys, String rawValue) {
+        if (rawValue == null) return;
+        for (String key : rawValue.split(",")) {
+            String trimmed = key.trim();
+            if (!trimmed.isEmpty()) {
+                keys.add(trimmed);
+            }
+        }
     }
 
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -83,12 +104,11 @@ public class GeminiService {
     }
 
     public String chat(List<ChatMessage> history) throws Exception {
-        String currentApiKey = getApiKey();
-        if (currentApiKey == null || currentApiKey.trim().isEmpty()) {
+        List<String> keys = getApiKeys();
+        if (keys.isEmpty()) {
             throw new RuntimeException("Không tìm thấy Gemini API Key nào được cấu hình!");
         }
 
-        String[] keys = currentApiKey.split(",");
         Exception lastException = null;
 
         Map<String, Object> requestBodyMap = new HashMap<>();
@@ -188,8 +208,8 @@ public class GeminiService {
         String requestBody = objectMapper.writeValueAsString(requestBodyMap);
 
         // Duyệt qua danh sách các API Key để thử kết nối
-        for (int i = 0; i < keys.length; i++) {
-            String currentKey = keys[i].trim();
+        for (int i = 0; i < keys.size(); i++) {
+            String currentKey = keys.get(i).trim();
             if (currentKey.isEmpty()) continue;
 
             String apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/" + getModelName() + ":generateContent?key="
