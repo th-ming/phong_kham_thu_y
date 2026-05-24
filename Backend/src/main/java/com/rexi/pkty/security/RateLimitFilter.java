@@ -37,11 +37,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         String ip = getClientIP(request);
-        if ("127.0.0.1".equals(ip) || "0:0:0:0:0:0:0:1".equals(ip)) {
-            // Bypass rate limiting for localhost to allow local developer testing and seeding
-            filterChain.doFilter(request, response);
-            return;
-        }
+        boolean localhost = "127.0.0.1".equals(ip) || "0:0:0:0:0:0:0:1".equals(ip);
         long currentTime = System.currentTimeMillis();
 
         if (securityAlertService != null && securityAlertService.isBlocked(ip)) {
@@ -69,6 +65,12 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
         if (blockedIps.contains(ip)) {
             writeBlockedResponse(response, "Truy cập bị từ chối: Địa chỉ IP của bạn đã bị đưa vào danh sách đen (Blacklist)!");
+            return;
+        }
+
+        if (localhost) {
+            // Localhost vẫn bị chặn nếu nằm trong blacklist, nhưng bỏ qua dò tấn công/rate limit để tiện chạy dev.
+            filterChain.doFilter(request, response);
             return;
         }
 
@@ -152,8 +154,20 @@ public class RateLimitFilter extends OncePerRequestFilter {
         if (probe.matches(".*(<script|javascript:|onerror\\s*=|onload\\s*=|document\\.cookie|<iframe|<svg).*")) {
             return new AttackSignal("Cross-site scripting (XSS)", truncate(probe));
         }
+        if (probe.matches(".*(;\\s*(cat|curl|wget|bash|sh|powershell|cmd)|\\$\\(|`|/bin/sh|/bin/bash|\\|\\s*(cat|curl|wget|nc|ncat)|&&\\s*(cat|curl|wget|whoami)).*")) {
+            return new AttackSignal("Command injection / remote command execution", truncate(probe));
+        }
+        if (probe.matches(".*(169\\.254\\.169\\.254|metadata\\.google\\.internal|localhost:|127\\.0\\.0\\.1|file://|gopher://|dict://).*")) {
+            return new AttackSignal("SSRF / internal network probing", truncate(probe));
+        }
         if (probe.matches(".*(\\.\\./|\\.\\.\\\\|/etc/passwd|boot\\.ini|win\\.ini|%2e%2e|%252e%252e).*")) {
             return new AttackSignal("Path traversal / file probing", truncate(probe));
+        }
+        if (probe.matches(".*(api[_-]?key|secret|access[_-]?token|refresh[_-]?token|private[_-]?key|\\.aws/credentials|id_rsa).*")) {
+            return new AttackSignal("Credential/API key probing", truncate(probe));
+        }
+        if (probe.matches(".*(/login|/dang-nhap|/api/auth|/wp-login).*") && probe.matches(".*(hydra|patator|bruteforce|credential|password).*")) {
+            return new AttackSignal("Credential stuffing / brute force", truncate(probe));
         }
         if (probe.matches(".*(/wp-admin|/wp-login|/phpmyadmin|/\\.env|/actuator/env|/server-status|/vendor/phpunit).*")) {
             return new AttackSignal("Automated vulnerability scanner", truncate(probe));

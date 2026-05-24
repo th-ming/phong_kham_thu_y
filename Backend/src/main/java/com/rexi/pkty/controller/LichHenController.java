@@ -66,7 +66,7 @@ public class LichHenController {
 
             if (username != null && !username.equals("anonymousUser")) {
                 taiKhoanRepository.findByTenDangNhap(username).ifPresent(tk -> {
-                    // Nếu là khách hàng, tự động điền id_khach_hang nếu thiếu, hoặc kiểm tra quyền
+                    // Phân quyền đặt lịch: Nếu tài khoản là Khách hàng thì chỉ được đặt lịch cho chính mình thôi (khách A không được tạo lịch cho khách B)
                     if (tk.getId_vai_tro() != null && "VT-5".equals(tk.getId_vai_tro())) { 
                         if (lichHen.getId_khach_hang() == null || lichHen.getId_khach_hang().isEmpty()) {
                             lichHen.setId_khach_hang(tk.getId_khach_hang());
@@ -208,7 +208,7 @@ public class LichHenController {
                         + " phút) với một khách hàng khác. Vui lòng chọn khung giờ rộng hơn nhé!");
             }
 
-            // 4. Kiểm tra trùng lịch khám của chính bé cưng này
+            // Kiểm tra xem bé cưng (thú cưng) này đã có lịch hẹn nào trùng thời gian trong cùng ngày chưa để tránh đặt lịch chồng chéo
             boolean isPetConflict = false;
             if (lichHen.getId_thu_cung() != null && !lichHen.getId_thu_cung().isEmpty()) {
                 List<Map<String, Object>> existingPetApps = jdbcTemplate.queryForList(
@@ -386,7 +386,7 @@ public class LichHenController {
             return ResponseEntity.status(403).body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền truy cập danh sách lịch hẹn tổng quát!"));
         }
 
-        // Xây dựng WHERE clause linh hoạt theo filter status
+        // Tự động xây dựng câu lệnh SQL lọc dữ liệu dựa trên trạng thái (status) hoặc từ khóa tìm kiếm (search) do người dùng chọn
         StringBuilder where = new StringBuilder("WHERE 1=1");
         java.util.List<Object> params = new java.util.ArrayList<>();
         if (status != null && !status.isEmpty()) {
@@ -410,7 +410,7 @@ public class LichHenController {
                 "LEFT JOIN NhanVien nv ON lh.id_bac_si = nv.id_nhan_vien " +
                 "LEFT JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu ";
 
-        // Nếu có params page/size → trả về Page object để frontend phân trang
+        // Thực hiện phân trang nếu Frontend truyền lên tham số page và size (giúp tải trang nhanh hơn đối với danh sách lớn)
         if (page != null && size != null && size > 0) {
             try {
                 Integer total = jdbcTemplate.queryForObject(
@@ -443,7 +443,7 @@ public class LichHenController {
             }
         }
 
-        // Fallback: Không có page/size → trả toàn bộ (backward-compatible, giới hạn 500)
+        // Nếu Frontend không gửi tham số phân trang, lấy toàn bộ danh sách lịch hẹn để tương thích với code cũ
         String sql = baseSelect + where + " ORDER BY lh.ngay_kham DESC, lh.gio_kham DESC";
         java.util.List<Map<String, Object>> all = jdbcTemplate.queryForList(sql, params.toArray());
         return ResponseEntity.ok(all);
@@ -650,7 +650,7 @@ public class LichHenController {
                 }
             }
 
-            // BẢO MẬT: Kiểm tra xem đã có Hóa Đơn hoặc Bệnh án chưa
+            // Kiểm tra xem lịch hẹn này đã liên kết với hóa đơn hay bệnh án nào chưa, nếu có rồi thì tuyệt đối không được xóa để tránh mất dữ liệu
             int usageCount = 0;
             try {
                 usageCount += jdbcTemplate.queryForObject("SELECT COUNT(*) FROM HoSoBenhAn WHERE id_lich_hen = ?", Integer.class, id);
@@ -661,7 +661,7 @@ public class LichHenController {
                 return ResponseEntity.status(409).body(Map.of("message", "Không thể hủy lịch hẹn vì đã có Hóa đơn hoặc Hồ sơ Bệnh án liên kết. Nếu có sai sót, vui lòng liên hệ Quản lý để xử lý."));
             }
 
-            // THAY MÁU: Thay vì xóa cứng (deleteById), đổi trạng thái thành DA_HUY để giữ lịch sử
+            // Áp dụng xóa mềm: Chỉ cập nhật trạng thái lịch hẹn thành 'DA_HUY' chứ không xóa hoàn toàn khỏi DB để giữ lại dữ liệu đối soát
             lh.setTrang_thai("DA_HUY");
             lichHenRepository.save(lh);
 

@@ -54,6 +54,8 @@ const CauHinhHeThong: React.FC = () => {
     const [logs, setLogs] = useState<any[]>([]);
     const [backups, setBackups] = useState<any[]>([]);
     const [activeTab, setActiveTab] = useState('general');
+    const [securityState, setSecurityState] = useState<{ blockedIps: string[], alerts: any[] }>({ blockedIps: [], alerts: [] });
+    const [loadingSecurity, setLoadingSecurity] = useState(false);
 
     // Trạng thái kiểm tra email
     const [testEmailTo, setTestEmailTo] = useState('');
@@ -69,6 +71,7 @@ const CauHinhHeThong: React.FC = () => {
         fetchConfigs();
         fetchLogs();
         fetchBackups();
+        fetchSecurityState();
     }, []);
 
     const fetchConfigs = async () => {
@@ -111,6 +114,23 @@ const CauHinhHeThong: React.FC = () => {
         } catch (error: any) {}
     };
 
+    const fetchSecurityState = async () => {
+        setLoadingSecurity(true);
+        try {
+            const res = await axiosInstance.get('/api/system/security/blocked-ips');
+            setSecurityState({
+                blockedIps: Array.isArray(res.data?.blockedIps) ? res.data.blockedIps : [],
+                alerts: Array.isArray(res.data?.alerts) ? res.data.alerts : []
+            });
+        } catch (error: any) {
+            if (activeTab === 'security') {
+                toast.error(error.response?.data?.message || 'Không tải được trạng thái bảo mật');
+            }
+        } finally {
+            setLoadingSecurity(false);
+        }
+    };
+
     const handleSave = async () => {
         setSaving(true);
         try {
@@ -121,6 +141,7 @@ const CauHinhHeThong: React.FC = () => {
             await axiosInstance.post('/api/system/cau-hinh', payload);
             toast.success('Đã lưu cấu hình thành công!');
             fetchLogs();
+            fetchSecurityState();
         } catch (error: any) {
             toast.error(error.response?.data?.message || 'Lỗi khi lưu cấu hình');
         } finally {
@@ -231,6 +252,26 @@ const CauHinhHeThong: React.FC = () => {
             toast.error('Lỗi khi xóa tất cả bản sao lưu: ' + (error.response?.data?.message || error.message));
         } finally {
             setDeletingBackups(false);
+        }
+    };
+
+    const handleUnblockIp = async (ip: string) => {
+        if (!ip || !window.confirm(`Gỡ chặn IP ${ip}? Chỉ gỡ khi đã xác minh đây không phải tấn công.`)) return;
+        try {
+            await axiosInstance.delete(`/api/system/security/blocked-ips/${encodeURIComponent(ip)}`);
+            toast.success(`Đã gỡ chặn IP ${ip}`);
+            setConfigs((prev: any) => ({
+                ...prev,
+                blocked_ips: String(prev.blocked_ips || '')
+                    .split(',')
+                    .map(item => item.trim())
+                    .filter(item => item && item !== ip)
+                    .join(',')
+            }));
+            fetchSecurityState();
+            fetchLogs();
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || 'Không gỡ chặn được IP');
         }
     };
 
@@ -368,6 +409,7 @@ const CauHinhHeThong: React.FC = () => {
                 {renderTabButton('payment', 'payments', 'Thanh toán')}
                 {renderTabButton('ai', 'smart_toy', 'AI & Phân quyền')}
                 {renderTabButton('email', 'mail', 'Email SMTP')}
+                {renderTabButton('security', 'shield_lock', 'Bảo mật')}
                 {renderTabButton('backup', 'inventory_2', 'Backup & Nhật ký')}
             </div>
 
@@ -494,6 +536,87 @@ const CauHinhHeThong: React.FC = () => {
                                     </div>
                                 </div>
                             )}
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'security' && (
+                    <div className="animate-fade-in" style={{ display: 'grid', gap: '24px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+                            <div>
+                                <h2 style={{ fontSize: '1.4rem', fontWeight: 900, color: 'var(--ink)', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <span className="material-symbols-outlined" style={{ color: 'var(--danger)' }}>shield_lock</span>
+                                    Tường chặn tấn công tự động
+                                </h2>
+                                <p style={{ color: 'var(--gray-500)', margin: 0, fontWeight: 600 }}>
+                                    IP có dấu hiệu tấn công sẽ bị chặn ngay và chỉ được mở lại khi Admin gỡ tại đây.
+                                </p>
+                            </div>
+                            <button
+                                data-ai-id="button-cauhinhhethong-security-refresh"
+                                type="button"
+                                className="btn btn-outline"
+                                onClick={fetchSecurityState}
+                                disabled={loadingSecurity}
+                                style={{ borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}
+                            >
+                                <span className="material-symbols-outlined" style={{ animation: loadingSecurity ? 'spinBtn 1s linear infinite' : 'none' }}>{loadingSecurity ? 'sync' : 'refresh'}</span>
+                                Làm mới
+                            </button>
+                        </div>
+
+                        <div className="responsive-grid-2">
+                            <div style={{ border: '1px solid var(--gray-200)', borderRadius: '14px', background: 'var(--surface)', overflow: 'hidden' }}>
+                                <div style={{ padding: '16px 18px', borderBottom: '1px solid var(--gray-100)', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <span className="material-symbols-outlined" style={{ color: 'var(--danger)' }}>block</span>
+                                    IP đang bị chặn ({securityState.blockedIps.length})
+                                </div>
+                                {securityState.blockedIps.length === 0 ? (
+                                    <div style={{ padding: '26px', color: 'var(--gray-500)', fontWeight: 700, textAlign: 'center' }}>Chưa có IP nào đang bị chặn.</div>
+                                ) : (
+                                    <div style={{ maxHeight: '380px', overflow: 'auto' }}>
+                                        {securityState.blockedIps.map((ip) => (
+                                            <div key={ip} style={{ padding: '14px 16px', borderBottom: '1px solid var(--gray-100)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+                                                <code style={{ fontWeight: 900, color: 'var(--ink)', wordBreak: 'break-all' }}>{ip}</code>
+                                                <button
+                                                    data-ai-id={`button-cauhinhhethong-security-unblock-${ip.replace(/[^a-zA-Z0-9]/g, '-')}`}
+                                                    type="button"
+                                                    className="btn btn-outline"
+                                                    onClick={() => handleUnblockIp(ip)}
+                                                    style={{ color: 'var(--danger)', borderColor: 'var(--danger)', borderRadius: '10px', whiteSpace: 'nowrap' }}
+                                                >
+                                                    <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>lock_open</span>
+                                                    Gỡ chặn
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div style={{ border: '1px solid var(--gray-200)', borderRadius: '14px', background: 'var(--surface)', overflow: 'hidden' }}>
+                                <div style={{ padding: '16px 18px', borderBottom: '1px solid var(--gray-100)', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <span className="material-symbols-outlined" style={{ color: 'var(--primary)' }}>notification_important</span>
+                                    Cảnh báo gần nhất
+                                </div>
+                                {securityState.alerts.length === 0 ? (
+                                    <div style={{ padding: '26px', color: 'var(--gray-500)', fontWeight: 700, textAlign: 'center' }}>Chưa ghi nhận cảnh báo trong phiên này.</div>
+                                ) : (
+                                    <div style={{ maxHeight: '380px', overflow: 'auto' }}>
+                                        {securityState.alerts.map((alert) => (
+                                            <div key={alert.id || `${alert.ip}-${alert.detectedAt}`} style={{ padding: '14px 16px', borderBottom: '1px solid var(--gray-100)', display: 'grid', gap: '6px' }}>
+                                                <div style={{ fontWeight: 900, color: 'var(--danger)' }}>{alert.attackType || 'Tấn công chưa phân loại'} - IP {alert.ip || 'không rõ'}</div>
+                                                <div style={{ fontSize: '0.84rem', color: 'var(--gray-600)', fontWeight: 650, wordBreak: 'break-word' }}>{alert.method} {alert.path}</div>
+                                                <div style={{ fontSize: '0.8rem', color: 'var(--gray-500)', wordBreak: 'break-word' }}>{alert.locationHint || 'Không rõ vị trí'} • {alert.detectedAt ? chuyenNgayGioISO_SangVN(alert.detectedAt) : 'Không rõ thời gian'}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        <div style={{ padding: '14px 16px', borderRadius: '12px', background: 'var(--danger-light)', color: 'var(--danger)', fontWeight: 750, border: '1px solid rgba(239,68,68,0.2)' }}>
+                            Lưu ý: hệ thống chặn tự động theo IP nguồn request/proxy. Nếu server chạy sau Cloudflare/Nginx, cần cấu hình proxy chuyển đúng IP thật qua X-Forwarded-For để tránh chặn nhầm IP gateway.
                         </div>
                     </div>
                 )}

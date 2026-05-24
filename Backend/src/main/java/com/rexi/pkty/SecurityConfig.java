@@ -92,7 +92,21 @@ public class SecurityConfig {
             "https://accounts.google.com"
         ));
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-        config.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept", "Origin"));
+        config.setAllowedHeaders(Arrays.asList(
+            "Authorization",
+            "Content-Type",
+            "Accept",
+            "Origin",
+            "X-AI-ACTION",
+            "X-Current-Path",
+            "X-Current-DOM-Context",
+            "X-User-Activity-Logs",
+            "X-User-Name",
+            "X-Forwarded-For",
+            "CF-IPCountry",
+            "X-Region",
+            "X-City"
+        ));
         config.setAllowCredentials(true);
         config.setMaxAge(3600L);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

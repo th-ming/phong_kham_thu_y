@@ -933,6 +933,34 @@ export const ChatBot: React.FC = () => {
         setProactiveMessage(null);
     };
 
+    useEffect(() => {
+        if (!isClinicStaff) return;
+
+        const handleSecurityAlert = (event: Event) => {
+            const alert = (event as CustomEvent).detail || {};
+            const detail = [
+                `IP ${alert.ip || "không rõ"}`,
+                alert.locationHint || "không rõ vị trí",
+                alert.attackType || "hành vi tấn công chưa phân loại",
+                `${alert.method || ""} ${alert.path || ""}`.trim()
+            ].filter(Boolean).join(" | ");
+
+            setProactiveMessage({
+                id: `security-${alert.id || Date.now()}`,
+                text: `CẢNH BÁO BẢO MẬT: ${detail}. Hệ thống đã tự động chặn IP này cho tới khi Admin gỡ khỏi danh sách chặn.`,
+                action: () => {
+                    const message = `Cảnh báo bảo mật realtime:\n- IP: ${alert.ip || "không rõ"}\n- Vị trí suy đoán: ${alert.locationHint || "không rõ"}\n- Hình thức: ${alert.attackType || "chưa phân loại"}\n- Đường dẫn: ${alert.method || ""} ${alert.path || ""}\n- Bằng chứng: ${alert.evidence || "không có"}\n\nTrạng thái: IP đã bị chặn tự động. Admin có thể vào Cấu hình hệ thống > Bảo mật để xem hoặc gỡ chặn nếu xác minh là nhầm.`;
+                    setActiveTab("agent");
+                    setIsOpen(true);
+                    setAgentMessages(prev => [...prev, { type: "ai", text: message }]);
+                }
+            });
+        };
+
+        window.addEventListener("rexi-security-alert", handleSecurityAlert);
+        return () => window.removeEventListener("rexi-security-alert", handleSecurityAlert);
+    }, [isClinicStaff]);
+
     const getElementAgentLabel = (el: Element) => {
         const input = el as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
         const labelByFor = input.id ? document.querySelector(`label[for="${input.id}"]`)?.textContent || "" : "";
