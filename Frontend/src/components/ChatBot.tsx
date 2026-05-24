@@ -154,7 +154,7 @@ const SwarmConsole: React.FC<{ data: SwarmData; isDark: boolean }> = ({ data, is
         }
     }, [currentStep, data.steps]);
 
-    // Fix E: Gửi email hàng loạt qua API thật
+    // Gửi email hàng loạt cho danh sách khách hàng qua API
     const handleApproveAndSend = async () => {
         setIsSending(true);
         setSendError("");
@@ -947,9 +947,12 @@ export const ChatBot: React.FC = () => {
 
             setProactiveMessage({
                 id: `security-${alert.id || Date.now()}`,
-                text: `CẢNH BÁO BẢO MẬT: ${detail}. Hệ thống đã tự động chặn IP này cho tới khi Admin gỡ khỏi danh sách chặn.`,
+                text: `CẢNH BÁO BẢO MẬT: ${detail}. Mức độ ${alert.severity || "HIGH"}. ${alert.riskSummary || "Hệ thống đã tự động chặn IP này cho tới khi Admin gỡ khỏi danh sách chặn."}`,
                 action: () => {
-                    const message = `Cảnh báo bảo mật realtime:\n- IP: ${alert.ip || "không rõ"}\n- Vị trí suy đoán: ${alert.locationHint || "không rõ"}\n- Hình thức: ${alert.attackType || "chưa phân loại"}\n- Đường dẫn: ${alert.method || ""} ${alert.path || ""}\n- Bằng chứng: ${alert.evidence || "không có"}\n\nTrạng thái: IP đã bị chặn tự động. Admin có thể vào Cấu hình hệ thống > Bảo mật để xem hoặc gỡ chặn nếu xác minh là nhầm.`;
+                    const recommendations = Array.isArray(alert.recommendedActions)
+                        ? alert.recommendedActions.map((item: string, index: number) => `${index + 1}. ${item}`).join("\n")
+                        : "1. Giữ IP trong danh sách chặn.\n2. Kiểm tra log quanh thời điểm cảnh báo.\n3. Chỉ gỡ chặn nếu xác minh là false-positive.";
+                    const message = `Cảnh báo bảo mật realtime:\n- IP: ${alert.ip || "không rõ"}\n- Vị trí suy đoán: ${alert.locationHint || "không rõ"}\n- Hình thức: ${alert.attackType || "chưa phân loại"}\n- Mức độ: ${alert.severity || "HIGH"}\n- Đường dẫn: ${alert.method || ""} ${alert.path || ""}\n- Bằng chứng: ${alert.evidence || "không có"}\n\nPhân tích: ${alert.riskSummary || "Request có dấu hiệu bất thường và đã bị chặn."}\n\nGợi ý xử lý:\n${recommendations}\n\nQuyết định đề xuất: ${alert.adminDecision || "Giữ IP trong danh sách chặn. Chỉ gỡ nếu xác minh là nhầm."}`;
                     setActiveTab("agent");
                     setIsOpen(true);
                     setAgentMessages(prev => [...prev, { type: "ai", text: message }]);
@@ -1253,7 +1256,7 @@ export const ChatBot: React.FC = () => {
                     return;
                 }
 
-                // Fix C: dùng axiosInstance để tự động đính kèm JWT token
+                // Dùng axiosInstance để tự động đính kèm Token JWT vào request
                 const response = await axiosInstance.get("/api/agent/retention-reminders");
                 const data = response.data;
                 if (cancelled) return;
@@ -2270,7 +2273,7 @@ export const ChatBot: React.FC = () => {
                 ...(videos.length > 0 && { videos })
             });
 
-            // Fix B: mở rộng keywords kích hoạt Swarm — bao phủ câu hỏi tự nhiên của người dùng
+            // Mở rộng các từ khóa kích hoạt cơ chế Swarm của khách hàng
             const isMarketingCampaign = normalizedText.includes("chiến dịch") ||
                                        normalizedText.includes("marketing") ||
                                        normalizedText.includes("gửi mail") ||
@@ -3354,7 +3357,7 @@ export const ChatBot: React.FC = () => {
                 content: textToSend
             });
 
-            // Fix B: mở rộng keywords kích hoạt Swarm trong Agent Tab
+            // Mở rộng từ khóa kích hoạt cơ chế Swarm bên tab Agent
             const isMarketingCampaign = query.includes("chiến dịch") ||
                                        query.includes("marketing") ||
                                        query.includes("gửi mail") ||

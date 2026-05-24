@@ -7,7 +7,7 @@ import { toast } from "@components/Toast";
 
 const chuyenNgayISO_SangVN = (dateString: string) => {
   if (!dateString) return "—";
-  // BẢO MẬT GIAO DIỆN: Chống lỗi lệch múi giờ
+  // Fix lệch múi giờ để giao diện hiển thị đúng giờ của Việt Nam
   const parts = dateString.split('T')[0].split('-');
   if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
   return dateString;
@@ -177,7 +177,7 @@ const HoaDonThanhToan: React.FC = () => {
       getInvoiceStatus(h) === 'da_thanh_toan' ? 'Đã thanh toán' : 'Chưa thanh toán'
     ]);
 
-    // BẢO MẬT: Chống CSV Injection bằng cách thêm dấu nháy đơn trước các ký tự nhạy cảm
+    // Tránh lỗi CSV Injection khi xuất hóa đơn bằng dấu nháy đơn
     const sanitizeCSV = (val: string) => {
       if (/^[=+\-@]/.test(val)) return `'${val}`;
       return val;

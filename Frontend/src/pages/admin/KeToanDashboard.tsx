@@ -272,7 +272,7 @@ const KeToanDashboard: React.FC = () => {
             inv.trang_thai?.toUpperCase() === 'DA_THANH_TOAN' ? 'Đã thu tiền' : 'Chờ thanh toán'
         ]);
 
-        // BẢO MẬT: Chống CSV Injection bằng cách thêm dấu nháy đơn trước các ký tự nhạy cảm
+        // Thêm dấu nháy đơn trước các ký tự nhạy cảm để chặn lỗi CSV Injection
         const sanitizeCSV = (val: string) => {
             if (/^[=+\-@]/.test(val)) return `'${val}`;
             return val;

@@ -144,7 +144,7 @@ const QuanLyHoaDon: React.FC = () => {
       h.ten_nhan_vien || 'Hệ thống'
     ]);
 
-    // BẢO MẬT: Chống CSV Injection bằng cách thêm dấu nháy đơn trước các ký tự nhạy cảm (=, +, -, @)
+    // Thêm dấu nháy đơn để tránh lỗi CSV Injection khi sếp xuất file hóa đơn
     const sanitizeCSV = (val: string) => {
       if (/^[=+\-@]/.test(val)) return `'${val}`;
       return val;
