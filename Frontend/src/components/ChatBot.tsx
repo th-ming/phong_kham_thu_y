@@ -1536,10 +1536,11 @@ export const ChatBot: React.FC = () => {
 
                 // CẢNH BÁO Y KHOA: LƯU BỆNH ÁN KHI ĐƠN THUỐC TRỐNG CHO CA FPV NẶNG
                 if (aiId === "button-quanlybenhan-1pce") {
-                    const chanDoanEl = document.querySelector('[data-ai-id="textarea-quanlybenhan-chandoan"]') as HTMLTextAreaElement;
+                    const chanDoanEl = findVisibleControlByKeywords<HTMLTextAreaElement>("textarea", ["chẩn đoán", "chan doan", "diagnosis"])
+                        || document.querySelector('[data-ai-id="textarea-quanlybenhan-chandoan"]') as HTMLTextAreaElement;
                     const diagnosis = chanDoanEl?.value?.toLowerCase() || "";
                     if (diagnosis.includes("fpv") || diagnosis.includes("parvo") || diagnosis.includes("giảm bạch cầu") || diagnosis.includes("giam bach cau")) {
-                        const selectEls = document.querySelectorAll('[data-ai-id="select-quanlybenhan-dttd"]');
+                        const selectEls = findVisibleControlsByKeywords<HTMLSelectElement>("select", ["thuốc", "thuoc", "dược", "duoc", "đơn thuốc", "don thuoc"]);
                         if (selectEls.length === 0) {
                             e.preventDefault();
                             e.stopPropagation();
