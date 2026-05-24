@@ -22,10 +22,8 @@ Timeout: 5000ms
 Call log:
   - Expect "toContainText" with timeout 5000ms
   - waiting for locator('#chatWindow')
-    7 × locator resolved to <div id="chatWindow" class="glass-card animate-fade-in">…</div>
-      - unexpected value "Rexi Agent v2 🤖volume_offrestart_altclosechatTrợ lý Rexismart_toyTác vụ Agent v2Chào buổi tối Sen Trần Minh! 🐾 Tôi là Rexi Agent v2 - Trợ lý Tác vụ AI. Tôi có thể hỗ trợ đặt lịch khám, tra cứu lịch trực bác sĩ và tìm tài liệu thú y chuẩn xác. Sen muốn Rexi làm gì hôm nay ạ?Đặt lịch khám ngày 20-05-2020Tự điền lịch khámTìm hóa đơnMở hồ sơ y tếTìm tài liệu mèo mang thaiSơ cứu hóc xươngmic_nonesend"
-    6 × locator resolved to <div id="chatWindow" class="glass-card animate-fade-in">…</div>
-      - unexpected value "Rexi Agent v2 🤖volume_offrestart_altclosechatTrợ lý Rexismart_toyTác vụ Agent v2Chào buổi tối Sen Trần Minh! 🐾 Tôi là Rexi Agent v2 - Trợ lý Tác vụ AI. Tôi có thể hỗ trợ đặt lịch khám, tra cứu lịch trực bác sĩ và tìm tài liệu thú y chuẩn xác. Sen muốn Rexi làm gì hôm nay ạ?Đặt lịch khám ngày 20-05-2020Xin lỗi, đã xảy ra lỗi từ hệ thống khi tạo lịch hẹn. Bạn vui lòng thử lại sau nhé!Tự điền lịch khámTìm hóa đơnMở hồ sơ y tếTìm tài liệu mèo mang thaiSơ cứu hóc xươngmic_nonesend"
+    13 × locator resolved to <div id="chatWindow" class="glass-card animate-fade-in">…</div>
+       - unexpected value "Rexi Agent v2 🤖volume_offrestart_altclosechatTrợ lý Rexismart_toyTác vụ Agent v2Chào buổi tối Sen Trần Minh! 🐾 Tôi là Rexi Agent v2 - Trợ lý Tác vụ AI. Tôi có thể hỗ trợ đặt lịch khám, tra cứu lịch trực bác sĩ và tìm tài liệu thú y chuẩn xác. Sen muốn Rexi làm gì hôm nay ạ?Đặt lịch khám ngày 20-05-2020Xin lỗi, đã xảy ra lỗi từ hệ thống khi tạo lịch hẹn. Bạn vui lòng thử lại sau nhé!Tự điền lịch khámTìm hóa đơnMở hồ sơ y tếTìm tài liệu mèo mang thaiSơ cứu hóc xươngmic_nonesend"
 
 ```
 

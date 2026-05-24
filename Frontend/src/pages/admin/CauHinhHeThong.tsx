@@ -691,6 +691,7 @@ const CauHinhHeThong: React.FC = () => {
                                     <input type="text" className="form-input" value={configs.openrouter_model || ''} onChange={e => setConfigs({...configs, openrouter_model: e.target.value})} placeholder="deepseek/deepseek-v4-flash:free" />
                                     {renderAiTestPanel('openrouter')}
                                 </div>
+
                             </div>
                         </div>
 

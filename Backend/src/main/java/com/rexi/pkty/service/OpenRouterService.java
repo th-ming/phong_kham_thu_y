@@ -14,8 +14,10 @@ import java.net.http.*;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 public class OpenRouterService {
@@ -37,15 +39,34 @@ public class OpenRouterService {
     }
 
     private String getApiKey() {
+        List<String> keys = getApiKeys();
+        return keys.isEmpty() ? "" : keys.get(0);
+    }
+
+    private List<String> getApiKeys() {
+        Set<String> keys = new LinkedHashSet<>();
         try {
-            String dbKey = jdbcTemplate.queryForObject(
-                "SELECT gia_tri FROM CauHinhHeThong WHERE ten_cau_hinh = 'openrouter_api_key'", 
-                String.class);
-            if (dbKey != null && !dbKey.trim().isEmpty()) {
-                return dbKey.trim();
+            List<String> dbKeys = jdbcTemplate.queryForList(
+                    "SELECT gia_tri FROM CauHinhHeThong "
+                            + "WHERE ten_cau_hinh LIKE 'openrouter_api_key%' "
+                            + "ORDER BY CASE WHEN ten_cau_hinh = 'openrouter_api_key' THEN 0 ELSE 1 END, ten_cau_hinh",
+                    String.class);
+            for (String dbKey : dbKeys) {
+                addKeys(keys, dbKey);
             }
         } catch (Exception e) {}
-        return apiKey;
+        addKeys(keys, apiKey);
+        return new ArrayList<>(keys);
+    }
+
+    private void addKeys(Set<String> keys, String rawValue) {
+        if (rawValue == null) return;
+        for (String key : rawValue.split(",")) {
+            String trimmed = key.trim();
+            if (!trimmed.isEmpty()) {
+                keys.add(trimmed);
+            }
+        }
     }
 
     private static final Logger logger = java.util.logging.Logger.getLogger(OpenRouterService.class.getName());
@@ -58,6 +79,16 @@ public class OpenRouterService {
     @Value("${openrouter.model:deepseek/deepseek-v4-flash:free}")
     private String modelName;
 
+    private static final List<String> FREE_FALLBACK_MODELS = List.of(
+            "openrouter/free",
+            "deepseek/deepseek-v4-flash:free",
+            "openrouter/owl-alpha",
+            "baidu/cobuddy:free",
+            "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+            "poolside/laguna-m.1:free",
+            "poolside/laguna-xs.2:free"
+    );
+
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     private final HttpClient client = HttpClient.newBuilder()
@@ -65,8 +96,8 @@ public class OpenRouterService {
             .build();
 
     public String chat(List<ChatMessage> history) throws Exception {
-        String currentApiKey = getApiKey();
-        if (currentApiKey == null || currentApiKey.trim().isEmpty()) {
+        List<String> apiKeys = getApiKeys();
+        if (apiKeys.isEmpty()) {
             throw new RuntimeException("Không tìm thấy OpenRouter API Key nào được cấu hình!");
         }
 
@@ -84,9 +115,54 @@ public class OpenRouterService {
             }
         }
 
+        Exception lastException = null;
+        for (String currentApiKey : apiKeys) {
+            for (String candidateModel : getCandidateModels()) {
+                try {
+                    HttpResponse<String> response = callOpenRouter(currentApiKey, candidateModel, messagesForApi);
+                    if (response.statusCode() == 200) {
+                        return parseOpenRouterReply(response.body(), candidateModel);
+                    }
+
+                    RuntimeException apiException = new RuntimeException(
+                            "OpenRouter API Error " + response.statusCode() + " (" + candidateModel + "): " + response.body());
+                    lastException = apiException;
+                    if (!shouldTryNextModel(response.statusCode(), response.body())) {
+                        throw apiException;
+                    }
+                    logger.warning("OpenRouter key/model lỗi, thử dự phòng tiếp theo. model="
+                            + candidateModel + " status=" + response.statusCode());
+                } catch (Exception e) {
+                    lastException = e;
+                    if (!shouldTryNextModel(e)) {
+                        throw e;
+                    }
+                    logger.warning("OpenRouter key/model không khả dụng, thử dự phòng tiếp theo. model="
+                            + candidateModel + " error=" + e.getMessage());
+                }
+            }
+        }
+
+        throw new RuntimeException("Tất cả OpenRouter free model đều không khả dụng: "
+                + (lastException != null ? lastException.getMessage() : "không rõ lỗi"));
+    }
+
+    private List<String> getCandidateModels() {
+        Set<String> models = new LinkedHashSet<>();
+        String configuredModel = getModelName();
+        if (configuredModel != null && !configuredModel.trim().isEmpty()) {
+            models.add(configuredModel.trim());
+        }
+        models.addAll(FREE_FALLBACK_MODELS);
+        return new ArrayList<>(models);
+    }
+
+    private HttpResponse<String> callOpenRouter(String currentApiKey, String selectedModel,
+            List<Map<String, Object>> messagesForApi) throws Exception {
         Map<String, Object> requestBodyMap = Map.of(
-                "model", getModelName(),
-                "messages", messagesForApi);
+                "model", selectedModel,
+                "messages", messagesForApi,
+                "max_tokens", 2048);
 
         String requestBody = objectMapper.writeValueAsString(requestBodyMap);
 
@@ -94,26 +170,55 @@ public class OpenRouterService {
                 .uri(URI.create(OPENROUTER_API_URL))
                 .header("Content-Type", "application/json")
                 .header("Authorization", "Bearer " + currentApiKey)
-                .header("HTTP-Referer", "http://localhost:3000") // Required for OpenRouter
+                .header("HTTP-Referer", "http://localhost:3000")
                 .header("X-Title", "Rexi Vet Clinic")
                 .POST(HttpRequest.BodyPublishers.ofString(requestBody, StandardCharsets.UTF_8))
                 .timeout(Duration.ofSeconds(25))
                 .build();
 
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        return client.send(request, HttpResponse.BodyHandlers.ofString());
+    }
 
-        if (response.statusCode() != 200) {
-            logger.severe("OpenRouter API Error - Status: " + response.statusCode() + " Body: " + response.body());
-            throw new RuntimeException("OpenRouter API Error " + response.statusCode() + ": " + response.body());
-        }
-
-        JsonNode rootNode = objectMapper.readTree(response.body());
+    private String parseOpenRouterReply(String responseBody, String selectedModel) throws Exception {
+        JsonNode rootNode = objectMapper.readTree(responseBody);
         try {
             return rootNode.path("choices").get(0).path("message").path("content").asText();
         } catch (Exception e) {
-            logger.severe("Lỗi parse phản hồi từ OpenRouter. Nội dung: " + response.body());
-            throw new RuntimeException("Lỗi Parse OpenRouter: " + response.body());
+            logger.severe("Lỗi parse phản hồi từ OpenRouter model " + selectedModel + ". Nội dung: " + responseBody);
+            throw new RuntimeException("Lỗi Parse OpenRouter (" + selectedModel + "): " + responseBody);
         }
+    }
+
+    private boolean shouldTryNextModel(int statusCode, String responseBody) {
+        String body = responseBody == null ? "" : responseBody.toLowerCase();
+        return statusCode == 400
+                || statusCode == 402
+                || statusCode == 404
+                || statusCode == 408
+                || statusCode == 409
+                || statusCode == 429
+                || statusCode >= 500
+                || body.contains("rate-limited")
+                || body.contains("no endpoints")
+                || body.contains("insufficient_quota")
+                || body.contains("not a valid model");
+    }
+
+    private boolean shouldTryNextModel(Exception e) {
+        String message = e.getMessage() == null ? "" : e.getMessage().toLowerCase();
+        return message.contains("timeout")
+                || message.contains("timed out")
+                || message.contains("rate")
+                || message.contains("quota")
+                || message.contains("402")
+                || message.contains("404")
+                || message.contains("429")
+                || message.contains("500")
+                || message.contains("502")
+                || message.contains("503")
+                || message.contains("504")
+                || message.contains("no endpoints")
+                || message.contains("not a valid model");
     }
 
     private String normalizeVietnamese(String input) {

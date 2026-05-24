@@ -15,8 +15,10 @@ import java.net.http.*;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 public class GroqService {
@@ -65,15 +67,34 @@ public class GroqService {
     private String visionModelName;
 
     private String getApiKey() {
+        List<String> keys = getApiKeys();
+        return keys.isEmpty() ? "" : keys.get(0);
+    }
+
+    private List<String> getApiKeys() {
+        Set<String> keys = new LinkedHashSet<>();
         try {
-            String dbKey = jdbcTemplate.queryForObject(
-                "SELECT gia_tri FROM CauHinhHeThong WHERE ten_cau_hinh = 'groq_api_key'", 
-                String.class);
-            if (dbKey != null && !dbKey.trim().isEmpty()) {
-                return dbKey.trim();
+            List<String> dbKeys = jdbcTemplate.queryForList(
+                    "SELECT gia_tri FROM CauHinhHeThong "
+                            + "WHERE ten_cau_hinh LIKE 'groq_api_key%' "
+                            + "ORDER BY CASE WHEN ten_cau_hinh = 'groq_api_key' THEN 0 ELSE 1 END, ten_cau_hinh",
+                    String.class);
+            for (String dbKey : dbKeys) {
+                addKeys(keys, dbKey);
             }
         } catch (Exception e) {}
-        return apiKey;
+        addKeys(keys, apiKey);
+        return new ArrayList<>(keys);
+    }
+
+    private void addKeys(Set<String> keys, String rawValue) {
+        if (rawValue == null) return;
+        for (String key : rawValue.split(",")) {
+            String trimmed = key.trim();
+            if (!trimmed.isEmpty()) {
+                keys.add(trimmed);
+            }
+        }
     }
 
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -127,35 +148,42 @@ public class GroqService {
 
         String requestBody = objectMapper.writeValueAsString(requestBodyMap);
 
-        String currentApiKey = getApiKey();
-        if (currentApiKey == null || currentApiKey.trim().isEmpty()) {
+        List<String> apiKeys = getApiKeys();
+        if (apiKeys.isEmpty()) {
             throw new RuntimeException("Không tìm thấy Groq API Key nào được cấu hình!");
         }
 
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(GROQ_API_URL))
-                .header("Content-Type", "application/json")
-                .header("Authorization", "Bearer " + currentApiKey)
-                .POST(HttpRequest.BodyPublishers.ofString(requestBody, StandardCharsets.UTF_8))
-                .timeout(Duration.ofSeconds(15)) // Set timeout tối đa 15s cho thời gian sinh câu trả lời
-                .build();
+        Exception lastException = null;
+        for (int i = 0; i < apiKeys.size(); i++) {
+            String currentApiKey = apiKeys.get(i);
+            try {
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(URI.create(GROQ_API_URL))
+                        .header("Content-Type", "application/json")
+                        .header("Authorization", "Bearer " + currentApiKey)
+                        .POST(HttpRequest.BodyPublishers.ofString(requestBody, StandardCharsets.UTF_8))
+                        .timeout(Duration.ofSeconds(15))
+                        .build();
 
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+                HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+                if (response.statusCode() != 200) {
+                    logger.warning("Groq key lỗi, thử key dự phòng tiếp theo. keyIndex=" + i
+                            + " status=" + response.statusCode());
+                    lastException = new RuntimeException("Groq API Error " + response.statusCode() + ": " + response.body());
+                    continue;
+                }
 
-        // Xử lý lỗi API - log chi tiết để debug
-        if (response.statusCode() != 200) {
-            logger.severe("Groq API Error - Status: " + response.statusCode() + " Body: " + response.body());
-
-            // Ném lỗi để ChatController có thể thực hiện Fallback sang Gemini
-            throw new RuntimeException("Groq API Error " + response.statusCode());
+                JsonNode rootNode = objectMapper.readTree(response.body());
+                return rootNode.path("choices").get(0).path("message").path("content").asText();
+            } catch (Exception e) {
+                lastException = e;
+                logger.warning("Groq key không khả dụng, thử key dự phòng tiếp theo. keyIndex=" + i
+                        + " error=" + e.getMessage());
+            }
         }
 
-        JsonNode rootNode = objectMapper.readTree(response.body());
-        try {
-            return rootNode.path("choices").get(0).path("message").path("content").asText();
-        } catch (Exception e) {
-            return "Tôi rất lo cho bé nhưng hệ thống đang trục trặc. Bạn hãy đưa bé đến Rexi sớm để bác sĩ kiểm tra cho yên tâm nhé!";
-        }
+        throw new RuntimeException("Tất cả Groq API Key đều thất bại: "
+                + (lastException != null ? lastException.getMessage() : "không rõ lỗi"));
     }
 
     public void streamChat(List<ChatMessage> history, SseEmitter emitter) throws Exception {

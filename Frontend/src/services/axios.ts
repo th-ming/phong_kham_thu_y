@@ -27,8 +27,21 @@ axiosInstance.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
     
-    // Đính kèm tag hành động AI nếu có
-    if ((window as any).__AI_ACTION_TAG__) {
+    const requestUrl = config.url || '';
+    const isChatRequest = requestUrl.includes('/api/chat');
+
+    // Đính kèm tag hành động AI nếu có. Không bao giờ gắn header này vào chat thường,
+    // vì tag Autopilot cũ có thể làm backend chặn /api/chat với 403.
+    if (isChatRequest) {
+        (window as any).__AI_ACTION_TAG__ = undefined;
+        const headers = config.headers as any;
+        if (typeof headers?.delete === 'function') {
+            headers.delete('X-AI-ACTION');
+            headers.delete('x-ai-action');
+        }
+        delete headers?.['X-AI-ACTION'];
+        delete headers?.['x-ai-action'];
+    } else if ((window as any).__AI_ACTION_TAG__) {
         config.headers['X-AI-ACTION'] = (window as any).__AI_ACTION_TAG__;
     }
     
