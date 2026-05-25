@@ -344,7 +344,9 @@ ChatMessage systemMsg = new ChatMessage();
             // Tập hợp từ khóa y tế mở rộng bao gồm cả viết tắt, tiếng lóng, từ địa phương và gõ sai bộ gõ telex
             boolean isMedicalQuery = isMedicalQuery(normalizedQuery);
 
-            if (acceptHeader != null && acceptHeader.contains("text/event-stream")) {
+            // CHỐT CHẶN BẢO MẬT STREAMING: Chỉ cho phép Stream nếu không có hình ảnh/video và không phải câu hỏi y tế
+            // Nếu có Media hoặc là Y tế, bẻ luồng sang xử lý đồng bộ để Gemini và DeepSeek xử lý
+            if (acceptHeader != null && acceptHeader.contains("text/event-stream") && !hasMedia && !isMedicalQuery) {
                 org.springframework.web.servlet.mvc.method.annotation.SseEmitter emitter = new org.springframework.web.servlet.mvc.method.annotation.SseEmitter(-1L);
                 try {
                     // Tạm thời bỏ qua lưu log DB cho stream để tối ưu hiệu năng

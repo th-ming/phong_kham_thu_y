@@ -99,11 +99,24 @@ const PhanDoiTac: React.FC = () => {
                         </div>
                     </div>
 
+                    <svg aria-hidden="true" className="partner-logo-filters" focusable="false">
+                        <defs>
+                            {/* Tách nền trắng PNG — chỉ giữ phần màu của logo */}
+                            {/* Dark mode: tách nền trắng nhẹ — giữ màu logo đậm, không làm mờ */}
+                            <filter id="partner-logo-knockout-soft" colorInterpolationFilters="sRGB">
+                                <feColorMatrix
+                                    type="matrix"
+                                    values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  -0.88 -0.88 -0.88 1 0.12"
+                                />
+                            </filter>
+                        </defs>
+                    </svg>
+
                     <div className="responsive-grid-2">
                         {partners.map((partner) => (
                             <div key={partner.name} className="partner-card-new">
-                                <div className="partner-logo-box">
-                                    <img src={partner.logo} alt={partner.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                                <div className="partner-logo-box" style={{ '--partner-accent': partner.color } as React.CSSProperties}>
+                                    <img src={partner.logo} alt={partner.name} className="partner-logo-img" loading="lazy" />
                                 </div>
                                 <div>
                                     <div style={{ fontWeight: 800, color: 'var(--ink)', marginBottom: '4px', fontSize: '1rem' }}>{partner.name}</div>
@@ -129,31 +142,108 @@ const PhanDoiTac: React.FC = () => {
                 .stat-card-light:hover { transform: translateY(-5px); box-shadow: var(--shadow-xl); border-color: var(--primary); }
                 
                 .partner-card-new {
-                    background: var(--surface);
+                    background: color-mix(in srgb, var(--surface) 88%, transparent);
                     border-radius: 28px;
                     padding: 24px;
-                    border: 1px solid var(--gray-200);
+                    border: 1px solid color-mix(in srgb, var(--gray-200) 75%, transparent);
                     box-shadow: var(--shadow-sm);
-                    transition: all 0.4s ease;
+                    transition: transform 0.4s ease, box-shadow 0.4s ease, border-color 0.4s ease;
                     display: flex;
                     flex-direction: column;
                     gap: 16px;
                 }
-                .partner-card-new:hover { transform: translateY(-5px); box-shadow: var(--shadow-xl); border-color: var(--primary); }
-                
+                .partner-card-new:hover {
+                    transform: translateY(-5px);
+                    box-shadow: var(--shadow-xl);
+                    border-color: color-mix(in srgb, var(--primary) 45%, var(--gray-200));
+                }
+
+                [data-theme='dark'] .partner-card-new {
+                    background: color-mix(in srgb, var(--surface) 72%, transparent);
+                    border-color: color-mix(in srgb, var(--primary) 18%, var(--gray-200));
+                    box-shadow: 0 10px 36px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+                }
+                [data-theme='dark'] .partner-card-new:hover {
+                    border-color: color-mix(in srgb, var(--primary) 55%, transparent);
+                    box-shadow:
+                        0 14px 42px rgba(0, 0, 0, 0.45),
+                        0 0 28px color-mix(in srgb, var(--primary) 22%, transparent);
+                }
+
+                .partner-logo-filters {
+                    position: absolute;
+                    width: 0;
+                    height: 0;
+                    overflow: hidden;
+                    pointer-events: none;
+                }
+
                 .partner-logo-box {
+                    --partner-accent: var(--primary);
                     width: 100%;
-                    height: 120px;
+                    min-height: 128px;
+                    height: 128px;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    background: var(--background);
+                    position: relative;
                     border-radius: 18px;
-                    padding: 4px;
-                    transition: all 0.3s ease;
-                    border: 1px solid var(--gray-200);
+                    padding: 10px 14px;
+                    transition: border-color 0.35s ease, background 0.35s ease;
+                    border: 1px solid color-mix(in srgb, var(--gray-200) 55%, transparent);
+                    /* Nền xám nhạt: multiply xóa trắng PNG mà logo vẫn đậm */
+                    background: color-mix(in srgb, var(--gray-100) 85%, var(--surface));
                 }
-                .partner-card-new:hover .partner-logo-box { background: var(--primary-light); border-color: var(--primary); }
+                [data-theme='dark'] .partner-logo-box {
+                    background: color-mix(in srgb, var(--background) 92%, var(--partner-accent) 8%);
+                    border-color: color-mix(in srgb, var(--gray-200) 28%, transparent);
+                }
+                .partner-card-new:hover .partner-logo-box {
+                    border-color: color-mix(in srgb, var(--partner-accent) 35%, var(--gray-200));
+                }
+
+                /* Light: logo gốc rõ — không dùng knockout */
+                .partner-logo-img {
+                    display: block;
+                    width: auto;
+                    max-width: min(100%, 200px);
+                    height: auto;
+                    max-height: 96px;
+                    min-height: 56px;
+                    object-fit: contain;
+                    transition: transform 0.35s ease, filter 0.35s ease;
+                    mix-blend-mode: multiply;
+                    filter: contrast(1.12) saturate(1.15);
+                    opacity: 1;
+                }
+
+                /* Dark: knockout nhẹ + sáng rõ + glow sát logo (blur nhỏ) */
+                [data-theme='dark'] .partner-logo-img {
+                    mix-blend-mode: normal;
+                    opacity: 1;
+                    filter:
+                        url(#partner-logo-knockout-soft)
+                        contrast(1.28)
+                        brightness(1.32)
+                        saturate(1.22)
+                        drop-shadow(0 0 2px var(--partner-accent))
+                        drop-shadow(0 0 8px color-mix(in srgb, var(--partner-accent) 88%, transparent))
+                        drop-shadow(0 0 16px color-mix(in srgb, var(--partner-accent) 45%, transparent));
+                }
+                .partner-card-new:hover .partner-logo-img {
+                    transform: scale(1.05);
+                    filter: contrast(1.15) saturate(1.2);
+                }
+                [data-theme='dark'] .partner-card-new:hover .partner-logo-img {
+                    filter:
+                        url(#partner-logo-knockout-soft)
+                        contrast(1.35)
+                        brightness(1.42)
+                        saturate(1.28)
+                        drop-shadow(0 0 3px var(--partner-accent))
+                        drop-shadow(0 0 12px color-mix(in srgb, var(--partner-accent) 95%, transparent))
+                        drop-shadow(0 0 22px color-mix(in srgb, var(--partner-accent) 55%, transparent));
+                }
 
                 @media (max-width: 992px) {
                     .stat-card-light { padding: 24px; }

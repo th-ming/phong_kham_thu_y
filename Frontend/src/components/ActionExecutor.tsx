@@ -5,7 +5,7 @@ import { confirmAction } from './ConfirmModal';
  * Execute a single AI action tag.
  * Supported tags: CLICK, FILL, TOGGLE, SELECT, DELETE, SCROLL
  */
-export const executeAction = async (tag: string) => {
+export const executeAction = async (tag: string, skipConfirm: boolean = false) => {
   try {
     const match = tag.match(/^\[(CLICK|FILL|TOGGLE|SELECT|DELETE|SCROLL):([^\]]+)\]$/);
     if (!match) return;
@@ -129,11 +129,14 @@ export const executeAction = async (tag: string) => {
       }
       case 'DELETE': {
         // HÀNH ĐỘNG NHẠY CẢM: Bắt buộc gọi Modal xác nhận trước khi thực thi
-        window.dispatchEvent(new CustomEvent('agent-action', {
-          detail: { type: 'PROGRESS', tag, message: `Đang chờ sếp xác nhận lệnh XÓA: ${payload}` }
-        }));
-        const isConfirmed = await confirmAction(`AI đang cố gắng thực thi lệnh XÓA "${payload}". Bạn có chắc chắn muốn cho phép hành động này không?`);
-        if (isConfirmed) {
+        let isActionConfirmed = skipConfirm;
+        if (!isActionConfirmed) {
+          window.dispatchEvent(new CustomEvent('agent-action', {
+            detail: { type: 'PROGRESS', tag, message: `Đang chờ sếp xác nhận lệnh XÓA: ${payload}` }
+          }));
+          isActionConfirmed = await confirmAction(`AI đang cố gắng thực thi lệnh XÓA "${payload}". Bạn có chắc chắn muốn cho phép hành động này không?`);
+        }
+        if (isActionConfirmed) {
           const el = document.querySelector(`[data-ai-id="${payload}"]`) as HTMLElement;
           if (el) {
             triggerClickWithTag(el, `DELETE:${payload}`);

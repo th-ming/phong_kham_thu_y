@@ -1,7 +1,9 @@
 package com.rexi.pkty.controller;
 
+import com.rexi.pkty.security.RexiSecurityRoles;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,6 +18,7 @@ public class HoSoBenhAnController {
     private com.rexi.pkty.service.GeminiService geminiService;
 
     @GetMapping("/ai-summary/{idKhachHang}")
+    @PreAuthorize(RexiSecurityRoles.CLINICAL_READ)
     public org.springframework.http.ResponseEntity<?> getAISummary(@PathVariable String idKhachHang) {
         try {
             String sql = "SELECT hs.ngay_kham, hs.trieu_chung, hs.chan_doan, hs.phac_do_dieu_tri, hs.huong_dan_cham_soc " +
@@ -53,14 +56,11 @@ public class HoSoBenhAnController {
     private com.rexi.pkty.service.AuditLogService auditLogService;
 
     @GetMapping
+    @PreAuthorize(RexiSecurityRoles.CLINICAL_READ)
     public org.springframework.http.ResponseEntity<?> getAllHoSoBenhAn(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "50") int size,
             @RequestParam(required = false) String search) {
-        if (!hasMedicalPermission()) {
-            return org.springframework.http.ResponseEntity.status(403)
-                    .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền xem danh sách bệnh án tổng quát!"));
-        }
         int offset = page * size;
         StringBuilder where = new StringBuilder("WHERE 1=1");
         java.util.List<Object> params = new java.util.ArrayList<>();
@@ -171,12 +171,10 @@ public class HoSoBenhAnController {
     }
 
     @GetMapping("/don-thuoc")
+    @PreAuthorize(RexiSecurityRoles.CLINICAL_READ)
     public List<Map<String, Object>> getAllDonThuoc(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        if (!hasMedicalPermission()) {
-            return List.of(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền xem danh sách đơn thuốc!"));
-        }
         int offset = page * size;
         String sql = "SELECT dt.id_don_thuoc, dt.id_ho_so_benh_an, tc.ten_thu_cung, " +
                 "t.ten_thuoc, dtct.so_luong, dtct.lieu_dung as cach_dung, dt.ghi_chu, " +
@@ -194,12 +192,10 @@ public class HoSoBenhAnController {
     }
 
     @GetMapping("/xet-nghiem")
+    @PreAuthorize(RexiSecurityRoles.CLINICAL_READ)
     public List<Map<String, Object>> getAllXetNghiem(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        if (!hasMedicalPermission()) {
-            return List.of(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền xem danh sách xét nghiệm!"));
-        }
         int offset = page * size;
         String sql = "SELECT baxn.id_ba_xn as id_xet_nghiem_benh_an, lxn.ten_xet_nghiem, " +
                 "baxn.id_benh_an as id_ho_so, baxn.ngay_chi_dinh as ngay_lay_mau, " +
@@ -223,11 +219,8 @@ public class HoSoBenhAnController {
     }
 
     @PostMapping
+    @PreAuthorize(RexiSecurityRoles.CLINICAL_WRITE)
     public org.springframework.http.ResponseEntity<?> taoHoSoBenhAn(@RequestBody Map<String, Object> payload) {
-        if (!hasMedicalPermission()) {
-            return org.springframework.http.ResponseEntity.status(403)
-                    .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền tạo hồ sơ bệnh án!"));
-        }
         try {
             String idThuCung = String.valueOf(payload.get("id_thu_cung"));
             String idBacSi = String.valueOf(payload.get("id_bac_si"));

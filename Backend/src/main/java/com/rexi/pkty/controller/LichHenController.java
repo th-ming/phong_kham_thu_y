@@ -2,8 +2,10 @@ package com.rexi.pkty.controller;
 
 import com.rexi.pkty.entity.LichHen;
 import com.rexi.pkty.repository.LichHenRepository;
+import com.rexi.pkty.security.RexiSecurityRoles;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -380,15 +382,12 @@ public class LichHenController {
     }
 
     @GetMapping
+    @PreAuthorize(RexiSecurityRoles.APPOINTMENT_READ)
     public ResponseEntity<?> getAll(
             @RequestParam(required = false) Integer page,
             @RequestParam(required = false) Integer size,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String search) {
-        if (!isInternalUser()) {
-            return ResponseEntity.status(403).body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền truy cập danh sách lịch hẹn tổng quát!"));
-        }
-
         // Tự xây câu SQL lọc dữ liệu theo trạng thái (status) hoặc thanh tìm kiếm (search) sếp chọn
         StringBuilder where = new StringBuilder("WHERE 1=1");
         java.util.List<Object> params = new java.util.ArrayList<>();
@@ -453,10 +452,8 @@ public class LichHenController {
     }
 
     @GetMapping("/hom-nay")
+    @PreAuthorize(RexiSecurityRoles.APPOINTMENT_READ)
     public ResponseEntity<?> getTodayAppointments() {
-        if (!isInternalUser()) {
-            return ResponseEntity.status(403).body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền xem lịch hẹn hôm nay!"));
-        }
         return ResponseEntity.ok(jdbcTemplate.queryForList(
                 "SELECT lh.*, kh.ten_khach_hang, kh.sdt, tc.ten_thu_cung, nv.ho_ten as ten_bac_si, dv.ten_dich_vu " +
                         "FROM LichHen lh " +

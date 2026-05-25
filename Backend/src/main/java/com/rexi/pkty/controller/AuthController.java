@@ -1080,14 +1080,7 @@ public class AuthController {
                             tk.getId_vai_tro());
                     String roleName = roles.isEmpty() ? "KHACH_HANG" : roles.get(0).toLowerCase();
 
-                    String loaiTaiKhoan = "KHACH_HANG";
-                    if (roleName.contains("admin") || roleName.contains("quản lý"))
-                        loaiTaiKhoan = "ADMIN";
-                    else if (roleName.contains("bác sĩ") || roleName.contains("doctor"))
-                        loaiTaiKhoan = "BAC_SI";
-                    else if (roleName.contains("tiếp tân") || roleName.contains("y tá")
-                            || roleName.contains("nhân viên") || roleName.contains("kế toán"))
-                        loaiTaiKhoan = "STAFF";
+                    String loaiTaiKhoan = resolveRoleCodeFromDb(tk.getId_vai_tro(), roleName);
 
                     String newToken = jwtUtil.generateToken(username, loaiTaiKhoan);
                     return ResponseEntity.ok(Map.of("token", newToken));
@@ -1099,6 +1092,29 @@ public class AuthController {
             logger.warning("Lỗi làm mới Token: " + e.getMessage());
         }
         return ResponseEntity.status(401).body(Map.of("message", "Refresh Token không hợp lệ hoặc đã hết hạn"));
+    }
+
+    /** Mã role JWT — khớp {@link org.springframework.security.access.prepost.PreAuthorize} (ROLE_*). */
+    private String resolveRoleCodeFromDb(String idVaiTro, String roleNameFromDb) {
+        if (idVaiTro != null) {
+            if (idVaiTro.equals("VT-1") || idVaiTro.contains("ADMIN")) return "ADMIN";
+            if (idVaiTro.equals("VT-6") || idVaiTro.contains("QL")) return "QUAN_LY";
+            if (idVaiTro.equals("VT-2") || idVaiTro.contains("BS")) return "BAC_SI";
+            if (idVaiTro.equals("VT-4") || idVaiTro.contains("KT")) return "KE_TOAN";
+            if (idVaiTro.equals("VT-7") || idVaiTro.contains("TT")) return "TIEP_TAN";
+            if (idVaiTro.equals("VT-8") || idVaiTro.contains("YT")) return "Y_TA";
+            if (idVaiTro.equals("VT-3") || idVaiTro.contains("NV")) return "STAFF";
+            if (idVaiTro.equals("VT-5")) return "CUSTOMER";
+        }
+        String roleName = roleNameFromDb != null ? roleNameFromDb.toLowerCase() : "";
+        if (roleName.contains("admin") || roleName.contains("quản trị")) return "ADMIN";
+        if (roleName.contains("quản lý") || roleName.contains("quan ly")) return "QUAN_LY";
+        if (roleName.contains("bác sĩ") || roleName.contains("bac si") || roleName.contains("doctor")) return "BAC_SI";
+        if (roleName.contains("kế toán") || roleName.contains("ke toan")) return "KE_TOAN";
+        if (roleName.contains("tiếp tân") || roleName.contains("tiep tan")) return "TIEP_TAN";
+        if (roleName.contains("y tá") || roleName.contains("y ta")) return "Y_TA";
+        if (roleName.contains("nhân viên") || roleName.contains("nhan vien")) return "STAFF";
+        return "CUSTOMER";
     }
 
 }

@@ -2,7 +2,9 @@ package com.rexi.pkty.controller;
 
 import com.rexi.pkty.dto.ChatMessage;
 import com.rexi.pkty.security.RoleAccessPolicy;
+import com.rexi.pkty.security.RexiSecurityRoles;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -127,26 +129,8 @@ public class AgentController {
      * Nhận yêu cầu phức tạp từ giao diện và trả về chuỗi log thảo luận ngầm của các Agent phụ tá y khoa
      */
     @PostMapping("/swarm-orchestration")
+    @PreAuthorize(RexiSecurityRoles.MARKETING)
     public ResponseEntity<?> handleSwarmOrchestration(@RequestBody Map<String, String> payload) {
-        org.springframework.security.core.Authentication auth =
-            org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
-        String userRole = "";
-        if (auth != null) {
-            userRole = auth.getAuthorities().stream()
-                .findFirst().map(g -> g.getAuthority().replace("ROLE_", "")).orElse("");
-        }
-        if (!isCurrentUserStaff()) {
-            return ResponseEntity.status(403).body(Map.of(
-                "reply", "Tài khoản khách hàng không được chạy Swarm Agent hoặc truy vấn danh sách khách hàng nội bộ."
-            ));
-        }
-        String normalizedRole = RoleAccessPolicy.normalizeRole(userRole);
-        if (!Set.of("admin", "quan_ly").contains(normalizedRole)) {
-            return ResponseEntity.status(403).body(Map.of(
-                "reply", "Chỉ Admin và Quản lý được chạy chiến dịch marketing qua Swarm Agent."
-            ));
-        }
-
         String query = payload.get("query") != null ? payload.get("query") : "";
         logger.info("[SWARM] Tiếp nhận yêu cầu điều phối đa Agent Swarm: " + query);
 
@@ -431,14 +415,8 @@ public class AgentController {
      * Nhận danh sách contacts từ SwarmConsole và xử lý gửi đồng loạt
      */
     @PostMapping("/bulk-send-email")
+    @PreAuthorize(RexiSecurityRoles.MARKETING)
     public ResponseEntity<?> bulkSendEmail(@RequestBody Map<String, Object> request) {
-        if (!isCurrentUserStaff()) {
-            return ResponseEntity.status(403).body(Map.of(
-                "success", false,
-                "error", "Tài khoản khách hàng không được gửi email hàng loạt."
-            ));
-        }
-
         try {
             @SuppressWarnings("unchecked")
             List<Map<String, Object>> contacts = (List<Map<String, Object>>) request.get("contacts");
@@ -522,6 +500,7 @@ public class AgentController {
      * không cần đi qua vòng LLM ReAct. Các tool đọc dữ liệu nội bộ vẫn yêu cầu tài khoản nhân sự.
      */
     @PostMapping("/tool")
+    @PreAuthorize(RexiSecurityRoles.AUTHENTICATED)
     public ResponseEntity<?> runDirectTool(@RequestBody Map<String, Object> body) {
         String toolName = body.getOrDefault("tool", "").toString().trim();
         if (toolName.isEmpty()) {
@@ -572,6 +551,7 @@ public class AgentController {
      * AI tự lên kế hoạch, gọi tools, quan sát, lặp lại rồi trả lời cuối cùng.
      */
     @PostMapping("/react")
+    @PreAuthorize(RexiSecurityRoles.AUTHENTICATED)
     public ResponseEntity<?> reactAgent(@RequestBody Map<String, String> body, jakarta.servlet.http.HttpServletRequest request) {
         String query = body.getOrDefault("query", "").trim();
         if (query.isEmpty()) {

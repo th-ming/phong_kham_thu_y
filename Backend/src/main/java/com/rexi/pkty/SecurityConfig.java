@@ -75,7 +75,7 @@ public class SecurityConfig {
                     "/api/payment/**", "/api/lich-hen/gio-ranh", "/api/lich-hen/dat-lich-nhanh",
                     "/api/lich-hen/khach-vang-lai", "/api/dich-vu/**", "/api/bac-si/**",
                     "/ws/**",
-                    "/public/**", "/api/test-doanh-thu"
+                    "/public/**"
                 ).permitAll()
                 .requestMatchers("/api/system/**").authenticated()
                 .requestMatchers("/api/admin/**").authenticated()

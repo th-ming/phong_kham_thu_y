@@ -2,7 +2,9 @@ package com.rexi.pkty.controller;
 
 import com.rexi.pkty.entity.Thuoc;
 import com.rexi.pkty.repository.ThuocRepository;
+import com.rexi.pkty.security.RexiSecurityRoles;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,12 +24,14 @@ public class ThuocController {
     private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
 
     @GetMapping
+    @PreAuthorize(RexiSecurityRoles.INVENTORY_READ)
     public List<Thuoc> getAllThuoc() {
         return thuocRepository.findAll();
     }
 
     // API Dành cho cơ chế Autocomplete ở Frontend
     @GetMapping("/search")
+    @PreAuthorize(RexiSecurityRoles.INVENTORY_READ)
     public List<Thuoc> searchThuoc(@RequestParam String keyword) {
         if (keyword == null || keyword.trim().isEmpty())
             return List.of();
