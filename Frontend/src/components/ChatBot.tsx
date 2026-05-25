@@ -18,6 +18,11 @@ import {
 import { executeAction } from "./ActionExecutor";
 import { toast } from "@components/Toast";
 import { reportClientError } from "@services/clientErrorReporter";
+import {
+    polishTextForSpeech,
+    scoreAssistantVoice,
+    splitSpeechIntoVoiceChunks,
+} from "./chatbot/chatbotTextHelpers";
 
 interface SwarmStep {
     agent: string;
@@ -1831,7 +1836,6 @@ export const ChatBot: React.FC = () => {
     const pendingSensitiveCommandRef = useRef<string | null>(null);
     const pendingCancelAppointmentRef = useRef<{ id: string; label: string } | null>(null);
     const preferredVoiceRef = useRef<SpeechSynthesisVoice | null>(null);
-    const preferredEnglishVoiceRef = useRef<SpeechSynthesisVoice | null>(null);
 
     useEffect(() => {
         voiceModeRef.current = voiceMode;
