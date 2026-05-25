@@ -109,6 +109,13 @@ const applyInlineEnglishPronunciation = (text: string) => text
     .replace(/\bEdge\b/gi, "ét")
     .replace(/\bEmail\b/gi, "i meo");
 
+export const splitSpeechIntoVoiceChunks = (text: string): string[] =>
+    text
+        .split(/(?<=[.!?])\s+/)
+        .flatMap(segment => segment.length > 180 ? segment.match(/.{1,170}(?:\s|$)/g) || [segment] : [segment])
+        .map(segment => segment.trim())
+        .filter(Boolean);
+
 export const splitSpeechByLanguage = (text: string): Array<{ text: string; lang: SpeechLang }> => {
     const sentences = text
         .split(/(?<=[.!?])\s+/)
