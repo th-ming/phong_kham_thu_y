@@ -220,6 +220,30 @@ const DatLichHen: React.FC = () => {
     setServiceScrollHintOpacity(nextOpacity);
   };
 
+  const notifyBookingValidationIssue = (message: string) => {
+    window.dispatchEvent(new CustomEvent("rexi-booking-validation", {
+      detail: { message }
+    }));
+  };
+
+  const notifyCurrentBookingDraftIssue = () => {
+    if (!idThuCung) {
+      notifyBookingValidationIssue("Rexi thấy đơn đặt lịch khám còn thiếu thông tin: chưa chọn thú cưng cần khám.");
+      return;
+    }
+    if (!idDichVu) {
+      notifyBookingValidationIssue("Rexi thấy đơn đặt lịch khám còn thiếu thông tin: chưa chọn dịch vụ khám.");
+      return;
+    }
+    if (!date) {
+      notifyBookingValidationIssue("Rexi thấy đơn đặt lịch khám còn thiếu thông tin: chưa chọn ngày khám.");
+      return;
+    }
+    if (!time) {
+      notifyBookingValidationIssue("Rexi thấy đơn đặt lịch khám còn thiếu thông tin: chưa chọn khung giờ khám.");
+    }
+  };
+
   const handleBooking = async (
     e?: React.FormEvent,
     override?: Partial<{
@@ -248,6 +272,7 @@ const DatLichHen: React.FC = () => {
     const selectedPet = pets.find(p => String(p.id_thu_cung) === formIdThuCung);
 
     if (!formIdThuCung) {
+      notifyBookingValidationIssue("Rexi thấy đơn đặt lịch khám còn thiếu thông tin: chưa chọn thú cưng cần khám.");
       toast.info("Vui lòng chọn thú cưng cần khám!");
       return;
     }
@@ -258,6 +283,7 @@ const DatLichHen: React.FC = () => {
     }
 
     if (!formIdDichVu) {
+      notifyBookingValidationIssue("Rexi thấy đơn đặt lịch khám còn thiếu thông tin: chưa chọn dịch vụ khám.");
       toast.info("Vui lòng chọn một dịch vụ cho bé nhé!");
       return;
     }
@@ -268,11 +294,13 @@ const DatLichHen: React.FC = () => {
     }
 
     if (!formDate) {
+      notifyBookingValidationIssue("Rexi thấy đơn đặt lịch khám còn thiếu thông tin: chưa chọn ngày khám.");
       toast.info("Vui lòng chọn ngày khám!");
       return;
     }
 
     if (!formTime) {
+      notifyBookingValidationIssue("Rexi thấy đơn đặt lịch khám còn thiếu thông tin: chưa chọn khung giờ khám.");
       toast.info("Vui lòng chọn khung giờ khám!");
       return;
     }
@@ -512,7 +540,7 @@ const DatLichHen: React.FC = () => {
             <textarea data-ai-id="textarea-datlichhen-note" className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left', minHeight: '100px', padding: '16px', lineHeight: '1.6', borderRadius: '16px', border: '1px solid var(--gray-200)', outline: 'none' }} placeholder="Mô tả tình trạng bé hoặc các yêu cầu đặc biệt..." value={note} onChange={e => setNote(e.target.value)} />
           </div>
 
-          <button data-ai-id="button-datlichhen-66iq" type="submit" className="btn btn-primary btn-pill" disabled={loading} style={{ padding: '16px', fontSize: '1.1rem' }}>
+          <button data-ai-id="button-datlichhen-66iq" type="submit" className="btn btn-primary btn-pill" disabled={loading} onClick={notifyCurrentBookingDraftIssue} style={{ padding: '16px', fontSize: '1.1rem' }}>
             {loading ? (
               <>
                 <span className="material-symbols-outlined icon-spin">autorenew</span>

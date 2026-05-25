@@ -271,9 +271,9 @@ public class GeminiService {
         if (configured != null && !configured.trim().isEmpty()) {
             models.add(configured.trim());
         }
+        models.add("gemini-flash-lite-latest");
         models.add("gemini-2.5-flash");
         models.add("gemini-2.0-flash");
-        models.add("gemini-1.5-flash");
         return new ArrayList<>(models);
     }
 }

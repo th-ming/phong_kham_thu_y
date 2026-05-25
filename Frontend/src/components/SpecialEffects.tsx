@@ -481,7 +481,7 @@ const MemeCatCore: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
 /**
  * TRÌNH PHÁT VIDEO NỀN TRONG SUỐT (TÍCH HỢP TẨY PHÔNG XANH)
  */
-export const TransparentVideo: React.FC<{ src: string, style?: React.CSSProperties, playbackRate?: number, isDark?: boolean, loop?: boolean, muted?: boolean, onEnded?: () => void, removeBlack?: boolean }> = ({ src, style, playbackRate = 1, isDark = false, loop = true, muted = true, onEnded, removeBlack = false }) => {
+export const TransparentVideo: React.FC<{ src: string, style?: React.CSSProperties, className?: string, playbackRate?: number, isDark?: boolean, loop?: boolean, muted?: boolean, onEnded?: () => void, removeBlack?: boolean }> = ({ src, style, className, playbackRate = 1, isDark = false, loop = true, muted = true, onEnded, removeBlack = false }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [inView, setInView] = useState(false);
@@ -564,7 +564,7 @@ export const TransparentVideo: React.FC<{ src: string, style?: React.CSSProperti
         onEnded={onEnded}
         style={{ display: 'none' }}
       />
-      <canvas ref={canvasRef} style={{ ...style, background: 'transparent' }} />
+      <canvas ref={canvasRef} className={className} style={{ ...style, background: 'transparent' }} />
     </>
   );
 };

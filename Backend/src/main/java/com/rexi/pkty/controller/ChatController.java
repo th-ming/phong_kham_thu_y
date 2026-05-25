@@ -10,6 +10,7 @@ import com.rexi.pkty.service.GeminiService;
 import com.rexi.pkty.service.OpenRouterService;
 import com.rexi.pkty.service.AiMemoryService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +25,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Locale;
 
 @RestController
@@ -49,6 +51,9 @@ public class ChatController {
     @Autowired
     private LichSuTuVanRepository lichSuTuVanRepository;
 
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
     // Cấu trúc giới hạn Rate Limit đơn giản trong RAM
     private static class RateLimit {
         int count;
@@ -60,14 +65,63 @@ public class ChatController {
         }
     }
 
+    private record EmergencyTriage(boolean emergency, int score, String category, String reason) {}
+    private enum ChatRoute {
+        QUICK_LOCAL,
+        SENSITIVE_HANDOFF,
+        DB_LOCAL,
+        MEDIA_AI,
+        MEDICAL_AI,
+        WEB_AI,
+        AUTOPILOT_AI,
+        CHAT_AI
+    }
+    private record ChatRequestPlan(
+            ChatRoute route,
+            boolean requiresDb,
+            boolean requiresAi,
+            boolean allowStreaming,
+            boolean needsClinicContext,
+            String providerHint
+    ) {}
+    private record ChatPersonaContext(
+            String audience,
+            String mode,
+            String tone,
+            String allowedActions,
+            String forbiddenActions
+    ) {}
+
+    // Wrapper mới an toàn hơn Headers
+    public static class ChatPayload {
+        public List<ChatMessage> history;
+        public String currentPath;
+        public String domContext;
+        public Object activityLogs;
+    }
+
     private final ConcurrentHashMap<String, RateLimit> rateLimiter = new ConcurrentHashMap<>();
+
+    @PostMapping("/prewarm")
+    public Map<String, Object> prewarm() {
+        java.util.concurrent.CompletableFuture.runAsync(() -> {
+            try {
+                groqService.prewarm();
+            } catch (Exception e) {
+                logger.warning("Không thể prewarm Groq: " + e.getMessage());
+            }
+        });
+        return Map.of("ok", true, "provider", "groq", "mode", "background");
+    }
 
     @PostMapping
     public Object chat(
-            @RequestBody List<ChatMessage> history,
+            @RequestBody JsonNode requestBody,
             HttpServletRequest request,
             @RequestHeader(value = "Accept", defaultValue = "application/json") String acceptHeader) {
 
+        ChatPayload payload = parseChatPayload(requestBody);
+        List<ChatMessage> history = payload.history;
         // Chặn spam chat nhanh quá gây nghẽn hệ thống. Cho tối đa 20 tin text hoặc 15 video mỗi phút nha sếp.
         String clientIp = request.getRemoteAddr();
         org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
@@ -127,25 +181,63 @@ public class ChatController {
             boolean hasImage = lastMsg.getImages() != null && !lastMsg.getImages().isEmpty();
             boolean hasMedia = hasVideo || hasImage;
 
+            String localFollowUpReply = tryLocalFollowUpReply(history, normalizedUserQuery);
+            if (!hasMedia && localFollowUpReply != null) {
+                return Map.of("reply", localFollowUpReply, "source", "local_follow_up");
+            }
+
+            if (!hasMedia && isUserComplaintQuery(normalizedUserQuery)) {
+                return Map.of("reply", buildUserComplaintReply(normalizedUserQuery), "source", "local_complaint");
+            }
+
+            String localDocumentReply = tryLocalDocumentQuestionReply(userQuery);
+            if (!hasMedia && localDocumentReply != null) {
+                return Map.of("reply", localDocumentReply, "source", "local_document");
+            }
+
             // Giới hạn chat max 1000 ký tự để chặn spam tin siêu dài, đỡ tốn token API.
             if (userQuery.length() > 1000) {
                 return Map.of("reply",
                         "Sen ơi tin nhắn hơi dài quá òi! 😿 Sen tóm tắt lại tình trạng của bé ngắn gọn (dưới 1000 ký tự) để Rexi đọc và tư vấn chuẩn xác nhất nha!");
             }
 
-            if (isEmergencyQuery(normalizedUserQuery)) {
-                return Map.of("reply", buildEmergencyReply(normalizedUserQuery));
+            EmergencyTriage emergencyTriage = classifyEmergencyTriage(normalizedUserQuery);
+            if (emergencyTriage.emergency()) {
+                return Map.of(
+                        "reply", buildEmergencyReply(normalizedUserQuery, emergencyTriage),
+                        "source", "local_triage",
+                        "triage", Map.of(
+                                "score", emergencyTriage.score(),
+                                "category", emergencyTriage.category(),
+                                "reason", emergencyTriage.reason()
+                        )
+                );
             }
 
-            if (!hasMedia && isQuickLocalQuery(normalizedUserQuery)) {
+            String localVetReply = tryLocalVeterinaryReply(normalizedUserQuery, userQuery);
+            if (!hasMedia && localVetReply != null) {
+                return Map.of("reply", localVetReply, "source", "local_vet");
+            }
+
+            ChatRequestPlan requestPlan = planChatRequest(normalizedUserQuery, userQuery, hasMedia);
+
+            if (requestPlan.route() == ChatRoute.QUICK_LOCAL) {
                 return Map.of("reply", buildQuickLocalReply(normalizedUserQuery));
             }
 
-            boolean medicalQuery = isMedicalQuery(normalizedUserQuery);
-            boolean webSearchRequested = isWebSearchQuery(userQuery);
-            boolean autopilotRequested = isAutopilotQuery(normalizedUserQuery);
-            boolean clinicContextNeeded = medicalQuery || hasMedia || webSearchRequested
-                    || autopilotRequested || isClinicInfoQuery(normalizedUserQuery);
+            if (requestPlan.route() == ChatRoute.SENSITIVE_HANDOFF) {
+                return Map.of("reply", buildSensitiveDataHandoffReply());
+            }
+
+            if (requestPlan.route() == ChatRoute.DB_LOCAL) {
+                String fastDbReply = tryFastDbReply(normalizedUserQuery, userQuery);
+                return Map.of("reply", fastDbReply, "source", "fast_db");
+            }
+
+            boolean medicalQuery = requestPlan.route() == ChatRoute.MEDICAL_AI;
+            boolean webSearchRequested = requestPlan.route() == ChatRoute.WEB_AI;
+            boolean autopilotRequested = requestPlan.route() == ChatRoute.AUTOPILOT_AI;
+            boolean clinicContextNeeded = requestPlan.needsClinicContext();
 
             // Lọc ngữ cảnh thông minh dựa vào câu chat để AI biết đường trả lời cho chuẩn.
             String userContext = (realUsername != null && clinicContextNeeded)
@@ -163,37 +255,17 @@ public class ChatController {
                 webSearchContext = buildWebSearchContext(userQuery, webResults);
             }
 
-            // Đọc bối cảnh màn hình DOM từ frontend gửi lên để AI biết sếp đang ở trang nào.
-            String rawPath = request.getHeader("X-Current-Path");
-            String rawDomContext = request.getHeader("X-Current-DOM-Context");
-            String rawActivityLogs = request.getHeader("X-User-Activity-Logs");
+            // Lấy từ Body JSON thay vì Header, tránh sập web server vì 431 Entity Too Large
+            String currentPath = payload.currentPath != null ? payload.currentPath : "/";
+            String currentDomContext = autopilotRequested && payload.domContext != null && !payload.domContext.isBlank() 
+                                        ? payload.domContext 
+                                        : "Không có bối cảnh giao diện.";
             
-            String currentPath = "/";
-            String currentDomContext = "Không có bối cảnh giao diện.";
             String currentActivityLogs = "Không có nhật ký hành động gần đây.";
-            
-            if (rawPath != null && !rawPath.isEmpty()) {
-                try {
-                    currentPath = java.net.URLDecoder.decode(rawPath, java.nio.charset.StandardCharsets.UTF_8);
-                } catch (Exception e) {
-                    logger.warning("Không thể giải mã X-Current-Path: " + e.getMessage());
-                }
-            }
-            
-            if (autopilotRequested && rawDomContext != null && !rawDomContext.isEmpty()) {
-                try {
-                    currentDomContext = java.net.URLDecoder.decode(rawDomContext, java.nio.charset.StandardCharsets.UTF_8);
-                } catch (Exception e) {
-                    logger.warning("Không thể giải mã X-Current-DOM-Context: " + e.getMessage());
-                }
-            }
-
-            if (autopilotRequested && rawActivityLogs != null && !rawActivityLogs.isEmpty()) {
-                try {
-                    currentActivityLogs = java.net.URLDecoder.decode(rawActivityLogs, java.nio.charset.StandardCharsets.UTF_8);
-                } catch (Exception e) {
-                    logger.warning("Không thể giải mã X-User-Activity-Logs: " + e.getMessage());
-                }
+            if (autopilotRequested && payload.activityLogs != null) {
+                 try {
+                     currentActivityLogs = new ObjectMapper().writeValueAsString(payload.activityLogs);
+                 } catch (Exception ignored) {}
             }
             
             String domContextBlock = autopilotRequested
@@ -249,10 +321,13 @@ public class ChatController {
                     }
                 }
             }
+            ChatPersonaContext personaContext = buildPersonaContext(isStaff, userRoleName, requestPlan, isLoggedIn);
+            String personaBlock = renderPersonaBlock(personaContext, requestPlan, currentPath);
 
             String systemPrompt;
             if (isStaff) {
-                systemPrompt = "BẠN LÀ BÁC SĨ THÚ Y REXI - ĐỒNG NGHIỆP VÀ TRỢ LÝ HỖ TRỢ CHUYÊN NGHIỆP CỦA PHÒNG KHÁM.\n"
+                systemPrompt = personaBlock
+                        + "BẠN LÀ BÁC SĨ THÚ Y REXI - ĐỒNG NGHIỆP VÀ TRỢ LÝ HỖ TRỢ CHUYÊN NGHIỆP CỦA PHÒNG KHÁM.\n"
                         + realtimeContext
                         + "1. VAI TRÒ: Bạn đang trò chuyện với một thành viên trong đội ngũ nhân viên phòng khám (" + userRoleName + "). Bạn là đồng nghiệp đắc lực hỗ trợ cho họ.\n"
                         + "2. PHẠM VI HỖ TRỢ: Hỗ trợ tra cứu kiến thức chuyên môn y khoa, quy trình làm việc, tư vấn phác đồ điều trị nâng cao, quản lý danh mục thuốc, quy định nghiệp vụ hoặc giải đáp thắc mắc chuyên môn.\n"
@@ -293,7 +368,8 @@ public class ChatController {
                         + "\n" + webSearchContext
                         + domContextBlock;
             } else {
-                systemPrompt = "BẠN LÀ BÁC SĨ THÚ Y REXI - CHUYÊN GIA TOÀN NĂNG TRONG LĨNH VỰC CHĂM SÓC THÚ CƯNG.\n"
+                systemPrompt = personaBlock
+                        + "BẠN LÀ BÁC SĨ THÚ Y REXI - CHUYÊN GIA TOÀN NĂNG TRONG LĨNH VỰC CHĂM SÓC THÚ CƯNG.\n"
                         + realtimeContext
                         + "1. PHẠM VI TRI THỨC: Bạn có kiến thức sâu rộng về MỌI mặt của thú y: Y khoa (bệnh lý, điều trị), Dinh dưỡng, Hành vi, Chăm sóc hằng ngày. Đừng ngần ngại tư vấn chi tiết cho Sen bất kể câu hỏi là gì.\n"
                         + "2. NGUỒN TRI THỨC: \n"
@@ -383,20 +459,20 @@ ChatMessage systemMsg = new ChatMessage();
                     }
                 }
             } else if (isMedicalQuery) {
-                // 🩺 THẾ MẠNH CỦA DEEPSEEK V4: Tư duy Y khoa, Logic và Chẩn đoán
-                logger.info("[AI ROUTER] Định tuyến câu hỏi Tư vấn Y tế sang: OpenRouter (DeepSeek V4)");
+                // Gemini phản hồi y tế ngắn ổn định hơn; OpenRouter giữ vai trò dự phòng chuyên sâu.
+                logger.info("[AI ROUTER] Định tuyến câu hỏi Tư vấn Y tế sang: Gemini");
                 try {
-                    reply = openRouterService.chat(history);
-                } catch (Exception openRouterEx) {
-                    if (isTimeoutError.test(openRouterEx)) {
-                        logger.warning("[AI ROUTER] OpenRouter (DeepSeek) bị Timeout, bẻ lái khẩn cấp sang Groq siêu tốc để cứu vãn...");
+                    reply = geminiService.chat(history);
+                } catch (Exception geminiEx) {
+                    if (isTimeoutError.test(geminiEx)) {
+                        logger.warning("[AI ROUTER] Gemini timeout, chuyển nhanh sang Groq để tránh treo chat...");
                         reply = groqService.chat(history);
                     } else {
-                        logger.warning("[AI ROUTER] OpenRouter lỗi, chuyển hướng dự phòng sang: Gemini...");
+                        logger.warning("[AI ROUTER] Gemini lỗi, chuyển hướng dự phòng sang: OpenRouter...");
                         try {
-                            reply = geminiService.chat(history);
-                        } catch (Exception geminiEx) {
-                            logger.warning("[AI ROUTER] Gemini lỗi, chuyển hướng dự phòng cuối cùng sang: Groq...");
+                            reply = openRouterService.chat(history);
+                        } catch (Exception openRouterEx) {
+                            logger.warning("[AI ROUTER] OpenRouter lỗi, chuyển hướng dự phòng cuối cùng sang: Groq...");
                             reply = groqService.chat(history);
                         }
                     }
@@ -451,6 +527,27 @@ ChatMessage systemMsg = new ChatMessage();
             return Map.of(
                     "reply", buildRoleAwareAiErrorReply(errorCode),
                     "errorCode", errorCode);
+        }
+    }
+
+    private ChatPayload parseChatPayload(JsonNode requestBody) {
+        ChatPayload payload = new ChatPayload();
+        if (requestBody == null || requestBody.isNull()) {
+            return payload;
+        }
+
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            if (requestBody.isArray()) {
+                payload.history = new ArrayList<>(Arrays.asList(mapper.treeToValue(requestBody, ChatMessage[].class)));
+                return payload;
+            }
+
+            ChatPayload parsedPayload = mapper.treeToValue(requestBody, ChatPayload.class);
+            return parsedPayload != null ? parsedPayload : payload;
+        } catch (Exception e) {
+            logger.warning("Không thể đọc payload chat: " + e.getMessage());
+            return payload;
         }
     }
 
@@ -670,4 +767,651 @@ ChatMessage systemMsg = new ChatMessage();
         int index = 1;
         for (Map<String, String> item : results) {
             sb.append(index++).append(". ")
-                    .appen
+                    .append(item.getOrDefault("title", "Không tiêu đề"))
+                    .append(" | ")
+                    .append(item.getOrDefault("url", ""))
+                    .append(" | ")
+                    .append(item.getOrDefault("snippet", ""))
+                    .append("\n");
+        }
+        return sb.toString();
+    }
+
+    private String buildRealtimeContext() {
+        String now = LocalDateTime.now(VN_ZONE).format(VN_TIME_FORMATTER);
+        return "--- THỜI GIAN HỆ THỐNG HIỆN TẠI ---\n"
+                + "Bây giờ là " + now + " theo múi giờ Việt Nam (Asia/Ho_Chi_Minh). "
+                + "Khi người dùng nói hôm nay/ngày mai/hiện tại, phải hiểu theo thời điểm này; không dùng ngày cũ trong ví dụ hoặc lịch sử chat.\n";
+    }
+
+    private boolean isQuickLocalQuery(String normalizedQuery) {
+        if (normalizedQuery == null) return false;
+        String q = normalizedQuery.trim().replaceAll("[!?.\\s]+$", "");
+        if (q.isEmpty()) return true;
+        String[] quickPhrases = {
+                "hi", "hello", "helo", "hey", "alo", "chao", "xin chao", "chao rexi",
+                "ok", "oke", "okay", "cam on", "thanks", "thank you", "test", "thu xem"
+        };
+        for (String phrase : quickPhrases) {
+            if (q.equals(phrase)) {
+                return true;
+            }
+        }
+        if (q.contains("ban ho tro gi") || q.contains("rexi la gi")
+                || q.contains("hotline") || q.contains("so dien thoai")
+                || q.contains("dia chi") || q.contains("gio lam viec")) {
+            return true;
+        }
+        return q.length() <= 12 && (q.startsWith("hi ") || q.startsWith("chao "));
+    }
+
+    private String buildQuickLocalReply(String normalizedQuery) {
+        String q = normalizedQuery == null ? "" : normalizedQuery.trim();
+        if (q.contains("cam on") || q.contains("thank")) {
+            return "Dạ không có gì ạ. Sen cần Rexi hỗ trợ thêm việc gì cứ nhắn nhé.";
+        }
+        if (q.equals("ok") || q.equals("oke") || q.equals("okay")) {
+            return "Dạ, Rexi nghe đây ạ.";
+        }
+        if (q.equals("test") || q.equals("thu xem")) {
+            return "Rexi đang hoạt động bình thường ạ.";
+        }
+        if (q.contains("hotline") || q.contains("so dien thoai")) {
+            return "Hotline Phòng khám Thú y Rexi: 0353.374.156.";
+        }
+        if (q.contains("dia chi")) {
+            return "Địa chỉ Phòng khám Thú y Rexi: Số 68, Ngõ 10, Đường Ngô Xuân Quảng, Trâu Quỳ, Gia Lâm, Hà Nội.";
+        }
+        if (q.contains("gio lam viec")) {
+            return "Rexi chưa có lịch giờ làm việc cố định trong tin nhắn nhanh này. Sen gọi hotline 0353.374.156 để xác nhận khung giờ khám chính xác nhé.";
+        }
+        if (q.contains("rexi la gi")) {
+            return "Rexi là trợ lý thú y của Phòng khám Thú y Rexi, hỗ trợ tư vấn chăm sóc thú cưng, đặt lịch, tra cứu thông tin phòng khám và hướng dẫn thao tác trên hệ thống.";
+        }
+        if (q.contains("ban ho tro gi")) {
+            return "Rexi có thể hỗ trợ tư vấn chăm sóc thú cưng, đặt lịch khám, hướng dẫn dùng hệ thống, tra cứu dịch vụ và cung cấp thông tin liên hệ phòng khám.";
+        }
+        return "Dạ Rexi đây ạ. Sen cần hỗ trợ gì hôm nay?";
+    }
+
+    private boolean isUserComplaintQuery(String normalizedQuery) {
+        if (normalizedQuery == null || normalizedQuery.isBlank()) return false;
+        String q = normalizedQuery.trim();
+        boolean slowComplaint = q.contains("chay nhu rua")
+                || q.contains("chay cham")
+                || q.contains("phan hoi lau")
+                || q.contains("lag")
+                || q.contains("giat")
+                || q.contains("treo")
+                || q.contains("loading lau")
+                || q.contains("khong hieu gi")
+                || q.contains("dung kieu gi")
+                || q.contains("kho dung");
+        boolean mentionsSystem = q.contains("web") || q.contains("chatbot") || q.contains("agent")
+                || q.contains("trang") || q.contains("he thong") || q.contains("app");
+        return slowComplaint && mentionsSystem;
+    }
+
+    private String buildUserComplaintReply(String normalizedQuery) {
+        if (normalizedQuery != null && (normalizedQuery.contains("khong hieu gi") || normalizedQuery.contains("dung kieu gi"))) {
+            return "Mình hiểu là bạn đang bị vướng cách dùng. Bạn cho Rexi biết bạn đang ở trang nào hoặc muốn làm việc gì: đặt lịch, xem hóa đơn, tìm khách hàng, xem bệnh án hay dùng chatbot? Rexi sẽ hướng dẫn đúng từng bước, không cần bạn nhập câu lệnh chuẩn.";
+        }
+        return "Mình hiểu là bạn đang phản ánh hệ thống/chatbot phản hồi chậm. Trước mắt bạn thử tải lại trang, kiểm tra mạng và đóng bớt tab nặng. Nếu vẫn chậm, Admin nên kiểm tra 3 điểm: backend `/api/system/health`, log lỗi provider AI, và thời gian phản hồi của `/api/chat` hoặc `/api/agent/react`. Rexi sẽ không đoán dữ liệu; nếu backend/AI nghẽn thì nên báo rõ thay vì trả lời lung tung.";
+    }
+
+    private String tryLocalDocumentQuestionReply(String userQuery) {
+        if (userQuery == null || userQuery.length() <= 1000) return null;
+        String normalized = normalizeVietnamese(userQuery.toLowerCase());
+        boolean asksSummaryOrDetail = normalized.contains("tom tat")
+                || normalized.contains("chi tiet quan trong")
+                || normalized.contains("tim mot chi tiet")
+                || normalized.contains("noi dung quan trong")
+                || normalized.contains("hoi:");
+        if (!asksSummaryOrDetail) return null;
+
+        String compact = userQuery.replaceAll("\\s+", " ").trim();
+        Matcher important = Pattern.compile("(?i)(Chi tiết quan trọng|Chi tiet quan trong)\\s*:\\s*([^\\.\\n]+(?:\\.[^\\.\\n]+){0,2})").matcher(compact);
+        if (important.find()) {
+            return "Chi tiết quan trọng trong tài liệu là: " + important.group(2).trim()
+                    + "\n\nRexi đã xử lý phần này bằng bộ đọc nội bộ để tránh gửi toàn bộ tài liệu dài lên provider AI.";
+        }
+
+        int questionIndex = Math.max(compact.toLowerCase(Locale.ROOT).lastIndexOf("hỏi:"), compact.toLowerCase(Locale.ROOT).lastIndexOf("hoi:"));
+        String body = questionIndex > 0 ? compact.substring(0, questionIndex).trim() : compact;
+        String sample = body.length() > 700 ? body.substring(0, 700) + "..." : body;
+        return "Tóm tắt nhanh tài liệu: " + sample
+                + "\n\nTài liệu khá dài nên Rexi chỉ trích phần liên quan/tóm tắt cục bộ trước, không đẩy toàn bộ nội dung lên AI để tránh tốn token và lộ ngữ cảnh không cần thiết.";
+    }
+
+    private String tryLocalVeterinaryReply(String normalizedQuery, String rawQuery) {
+        if (normalizedQuery == null || normalizedQuery.isBlank()) return null;
+        String q = normalizedQuery.trim();
+
+        if (containsAny(q, "ca rong", "chim canh", "chim", "ca canh", "bo sat", "ran canh")
+                && containsAny(q, "ban", "kham", "dich vu", "ho tro", "web minh", "phong kham")) {
+            return "Dạ hiện tại Rexi tập trung hỗ trợ thú cưng phổ biến như chó, mèo và một số thú nhỏ. Với cá rồng/chim cảnh, phòng khám chưa có dịch vụ chuyên sâu cố định nên Rexi không muốn tư vấn quá tay. Nếu bé có dấu hiệu nguy cấp, Sen nên liên hệ cơ sở thú y chuyên cá/chim cảnh gần nhất hoặc gọi Rexi để được hướng dẫn kênh phù hợp.";
+        }
+
+        if (containsAny(q, "meo") && containsAny(q, "moi de", "vua de", "de con", "meo con", "meo me")) {
+            return "Với mèo mẹ mới đẻ, Sen ưu tiên 4 việc: giữ ổ ấm, khô và yên tĩnh; cho mèo mẹ ăn khẩu phần giàu năng lượng/đạm và luôn có nước sạch; theo dõi mèo con bú đều, không bị lạnh, không kêu yếu kéo dài; không tắm hoặc bế mèo con quá nhiều trong vài ngày đầu. Nếu mèo mẹ bỏ ăn, sốt, chảy dịch hôi, bỏ con hoặc mèo con lạnh/yếu không bú thì nên đưa tới bác sĩ thú y sớm.";
+        }
+
+        if (containsAny(q, "di ngoai ra nuoc", "di ngoai", "tieu chay", "phan long")
+                && containsAny(q, "mui hoi", "hoi lam", "ra nuoc", "cun", "cho")) {
+            return "Rexi hiểu là cún đang có dấu hiệu **tiêu chảy nước, mùi hôi**. Đây có thể là rối loạn tiêu hóa, nhiễm khuẩn/ký sinh trùng, và ở chó con hoặc chó chưa tiêm đủ vaccine cần đặc biệt cảnh giác **Parvovirus**. Việc cần làm ngay: cho bé uống nước từng ít một, không tự dùng thuốc cầm tiêu chảy của người, theo dõi nôn/sốt/lừ đừ/phân máu. Nếu bé còn nhỏ, bỏ ăn, nôn, lừ đừ hoặc tiêu chảy liên tục thì nên mang tới phòng khám trong ngày để test và truyền dịch nếu cần.";
+        }
+
+        if (containsAny(q, "bo an", "khong an", "an it")
+                && containsAny(q, "nguoi nong", "nong lam", "sot", "meo")) {
+            return "Rexi hiểu theo ngôn ngữ thú y là mèo có dấu hiệu **bỏ ăn kèm nghi sốt**. Mèo bỏ ăn quá 24 giờ đã đáng lo, nhất là nếu người nóng, lừ đừ, trốn, thở nhanh hoặc nôn. Sen nên đo nhiệt độ hậu môn nếu có nhiệt kế thú y; mèo thường khoảng 38-39.2°C, cao hơn nên đi khám. Trước mắt giữ bé ở nơi mát, có nước sạch, không tự cho uống thuốc hạ sốt của người vì có thể gây ngộ độc. Nên đặt lịch khám sớm để bác sĩ kiểm tra nguyên nhân nhiễm trùng/đau/stress.";
+        }
+
+        if (containsAny(q, "ngua tai", "gay tai", "lac dau", "hoi tai", "poodle", "da lieu")) {
+            return "Dấu hiệu ngứa tai/lắc đầu ở Poodle thường liên quan viêm tai ngoài, nấm/vi khuẩn, ve tai hoặc dị ứng da. Không nên tự nhỏ thuốc khi chưa soi tai vì nếu màng nhĩ tổn thương có thể nguy hiểm. Sen nên đặt lịch khám da liễu/tai để bác sĩ soi tai, vệ sinh đúng cách và kê thuốc phù hợp.";
+        }
+
+        return null;
+    }
+
+    private String tryLocalFollowUpReply(List<ChatMessage> history, String normalizedLatestQuery) {
+        if (history == null || history.size() < 2 || normalizedLatestQuery == null) return null;
+        boolean asksScheduleFollowUp = normalizedLatestQuery.contains("chu nhat")
+                || normalizedLatestQuery.contains("sang chu nhat")
+                || normalizedLatestQuery.contains("chieu chu nhat")
+                || normalizedLatestQuery.contains("cuoi tuan")
+                || normalizedLatestQuery.matches(".*\\b(thay|chuyen|doi)\\b.*\\b(sang|chieu|toi|ngay)\\b.*");
+        if (!asksScheduleFollowUp) return null;
+
+        StringBuilder recent = new StringBuilder();
+        int start = Math.max(0, history.size() - 6);
+        for (int i = start; i < history.size() - 1; i++) {
+            ChatMessage msg = history.get(i);
+            if (msg.getContent() != null) {
+                recent.append(' ').append(normalizeVietnamese(msg.getContent().toLowerCase()));
+            }
+        }
+        String ctx = recent.toString();
+        boolean appointmentContext = ctx.contains("dat lich") || ctx.contains("lich kham") || ctx.contains("tiem phong");
+        if (!appointmentContext) return null;
+
+        String petName = extractPetNameFromContext(ctx);
+        String petText = petName.isBlank() ? "bé" : "bé " + petName;
+        return "Được ạ, Rexi hiểu mình vẫn đang nói về lịch tiêm phòng/khám cho " + petText
+                + ". Nếu chuyển sang sáng Chủ nhật thì nên chọn khung 08:00-10:30 để bé đỡ mệt và phòng khám dễ sắp bác sĩ. "
+                + "Để chốt lịch thật trên hệ thống, Sen/Sếp chuyển sang Rexi Agent hoặc cung cấp thêm ngày cụ thể, SĐT khách hàng, thú cưng và dịch vụ cần đặt.";
+    }
+
+    private String extractPetNameFromContext(String normalizedContext) {
+        if (normalizedContext == null || normalizedContext.isBlank()) return "";
+        Matcher matcher = Pattern.compile("\\bbe\\s+([a-z0-9_-]{2,20})").matcher(normalizedContext);
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+        return "";
+    }
+
+    private boolean isAutopilotQuery(String normalizedQuery) {
+        if (normalizedQuery == null || normalizedQuery.isBlank()) return false;
+        String[] actionKeywords = {
+                "mo trang", "dua toi den", "chuyen sang", "di toi", "vao trang",
+                "dat lich", "lap lich", "tao lich", "huy lich", "doi lich",
+                "them", "sua", "xoa", "dien", "fill", "chon", "bam", "click",
+                "tim khach", "tim ho so", "tra cuu khach", "quet du lieu"
+        };
+        for (String kw : actionKeywords) {
+            if (normalizedQuery.contains(kw)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isClinicInfoQuery(String normalizedQuery) {
+        if (normalizedQuery == null || normalizedQuery.isBlank()) return false;
+        String[] clinicKeywords = {
+                "bang gia", "gia tien", "chi phi", "dich vu", "lich lam viec",
+                "bac si", "bsi", "dia chi", "hotline", "so dien thoai", "phong kham",
+                "gio mo cua", "gio lam viec", "rexi"
+        };
+        for (String kw : clinicKeywords) {
+            if (normalizedQuery.contains(kw)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isMedicalQuery(String normalizedQuery) {
+        if (normalizedQuery == null || normalizedQuery.isBlank()) return false;
+        String[] medicalPhrases = {
+                "trieu chung", "trieu chuong", "tieu chay", "tieu chai", "dieu tri", "chan doan",
+                "toa thuoc", "ke don", "suc khoe", "bac si", "bac sy", "cap cuu", "tai nan",
+                "chong mat", "co giat", "kho tho", "di ngoai", "bo an", "lo loet", "viem da"
+        };
+        for (String kw : medicalPhrases) {
+            if (containsNormalizedTokenOrPhrase(normalizedQuery, kw)) return true;
+        }
+        String[] medicalTokens = {
+                "benh", "thuoc", "thuooc", "sot", "soot", "non", "kham", "bnh", "bsi",
+                "oi", "ia", "ngua", "ho", "dau"
+        };
+        for (String kw : medicalTokens) {
+            if (containsNormalizedTokenOrPhrase(normalizedQuery, kw)) return true;
+        }
+        return false;
+    }
+
+    private boolean containsNormalizedTokenOrPhrase(String normalizedQuery, String keyword) {
+        if (normalizedQuery == null || keyword == null || keyword.isBlank()) return false;
+        String paddedQuery = " " + normalizedQuery + " ";
+        String normalizedKeyword = normalizeVietnamese(keyword.toLowerCase(Locale.ROOT));
+        return normalizedKeyword.contains(" ")
+                ? paddedQuery.contains(" " + normalizedKeyword + " ")
+                : Arrays.asList(normalizedQuery.split("\\s+")).contains(normalizedKeyword);
+    }
+
+    private ChatPersonaContext buildPersonaContext(boolean isStaff, String userRoleName, ChatRequestPlan plan, boolean isLoggedIn) {
+        String audience = isStaff ? ("nhân sự nội bộ phòng khám - " + userRoleName) : "khách hàng/chủ nuôi";
+        String tone = isStaff
+                ? "chuyên nghiệp, ngắn gọn, trực tiếp, gọi là sếp hoặc đồng nghiệp"
+                : "ấm áp, dễ hiểu, trấn an, gọi khách là Sen và thú cưng là bé/boss";
+
+        String mode = switch (plan.route()) {
+            case MEDIA_AI -> "phân tích ảnh/video thú y";
+            case MEDICAL_AI -> "tư vấn y khoa thú y";
+            case WEB_AI -> "tìm kiếm web có trích nguồn";
+            case AUTOPILOT_AI -> "hỗ trợ thao tác giao diện có kiểm soát";
+            case CHAT_AI -> "chat tư vấn nhanh";
+            case DB_LOCAL -> "tra cứu dữ liệu hệ thống";
+            case SENSITIVE_HANDOFF -> "chuyển giao sang agent dữ liệu";
+            case QUICK_LOCAL -> "trả lời nhanh nội bộ";
+        };
+
+        String allowedActions = switch (plan.route()) {
+            case MEDIA_AI -> "mô tả dấu hiệu nhìn thấy, đánh giá mức độ khẩn, hỏi thêm thông tin còn thiếu";
+            case MEDICAL_AI -> "tư vấn chăm sóc/sơ cứu, nêu khả năng, khuyến nghị đi khám khi có dấu hiệu nguy hiểm";
+            case WEB_AI -> "tổng hợp thông tin từ nguồn thật và trích link rõ ràng";
+            case AUTOPILOT_AI -> "chỉ dùng tag thao tác khi người dùng yêu cầu rõ và data-ai-id tồn tại";
+            case CHAT_AI -> "trả lời trực tiếp, hỏi thêm khi thiếu dữ kiện, hướng dẫn dùng hệ thống";
+            default -> "trả lời theo dữ liệu đã được backend cung cấp";
+        };
+
+        String forbiddenActions = "không bịa dữ liệu hệ thống; không tự nhận đã tra DB nếu route không cho đọc DB; "
+                + "không chẩn đoán chắc chắn hoặc kê đơn thuốc; không tạo link nguồn giả; "
+                + (isLoggedIn ? "" : "không tạo lịch/đơn/hành động tài khoản khi người dùng chưa đăng nhập; ")
+                + "không dùng Autopilot nếu người dùng chỉ hỏi thông tin.";
+
+        return new ChatPersonaContext(audience, mode, tone, allowedActions, forbiddenActions);
+    }
+
+    private String renderPersonaBlock(ChatPersonaContext persona, ChatRequestPlan plan, String currentPath) {
+        return "--- CHAT PERSONA CONTEXT (BẮT BUỘC TUÂN THỦ) ---\n"
+                + "Người đang nói chuyện: " + persona.audience() + ".\n"
+                + "Chế độ xử lý request: " + persona.mode() + " (" + plan.route() + ").\n"
+                + "Provider ưu tiên: " + plan.providerHint() + ".\n"
+                + "Màn hình hiện tại: " + currentPath + ".\n"
+                + "Giọng điệu: " + persona.tone() + ".\n"
+                + "Được phép: " + persona.allowedActions() + ".\n"
+                + "Không được phép: " + persona.forbiddenActions() + ".\n"
+                + "Nguyên tắc tốc độ/độ đúng: trả lời ngắn và đúng việc trước; chỉ đọc DB, web, DOM hoặc gọi AI nặng khi route cho phép; nếu thiếu dữ liệu thì nói rõ thiếu dữ liệu thay vì đoán.\n"
+                + "--- HẾT PERSONA CONTEXT ---\n\n";
+    }
+
+    private ChatRequestPlan planChatRequest(String normalizedQuery, String rawQuery, boolean hasMedia) {
+        if (!hasMedia && isQuickLocalQuery(normalizedQuery)) {
+            return new ChatRequestPlan(ChatRoute.QUICK_LOCAL, false, false, false, false, "local");
+        }
+        if (!hasMedia && isSensitiveDataLookup(normalizedQuery)) {
+            return new ChatRequestPlan(ChatRoute.SENSITIVE_HANDOFF, false, false, false, false, "agent");
+        }
+        if (!hasMedia && isDbLocalQuery(normalizedQuery)) {
+            return new ChatRequestPlan(ChatRoute.DB_LOCAL, true, false, false, true, "database");
+        }
+        if (hasMedia) {
+            return new ChatRequestPlan(ChatRoute.MEDIA_AI, false, true, false, true, "gemini");
+        }
+        if (isWebSearchQuery(rawQuery)) {
+            return new ChatRequestPlan(ChatRoute.WEB_AI, false, true, false, true, "web+ai");
+        }
+        if (isAutopilotQuery(normalizedQuery)) {
+            return new ChatRequestPlan(ChatRoute.AUTOPILOT_AI, false, true, false, true, "groq");
+        }
+        if (isMedicalQuery(normalizedQuery)) {
+            return new ChatRequestPlan(ChatRoute.MEDICAL_AI, false, true, false, true, "gemini");
+        }
+        boolean needsClinicContext = isClinicInfoQuery(normalizedQuery);
+        return new ChatRequestPlan(ChatRoute.CHAT_AI, false, true, true, needsClinicContext, "groq");
+    }
+
+    private boolean isDbLocalQuery(String normalizedQuery) {
+        return isServicePriceQuery(normalizedQuery)
+                || isScheduleQuery(normalizedQuery)
+                || isDoctorListQuery(normalizedQuery);
+    }
+
+    private String tryFastDbReply(String normalizedQuery, String rawQuery) {
+        if (normalizedQuery == null || normalizedQuery.isBlank()) return null;
+        if (isSensitiveDataLookup(normalizedQuery)) {
+            return buildSensitiveDataHandoffReply();
+        }
+        try {
+            if (isServicePriceQuery(normalizedQuery)) {
+                return buildServicePriceReply(normalizedQuery);
+            }
+            if (isScheduleQuery(normalizedQuery)) {
+                return buildScheduleReply(normalizedQuery);
+            }
+            if (isDoctorListQuery(normalizedQuery)) {
+                return buildDoctorListReply();
+            }
+        } catch (Exception e) {
+            logger.warning("[FAST_DB] Không thể trả lời nhanh bằng DB: " + e.getMessage());
+            return "Dữ liệu hệ thống hiện chưa sẵn sàng để tra cứu chính xác. Tôi sẽ không đoán bừa phần này; bạn kiểm tra lại kết nối SQL Server hoặc thử lại sau ít giây.";
+        }
+        return "Tôi chưa tìm thấy dữ liệu khớp rõ trong hệ thống. Bạn nhập cụ thể hơn tên dịch vụ, bác sĩ, lịch trực hoặc chuyển sang Rexi Agent để quét dữ liệu sâu hơn.";
+    }
+
+    private String buildSensitiveDataHandoffReply() {
+        return "Dạ phần tra cứu khách hàng, thú cưng, bệnh án hoặc hóa đơn là dữ liệu nội bộ. Sen/sếp vui lòng chuyển sang **Rexi Agent** để hệ thống kiểm tra quyền và quét dữ liệu thật, tránh chatbot thường tìm nhầm hoặc lộ dữ liệu.";
+    }
+
+    private boolean isSensitiveDataLookup(String q) {
+        String[] keywords = {
+                "tim khach", "tra khach", "tim thu cung", "tim boss", "tim benh an",
+                "tra benh an", "tim hoa don", "hoa don cua", "lich su kham cua",
+                "khach hang ten", "so dien thoai khach"
+        };
+        for (String kw : keywords) {
+            if (q.contains(kw)) return true;
+        }
+        return false;
+    }
+
+    private boolean isServicePriceQuery(String q) {
+        return q.contains("bang gia") || q.contains("gia dich vu") || q.contains("chi phi")
+                || q.contains("bao nhieu tien") || q.contains("gia bao nhieu")
+                || (q.contains("gia") && (q.contains("kham") || q.contains("tiem") || q.contains("spa")
+                        || q.contains("sieu am") || q.contains("xet nghiem") || q.contains("dich vu")));
+    }
+
+    private boolean isScheduleQuery(String q) {
+        return (q.contains("lich") || q.contains("truc") || q.contains("hom nay") || q.contains("ngay mai"))
+                && (q.contains("bac si") || q.contains("bsi") || q.contains("kham") || q.contains("truc"));
+    }
+
+    private boolean isDoctorListQuery(String q) {
+        return (q.contains("bac si") || q.contains("bsi"))
+                && (q.contains("nao") || q.contains("danh sach") || q.contains("co ai") || q.contains("gioi thieu"));
+    }
+
+    private String buildServicePriceReply(String normalizedQuery) {
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+                "SELECT TOP 30 ten_dich_vu, gia, thoi_luong_phut FROM DichVu "
+                        + "WHERE (da_xoa = 0 OR da_xoa IS NULL) AND (trang_thai = 1 OR trang_thai IS NULL) "
+                        + "ORDER BY ten_dich_vu");
+        List<String> terms = extractDbSearchTerms(normalizedQuery);
+        List<Map<String, Object>> matched = new ArrayList<>();
+        for (Map<String, Object> row : rows) {
+            String name = normalizeVietnamese(String.valueOf(row.getOrDefault("ten_dich_vu", "")).toLowerCase(Locale.ROOT));
+            boolean match = terms.isEmpty();
+            for (String term : terms) {
+                if (name.contains(term)) {
+                    match = true;
+                    break;
+                }
+            }
+            if (match) matched.add(row);
+        }
+        if (matched.isEmpty() && !terms.isEmpty()) {
+            return "Rexi chưa tìm thấy dịch vụ khớp rõ trong bảng giá. Sen nhập tên dịch vụ cụ thể hơn, ví dụ: khám tổng quát, tiêm phòng, xét nghiệm máu.";
+        }
+        if (matched.isEmpty()) return null;
+        StringBuilder sb = new StringBuilder("Rexi tra bảng giá trực tiếp từ hệ thống:\n");
+        int count = 0;
+        for (Map<String, Object> row : matched) {
+            if (++count > 8) break;
+            sb.append("- ").append(row.get("ten_dich_vu"))
+                    .append(": ").append(formatMoney(row.get("gia"))).append(" VND");
+            Object minutes = row.get("thoi_luong_phut");
+            if (minutes != null) sb.append(" (~").append(minutes).append(" phút)");
+            sb.append("\n");
+        }
+        if (matched.size() > 8) sb.append("... còn ").append(matched.size() - 8).append(" dịch vụ khác, Sen hỏi tên dịch vụ cụ thể để Rexi lọc tiếp.");
+        return sb.toString().trim();
+    }
+
+    private String buildScheduleReply(String normalizedQuery) {
+        LocalDateTime now = LocalDateTime.now(VN_ZONE);
+        java.time.LocalDate from = now.toLocalDate();
+        java.time.LocalDate to = normalizedQuery.contains("ngay mai") ? from.plusDays(1) : from.plusDays(7);
+        if (normalizedQuery.contains("hom nay")) {
+            to = from;
+        }
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+                "SELECT TOP 12 llv.ngay_lam, llv.gio_bat_dau, llv.gio_ket_thuc, llv.ghi_chu, nv.ho_ten, nv.chuyen_mon "
+                        + "FROM LichLamViecNhanVien llv JOIN NhanVien nv ON nv.id_nhan_vien = llv.id_nhan_vien "
+                        + "WHERE llv.ngay_lam BETWEEN ? AND ? AND (nv.da_xoa = 0 OR nv.da_xoa IS NULL) "
+                        + "AND EXISTS (SELECT 1 FROM TaiKhoan tk WHERE tk.id_nhan_vien = nv.id_nhan_vien AND tk.id_vai_tro = 'VT-BS') "
+                        + "AND nv.ho_ten NOT LIKE N'%Kiểm thử%' AND nv.ho_ten NOT LIKE N'%Admin%' AND nv.ho_ten NOT LIKE N'%Tiếp tân%' "
+                        + "ORDER BY llv.ngay_lam, llv.gio_bat_dau",
+                java.sql.Date.valueOf(from), java.sql.Date.valueOf(to));
+        if (rows.isEmpty()) {
+            return "Rexi chưa thấy lịch trực phù hợp trong hệ thống cho khoảng thời gian này. Sen gọi hotline 0353.374.156 để được xác nhận lịch khám mới nhất.";
+        }
+        StringBuilder sb = new StringBuilder("Rexi tra lịch trực trực tiếp từ hệ thống:\n");
+        for (Map<String, Object> row : rows) {
+            sb.append("- ").append(row.get("ngay_lam"))
+                    .append(": BS. ").append(row.get("ho_ten"))
+                    .append(" từ ").append(row.get("gio_bat_dau"))
+                    .append(" đến ").append(row.get("gio_ket_thuc"));
+            Object note = row.get("ghi_chu");
+            if (note != null && !String.valueOf(note).isBlank()) sb.append(" (").append(note).append(")");
+            sb.append("\n");
+        }
+        return sb.toString().trim();
+    }
+
+    private String buildDoctorListReply() {
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+                "SELECT TOP 8 ho_ten, chuyen_mon, gioi_thieu FROM NhanVien "
+                        + "WHERE (da_xoa = 0 OR da_xoa IS NULL) "
+                        + "AND EXISTS (SELECT 1 FROM TaiKhoan tk WHERE tk.id_nhan_vien = NhanVien.id_nhan_vien AND tk.id_vai_tro = 'VT-BS') "
+                        + "AND ho_ten NOT LIKE N'%Kiểm thử%' AND ho_ten NOT LIKE N'%Admin%' AND ho_ten NOT LIKE N'%Tiếp tân%' "
+                        + "AND (chuyen_mon IS NOT NULL OR gioi_thieu IS NOT NULL) "
+                        + "ORDER BY ho_ten");
+        if (rows.isEmpty()) return null;
+        StringBuilder sb = new StringBuilder("Rexi tra danh sách bác sĩ/nhân sự chuyên môn từ hệ thống:\n");
+        for (Map<String, Object> row : rows) {
+            String doctorName = String.valueOf(row.get("ho_ten"));
+            sb.append("- ");
+            if (!normalizeVietnamese(doctorName.toLowerCase(Locale.ROOT)).startsWith("bs")) {
+                sb.append("BS. ");
+            }
+            sb.append(doctorName);
+            Object specialty = row.get("chuyen_mon");
+            if (specialty != null && !String.valueOf(specialty).isBlank()) {
+                sb.append(" - ").append(specialty);
+            }
+            sb.append("\n");
+        }
+        return sb.toString().trim();
+    }
+
+    private List<String> extractDbSearchTerms(String normalizedQuery) {
+        String cleaned = normalizedQuery
+                .replace("bang gia", " ")
+                .replace("gia dich vu", " ")
+                .replace("chi phi", " ")
+                .replace("bao nhieu tien", " ")
+                .replace("gia bao nhieu", " ")
+                .replace("dich vu", " ")
+                .replace("gia", " ");
+        List<String> terms = new ArrayList<>();
+        for (String term : cleaned.split("\\s+")) {
+            if (term.length() >= 3 && !List.of("cho", "toi", "xem", "cua", "bao", "nhieu", "tien", "rexi").contains(term)) {
+                terms.add(term);
+            }
+        }
+        return terms;
+    }
+
+    private String formatMoney(Object value) {
+        if (value == null) return "0";
+        try {
+            java.math.BigDecimal number = new java.math.BigDecimal(String.valueOf(value));
+            return String.format(Locale.US, "%,.0f", number);
+        } catch (Exception ignored) {
+            return String.valueOf(value);
+        }
+    }
+
+    private String buildMediaPrompt(String rawPrompt, boolean hasImage, boolean hasVideo) {
+        String userPrompt = rawPrompt == null ? "" : rawPrompt.trim();
+        String mediaType = hasImage && hasVideo ? "ảnh và video" : hasVideo ? "video" : "ảnh";
+        String base = "Bạn đang phân tích " + mediaType + " thú y bằng năng lực đa phương tiện. "
+                + "Hãy mô tả dấu hiệu nhìn thấy được, mức độ khẩn cấp, các khả năng nguyên nhân theo thứ tự ưu tiên, "
+                + "việc chủ nuôi có thể làm ngay, dấu hiệu cần đi cấp cứu và thông tin còn thiếu cần hỏi thêm. "
+                + "Không được chẩn đoán chắc chắn hoặc kê đơn chỉ dựa trên ảnh/video; nếu hình/video mờ hoặc không đủ dữ liệu phải nói rõ.";
+        return userPrompt.isBlank() ? base : userPrompt + "\n\n" + base;
+    }
+
+    private String cleanDuckDuckGoUrl(String rawUrl) {
+        if (rawUrl == null) return "";
+        String decoded = stripHtmlEntities(rawUrl);
+        try {
+            if (decoded.contains("uddg=")) {
+                String query = java.net.URI.create(decoded).getRawQuery();
+                if (query != null) {
+                    for (String part : query.split("&")) {
+                        if (part.startsWith("uddg=")) {
+                            return java.net.URLDecoder.decode(part.substring(5), java.nio.charset.StandardCharsets.UTF_8);
+                        }
+                    }
+                }
+            }
+        } catch (Exception ignored) {
+        }
+        return decoded;
+    }
+
+    private String stripHtmlEntities(String value) {
+        if (value == null) return "";
+        return value.replace("&amp;", "&")
+                .replace("&quot;", "\"")
+                .replace("&#x27;", "'")
+                .replace("&#39;", "'")
+                .replace("&lt;", "<")
+                .replace("&gt;", ">")
+                .replaceAll("<[^>]+>", "")
+                .trim();
+    }
+
+    private String normalizeVietnamese(String input) {
+        if (input == null) return "";
+        String normalized = java.text.Normalizer.normalize(input, java.text.Normalizer.Form.NFD)
+                .replaceAll("\\p{M}+", "")
+                .replace("đ", "d")
+                .replace("Đ", "D");
+        return normalized
+                .replaceAll("[àáạảãâầấậẩẫăằắặẳẵ]", "a")
+                .replaceAll("[èéẹẻẽêềếệểễ]", "e")
+                .replaceAll("[ìíịỉĩ]", "i")
+                .replaceAll("[òóọỏõôồốộổỗơờớợởỡ]", "o")
+                .replaceAll("[ùúụủũưừứựửữ]", "u")
+                .replaceAll("[ỳýỵỷỹ]", "y")
+                .replaceAll("[đ]", "d");
+    }
+
+    private EmergencyTriage classifyEmergencyTriage(String normalizedQuery) {
+        String q = normalizedQuery == null ? "" : normalizedQuery.trim();
+        if (q.isBlank()) return new EmergencyTriage(false, 0, "none", "empty");
+
+        int score = 0;
+        String category = "general";
+        List<String> reasons = new ArrayList<>();
+
+        if (containsAny(q, "cap cuu", "khan cap", "sos", "emergency", "cuu toi", "cuu voi", "giup voi", "chet mat", "sap chet")) {
+            score += 5;
+            reasons.add("explicit-distress");
+        }
+        if (containsAny(q, "khong tho", "ngung tho", "ngat tho", "kho tho", "tim tai", "luoi tim", "thoi thop")) {
+            score += 6;
+            category = "airway";
+            reasons.add("airway-breathing");
+        }
+        if (containsAny(q, "hoc", "mac xuong", "di vat", "nghen", "nghet", "nuot phai")) {
+            score += 5;
+            category = "airway";
+            reasons.add("choking-risk");
+        }
+        if (containsAny(q, "co giat", "dong kinh", "run giat", "mat y thuc", "bat tinh", "hon me", "lim di", "khong dung day")) {
+            score += 5;
+            category = "neuro";
+            reasons.add("neuro-collapse");
+        }
+        if (containsAny(q, "ngo doc", "an ba", "thuoc chuot", "ba chuot", "socola", "chocolate", "thuoc tru sau", "hoa chat", "chat tay", "uong nham", "an nham", "nuot nham")) {
+            score += 5;
+            category = "poison";
+            reasons.add("poison-risk");
+        }
+        if (containsAny(q, "chay mau", "mau chay", "mau nhieu", "ra mau", "di ngoai ra mau", "ia ra mau", "i a ra mau", "phan mau", "tai nan", "bi xe tong", "xe quet", "xe quet trung", "xe can", "dam xe", "va xe", "nga cao", "gay xuong", "vet thuong sau", "can nhau")) {
+            score += 4;
+            category = "trauma";
+            reasons.add("trauma-bleeding");
+        }
+        if (containsAny(q, "meo", "cho", "cun", "boss", "thu cung", "be nha", "be no", "pet")) {
+            score += 1;
+            reasons.add("pet-context");
+        }
+        if (containsAny(q, "lam sao", "phai lam gi", "xu ly sao", "gio sao", "khong biet lam gi", "toi voi", "nhanh len")) {
+            score += 2;
+            reasons.add("urgent-help-seeking");
+        }
+
+        boolean emergency = score >= 5 || (score >= 4 && q.length() <= 80);
+        return new EmergencyTriage(emergency, score, category, reasons.isEmpty() ? "none" : String.join(",", reasons));
+    }
+
+    private boolean containsAny(String value, String... terms) {
+        for (String term : terms) {
+            if (value.contains(term)) return true;
+        }
+        return false;
+    }
+
+    private String buildEmergencyReply(String normalizedQuery, EmergencyTriage triage) {
+        StringBuilder reply = new StringBuilder();
+        reply.append("[EMERGENCY] Sen bình tĩnh làm ngay các bước sơ cứu dưới đây và gọi Rexi theo hotline 0353.374.156.\n\n");
+
+        if ("airway".equals(triage.category())) {
+            reply.append("**Nghi hóc dị vật/ngạt thở:**\n")
+                    .append("1. Mở miệng bé kiểm tra nhanh. Chỉ lấy dị vật ra nếu nhìn thấy rõ và gắp được an toàn.\n")
+                    .append("2. Không móc tay sâu vì có thể đẩy dị vật vào trong.\n")
+                    .append("3. Nếu bé không thở hoặc tím tái, thực hiện Heimlich cho thú cưng: đặt hai tay ngay sau xương sườn, ép nhanh hướng lên trên 3-5 lần, rồi kiểm tra miệng.\n")
+                    .append("4. Nếu bé nhỏ, có thể nâng phần thân sau cao hơn đầu và vỗ chắc 3-5 cái giữa hai bả vai.\n\n");
+        } else if ("poison".equals(triage.category())) {
+            reply.append("**Nghi ngộ độc:**\n")
+                    .append("1. Ngừng cho ăn/uống thêm và đưa bé tránh xa nguồn độc.\n")
+                    .append("2. Không tự gây nôn nếu chưa có bác sĩ hướng dẫn.\n")
+                    .append("3. Mang theo bao bì/chất nghi độc khi đến phòng khám.\n\n");
+        } else if ("neuro".equals(triage.category())) {
+            reply.append("**Co giật/ngất/lịm:**\n")
+                    .append("1. Dọn vật cứng quanh bé, không giữ chặt miệng hoặc kéo lưỡi.\n")
+                    .append("2. Ghi lại thời gian co giật và quay video ngắn nếu an toàn.\n")
+                    .append("3. Nếu cơn kéo dài hơn 2-3 phút hoặc lặp lại, đưa bé đi cấp cứu ngay.\n\n");
+        } else if ("trauma".equals(triage.category())) {
+            reply.append("**Chảy máu/tai nạn:**\n")
+                    .append("1. Dùng gạc sạch ép trực tiếp lên điểm chảy máu 5-10 phút.\n")
+                    .append("2. Hạn chế di chuyển bé nếu nghi gãy xương hoặc chấn thương nặng.\n")
+                    .append("3. Không tự bôi thuốc dân gian lên vết thương.\n\n");
+        } else {
+            reply.append("**Chưa rõ tình huống nhưng có dấu hiệu khẩn cấp:**\n")
+                    .append("1. Đặt bé ở nơi thoáng, yên tĩnh, tránh tụ tập hoặc lay mạnh.\n")
+                    .append("2. Kiểm tra nhanh: bé còn thở không, nướu/lưỡi có tím tái không, có chảy máu hoặc co giật không.\n")
+                    .append("3. Nhắn ngay triệu chứng chính: khó thở, hóc, ngộ độc, co giật, chảy máu, tai nạn hoặc lịm đi.\n\n");
+        }
+
+        reply.append("Sen cho Rexi biết vị trí hiện tại của Sen để Rexi hướng dẫn đường đến cơ sở thú y gần nhất. Nếu ở Gia Lâm/Hà Nội, đưa bé tới Phòng khám Thú y Rexi, Số 68, Ngõ 10, Đường Ngô Xuân Quảng, Trâu Quỳ, Gia Lâm, Hà Nội.");
+        return reply.toString();
+    }
+}

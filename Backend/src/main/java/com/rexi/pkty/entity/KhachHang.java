@@ -25,5 +25,7 @@ public class KhachHang {
 
     // Cấu hình khách hàng đồng ý nhận thông báo qua SMS (true/false)
     private Boolean nhan_sms;
+
+    private Integer nam_sinh;
 }
 

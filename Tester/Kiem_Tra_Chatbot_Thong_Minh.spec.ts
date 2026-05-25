@@ -37,6 +37,27 @@ test.describe('Kiểm tra Chatbot thông minh - ý định, media và giọng n�
     await expect(page.getByText(/Rexi (phát hiện lỗi|thấy đơn đặt lịch khám còn thiếu)/i).first()).toBeVisible({ timeout: 8000 });
   });
 
+  test('Mở chatbot sẽ prewarm provider AI để giảm độ trễ tin nhắn đầu', async ({ page }) => {
+    let prewarmCount = 0;
+    await loginAsCustomer(page);
+    await page.route('**/api/chat/prewarm', async route => {
+      prewarmCount++;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json; charset=utf-8',
+        body: JSON.stringify({ ok: true, provider: 'groq', mode: 'background' })
+      });
+    });
+
+    await openChat(page);
+    await expect.poll(() => prewarmCount).toBe(1);
+
+    await page.locator('#chatBtn').click({ force: true });
+    await page.locator('#chatBtn').click({ force: true });
+    await page.waitForTimeout(400);
+    expect(prewarmCount).toBe(1);
+  });
+
   test('Không tự điều hướng khi người dùng chỉ hỏi thông tin, dù phản hồi AI có tag NAVIGATE', async ({ page }) => {
     await loginAsCustomer(page);
     await page.route('**/api/chat', async route => {

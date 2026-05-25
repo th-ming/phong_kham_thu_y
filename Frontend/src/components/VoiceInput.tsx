@@ -16,9 +16,11 @@ export const VoiceInput = ({ onSend, onTyping }: { onSend: (text: string) => voi
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (SpeechRecognition) {
       const rec = new SpeechRecognition();
+      // Web Speech API chỉ nhận một ngôn ngữ chính mỗi phiên; vi-VN vẫn bắt tốt câu Việt
+      // và Chrome/Edge thường giữ được các thuật ngữ tiếng Anh ngắn trong câu trộn.
       rec.lang = 'vi-VN';
       rec.interimResults = true; // Hiện chữ ngay khi đang nói
-      rec.maxAlternatives = 1;
+      rec.maxAlternatives = 3;
       
       let silenceTimer: ReturnType<typeof window.setTimeout>;
       let finalTranscriptAccumulated = '';

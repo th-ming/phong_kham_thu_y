@@ -5,6 +5,7 @@ import axiosInstance from "@services/axios";
 import { formatTienVND, generateSlug, getUserProfile, normalizeUserRole } from "@utils/index";
 import { toast } from "@components/Toast";
 import { useAutoRefresh } from "@hooks/useAutoRefresh";
+import Loi404 from "@pages/Loi404";
 
 interface ServiceData {
   id_dich_vu: number;
@@ -77,12 +78,7 @@ const ChiTietDichVu: React.FC = () => {
   }
 
   if (!service) {
-    return (
-      <div style={{ padding: '150px 20px', textAlign: 'center', background: 'var(--background)', minHeight: '100vh' }}>
-        <h2 style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--ink)', marginBottom: '24px' }}>Dịch vụ không tồn tại</h2>
-        <Link to="/" className="btn btn-primary btn-pill">Quay về trang chủ</Link>
-      </div>
-    );
+    return <Loi404 />;
   }
 
   const assets = getServiceAssets(service.ten_dich_vu);

@@ -52,7 +52,67 @@ const Loi404: React.FC = () => {
                     backdrop-filter: var(--glass-blur);
                     border: 1px solid var(--glass-border);
                     box-shadow: var(--shadow-2xl);
-                    border-radius: 60px;
+                    border-radius: 48px;
+                    overflow: hidden;
+                }
+                .cat-404-number {
+                    position: absolute;
+                    inset: 0;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 0;
+                    pointer-events: none;
+                }
+                .cat-404-number span {
+                    color: var(--primary);
+                    font-size: clamp(8rem, 28vw, 13rem);
+                    font-weight: 1000;
+                    letter-spacing: -0.08em;
+                    line-height: 0.85;
+                    opacity: 0.1;
+                }
+                .cat-404-video {
+                    position: absolute;
+                    left: 50%;
+                    bottom: 5%;
+                    transform: translateX(-50%);
+                    width: min(72%, 350px);
+                    height: auto;
+                    z-index: 2;
+                    filter: drop-shadow(0 24px 18px rgba(0, 0, 0, 0.24));
+                }
+                .cat-404-question {
+                    position: absolute;
+                    top: 10%;
+                    right: 14%;
+                    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+                    width: 64px;
+                    height: 64px;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 10;
+                    animation: floatQuestion 3s ease-in-out infinite;
+                    color: white;
+                    box-shadow: 0 16px 34px rgba(245, 158, 11, 0.32);
+                }
+                @media (max-width: 720px) {
+                    .cat-card {
+                        max-width: 380px !important;
+                        border-radius: 34px;
+                    }
+                    .cat-404-video {
+                        width: min(76%, 300px);
+                        bottom: 4%;
+                    }
+                    .cat-404-question {
+                        width: 54px;
+                        height: 54px;
+                        top: 9%;
+                        right: 12%;
+                    }
                 }
             `}</style>
 
@@ -79,23 +139,13 @@ const Loi404: React.FC = () => {
 
                     {/* KHỐI CON MÈO */}
                     <div style={{ position: 'relative', width: '100%', aspectRatio: '1', maxWidth: '480px', margin: '0 auto' }} className="cat-card">
-                        <div style={{ position: 'absolute', top: '50%', left: '0', transform: 'translateY(-50%)', width: '100%', textAlign: 'center', zIndex: 0 }}>
-                            <span style={{ fontSize: '12rem', fontWeight: 1000, color: 'var(--primary)', opacity: 0.1, letterSpacing: '-10px' }}>404</span>
+                        <div className="cat-404-number">
+                            <span>404</span>
                         </div>
 
                         <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>
-                            <div style={{ transform: 'translateY(5%)', width: '100%', display: 'flex', justifyContent: 'center' }}>
-                                <TransparentVideo src="/img/video_loi_404.mp4" style={{ width: '85%', height: '85%', objectFit: 'contain', position: 'relative', zIndex: 2, filter: 'drop-shadow(0px 25px 20px rgba(0, 0, 0, 0.2))' }} />
-                            </div>
-
-                            <div style={{
-                                position: 'absolute', top: '8%', right: '15%',
-                                background: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',
-                                width: '60px', height: '60px', borderRadius: '50%',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                zIndex: 10, animation: 'floatQuestion 3s ease-in-out infinite',
-                                color: 'white'
-                            }}>
+                            <TransparentVideo src="/img/video_loi_404.mp4" className="cat-404-video" style={{ display: 'block' }} />
+                            <div className="cat-404-question">
                                 <span className="material-symbols-outlined" style={{ fontSize: '32px', fontWeight: 900 }}>question_mark</span>
                             </div>
                         </div>
