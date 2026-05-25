@@ -2,8 +2,10 @@ package com.rexi.pkty.controller;
 
 import com.rexi.pkty.entity.HoaDon;
 import com.rexi.pkty.repository.HoaDonRepository;
+import com.rexi.pkty.security.RexiSecurityRoles;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -33,10 +35,9 @@ public class FinanceController {
         if (auth == null || auth.getName().equals("anonymousUser"))
             return false;
 
-        // Kiểm tra nhanh qua Spring Security authorities (role code)
+        // Kiểm tra nhanh qua Spring Security authorities (role code) — chỉ tài chính
         String authorities = auth.getAuthorities().toString().toUpperCase();
-        if (authorities.contains("ADMIN") || authorities.contains("QUAN_LY") || authorities.contains("KE_TOAN")
-                || authorities.contains("STAFF") || authorities.contains("BAC_SI")) {
+        if (authorities.contains("ADMIN") || authorities.contains("QUAN_LY") || authorities.contains("KE_TOAN")) {
             return true;
         }
 
@@ -87,17 +88,8 @@ public class FinanceController {
 
     // Lấy danh sách thuốc sắp hết hạn (từ View)
     @GetMapping("/kho/thuoc-sap-het-han")
+    @PreAuthorize(RexiSecurityRoles.INVENTORY_READ)
     public ResponseEntity<?> getThuocSapHetHan() {
-        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
-                .getContext().getAuthentication();
-        String role = (auth != null) ? auth.getAuthorities().toString().toUpperCase() : "";
-        // BẢO MẬT: Chặn khách hàng xem thông tin cảnh báo kho thuốc
-        if (!role.contains("ADMIN") && !role.contains("QUAN_LY") && !role.contains("KETOAN") && !role.contains("KE_TOAN")
-                && !role.contains("BAC_SI") && !role.contains("Y_TA") && !role.contains("TIEP_TAN")) {
-            return ResponseEntity.status(403)
-                    .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền xem thông tin kho thuốc!"));
-        }
-
         try {
             return ResponseEntity.ok(hoaDonRepository.getThuocSapHetHan());
         } catch (Exception e) {
@@ -134,18 +126,8 @@ public class FinanceController {
 
     // Lấy tất cả hóa đơn (cho Admin)
     @GetMapping("/hoa-don")
+    @PreAuthorize(RexiSecurityRoles.INVOICE_READ)
     public ResponseEntity<?> getAllInvoices() {
-        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
-                .getContext().getAuthentication();
-        String role = (auth != null) ? auth.getAuthorities().toString().toUpperCase() : "";
-
-        // BẢO MẬT: Chặn khách hàng xem toàn bộ danh sách hóa đơn làm lộ doanh thu và
-        // thông tin người khác
-        if (!role.contains("ADMIN") && !role.contains("QUAN_LY") && !role.contains("KETOAN") && !role.contains("KE_TOAN")
-                && !role.contains("STAFF") && !role.contains("TIEP_TAN")) {
-            return ResponseEntity.status(403)
-                    .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền xem toàn bộ danh sách hóa đơn!"));
-        }
         try {
             return ResponseEntity.ok(hoaDonRepository.getAllHoaDon());
         } catch (Exception e) {
@@ -240,17 +222,8 @@ public class FinanceController {
 
     // Lấy tất cả thuốc
     @GetMapping("/kho/thuoc")
+    @PreAuthorize(RexiSecurityRoles.INVENTORY_READ)
     public ResponseEntity<?> getAllThuoc() {
-        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
-                .getContext().getAuthentication();
-        String role = (auth != null) ? auth.getAuthorities().toString().toUpperCase() : "";
-        // BẢO MẬT: Chặn khách hàng lấy danh sách toàn bộ mặt hàng thuốc
-        if (!role.contains("ADMIN") && !role.contains("QUAN_LY") && !role.contains("KETOAN") && !role.contains("KE_TOAN")
-                && !role.contains("BAC_SI") && !role.contains("Y_TA") && !role.contains("TIEP_TAN")) {
-            return ResponseEntity.status(403)
-                    .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền truy cập kho thuốc!"));
-        }
-
         try {
             return ResponseEntity.ok(hoaDonRepository.getAllThuoc());
         } catch (Exception e) {
@@ -261,17 +234,8 @@ public class FinanceController {
 
     // Lấy tất cả lô thuốc
     @GetMapping("/kho/lo-thuoc")
+    @PreAuthorize(RexiSecurityRoles.INVENTORY_READ)
     public ResponseEntity<?> getAllLoThuoc() {
-        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
-                .getContext().getAuthentication();
-        String role = (auth != null) ? auth.getAuthorities().toString().toUpperCase() : "";
-        // BẢO MẬT: Chặn lộ giá nhập (gia_nhap) và số lượng tồn kho cho người ngoài
-        if (!role.contains("ADMIN") && !role.contains("QUAN_LY") && !role.contains("KETOAN") && !role.contains("KE_TOAN")
-                && !role.contains("BAC_SI") && !role.contains("Y_TA") && !role.contains("TIEP_TAN")) {
-            return ResponseEntity.status(403)
-                    .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền truy cập thông tin lô thuốc!"));
-        }
-
         try {
             return ResponseEntity.ok(hoaDonRepository.getAllLoThuoc());
         } catch (Exception e) {
@@ -282,18 +246,11 @@ public class FinanceController {
 
     // Cập nhật trạng thái hóa đơn (Lễ tân thu tiền mặt hoặc chuyển khoản thủ công)
     @PutMapping("/hoa-don/{id}/status")
+    @PreAuthorize(RexiSecurityRoles.INVOICE_WRITE)
     public ResponseEntity<?> updateInvoiceStatus(@PathVariable String id, @RequestBody Map<String, String> payload) {
         org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
                 .getContext().getAuthentication();
         String role = (auth != null) ? auth.getAuthorities().toString().toUpperCase() : "";
-
-        // BẢO MẬT LỚP 1: Chặn khách hàng tự ý đổi trạng thái hóa đơn của mình thành "Đã
-        // thanh toán"
-        if (!role.contains("ADMIN") && !role.contains("QUAN_LY") && !role.contains("KETOAN") && !role.contains("KE_TOAN")
-                && !role.contains("STAFF") && !role.contains("TIEP_TAN")) {
-            return ResponseEntity.status(403)
-                    .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền cập nhật trạng thái hóa đơn!"));
-        }
 
         try {
             String status = payload.get("status");
@@ -330,13 +287,8 @@ public class FinanceController {
     // Nhập lô thuốc mới và tự động cộng dồn tồn kho
     @PostMapping("/kho/lo-thuoc")
     @org.springframework.transaction.annotation.Transactional
+    @PreAuthorize(RexiSecurityRoles.INVENTORY_WRITE)
     public ResponseEntity<?> addLoThuoc(@RequestBody Map<String, Object> payload) {
-        // BẢO MẬT: Chặn mọi đối tượng không có quyền Tài chính/Kho truy cập API này
-        if (!hasFinancePermission()) {
-            return ResponseEntity.status(403)
-                    .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền nhập kho thuốc!"));
-        }
-
         try {
             String idThuoc = String.valueOf(payload.get("id_thuoc"));
             String soLo = (String) payload.get("so_lo");
@@ -365,11 +317,8 @@ public class FinanceController {
 
     // Báo cáo doanh thu tháng (từ View)
     @GetMapping("/bao-cao/doanh-thu-thang")
+    @PreAuthorize(RexiSecurityRoles.FINANCE_READ)
     public ResponseEntity<?> getDoanhThuThang() {
-        if (!hasFinancePermission()) {
-            return ResponseEntity.status(403)
-                    .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền xem báo cáo tài chính!"));
-        }
         try {
             return ResponseEntity.ok(hoaDonRepository.getDoanhThuTheoThang());
         } catch (Exception e) {
@@ -380,11 +329,8 @@ public class FinanceController {
 
     // Tổng quan tài chính chuẩn: chỉ tính hóa đơn đã thanh toán
     @GetMapping("/bao-cao/tong-quan-tai-chinh")
+    @PreAuthorize(RexiSecurityRoles.FINANCE_READ)
     public ResponseEntity<?> getTongQuanTaiChinh() {
-        if (!hasFinancePermission()) {
-            return ResponseEntity.status(403)
-                    .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền xem báo cáo tài chính!"));
-        }
         try {
             Map<String, Object> summary = jdbcTemplate.queryForMap(
                     "SELECT " +
@@ -403,11 +349,8 @@ public class FinanceController {
 
     // Thống kê bác sĩ (từ View)
     @GetMapping("/bao-cao/thong-ke-bac-si")
+    @PreAuthorize(RexiSecurityRoles.FINANCE_READ)
     public ResponseEntity<?> getThongKeBacSi() {
-        if (!hasFinancePermission()) {
-            return ResponseEntity.status(403)
-                    .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền xem báo cáo thống kê!"));
-        }
         try {
             return ResponseEntity.ok(hoaDonRepository.getThongKeBacSi());
         } catch (Exception e) {
@@ -418,6 +361,7 @@ public class FinanceController {
 
     // Endpoint test lỗi
     @GetMapping("/test-doanh-thu")
+    @PreAuthorize(RexiSecurityRoles.FINANCE_READ)
     public ResponseEntity<?> testDoanhThu() {
         try {
             return ResponseEntity.ok(hoaDonRepository.getDoanhThuTheoNgay());
@@ -428,11 +372,8 @@ public class FinanceController {
 
     // Báo cáo doanh thu ngày
     @GetMapping("/bao-cao/doanh-thu-ngay")
+    @PreAuthorize(RexiSecurityRoles.FINANCE_READ)
     public ResponseEntity<?> getDoanhThuNgay() {
-        if (!hasFinancePermission()) {
-            return ResponseEntity.status(403)
-                    .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền xem báo cáo tài chính!"));
-        }
         try {
             return ResponseEntity.ok(hoaDonRepository.getDoanhThuTheoNgay());
         } catch (Exception e) {
@@ -444,11 +385,8 @@ public class FinanceController {
 
     // Thống kê tỷ lệ thú cưng
     @GetMapping("/bao-cao/thong-ke-thu-cung")
+    @PreAuthorize(RexiSecurityRoles.FINANCE_READ)
     public ResponseEntity<?> getThongKeThuCung() {
-        if (!hasFinancePermission()) {
-            return ResponseEntity.status(403)
-                    .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền xem báo cáo thống kê!"));
-        }
         try {
             return ResponseEntity.ok(hoaDonRepository.getThongKeThuCung());
         } catch (Exception e) {
@@ -459,11 +397,8 @@ public class FinanceController {
 
     // Thống kê doanh thu theo dịch vụ
     @GetMapping("/bao-cao/doanh-thu-dich-vu")
+    @PreAuthorize(RexiSecurityRoles.FINANCE_READ)
     public ResponseEntity<?> getDoanhThuTheoDichVu() {
-        if (!hasFinancePermission()) {
-            return ResponseEntity.status(403)
-                    .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền xem báo cáo tài chính!"));
-        }
         try {
             return ResponseEntity.ok(hoaDonRepository.getDoanhThuTheoDichVu());
         } catch (Exception e) {

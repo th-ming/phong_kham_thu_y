@@ -3,8 +3,10 @@ package com.rexi.pkty.controller;
 import com.rexi.pkty.entity.KhachHang;
 import com.rexi.pkty.repository.KhachHangRepository;
 import com.rexi.pkty.service.KhachHangService;
+import com.rexi.pkty.security.RexiSecurityRoles;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
@@ -43,31 +45,22 @@ public class KhachHangController {
 
     // Lấy danh sách khách hàng
     @GetMapping
+    @PreAuthorize(RexiSecurityRoles.CUSTOMER_PET_READ)
     public ResponseEntity<?> getAll() {
-        if (!isInternalStaff()) {
-            return ResponseEntity.status(403)
-                    .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền xem danh sách khách hàng!"));
-        }
         return ResponseEntity.ok(khachHangService.getAllKhachHang());
     }
 
     // Đếm tổng số khách hàng (cho Dashboard)
     @GetMapping("/count")
+    @PreAuthorize(RexiSecurityRoles.CUSTOMER_PET_READ)
     public ResponseEntity<?> countAll() {
-        if (!isInternalStaff()) {
-            return ResponseEntity.status(403)
-                    .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền xem thống kê!"));
-        }
         return ResponseEntity.ok(khachHangRepository.count());
     }
 
     // Tìm kiếm khách hàng thông minh theo tên, SĐT, email, địa chỉ hoặc mã khách.
     @GetMapping("/search")
+    @PreAuthorize(RexiSecurityRoles.CUSTOMER_PET_READ)
     public ResponseEntity<?> searchBySdt(@RequestParam String sdt) {
-        if (!isInternalStaff()) {
-            return ResponseEntity.status(403)
-                    .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền tìm kiếm khách hàng!"));
-        }
         return ResponseEntity.ok(khachHangRepository.findAll().stream()
                 .filter(kh -> kh.getDa_xoa() == null || !kh.getDa_xoa())
                 .filter(kh -> com.rexi.pkty.util.SmartSearchSql.matchesFields(sdt,

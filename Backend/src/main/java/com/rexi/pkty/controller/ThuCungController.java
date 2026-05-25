@@ -2,8 +2,10 @@ package com.rexi.pkty.controller;
  
 import com.rexi.pkty.entity.ThuCung;
 import com.rexi.pkty.repository.ThuCungRepository;
+import com.rexi.pkty.security.RexiSecurityRoles;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
  
 import java.util.List;
@@ -29,17 +31,12 @@ public class ThuCungController {
     private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
 
     @GetMapping
+    @PreAuthorize(RexiSecurityRoles.CUSTOMER_PET_READ)
     public ResponseEntity<?> getAllThuCung(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String search) {
         try {
-            org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
-            String role = (auth != null) ? auth.getAuthorities().toString().toUpperCase() : "";
-            if (!role.contains("ADMIN") && !role.contains("QUAN_LY") && !role.contains("TIEP_TAN") && !role.contains("BAC_SI") && !role.contains("Y_TA")) {
-                return ResponseEntity.status(403).body(Map.of("message", "Từ chối truy cập"));
-            }
-
             // Dùng JdbcTemplate để ổn định nhất, tránh lỗi mapping JPA/Serialization
             String sql;
             List<Map<String, Object>> allPets;

@@ -2715,20 +2715,20 @@ export const ChatBot: React.FC = () => {
             .some(phrase => normalized.includes(phrase));
     };
 
-    const canRunAutopilotTag = (tag: string) => {
+    const canRunAutopilotTag = (tag: string, isConfirmed: boolean = false) => {
         if (location.pathname.startsWith("/quan-ly/") && !canAccessAdminPath(normalizedRoleCode, location.pathname)) {
             return false;
         }
         if (tag.toUpperCase().startsWith("[DELETE:")) {
-            return Boolean(pendingSensitiveCommandRef.current);
+            return isConfirmed || Boolean(pendingSensitiveCommandRef.current);
         }
-        if (isSensitiveAutopilotTag(tag) && !pendingSensitiveCommandRef.current) {
+        if (isSensitiveAutopilotTag(tag) && !pendingSensitiveCommandRef.current && !isConfirmed) {
             return false;
         }
         return true;
     };
 
-    const handleLocalAgentPageAction = async (text: string) => {
+    const handleLocalAgentPageAction = async (text: string, isConfirmed: boolean = false) => {
         const normalized = normalizeSearchText(text);
         const reply = (message: string) => {
             const aiReply = { type: "ai", text: message };
@@ -3029,7 +3029,7 @@ export const ChatBot: React.FC = () => {
         }
 
         const label = button.textContent?.trim() || button.getAttribute("aria-label") || button.getAttribute("data-ai-id") || clickTarget;
-        if (isSensitiveVisibleElement(button)) {
+        if (!isConfirmed && isSensitiveVisibleElement(button)) {
             pendingSensitiveCommandRef.current = text;
             reply(`Tôi thấy nút "${label}" là thao tác nhạy cảm. Tôi chưa bấm. Nếu muốn làm tiếp, hãy nói "xác nhận"; nếu không, nói "hủy".`);
             return true;
@@ -3037,7 +3037,7 @@ export const ChatBot: React.FC = () => {
 
         const aiId = button.getAttribute("data-ai-id");
         if (aiId) {
-            await executeAction(`[CLICK:${aiId}]`);
+            await executeAction(`[CLICK:${aiId}]`, isConfirmed);
         } else {
             button.click();
             window.dispatchEvent(new CustomEvent('agent-action', {
@@ -3929,10 +3929,14 @@ export const ChatBot: React.FC = () => {
             return;
         }
 
+        let sensitiveConfirmedInThisTurn = false;
+        let textForLocalAction = textToSend;
         const pendingSensitiveCommand = pendingSensitiveCommandRef.current;
         if (pendingSensitiveCommand) {
             if (isAffirmationCommand(textToSend)) {
                 pendingSensitiveCommandRef.current = null;
+                sensitiveConfirmedInThisTurn = true;
+                textForLocalAction = pendingSensitiveCommand;
                 textToSend = `${pendingSensitiveCommand}\nNgười dùng đã xác nhận rõ ràng bằng giọng nói: "${textToSend}". Chỉ thực hiện đúng tác vụ đã xác nhận, không mở rộng thêm.`;
             } else if (isCancelCommand(textToSend)) {
                 pendingSensitiveCommandRef.current = null;
@@ -3995,7 +3999,7 @@ export const ChatBot: React.FC = () => {
                  normalizedAgentQuery.includes("biet duoc") ||
                  normalizedAgentQuery.includes("co biet"));
 
-            if (await handleLocalAgentPageAction(textToSend)) {
+        if (await handleLocalAgentPageAction(textForLocalAction, sensitiveConfirmedInThisTurn)) {
                 setAgentLoading(false);
                 return;
             }
@@ -5034,11 +5038,11 @@ export const ChatBot: React.FC = () => {
             }
             let blockedAutopilotAgent = false;
             for (const tag of actionTags) {
-                if (!canRunAutopilotTag(tag)) {
+                if (!canRunAutopilotTag(tag, sensitiveConfirmedInThisTurn)) {
                     blockedAutopilotAgent = true;
                     continue;
                 }
-                await executeAction(tag);
+                await executeAction(tag, sensitiveConfirmedInThisTurn);
             }
             if (blockedAutopilotAgent) {
                 cleanedReplyText = `${cleanedReplyText}\n\n(Tôi đã bỏ qua một số thao tác Autopilot vì không đúng quyền hoặc cần xác nhận "xác nhận" trước.)`.trim();
