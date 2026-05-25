@@ -1,7 +1,8 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axiosInstance from "@services/axios";
 import { Modal } from "@components/CommonUI";
+import { toast } from "@components/Toast";
 import { getUserProfile } from "@utils/index";
 import { useAutoRefresh } from "@hooks/useAutoRefresh";
 
@@ -35,13 +36,123 @@ const DashboardKhachHang: React.FC = () => {
   const [isTipsModalOpen, setIsTipsModalOpen] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<string>("");
   const [petRowsForTrend, setPetRowsForTrend] = useState<any[]>([]);
+  const [showOnboardingModal, setShowOnboardingModal] = useState(false);
+  const [birthYear, setBirthYear] = useState<string>("");
+  const [updatingBirthYear, setUpdatingBirthYear] = useState(false);
+  const [fullCustomerProfile, setFullCustomerProfile] = useState<any>(null);
 
   const randomTip = useMemo(() => PET_CARE_TIPS[Math.floor(Math.random() * PET_CARE_TIPS.length)], []);
+
+  // KIỂM TRA NĂM SINH ĐỂ HIỂN THỊ ONBOARDING MODAL CHO KHÁCH HÀNG MỚI
+  useEffect(() => {
+    const checkBirthYear = async () => {
+      const currentUser = getUserProfile();
+      if (!currentUser) return;
+      
+      const idKhachHang = currentUser.id_khach_hang || currentUser.idKhachHang || currentUser.id;
+      if (!idKhachHang) return;
+
+      try {
+        // Lấy profile chi tiết từ API để có dữ liệu mới nhất trong DB
+        const res = await axiosInstance.get(`/api/khach-hang/${idKhachHang}`);
+        const profile = res.data;
+        setFullCustomerProfile(profile);
+
+        // Nếu DB chưa có năm sinh hoặc bằng 0, bật onboarding modal
+        if (profile && (profile.nam_sinh === undefined || profile.nam_sinh === null || profile.nam_sinh === 0)) {
+          setShowOnboardingModal(true);
+        } else {
+          // Nếu DB đã có năm sinh, đồng bộ ngược lại localStorage
+          if (currentUser.nam_sinh !== profile.nam_sinh) {
+            localStorage.setItem("user", JSON.stringify({
+              ...currentUser,
+              nam_sinh: profile.nam_sinh
+            }));
+          }
+        }
+      } catch (err) {
+        console.error("Lỗi khi tải thông tin khách hàng để check năm sinh:", err);
+      }
+    };
+
+    checkBirthYear();
+  }, []);
+
+  const handleSaveBirthYear = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!birthYear || isNaN(Number(birthYear))) {
+      toast.error("Vui lòng nhập năm sinh hợp lệ!");
+      return;
+    }
+
+    const yearNum = Number(birthYear);
+    const currentYear = new Date().getFullYear();
+    if (yearNum < 1920 || yearNum > currentYear) {
+      toast.error(`Năm sinh phải nằm trong khoảng từ 1920 đến ${currentYear}!`);
+      return;
+    }
+
+    const currentUser = getUserProfile();
+    const idKhachHang = currentUser?.id_khach_hang || currentUser?.idKhachHang || currentUser?.id;
+    if (!idKhachHang) {
+      toast.error("Không tìm thấy thông tin khách hàng. Vui lòng thử đăng nhập lại!");
+      return;
+    }
+
+    setUpdatingBirthYear(true);
+    try {
+      // Gộp năm sinh vào profile hiện tại
+      const updatedProfile = {
+        ...fullCustomerProfile,
+        id_khach_hang: idKhachHang,
+        nam_sinh: yearNum
+      };
+
+      await axiosInstance.put(`/api/khach-hang/${idKhachHang}`, updatedProfile);
+      
+      // Đồng bộ thông tin mới vào localStorage
+      const nextUser = {
+        ...currentUser,
+        nam_sinh: yearNum
+      };
+      localStorage.setItem("user", JSON.stringify(nextUser));
+
+      // Đóng modal
+      setShowOnboardingModal(false);
+
+      // Hiển thị lời chào cá nhân hóa độc đáo theo lứa tuổi
+      if (yearNum >= 1997) {
+        toast.success("Oki kiki! Bạn đã gia nhập Câu lạc bộ Gen Z nhây nhây siêu đáng yêu. Hãy trò chuyện với chatbot Rexi phiên bản Genz cực khìn cực iu nhé! 🐱🎉");
+      } else {
+        toast.success("Cập nhật thành công! Giao diện phòng khám và Trợ lý y khoa Rexi chuyên nghiệp đã được thiết lập sẵn sàng phục vụ Quý khách! 🩺✨");
+      }
+
+      // Reload nhẹ trang để áp dụng tone giọng mới tức thì
+      setTimeout(() => {
+        window.location.reload();
+      }, 2500);
+
+    } catch (err: any) {
+      console.error("Lỗi khi lưu năm sinh onboarding:", err);
+      toast.error(err.response?.data?.message || "Cập nhật năm sinh thất bại. Vui lòng thử lại!");
+    } finally {
+      setUpdatingBirthYear(false);
+    }
+  };
 
   const user = getUserProfile();
   const userName = user?.display_name || user?.displayName || user?.ho_ten || user?.hoTen || user?.fullName || user?.ten_khach_hang || user?.ten_dang_nhap || user?.username || "Sen";
   const userAvatar = user?.hinh_anh || user?.avatar || "";
   const userInitial = String(userName).replace(/^\d+\.\s*/, '').trim().charAt(0).toUpperCase() || "S";
+
+  // Bẫy nghiệp vụ phân loại KHACH_HANG: Cắt mốc từ 1997 trở đi gán cứng là GENZ.
+  // Quyết định này giúp đổi banner động dới chatbot Rexi nhây nhây siêu bựa.
+  // Ông nào sau này bảo trì muốn đổi mốc 1997 sang mốc khác thì đổi ở đây dới đồng bộ DB nha.
+  const isGenZ = useMemo(() => {
+    if (!user) return false;
+    const userNamSinh = user.nam_sinh;
+    return userNamSinh !== undefined && userNamSinh !== null && Number(userNamSinh) >= 1997;
+  }, [user]);
 
   const fetchDashboardData = React.useCallback(async () => {
     if (!user) {
@@ -272,6 +383,15 @@ const DashboardKhachHang: React.FC = () => {
           from { opacity: 0; transform: translateY(30px); }
           to { opacity: 1; transform: translateY(0); }
         }
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes float {
+          0% { transform: translateY(0px); }
+          50% { transform: translateY(-8px); }
+          100% { transform: translateY(0px); }
+        }
         @keyframes bounceLocal {
           0% { transform: translateY(0); }
           100% { transform: translateY(-4px); }
@@ -342,13 +462,6 @@ const DashboardKhachHang: React.FC = () => {
           width: min(250px, calc(100% - 36px));
           padding: 14px 15px;
           border-radius: 16px;
-          background: var(--surface);
-          border: 1px solid var(--gray-200);
-          box-shadow: 0 20px 44px rgba(15, 23, 42, 0.16);
-          color: var(--ink);
-          opacity: 0;
-          transform: translateY(-6px);
-          pointer-events: none;
           transition: all 0.3s ease;
         }
         .kpi-trend-badge:hover + .kpi-trend-popover,
@@ -413,8 +526,14 @@ const DashboardKhachHang: React.FC = () => {
             </div>
           </div>
           <div>
-            <h1 className="header-title" style={{ fontSize: '3.5rem', fontWeight: 950, letterSpacing: '-2px', margin: '0 0 8px 0', textShadow: '0 4px 15px rgba(0,0,0,0.2)', color: 'white' }}>Xin chào! 👋</h1>
-            <p style={{ fontWeight: 700, color: 'rgba(255,255,255,0.95)', margin: 0, fontSize: '1.2rem', textShadow: '0 1px 4px rgba(0,0,0,0.1)' }}>Cùng theo dõi và chăm sóc sức khỏe cho các bạn nhỏ nhà mình nhé.</p>
+            <h1 className="header-title" style={{ fontSize: '3.5rem', fontWeight: 950, letterSpacing: '-2px', margin: '0 0 8px 0', textShadow: '0 4px 15px rgba(0,0,0,0.2)', color: 'white' }}>
+              {isGenZ ? `Hế lô Sen ${userName} nha! 🦖👋` : `Kính chào Quý khách ${userName}! 👋`}
+            </h1>
+            <p style={{ fontWeight: 700, color: 'rgba(255,255,255,0.95)', margin: 0, fontSize: '1.2rem', textShadow: '0 1px 4px rgba(0,0,0,0.1)' }}>
+              {isGenZ 
+                ? "Hôm nay boss cưng thế nào òi? Cùng xem lịch khám dới chi tiêu dới Rexi nhen! 🐾💖"
+                : "Chào mừng Quý khách quay trở lại. Kính chúc Quý khách và các bé cưng một ngày tràn đầy sức khỏe và bình an! 🏥✨"}
+            </p>
             {lastUpdated && (
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', fontWeight: 800, background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)', padding: '6px 14px', borderRadius: '999px', marginTop: '14px', border: '1px solid rgba(255,255,255,0.2)', position: 'relative', zIndex: 1, boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
                 <span className="material-symbols-outlined" style={{ fontSize: '15px', color: '#5eead4', animation: 'spin 3s infinite linear' }}>sync</span>
@@ -535,6 +654,120 @@ const DashboardKhachHang: React.FC = () => {
           ))}
         </div>
       </Modal>
+
+      {/* ONBOARDING MODAL GLASSMORPHISM LỘNG LẪY CHO KHÁCH HÀNG MỚI */}
+      {showOnboardingModal && (
+        <div style={{
+          position: "fixed",
+          top: 0, left: 0, right: 0, bottom: 0,
+          background: "rgba(15, 23, 42, 0.45)",
+          backdropFilter: "blur(20px) saturate(180%)",
+          WebkitBackdropFilter: "blur(20px) saturate(180%)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 9999,
+          padding: "20px",
+          animation: "fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1)"
+        }}>
+          <div style={{
+            background: "rgba(255, 255, 255, 0.75)",
+            backdropFilter: "blur(40px)",
+            WebkitBackdropFilter: "blur(40px)",
+            border: "1px solid rgba(255, 255, 255, 0.4)",
+            borderRadius: "32px",
+            width: "100%",
+            maxWidth: "460px",
+            padding: "40px",
+            boxShadow: "0 30px 60px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.6)",
+            textAlign: "center",
+            transform: "translateY(0)",
+            animation: "slideUpFade 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)"
+          }}>
+            <div style={{
+              width: "80px",
+              height: "80px",
+              background: "linear-gradient(135deg, var(--primary) 0%, #14b8a6 100%)",
+              borderRadius: "28px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              margin: "0 auto 24px auto",
+              boxShadow: "0 12px 24px rgba(15, 157, 138, 0.3)",
+              animation: "float 4s ease-in-out infinite"
+            }}>
+              <span className="material-symbols-outlined" style={{ fontSize: "40px", color: "white" }}>face</span>
+            </div>
+
+            <h3 style={{ fontSize: "1.6rem", fontWeight: 900, color: "var(--ink)", margin: "0 0 12px 0", letterSpacing: "-0.5px" }}>Chào mừng bạn đến với Rexi!</h3>
+            <p style={{ fontSize: "0.95rem", color: "var(--gray-500)", fontWeight: 600, lineHeight: "1.6", margin: "0 0 32px 0" }}>
+              Hãy cho phòng khám biết năm sinh của bạn để chúng tôi cá nhân hóa giao diện và mang đến phong cách trò chuyện phù hợp nhất nhé!
+            </p>
+
+            <form onSubmit={handleSaveBirthYear}>
+              <div style={{ position: "relative", marginBottom: "24px" }}>
+                <input
+                  type="number"
+                  placeholder="Nhập năm sinh của bạn (VD: 1998)"
+                  value={birthYear}
+                  onChange={(e) => setBirthYear(e.target.value)}
+                  min="1920"
+                  max={new Date().getFullYear()}
+                  style={{
+                    width: "100%",
+                    padding: "16px 20px",
+                    borderRadius: "16px",
+                    border: "2px solid rgba(15, 157, 138, 0.2)",
+                    background: "rgba(255, 255, 255, 0.8)",
+                    fontSize: "1.05rem",
+                    fontWeight: 700,
+                    textAlign: "center",
+                    color: "var(--ink)",
+                    outline: "none",
+                    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = "var(--primary)"}
+                  onBlur={(e) => e.target.style.borderColor = "rgba(15, 157, 138, 0.2)"}
+                  disabled={updatingBirthYear}
+                  autoFocus
+                  required
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={updatingBirthYear}
+                className="btn btn-primary"
+                style={{
+                  width: "100%",
+                  padding: "16px",
+                  borderRadius: "16px",
+                  fontWeight: 800,
+                  fontSize: "1rem",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "8px",
+                  boxShadow: "0 8px 20px rgba(15, 157, 138, 0.25)",
+                  transition: "all 0.3s"
+                }}
+              >
+                {updatingBirthYear ? (
+                  <>
+                    <div className="dot-pulse" style={{ scale: "0.8" }}></div>
+                    Đang thiết lập...
+                  </>
+                ) : (
+                  <>
+                    Xác nhận & Khám phá ngay
+                    <span className="material-symbols-outlined">arrow_forward</span>
+                  </>
+                )}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

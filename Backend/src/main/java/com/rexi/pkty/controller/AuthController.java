@@ -716,6 +716,8 @@ public class AuthController {
             kh.setEmail(request.getEmail());
             kh.setSdt(request.getSdt());
             kh.setDia_chi(request.getDia_chi());
+            // Lưu năm sinh của khách hàng để phân loại độ tuổi tự động (VD: GenZ vs người lớn tuổi)
+            kh.setNam_sinh(request.getNam_sinh());
             kh.setDa_xoa(false);
             kh.setNgay_tao(java.time.LocalDateTime.now());
             kh.setNgay_cap_nhat(java.time.LocalDateTime.now());
@@ -803,6 +805,17 @@ public class AuthController {
             }
             kh.setEmail(email);
             kh.setDia_chi("");
+            
+            // Lấy năm sinh từ dữ liệu gửi lên nếu có (tiện cho lễ tân nhập nhanh)
+            String namSinhStr = request.get("nam_sinh");
+            if (namSinhStr != null && !namSinhStr.trim().isEmpty()) {
+                try {
+                    kh.setNam_sinh(Integer.parseInt(namSinhStr.trim()));
+                } catch (Exception e) {
+                    logger.warning("Không thể parse năm sinh: " + namSinhStr);
+                }
+            }
+
             kh.setDa_xoa(false);
             kh.setNgay_tao(java.time.LocalDateTime.now());
             kh.setNgay_cap_nhat(java.time.LocalDateTime.now());

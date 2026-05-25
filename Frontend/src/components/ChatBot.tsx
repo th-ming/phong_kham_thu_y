@@ -343,7 +343,6 @@ const SwarmConsole: React.FC<{ data: SwarmData; isDark: boolean }> = ({ data, is
                     </div>
 
                     {/* Danh sách contacts xem trước */}
-                    {contacts.length > 0 && !isSent && (
                     {contacts.length > 0 && !isSent && !isCancelled && (
                         <div style={{ marginTop: '12px' }}>
                             <div style={{ fontSize: '0.72rem', fontWeight: 900, color: '#3b82f6', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -377,12 +376,10 @@ const SwarmConsole: React.FC<{ data: SwarmData; isDark: boolean }> = ({ data, is
 
                             {/* Nút Phê Duyệt & Gửi Đồng Loạt */}
                             {!isSending && (
-                                <button
                                 <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
                                   <button
                                     onClick={handleApproveAndSend}
                                     style={{
-                                        marginTop: '12px', width: '100%', padding: '12px',
                                         flex: 1, padding: '12px',
                                         background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
                                         color: 'white', border: 'none', borderRadius: '12px',
@@ -396,7 +393,6 @@ const SwarmConsole: React.FC<{ data: SwarmData; isDark: boolean }> = ({ data, is
                                 >
                                     <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>send</span>
                                     ✅ PHÊ DUYỆT & GỬI ĐỒNG LOẠT ({contacts.length} EMAIL)
-                                </button>
                                   </button>
                                   
                                   <button

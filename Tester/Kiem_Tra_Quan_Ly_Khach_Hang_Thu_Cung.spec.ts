@@ -29,6 +29,7 @@ test.describe('Kiểm thử chức năng: Quản lý Khách hàng & Thú cưng',
         await page.locator('[data-ai-id="input-quanlykhachhangthucung-3mat"]').fill(tenKhachHang); // Tên
         await page.locator('[data-ai-id="input-quanlykhachhangthucung-3m6n"]').fill(`09${ts.toString().slice(-8)}`); // SĐT ngẫu nhiên
         await page.locator('[data-ai-id="input-quanlykhachhangthucung-j4ng"]').fill(`tester_${ts}@rexi.com`); // Email
+        await page.locator('[data-ai-id="input-quanlykhachhangthucung-namsinh"]').fill('1999'); // Năm sinh (Gen Z để chatbot đổi giọng nhây)
 
         // 4. Lưu thông tin
         const registerResponse = page.waitForResponse(res => res.url().includes('/api/auth/register-simple'), { timeout: 15000 });
@@ -37,6 +38,9 @@ test.describe('Kiểm thử chức năng: Quản lý Khách hàng & Thú cưng',
 
         // 5. Xác nhận hiển thị thông báo thành công
         await expect(page.getByText('Thêm khách hàng thành công!')).toBeVisible({ timeout: 10000 });
+
+        // Chụp lại ảnh màn hình bằng chứng thực tế đăng ký thành công có Năm sinh Gen Z
+        await page.screenshot({ path: 'd:/QLy Phòng Khám Thú Y/Tester/test-results/evidence-tc01-dang-ky-nam-sinh.png', fullPage: true });
     });
 
     test('TC02: Đăng ký bé mới và gán cho Chủ sở hữu', async ({ page }) => {
@@ -63,6 +67,9 @@ test.describe('Kiểm thử chức năng: Quản lý Khách hàng & Thú cưng',
 
         // 5. Xác nhận thành công
         await expect(page.getByText('Thêm thú cưng thành công!')).toBeVisible({ timeout: 10000 });
+
+        // Chụp lại ảnh màn hình bằng chứng thực tế đăng ký thú cưng thành công
+        await page.screenshot({ path: 'd:/QLy Phòng Khám Thú Y/Tester/test-results/evidence-tc02-dang-ky-thu-cung.png', fullPage: true });
     });
 
 });
