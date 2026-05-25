@@ -357,6 +357,12 @@ ChatMessage systemMsg = new ChatMessage();
                 return emitter;
             }
 
+            // Hàm ẩn giúp phát hiện lỗi Timeout để cắt đuôi Fallback
+            java.util.function.Predicate<Exception> isTimeoutError = (ex) -> {
+                String msg = ex.getMessage() != null ? ex.getMessage().toLowerCase(Locale.ROOT) : "";
+                return msg.contains("timeout") || msg.contains("timed out") || msg.contains("read timed out");
+            };
+
             String reply;
             // Định tuyến AI thông minh: Gemini trị ảnh/video, DeepSeek cân y tế, Groq chat thường cho nhanh.
             if (hasMedia) {
@@ -365,6 +371,9 @@ ChatMessage systemMsg = new ChatMessage();
                 try {
                     reply = geminiService.chat(history);
                 } catch (Exception geminiEx) {
+                    if (isTimeoutError.test(geminiEx)) {
+                        throw new RuntimeException("Gemini timeout khi phân tích Media", geminiEx);
+                    }
                     if (hasVideo) {
                         logger.warning("[AI ROUTER] Gemini lỗi khi phân tích video; không fallback sang model text-only để tránh bịa kết quả video: " + geminiEx.getMessage());
                         reply = "Tôi chưa phân tích được video này vì model đa phương tiện đang lỗi hoặc quá tải. Để tránh nhận định bịa, bạn vui lòng gửi lại video ngắn hơn/rõ hơn hoặc gửi 2-3 ảnh chụp từ video. Nếu bé có dấu hiệu khó thở, co giật, chảy máu nhiều, tím tái hoặc lịm đi thì đưa bé đi cấp cứu ngay.";
@@ -379,12 +388,17 @@ ChatMessage systemMsg = new ChatMessage();
                 try {
                     reply = openRouterService.chat(history);
                 } catch (Exception openRouterEx) {
-                    logger.warning("[AI ROUTER] OpenRouter lỗi, chuyển hướng dự phòng sang: Gemini...");
-                    try {
-                        reply = geminiService.chat(history);
-                    } catch (Exception geminiEx) {
-                        logger.warning("[AI ROUTER] Gemini lỗi, chuyển hướng dự phòng cuối cùng sang: Groq...");
+                    if (isTimeoutError.test(openRouterEx)) {
+                        logger.warning("[AI ROUTER] OpenRouter (DeepSeek) bị Timeout, bẻ lái khẩn cấp sang Groq siêu tốc để cứu vãn...");
                         reply = groqService.chat(history);
+                    } else {
+                        logger.warning("[AI ROUTER] OpenRouter lỗi, chuyển hướng dự phòng sang: Gemini...");
+                        try {
+                            reply = geminiService.chat(history);
+                        } catch (Exception geminiEx) {
+                            logger.warning("[AI ROUTER] Gemini lỗi, chuyển hướng dự phòng cuối cùng sang: Groq...");
+                            reply = groqService.chat(history);
+                        }
                     }
                 }
             } else {
@@ -393,6 +407,10 @@ ChatMessage systemMsg = new ChatMessage();
                 try {
                     reply = groqService.chat(history);
                 } catch (Exception groqException) {
+                    if (isTimeoutError.test(groqException)) {
+                        // Groq là model nhanh nhất mà còn timeout thì mạng hoặc server đang có vấn đề nặng. Báo lỗi ngay lập tức.
+                        throw new RuntimeException("Groq timeout", groqException);
+                    }
                     logger.warning("[AI ROUTER] Groq lỗi, chuyển hướng dự phòng sang: Gemini...");
                     try {
                         reply = geminiService.chat(history);

@@ -99,23 +99,25 @@ const PhanDoiTac: React.FC = () => {
                         </div>
                     </div>
 
-                    <svg aria-hidden="true" className="partner-logo-filters" focusable="false">
-                        <defs>
-                            {/* Tách nền trắng PNG — chỉ giữ phần màu của logo */}
-                            {/* Dark mode: tách nền trắng nhẹ — giữ màu logo đậm, không làm mờ */}
-                            <filter id="partner-logo-knockout-soft" colorInterpolationFilters="sRGB">
-                                <feColorMatrix
-                                    type="matrix"
-                                    values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  -0.88 -0.88 -0.88 1 0.12"
-                                />
-                            </filter>
-                        </defs>
-                    </svg>
+                <svg aria-hidden="true" style={{ position: 'absolute', width: 0, height: 0, pointerEvents: 'none' }}>
+                    <defs>
+                        <filter id="smart-knockout" colorInterpolationFilters="sRGB">
+                            {/* 1. Tính độ sáng (Luminance) của ảnh gốc */}
+                            <feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0.299 0.587 0.114 0 0" result="luma" />
+                            {/* 2. Ép pixel nền trắng thành trong suốt (alpha=0), giữ nguyên pixel màu */}
+                            <feComponentTransfer in="luma" result="alphaMask">
+                                <feFuncA type="linear" slope="-10" intercept="9.5" />
+                            </feComponentTransfer>
+                            {/* 3. Phủ mặt nạ trong suốt lên ảnh gốc */}
+                            <feComposite in="SourceGraphic" in2="alphaMask" operator="in" />
+                        </filter>
+                    </defs>
+                </svg>
 
                     <div className="responsive-grid-2">
                         {partners.map((partner) => (
-                            <div key={partner.name} className="partner-card-new">
-                                <div className="partner-logo-box" style={{ '--partner-accent': partner.color } as React.CSSProperties}>
+                            <div key={partner.name} className="partner-card-new" style={{ '--partner-accent': partner.color } as React.CSSProperties}>
+                                <div className="partner-logo-box">
                                     <img src={partner.logo} alt={partner.name} className="partner-logo-img" loading="lazy" />
                                 </div>
                                 <div>
@@ -138,8 +140,25 @@ const PhanDoiTac: React.FC = () => {
                     border: 1px solid var(--gray-200);
                     box-shadow: var(--shadow-md);
                     transition: all 0.4s ease;
+                    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s ease, border-color 0.4s ease;
+                    position: relative;
+                    overflow: hidden;
                 }
                 .stat-card-light:hover { transform: translateY(-5px); box-shadow: var(--shadow-xl); border-color: var(--primary); }
+                .stat-card-light:hover {
+                    transform: translateY(-6px) scale(1.02);
+                    box-shadow: 0 20px 40px -10px color-mix(in srgb, var(--primary) 20%, transparent);
+                    border-color: var(--primary);
+                }
+                [data-theme='dark'] .stat-card-light {
+                    background: color-mix(in srgb, var(--surface) 60%, transparent);
+                    border-color: color-mix(in srgb, var(--gray-200) 20%, transparent);
+                    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+                }
+                [data-theme='dark'] .stat-card-light:hover {
+                    border-color: var(--primary);
+                    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5), 0 0 20px color-mix(in srgb, var(--primary) 30%, transparent);
+                }
                 
                 .partner-card-new {
                     background: color-mix(in srgb, var(--surface) 88%, transparent);
@@ -147,15 +166,15 @@ const PhanDoiTac: React.FC = () => {
                     padding: 24px;
                     border: 1px solid color-mix(in srgb, var(--gray-200) 75%, transparent);
                     box-shadow: var(--shadow-sm);
-                    transition: transform 0.4s ease, box-shadow 0.4s ease, border-color 0.4s ease;
+                    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s ease, border-color 0.4s ease;
                     display: flex;
                     flex-direction: column;
                     gap: 16px;
                 }
                 .partner-card-new:hover {
-                    transform: translateY(-5px);
-                    box-shadow: var(--shadow-xl);
-                    border-color: color-mix(in srgb, var(--primary) 45%, var(--gray-200));
+                    transform: translateY(-6px) scale(1.02);
+                    box-shadow: 0 20px 40px -10px color-mix(in srgb, var(--partner-accent) 20%, transparent);
+                    border-color: color-mix(in srgb, var(--partner-accent) 45%, var(--gray-200));
                 }
 
                 [data-theme='dark'] .partner-card-new {
@@ -164,18 +183,10 @@ const PhanDoiTac: React.FC = () => {
                     box-shadow: 0 10px 36px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.05);
                 }
                 [data-theme='dark'] .partner-card-new:hover {
-                    border-color: color-mix(in srgb, var(--primary) 55%, transparent);
+                    border-color: color-mix(in srgb, var(--partner-accent) 60%, transparent);
                     box-shadow:
-                        0 14px 42px rgba(0, 0, 0, 0.45),
-                        0 0 28px color-mix(in srgb, var(--primary) 22%, transparent);
-                }
-
-                .partner-logo-filters {
-                    position: absolute;
-                    width: 0;
-                    height: 0;
-                    overflow: hidden;
-                    pointer-events: none;
+                        0 15px 45px rgba(0, 0, 0, 0.5),
+                        0 0 30px color-mix(in srgb, var(--partner-accent) 25%, transparent);
                 }
 
                 .partner-logo-box {
@@ -211,38 +222,37 @@ const PhanDoiTac: React.FC = () => {
                     max-height: 96px;
                     min-height: 56px;
                     object-fit: contain;
-                    transition: transform 0.35s ease, filter 0.35s ease;
+                    transition: transform 0.35s ease, filter 0.35s ease, opacity 0.35s ease;
                     mix-blend-mode: multiply;
                     filter: contrast(1.12) saturate(1.15);
                     opacity: 1;
                 }
 
-                /* Dark: knockout nhẹ + sáng rõ + glow sát logo (blur nhỏ) */
+                @keyframes partnerLogoPulse {
+                    0%, 100% {
+                        filter: url(#smart-knockout) brightness(1.2) drop-shadow(0 0 6px color-mix(in srgb, var(--partner-accent) 50%, transparent));
+                        opacity: 0.9;
+                    }
+                    50% {
+                        filter: url(#smart-knockout) brightness(1.5) drop-shadow(0 0 22px color-mix(in srgb, var(--partner-accent) 95%, transparent));
+                        opacity: 1;
+                    }
+                }
+
+                /* Dark mode: Xóa phông trắng bằng SVG Filter, ánh sáng chỉ bám sát viền chữ/logo */
                 [data-theme='dark'] .partner-logo-img {
                     mix-blend-mode: normal;
-                    opacity: 1;
-                    filter:
-                        url(#partner-logo-knockout-soft)
-                        contrast(1.28)
-                        brightness(1.32)
-                        saturate(1.22)
-                        drop-shadow(0 0 2px var(--partner-accent))
-                        drop-shadow(0 0 8px color-mix(in srgb, var(--partner-accent) 88%, transparent))
-                        drop-shadow(0 0 16px color-mix(in srgb, var(--partner-accent) 45%, transparent));
+                    animation: partnerLogoPulse 3s ease-in-out infinite;
                 }
                 .partner-card-new:hover .partner-logo-img {
                     transform: scale(1.05);
                     filter: contrast(1.15) saturate(1.2);
                 }
                 [data-theme='dark'] .partner-card-new:hover .partner-logo-img {
-                    filter:
-                        url(#partner-logo-knockout-soft)
-                        contrast(1.35)
-                        brightness(1.42)
-                        saturate(1.28)
-                        drop-shadow(0 0 3px var(--partner-accent))
-                        drop-shadow(0 0 12px color-mix(in srgb, var(--partner-accent) 95%, transparent))
-                        drop-shadow(0 0 22px color-mix(in srgb, var(--partner-accent) 55%, transparent));
+                    animation: none; /* Tắt nhịp thở khi rê chuột vào để ánh sáng giữ mức rực rỡ nhất */
+                    filter: url(#smart-knockout) brightness(1.7) drop-shadow(0 0 32px color-mix(in srgb, var(--partner-accent) 100%, transparent));
+                    opacity: 1;
+                    transform: scale(1.08);
                 }
 
                 @media (max-width: 992px) {
