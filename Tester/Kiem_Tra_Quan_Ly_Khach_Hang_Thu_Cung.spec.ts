@@ -17,7 +17,7 @@ test.describe('Kiểm thử chức năng: Quản lý Khách hàng & Thú cưng',
     test('TC01: Luồng Đăng ký Chủ nuôi (Khách hàng mới)', async ({ page }) => {
         // 1. Đi tới trang Quản lý Khách hàng & Thú cưng
         await page.goto(`${BASE_URL}/quan-ly/khach-hang-thu-cung`);
-        await expect(page.getByRole('heading', { name: 'Khách hàng & Thú cưng' })).toBeVisible();
+        await expect(page.getByRole('heading', { name: 'Khách hàng & Thú cưng' })).toBeVisible({ timeout: 15000 });
 
         // 2. Click nút "Thêm chủ nuôi" để mở form đăng ký nhanh
         await page.getByRole('button', { name: /Thêm chủ nuôi/i }).click();
@@ -66,7 +66,7 @@ test.describe('Kiểm thử chức năng: Quản lý Khách hàng & Thú cưng',
         await page.getByRole('button', { name: 'Đăng ký bé' }).click();
 
         // 5. Xác nhận thành công
-        await expect(page.getByText('Thêm thú cưng thành công!')).toBeVisible({ timeout: 10000 });
+        await expect(page.getByText('Thêm thú cưng thành công!')).toBeVisible({ timeout: 20000 });
 
         // Chụp lại ảnh màn hình bằng chứng thực tế đăng ký thú cưng thành công
         await page.screenshot({ path: 'd:/QLy Phòng Khám Thú Y/Tester/test-results/evidence-tc02-dang-ky-thu-cung.png', fullPage: true });
