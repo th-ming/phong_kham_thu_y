@@ -30,7 +30,9 @@ const QuanLyKhachHangThuCung: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
 
-  const [khFormData, setKhFormData] = useState({ ten_khach_hang: "", sdt: "", email: "" });
+  // Form lưu thô data chủ nuôi mới, nạp thêm nam_sinh để phân loại GENZ vs MATURE ngay từ khi TIEP_TAN gõ đơn.
+  // Ông nào sau này mở rộng form nhớ sync trường này lên CSDL khớp với Snake Case nam_sinh ở DB nha.
+  const [khFormData, setKhFormData] = useState({ ten_khach_hang: "", sdt: "", email: "", nam_sinh: "" });
   const [petFormData, setPetFormData] = useState({
     ten_thu_cung: "", loai: "Chó", giong: "", gioi_tinh: "Đực",
     mau_sac: "", trong_luong: "", ngay_sinh: "", id_khach_hang: ""
@@ -108,13 +110,17 @@ const QuanLyKhachHangThuCung: React.FC = () => {
 
   useAutoRefresh(fetchData, { runImmediately: false });
 
+  // Bẫy nghiệp vụ đăng ký nhanh dành riêng cho TIEP_TAN hoặc ADMIN nhập lẹ khi khách đưa chó mèo tới phòng khám gấp.
+  // API register-simple ở backend sẽ tự bóc sđt làm tên đăng nhập và tự hash pass ngẫu nhiên.
+  // Nhớ reset sạch form kể cả nam_sinh để tránh lưu đè nhầm thông tin cho ca tiếp theo.
   const handleAddCustomer = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
     try {
       await axiosInstance.post("/api/auth/register-simple", khFormData);
       setShowAddKhModal(false);
-      setKhFormData({ ten_khach_hang: "", sdt: "", email: "" });
+      // Dọn dẹp form hoàn toàn từ tên, sđt, email cho tới nam_sinh
+      setKhFormData({ ten_khach_hang: "", sdt: "", email: "", nam_sinh: "" });
       fetchData();
       toast.success("Thêm khách hàng thành công!");
     } catch (err: any) {
@@ -306,16 +312,17 @@ const QuanLyKhachHangThuCung: React.FC = () => {
         <div className="table-responsive-wrapper">
           <div style={{ minWidth: '800px' }}>
 
-        {/* Tiêu đề cột dạng CSS Grid */}
+        {/* Tiêu đề cột dạng CSS Grid - layout 5 cột cao cấp và khoa học */}
         <div style={{ 
           display: 'grid', 
-          gridTemplateColumns: '1.5fr 1fr 1fr 1fr', 
+          gridTemplateColumns: '1.5fr 1fr 1.2fr 0.8fr 1fr', 
           background: 'var(--gray-50)', 
           padding: '16px 20px',
           borderBottom: '1px solid var(--gray-100)',
           boxSizing: 'border-box'
         }}>
           <div style={{ fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800 }}>TÊN KHÁCH HÀNG</div>
+          <div style={{ fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800 }}>NĂM SINH</div>
           <div style={{ fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800 }}>LIÊN HỆ</div>
           <div style={{ fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800 }}>TRẠNG THÁI</div>
           <div style={{ fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800, textAlign: 'center' }}>THAO TÁC</div>
@@ -355,7 +362,7 @@ const QuanLyKhachHangThuCung: React.FC = () => {
                         width: '100%',
                         height: `${ROW_HEIGHT}px`,
                         display: 'grid',
-                        gridTemplateColumns: '1.5fr 1fr 1fr 1fr',
+                        gridTemplateColumns: '1.5fr 1fr 1.2fr 0.8fr 1fr',
                         alignItems: 'center',
                         borderBottom: '1px solid var(--gray-50)',
                         padding: '0 20px',
@@ -370,6 +377,23 @@ const QuanLyKhachHangThuCung: React.FC = () => {
                         <span style={{ fontWeight: 800, color: kh.da_xoa ? 'var(--gray-400)' : 'var(--ink)', textDecoration: kh.da_xoa ? 'line-through' : 'none', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           {kh.ten_khach_hang}
                         </span>
+                      </div>
+
+                      {/* Lọc năm sinh của chủ nuôi ra đây để TIEP_TAN nhìn phát biết ngay khách thuộc lứa GENZ hay MATURE */}
+                      {/* Mục đích: Biết đường sync tone giọng nhây/nghiêm túc của AI chatbot và giao diện meme cho chuẩn chỉ. */}
+                      <div style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <div style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--ink)' }}>
+                          {kh.nam_sinh ? `${kh.nam_sinh}` : "—"}
+                        </div>
+                        {kh.nam_sinh ? (
+                          <div style={{ 
+                            fontSize: '0.75rem', 
+                            color: kh.nam_sinh >= 1997 ? 'var(--primary)' : 'var(--gray-400)', 
+                            fontWeight: 700 
+                          }}>
+                            {kh.nam_sinh >= 1997 ? "Gen Z 🐱" : "Mature 🩺"}
+                          </div>
+                        ) : null}
                       </div>
 
                       {/* Liên hệ */}
@@ -558,6 +582,20 @@ const QuanLyKhachHangThuCung: React.FC = () => {
             <div style={{ display: 'grid', gap: '8px' }}>
               <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)' }}>EMAIL (TÙY CHỌN)</label>
               <input data-ai-id="input-quanlykhachhangthucung-j4ng" className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left', cursor: 'text' }} value={khFormData.email} onChange={e => setKhFormData({ ...khFormData, email: e.target.value })} />
+            </div>
+            <div style={{ display: 'grid', gap: '8px' }}>
+              <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)' }}>NĂM SINH (TÙY CHỌN)</label>
+              <input 
+                data-ai-id="input-quanlykhachhangthucung-namsinh" 
+                type="number" 
+                min="1920" 
+                max={new Date().getFullYear()} 
+                className="btn" 
+                style={{ background: 'var(--gray-50)', textAlign: 'left', cursor: 'text' }} 
+                value={khFormData.nam_sinh} 
+                onChange={e => setKhFormData({ ...khFormData, nam_sinh: e.target.value })} 
+                placeholder="VD: 1998 (Phân loại GenZ vs Mature)" 
+              />
             </div>
             <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
               <button data-ai-id="button-quanlykhachhangthucung-30dl" type="submit" disabled={isSaving} className="btn btn-primary btn-pill" style={{ flex: 1 }}>{isSaving ? 'Đang lưu...' : 'Lưu thông tin'}</button>

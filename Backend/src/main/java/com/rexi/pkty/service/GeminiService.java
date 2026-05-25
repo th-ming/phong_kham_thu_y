@@ -86,7 +86,8 @@ public class GeminiService {
 
     // Sử dụng chung 1 HttpClient cho toàn bộ service để tăng hiệu suất
     private final HttpClient client = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(180)) // Cho phép kết nối tối đa 3 phút
+            .version(HttpClient.Version.HTTP_2)
+            .connectTimeout(Duration.ofSeconds(10))
             .build();
 
         public String summarizeMedicalRecords(String thuCungName, String rawData) throws Exception {
@@ -136,6 +137,7 @@ public class GeminiService {
 
         // Thiết lập nội dung hội thoại (Contents)
         List<Map<String, Object>> contents = new ArrayList<>();
+        boolean hasVideo = false;
 
         for (ChatMessage msg : userModelHistory) {
             Map<String, Object> contentItem = new HashMap<>();
@@ -173,6 +175,7 @@ public class GeminiService {
                 if (textContent.isBlank())
                     textContent = "Phân tích video này theo góc nhìn bác sĩ thú y. Mô tả chuyển động/hành vi bất thường, mức độ khẩn cấp, khả năng nguyên nhân, khuyến nghị chăm sóc ban đầu và khi nào cần đưa bé đi khám. Không chẩn đoán chắc chắn chỉ dựa trên video.";
                 parts.add(Map.of("text", textContent));
+                hasVideo = true;
 
                 for (String vidData : msg.getVideos()) {
                     String mimeType = "video/mp4";
@@ -215,12 +218,13 @@ public class GeminiService {
         int modelStart = Math.floorMod(modelCursor.getAndIncrement(), modelCandidates.size());
 
         // Duyệt round-robin qua danh sách model/key để tránh dồn tải vào key đầu.
-        for (int modelOffset = 0; modelOffset < modelCandidates.size(); modelOffset++) {
-            String selectedModel = modelCandidates.get((modelStart + modelOffset) % modelCandidates.size());
-            for (int keyOffset = 0; keyOffset < keys.size(); keyOffset++) {
-                int keyIndex = (keyStart + keyOffset) % keys.size();
-                String currentKey = keys.get(keyIndex).trim();
-                if (currentKey.isEmpty()) continue;
+        for (int keyOffset = 0; keyOffset < keys.size(); keyOffset++) {
+            int keyIndex = (keyStart + keyOffset) % keys.size();
+            String currentKey = keys.get(keyIndex).trim();
+            if (currentKey.isEmpty()) continue;
+            
+            for (int modelOffset = 0; modelOffset < modelCandidates.size(); modelOffset++) {
+                String selectedModel = modelCandidates.get((modelStart + modelOffset) % modelCandidates.size());
 
                 String apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/" + selectedModel + ":generateContent?key="
                         + currentKey;
@@ -229,11 +233,10 @@ public class GeminiService {
                         .uri(URI.create(apiUrl))
                         .header("Content-Type", "application/json")
                         .POST(HttpRequest.BodyPublishers.ofString(requestBody, StandardCharsets.UTF_8))
-                        .timeout(Duration.ofMinutes(3)) // Gemini xử lý video có thể lâu, cho phép tối đa 3 phút
+                        .timeout(Duration.ofSeconds(hasVideo ? 60 : 15))
                         .build();
 
                 try {
-                    logger.info("Đang gọi Gemini API model=" + selectedModel + " keyIndex=" + keyIndex);
                     HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
                     if (response.statusCode() == 200) {
@@ -243,18 +246,23 @@ public class GeminiService {
                         } catch (Exception e) {
                             logger.severe("Lỗi phân tích phản hồi từ Gemini (model " + selectedModel + ", keyIndex " + keyIndex + "). Nội dung: " + response.body());
                             lastException = new RuntimeException("Lỗi Parse Gemini: " + response.body());
-                            continue; // Thử key tiếp theo
+                            break; // Lỗi parse thì đổi key luôn
                         }
                     } else {
-                        logger.severe("=== LỖI KẾT NỐI GEMINI API (model " + selectedModel + ", keyIndex " + keyIndex + ") ===");
-                        logger.severe("Trạng thái: " + response.statusCode());
-                        logger.severe("Nội dung lỗi: " + response.body());
                         lastException = new RuntimeException("Gemini API gặp lỗi " + response.statusCode() + ": " + response.body());
-                        // Tiếp tục thử key/model tiếp theo.
+                        
+                        if (response.statusCode() == 404) {
+                            logger.warning("Gemini model " + selectedModel + " không tồn tại, thử model dự phòng...");
+                            continue; // Đổi model
+                        } else {
+                            logger.warning("Gemini key lỗi (status " + response.statusCode() + "), thử key dự phòng...");
+                            break; // Đổi key
+                        }
                     }
                 } catch (Exception e) {
-                    logger.severe("Lỗi kết nối mạng với Gemini API (model " + selectedModel + ", keyIndex " + keyIndex + "): " + e.getMessage());
                     lastException = e;
+                    logger.warning("Lỗi mạng Gemini API (timeout/disconnect), thử key dự phòng: " + e.getMessage());
+                    break; // Đổi key
                 }
             }
         }

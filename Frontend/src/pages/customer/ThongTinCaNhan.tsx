@@ -24,6 +24,7 @@ const ThongTinCaNhan: React.FC = () => {
   const [avatarPreview, setAvatarPreview] = useState("");
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
+  const userInitial = String(data?.ten_khach_hang || data?.ho_ten || data?.ten_dang_nhap || "R").trim().charAt(0).toUpperCase();
 
   useEffect(() => {
     try {
@@ -57,222 +58,6 @@ const ThongTinCaNhan: React.FC = () => {
             const profileData = {
               ...user,
               ...res.data,
-              id_khach_hang: res.data.id_khach_hang || customerId || user.id_khach_hang,
-              id_nhan_vien: res.data.id_nhan_vien || staffId || user.id_nhan_vien,
-            };
-            setData(profileData);
-            setFormData(profileData);
-            setAvatarPreview(profileData.hinh_anh || profileData.avatar || "");
-            // Khởi tạo trạng thái nhận thông báo từ dữ liệu DB (mặc định là true nếu null)
-            setEmailNoti(profileData.nhan_email ?? true);
-            setSmsNoti(profileData.nhan_sms ?? true);
-            setLoading(false);
-          })
-          .catch(err => {
-            console.error("Lỗi tải thông tin:", err);
-            setLoading(false);
-          });
-      } else {
-        setLoading(false);
-      }
-    } catch (error) {
-      console.error("Lỗi khi đọc thông tin user từ localStorage", error);
-      setLoading(false);
-    }
-  }, []);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith("image/")) {
-      toast.error("Vui lòng chọn đúng file ảnh!");
-      return;
-    }
-
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error("Ảnh avatar nên nhỏ hơn 2MB để tải nhanh hơn!");
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      const imageUrl = String(reader.result || "");
-      setAvatarPreview(imageUrl);
-      setFormData((prev: any) => ({
-        ...prev,
-        hinh_anh: imageUrl,
-        avatar: imageUrl,
-      }));
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handlePassChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPassData({ ...passData, [e.target.name]: e.target.value });
-  };
-
-  const handleSavePass = async () => {
-    if (passData.newPass !== passData.confirmPass) {
-      toast.error("Mật khẩu xác nhận không khớp!");
-      return;
-    }
-    if (!isValidPassword(passData.newPass)) {
-      toast.error(PASSWORD_POLICY_MESSAGE);
-      return;
-    }
-    try {
-      await axiosInstance.post("/api/auth/change-password", {
-        currentPass: passData.currentPass,
-        newPass: passData.newPass
-      });
-      toast.success("Đổi mật khẩu thành công! Vui lòng dùng mật khẩu mới cho lần đăng nhập sau.");
-      setShowPasswordModal(false);
-      setPassData({ currentPass: "", newPass: "", confirmPass: "" });
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || "Đổi mật khẩu thất bại. Vui lòng kiểm tra lại mật khẩu hiện tại.");
-    }
-  };
-
-  const handleSave = () => {
-    try {
-      const user = getUserProfile();
-      const isCustomerUser = !!(data?.id_khach_hang || user?.id_khach_hang || normalizeUserRole(user) === "khach_hang");
-      const userId = isCustomerUser
-        ? (data?.id_khach_hang || user?.id_khach_hang || user?.idKhachHang)
-        : (data?.id_nhan_vien || user?.id_nhan_vien || user?.idNhanVien);
-
-      if (!userId) {
-        toast.error("Không tìm thấy thông tin tài khoản. Vui lòng đăng nhập lại!");
-        return;
-      }
-
-      const tenHienTai = formData.ten_khach_hang || formData.ho_ten || '';
-      if (!tenHienTai.trim()) {
-        toast.error("Họ và tên không được để trống!");
-        return;
-      }
-
-      const endpoint = isCustomerUser
-        ? `/api/khach-hang/${userId}`
-        : `/api/nhan-vien/${userId}`;
-
-      axiosInstance.put(endpoint, formData)
-        .then(res => {
-          const savedData = {
-            ...formData,
-            ...(res.data || {}),
-            id_khach_hang: res.data?.id_khach_hang || formData.id_khach_hang || user?.id_khach_hang || user?.idKhachHang,
-            id_nhan_vien: res.data?.id_nhan_vien || formData.id_nhan_vien || user?.id_nhan_vien || user?.idNhanVien,
-          };
-          toast.success("Cập nhật thông tin thành công!");
-          setData(savedData);
-          setFormData(savedData);
-          const currentUser = getUserProfile();
-          if (currentUser) {
-            const nextUser = {
-              ...currentUser,
-              id_khach_hang: savedData.id_khach_hang || currentUser.id_khach_hang,
-              id_nhan_vien: savedData.id_nhan_vien || currentUser.id_nhan_vien,
-              ho_ten: savedData.ho_ten || savedData.ten_khach_hang || currentUser.ho_ten,
-              ten_khach_hang: savedData.ten_khach_hang || savedData.ho_ten || currentUser.ten_khach_hang,
-              email: savedData.email || currentUser.email,
-              sdt: savedData.sdt || savedData.so_dien_thoai || currentUser.sdt,
-              hinh_anh: savedData.hinh_anh || savedData.avatar || currentUser.hinh_anh,
-              avatar: savedData.avatar || savedData.hinh_anh || currentUser.avatar,
-            };
-            localStorage.setItem("user", JSON.stringify(nextUser));
-          }
-          setIsEditing(false);
-        })
-        .catch(err => {
-          console.error(err);
-          toast.error("Cập nhật thất bại!");
-        });
-    } catch (error) {
-      console.error(error);
-      toast.error("Đã xảy ra lỗi hệ thống!");
-    }
-  };
-
-  const handleDeleteAccount = async () => {
-    setIsDeleting(true);
-    try {
-      const user = getUserProfile();
-      const userId = data?.id_khach_hang || user?.id_khach_hang || user?.idKhachHang;
-      if (!userId) {
-        toast.error("Không tìm thấy thông tin tài khoản. Vui lòng đăng nhập lại!");
-        return;
-      }
-      await axiosInstance.delete(`/api/khach-hang/${userId}`);
-      toast.success("Tài khoản của bạn đã được vô hiệu hóa. Chào tạm biệt!");
-      localStorage.clear();
-      navigate("/dang-nhap");
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || "Lỗi khi xóa tài khoản. Vui lòng thử lại sau.");
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
-  // Cập nhật cài đặt nhận thông báo của khách hàng và đồng bộ xuống DB ngay lập tức
-  const handleToggleMarketing = async (type: "email" | "sms", currentValue: boolean) => {
-    try {
-      const user = getUserProfile();
-      const userId = data?.id_khach_hang || data?.idKhachHang || user?.id_khach_hang || user?.idKhachHang;
-      if (!userId) {
-        toast.error("Không tìm thấy thông tin tài khoản. Vui lòng đăng nhập lại!");
-        return;
-      }
-
-      const newValue = !currentValue;
-      const payloadKey = type === "email" ? "nhan_email" : "nhan_sms";
-
-      await axiosInstance.put(`/api/khach-hang/${userId}/marketing-preferences`, {
-        [payloadKey]: newValue
-      });
-
-      if (type === "email") {
-        setEmailNoti(newValue);
-      } else {
-        setSmsNoti(newValue);
-      }
-      toast.success("Cập nhật cài đặt nhận thông báo thành công!");
-    } catch (err: any) {
-      console.error(err);
-      toast.error(err.response?.data?.message || "Cập nhật cài đặt thất bại, vui lòng thử lại sau!");
-    }
-  };
-
-  if (loading) return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}><div className="dot-pulse"></div></div>;
-
-  const localUser = getUserProfile();
-  const profile = { ...(localUser || {}), ...(data || {}) };
-  const isCustomer = !!(profile.id_khach_hang || normalizeUserRole(localUser) === "khach_hang");
-
-  return (
-    <div className="animate-fade-in">
-      <div className="stagger-1" style={{ 
-        marginBottom: '40px', 
-        padding: '60px 48px', 
-        borderRadius: 'var(--radius-xl)', 
-        background: 'linear-gradient(135deg, #6366f1 0%, #0d9488 50%, #ec4899 100%)', 
-        color: 'white', 
-        position: 'relative', 
-        overflow: 'hidden', 
-        boxShadow: '0 20px 50px rgba(168, 85, 247, 0.25)',
-        border: '1px solid rgba(255, 255, 255, 0.2)'
-      }}>
-        {/* Decorative elements */}
-        <div style={{ position: 'absolute', top: '-10%', right: '-5%', width: '400px', height: '400px', background: 'radial-gradient(circle, rgba(255,255,255,0.25) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none', filter: 'blur(50px)' }}></div>
-        <div style={{ position: 'absolute', bottom: '-20%', left: '-5%', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(99, 102, 241, 0.4) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none', filter: 'blur(40px)' }}></div>
-        
-        <div style={{ position: 'relative', zIndex: 1 }}>
-          <h1 style={{ 
             fontSize: '3.6rem', 
             fontWeight: 950, 
             letterSpacing: '-2.5px', 
@@ -333,7 +118,28 @@ const ThongTinCaNhan: React.FC = () => {
                 <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '12px', display: 'block', textTransform: 'uppercase' }}>EMAIL <span style={{ color: '#ff4d4f' }}>*</span></label>
                 {isEditing ? <input data-ai-id="input-thongtincanhan-1qez" type="email" name="email" value={formData.email || ''} onChange={handleChange} style={{ width: '100%', padding: '14px 18px', borderRadius: '14px', border: '1px solid var(--gray-200)', background: 'var(--gray-50)', color: 'var(--ink)', fontWeight: 600, outline: 'none' }} /> : <div style={{ fontWeight: 700, color: 'var(--ink)' }}>{data?.email || "—"}</div>}
               </div>
-              <div>
+              {isCustomer && (
+                <div>
+                  <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '12px', display: 'block', textTransform: 'uppercase' }}>NĂM SINH (CÁ NHÂN HÓA TRẢI NGHIỆM)</label>
+                  {isEditing ? (
+                    <input
+                      data-ai-id="input-thongtincanhan-namsinh"
+                      type="number"
+                      name="nam_sinh"
+                      min="1920"
+                      max={new Date().getFullYear()}
+                      value={formData.nam_sinh || ''}
+                      onChange={handleChange}
+                      style={{ width: '100%', padding: '14px 18px', borderRadius: '14px', border: '1px solid var(--gray-200)', background: 'var(--gray-50)', color: 'var(--ink)', fontWeight: 600, outline: 'none' }}
+                    />
+                  ) : (
+                    <div style={{ fontWeight: 700, color: 'var(--ink)' }}>
+                      {data?.nam_sinh ? `${data.nam_sinh} (${data.nam_sinh >= 1997 ? "Gen Z vui vẻ 🐱🎉" : "Trưởng thành chuẩn mực 🩺✨"})` : "Chưa cập nhật năm sinh"}
+                    </div>
+                  )}
+                </div>
+              )}
+              <div style={{ gridColumn: '1 / -1' }}>
                 <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '12px', display: 'block', textTransform: 'uppercase' }}>ĐỊA CHỈ LIÊN HỆ</label>
                 {isEditing ? (
                   <textarea className="form-input" name="dia_chi" value={formData.dia_chi || ''} onChange={handleChange} rows={3} style={{ width: '100%', background: 'var(--gray-50)', color: 'var(--ink)' }} />
@@ -354,194 +160,138 @@ const ThongTinCaNhan: React.FC = () => {
           </div>
         </div>
 
-        <div style={{ display: 'grid', gap: '32px', height: 'fit-content' }}>
-          <div className="glass-card" style={{ padding: '34px 28px', textAlign: 'center', borderRadius: 'var(--radius-xl)', display: 'grid', justifyItems: 'center', gap: '18px' }}>
-            <input
-              ref={avatarInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleAvatarChange}
-              style={{ display: 'none' }}
-            />
-            <button
-              type="button"
-              aria-label="Đổi avatar"
-              onClick={() => isEditing && avatarInputRef.current?.click()}
-              style={{
-                width: '124px',
-                height: '124px',
-                padding: 0,
-                border: 'none',
-                borderRadius: '50%',
-                background: 'transparent',
-                position: 'relative',
-                display: 'grid',
-                placeItems: 'center',
-                cursor: isEditing ? 'pointer' : 'default',
-              }}
-            >
-              <div style={{
-                position: 'absolute',
-                inset: '-4px',
-                borderRadius: '50%',
-                border: '2px solid var(--primary)',
-                boxShadow: '0 0 15px var(--primary), inset 0 0 15px var(--primary)',
-                animation: 'pulse 2s infinite',
-                opacity: 0.8
-              }} />
-              <div style={{
-                position: 'relative',
-                width: '112px',
-                height: '112px',
-                borderRadius: '50%',
-                background: 'var(--primary)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'white',
-                overflow: 'hidden',
-                border: '2px solid rgba(255,255,255,0.2)',
-                boxShadow: '0 0 20px rgba(13, 148, 136, 0.4)',
-              }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+          <div className="glass-card" style={{ padding: '40px', borderRadius: 'var(--radius-xl)', textAlign: 'center' }}>
+            <div style={{ 
+              width: '140px', 
+              height: '140px', 
+              borderRadius: '50%', 
+              background: 'var(--primary-gradient)', 
+              display: 'grid', 
+              placeItems: 'center', 
+              margin: '0 auto 28px auto', 
+              boxShadow: '0 15px 35px var(--primary-shadow)',
+              position: 'relative',
+              cursor: isEditing ? 'pointer' : 'default'
+            }} onClick={() => isEditing && avatarInputRef.current?.click()}>
+              <div style={{ width: '130px', height: '130px', borderRadius: '50%', overflow: 'hidden', border: '4px solid white', background: 'var(--primary)', display: 'grid', placeItems: 'center', color: 'white', fontWeight: 950, fontSize: '3.2rem' }}>
                 {avatarPreview ? (
                   <img src={avatarPreview} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 ) : (
-                  <span style={{ fontSize: '3rem', fontWeight: 900 }}>{(data?.ten_khach_hang || data?.ho_ten || "K").charAt(0).toUpperCase()}</span>
-                )}
-                {isEditing && (
-                  <div style={{
-                    position: 'absolute',
-                    inset: 0,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    background: 'rgba(2, 6, 23, 0.48)',
-                    color: 'white',
-                  }}>
-                    <span className="material-symbols-outlined" style={{ fontSize: '34px' }}>photo_camera</span>
-                  </div>
+                  <span>{userInitial}</span>
                 )}
               </div>
-            </button>
-            {isEditing && (
-              <div style={{ color: 'var(--primary)', fontWeight: 800, fontSize: '0.82rem', marginTop: '-4px' }}>
-                Nhấn vào ảnh để đổi avatar
+              {isEditing && (
+                <div style={{
+                  position: 'absolute',
+                  bottom: '4px',
+                  right: '4px',
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '50%',
+                  background: 'var(--ink)',
+                  color: 'white',
+                  display: 'grid',
+                  placeItems: 'center',
+                  boxShadow: 'var(--shadow-md)',
+                  border: '2px solid white'
+                }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>photo_camera</span>
+                </div>
+              )}
+            </div>
+            <input type="file" ref={avatarInputRef} style={{ display: 'none' }} accept="image/*" onChange={handleAvatarChange} />
+            <h4 style={{ fontSize: '1.4rem', fontWeight: 900, color: 'var(--ink)', margin: '0 0 6px 0' }}>{profile?.ten_khach_hang || profile?.ho_ten || "Khách hàng"}</h4>
+            <p style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--primary)', margin: '0 0 16px 0', textTransform: 'uppercase', letterSpacing: '1px' }}>{isCustomer ? "Khách hàng thân thiết" : "Nhân viên phòng khám"}</p>
+          </div>
+
+          <div className="glass-card" style={{ padding: '40px', borderRadius: 'var(--radius-xl)' }}>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--ink)', marginBottom: '28px' }}>Tùy chọn nhận tin</h3>
+            <div style={{ display: 'grid', gap: '24px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <h4 style={{ margin: '0 0 4px 0', fontWeight: 700, color: 'var(--ink)', fontSize: '0.95rem' }}>Email Marketing</h4>
+                  <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 600 }}>Nhận tin ưu đãi, khuyến mãi hàng tuần</p>
+                </div>
+                <label className="toggle-switch">
+                  <input type="checkbox" checked={emailNoti} onChange={(e) => handleMarketingChange("email", e.target.checked)} />
+                  <span className="toggle-slider"></span>
+                </label>
               </div>
-            )}
-            <div>
-              <h3 style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--ink)', margin: 0 }}>{profile?.ten_khach_hang || profile?.ho_ten || profile?.displayName || "Khách hàng"}</h3>
-              <p style={{ color: 'var(--gray-400)', fontWeight: 800, fontSize: '0.75rem', marginTop: '8px' }}>ID: #{profile?.id_khach_hang || profile?.id_nhan_vien || profile?.id || "—"}</p>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <h4 style={{ margin: '0 0 4px 0', fontWeight: 700, color: 'var(--ink)', fontSize: '0.95rem' }}>Tin nhắn nhắc lịch (SMS)</h4>
+                  <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 600 }}>Nhận thông báo nhắc lịch khám, chăm sóc bé</p>
+                </div>
+                <label className="toggle-switch">
+                  <input type="checkbox" checked={smsNoti} onChange={(e) => handleMarketingChange("sms", e.target.checked)} />
+                  <span className="toggle-slider"></span>
+                </label>
+              </div>
             </div>
           </div>
 
           {isCustomer && (
-            <>
-              <div className="glass-card" style={{ padding: '32px', borderRadius: 'var(--radius-xl)' }}>
-                <h4 style={{ fontWeight: 800, marginBottom: '20px', color: 'var(--ink)' }}>Thông báo</h4>
-                <div style={{ display: 'grid', gap: '16px' }}>
-                  <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', padding: '12px 0', borderBottom: '1px solid var(--gray-100)' }}>
-                    <span style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--ink)' }}>Email Marketing</span>
-                    <div onClick={() => handleToggleMarketing('email', emailNoti)} style={{ width: '50px', height: '26px', background: emailNoti ? 'var(--primary)' : 'var(--gray-200)', borderRadius: '50px', position: 'relative', transition: 'all 0.3s', cursor: 'pointer' }}>
-                      <div style={{ width: '18px', height: '18px', background: 'white', borderRadius: '50%', position: 'absolute', top: '4px', left: emailNoti ? '28px' : '4px', transition: 'all 0.3s', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' }}></div>
-                    </div>
-                  </label>
-                  <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', padding: '12px 0' }}>
-                    <span style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--ink)' }}>Thông báo SMS</span>
-                    <div onClick={() => handleToggleMarketing('sms', smsNoti)} style={{ width: '50px', height: '26px', background: smsNoti ? 'var(--primary)' : 'var(--gray-200)', borderRadius: '50px', position: 'relative', transition: 'all 0.3s', cursor: 'pointer' }}>
-                      <div style={{ width: '18px', height: '18px', background: 'white', borderRadius: '50%', position: 'absolute', top: '4px', left: smsNoti ? '28px' : '4px', transition: 'all 0.3s', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' }}></div>
-                    </div>
-                  </label>
-                </div>
-              </div>
-
-              <div style={{ 
-                padding: '24px', 
-                borderRadius: '24px', 
-                background: 'rgba(239, 68, 68, 0.05)', 
-                border: '1px solid rgba(239, 68, 68, 0.1)',
-                textAlign: 'center'
-              }}>
-                <h4 style={{ color: '#ef4444', fontWeight: 900, fontSize: '0.9rem', marginBottom: '4px' }}>Khu vực nguy hiểm</h4>
-                <p style={{ color: '#ef4444', fontSize: '0.75rem', fontWeight: 600, marginBottom: '16px', opacity: 0.7 }}>Thao tác này không thể khôi phục</p>
-                <button data-ai-id="button-thongtincanhan-3fft" 
-                  className="btn btn-pill" 
-                  style={{ background: '#ef4444', color: 'white', width: '100%', fontWeight: 800, padding: '12px' }} 
-                  onClick={() => setShowDeleteModal(true)}
-                >
-                  Xóa tài khoản
-                </button>
-              </div>
-            </>
+            <div className="glass-card" style={{ padding: '40px', borderRadius: 'var(--radius-xl)', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#ef4444', marginBottom: '12px' }}>Khu vực nguy hiểm</h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--gray-400)', fontWeight: 600, marginBottom: '24px', lineHeight: 1.5 }}>Một khi bạn xóa hồ sơ, mọi thông tin thú cưng, lịch sử bệnh án và hóa đơn liên quan sẽ bị ẩn vĩnh viễn.</p>
+              <button data-ai-id="button-thongtincanhan-643m" className="btn btn-pill" style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1.5px solid rgba(239, 68, 68, 0.2)', width: '100%', fontWeight: 800 }} onClick={() => setShowDeleteModal(true)}>Xóa tài khoản vĩnh viễn</button>
+            </div>
           )}
         </div>
       </div>
 
       {/* MODAL ĐỔI MẬT KHẨU */}
-      <Modal isOpen={showPasswordModal} onClose={() => { setShowPasswordModal(false); setShowCurrentPass(false); setShowNewPass(false); setShowConfirmPass(false); }} title="Thay đổi mật khẩu" maxWidth="450px">
-        <div style={{ display: 'grid', gap: '20px', marginBottom: '32px' }}>
+      <Modal isOpen={showPasswordModal} onClose={() => setShowPasswordModal(false)} title="Thay đổi mật khẩu bảo mật">
+        <div style={{ display: 'grid', gap: '20px' }}>
           <div>
             <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '8px', display: 'block' }}>MẬT KHẨU HIỆN TẠI</label>
-            <div style={{ position: "relative" }}>
-              <input data-ai-id="input-thongtincanhan-pym5" type={showCurrentPass ? "text" : "password"} name="currentPass" value={passData.currentPass} onChange={handlePassChange} style={{ width: '100%', paddingRight: '48px', background: 'var(--gray-50)', padding: '14px 48px 14px 18px', borderRadius: '14px', border: '1px solid var(--gray-200)', color: 'var(--ink)', fontWeight: 600, outline: 'none' }} />
-              <span className="material-symbols-outlined" onClick={() => setShowCurrentPass(!showCurrentPass)} style={{ position: "absolute", right: "16px", top: "50%", transform: "translateY(-50%)", cursor: "pointer", color: "var(--gray-400)", userSelect: "none", zIndex: 10 }}>
+            <div style={{ position: 'relative' }}>
+              <input data-ai-id="input-thongtincanhan-qj3x" type={showCurrentPass ? "text" : "password"} name="currentPass" value={passData.currentPass} onChange={handlePassChange} style={{ width: '100%', padding: '14px 18px', borderRadius: '12px', border: '1px solid var(--gray-200)', background: 'var(--gray-50)', color: 'var(--ink)', fontWeight: 600, paddingRight: '48px', outline: 'none' }} />
+              <span className="material-symbols-outlined" style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', color: 'var(--gray-400)', fontSize: '20px' }} onClick={() => setShowCurrentPass(!showCurrentPass)}>
                 {showCurrentPass ? "visibility" : "visibility_off"}
               </span>
             </div>
           </div>
           <div>
             <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '8px', display: 'block' }}>MẬT KHẨU MỚI</label>
-            <div style={{ position: "relative" }}>
-              <input data-ai-id="input-thongtincanhan-lmif" type={showNewPass ? "text" : "password"} name="newPass" value={passData.newPass} onChange={handlePassChange} style={{ width: '100%', paddingRight: '48px', background: 'var(--gray-50)', padding: '14px 48px 14px 18px', borderRadius: '14px', border: '1px solid var(--gray-200)', color: 'var(--ink)', fontWeight: 600, outline: 'none' }} />
-              <span className="material-symbols-outlined" onClick={() => setShowNewPass(!showNewPass)} style={{ position: "absolute", right: "16px", top: "50%", transform: "translateY(-50%)", cursor: "pointer", color: "var(--gray-400)", userSelect: "none", zIndex: 10 }}>
+            <div style={{ position: 'relative' }}>
+              <input data-ai-id="input-thongtincanhan-wcr0" type={showNewPass ? "text" : "password"} name="newPass" value={passData.newPass} onChange={handlePassChange} style={{ width: '100%', padding: '14px 18px', borderRadius: '12px', border: '1px solid var(--gray-200)', background: 'var(--gray-50)', color: 'var(--ink)', fontWeight: 600, paddingRight: '48px', outline: 'none' }} />
+              <span className="material-symbols-outlined" style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', color: 'var(--gray-400)', fontSize: '20px' }} onClick={() => setShowNewPass(!showNewPass)}>
                 {showNewPass ? "visibility" : "visibility_off"}
               </span>
             </div>
+            <p style={{ margin: '8px 0 0 0', fontSize: '0.75rem', color: 'var(--gray-400)', fontWeight: 600, lineHeight: 1.4 }}>{PASSWORD_POLICY_MESSAGE}</p>
           </div>
           <div>
             <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '8px', display: 'block' }}>XÁC NHẬN MẬT KHẨU MỚI</label>
-            <div style={{ position: "relative" }}>
-              <input data-ai-id="input-thongtincanhan-xz62" type={showConfirmPass ? "text" : "password"} name="confirmPass" value={passData.confirmPass} onChange={handlePassChange} style={{ width: '100%', paddingRight: '48px', background: 'var(--gray-50)', padding: '14px 48px 14px 18px', borderRadius: '14px', border: '1px solid var(--gray-200)', color: 'var(--ink)', fontWeight: 600, outline: 'none' }} />
-              <span className="material-symbols-outlined" onClick={() => setShowConfirmPass(!showConfirmPass)} style={{ position: "absolute", right: "16px", top: "50%", transform: "translateY(-50%)", cursor: "pointer", color: "var(--gray-400)", userSelect: "none", zIndex: 10 }}>
+            <div style={{ position: 'relative' }}>
+              <input data-ai-id="input-thongtincanhan-8kpl" type={showConfirmPass ? "text" : "password"} name="confirmPass" value={passData.confirmPass} onChange={handlePassChange} style={{ width: '100%', padding: '14px 18px', borderRadius: '12px', border: '1px solid var(--gray-200)', background: 'var(--gray-50)', color: 'var(--ink)', fontWeight: 600, paddingRight: '48px', outline: 'none' }} />
+              <span className="material-symbols-outlined" style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', color: 'var(--gray-400)', fontSize: '20px' }} onClick={() => setShowConfirmPass(!showConfirmPass)}>
                 {showConfirmPass ? "visibility" : "visibility_off"}
               </span>
             </div>
           </div>
-        </div>
-        <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-          <button data-ai-id="button-thongtincanhan-zsem" className="btn btn-pill" style={{ background: 'var(--gray-100)', color: 'var(--ink)' }} onClick={() => setShowPasswordModal(false)}>Hủy</button>
-          <button data-ai-id="button-thongtincanhan-52rs" className="btn btn-primary btn-pill" onClick={handleSavePass}>Lưu mật khẩu</button>
+          <button data-ai-id="button-thongtincanhan-n7s4" className="btn btn-primary" onClick={handleSavePass} style={{ padding: '16px', borderRadius: '12px', fontWeight: 800, marginTop: '12px' }}>Cập nhật mật khẩu mới</button>
         </div>
       </Modal>
 
-      {/* MODAL XÓA TÀI KHOẢN */}
-      <Modal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)} title="Xác nhận xóa tài khoản" maxWidth="450px">
-        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-          <div style={{ width: '64px', height: '64px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
-            <span className="material-symbols-outlined" style={{ fontSize: '32px' }}>warning</span>
+      {/* MODAL XÁC NHẬN XÓA TÀI KHOẢN */}
+      <Modal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)} title="Xác nhận xóa tài khoản vĩnh viễn">
+        <div style={{ textAlign: 'center', padding: '10px 0' }}>
+          <div style={{ width: '72px', height: '72px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', borderRadius: '50%', display: 'grid', placeItems: 'center', margin: '0 auto 20px auto' }}>
+            <span className="material-symbols-outlined" style={{ fontSize: '36px' }}>warning</span>
           </div>
-          <h4 style={{ margin: '0 0 12px 0', fontSize: '1.2rem', fontWeight: 950, color: 'var(--ink)' }}>XÁC NHẬN XÓA TÀI KHOẢN?</h4>
-          <p style={{ margin: 0, fontSize: '0.95rem', color: 'var(--gray-500)', fontWeight: 600, lineHeight: 1.6 }}>
-            Hành động này <span style={{ color: '#ef4444', fontWeight: 800 }}>KHÔNG THỂ HOÀN TÁC</span>. 
-            Tất cả hồ sơ thú cưng, lịch hẹn và dữ liệu liên quan sẽ bị xóa vĩnh viễn khỏi hệ thống của chúng tôi.
+          <h4 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--ink)', margin: '0 0 12px 0' }}>Hành động này không thể khôi phục!</h4>
+          <p style={{ fontSize: '0.9rem', color: 'var(--gray-400)', fontWeight: 600, lineHeight: 1.6, margin: '0 0 32px 0', padding: '0 20px' }}>
+            Bạn có chắc chắn muốn xóa tài khoản này? Toàn bộ dữ liệu thú cưng, lịch sử khám bệnh và dịch vụ của bạn sẽ bị ẩn hoàn toàn khỏi hệ thống phòng khám.
           </p>
-        </div>
-        <div style={{ display: 'grid', gap: '12px' }}>
-          <button data-ai-id="button-thongtincanhan-gl4d"
-            className="btn btn-pill"
-            style={{ background: '#ef4444', color: 'white', width: '100%', padding: '14px', fontWeight: 800 }}
-            onClick={handleDeleteAccount}
-            disabled={isDeleting}
-          >
-            {isDeleting ? "Đang xử lý..." : "Xác nhận xóa vĩnh viễn"}
-          </button>
-          <button data-ai-id="button-thongtincanhan-g7jh"
-            className="btn btn-pill"
-            style={{ background: 'var(--gray-100)', color: 'var(--ink)', width: '100%', padding: '14px', fontWeight: 800 }}
-            onClick={() => setShowDeleteModal(false)}
-            disabled={isDeleting}
-          >
-            Tôi muốn quay lại
-          </button>
+          <div style={{ display: 'flex', gap: '16px' }}>
+            <button data-ai-id="button-thongtincanhan-1d70" className="btn" style={{ flex: 1, background: 'var(--gray-100)', color: 'var(--ink)', fontWeight: 800, padding: '14px' }} onClick={() => setShowDeleteModal(false)} disabled={isDeleting}>Hủy bỏ</button>
+            <button data-ai-id="button-thongtincanhan-m1b4" className="btn" style={{ flex: 1, background: '#ef4444', color: 'white', fontWeight: 800, padding: '14px', boxShadow: '0 8px 20px rgba(239, 68, 68, 0.25)' }} onClick={handleDeleteAccount} disabled={isDeleting}>
+              {isDeleting ? "Đang xử lý..." : "Xác nhận xóa"}
+            </button>
+          </div>
         </div>
       </Modal>
     </div>

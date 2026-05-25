@@ -31,6 +31,7 @@ public class RegisterRequest {
     
     @Size(max = 200, message = "Địa chỉ không quá 200 ký tự")
     private String dia_chi;
+
+    // Năm sinh của khách hàng để phân loại độ tuổi (GenZ vs Mature)
+    private Integer nam_sinh;
 }
-
-

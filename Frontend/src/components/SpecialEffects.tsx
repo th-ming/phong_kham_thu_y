@@ -75,19 +75,57 @@ const MemeCatCore: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
     return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
   }, []);
 
-  // LỜI THOẠI NGẪU NHIÊN CỦA BOSS
+  // LỜI THOẠI NGẪU NHIÊN CỦA BOSS DỰA TRÊN ĐỘ TUỔI (GEN Z VS MATURE)
   useEffect(() => {
-    const baseMessages = [
-      "Meow~ 🐾", "Rexi số 1 meow! ✨", "Nhớ đặt lịch khám nha!", "Đang chạy bộ nè meow... 🙀", "Pate đâu rồi sen? 🐟",
-      "Sen ơi, trẫm đói! Đưa pate đây! 😾",
-      "Chạy sút quần để trốn đi tắm nè meow! 🏃‍♂️💨",
-      "Bác sĩ dặn rồi, ngày chỉ ăn 3 cữ súp thưởng thôi! 🩺",
-      "Thấy trẫm chạy lẹ không? Tránh đường cho bổn cung! 🐾",
-      "Trầm cảm vì sen nghèo không có tiền mua bàn cào móng... 😿",
-      "Ủa đang ở đâu đây? Lạc đường mất tiêu rồi meow~ 🧭",
-      "Cấp cứu! Bụng đói cồn cào! Gọi ***REMOVED***-VIETQR_ACCOUNT_NO lẹ! 🚑",
-      "Bế trẫm đi Rexi khám lẹ, dạo này rụng lông quá! 🙀"
-    ];
+    // Đọc thông tin năm sinh từ localStorage để phân loại phong cách thoại
+    let userNamSinh: number | null = null;
+    try {
+      const userStr = localStorage.getItem("user");
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        if (user.nam_sinh !== undefined && user.nam_sinh !== null) {
+          userNamSinh = Number(user.nam_sinh);
+        }
+      }
+    } catch (e) {
+      console.error("Lỗi đọc nam_sinh cho MemeCat:", e);
+    }
+
+    // GenZ từ 1997 trở đi thì dùng tone vui vẻ nhây nhây teencode
+    const isGenZ = userNamSinh !== null && userNamSinh >= 1997;
+
+    const baseMessages = isGenZ 
+      ? [
+          "Meow~ 🐾", 
+          "Rexi số 1 meow! ✨", 
+          "Nhớ đặt lịch khám nha!", 
+          "Đang chạy bộ nè meow... 🙀", 
+          "Pate đâu rồi sen? 🐟",
+          "Sen ơi, trẫm đói! Đưa pate đây! 😾",
+          "Chạy sút quần để trốn đi tắm nè meow! 🏃‍♂️💨",
+          "Bác sĩ dặn rồi, ngày chỉ ăn 3 cữ súp thưởng thôi! 🩺",
+          "Thấy trẫm chạy lẹ không? Tránh đường cho bổn cung! 🐾",
+          "Trầm cảm vì sen nghèo không có tiền mua bàn cào móng... 😿",
+          "Ủa đang ở đâu đây? Lạc đường mất tiêu rồi meow~ 🧭",
+          "Cấp cứu! Bụng đói cồn cào! Gọi 0353.374.156 lẹ! 🚑",
+          "Bế trẫm đi Rexi khám lẹ, dạo này rụng lông quá! 🙀"
+        ]
+      : [
+          "Meow~ 🐾", 
+          "Chào mừng bạn đến với Rexi! ✨", 
+          "Đừng quên đặt lịch khám sức khỏe định kỳ cho bé nhé!", 
+          "Chúc bé cưng của bạn luôn vui khỏe mỗi ngày! ❤️", 
+          "Hôm nay bé cưng đã được ăn súp thưởng chưa nhỉ? 🐟",
+          "Cần bất kỳ hỗ trợ nào về thú y, tôi luôn sẵn sàng hỗ trợ! 🩺",
+          "Tôi đang chạy thể dục nâng cao sức khỏe đây meow~ 🏃‍♂️💨",
+          "Rexi luôn đồng hành cùng sức khỏe thú cưng của bạn! 🐾",
+          "Yêu thương và chăm sóc chu đáo như thành viên gia đình! 🥰",
+          "Đặt lịch online cực kỳ nhanh chóng và tiện lợi luôn ạ! 📅",
+          "Cần tư vấn khẩn cấp? Đã có bác sĩ AI Rexi túc trực 24/7! 🩺",
+          "Hotline hỗ trợ nhanh: 0353.374.156! 🚑",
+          "Chăm sóc tận tâm - Nâng niu từng bé thú cưng! 🐱🐶"
+        ];
+
     const interval = setInterval(() => {
       if (!isVisible) return;
       const randomMsg = baseMessages[Math.floor(Math.random() * baseMessages.length)];

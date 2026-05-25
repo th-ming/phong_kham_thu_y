@@ -65,6 +65,9 @@ test.describe('Kiểm tra Chatbot AI - Tính năng Khẩn cấp, Bảo mật & �
 
         // 3. Xác minh Trợ lý AI đồng bộ hóa đúng số điện thoại khẩn cấp chính thức của Rexi Clinic
         await expect(responseContainer).toContainText(/0353.*374.*156/);
+
+        // Chụp lại ảnh màn hình bằng chứng thực tế AI phản hồi khẩn cấp Heimlich trực quan lộng lẫy
+        await page.screenshot({ path: 'd:/QLy Phòng Khám Thú Y/Tester/test-results/evidence-tc03-chatbot-emergency.png', fullPage: true });
     });
 
     test('TC03: Tương tác các gợi ý nhanh (Quick Actions) và nút chuyển tiếp đăng ký', async ({ page }) => {

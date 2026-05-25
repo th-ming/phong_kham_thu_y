@@ -324,6 +324,24 @@ public class ChatController {
             ChatPersonaContext personaContext = buildPersonaContext(isStaff, userRoleName, requestPlan, isLoggedIn);
             String personaBlock = renderPersonaBlock(personaContext, requestPlan, currentPath);
 
+            // Truy vấn lấy năm sinh của KHACH_HANG đang chat từ database dựa trên tài khoản của họ.
+            // Đây là mấu chốt để phân loại độ tuổi GenZ vs Mature chuẩn chỉ cho con chatbot AI.
+            // Lỡ khách gõ bậy hoặc hệ thống ko tìm thấy thì trả về null để chatbot xử lý lịch sự mặc định.
+            Integer namSinh = null;
+            if (realUsername != null) {
+                try {
+                    namSinh = jdbcTemplate.queryForObject(
+                        "SELECT kh.nam_sinh FROM TaiKhoan tk JOIN KhachHang kh ON tk.id_khach_hang = kh.id_khach_hang WHERE tk.ten_dang_nhap = ?",
+                        Integer.class,
+                        realUsername
+                    );
+                } catch (Exception e) {
+                    logger.warning("Không lấy được năm sinh cho " + realUsername + ": " + e.getMessage());
+                }
+            }
+
+            boolean chatbotIsGenZ = (namSinh != null && namSinh >= 1997);
+
             String systemPrompt;
             if (isStaff) {
                 systemPrompt = personaBlock
@@ -368,6 +386,10 @@ public class ChatController {
                         + "\n" + webSearchContext
                         + domContextBlock;
             } else {
+                String phongCachText = chatbotIsGenZ
+                    ? "4. PHONG CÁCH: Bạn đang trò chuyện với một Sen thế hệ Gen Z (sinh năm " + namSinh + "). Hãy trò chuyện cực kỳ hóm hỉnh, năng động, nhây nhây vui tươi, thỉnh thoảng trêu chọc đùa giỡn nhẹ nhàng. Hãy chêm các từ teencode phổ biến của giới trẻ một cách tự nhiên (như: 'khum', 'iu', 'z', 'hông', 'sen', 'boss', 'dạ', 'oke'). Tuy nhiên, nếu họ hỏi về cấp cứu y tế hoặc tình huống khẩn cấp, bạn phải ngay lập tức chuyển sang chế độ nghiêm túc và ân cần 100% để hướng dẫn.\n"
+                    : "4. PHONG CÁCH: Bạn đang trò chuyện với khách hàng lớn tuổi/trưởng thành (sinh năm " + (namSinh != null ? namSinh : "trước 1997") + "). Hãy trò chuyện cực kỳ kính trọng, lịch sự, ân cần, ngôn từ nghiêm túc, chuẩn mực. TUYỆT ĐỐI KHÔNG dùng teencode, không cợt nhả, và TUYỆT ĐỐI KHÔNG được gọi họ là 'Sen' (họ sẽ thấy khó chịu), hãy gọi họ là 'Quý khách' hoặc xưng hô lịch thiệp 'Dạ thưa anh/chị'.\n";
+
                 systemPrompt = personaBlock
                         + "BẠN LÀ BÁC SĨ THÚ Y REXI - CHUYÊN GIA TOÀN NĂNG TRONG LĨNH VỰC CHĂM SÓC THÚ CƯNG.\n"
                         + realtimeContext
@@ -376,7 +398,7 @@ public class ChatController {
                         + "   - Nếu Sen hỏi về các chủ đề có trong [TÀI LIỆU CHUYÊN MÔN REXI] bên dưới, bạn BẮT BUỘC phải trả lời theo đúng tài liệu đó.\n"
                         + "   - Với mọi câu hỏi khác, hãy sử dụng kho tri thức thú y khổng lồ mà bạn đã được huấn luyện để tư vấn một cách chuyên nghiệp, chính xác và đầy yêu thương.\n"
                         + "3. HOTLINE & ĐỊA CHỈ: Luôn dùng số điện thoại: 0353.374.156 và địa chỉ: Gia Lâm, Hà Nội khi khách cần liên hệ hoặc trong trường hợp khẩn cấp.\n"
-                        + "4. PHONG CÁCH: Một bác sĩ thông thái, hóm hỉnh, luôn gọi khách là 'Sen' và thú cưng là 'Bé/Boss'.\n"
+                        + phongCachText
                         + "5. SƠ CỨU KHẨN CẤP (HEIMLICH, NGỘ ĐỘC, TAI NẠN, CHẢY MÁU): Khi Sen hỏi về tình trạng khẩn cấp, KHÔNG dọa dẫm gây hoảng loạn. BẮT BUỘC bắt đầu bằng tag [EMERGENCY], hướng dẫn sơ cứu cơ bản trước, sau đó CHỦ ĐỘNG HỎI VỊ TRÍ của Sen để chỉ hướng đến phòng khám gần nhất.\n"
                         + "6. ĐẶT LỊCH HẸN: " + loginContext + " Khi Sen chốt lịch, BẮT BUỘC in ra chuỗi [AUTO_BOOK:Ngày|Giờ|TênThúCưng|DịchVụ|TênBácSĩ]. Định dạng ngày YYYY-MM-DD, giờ HH:mm.\n"
                         + "7. THU THẬP TIỂU SỬ THÚ CƯNG: Bắt buộc chủ động hỏi Sen về Giống (chó/mèo/...), Độ tuổi và Cân nặng của thú cưng nếu chưa có thông tin, để đưa ra tư vấn sát thực tế nhất.\n"
@@ -539,7 +561,7 @@ ChatMessage systemMsg = new ChatMessage();
         ObjectMapper mapper = new ObjectMapper();
         try {
             if (requestBody.isArray()) {
-                payload.history = new ArrayList<>(Arrays.asList(mapper.treeToValue(requestBody, ChatMessage[].class)));
+                payload.history = Arrays.asList(mapper.treeToValue(requestBody, ChatMessage[].class));
                 return payload;
             }
 
@@ -1349,6 +1371,11 @@ ChatMessage systemMsg = new ChatMessage();
             category = "neuro";
             reasons.add("neuro-collapse");
         }
+        if (containsAny(q, "soc nhiet", "say nang", "tho gap", "nong qua")) {
+            score += 5;
+            category = "heatstroke";
+            reasons.add("heatstroke-risk");
+        }
         if (containsAny(q, "ngo doc", "an ba", "thuoc chuot", "ba chuot", "socola", "chocolate", "thuoc tru sau", "hoa chat", "chat tay", "uong nham", "an nham", "nuot nham")) {
             score += 5;
             category = "poison";
@@ -1399,6 +1426,11 @@ ChatMessage systemMsg = new ChatMessage();
                     .append("1. Dọn vật cứng quanh bé, không giữ chặt miệng hoặc kéo lưỡi.\n")
                     .append("2. Ghi lại thời gian co giật và quay video ngắn nếu an toàn.\n")
                     .append("3. Nếu cơn kéo dài hơn 2-3 phút hoặc lặp lại, đưa bé đi cấp cứu ngay.\n\n");
+        } else if ("heatstroke".equals(triage.category())) {
+            reply.append("**Sốc nhiệt/Say nắng:**\n")
+                    .append("1. Đưa bé vào nơi bóng râm, mát mẻ hoặc phòng có điều hòa ngay lập tức.\n")
+                    .append("2. Dùng khăn ướt (nước mát, KHÔNG dùng nước đá) lau và đắp lên vùng bụng, nách, bẹn và đệm chân bé.\n")
+                    .append("3. Cho bé uống một ít nước mát nếu bé còn tỉnh táo, rồi đưa đi cấp cứu.\n\n");
         } else if ("trauma".equals(triage.category())) {
             reply.append("**Chảy máu/tai nạn:**\n")
                     .append("1. Dùng gạc sạch ép trực tiếp lên điểm chảy máu 5-10 phút.\n")
