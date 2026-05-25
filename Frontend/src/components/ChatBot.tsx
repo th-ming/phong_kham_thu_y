@@ -237,6 +237,7 @@ const SwarmConsole: React.FC<{ data: SwarmData; isDark: boolean }> = ({ data, is
     const [isComplete, setIsComplete] = useState<boolean>(false);
     const [isSending, setIsSending] = useState<boolean>(false);
     const [isSent, setIsSent] = useState<boolean>(false);
+    const [isCancelled, setIsCancelled] = useState<boolean>(false);
     const [sendError, setSendError] = useState<string>("");
     const [previewIdx, setPreviewIdx] = useState<number | null>(null);
 
@@ -343,6 +344,7 @@ const SwarmConsole: React.FC<{ data: SwarmData; isDark: boolean }> = ({ data, is
 
                     {/* Danh sách contacts xem trước */}
                     {contacts.length > 0 && !isSent && (
+                    {contacts.length > 0 && !isSent && !isCancelled && (
                         <div style={{ marginTop: '12px' }}>
                             <div style={{ fontSize: '0.72rem', fontWeight: 900, color: '#3b82f6', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                                 <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>group</span>
@@ -376,9 +378,12 @@ const SwarmConsole: React.FC<{ data: SwarmData; isDark: boolean }> = ({ data, is
                             {/* Nút Phê Duyệt & Gửi Đồng Loạt */}
                             {!isSending && (
                                 <button
+                                <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+                                  <button
                                     onClick={handleApproveAndSend}
                                     style={{
                                         marginTop: '12px', width: '100%', padding: '12px',
+                                        flex: 1, padding: '12px',
                                         background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
                                         color: 'white', border: 'none', borderRadius: '12px',
                                         fontWeight: 900, fontSize: '0.82rem', cursor: 'pointer',
@@ -392,6 +397,22 @@ const SwarmConsole: React.FC<{ data: SwarmData; isDark: boolean }> = ({ data, is
                                     <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>send</span>
                                     ✅ PHÊ DUYỆT & GỬI ĐỒNG LOẠT ({contacts.length} EMAIL)
                                 </button>
+                                  </button>
+                                  
+                                  <button
+                                    onClick={() => setIsCancelled(true)}
+                                    style={{
+                                        padding: '12px',
+                                        background: 'transparent',
+                                        color: isDark ? '#f87171' : '#ef4444', border: '1.5px solid ' + (isDark ? '#f87171' : '#ef4444'), borderRadius: '12px',
+                                        fontWeight: 900, fontSize: '0.82rem', cursor: 'pointer',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px',
+                                        transition: 'all 0.2s', fontFamily: 'inherit'
+                                    }}
+                                  >
+                                    <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>close</span>
+                                  </button>
+                                </div>
                             )}
 
                             {/* Hiệu ứng đang gửi */}
@@ -406,6 +427,14 @@ const SwarmConsole: React.FC<{ data: SwarmData; isDark: boolean }> = ({ data, is
                                     {sendError}
                                 </div>
                             )}
+                        </div>
+                    )}
+                    
+                    {/* Thông báo đã hủy */}
+                    {isCancelled && (
+                        <div style={{ marginTop: '12px', padding: '12px', borderRadius: '12px', background: isDark ? 'rgba(100, 116, 139, 0.3)' : '#f1f5f9', border: '1px dashed ' + (isDark ? '#475569' : '#cbd5e1'), color: isDark ? '#94a3b8' : '#64748b', fontSize: '0.8rem', fontStyle: 'italic', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>block</span>
+                            Đã hủy bỏ chiến dịch gửi email.
                         </div>
                     )}
 
