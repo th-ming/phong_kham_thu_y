@@ -184,6 +184,9 @@ const ThongTinCaNhan: React.FC = () => {
               sdt: savedData.sdt || savedData.so_dien_thoai || currentUser.sdt,
               hinh_anh: savedData.hinh_anh || savedData.avatar || currentUser.hinh_anh,
               avatar: savedData.avatar || savedData.hinh_anh || currentUser.avatar,
+              // Sync năm sinh ngay xuống localStorage.user để UI và chatbot Rexi đổi giọng nhây vs nghiêm túc tức thì.
+              // Khách hàng bấm lưu phát là Boss mèo meme ở góc màn hình tự động bóc tách đổi tone luôn, khum cần F5.
+              nam_sinh: savedData.nam_sinh !== undefined ? savedData.nam_sinh : currentUser.nam_sinh,
             };
             localStorage.setItem("user", JSON.stringify(nextUser));
           }
@@ -333,6 +336,27 @@ const ThongTinCaNhan: React.FC = () => {
                 <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '12px', display: 'block', textTransform: 'uppercase' }}>EMAIL <span style={{ color: '#ff4d4f' }}>*</span></label>
                 {isEditing ? <input data-ai-id="input-thongtincanhan-1qez" type="email" name="email" value={formData.email || ''} onChange={handleChange} style={{ width: '100%', padding: '14px 18px', borderRadius: '14px', border: '1px solid var(--gray-200)', background: 'var(--gray-50)', color: 'var(--ink)', fontWeight: 600, outline: 'none' }} /> : <div style={{ fontWeight: 700, color: 'var(--ink)' }}>{data?.email || "—"}</div>}
               </div>
+              {isCustomer && (
+                <div>
+                  <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '12px', display: 'block', textTransform: 'uppercase' }}>NĂM SINH (CÁ NHÂN HÓA TRẢI NGHIỆM)</label>
+                  {isEditing ? (
+                    <input
+                      data-ai-id="input-thongtincanhan-namsinh"
+                      type="number"
+                      name="nam_sinh"
+                      min="1920"
+                      max={new Date().getFullYear()}
+                      value={formData.nam_sinh || ''}
+                      onChange={handleChange}
+                      style={{ width: '100%', padding: '14px 18px', borderRadius: '14px', border: '1px solid var(--gray-200)', background: 'var(--gray-50)', color: 'var(--ink)', fontWeight: 600, outline: 'none' }}
+                    />
+                  ) : (
+                    <div style={{ fontWeight: 700, color: 'var(--ink)' }}>
+                      {data?.nam_sinh ? `${data.nam_sinh} (${data.nam_sinh >= 1997 ? "Gen Z vui vẻ 🐱🎉" : "Trưởng thành chuẩn mực 🩺✨"})` : "Chưa cập nhật năm sinh"}
+                    </div>
+                  )}
+                </div>
+              )}
               <div>
                 <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '12px', display: 'block', textTransform: 'uppercase' }}>ĐỊA CHỈ LIÊN HỆ</label>
                 {isEditing ? (
