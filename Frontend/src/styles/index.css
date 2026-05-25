@@ -1507,7 +1507,7 @@ html {
   /* 3. Phát sáng nút bong bóng Chatbot nổi */
   #chatBtn:not(.is-open) {
     box-shadow: 0 0 22px rgba(34, 211, 238, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
-    animation: chatWaterBobDark 3s infinite ease-in-out !important;
+    animation: none !important;
   }
   #chatBtn:hover {
     box-shadow: 0 0 35px rgba(34, 211, 238, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
@@ -1542,12 +1542,12 @@ html {
 }
 
 @keyframes chatWaterBobDark {
-  0%, 30%, 100% { transform: translateY(0) scale(1) rotate(0deg); box-shadow: 0 0 15px rgba(34, 211, 238, 0.3); }
-  5% { transform: translateY(-4px) scale(1.05) rotate(-8deg); box-shadow: 0 0 25px rgba(34, 211, 238, 0.5); }
-  10% { transform: translateY(-2px) scale(1.05) rotate(8deg); box-shadow: 0 0 30px rgba(34, 211, 238, 0.6); }
-  15% { transform: translateY(0) scale(1.02) rotate(-5deg); box-shadow: 0 0 20px rgba(34, 211, 238, 0.4); }
-  20% { transform: translateY(0) scale(1) rotate(3deg); box-shadow: 0 0 15px rgba(34, 211, 238, 0.3); }
-  25% { transform: translateY(0) scale(1) rotate(0deg); box-shadow: 0 0 15px rgba(34, 211, 238, 0.3); }
+  0%, 30%, 100% { transform: rotate(0deg); box-shadow: 0 0 15px rgba(34, 211, 238, 0.3); }
+  5% { transform: rotate(-8deg); box-shadow: 0 0 25px rgba(34, 211, 238, 0.5); }
+  10% { transform: rotate(8deg); box-shadow: 0 0 30px rgba(34, 211, 238, 0.6); }
+  15% { transform: rotate(-5deg); box-shadow: 0 0 20px rgba(34, 211, 238, 0.4); }
+  20% { transform: rotate(3deg); box-shadow: 0 0 15px rgba(34, 211, 238, 0.3); }
+  25% { transform: rotate(0deg); box-shadow: 0 0 15px rgba(34, 211, 238, 0.3); }
 }
 
 

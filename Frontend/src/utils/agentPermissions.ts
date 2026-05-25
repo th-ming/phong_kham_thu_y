@@ -9,11 +9,15 @@ export const AGENT_TOOL_ROLES: Record<string, UserRoleCode[]> = {
   xem_benh_an: ROLE_GROUPS.clinicalRecord,
   tim_lich_trong: [...ROLE_GROUPS.allInternal, "khach_hang"],
   dat_lich_hen: ROLE_GROUPS.appointment,
+  huy_lich_hen: [...ROLE_GROUPS.appointment, "khach_hang"],
+  cap_nhat_benh_an: ["bac_si", "y_ta"],
   xem_kho_thuoc: ROLE_GROUPS.inventory,
   thong_ke_doanh_thu: ROLE_GROUPS.finance,
   tim_kiem_web: [...ROLE_GROUPS.allInternal, "khach_hang"],
   gui_email_don_le: ROLE_GROUPS.marketing,
   kiem_tra_cau_hinh_ai: ROLE_GROUPS.adminOnly,
+  kiem_tra_kien_truc_he_thong: ROLE_GROUPS.adminOnly,
+  tra_cuu_ma_nguon: ROLE_GROUPS.adminOnly,
   kiem_tra_phan_he: [...ROLE_GROUPS.allInternal, "khach_hang"],
   xem_hoa_don: ROLE_GROUPS.invoice,
   thao_tac_tai_khoan: ROLE_GROUPS.staffAccountManage,
@@ -22,6 +26,7 @@ export const AGENT_TOOL_ROLES: Record<string, UserRoleCode[]> = {
 
 export const CUSTOMER_SAFE_AGENT_TOOLS = new Set([
   "tim_lich_trong",
+  "huy_lich_hen",
   "tim_kiem_web",
   "kiem_tra_phan_he",
 ]);

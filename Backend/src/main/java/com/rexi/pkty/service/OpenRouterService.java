@@ -80,22 +80,18 @@ public class OpenRouterService {
     @Value("${openrouter.model:deepseek/deepseek-v4-flash:free}")
     private String modelName;
 
-    private static final List<String> FREE_FALLBACK_MODELS = List.of(
-            "openrouter/free",
-            "deepseek/deepseek-v4-flash:free",
-            "openrouter/owl-alpha",
-            "baidu/cobuddy:free",
-            "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
-            "poolside/laguna-m.1:free",
-            "poolside/laguna-xs.2:free"
-    );
+    // Biến lưu Cache danh sách Model
+    private List<String> cachedFreeModels = new ArrayList<>();
+    private long lastModelFetchTime = 0;
+    private static final long CACHE_DURATION_MS = 24 * 60 * 60 * 1000L; // 24 giờ
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final AtomicInteger keyCursor = new AtomicInteger(0);
     private final AtomicInteger modelCursor = new AtomicInteger(0);
 
     private final HttpClient client = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(20))
+            .version(HttpClient.Version.HTTP_2)
+            .connectTimeout(Duration.ofSeconds(10))
             .build();
 
     public String chat(List<ChatMessage> history) throws Exception {
@@ -121,37 +117,33 @@ public class OpenRouterService {
         Exception lastException = null;
         List<String> candidateModels = getCandidateModels();
         int keyStart = Math.floorMod(keyCursor.getAndIncrement(), apiKeys.size());
-        int modelStart = Math.floorMod(modelCursor.getAndIncrement(), candidateModels.size());
+        
         for (int keyOffset = 0; keyOffset < apiKeys.size(); keyOffset++) {
             String currentApiKey = apiKeys.get((keyStart + keyOffset) % apiKeys.size());
-            for (int modelOffset = 0; modelOffset < candidateModels.size(); modelOffset++) {
-                String candidateModel = candidateModels.get((modelStart + modelOffset) % candidateModels.size());
-                try {
-                    HttpResponse<String> response = callOpenRouter(currentApiKey, candidateModel, messagesForApi);
-                    if (response.statusCode() == 200) {
-                        return parseOpenRouterReply(response.body(), candidateModel);
-                    }
-
-                    RuntimeException apiException = new RuntimeException(
-                            "OpenRouter API Error " + response.statusCode() + " (" + candidateModel + "): " + response.body());
-                    lastException = apiException;
-                    if (!shouldTryNextModel(response.statusCode(), response.body())) {
-                        throw apiException;
-                    }
-                    logger.warning("OpenRouter key/model lỗi, thử dự phòng tiếp theo. model="
-                            + candidateModel + " status=" + response.statusCode());
-                } catch (Exception e) {
-                    lastException = e;
-                    if (!shouldTryNextModel(e)) {
-                        throw e;
-                    }
-                    logger.warning("OpenRouter key/model không khả dụng, thử dự phòng tiếp theo. model="
-                            + candidateModel + " error=" + e.getMessage());
+            
+            try {
+                HttpResponse<String> response = callOpenRouter(currentApiKey, candidateModels, messagesForApi);
+                if (response.statusCode() == 200) {
+                    return parseOpenRouterReply(response.body());
                 }
+
+                RuntimeException apiException = new RuntimeException(
+                        "OpenRouter API Error " + response.statusCode() + ": " + response.body());
+                lastException = apiException;
+                if (!shouldTryNextModel(response.statusCode(), response.body())) {
+                    throw apiException;
+                }
+                logger.warning("OpenRouter key lỗi, thử dự phòng tiếp theo. status=" + response.statusCode());
+            } catch (Exception e) {
+                lastException = e;
+                if (!shouldTryNextModel(e)) {
+                    throw e;
+                }
+                logger.warning("OpenRouter key không khả dụng, thử dự phòng tiếp theo. error=" + e.getMessage());
             }
         }
 
-        throw new RuntimeException("Tất cả OpenRouter free model đều không khả dụng: "
+        throw new RuntimeException("Tất cả OpenRouter API Key đều không khả dụng: "
                 + (lastException != null ? lastException.getMessage() : "không rõ lỗi"));
     }
 
@@ -161,16 +153,78 @@ public class OpenRouterService {
         if (configuredModel != null && !configuredModel.trim().isEmpty()) {
             models.add(configuredModel.trim());
         }
-        models.addAll(FREE_FALLBACK_MODELS);
+        models.addAll(getDynamicFreeModels());
         return new ArrayList<>(models);
     }
 
-    private HttpResponse<String> callOpenRouter(String currentApiKey, String selectedModel,
+    private synchronized List<String> getDynamicFreeModels() {
+        long now = System.currentTimeMillis();
+        // Trả về cache nếu chưa hết hạn (chưa qua 24 giờ)
+        if (!cachedFreeModels.isEmpty() && (now - lastModelFetchTime < CACHE_DURATION_MS)) {
+            return cachedFreeModels;
+        }
+
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create("https://openrouter.ai/api/v1/models"))
+                    .GET()
+                    .timeout(Duration.ofSeconds(10))
+                    .build();
+
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() == 200) {
+                JsonNode root = objectMapper.readTree(response.body());
+                JsonNode dataNode = root.path("data");
+                List<String> freeModels = new ArrayList<>();
+                
+                if (dataNode.isArray()) {
+                    for (JsonNode modelNode : dataNode) {
+                        String id = modelNode.path("id").asText();
+                        JsonNode pricing = modelNode.path("pricing");
+                        
+                        String promptPrice = pricing.path("prompt").asText();
+                        String completionPrice = pricing.path("completion").asText();
+                        
+                        // OpenRouter quy định model free có giá prompt & completion đều bằng "0"
+                        if (("0".equals(promptPrice) || "0.0".equals(promptPrice)) && 
+                            ("0".equals(completionPrice) || "0.0".equals(completionPrice))) {
+                            freeModels.add(id);
+                        }
+                    }
+                }
+                
+                if (!freeModels.isEmpty()) {
+                    // Giới hạn lấy tối đa 10 model free để không làm mảng API quá dài gây nghẽn
+                    cachedFreeModels = freeModels.subList(0, Math.min(freeModels.size(), 10));
+                    lastModelFetchTime = now;
+                    logger.info("Đã quét tự động và cập nhật " + cachedFreeModels.size() + " model Free từ OpenRouter.");
+                    return cachedFreeModels;
+                }
+            }
+        } catch (Exception e) {
+            logger.warning("Lỗi tự động quét model Free từ OpenRouter: " + e.getMessage());
+        }
+
+        // Danh sách dự phòng cứng (Hardcode) nếu API /models bị sập
+        if (cachedFreeModels.isEmpty()) {
+            return List.of(
+                    "openrouter/free",
+                    "deepseek/deepseek-v4-flash:free",
+                    "openrouter/owl-alpha",
+                    "baidu/cobuddy:free",
+                    "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free"
+            );
+        }
+        return cachedFreeModels;
+    }
+
+    private HttpResponse<String> callOpenRouter(String currentApiKey, List<String> candidateModels,
             List<Map<String, Object>> messagesForApi) throws Exception {
         Map<String, Object> requestBodyMap = Map.of(
-                "model", selectedModel,
+                "models", candidateModels,
                 "messages", messagesForApi,
-                "max_tokens", 2048);
+                "max_tokens", 900,
+                "temperature", 0.35);
 
         String requestBody = objectMapper.writeValueAsString(requestBodyMap);
 
@@ -187,13 +241,13 @@ public class OpenRouterService {
         return client.send(request, HttpResponse.BodyHandlers.ofString());
     }
 
-    private String parseOpenRouterReply(String responseBody, String selectedModel) throws Exception {
+    private String parseOpenRouterReply(String responseBody) throws Exception {
         JsonNode rootNode = objectMapper.readTree(responseBody);
         try {
             return rootNode.path("choices").get(0).path("message").path("content").asText();
         } catch (Exception e) {
-            logger.severe("Lỗi parse phản hồi từ OpenRouter model " + selectedModel + ". Nội dung: " + responseBody);
-            throw new RuntimeException("Lỗi Parse OpenRouter (" + selectedModel + "): " + responseBody);
+            logger.severe("Lỗi parse phản hồi từ OpenRouter. Nội dung: " + responseBody);
+            throw new RuntimeException("Lỗi Parse OpenRouter: " + responseBody);
         }
     }
 

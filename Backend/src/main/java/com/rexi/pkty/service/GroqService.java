@@ -19,6 +19,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
@@ -100,11 +101,111 @@ public class GroqService {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final AtomicInteger keyCursor = new AtomicInteger(0);
+    private volatile long lastPrewarmAtMs = 0L;
+    private final ConcurrentHashMap<String, Long> keyCooldownUntilMs = new ConcurrentHashMap<>();
 
     // Sử dụng chung 1 HttpClient cho toàn bộ service để tận dụng Connection Pooling
     private final HttpClient client = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(20))
             .build();
+
+    private List<String> getAvailableApiKeys(List<String> apiKeys) {
+        long now = System.currentTimeMillis();
+        List<String> available = new ArrayList<>();
+        List<String> coolingDown = new ArrayList<>();
+        for (String key : apiKeys) {
+            Long cooldownUntil = keyCooldownUntilMs.get(key);
+            if (cooldownUntil == null || cooldownUntil <= now) {
+                available.add(key);
+            } else {
+                coolingDown.add(key);
+            }
+        }
+        return available.isEmpty() ? coolingDown : available;
+    }
+
+    private void markKeySuccess(String key) {
+        keyCooldownUntilMs.remove(key);
+    }
+
+    private void markKeyFailure(String key, int statusCode, String reason) {
+        long cooldownMs;
+        if (statusCode == 401 || statusCode == 403) {
+            cooldownMs = Duration.ofHours(24).toMillis();
+        } else if (statusCode == 429) {
+            cooldownMs = Duration.ofMinutes(2).toMillis();
+        } else if (statusCode >= 500) {
+            cooldownMs = Duration.ofSeconds(30).toMillis();
+        } else {
+            cooldownMs = Duration.ofMinutes(5).toMillis();
+        }
+        keyCooldownUntilMs.put(key, System.currentTimeMillis() + cooldownMs);
+        logger.warning("Groq key cooldown " + maskKey(key) + " status=" + statusCode + " reason=" + reason);
+    }
+
+    private void markKeyFailure(String key, Exception e) {
+        keyCooldownUntilMs.put(key, System.currentTimeMillis() + Duration.ofSeconds(30).toMillis());
+        logger.warning("Groq key cooldown " + maskKey(key) + " error=" + e.getMessage());
+    }
+
+    private String maskKey(String key) {
+        if (key == null || key.length() < 10) return "****";
+        return key.substring(0, 6) + "..." + key.substring(key.length() - 4);
+    }
+
+    public void prewarm() {
+        long now = System.currentTimeMillis();
+        if (now - lastPrewarmAtMs < 60_000) {
+            return;
+        }
+        lastPrewarmAtMs = now;
+
+        List<String> keys = getAvailableApiKeys(getApiKeys());
+        if (keys.isEmpty()) {
+            logger.warning("Bỏ qua Groq prewarm vì chưa có API key trong cấu hình.");
+            return;
+        }
+
+        try {
+            String requestBody = objectMapper.writeValueAsString(Map.of(
+                    "model", modelName,
+                    "messages", List.of(
+                            Map.of("role", "system", "content", "Warm up Rexi assistant."),
+                            Map.of("role", "user", "content", "ping")
+                    ),
+                    "max_tokens", 1,
+                    "temperature", 0
+            ));
+
+            int prewarmCount = Math.min(2, keys.size());
+            int keyStart = Math.floorMod(keyCursor.getAndIncrement(), keys.size());
+            for (int offset = 0; offset < prewarmCount; offset++) {
+                String currentApiKey = keys.get((keyStart + offset) % keys.size());
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(URI.create(GROQ_API_URL))
+                        .header("Content-Type", "application/json")
+                        .header("Authorization", "Bearer " + currentApiKey)
+                        .POST(HttpRequest.BodyPublishers.ofString(requestBody, StandardCharsets.UTF_8))
+                        .timeout(Duration.ofSeconds(8))
+                        .build();
+
+                client.sendAsync(request, HttpResponse.BodyHandlers.discarding())
+                        .thenAccept(response -> {
+                            if (response.statusCode() == 200) {
+                                markKeySuccess(currentApiKey);
+                                return;
+                            }
+                            markKeyFailure(currentApiKey, response.statusCode(), "prewarm");
+                        })
+                        .exceptionally(ex -> {
+                            markKeyFailure(currentApiKey, new RuntimeException(ex));
+                            return null;
+                        });
+            }
+        } catch (Exception e) {
+            logger.warning("Không tạo được request Groq prewarm: " + e.getMessage());
+        }
+    }
 
     public String chat(List<ChatMessage> history) throws Exception {
         ChatMessage latest = history.get(history.size() - 1);
@@ -146,11 +247,13 @@ public class GroqService {
         // Dùng model phù hợp: vision cho ảnh, text cho chat thường
         Map<String, Object> requestBodyMap = Map.of(
                 "model", selectedModel,
-                "messages", messagesForApi);
+                "messages", messagesForApi,
+                "max_tokens", hasImage ? 900 : 600,
+                "temperature", 0.4);
 
         String requestBody = objectMapper.writeValueAsString(requestBodyMap);
 
-        List<String> apiKeys = getApiKeys();
+        List<String> apiKeys = getAvailableApiKeys(getApiKeys());
         if (apiKeys.isEmpty()) {
             throw new RuntimeException("Không tìm thấy Groq API Key nào được cấu hình!");
         }
@@ -173,14 +276,18 @@ public class GroqService {
                 if (response.statusCode() != 200) {
                     logger.warning("Groq key lỗi, thử key dự phòng tiếp theo. keyIndex=" + i
                             + " status=" + response.statusCode());
+                    markKeyFailure(currentApiKey, response.statusCode(), "chat");
                     lastException = new RuntimeException("Groq API Error " + response.statusCode() + ": " + response.body());
                     continue;
                 }
 
+                markKeySuccess(currentApiKey);
+                prewarm();
                 JsonNode rootNode = objectMapper.readTree(response.body());
                 return rootNode.path("choices").get(0).path("message").path("content").asText();
             } catch (Exception e) {
                 lastException = e;
+                markKeyFailure(currentApiKey, e);
                 logger.warning("Groq key không khả dụng, thử key dự phòng tiếp theo. keyIndex=" + i
                         + " error=" + e.getMessage());
             }
@@ -224,12 +331,14 @@ public class GroqService {
         Map<String, Object> requestBodyMap = Map.of(
                 "model", selectedModel,
                 "messages", messagesForApi,
+                "max_tokens", hasImage ? 900 : 600,
+                "temperature", 0.4,
                 "stream", true
         );
 
         String requestBody = objectMapper.writeValueAsString(requestBodyMap);
 
-        List<String> apiKeys = getApiKeys();
+        List<String> apiKeys = getAvailableApiKeys(getApiKeys());
         if (apiKeys.isEmpty()) {
             emitter.completeWithError(new RuntimeException("Không tìm thấy Groq API Key nào được cấu hình!"));
             return;
@@ -248,9 +357,12 @@ public class GroqService {
             .thenAccept(response -> {
                 if (response.statusCode() != 200) {
                     logger.severe("Groq API Error - Status: " + response.statusCode());
+                    markKeyFailure(currentApiKey, response.statusCode(), "stream");
                     emitter.completeWithError(new RuntimeException("Groq API Error " + response.statusCode()));
                     return;
                 }
+                markKeySuccess(currentApiKey);
+                prewarm();
                 response.body().forEach(line -> {
                     try {
                         if (line.startsWith("data: ")) {
@@ -275,6 +387,7 @@ public class GroqService {
             })
             .exceptionally(ex -> {
                 logger.severe("Groq Streaming Exception: " + ex.getMessage());
+                markKeyFailure(currentApiKey, new RuntimeException(ex));
                 emitter.completeWithError(ex);
                 return null;
             });

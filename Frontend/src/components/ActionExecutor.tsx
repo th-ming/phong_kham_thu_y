@@ -1,6 +1,22 @@
 import { toast } from './Toast';
 import { confirmAction } from './ConfirmModal';
 
+const escapeCssIdent = (value: string) => {
+  const css = (window as any).CSS;
+  if (css?.escape) return css.escape(value);
+  return value.replace(/["\\\]\[]/g, '\\$&');
+};
+
+const getAiElement = <T extends HTMLElement = HTMLElement>(id: string): T | null => {
+  return document.querySelector(`[data-ai-id="${escapeCssIdent(id)}"]`) as T | null;
+};
+
+const isSensitiveElement = (element: HTMLElement, payload: string) => {
+  const label = `${payload} ${element.getAttribute('aria-label') || ''} ${element.getAttribute('title') || ''} ${element.textContent || ''}`.toLowerCase();
+  return ['xóa', 'xoa', 'delete', 'hủy', 'huy', 'khóa', 'khoa', 'thanh toán', 'thanh toan', 'thu tiền', 'thu tien', 'duyệt', 'duyet', 'gửi đồng loạt', 'gui dong loat']
+    .some(keyword => label.includes(keyword));
+};
+
 /**
  * Execute a single AI action tag.
  * Supported tags: CLICK, FILL, TOGGLE, SELECT, DELETE, SCROLL
@@ -30,12 +46,22 @@ export const executeAction = async (tag: string, skipConfirm: boolean = false) =
 
     switch (type) {
       case 'CLICK': {
-        const el = document.querySelector(`[data-ai-id="${payload}"]`) as HTMLElement;
+        const el = getAiElement(payload);
         if (el) {
+          if (!skipConfirm && isSensitiveElement(el, payload)) {
+            const confirmed = await confirmAction(`AI đang chuẩn bị bấm phần tử nhạy cảm "${payload}". Bạn có chắc muốn cho phép không?`);
+            if (!confirmed) {
+              toast.info('Đã hủy thao tác nhạy cảm từ AI.');
+              window.dispatchEvent(new CustomEvent('agent-action', {
+                detail: { type: 'ERROR', tag, message: `Người dùng từ chối thao tác nhạy cảm: ${payload}` }
+              }));
+              break;
+            }
+          }
           triggerClickWithTag(el, `CLICK:${payload}`);
-          toast.success(`Đã tự động Click vào: ${payload}`);
+          toast.success(`Đã kích hoạt thao tác: ${payload}`);
           window.dispatchEvent(new CustomEvent('agent-action', {
-            detail: { type: 'SUCCESS', tag, message: `Đã tự động Click vào: ${payload}` }
+            detail: { type: 'SUCCESS', tag, message: `Đã kích hoạt thao tác: ${payload}` }
           }));
         } else {
           window.dispatchEvent(new CustomEvent('agent-action', {
@@ -49,7 +75,7 @@ export const executeAction = async (tag: string, skipConfirm: boolean = false) =
         const id = separatorIdx > -1 ? payload.slice(0, separatorIdx).trim() : payload;
         let value = separatorIdx > -1 ? payload.slice(separatorIdx + 1) : '';
         
-        const input = document.querySelector(`[data-ai-id="${id}"]`) as HTMLInputElement;
+        const input = getAiElement<HTMLInputElement>(id);
         if (input) {
           // Ngăn chặn bypass HTML5 Validation (giới hạn độ dài tối đa)
           const maxLength = input.getAttribute('maxlength');
@@ -78,8 +104,18 @@ export const executeAction = async (tag: string, skipConfirm: boolean = false) =
         break;
       }
       case 'TOGGLE': {
-        const el = document.querySelector(`[data-ai-id="${payload}"]`) as HTMLElement;
+        const el = getAiElement(payload);
         if (el) {
+          if (!skipConfirm && isSensitiveElement(el, payload)) {
+            const confirmed = await confirmAction(`AI đang chuẩn bị đổi trạng thái phần tử nhạy cảm "${payload}". Bạn có chắc muốn cho phép không?`);
+            if (!confirmed) {
+              toast.info('Đã hủy thao tác nhạy cảm từ AI.');
+              window.dispatchEvent(new CustomEvent('agent-action', {
+                detail: { type: 'ERROR', tag, message: `Người dùng từ chối thao tác nhạy cảm: ${payload}` }
+              }));
+              break;
+            }
+          }
           triggerClickWithTag(el, `TOGGLE:${payload}`);
           toast.success(`Đã chuyển đổi trạng thái: ${payload}`);
           window.dispatchEvent(new CustomEvent('agent-action', {
@@ -93,8 +129,10 @@ export const executeAction = async (tag: string, skipConfirm: boolean = false) =
         break;
       }
       case 'SELECT': {
-        const [id, option] = payload.split('|');
-        const select = document.querySelector(`[data-ai-id="${id}"]`) as HTMLSelectElement;
+        const separatorIdx = payload.indexOf('|');
+        const id = separatorIdx > -1 ? payload.slice(0, separatorIdx).trim() : payload.trim();
+        const option = separatorIdx > -1 ? payload.slice(separatorIdx + 1) : '';
+        const select = getAiElement<HTMLSelectElement>(id);
         if (select) {
           const requestedOption = option?.trim();
           const firstValidOption = Array.from(select.options).find(opt => !opt.disabled && opt.value.trim() !== "");
@@ -102,9 +140,10 @@ export const executeAction = async (tag: string, skipConfirm: boolean = false) =
             ? firstValidOption?.value
             : requestedOption;
 
-          if (!optionToSelect) {
+          const optionExists = Array.from(select.options).some(opt => opt.value === optionToSelect && !opt.disabled);
+          if (!optionToSelect || !optionExists) {
             window.dispatchEvent(new CustomEvent('agent-action', {
-              detail: { type: 'ERROR', tag, message: `Không có lựa chọn hợp lệ trong danh mục: ${id}` }
+              detail: { type: 'ERROR', tag, message: `Không có lựa chọn hợp lệ "${requestedOption || ''}" trong danh mục: ${id}` }
             }));
             break;
           }
@@ -137,7 +176,7 @@ export const executeAction = async (tag: string, skipConfirm: boolean = false) =
           isActionConfirmed = await confirmAction(`AI đang cố gắng thực thi lệnh XÓA "${payload}". Bạn có chắc chắn muốn cho phép hành động này không?`);
         }
         if (isActionConfirmed) {
-          const el = document.querySelector(`[data-ai-id="${payload}"]`) as HTMLElement;
+          const el = getAiElement(payload);
           if (el) {
             triggerClickWithTag(el, `DELETE:${payload}`);
             toast.success(`Đã xác nhận xóa: ${payload}`);
@@ -186,7 +225,7 @@ export const executeAction = async (tag: string, skipConfirm: boolean = false) =
         } else if (target === 'down' || target === 'xuong') {
           window.scrollBy({ top: parseAmount(amountHint), behavior: 'smooth' });
         } else {
-          const el = document.querySelector(`[data-ai-id="${payload}"]`) as HTMLElement;
+          const el = getAiElement(payload);
           if (el) {
             el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
           } else {

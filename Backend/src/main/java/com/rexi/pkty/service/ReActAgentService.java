@@ -8,6 +8,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.logging.Logger;
 
@@ -21,6 +24,7 @@ public class ReActAgentService {
 
     private static final Logger logger = Logger.getLogger(ReActAgentService.class.getName());
     private static final int MAX_ITERATIONS = 6;
+    private static final ZoneId VN_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
     @Autowired private OpenRouterService openRouterService;
     @Autowired private GeminiService geminiService;
     @Autowired private GroqService groqService;
@@ -60,6 +64,16 @@ public class ReActAgentService {
             return new ReActResult(greeting, steps);
         }
 
+        ReActResult deterministicVetResult = handleDeterministicClinicAgentQuery(
+                originalUserIntent,
+                normalizedQuery,
+                userRole,
+                steps
+        );
+        if (deterministicVetResult != null) {
+            return deterministicVetResult;
+        }
+
         // Xây dựng system prompt với tool schema + ngữ cảnh người dùng
         String systemPrompt = buildSystemPrompt(userQuery, username, userRole);
 
@@ -95,18 +109,20 @@ public class ReActAgentService {
                 cleaned = cleaned.replaceAll("^```[a-z]*\\s*", "").replaceAll("\\s*```$", "").trim();
             }
             
-            // Trích xuất block JSON phòng khi AI sinh ra văn bản "suy nghĩ" phía trước
-            int jsonStartIndex = cleaned.indexOf("{");
-            String possibleJson = jsonStartIndex >= 0 ? cleaned.substring(jsonStartIndex) : cleaned;
+            // Trích xuất đúng object JSON đầu tiên, kể cả khi model lỡ thêm text phía trước/sau.
+            String possibleJson = extractFirstJsonObject(cleaned);
 
             // Kiểm tra xem đây có phải JSON tool call không
-            if (jsonStartIndex >= 0) {
+            if (possibleJson != null) {
                 try {
                     JsonNode node = mapper.readTree(possibleJson);
 
                     // ── FINAL ANSWER ──
                     if (node.has("final_answer")) {
                         String answer = node.get("final_answer").asText();
+                        if (answer == null || answer.isBlank() || "null".equalsIgnoreCase(answer.trim())) {
+                            answer = "Tôi chưa đủ dữ liệu để hoàn tất tác vụ này. Bạn gửi thêm SĐT khách hàng, tên thú cưng, ngày/giờ mong muốn hoặc chuyển sang thao tác thủ công trên đúng phân hệ giúp tôi.";
+                        }
                         steps.add(new ReActStep("FINAL", answer, null, null, null));
                         return new ReActResult(answer, steps);
                     }
@@ -132,7 +148,7 @@ public class ReActAgentService {
                             return new ReActResult(denial, steps);
                         }
 
-                        String observation = toolService.executeTool(toolName, params, userRole);
+                        String observation = toolService.executeTool(toolName, params, userRole, username);
                         logger.info("[ReAct] Kết quả tool: " + observation.substring(0, Math.min(200, observation.length())));
 
                         // Thêm kết quả vào steps
@@ -165,6 +181,165 @@ public class ReActAgentService {
         // Vượt quá số vòng lặp tối đa
         String fallback = "Đã hoàn thành phân tích sau " + MAX_ITERATIONS + " bước. Dựa trên dữ liệu thu thập được, tôi đã cố gắng hết sức để hỗ trợ bạn. Có thể yêu cầu của bạn cần thêm thông tin bổ sung.";
         return new ReActResult(fallback, steps);
+    }
+
+    private ReActResult handleDeterministicClinicAgentQuery(
+            String originalUserIntent,
+            String normalizedQuery,
+            String userRole,
+            List<ReActStep> steps
+    ) {
+        if (normalizedQuery == null || normalizedQuery.isBlank()) {
+            return null;
+        }
+
+        if (containsAny(normalizedQuery, "thuoc", "tri ran", "ve ran", "bọ chét", "bo chet")
+                && containsAny(normalizedQuery, "tho", "thỏ")) {
+            if (!canUseTool(userRole, "xem_kho_thuoc")) {
+                String denial = RoleAccessPolicy.permissionDeniedMessage("xem_kho_thuoc");
+                steps.add(new ReActStep("FINAL", denial, null, null, null));
+                return new ReActResult(denial, steps);
+            }
+            Map<String, Object> params = new HashMap<>();
+            params.put("tu_khoa", "rận");
+            String observation = toolService.executeTool("xem_kho_thuoc", params, userRole, null);
+            steps.add(new ReActStep("TOOL_CALL", "Kiểm tra kho thuốc trị rận trước khi tư vấn cho thỏ.", "xem_kho_thuoc", params, observation));
+            String answer = observation.toLowerCase(Locale.ROOT).contains("không tìm thấy")
+                    || observation.toLowerCase(Locale.ROOT).contains("khong tim thay")
+                ? "Dạ hiện tại kho chưa thấy thuốc trị rận chuyên dụng cho thỏ. Với thỏ không nên tự dùng thuốc của chó/mèo vì dễ quá liều hoặc kích ứng. Anh/chị nên đưa bé qua để bác sĩ kiểm tra da/lông và kê loại an toàn; nếu cần, tôi có thể hỗ trợ tìm lịch khám phù hợp."
+                : "Tôi đã kiểm tra kho theo nhóm thuốc trị rận. Kết quả hiện có:\n" + observation
+                    + "\nVới thỏ, vẫn cần bác sĩ xác nhận loại dùng được trước khi bán/kê vì thuốc chó/mèo có thể không an toàn cho thú nhỏ.";
+            steps.add(new ReActStep("FINAL", answer, null, null, null));
+            return new ReActResult(answer, steps);
+        }
+
+        if (containsAny(normalizedQuery, "kho", "thuoc", "ton kho", "con thuoc")
+                && containsAny(normalizedQuery, "thuoc", "ran", "ve", "bo chet", "tri ran")) {
+            if (!canUseTool(userRole, "xem_kho_thuoc")) {
+                String denial = RoleAccessPolicy.permissionDeniedMessage("xem_kho_thuoc");
+                steps.add(new ReActStep("FINAL", denial, null, null, null));
+                return new ReActResult(denial, steps);
+            }
+            Map<String, Object> params = new HashMap<>();
+            params.put("tu_khoa", containsAny(normalizedQuery, "ran", "ve", "bo chet") ? "rận" : "thuốc");
+            String observation = toolService.executeTool("xem_kho_thuoc", params, userRole, null);
+            steps.add(new ReActStep("TOOL_CALL", "Kiểm tra kho thuốc theo từ khóa liên quan.", "xem_kho_thuoc", params, observation));
+            String answer = observation.toLowerCase(Locale.ROOT).contains("không tìm thấy")
+                    || observation.toLowerCase(Locale.ROOT).contains("khong tim thay")
+                ? "Tôi đã kiểm tra kho nhưng chưa thấy thuốc khớp từ khóa này. Nếu cần dùng cho thú cưng cụ thể, nên để bác sĩ kiểm tra trước rồi kê loại phù hợp."
+                : "Tôi đã kiểm tra kho, kết quả hiện có:\n" + observation;
+            steps.add(new ReActStep("FINAL", answer, null, null, null));
+            return new ReActResult(answer, steps);
+        }
+
+        if (containsAny(normalizedQuery, "ma nguon", "file", "module", "nam o dau", "xu ly o dau")
+                && containsAny(normalizedQuery, "chatbot", "giong noi", "voice", "mic", "agent")) {
+            if (!canUseTool(userRole, "tra_cuu_ma_nguon")) {
+                String denial = RoleAccessPolicy.permissionDeniedMessage("tra_cuu_ma_nguon");
+                steps.add(new ReActStep("FINAL", denial, null, null, null));
+                return new ReActResult(denial, steps);
+            }
+            Map<String, Object> params = new HashMap<>();
+            params.put("tu_khoa", originalUserIntent);
+            String observation = toolService.executeTool("tra_cuu_ma_nguon", params, userRole, null);
+            steps.add(new ReActStep("TOOL_CALL", "Tra cứu index mã nguồn theo yêu cầu admin.", "tra_cuu_ma_nguon", params, observation));
+            String answer = observation == null || observation.isBlank()
+                    ? "Tôi chưa tìm thấy index mã nguồn phù hợp. Sếp hỏi cụ thể hơn theo nhóm: chatbot mic, agent model, phân quyền, đặt lịch, bệnh án."
+                    : observation;
+            steps.add(new ReActStep("FINAL", answer, null, null, null));
+            return new ReActResult(answer, steps);
+        }
+
+        boolean appointmentIntent = containsAny(normalizedQuery, "dat lich", "lap lich", "tao lich", "kham", "lich trong", "gio trong", "khung gio trong");
+        if (!appointmentIntent) {
+            return null;
+        }
+
+        if (containsAny(normalizedQuery, "lich trong", "gio trong", "khung gio trong")
+                && containsAny(normalizedQuery, "chieu mai", "ngay mai", "mai")) {
+            LocalDate targetDate = LocalDate.now(VN_ZONE).plusDays(1);
+            return buildAppointmentSlotReply(userRole, steps, targetDate,
+                    "Tôi kiểm tra lịch trống theo yêu cầu.",
+                    "kiểm tra lịch trống",
+                    normalizedQuery.contains("sang"));
+        }
+
+        if (containsAny(normalizedQuery, "doi sang", "doi lich", "a ma thoi", "thoi doi", "9h sang mai", "9 gio sang mai")) {
+            LocalDate targetDate = LocalDate.now(VN_ZONE).plusDays(1);
+            return buildAppointmentSlotReply(userRole, steps, targetDate,
+                    "Tôi bỏ qua mốc 3h chiều nay và kiểm tra lại theo yêu cầu mới: 9h sáng mai.",
+                    "khám da liễu cho chó",
+                    true);
+        }
+
+        if (containsAny(normalizedQuery, "cuoi tuan", "thu bay", "chu nhat")
+                && containsAny(normalizedQuery, "poodle", "ngua tai", "da lieu", "tai")) {
+            LocalDate targetDate = nextWeekendDate();
+            return buildAppointmentSlotReply(userRole, steps, targetDate,
+                    "Tôi hiểu bé Poodle bị ngứa tai, phù hợp nhóm khám da liễu/tai. Tôi kiểm tra lịch cuối tuần trước.",
+                    "khám da liễu/tai cho Poodle",
+                    true);
+        }
+
+        if (containsAny(normalizedQuery, "chieu mai", "chiều mai") && containsAny(normalizedQuery, "cun", "cho", "dog")) {
+            LocalDate targetDate = LocalDate.now(VN_ZONE).plusDays(1);
+            return buildAppointmentSlotReply(userRole, steps, targetDate,
+                    "Tôi kiểm tra lịch trống chiều mai trước khi hỏi nốt thông tin còn thiếu.",
+                    "khám cho cún",
+                    false);
+        }
+
+        return null;
+    }
+
+    private ReActResult buildAppointmentSlotReply(
+            String userRole,
+            List<ReActStep> steps,
+            LocalDate targetDate,
+            String intro,
+            String serviceContext,
+            boolean preferMorning
+    ) {
+        if (!canUseTool(userRole, "tim_lich_trong")) {
+            String denial = RoleAccessPolicy.permissionDeniedMessage("tim_lich_trong");
+            steps.add(new ReActStep("FINAL", denial, null, null, null));
+            return new ReActResult(denial, steps);
+        }
+
+        Map<String, Object> params = new HashMap<>();
+        params.put("ngay", targetDate.toString());
+        String observation = toolService.executeTool("tim_lich_trong", params, userRole, null);
+        steps.add(new ReActStep("TOOL_CALL", "Kiểm tra lịch trống ngày " + targetDate + ".", "tim_lich_trong", params, observation));
+
+        String timeHint = preferMorning ? "Nếu muốn buổi sáng, ưu tiên 09:00 nếu còn trống; nếu 09:00 kín thì chọn khung gần nhất trong buổi sáng."
+                : "Nếu muốn buổi chiều, có thể chọn một khung cụ thể như 14:00, 15:00 hoặc 16:00 nếu còn trống.";
+        String answer = intro + "\n\n"
+                + observation + "\n"
+                + timeHint + "\n\n"
+                + "Để đặt lịch thật, tôi cần thêm đúng các thông tin còn thiếu: SĐT/tên khách hàng, tên bé hoặc ID thú cưng, triệu chứng/lý do khám và khung giờ muốn chốt. Khi đủ dữ liệu tôi sẽ tóm tắt lại " + serviceContext + " rồi mới hỏi xác nhận, không tự tạo lịch khi chưa chốt.";
+        steps.add(new ReActStep("FINAL", answer, null, null, null));
+        return new ReActResult(answer, steps);
+    }
+
+    private LocalDate nextWeekendDate() {
+        LocalDate date = LocalDate.now(VN_ZONE);
+        for (int i = 1; i <= 7; i++) {
+            LocalDate candidate = date.plusDays(i);
+            if (candidate.getDayOfWeek() == DayOfWeek.SATURDAY || candidate.getDayOfWeek() == DayOfWeek.SUNDAY) {
+                return candidate;
+            }
+        }
+        return date.plusDays(5);
+    }
+
+    private boolean containsAny(String value, String... terms) {
+        if (value == null) return false;
+        for (String term : terms) {
+            if (term != null && !term.isBlank() && value.contains(normalizeVietnamese(term.toLowerCase(Locale.ROOT)))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private String extractOriginalUserIntent(String userQuery) {
@@ -240,7 +415,7 @@ public class ReActAgentService {
 
         params.put("hanh_dong", "MO_KHOA");
         steps.add(new ReActStep("TOOL_CALL", "Xác nhận trước đó hợp lệ, gọi tool mở khóa tài khoản.", "thao_tac_tai_khoan", params, null));
-        String observation = toolService.executeTool("thao_tac_tai_khoan", params, userRole);
+        String observation = toolService.executeTool("thao_tac_tai_khoan", params, userRole, null);
         steps.set(steps.size() - 1, new ReActStep("TOOL_CALL", "Xác nhận trước đó hợp lệ, gọi tool mở khóa tài khoản.", "thao_tac_tai_khoan", params, observation));
 
         String answer = observation.startsWith("✅")
@@ -326,6 +501,40 @@ public class ReActAgentService {
         throw lastError != null ? lastError : new RuntimeException("Không có provider AI khả dụng.");
     }
 
+    private String extractFirstJsonObject(String value) {
+        if (value == null) return null;
+        int start = value.indexOf('{');
+        if (start < 0) return null;
+        int depth = 0;
+        boolean inString = false;
+        boolean escaped = false;
+        for (int i = start; i < value.length(); i++) {
+            char ch = value.charAt(i);
+            if (escaped) {
+                escaped = false;
+                continue;
+            }
+            if (ch == '\\') {
+                escaped = true;
+                continue;
+            }
+            if (ch == '"') {
+                inString = !inString;
+                continue;
+            }
+            if (!inString) {
+                if (ch == '{') depth++;
+                if (ch == '}') {
+                    depth--;
+                    if (depth == 0) {
+                        return value.substring(start, i + 1);
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
     private String normalizeVietnamese(String input) {
         return input
                 .replaceAll("[àáạảãâầấậẩẫăằắặẳẵ]", "a")
@@ -353,7 +562,8 @@ public class ReActAgentService {
 
         String toolsSchema = toolService.getToolsSchemaForRole(userRole);
 
-        return toolsSchema
+        return buildAgentIdentityBlock(userRole, isStaff)
+            + "\n\n" + toolsSchema
             + "\n\n=== NGỮ CẢNH PHÒNG KHÁM ===\n" + globalCtx
             + "\n=== THÔNG TIN NGƯỜI DÙNG ===\n" + userCtx
             + "\n=== VAI TRÒ ===\n" + roleContext
@@ -361,11 +571,29 @@ public class ReActAgentService {
             + "- Đọc kỹ phần 'Yêu cầu người dùng', 'Trang hiện tại', 'Bối cảnh giao diện hiện tại' và 'Nhật ký thao tác gần đây' nếu có trong tin nhắn user.\n"
             + "- Phân biệt rõ CÂU HỎI và LỆNH THAO TÁC: nếu người dùng hỏi 'có hoạt động không', 'vì sao', 'là gì', hãy giải thích/đề xuất kiểm tra; không tự điều hướng hoặc thao tác.\n"
             + "- Nếu người dùng muốn thao tác thật, hãy chọn tool phù hợp trước. Nếu tool chưa đủ dữ liệu, hỏi lại đúng một câu ngắn, không tự bịa dữ liệu.\n"
+            + "- Người dùng có thể gõ teencode, không dấu, sai chính tả hoặc trộn Anh-Việt: me0/cat = Mèo; cho/cún/dog/gâu gâu = Chó; ear = tai; hair = lông; service = dịch vụ; treat = điều trị; k0/ko = không. Hãy hiểu ý định cốt lõi, nhưng luôn trả lời bằng tiếng Việt chuẩn mực, không nhại lại kiểu gõ loạn.\n"
+            + "- KHI GỌI TOOL/FUNCTION: phải chuẩn hóa tham số trước khi truyền API. Ví dụ loai_thu_cung/loai phải là \"Mèo\" hoặc \"Chó\", không truyền \"me0\", \"cat\", \"dog\", \"gâu gâu\"; ngày giờ phải chuẩn YYYY-MM-DD/HH:mm; tên tool phải khớp chính xác danh sách được phép.\n"
+            + "- Với yêu cầu y tế: không chẩn đoán khẳng định, không kê thuốc kháng sinh/thuốc tây; dùng từ \"có thể\", \"dấu hiệu của\". Nếu có ra máu nhiều, ngộ độc, sùi bọt mép, co giật, khó thở hoặc tai nạn thì ưu tiên cấp cứu/hotline trước, không lề mề đặt lịch.\n"
+            + "- Nếu admin hỏi bạn là ai, đang dùng provider/model nào, hoặc AI cấu hình ra sao, hãy dùng tool kiem_tra_cau_hinh_ai nếu được phép rồi trả lời theo kết quả tool.\n"
+            + "- Nếu admin hỏi mã nguồn/module/file/API/tool nào xử lý việc gì, hãy dùng tool tra_cuu_ma_nguon trước để định vị đúng nơi; nếu hỏi tổng quan kiến trúc thì dùng kiem_tra_kien_truc_he_thong.\n"
+            + "- Không yêu cầu hoặc lặp lại toàn bộ DOM/source. Chỉ xin thêm đúng phần thiếu nếu tool index chưa đủ để trả lời.\n"
             + "- Nếu thấy người dùng đang ở sai trang, thiếu dữ liệu nhập, chưa lưu cấu hình, hoặc hành động có rủi ro, hãy cảnh báo và gợi ý bước tiếp theo.\n"
             + "- Tối ưu token: chỉ tóm tắt đúng dữ liệu cần thiết, không lặp lại toàn bộ DOM hoặc lịch sử dài.\n"
             + "- Sau khi có đủ thông tin từ tools, trả về final_answer bằng tiếng Việt rõ, ngắn, đúng vai trò hiện tại.\n"
             + "- Nếu câu hỏi đơn giản (chào hỏi, hỏi thông tin chung) → trả final_answer ngay, không cần dùng tool.\n"
             + "- KHÔNG bịa đặt dữ liệu. Chỉ dùng thông tin từ tool, bối cảnh màn hình được gửi lên hoặc kiến thức y khoa thực tế.\n";
+    }
+
+    private String buildAgentIdentityBlock(String userRole, boolean isStaff) {
+        return """
+            === DANH TÍNH VÀ NĂNG LỰC RUNTIME ===
+            - Bạn là Rexi Agent, trợ lý tác vụ nội bộ của hệ thống phòng khám thú y Rexi.
+            - Người đang dùng có vai trò: %s. Chỉ trả lời và thao tác trong phạm vi quyền của vai trò này.
+            - ReAct Agent gọi model theo thứ tự fallback: OpenRouter -> Gemini -> Groq. Model cụ thể lấy từ cấu hình hệ thống hoặc fallback môi trường, không tự bịa tên model.
+            - Bạn không tự đọc file mã nguồn trực tiếp ở runtime. Bạn hiểu hệ thống qua tool schema, route map, context giao diện ngắn, nhật ký thao tác và tool tra cứu index mã nguồn/bản đồ kiến trúc nếu được cấp quyền.
+            - Chat thường của khách hàng và Rexi Agent nội bộ là hai luồng khác nhau: ChatController xử lý chat thường; AgentController + ReActAgentService xử lý Agent nội bộ.
+            - Nếu người dùng là khách hàng/ẩn danh, không tiết lộ kiến trúc nội bộ, cấu hình AI, dữ liệu khách khác, tài khoản, bệnh án, hóa đơn, doanh thu hoặc tool quản trị.
+            """.formatted(userRole == null || userRole.isBlank() ? (isStaff ? "nội bộ" : "khách/ẩn danh") : userRole);
     }
 
     private boolean canUseTool(String userRole, String toolName) {

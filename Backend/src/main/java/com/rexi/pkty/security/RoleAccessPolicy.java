@@ -12,6 +12,7 @@ public final class RoleAccessPolicy {
 
     public static final Set<String> CUSTOMER_SAFE_AGENT_TOOLS = Set.of(
         "tim_lich_trong",
+        "huy_lich_hen",
         "tim_kiem_web",
         "kiem_tra_phan_he"
     );
@@ -33,11 +34,15 @@ public final class RoleAccessPolicy {
         Map.entry("xem_benh_an", Set.of("admin", "quan_ly", "bac_si", "y_ta")),
         Map.entry("tim_lich_trong", Set.of("admin", "quan_ly", "staff", "bac_si", "ke_toan", "tiep_tan", "y_ta", "khach_hang")),
         Map.entry("dat_lich_hen", Set.of("admin", "quan_ly", "staff", "bac_si", "tiep_tan", "y_ta")),
+        Map.entry("huy_lich_hen", Set.of("admin", "quan_ly", "staff", "bac_si", "tiep_tan", "y_ta", "khach_hang")),
+        Map.entry("cap_nhat_benh_an", Set.of("bac_si", "y_ta")),
         Map.entry("xem_kho_thuoc", Set.of("admin", "quan_ly", "ke_toan", "bac_si", "y_ta", "tiep_tan")),
         Map.entry("thong_ke_doanh_thu", Set.of("admin", "quan_ly", "ke_toan")),
         Map.entry("tim_kiem_web", Set.of("admin", "quan_ly", "staff", "bac_si", "ke_toan", "tiep_tan", "y_ta", "khach_hang")),
         Map.entry("gui_email_don_le", Set.of("admin", "quan_ly")),
         Map.entry("kiem_tra_cau_hinh_ai", Set.of("admin")),
+        Map.entry("kiem_tra_kien_truc_he_thong", Set.of("admin")),
+        Map.entry("tra_cuu_ma_nguon", Set.of("admin")),
         Map.entry("kiem_tra_phan_he", Set.of("admin", "quan_ly", "staff", "bac_si", "ke_toan", "tiep_tan", "y_ta", "khach_hang")),
         Map.entry("xem_hoa_don", Set.of("admin", "quan_ly", "ke_toan", "tiep_tan")),
         Map.entry("thao_tac_tai_khoan", Set.of("admin", "quan_ly")),

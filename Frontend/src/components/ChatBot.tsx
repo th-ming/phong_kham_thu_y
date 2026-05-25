@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import axiosInstance from "@services/axios";
 import { useTheme } from "../contexts/ThemeContextV2";
-import { getUserProfile, matchesSearchFields, normalizeSearchText, normalizeUserRole, scoreSearchFields } from "../utils/index";
+import { getCustomerIdFromProfile, getUserProfile, matchesSearchFields, normalizeSearchText, normalizeUserRole, scoreSearchFields } from "../utils/index";
 import { ADMIN_ROUTE_ROLES, canAccessAdminPath, isInternalRole } from "../utils/permissions";
 import {
     agentPermissionDeniedMessage,
@@ -46,12 +46,11 @@ type QuickSuggestion = {
     tone?: "default" | "danger" | "warning" | "success" | "info" | "agent";
 };
 
-/** Opera có webkitSpeechRecognition nhưng hầu như không trả transcript — gây hiểu nhầm "có âm thanh, không ra chữ". */
+/** Opera có thể trả transcript không ổn định, nhưng vẫn nên thử nếu trình duyệt có expose API. */
 const isUnreliableSpeechRecognitionBrowser = (): boolean =>
     /\bOPR\/|Opera/i.test(navigator.userAgent);
 
 const getSpeechRecognitionConstructor = (): (new () => any) | null => {
-    if (isUnreliableSpeechRecognitionBrowser()) return null;
     return (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition || null;
 };
 
@@ -60,6 +59,22 @@ const OPERA_VOICE_HINT =
 
 const toSafeContextHeader = (value: string, maxLength = 1000): string => {
     return encodeURIComponent(value.slice(0, maxLength));
+};
+
+const clipContextText = (value: unknown, maxLength = 1200): string => {
+    return String(value ?? "").replace(/\s+/g, " ").trim().slice(0, maxLength);
+};
+
+const getApiErrorMessage = (err: any, fallback: string): string => {
+    const status = err?.response?.status;
+    const data = err?.response?.data;
+    const serverMessage = data?.reply || data?.error || data?.message;
+    if (serverMessage) return String(serverMessage);
+    if (status === 401) return "Phiên đăng nhập đã hết hạn hoặc chưa đăng nhập. Vui lòng đăng nhập lại rồi thử tiếp.";
+    if (status === 403) return "Tài khoản hiện tại không đủ quyền thực hiện tác vụ này.";
+    if (status === 429) return "Bạn đang gửi yêu cầu quá nhanh. Đợi một chút rồi thử lại.";
+    if (status >= 500) return "Backend đang lỗi khi xử lý yêu cầu này. Rexi chưa thực hiện thao tác nào.";
+    return fallback;
 };
 
 const extractTaggedJsonPayload = (replyText: string, tag: string): { cleanedText: string; json: any | null } => {
@@ -134,6 +149,64 @@ const extractTaggedJsonPayload = (replyText: string, tag: string): { cleanedText
         console.error("Lỗi parse tagged JSON payload:", err);
         return { cleanedText: replyText, json: null };
     }
+};
+
+const pickTextFromJsonPayload = (payload: any): string => {
+    if (typeof payload === "string") return payload;
+    if (!payload || typeof payload !== "object") return "";
+
+    const directKeys = ["finalAnswer", "final_answer", "reply", "text", "message", "answer", "content", "output"];
+    for (const key of directKeys) {
+        const value = payload[key];
+        if (typeof value === "string" && value.trim()) return value;
+    }
+
+    const choiceContent = payload.choices?.[0]?.message?.content || payload.choices?.[0]?.delta?.content;
+    if (typeof choiceContent === "string" && choiceContent.trim()) return choiceContent;
+
+    if (Array.isArray(payload)) {
+        return payload.map(pickTextFromJsonPayload).filter(Boolean).join("\n");
+    }
+
+    return "";
+};
+
+const parseAssistantJsonText = (value: string): string => {
+    try {
+        const parsed = JSON.parse(value);
+        return pickTextFromJsonPayload(parsed);
+    } catch {
+        return "";
+    }
+};
+
+const normalizeRawAssistantReplyText = (raw: unknown, fallback = ""): string => {
+    let text = typeof raw === "string" ? raw : pickTextFromJsonPayload(raw);
+    if (!text.trim()) text = fallback;
+    text = text.trim();
+
+    if (/^data:/m.test(text)) {
+        const dataText = text
+            .replace(/\r\n/g, "\n")
+            .split("\n")
+            .filter(line => line.startsWith("data:"))
+            .map(line => line.replace(/^data:\s?/, ""))
+            .filter(line => line && line !== "[DONE]")
+            .join("\n")
+            .trim();
+        if (dataText) text = dataText;
+    }
+
+    const fencedJson = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+    if (fencedJson) {
+        const extracted = parseAssistantJsonText(fencedJson[1].trim());
+        if (extracted) return extracted.trim();
+    }
+
+    const jsonText = parseAssistantJsonText(text);
+    if (jsonText) return jsonText.trim();
+
+    return text;
 };
 
 const stripChatControlTags = (text: string): string => {
@@ -661,38 +734,43 @@ export const ChatBot: React.FC = () => {
     const getPageDomContext = (): string => {
         try {
             const metrics: string[] = [];
+            const pushMetric = (value: string) => {
+                const cleaned = value.replace(/\s+/g, " ").trim();
+                if (cleaned) metrics.push(cleaned.slice(0, 180));
+            };
 
             // 1. Quét các thẻ card chỉ số (Stats cards)
             const cards = document.querySelectorAll(".glass-card, [class*='card'], .card");
-            cards.forEach(card => {
+            cards.forEach((card, idx) => {
+                if (idx > 7) return;
                 const labelEl = card.querySelector("p, .text-sm, .text-xs, [class*='label']");
                 const valueEl = card.querySelector("h3, h2, .text-2xl, .text-3xl, .font-bold, [class*='value']");
                 if (labelEl && valueEl) {
                     const label = labelEl.textContent?.trim().replace(/\s+/g, ' ');
                     const val = valueEl.textContent?.trim().replace(/\s+/g, ' ');
                     if (label && val && label.length < 50 && val.length < 30) {
-                        metrics.push(`${label}: ${val}`);
+                        pushMetric(`Chỉ số: ${label}: ${val}`);
                     }
                 }
             });
 
-            // 2. Quét các bảng dữ liệu đang hiển thị (Lịch hẹn, hóa đơn...)
+            // 2. Quét bảng đang hiển thị ở mức tóm tắt, không gửi toàn bộ DOM/dữ liệu.
             const tables = document.querySelectorAll("table");
             tables.forEach((table, tableIdx) => {
-                if (tableIdx > 1) return; 
+                if (tableIdx > 0) return; 
                 const headers: string[] = [];
                 table.querySelectorAll("thead th").forEach(th => {
                     const txt = th.textContent?.trim();
-                    if (txt) headers.push(txt);
+                    if (txt && headers.length < 8) headers.push(txt.slice(0, 24));
                 });
 
                 const rows: string[] = [];
                 table.querySelectorAll("tbody tr").forEach((tr, rowIdx) => {
-                    if (rowIdx > 3) return; 
+                    if (rowIdx > 1) return; 
                     const cells: string[] = [];
                     tr.querySelectorAll("td").forEach(td => {
                         const txt = td.textContent?.trim().replace(/\s+/g, ' ');
-                        if (txt) cells.push(txt);
+                        if (txt && cells.length < 5) cells.push(txt.slice(0, 32));
                     });
                     if (cells.length > 0) {
                         rows.push(`[${cells.join(" | ")}]`);
@@ -700,7 +778,7 @@ export const ChatBot: React.FC = () => {
                 });
 
                 if (rows.length > 0) {
-                    metrics.push(`Bảng ${tableIdx + 1} (${headers.join(", ")}): ${rows.join(" ; ")}`);
+                    pushMetric(`Bảng ${tableIdx + 1} (${headers.join(", ")}): ${rows.join(" ; ")}`);
                 }
             });
 
@@ -710,14 +788,14 @@ export const ChatBot: React.FC = () => {
                 if (idx > 2) return;
                 const txt = alert.textContent?.trim().replace(/\s+/g, ' ');
                 if (txt && txt.length < 150) {
-                    metrics.push(`Cảnh báo: ${txt}`);
+                    pushMetric(`Cảnh báo: ${txt}`);
                 }
             });
 
-            // 4. Quét các phần tử tương tác có data-ai-id (nút, input, select, textarea, div đặc biệt)
+            // 4. Chỉ gửi schema phần tử tương tác cần thao tác, không gửi toàn bộ text màn hình.
             const interactiveElements = document.querySelectorAll("[data-ai-id]");
             interactiveElements.forEach((el, idx) => {
-                if (idx > 40) return; // Tránh tràn context nếu có quá nhiều phần tử
+                if (idx > 17) return;
                 const aiId = el.getAttribute("data-ai-id");
                 if (!aiId) return;
 
@@ -744,11 +822,11 @@ export const ChatBot: React.FC = () => {
                 }
 
                 if (label.length > 100) label = label.substring(0, 100) + "...";
-                metrics.push(`Interactive Element [${tagName}]: "${label}" (data-ai-id: "${aiId}")`);
+                pushMetric(`Element [${tagName}] "${label}" (data-ai-id: "${aiId}")`);
             });
 
             const uniqueMetrics = Array.from(new Set(metrics)).filter(m => m.trim().length > 0);
-            return uniqueMetrics.join(" | ").slice(0, 3500);
+            return uniqueMetrics.join(" | ").slice(0, 1200);
         } catch (e) {
             console.error("Lỗi parse DOM context:", e);
             return "";
@@ -983,25 +1061,56 @@ export const ChatBot: React.FC = () => {
     const standardChatHistoryKey = `rexi_standard_chat_history_${chatSessionScope}`;
     const agentChatHistoryKey = `rexi_agent_chat_history_${chatSessionScope}`;
 
-    const hasExplicitAgentActionIntent = (text: string) => {
+    const matchesNormalizedIntent = (text: string, phrases: string[]) => {
         const normalized = normalizeSearchText(text);
+        const padded = ` ${normalized} `;
+        const words = new Set(normalized.split(" ").filter(Boolean));
+        return phrases.some((phrase) => {
+            const normalizedPhrase = normalizeSearchText(phrase);
+            if (!normalizedPhrase) return false;
+            return normalizedPhrase.includes(" ")
+                ? padded.includes(` ${normalizedPhrase} `)
+                : words.has(normalizedPhrase);
+        });
+    };
+
+    const hasExplicitAgentActionIntent = (text: string) => {
         const actionWords = [
-            "mo", "mo trang", "vao trang", "chuyen sang", "dieu huong", "truy cap", "di toi",
-            "xem danh sach", "loc", "tim", "tra cuu", "kiem tra", "thong ke", "tao", "them",
-            "sua", "xoa", "dat lich", "lap lich", "xuat", "in", "gui", "dien", "tu dong",
+            "mo trang", "vao trang", "chuyen sang", "dieu huong", "truy cap", "di toi",
+            "xem danh sach", "loc danh sach", "tim khach", "tim thu cung", "tra cuu", "kiem tra form",
+            "thong ke", "tao moi", "them moi", "sua thong tin", "xoa", "dat lich", "lap lich",
+            "xuat file", "in hoa don", "gui email", "dien form", "tu dong",
             "bam", "nhan", "click", "cuon", "keo xuong", "keo len"
         ];
-        return actionWords.some(word => normalized.includes(word));
+        return matchesNormalizedIntent(text, actionWords);
     };
 
     const hasExplicitNavigationIntent = (text: string) => {
-        const normalized = normalizeSearchText(text);
         const navigationPhrases = [
             "mo trang", "mo phan he", "mo muc", "vao trang", "vao phan he", "chuyen sang",
             "dieu huong", "truy cap", "di toi", "dua toi", "dua den", "nhay sang",
             "sang trang", "toi trang", "den trang"
         ];
-        return navigationPhrases.some(phrase => normalized.includes(phrase));
+        return matchesNormalizedIntent(text, navigationPhrases);
+    };
+
+    const getSafeStandardNavigationTarget = (text: string): { path: string; label: string } | null => {
+        if (!hasExplicitNavigationIntent(text)) return null;
+        const normalized = normalizeSearchText(text);
+        const safeRoutes = [
+            { keywords: ["hoa don", "thanh toan", "bien lai"], path: "/khach-hang/hoa-don-thanh-toan", label: "Hóa đơn & thanh toán" },
+            { keywords: ["dat lich", "dat kham", "lich hen moi"], path: "/khach-hang/dat-lich-hen", label: "Đặt lịch hẹn khám" },
+            { keywords: ["lich su lich hen", "lich su hen", "lich da dat"], path: "/khach-hang/lich-su-lich-hen", label: "Lịch sử lịch hẹn" },
+            { keywords: ["thu cung", "be cung", "pet"], path: "/khach-hang/quan-ly-thu-cung", label: "Quản lý thú cưng" },
+            { keywords: ["ho so y te", "benh an", "ho so benh"], path: "/khach-hang/ho-so-benh-an", label: "Hồ sơ bệnh án" },
+            { keywords: ["ca nhan", "thong tin cua toi", "profile"], path: "/khach-hang/thong-tin-ca-nhan", label: "Thông tin cá nhân" },
+            { keywords: ["tong quan", "dashboard"], path: "/khach-hang/dashboard", label: "Tổng quan khách hàng" },
+            { keywords: ["bang gia", "gia dich vu", "chi phi"], path: "/bang-gia", label: "Bảng giá dịch vụ" },
+            { keywords: ["bac si", "doi ngu"], path: "/bac-si", label: "Đội ngũ bác sĩ" },
+            { keywords: ["lien he", "hotline", "dia chi"], path: "/lien-he", label: "Liên hệ" },
+            { keywords: ["trang chu", "home"], path: "/", label: "Trang chủ" }
+        ];
+        return safeRoutes.find(route => route.keywords.some(keyword => normalized.includes(keyword))) || null;
     };
 
     const isConceptualQuestion = (text: string) => {
@@ -1013,6 +1122,12 @@ export const ChatBot: React.FC = () => {
         ];
         return questionWords.some(word => normalized.includes(word));
     };
+
+    const isMarketingCampaignIntent = (text: string) => matchesNormalizedIntent(text, [
+        "chien dich", "marketing", "gui mail", "gui email", "voucher", "swarm", "da agent",
+        "nhac lich", "soan email", "tim khach hang co", "gui thong bao", "tim be bi",
+        "tim meo", "tim cho bi"
+    ]);
 
     const buildLocationPrivacyAnswer = () => {
         return [
@@ -1070,7 +1185,16 @@ export const ChatBot: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'standard' | 'agent'>('standard');
     const [proactiveMessage, setProactiveMessage] = useState<{ id: string, text: string, action: () => void } | null>(null);
     const [userActivityLogs, setUserActivityLogs] = useState<{ action: string, timestamp: string }[]>([]);
+    const chatPrewarmRequestedRef = useRef(false);
     const proactiveDismissKey = `rexi_dismissed_proactive_${new Date().toISOString().slice(0, 10)}`;
+
+    useEffect(() => {
+        if (!isOpen || chatPrewarmRequestedRef.current) return;
+        chatPrewarmRequestedRef.current = true;
+        axiosInstance.post("/api/chat/prewarm").catch((err) => {
+            console.debug("Chat prewarm không khả dụng, bỏ qua để không ảnh hưởng trải nghiệm:", err?.message || err);
+        });
+    }, [isOpen, location.pathname]);
 
     const dismissChatBubbleForSession = () => {
         setIsChatBubbleDismissed(true);
@@ -1415,12 +1539,28 @@ export const ChatBot: React.FC = () => {
             }
         };
 
+        const handleBookingValidation = (e: Event) => {
+            const detail = (e as CustomEvent<{ message?: string }>).detail;
+            setProactiveMessage({
+                id: "booking-error-helper",
+                text: detail?.message || "Rexi thấy đơn đặt lịch khám còn thiếu thông tin. Sếp có muốn em kiểm tra và hỗ trợ hoàn tất form không ạ?",
+                action: () => {
+                    setActiveTab("agent");
+                    setIsOpen(true);
+                    setTimeout(() => {
+                        handleAgentSend("Rexi hãy tự động kiểm tra các thông tin còn trống trên form đặt lịch hẹn khám bệnh hiện tại, tìm khung giờ trống phù hợp và điền hoàn chỉnh giúp sếp nhé!");
+                    }, 500);
+                }
+            });
+        };
+
         document.addEventListener("click", handleGlobalClick, true);
         window.addEventListener("scroll", handleGlobalScroll);
         window.addEventListener("error", handleGlobalError);
         document.addEventListener("input", handleGlobalInput);
         document.addEventListener("invalid", handleGlobalInvalid, true);
         document.addEventListener("submit", handleGlobalSubmit, true);
+        window.addEventListener("rexi-booking-validation", handleBookingValidation as EventListener);
         return () => {
             document.removeEventListener("click", handleGlobalClick, true);
             window.removeEventListener("scroll", handleGlobalScroll);
@@ -1428,6 +1568,7 @@ export const ChatBot: React.FC = () => {
             document.removeEventListener("input", handleGlobalInput);
             document.removeEventListener("invalid", handleGlobalInvalid, true);
             document.removeEventListener("submit", handleGlobalSubmit, true);
+            window.removeEventListener("rexi-booking-validation", handleBookingValidation as EventListener);
         };
     }, []);
 
@@ -1566,7 +1707,7 @@ export const ChatBot: React.FC = () => {
     // Tự động xoay vòng bước suy nghĩ Standard mỗi 1800ms để người dùng đọc không bị chán
     useEffect(() => {
         let interval: any;
-        if (loading) {
+        if (loadingRef.current) {
             setThoughtStep(0);
             interval = window.setInterval(() => {
                 setThoughtStep(prev => (prev + 1) % standardThoughtSteps.length);
@@ -1652,13 +1793,20 @@ export const ChatBot: React.FC = () => {
     const pendingVoiceQueueRef = useRef<string[]>([]);
     const lastInterimVoiceTextRef = useRef("");
     const lastMicAudioAtRef = useRef(0);
+    const lastMicWeakAudioAtRef = useRef(0);
     const voiceNoSpeechPromptKeyRef = useRef<string | null>(null);
     const recognitionRunningRef = useRef(false);
     const loadingRef = useRef(false);
     const agentLoadingRef = useRef(false);
+    const activeStandardChatTurnsRef = useRef(0);
+    const pendingStandardChatQueueRef = useRef<Array<{
+        text: string;
+        files: { data: string, type: 'image' | 'video' }[];
+    }>>([]);
     const pendingSensitiveCommandRef = useRef<string | null>(null);
     const pendingCancelAppointmentRef = useRef<{ id: string; label: string } | null>(null);
     const preferredVoiceRef = useRef<SpeechSynthesisVoice | null>(null);
+    const preferredEnglishVoiceRef = useRef<SpeechSynthesisVoice | null>(null);
 
     useEffect(() => {
         voiceModeRef.current = voiceMode;
@@ -1724,6 +1872,7 @@ export const ChatBot: React.FC = () => {
 
         if (lang === "vi-vn") score += 160;
         else if (lang.includes("vi")) score += 120;
+        if (/multilingual|multi-lingual|multi language|multi-language/.test(name)) score += 80;
         if (/natural|neural|online|premium/.test(name)) score += 55;
         if (/hoaimy|hoai my|linh|an|mai|female|woman|zira/.test(name)) score += 38;
         if (/microsoft/.test(name)) score += 28;
@@ -1734,18 +1883,199 @@ export const ChatBot: React.FC = () => {
         return score;
     };
 
-    const polishTextForSpeech = (text: string) => text
-        .replace(/\[([^\]]+)\]\([^\)]+\)/g, "$1")
-        .replace(/<[^>]*>/g, "")
-        .replace(/[\*\_`#]/g, "")
-        .replace(/^-+\s*/gm, "")
-        .replace(/[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF]/g, "")
-        .replace(/\bAI\b/g, "trợ lý")
-        .replace(/\bRexi\b/g, "Rếch xi")
-        .replace(/([.!?])\s+/g, "$1 ")
-        .replace(/[,;:]\s+/g, ", ")
-        .replace(/\s+/g, " ")
-        .trim();
+    const getBestVoice = () => {
+        const voices = window.speechSynthesis.getVoices();
+        const bestVoice = preferredVoiceRef.current || [...voices].sort((a, b) => scoreAssistantVoice(b) - scoreAssistantVoice(a))[0];
+        if (bestVoice && scoreAssistantVoice(bestVoice) > 0) {
+            preferredVoiceRef.current = bestVoice;
+            return bestVoice;
+        }
+        return null;
+    };
+
+    const scoreEnglishVoice = (voice: SpeechSynthesisVoice) => {
+        const name = `${voice.name} ${voice.voiceURI}`.toLowerCase();
+        const lang = voice.lang.toLowerCase();
+        let score = 0;
+
+        if (lang === "en-us") score += 160;
+        else if (lang === "en-gb") score += 135;
+        else if (lang.startsWith("en")) score += 115;
+        if (/natural|neural|online|premium/.test(name)) score += 55;
+        if (/jenny|aria|guy|zira|david|mark|susan|google|microsoft/.test(name)) score += 30;
+        if (voice.default) score += 4;
+
+        return score;
+    };
+
+    const getBestVoiceForLang = (lang: "vi-VN" | "en-US") => {
+        if (lang === "vi-VN") return getBestVoice();
+
+        const voices = window.speechSynthesis.getVoices();
+        const bestVoice = preferredEnglishVoiceRef.current || [...voices].sort((a, b) => scoreEnglishVoice(b) - scoreEnglishVoice(a))[0];
+        if (bestVoice && scoreEnglishVoice(bestVoice) > 0) {
+            preferredEnglishVoiceRef.current = bestVoice;
+            return bestVoice;
+        }
+        return null;
+    };
+
+    const englishSpeechWords = new Set([
+        "api", "ai", "agent", "chat", "voice", "email", "marketing", "booking", "dashboard", "login", "logout",
+        "invoice", "payment", "database", "server", "client", "frontend", "backend", "model", "prompt", "token",
+        "stream", "upload", "download", "file", "image", "video", "google", "chrome", "edge", "english", "vietnamese",
+        "yes", "no", "ok", "okay", "please", "check", "search", "create", "update", "delete", "send", "open",
+        "show", "filter", "report", "status", "error", "bug", "fix", "test", "build", "deploy", "cache", "data",
+        "react", "typescript", "javascript", "vite", "node", "npm", "spring", "boot", "java", "maven", "jwt",
+        "json", "html", "css", "ui", "ux", "url", "http", "https", "sql", "server", "database", "table",
+        "component", "state", "props", "hook", "hooks", "callback", "async", "await", "promise", "function",
+        "array", "object", "string", "number", "boolean", "true", "false", "null", "undefined", "browser",
+        "localstorage", "sessionstorage", "clipboard", "paste", "drag", "drop", "preview", "agent", "standard"
+    ]);
+
+    const strongEnglishSpeechWords = new Set([
+        "api", "ai", "ui", "ux", "url", "http", "https", "sql", "jwt", "json", "html", "css", "id",
+        "react", "typescript", "javascript", "vite", "node", "npm", "spring", "boot", "java", "maven",
+        "frontend", "backend", "localstorage", "sessionstorage", "google", "chrome", "edge", "opera",
+        "chatgpt", "openai", "gemini", "vnpay", "vietqr", "agent", "agnet"
+    ]);
+
+    const vietnameseAsciiSpeechWords = new Set([
+        "anh", "em", "toi", "ban", "minh", "sep", "sen", "hay", "giup", "cho", "voi", "cua", "la", "va", "hoac",
+        "khong", "duoc", "dang", "ngay", "luc", "ten", "roi", "nhe", "nha", "hom", "nay", "mai", "qua", "xem",
+        "mo", "tim", "loc", "tao", "gui", "kiem", "tra", "hoa", "don", "lich", "hen", "thu", "cung", "khach",
+        "hang", "benh", "an", "thuoc", "bac", "si", "doanh", "thu", "bao", "cao"
+    ]);
+
+    const getSpeechWord = (token: string) => token.replace(/^[^a-z0-9]+|[^a-z0-9]+$/gi, "");
+
+    const isStrongEnglishSpeechToken = (token: string) => {
+        const rawWord = getSpeechWord(token);
+        const word = rawWord.toLowerCase();
+        if (!word) return false;
+        if (strongEnglishSpeechWords.has(word)) return true;
+        if (/^[A-Z]{2,8}s?$/.test(rawWord)) return true;
+        if (/[a-z][A-Z]/.test(rawWord)) return true;
+        if (/^[a-z]+(?:\.[a-z]+)+$/i.test(rawWord)) return true;
+        if (/^[a-z]+[-_][a-z0-9_-]+$/i.test(rawWord) && !vietnameseAsciiSpeechWords.has(word)) return true;
+        return false;
+    };
+
+    const isEnglishSpeechToken = (token: string) => {
+        const rawWord = getSpeechWord(token);
+        const word = rawWord.toLowerCase();
+        if (!word) return false;
+        if (isStrongEnglishSpeechToken(token)) return true;
+        if (englishSpeechWords.has(word)) return true;
+        if (/^[A-Z]{2,6}s?$/.test(rawWord)) return true;
+        if (vietnameseAsciiSpeechWords.has(word)) return false;
+        return /^[a-z][a-z-]{3,}$/i.test(word) && /[qwfjz]|tion|ment|ing|er$|or$|ed$/.test(word);
+    };
+
+    const applyInlineEnglishPronunciation = (text: string) => text
+        .replace(/\bAI\s+Agent\b/gi, "ây ai ây dừn")
+        .replace(/\bAgent\b/gi, "ây dừn")
+        .replace(/\bAgnet\b/gi, "ây dừn")
+        .replace(/\bAI\b/g, "ây ai")
+        .replace(/\bAPI\b/g, "ây pi ai")
+        .replace(/\bUI\b/g, "du ai")
+        .replace(/\bUX\b/g, "du ích")
+        .replace(/\bURL\b/g, "du a eo")
+        .replace(/\bID\b/g, "ai đi")
+        .replace(/\bChatGPT\b/gi, "chát gi pi ti")
+        .replace(/\bOpenAI\b/gi, "âu pần ây ai")
+        .replace(/\bGoogle\b/gi, "gu gồ")
+        .replace(/\bChrome\b/gi, "crôm")
+        .replace(/\bEdge\b/gi, "ét")
+        .replace(/\bEmail\b/gi, "i meo");
+
+    const splitSpeechByLanguage = (text: string): Array<{ text: string; lang: "vi-VN" | "en-US" }> => {
+        const sentences = text
+            .split(/(?<=[.!?])\s+/)
+            .flatMap(segment => segment.length > 180 ? segment.match(/.{1,170}(?:\s|$)/g) || [segment] : [segment])
+            .map(segment => segment.trim())
+            .filter(Boolean);
+
+        const segments: Array<{ text: string; lang: "vi-VN" | "en-US" }> = [];
+        sentences.forEach(sentence => {
+            const tokens = sentence.match(/\S+\s*/g) || [sentence];
+            let vietnameseText = "";
+            let englishText = "";
+            let englishCount = 0;
+            let hasStrongEnglish = false;
+
+            const pushVietnamese = () => {
+                const trimmed = vietnameseText.trim();
+                if (trimmed) segments.push({ text: trimmed, lang: "vi-VN" });
+                vietnameseText = "";
+            };
+
+            const flushEnglish = () => {
+                if (!englishText) return;
+                const shouldSwitchVoice = englishCount >= 3 || (hasStrongEnglish && englishCount >= 2);
+                if (shouldSwitchVoice) {
+                    pushVietnamese();
+                    segments.push({ text: englishText.trim(), lang: "en-US" });
+                } else {
+                    vietnameseText += englishText;
+                }
+                englishText = "";
+                englishCount = 0;
+                hasStrongEnglish = false;
+            };
+
+            tokens.forEach(token => {
+                if (isEnglishSpeechToken(token)) {
+                    englishText += token;
+                    englishCount += 1;
+                    if (isStrongEnglishSpeechToken(token)) hasStrongEnglish = true;
+                } else {
+                    flushEnglish();
+                    vietnameseText += token;
+                }
+            });
+
+            flushEnglish();
+            pushVietnamese();
+        });
+
+        return segments;
+    };
+
+    const polishTextForSpeech = (text: string) => {
+        const withoutMarkup = text
+            .replace(/\[([^\]]+)\]\([^\)]+\)/g, "$1")
+            .replace(/<[^>]*>/g, "")
+            .replace(/[\*\_`#]/g, "")
+            .replace(/^-+\s*/gm, "")
+            .replace(/[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF]/g, "");
+
+        return applyInlineEnglishPronunciation(withoutMarkup)
+            .replace(/\bRexi\b/g, "Rếch xi")
+            .replace(/([.!?])\s+/g, "$1 ")
+            .replace(/[,;:]\s+/g, ", ")
+            .replace(/\s+/g, " ")
+            .trim();
+    };
+
+    const createSpeechUtterance = (text: string, lang: "vi-VN" | "en-US") => {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = lang;
+        const voice = getBestVoiceForLang(lang);
+        if (voice) utterance.voice = voice;
+        utterance.rate = voiceModeRef.current === "fast" ? 1.12 : (lang === "en-US" ? 1.04 : 0.98);
+        utterance.pitch = lang === "en-US" ? 1.04 : 1.12;
+        utterance.volume = 1;
+        utterance.onstart = () => {
+            isAiSpeakingRef.current = true;
+            // Tạm ngắt mic ngay lập tức để không thu âm giọng AI
+            if (recognitionRef.current && voiceSessionActiveRef.current) {
+                try { recognitionRef.current.abort(); } catch(e){}
+            }
+        };
+        utterance.onerror = () => { isAiSpeakingRef.current = false; };
+        return utterance;
+    };
 
     // 3. ĐỌC THÀNH TIẾNG (TEXT-TO-SPEECH VIETNAMESE)
     const finishSpeechTurn = useCallback(() => {
@@ -1768,30 +2098,12 @@ export const ChatBot: React.FC = () => {
 
         if (!cleanText) return;
 
-        const utterance = new SpeechSynthesisUtterance(cleanText);
-        utterance.lang = "vi-VN";
-        
-        const voices = window.speechSynthesis.getVoices();
-        const bestVoice = preferredVoiceRef.current || [...voices].sort((a, b) => scoreAssistantVoice(b) - scoreAssistantVoice(a))[0];
-        if (bestVoice && scoreAssistantVoice(bestVoice) > 0) {
-            preferredVoiceRef.current = bestVoice;
-            utterance.voice = bestVoice;
-        }
-        utterance.rate = voiceModeRef.current === "fast" ? 1.08 : 0.92;
-        utterance.pitch = 1.12;
-        utterance.volume = 1;
-        
-        utterance.onstart = () => { 
-            isAiSpeakingRef.current = true; 
-            // Tạm ngắt mic ngay lập tức để không thu âm giọng AI
-            if (recognitionRef.current && voiceSessionActiveRef.current) {
-                try { recognitionRef.current.abort(); } catch(e){}
-            }
-        };
-        utterance.onend = finishSpeechTurn;
-        utterance.onerror = () => { isAiSpeakingRef.current = false; };
-        
-        window.speechSynthesis.speak(utterance);
+        const segments = splitSpeechByLanguage(cleanText);
+        segments.forEach((segment, index) => {
+            const utterance = createSpeechUtterance(segment.text, segment.lang);
+            if (index === segments.length - 1) utterance.onend = finishSpeechTurn;
+            window.speechSynthesis.speak(utterance);
+        });
     }, [finishSpeechTurn, isVoiceEnabled]);
 
     const speakStreamingText = useCallback((text: string) => {
@@ -1799,26 +2111,12 @@ export const ChatBot: React.FC = () => {
         const cleanText = polishTextForSpeech(text);
         if (!cleanText) return false;
 
-        const utterance = new SpeechSynthesisUtterance(cleanText);
-        utterance.lang = "vi-VN";
-        const voices = window.speechSynthesis.getVoices();
-        const bestVoice = preferredVoiceRef.current || [...voices].sort((a, b) => scoreAssistantVoice(b) - scoreAssistantVoice(a))[0];
-        if (bestVoice && scoreAssistantVoice(bestVoice) > 0) {
-            preferredVoiceRef.current = bestVoice;
-            utterance.voice = bestVoice;
-        }
-        utterance.rate = voiceModeRef.current === "fast" ? 1.08 : 0.92;
-        utterance.pitch = 1.12;
-        utterance.volume = 1;
-        utterance.onstart = () => {
-            isAiSpeakingRef.current = true;
-            if (recognitionRef.current && voiceSessionActiveRef.current) {
-                try { recognitionRef.current.abort(); } catch (e) {}
-            }
-        };
-        utterance.onend = finishSpeechTurn;
-        utterance.onerror = () => { isAiSpeakingRef.current = false; };
-        window.speechSynthesis.speak(utterance);
+        const segments = splitSpeechByLanguage(cleanText);
+        segments.forEach((segment, index) => {
+            const utterance = createSpeechUtterance(segment.text, segment.lang);
+            if (index === segments.length - 1) utterance.onend = finishSpeechTurn;
+            window.speechSynthesis.speak(utterance);
+        });
         return true;
     }, [finishSpeechTurn, isVoiceEnabled]);
 
@@ -1827,6 +2125,7 @@ export const ChatBot: React.FC = () => {
         const refreshVoices = () => {
             const voices = window.speechSynthesis.getVoices();
             preferredVoiceRef.current = [...voices].sort((a, b) => scoreAssistantVoice(b) - scoreAssistantVoice(a))[0] || null;
+            preferredEnglishVoiceRef.current = [...voices].sort((a, b) => scoreEnglishVoice(b) - scoreEnglishVoice(a))[0] || null;
         };
         refreshVoices();
         window.speechSynthesis.onvoiceschanged = refreshVoices;
@@ -2477,18 +2776,23 @@ export const ChatBot: React.FC = () => {
                 return;
             }
             const heardAudioRecently = Date.now() - lastMicAudioAtRef.current < 6000;
-            const promptKey = heardAudioRecently ? "audio-no-text" : "no-audio";
+            const heardWeakAudioRecently = Date.now() - lastMicWeakAudioAtRef.current < 6000;
+            const promptKey = heardAudioRecently ? "audio-no-text" : heardWeakAudioRecently ? "weak-audio" : "no-audio";
             if (voiceNoSpeechPromptKeyRef.current === promptKey) return;
             voiceNoSpeechPromptKeyRef.current = promptKey;
             const text = heardAudioRecently
                 ? "Micro có nhận âm thanh nhưng trình duyệt chưa chuyển được thành chữ. Bạn thử nói chậm hơn, dùng Chrome/Edge, hoặc tắt rồi bật lại micro."
-                : "Tôi đang bật micro nhưng chưa thấy tín hiệu âm thanh đi vào. Bạn kiểm tra đúng thiết bị micro và quyền micro rồi nói lại nhé.";
-            setVoiceStatus(heardAudioRecently ? "Có âm thanh, chưa ra chữ." : "Chưa có tín hiệu mic.");
+                : heardWeakAudioRecently
+                    ? "Tín hiệu micro vào rất yếu. Bạn tăng Input volume/Microphone boost trong Windows hoặc chọn đúng micro trong trình duyệt rồi thử lại."
+                    : "Tôi đang bật micro nhưng chưa thấy tín hiệu âm thanh đi vào. Bạn kiểm tra đúng thiết bị micro và quyền micro rồi nói lại nhé.";
+            setVoiceStatus(heardAudioRecently ? "Có âm thanh, chưa ra chữ." : heardWeakAudioRecently ? "Tín hiệu mic yếu." : "Chưa có tín hiệu mic.");
             reportVoiceIssueToAdmin(
-                heardAudioRecently ? "SPEECH_ENGINE_NO_TRANSCRIPT" : "MIC_NO_AUDIO_SIGNAL",
+                heardAudioRecently ? "SPEECH_ENGINE_NO_TRANSCRIPT" : heardWeakAudioRecently ? "MIC_WEAK_AUDIO_SIGNAL" : "MIC_NO_AUDIO_SIGNAL",
                 heardAudioRecently
                     ? "Audio analyser có tín hiệu âm thanh nhưng SpeechRecognition không trả transcript/interim text sau 5.5 giây."
-                    : "Mic đã bật nhưng sau 5.5 giây không có transcript/interim text và audio analyser không thấy tín hiệu âm thanh rõ.",
+                    : heardWeakAudioRecently
+                        ? "Mic đã bật nhưng sau 5.5 giây audio analyser chỉ thấy tín hiệu yếu."
+                        : "Mic đã bật nhưng sau 5.5 giây không có transcript/interim text và audio analyser không thấy tín hiệu âm thanh rõ.",
                 "MEDIUM"
             );
             notifyVoiceMessage(text, false);
@@ -2557,6 +2861,177 @@ export const ChatBot: React.FC = () => {
     const isVoiceNormalCommand = (text: string) => {
         const normalized = normalizeSearchText(text);
         return ["noi binh thuong", "lam binh thuong", "cham lai", "tu tu", "che do binh thuong"].some(kw => normalized.includes(kw));
+    };
+
+    const bilingualChatInstruction = {
+        role: "system",
+        content: "Người dùng có thể viết hoặc nói lẫn tiếng Việt và tiếng Anh trong cùng một câu. Hãy hiểu cả hai ngôn ngữ, giữ nguyên thuật ngữ tiếng Anh kỹ thuật/nghiệp vụ khi phù hợp, và trả lời chủ yếu bằng tiếng Việt tự nhiên trừ khi người dùng yêu cầu English."
+    };
+
+    const inferChatStyle = (currentText: string, history: any[] = []) => {
+        const recentUserText = history
+            .filter((msg: any) => msg?.type === "user")
+            .slice(-6)
+            .map((msg: any) => String(msg.text || ""))
+            .join(" ");
+        const raw = `${recentUserText} ${currentText}`;
+        const normalized = normalizeSearchText(raw);
+        const lowerRaw = raw.toLowerCase();
+
+        const playfulScore = [
+            "haha", "hihi", "hehe", "kkk", "z", "dz", "nhay", "vui", "huhu", "ui", "ê", "eo",
+            ":))", "=))", "lol"
+        ].reduce((score, keyword) => score + (lowerRaw.includes(keyword) || normalized.includes(keyword) ? 1 : 0), 0);
+        const seriousScore = [
+            "nghiem tuc", "chinh xac", "bao cao", "phan tich", "giai thich", "chi tiet", "quy trinh",
+            "bao mat", "toi uu", "khong anh huong", "kiem tra", "xac minh"
+        ].reduce((score, keyword) => score + (normalized.includes(keyword) ? 1 : 0), 0);
+        const frustratedScore = [
+            "sao no", "bi loi", "lag", "ngu", "ngo", "cc", "chet", "huhu", "cau cuu", "khong duoc",
+            "van khong", "chua duoc"
+        ].reduce((score, keyword) => score + (normalized.includes(keyword) ? 1 : 0), 0);
+        const wantsConcise = ["ngan gon", "noi nhanh", "tra loi ngan", "tom tat", "nhanh thoi"].some(keyword => normalized.includes(keyword));
+
+        const tone = frustratedScore >= 2
+            ? "calm-supportive"
+            : playfulScore > seriousScore
+                ? "friendly-playful"
+                : seriousScore >= 2
+                    ? "professional"
+                    : "natural";
+
+        return { tone, wantsConcise, playfulScore, seriousScore, frustratedScore };
+    };
+
+    const buildCurrentUserRoleContext = () => {
+        if (!user) {
+            return [
+                "Người đang chat: khách chưa đăng nhập.",
+                "Cách hướng dẫn: chỉ hướng dẫn thông tin công khai, đăng nhập/đăng ký, đặt lịch cơ bản; không khẳng định đã xem được dữ liệu cá nhân hay dữ liệu nội bộ."
+            ].join("\n");
+        }
+
+        const displayName = userName || user?.displayName || user?.ten_dang_nhap || "người dùng hiện tại";
+        const accountId = user?.id_tai_khoan || user?.idTaiKhoan || "không rõ";
+        const profileId = isCustomerAccount
+            ? (user?.id_khach_hang || user?.idKhachHang || "không rõ")
+            : (user?.id_nhan_vien || user?.idNhanVien || "không rõ");
+        const roleGuidanceMap: Record<string, string> = {
+            admin: "Đây là tài khoản quản trị: có thể nói theo góc nhìn điều hành hệ thống, cấu hình, phân quyền, báo cáo và kiểm soát dữ liệu. Vẫn yêu cầu xác nhận với thao tác nhạy cảm.",
+            quan_ly: "Đây là tài khoản quản lý: ưu tiên hướng dẫn vận hành, lịch hẹn, nhân sự, doanh thu, báo cáo và điều phối phòng khám.",
+            bac_si: "Đây là tài khoản bác sĩ: ưu tiên hướng dẫn ca khám, bệnh án, xét nghiệm, đơn thuốc, phác đồ và thông tin chuyên môn thú y.",
+            ke_toan: "Đây là tài khoản kế toán: ưu tiên hóa đơn, thanh toán, công nợ, doanh thu, đối soát và báo cáo tài chính.",
+            tiep_tan: "Đây là tài khoản tiếp tân: ưu tiên đặt lịch, check-in, tìm khách hàng, xác nhận lịch và điều phối khách tới khám.",
+            y_ta: "Đây là tài khoản y tá: ưu tiên hỗ trợ ca khám, chuẩn bị xét nghiệm/vật tư, nội trú và theo dõi sau khám.",
+            staff: "Đây là tài khoản nhân sự phòng khám: hướng dẫn theo nghiệp vụ nội bộ nhưng không vượt quá quyền thực tế.",
+            khach_hang: "Đây là tài khoản khách hàng: chỉ hướng dẫn dữ liệu cá nhân của chính khách, thú cưng, lịch hẹn, hóa đơn của họ, đặt lịch và chăm sóc thú cưng; không truy vấn dữ liệu nội bộ phòng khám.",
+            guest: "Đây là khách chưa xác định quyền: chỉ hướng dẫn thông tin công khai và luồng đăng nhập."
+        };
+        const roleGuidance = isCustomerAccount
+            ? roleGuidanceMap.khach_hang
+            : (roleGuidanceMap[normalizedRoleCode] || roleGuidanceMap.staff);
+
+        return [
+            `Người đang chat: ${displayName}.`,
+            `Vai trò hiển thị: ${userRoleName}; mã vai trò: ${normalizedRoleCode || "không rõ"}.`,
+            `Loại tài khoản: ${isCustomerAccount ? "khách hàng" : isClinicStaff ? "nhân sự phòng khám" : "người dùng hệ thống"}; mã tài khoản: ${accountId}; ${isCustomerAccount ? "mã khách hàng" : "mã nhân sự"}: ${profileId}.`,
+            `Cách xưng hô/hướng dẫn: ${roleGuidance}`,
+            "Khi trả lời, phải dùng đúng vai trò này để chọn ví dụ, thuật ngữ, quyền truy cập và hướng dẫn thao tác. Nếu thiếu quyền hoặc chưa đăng nhập thì nói rõ, không đoán dữ liệu."
+        ].join("\n");
+    };
+
+    const inferLikelyUserNeed = (currentText: string, history: any[] = []) => {
+        const recentUserText = history
+            .filter((msg: any) => msg?.type === "user")
+            .slice(-4)
+            .map((msg: any) => String(msg.text || ""))
+            .join(" ");
+        const normalized = normalizeSearchText(`${recentUserText} ${currentText}`);
+        const currentPath = location.pathname;
+
+        const needChecks: Array<{ key: string; label: string; score: number; guidance: string }> = [
+            {
+                key: "debug",
+                label: "đang cần sửa lỗi hoặc tối ưu hệ thống",
+                score: ["loi", "sao no", "khong duoc", "lag", "toi uu", "bug", "sua", "chay ngam", "an ram"].filter(keyword => normalized.includes(keyword)).length,
+                guidance: "Ưu tiên chẩn đoán nguyên nhân, bước kiểm tra, sửa an toàn, nói rõ nếu cần refresh/build; không lan man."
+            },
+            {
+                key: "navigation",
+                label: "đang cần được dẫn đường hoặc thao tác trên giao diện",
+                score: ["vao trang", "mo trang", "chuyen trang", "bam", "click", "o dau", "tim nut", "huong dan"].filter(keyword => normalized.includes(keyword)).length + (hasExplicitNavigationIntent(currentText) ? 2 : 0),
+                guidance: "Ưu tiên chỉ đường theo trang hiện tại, tên nút/menu cụ thể, và nếu là Agent thì thao tác khi đủ quyền."
+            },
+            {
+                key: "identity",
+                label: "đang cần câu trả lời cá nhân hóa theo tài khoản/vai trò",
+                score: ["toi la ai", "tai khoan", "vai tro", "quyen", "chuc vu", "toi can gi", "phong cach"].filter(keyword => normalized.includes(keyword)).length,
+                guidance: "Nêu rõ đang dựa trên phiên đăng nhập, vai trò và ngữ cảnh gần nhất; tránh trả lời chung chung."
+            },
+            {
+                key: "booking",
+                label: "đang cần đặt lịch hoặc xử lý lịch hẹn",
+                score: ["dat lich", "lich hen", "kham", "gio trong", "xac nhan lich", "huy lich", "check in"].filter(keyword => normalized.includes(keyword)).length + (currentPath.includes("lich") || currentPath.includes("dat-lich") ? 1 : 0),
+                guidance: "Ưu tiên hỏi/điền thông tin còn thiếu: thú cưng, dịch vụ, ngày giờ, bác sĩ, số điện thoại; không đoán lịch nếu chưa có dữ liệu."
+            },
+            {
+                key: "medical",
+                label: "đang cần tư vấn y khoa thú y",
+                score: ["benh", "trieu chung", "thuoc", "phac do", "xet nghiem", "cap cuu", "non", "tieu chay", "co giat", "bo an"].filter(keyword => normalized.includes(keyword)).length,
+                guidance: "Ưu tiên an toàn y khoa, cảnh báo cấp cứu khi cần, phân biệt thông tin tham khảo với chẩn đoán chính thức."
+            },
+            {
+                key: "finance",
+                label: "đang cần hóa đơn, thanh toán hoặc doanh thu",
+                score: ["hoa don", "thanh toan", "doanh thu", "cong no", "doi soat", "thu tien", "vnpay", "vietqr"].filter(keyword => normalized.includes(keyword)).length,
+                guidance: isCustomerAccount
+                    ? "Chỉ hướng dẫn hóa đơn/thanh toán của chính khách hàng."
+                    : "Ưu tiên số liệu, trạng thái hóa đơn, công nợ và quyền kế toán/quản lý."
+            }
+        ];
+
+        const ranked = needChecks
+            .filter(item => item.score > 0)
+            .sort((a, b) => b.score - a.score)
+            .slice(0, 2);
+
+        if (ranked.length === 0) {
+            const fallback = isCustomerAccount
+                ? "khả năng cần hỗ trợ dùng hệ thống khách hàng, chăm sóc thú cưng, đặt lịch hoặc xem dữ liệu cá nhân"
+                : isClinicStaff
+                    ? "khả năng cần hỗ trợ nghiệp vụ theo chức vụ hiện tại và trang đang mở"
+                    : "khả năng cần hướng dẫn công khai hoặc đăng nhập";
+            return `Nhu cầu dự đoán: ${fallback}. Hỏi lại ngắn gọn nếu thiếu dữ kiện, nhưng nếu có thể suy ra từ trang hiện tại thì chủ động đề xuất bước tiếp theo.`;
+        }
+
+        return [
+            `Nhu cầu dự đoán chính: ${ranked[0].label}. ${ranked[0].guidance}`,
+            ranked[1] ? `Nhu cầu phụ có thể đi kèm: ${ranked[1].label}. ${ranked[1].guidance}` : "",
+            "Khi trả lời, hãy chủ động gợi ý bước tiếp theo phù hợp với nhu cầu này; nếu độ chắc chắn thấp thì nói theo dạng 'có vẻ bạn đang cần...'."
+        ].filter(Boolean).join("\n");
+    };
+
+    const buildAdaptiveChatInstruction = (currentText: string, history: any[] = []) => {
+        const style = inferChatStyle(currentText, history);
+        const userRoleContext = buildCurrentUserRoleContext();
+        const likelyNeed = inferLikelyUserNeed(currentText, history);
+        const toneGuide: Record<string, string> = {
+            "calm-supportive": "Người dùng đang có vẻ bực/lo/lỗi gấp: trả lời bình tĩnh, đi thẳng vào cách xử lý, không nhây, không đổ lỗi.",
+            "friendly-playful": "Người dùng nói chuyện vui hoặc nhây: có thể thân mật, tự nhiên, hơi dí dỏm ở cách nói; nhưng dữ kiện, y khoa, bảo mật, tài chính và thao tác hệ thống phải chính xác, không bịa.",
+            professional: "Người dùng đang nghiêm túc: trả lời gọn, rõ, chuyên nghiệp, ưu tiên căn cứ và bước xử lý.",
+            natural: "Giữ giọng tự nhiên, thân thiện vừa phải, không quá màu mè."
+        };
+
+        return {
+            role: "system",
+            content: [
+                `Định danh và vai trò hiện tại:\n${userRoleContext}`,
+                `Phong cách hội thoại suy ra từ các tin gần đây: ${style.tone}. ${toneGuide[style.tone]}`,
+                `Nhu cầu người dùng có khả năng đang cần:\n${likelyNeed}`,
+                style.wantsConcise ? "Người dùng có dấu hiệu muốn nhanh/gọn: ưu tiên câu ngắn, hành động trước, giải thích sau." : "Điều chỉnh độ dài theo độ phức tạp câu hỏi; tránh dài dòng.",
+                "Không bắt chước chửi tục hoặc xúc phạm. Nếu người dùng nói vui thì chỉ phản hồi vui ở phong cách, không làm sai nội dung."
+            ].join("\n")
+        };
     };
 
     const startRecognitionSafe = (source = "voice") => {
@@ -2683,6 +3158,54 @@ export const ChatBot: React.FC = () => {
             "khach hang phong kham", "danh sach khach hang", "doanh thu", "cong no"
         ];
         return sensitivePhrases.some(phrase => normalized.includes(phrase));
+    };
+
+    const isSelfIdentityQuery = (text: string) => {
+        const normalized = normalizeSearchText(text);
+        const identityPhrases = [
+            "toi la ai", "minh la ai", "em la ai", "anh la ai", "chi la ai",
+            "toi dang dang nhap la ai", "dang nhap bang tai khoan nao",
+            "tai khoan cua toi", "tai khoan cua minh", "thong tin tai khoan cua toi",
+            "vai tro cua toi", "quyen cua toi", "toi co quyen gi", "toi la khach hay nhan vien"
+        ];
+        return identityPhrases.some(phrase => normalized.includes(phrase));
+    };
+
+    const buildSelfIdentityAnswer = () => {
+        if (!user) {
+            return "Hiện tại bạn chưa đăng nhập nên Rexi Agent chưa xác định được tài khoản của bạn.";
+        }
+
+        const displayName = userName || user?.displayName || user?.ten_dang_nhap || "Người dùng Rexi";
+        const accountId = user?.id_tai_khoan || user?.idTaiKhoan || "chưa có";
+        const profileId = isCustomerAccount
+            ? (user?.id_khach_hang || user?.idKhachHang || "chưa có")
+            : (user?.id_nhan_vien || user?.idNhanVien || "chưa có");
+        const profileLabel = isCustomerAccount ? "mã khách hàng" : "mã nhân sự";
+        const contactParts = [
+            user?.email ? `email: ${user.email}` : "",
+            user?.sdt ? `sđt: ${user.sdt}` : "",
+            user?.so_dien_thoai ? `sđt: ${user.so_dien_thoai}` : ""
+        ].filter(Boolean);
+
+        return [
+            `Bạn đang đăng nhập là ${displayName}.`,
+            `Vai trò: ${userRoleName}${normalizedRoleCode ? ` (${normalizedRoleCode})` : ""}.`,
+            `Tài khoản: ${user?.ten_dang_nhap || "chưa có tên đăng nhập"}; mã tài khoản: ${accountId}; ${profileLabel}: ${profileId}.`,
+            contactParts.length ? `Thông tin liên hệ đang có: ${contactParts.join(", ")}.` : "",
+            "Tôi lấy thông tin này từ phiên đăng nhập hiện tại trên trình duyệt."
+        ].filter(Boolean).join("\n");
+    };
+
+    const isNavigationOnlyAgentCommand = (text: string) => {
+        const normalized = normalizeSearchText(text);
+        if (!hasExplicitNavigationIntent(text)) return false;
+        const mutatingVerbs = [
+            "xoa", "delete", "huy", "khoa", "mo khoa", "sua", "cap nhat", "doi trang thai",
+            "phan quyen", "them", "tao", "duyet", "xac nhan", "thu tien", "thanh toan",
+            "gui hang loat", "gui dong loat", "gui mail", "gui email"
+        ];
+        return !mutatingVerbs.some(verb => normalized.includes(verb));
     };
 
     const getDirectClickTarget = (text: string) => {
@@ -3165,7 +3688,11 @@ export const ChatBot: React.FC = () => {
             return;
         }
 
-        if (!navigator.mediaDevices?.getUserMedia) {
+        const SpeechRecognitionCtor = getSpeechRecognitionConstructor();
+        const hasSpeechRecognition = Boolean(SpeechRecognitionCtor);
+        const onUnreliableBrowser = isUnreliableSpeechRecognitionBrowser();
+
+        if (!navigator.mediaDevices?.getUserMedia && !hasSpeechRecognition) {
             const text = "Trình duyệt này chưa hỗ trợ mở micro cho web. Bạn hãy dùng Chrome, Microsoft Edge hoặc Safari bản mới.";
             setVoiceStatus("Không hỗ trợ micro.");
             reportVoiceIssueToAdmin("GET_USER_MEDIA_UNSUPPORTED", text, "HIGH", navigator.userAgent);
@@ -3174,15 +3701,8 @@ export const ChatBot: React.FC = () => {
             return;
         }
 
-        const SpeechRecognitionCtor = getSpeechRecognitionConstructor();
-        const hasSpeechRecognition = Boolean(SpeechRecognitionCtor);
-        const onUnreliableBrowser = isUnreliableSpeechRecognitionBrowser();
-
         try {
             setVoiceStatus("Đang xin quyền micro...");
-            if (onUnreliableBrowser) {
-                toast.info(OPERA_VOICE_HINT);
-            }
             // TỰ ĐỘNG BẬT LOA PHẢN HỒI KHI DÙNG GIỌNG NÓI
             setIsVoiceEnabled(true);
             localStorage.setItem("rexi_is_voice_enabled", "true");
@@ -3307,54 +3827,52 @@ export const ChatBot: React.FC = () => {
                 };
             }
 
-            // Kích hoạt micro & vẽ sóng âm
-            const stream = await navigator.mediaDevices.getUserMedia({
-                audio: {
-                    echoCancellation: true,
-                    noiseSuppression: true,
-                    autoGainControl: true
-                }
-            });
-            mediaStreamRef.current = stream;
+            const updateVolume = () => {};
+            if (navigator.mediaDevices?.getUserMedia) {
+                // Kích hoạt micro & vẽ sóng âm khi trình duyệt hỗ trợ getUserMedia.
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: false,
+                        autoGainControl: true
+                    }
+                });
+                mediaStreamRef.current = stream;
 
-            const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-            const audioCtx = new AudioContextClass();
-            audioContextRef.current = audioCtx;
-            if (audioCtx.state === "suspended") {
-                await audioCtx.resume().catch(() => {});
+                const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+                const audioCtx = new AudioContextClass();
+                audioContextRef.current = audioCtx;
+                if (audioCtx.state === "suspended") {
+                    await audioCtx.resume().catch(() => {});
+                }
+
+                const source = audioCtx.createMediaStreamSource(stream);
+                const analyser = audioCtx.createAnalyser();
+                analyser.fftSize = 64;
+                source.connect(analyser);
+                analyserRef.current = analyser;
+
+                const dataArray = new Uint8Array(analyser.frequencyBinCount);
+                const updateAnalyserVolume = () => {
+                    if (!analyserRef.current) return;
+                    analyserRef.current.getByteFrequencyData(dataArray);
+                    const vol1 = dataArray[5] || 0;
+                    const vol2 = dataArray[15] || 0;
+                    const vol3 = dataArray[30] || 0;
+                    let maxVol = 0;
+                    for (let i = 0; i < dataArray.length; i++) {
+                        if (dataArray[i] > maxVol) maxVol = dataArray[i];
+                    }
+                    if (maxVol > 2) lastMicWeakAudioAtRef.current = Date.now();
+                    if (maxVol > 5) lastMicAudioAtRef.current = Date.now();
+                    const scale = 20 / 255;
+                    if (waveBar1Ref.current) { waveBar1Ref.current.style.height = `${6 + vol1 * scale}px`; waveBar1Ref.current.style.opacity = `${0.5 + (vol1 / 255) * 0.5}`; }
+                    if (waveBar2Ref.current) { waveBar2Ref.current.style.height = `${6 + vol2 * scale * 1.5}px`; waveBar2Ref.current.style.opacity = `${0.5 + (vol2 / 255) * 0.5}`; }
+                    if (waveBar3Ref.current) { waveBar3Ref.current.style.height = `${6 + vol3 * scale * 1.2}px`; waveBar3Ref.current.style.opacity = `${0.5 + (vol3 / 255) * 0.5}`; }
+                    animationFrameRef.current = requestAnimationFrame(updateAnalyserVolume);
+                };
+                updateAnalyserVolume();
             }
-
-            const source = audioCtx.createMediaStreamSource(stream);
-            const analyser = audioCtx.createAnalyser();
-            analyser.fftSize = 64;
-            source.connect(analyser);
-            analyserRef.current = analyser;
-
-            const dataArray = new Uint8Array(analyser.frequencyBinCount);
-            
-            const updateVolume = () => {
-                if (!analyserRef.current) return;
-                analyserRef.current.getByteFrequencyData(dataArray);
-                const vol1 = dataArray[5] || 0;
-                const vol2 = dataArray[15] || 0;
-                const vol3 = dataArray[30] || 0;
-                
-                let maxVol = 0;
-                for (let i = 0; i < dataArray.length; i++) {
-                    if (dataArray[i] > maxVol) maxVol = dataArray[i];
-                }
-                
-                if (maxVol > 8) {
-                    lastMicAudioAtRef.current = Date.now();
-                }
-                const scale = 20 / 255;
-
-                if (waveBar1Ref.current) { waveBar1Ref.current.style.height = `${6 + vol1 * scale}px`; waveBar1Ref.current.style.opacity = `${0.5 + (vol1 / 255) * 0.5}`; }
-                if (waveBar2Ref.current) { waveBar2Ref.current.style.height = `${6 + vol2 * scale * 1.5}px`; waveBar2Ref.current.style.opacity = `${0.5 + (vol2 / 255) * 0.5}`; }
-                if (waveBar3Ref.current) { waveBar3Ref.current.style.height = `${6 + vol3 * scale * 1.2}px`; waveBar3Ref.current.style.opacity = `${0.5 + (vol3 / 255) * 0.5}`; }
-
-                animationFrameRef.current = requestAnimationFrame(updateVolume);
-            };
 
             voiceSessionActiveRef.current = true;
             setIsListening(true);
@@ -3412,13 +3930,22 @@ export const ChatBot: React.FC = () => {
 
     // 5. TÌNH TRẠNG CẤP CỨU & KIỂM TRA TỪ KHÓA KHẨN CẤP (CLINICAL TRIAGE BOARD)
     const detectEmergencyKeywords = (text: string) => {
-        const lower = text.toLowerCase();
-        return ["hóc", "ngạt thở", "ngộ độc", "chảy máu", "co giật", "khó thở", "bị cắn", "cấp cứu"].some(kw => lower.includes(kw));
+        const normalized = normalizeSearchText(text);
+        return matchesNormalizedIntent(normalized, [
+            "hoc", "hoc xuong", "ngat tho", "ngo doc", "chay mau", "co giat",
+            "kho tho", "bi can", "cap cuu", "tim tai", "lim di", "bat tinh"
+        ]);
     };
 
     const isMedicalLikeQuery = (text: string) => {
         const normalized = normalizeSearchText(text);
-        return ["benh", "trieu chung", "thuoc", "dau", "sot", "non", "tieu chay", "dieu tri", "chan doan", "kham", "cap cuu", "tai nan", "co giat", "kho tho"].some(kw => normalized.includes(kw));
+        if (matchesNormalizedIntent(normalized, [
+            "trieu chung", "tieu chay", "dieu tri", "chan doan", "cap cuu", "tai nan",
+            "co giat", "kho tho", "di ngoai", "bo an", "ngua", "lo loet", "viem da"
+        ])) return true;
+        return matchesNormalizedIntent(normalized, [
+            "benh", "thuoc", "sot", "non", "oi", "kham", "tiem", "ngua", "ho", "dau"
+        ]);
     };
 
     const isWebLikeQuery = (text: string) => {
@@ -3426,10 +3953,37 @@ export const ChatBot: React.FC = () => {
         return ["google", "len mang", "tra cuu mang", "tim tai lieu", "tim tren web", "tim kiem web", "nguon tham khao", "link nguon", "moi nhat"].some(kw => normalized.includes(kw));
     };
 
+    const isPersonalPetProfileQuery = (text: string) => {
+        const normalized = normalizeSearchText(text);
+        const mentionsPet = [
+            "thu cung", "pet", "be cung", "be nha", "cho meo", "cho cua toi", "meo cua toi"
+        ].some(keyword => normalized.includes(keyword));
+        const asksOwnData = [
+            "cua toi", "nha toi", "toi co", "co may", "bao nhieu", "danh sach", "xem", "hien co", "dang co"
+        ].some(keyword => normalized.includes(keyword));
+        return mentionsPet && asksOwnData;
+    };
+
+    const shouldRouteStandardToAgent = (text: string) => {
+        if (activeTabRef.current !== "standard") return false;
+        if (isMedicalLikeQuery(text) || isWebLikeQuery(text) || detectEmergencyKeywords(text)) return false;
+        if (isConceptualQuestion(text) && !hasExplicitNavigationIntent(text)) return false;
+
+        const actionableCustomerRequest = matchesNormalizedIntent(text, [
+            "mo trang", "vao trang", "chuyen sang", "kiem tra form", "tu dien", "dat lich",
+            "tim hoa don", "xem hoa don", "mo ho so", "ho so y te", "xem thu cung",
+            "quan ly thu cung", "bam", "click", "cuon"
+        ]);
+
+        return hasExplicitAgentActionIntent(text) || hasExplicitNavigationIntent(text) || actionableCustomerRequest || isPersonalPetProfileQuery(text);
+    };
+
     const shouldOfferAgentHandoff = (replyText: string, userText: string) => {
-        if (!isClinicStaff || activeTabRef.current !== "standard") return false;
+        if (activeTabRef.current !== "standard") return false;
+        if (shouldRouteStandardToAgent(userText)) return true;
+
         const normalized = normalizeSearchText(`${replyText} ${userText}`);
-        return [
+        const suggestsToolNeeded = [
             "tro ly co ban",
             "chua duoc gan cong cu",
             "khong co cong cu truy cap",
@@ -3440,6 +3994,7 @@ export const ChatBot: React.FC = () => {
             "tac vu agent",
             "rexi agent"
         ].some(keyword => normalized.includes(keyword));
+        return isClinicStaff && suggestsToolNeeded;
     };
 
     const queueSpeechBySentence = (text: string) => {
@@ -3459,6 +4014,10 @@ export const ChatBot: React.FC = () => {
     };
 
     const shouldUseRealtimeStream = (text: string, hasMedia: boolean) => {
+        // Tắt SSE cho chat thường vì provider streaming có thể trả 403 dù request JSON vẫn hoạt động.
+        // Giữ đường ổn định trước: gửi JSON thường để tránh rơi vào fallback "chưa nhận được phản hồi".
+        const enableRealtimeStream = (window as any).__REXI_ENABLE_CHAT_STREAM__ === true;
+        if (!enableRealtimeStream) return false;
         if (hasMedia) return false;
         if (!("ReadableStream" in window) || typeof TextDecoder === "undefined") return false;
         if (hasExplicitAgentActionIntent(text) || hasExplicitNavigationIntent(text)) return false;
@@ -3518,12 +4077,13 @@ export const ChatBot: React.FC = () => {
                 "Content-Type": "application/json",
                 "Accept": "text/event-stream",
                 ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                "X-User-Name": userName || "",
-                "X-Current-Path": toSafeContextHeader(location.pathname, 500) || "",
-                "X-Current-DOM-Context": toSafeContextHeader(getPageDomContext()) || "",
-                "X-User-Activity-Logs": toSafeContextHeader(JSON.stringify(userActivityLogs.slice(-8)), 1500) || ""
             },
-            body: JSON.stringify(apiHistory)
+                body: JSON.stringify({
+                    history: apiHistory,
+                    currentPath: location.pathname,
+                    domContext: getPageDomContext(),
+                    activityLogs: userActivityLogs.slice(-8)
+                })
         });
 
         // Bắt lỗi 401 khi dùng fetch()
@@ -3557,18 +4117,38 @@ export const ChatBot: React.FC = () => {
     };
 
     // 6. GỬI TIN NHẮN TẬP TRUNG (SEND SERVICES)
-    const handleSend = async (textOverride?: string) => {
+    const handleSend = async (
+        textOverride?: string,
+        queuedFiles?: { data: string, type: 'image' | 'video' }[],
+        alreadyDisplayedUserMessage = false,
+        slotAlreadyReserved = false
+    ) => {
         const textToSend = textOverride || input;
-        if (!textToSend.trim() && selectedFiles.length === 0) return;
-        if (loading || isCompressing) return;
+        const currentFiles = queuedFiles ? [...queuedFiles] : [...selectedFiles];
+        if (!textToSend.trim() && currentFiles.length === 0) return;
+        if (isCompressing) return;
+        if (!slotAlreadyReserved && activeStandardChatTurnsRef.current >= 3) {
+            if (pendingStandardChatQueueRef.current.length >= 3) {
+                toast.info("Rexi đang trả lời 3 tin gần nhất. Tin mới này chưa được xếp hàng để tránh quá tải.");
+                return;
+            }
+            const queuedImages = currentFiles.filter(f => f.type === 'image').map(f => f.data);
+            const queuedVideos = currentFiles.filter(f => f.type === 'video').map(f => f.data);
+            pendingStandardChatQueueRef.current.push({ text: textToSend, files: currentFiles });
+            setMessages(prev => [...prev, {
+                type: "user",
+                text: textToSend,
+                ...(queuedImages.length > 0 && { images: queuedImages }),
+                ...(queuedVideos.length > 0 && { videos: queuedVideos }),
+                isEmergency: detectEmergencyKeywords(textToSend)
+            }]);
+            setInput("");
+            setSelectedFiles([]);
+            toast.info(`Đã xếp tin nhắn vào hàng chờ (${pendingStandardChatQueueRef.current.length}/3).`);
+            return;
+        }
 
-        const normalizedText = textToSend.toLowerCase();
-        const isMarketingCampaign = normalizedText.includes("chiến dịch") || 
-                                   normalizedText.includes("marketing") || 
-                                   normalizedText.includes("gửi mail") || 
-                                   normalizedText.includes("voucher") || 
-                                   normalizedText.includes("swarm") ||
-                                   normalizedText.includes("đa agent");
+        const isMarketingCampaign = isMarketingCampaignIntent(textToSend);
 
         // Chỉ yêu cầu đăng nhập đối với các tác vụ tiếp thị & tự động hóa Swarm nâng cao
         if (!user && isMarketingCampaign) {
@@ -3579,8 +4159,14 @@ export const ChatBot: React.FC = () => {
             }]);
             return;
         }
+        if (user && isMarketingCampaign && !canAgentUseMarketingSwarm(normalizedRoleCode)) {
+            setMessages(prev => [...prev, {
+                type: "ai",
+                text: agentPermissionDeniedMessage("chạy chiến dịch marketing Swarm")
+            }]);
+            return;
+        }
 
-        const currentFiles = [...selectedFiles];
         const images = currentFiles.filter(f => f.type === 'image').map(f => f.data);
         const videos = currentFiles.filter(f => f.type === 'video').map(f => f.data);
 
@@ -3592,21 +4178,74 @@ export const ChatBot: React.FC = () => {
             isEmergency: detectEmergencyKeywords(textToSend)
         };
 
-        setMessages(prev => [...prev, newMsg]);
-        setInput("");
-        setSelectedFiles([]);
+        if (!alreadyDisplayedUserMessage) {
+            setMessages(prev => [...prev, newMsg]);
+            setInput("");
+            setSelectedFiles([]);
+        }
+        if (!slotAlreadyReserved) {
+            activeStandardChatTurnsRef.current += 1;
+        }
+        loadingRef.current = true;
         setLoading(true);
+
+        const finishStandardTurn = () => {
+            activeStandardChatTurnsRef.current = Math.max(0, activeStandardChatTurnsRef.current - 1);
+            while (activeStandardChatTurnsRef.current < 3 && pendingStandardChatQueueRef.current.length > 0) {
+                const next = pendingStandardChatQueueRef.current.shift();
+                if (!next) break;
+                activeStandardChatTurnsRef.current += 1;
+                setTimeout(() => handleSend(next.text, next.files, true, true), 0);
+            }
+            const stillBusy = activeStandardChatTurnsRef.current > 0 || pendingStandardChatQueueRef.current.length > 0;
+            loadingRef.current = stillBusy;
+            setLoading(stillBusy);
+        };
 
         // Đọc to câu vừa gửi
         if (isVoiceEnabled) {
             speakText("Đang phân tích tin nhắn của bạn.");
         }
 
+        const safeNavigationTarget = activeTabRef.current === "standard"
+            ? getSafeStandardNavigationTarget(textToSend)
+            : null;
+        if (safeNavigationTarget && !images.length && !videos.length) {
+            const reply = `Dạ, tôi mở trang **${safeNavigationTarget.label}** cho Sen ngay.`;
+            setMessages(prev => [...prev, { type: "ai", text: reply }]);
+            speakText(reply);
+            setTimeout(() => navigate(safeNavigationTarget.path), 250);
+            finishStandardTurn();
+            return;
+        }
+
+        if (!images.length && !videos.length && shouldRouteStandardToAgent(textToSend)) {
+            const handoffMessage = isCustomerAccount
+                ? "Yêu cầu này cần Rexi Agent thao tác hoặc đọc dữ liệu cá nhân từ hệ thống thật. Tôi chưa tự trả lời ở chat thường để tránh đoán sai."
+                : "Yêu cầu này cần Rexi Agent thao tác hoặc đọc dữ liệu nghiệp vụ thật. Tôi chưa tự trả lời ở chat thường để tránh sai lệch.";
+            setMessages(prev => [...prev, {
+                type: "ai",
+                text: handoffMessage,
+                agentHandoff: {
+                    prompt: textToSend,
+                    label: "Để Rexi Agent làm tác vụ này"
+                }
+            }]);
+            speakText("Tôi sẽ chuyển yêu cầu này sang Rexi Agent để xử lý bằng dữ liệu thật.");
+            finishStandardTurn();
+            return;
+        }
+
         try {
-            const apiHistory = messages.slice(-10).map((msg) => ({
+            const adaptiveChatInstruction = buildAdaptiveChatInstruction(textToSend, messages);
+            const apiHistory = [
+                bilingualChatInstruction,
+                adaptiveChatInstruction,
+                ...messages.slice(-10).map((msg) => ({
                 role: msg.type === "ai" ? "assistant" : "user",
                 content: String(msg.text || "").slice(0, 1200)
-            }));
+                }))
+            ];
 
             apiHistory.push({
                 role: "user",
@@ -3614,21 +4253,7 @@ export const ChatBot: React.FC = () => {
                 ...(images.length > 0 && { images }),
                 ...(videos.length > 0 && { videos })
             });
-
-            // Mở rộng các từ khóa kích hoạt cơ chế Swarm của khách hàng
-            const isMarketingCampaign = normalizedText.includes("chiến dịch") ||
-                                       normalizedText.includes("marketing") ||
-                                       normalizedText.includes("gửi mail") ||
-                                       normalizedText.includes("voucher") ||
-                                       normalizedText.includes("swarm") ||
-                                       normalizedText.includes("đa agent") ||
-                                       normalizedText.includes("nhắc lịch") ||
-                                       normalizedText.includes("soạn email") ||
-                                       normalizedText.includes("tìm khách hàng có") ||
-                                       normalizedText.includes("gửi thông báo") ||
-                                       normalizedText.includes("tìm bé bị") ||
-                                       normalizedText.includes("tìm mèo") ||
-                                       normalizedText.includes("tìm chó bị");
+            (window as any).__REXI_LAST_CHAT_PAYLOAD__ = apiHistory;
 
             let response;
             let streamedMessage = false;
@@ -3663,7 +4288,7 @@ export const ChatBot: React.FC = () => {
                     }
                 });
             }
-            const replyText = response.data.reply || "Tôi đang bận một chút, bạn thử lại sau nhé!";
+            const replyText = normalizeRawAssistantReplyText(response.data.reply, "Tôi đang bận một chút, bạn thử lại sau nhé!");
 
             let cleanedReplyText = replyText;
             let treatmentData = null;
@@ -3738,15 +4363,16 @@ export const ChatBot: React.FC = () => {
                 actionTags.push(`[${matchAction[1]}:${matchAction[2]}]`);
             }
             let blockedAutopilot = false;
+            const userExplicitlyAskedForAutopilot = hasExplicitAgentActionIntent(textToSend) || hasExplicitNavigationIntent(textToSend);
             for (const tag of actionTags) {
-                if (!canRunAutopilotTag(tag)) {
+                if (!userExplicitlyAskedForAutopilot || !canRunAutopilotTag(tag)) {
                     blockedAutopilot = true;
                     continue;
                 }
                 await executeAction(tag);
             }
             if (blockedAutopilot) {
-                cleanedReplyText = `${cleanedReplyText}\n\n(Tôi đã bỏ qua một số thao tác Autopilot vì không đúng quyền hoặc cần xác nhận "xác nhận" trước.)`.trim();
+                cleanedReplyText = `${cleanedReplyText}\n\n(Tôi đã bỏ qua thao tác Autopilot vì người dùng chưa ra lệnh thao tác rõ ràng, không đúng quyền hoặc cần xác nhận trước.)`.trim();
             }
             cleanedReplyText = cleanedReplyText.replace(actionTagRegex, '').trim();
 
@@ -3775,7 +4401,9 @@ export const ChatBot: React.FC = () => {
 
             cleanedReplyText = stripChatControlTags(cleanedReplyText);
 
+            const aiMessageId = `ai-${Date.now()}-${Math.random().toString(36).slice(2)}`;
             const aiResponseMsg = { 
+                id: aiMessageId,
                 type: "ai", 
                 text: cleanedReplyText,
                 isEmergency: replyText.includes("[EMERGENCY]") || detectEmergencyKeywords(cleanedReplyText),
@@ -3801,13 +4429,14 @@ export const ChatBot: React.FC = () => {
                     return updated;
                 });
                 if (!liveSpeechQueued) speakText(cleanedReplyText);
+                finishStandardTurn();
             } else {
                 // Thêm tin nhắn với text rỗng, sau đó stream từng ký tự (typewriter effect)
                 setMessages(prev => {
                     return [...prev, { ...aiResponseMsg, text: "" }];
                 });
 
-                // Stream từng ký tự với tốc độ 6ms/ký tự — cảm giác như ChatGPT
+                // Stream từng ký tự nhanh hơn nhưng vẫn giữ thứ tự trả lời.
                 let charIdx = 0;
                 const fullText = cleanedReplyText;
                 liveSpeechQueued = queueSpeechBySentence(cleanedReplyText);
@@ -3816,9 +4445,9 @@ export const ChatBot: React.FC = () => {
                         const chunk = fullText.slice(0, charIdx + 1);
                         setMessages(prev => {
                             const updated = [...prev];
-                            const last = updated[updated.length - 1];
-                            if (last && last.type === "ai") {
-                                updated[updated.length - 1] = { ...last, text: chunk };
+                            const targetIndex = updated.findIndex((msg: any) => msg.id === aiMessageId);
+                            if (targetIndex >= 0) {
+                                updated[targetIndex] = { ...updated[targetIndex], text: chunk };
                             }
                             return updated;
                         });
@@ -3826,15 +4455,18 @@ export const ChatBot: React.FC = () => {
                     } else {
                         clearInterval(streamInterval);
                         if (!liveSpeechQueued) speakText(cleanedReplyText);
+                        finishStandardTurn();
                     }
-                }, 6);
+                }, 3);
             }
 
         } catch (err) {
             console.error("Chat API request failed:", err);
-            setMessages(prev => [...prev, { type: "ai", text: "Rexi chưa nhận được phản hồi từ hệ thống tư vấn. Tôi đã ghi nhận yêu cầu, bạn thử gửi lại sau vài giây hoặc chọn gợi ý nhanh bên dưới." }]);
-        } finally {
-            setLoading(false);
+            setMessages(prev => [...prev, {
+                type: "ai",
+                text: getApiErrorMessage(err, "Rexi chưa nhận được phản hồi từ hệ thống tư vấn. Tôi chưa thực hiện thao tác nào, bạn thử gửi lại sau vài giây hoặc chọn gợi ý nhanh bên dưới.")
+            }]);
+            finishStandardTurn();
         }
     };
 
@@ -3844,34 +4476,47 @@ export const ChatBot: React.FC = () => {
         if (!textToSend.trim()) return;
         if (agentLoading) return;
 
-        const query = textToSend.toLowerCase();
-        const isSimpleGreeting = ["chào", "hi", "hello", "xin chào", "chào bạn", "chào ad", "alo", "helo", "hey", "bạn là ai", "ai đó", "tên gì"].some(kw => query.includes(kw));
+        const normalizedGreetingQuery = normalizeSearchText(textToSend);
+        const isSimpleGreeting = matchesNormalizedIntent(normalizedGreetingQuery, [
+            "chao", "hi", "hello", "xin chao", "chao ban", "chao ad", "alo", "helo", "hey",
+            "ban la ai", "ai do", "ten gi"
+        ]);
 
         if (!user) {
             if (isSimpleGreeting) {
-                // Cho phép chào hỏi và giới thiệu thân thiện, không chặn cứng nhắc!
                 setAgentMessages(prev => [
                     ...prev,
                     { type: "user", text: textToSend },
                     {
                         type: "ai",
-                        text: "Dạ, Rexi Agent xin chào Sen! Em là quản lý trợ lý ảo thông minh chạy ngầm chuyên nghiệp của phòng khám. Các tác vụ tự động hóa lâm sàng nâng cao (như lập lịch khám tự động, truy vấn bệnh án thú y hay chạy chiến dịch marketing đa Agent) yêu cầu quyền đăng nhập tài khoản bảo mật của Bệnh viện Thú y Rexi. Sen đăng nhập nhanh chỉ trong 10 giây để cùng Rexi chăm sóc bé yêu nhé! 🐾✨",
-                        isLoginPrompt: true
+                        text: "Dạ, Rexi Agent đây ạ. Tôi có thể hỗ trợ tác vụ như đặt lịch, kiểm tra form, tra cứu lịch trống và hướng dẫn dùng hệ thống. Các thao tác đọc/sửa dữ liệu thật sẽ yêu cầu đăng nhập để bảo mật."
                     }
                 ]);
                 setAgentInput("");
                 return;
             } else {
-                setAgentMessages(prev => [...prev, {
+                setAgentMessages(prev => [...prev, { type: "user", text: textToSend }, {
                     type: "ai",
-                    text: "Sen ơi, các tác vụ tự động hóa nâng cao của Rexi Agent yêu cầu đăng nhập tài khoản bảo mật.",
+                    text: "Sen ơi, tác vụ này cần Rexi Agent đọc hoặc thao tác dữ liệu thật nên yêu cầu đăng nhập tài khoản bảo mật.",
                     isLoginPrompt: true
                 }]);
+                setAgentInput("");
                 return;
             }
         }
 
-        if (!isClinicStaff && isSensitiveAgentCommand(textToSend)) {
+        if (isSelfIdentityQuery(textToSend)) {
+            const aiReply = {
+                type: "ai",
+                text: buildSelfIdentityAnswer()
+            };
+            setAgentMessages(prev => [...prev, { type: "user", text: textToSend }, aiReply]);
+            setAgentInput("");
+            speakText(aiReply.text);
+            return;
+        }
+
+        if (!isClinicStaff && isSensitiveAgentCommand(textToSend) && !isNavigationOnlyAgentCommand(textToSend)) {
             const aiReply = {
                 type: "ai",
                 text: "Tài khoản khách hàng không được truy vấn hoặc thao tác dữ liệu nội bộ như tài khoản, khách hàng, hóa đơn, bệnh án phòng khám. Sen có thể dùng Agent để đặt lịch, xem trang hồ sơ/hóa đơn của mình hoặc tra cứu tài liệu thú y công khai."
@@ -3948,6 +4593,8 @@ export const ChatBot: React.FC = () => {
                 setAgentInput("");
                 speakText(aiReply.text);
                 return;
+            } else if (!isSensitiveAgentCommand(textToSend) || isNavigationOnlyAgentCommand(textToSend)) {
+                pendingSensitiveCommandRef.current = null;
             } else {
                 const aiReply = {
                     type: "ai",
@@ -3958,7 +4605,7 @@ export const ChatBot: React.FC = () => {
                 speakText(aiReply.text);
                 return;
             }
-        } else if (isSensitiveAgentCommand(textToSend)) {
+        } else if (isSensitiveAgentCommand(textToSend) && !isNavigationOnlyAgentCommand(textToSend)) {
             pendingSensitiveCommandRef.current = textToSend;
             const aiReply = {
                 type: "ai",
@@ -4015,6 +4662,66 @@ export const ChatBot: React.FC = () => {
                 return;
             }
 
+            if (isCustomerAccount && isPersonalPetProfileQuery(textToSend)) {
+                const customerId = getCustomerIdFromProfile(user);
+                if (!customerId) {
+                    const aiReply = {
+                        type: "ai",
+                        text: "Tôi chưa xác định được mã khách hàng trong phiên đăng nhập hiện tại, nên không gọi API thú cưng để tránh lấy sai dữ liệu. Sen đăng xuất rồi đăng nhập lại giúp tôi."
+                    };
+                    setAgentMessages(prev => [...prev, aiReply]);
+                    speakText(aiReply.text);
+                    setAgentLoading(false);
+                    return;
+                }
+
+                try {
+                    const response = await axiosInstance.get(`/api/thu-cung/khach/${customerId}`, {
+                        params: { page: 0, size: 999 }
+                    });
+                    const data = response.data;
+                    const petRows = Array.isArray(data) ? data : (data?.content || data?.data || []);
+                    const activePets = Array.isArray(petRows)
+                        ? petRows.filter((pet: any) => pet?.da_xoa !== true && pet?.daXoa !== true)
+                        : [];
+                    const rows = activePets.map((pet: any) => [
+                        pet.ten_thu_cung || pet.tenThuCung || "---",
+                        pet.loai || pet.loaiThuCung || "---",
+                        pet.giong || pet.giongLoai || "---",
+                        pet.gioi_tinh || pet.gioiTinh || "---",
+                        pet.trong_luong || pet.can_nang || pet.canNang ? `${pet.trong_luong || pet.can_nang || pet.canNang} kg` : "---"
+                    ]);
+                    const names = activePets
+                        .map((pet: any) => pet.ten_thu_cung || pet.tenThuCung)
+                        .filter(Boolean)
+                        .join(", ");
+                    const aiReply = {
+                        type: "ai",
+                        text: activePets.length > 0
+                            ? `Tôi đã kiểm tra dữ liệu thật của tài khoản hiện tại. Sen đang có **${activePets.length}** thú cưng${names ? `: ${names}` : ""}.`
+                            : "Tôi đã kiểm tra dữ liệu thật của tài khoản hiện tại. Hiện chưa có thú cưng nào trong hồ sơ của Sen.",
+                        isTableData: activePets.length > 0,
+                        tableHeader: ["Tên Bé", "Loài", "Giống", "Giới Tính", "Cân Nặng"],
+                        tableRows: rows
+                    };
+                    setAgentMessages(prev => [...prev, aiReply]);
+                    speakText(aiReply.text);
+                } catch (err: any) {
+                    const status = err?.response?.status;
+                    const aiReply = {
+                        type: "ai",
+                        text: status === 403
+                            ? "Backend từ chối quyền xem danh sách thú cưng của mã khách hàng hiện tại. Khả năng cao phiên đăng nhập đang lệch tài khoản, Sen đăng nhập lại giúp tôi."
+                            : "Tôi chưa lấy được danh sách thú cưng từ máy chủ. Backend hoặc phiên đăng nhập có thể đang lỗi, thử tải lại trang rồi hỏi lại."
+                    };
+                    setAgentMessages(prev => [...prev, aiReply]);
+                    speakText(aiReply.text);
+                } finally {
+                    setAgentLoading(false);
+                }
+                return;
+            }
+
             // KỸ NĂNG 1: TRA CỨU TÀI LIỆU Y KHOA THÚ Y / TRA CỨU MẠNG CÓ NGUỒN
             if (shouldUseDirectToolRule && ["lên mạng", "tìm tài liệu", "google", "tra cứu mạng", "tài liệu thú y", "giảm bạch cầu", "bạch cầu"].some(kw => query.includes(kw))) {
                 // Gọi API backend thật để lấy câu trả lời chuyên sâu sinh động của mô hình AI (Gemini/DeepSeek)
@@ -4028,7 +4735,7 @@ export const ChatBot: React.FC = () => {
                     }
                 });
                 
-                const replyText = response.data.reply || "Không tìm thấy dữ liệu y học phù hợp.";
+                const replyText = normalizeRawAssistantReplyText(response.data.reply, "Không tìm thấy dữ liệu y học phù hợp.");
 
                 // Ưu tiên nguồn web thật backend trả về; Google Search chỉ là link dự phòng để người dùng tự mở rộng.
                 const searchKeywords = encodeURIComponent(textToSend);
@@ -4872,10 +5579,15 @@ export const ChatBot: React.FC = () => {
 
             // KỸ NĂNG 4: CHAT TÁC VỤ THÔNG THƯỜNG TRỰC TIẾP
 
-            const apiHistory = agentMessages.map((msg) => ({
+            const adaptiveAgentInstruction = buildAdaptiveChatInstruction(textToSend, agentMessages);
+            const apiHistory = [
+                bilingualChatInstruction,
+                adaptiveAgentInstruction,
+                ...agentMessages.map((msg) => ({
                 role: msg.type === "ai" ? "assistant" : "user",
                 content: msg.text
-            }));
+                }))
+            ];
 
             apiHistory.push({
                 role: "user",
@@ -4883,19 +5595,7 @@ export const ChatBot: React.FC = () => {
             });
 
             // Mở rộng từ khóa kích hoạt cơ chế Swarm bên tab Agent
-            const isMarketingCampaign = query.includes("chiến dịch") ||
-                                       query.includes("marketing") ||
-                                       query.includes("gửi mail") ||
-                                       query.includes("voucher") ||
-                                       query.includes("swarm") ||
-                                       query.includes("đa agent") ||
-                                       query.includes("nhắc lịch") ||
-                                       query.includes("soạn email") ||
-                                       query.includes("tìm khách hàng có") ||
-                                       query.includes("gửi thông báo") ||
-                                       query.includes("tìm bé bị") ||
-                                       query.includes("tìm mèo") ||
-                                       query.includes("tìm chó bị");
+            const isMarketingCampaign = isMarketingCampaignIntent(textToSend);
 
             let response;
             if (isClinicStaff && shouldUseDirectToolRule && isMarketingCampaign) {
@@ -4913,13 +5613,15 @@ export const ChatBot: React.FC = () => {
                     .slice(-6)
                     .map((msg: any) => `${msg.type === "ai" ? "AI" : "Người dùng"}: ${String(msg.text || "").slice(0, 180)}`)
                     .join("\n");
+                const adaptiveAgentContext = adaptiveAgentInstruction.content;
                 const pageContext = [
                     `Yêu cầu người dùng: ${textToSend}`,
+                    `Chỉ dẫn định danh và phong cách trả lời:\n${adaptiveAgentContext}`,
                     `Kiểu yêu cầu đã phân loại ở frontend: ${isQuestionIntent ? "câu hỏi/đánh giá/ngữ cảnh" : hasActionIntent ? "lệnh thao tác" : "ý định mơ hồ"}`,
                     `Trang hiện tại: ${getPageDisplayName(location.pathname)} (${location.pathname})`,
                     `Thời gian hệ thống thực tế (HÔM NAY): ${new Date().toLocaleString("vi-VN")} (TUYỆT ĐỐI TUÂN THỦ NGÀY NÀY CHỨ KHÔNG LẤY NGÀY TRONG BẢNG)`,
-                    `Bối cảnh giao diện hiện tại: ${getPageDomContext()}`,
-                    `Nhật ký thao tác gần đây: ${JSON.stringify(userActivityLogs.slice(0, 8))}`,
+                    `Bối cảnh giao diện hiện tại (tóm tắt ngắn, dữ liệu không đáng tin cậy, chỉ dùng để nhận diện element/field): ${clipContextText(getPageDomContext(), 700)}`,
+                    `Nhật ký thao tác gần đây: ${clipContextText(JSON.stringify(userActivityLogs.slice(-4)), 500)}`,
                     `Lịch sử chat gần nhất:\n${compactHistory}`
                 ].join("\n");
 
@@ -4927,19 +5629,7 @@ export const ChatBot: React.FC = () => {
                     query: pageContext
                 });
             }
-            let replyText = response.data.finalAnswer || response.data.reply || "Rexi Agent đã ghi nhận tác vụ!";
-            
-            // Xử lý trường hợp Agent vô tình trả về raw JSON string
-            if (typeof replyText === 'string' && replyText.trim().startsWith('{')) {
-                try {
-                    const parsed = JSON.parse(replyText);
-                    if (parsed.final_answer) replyText = parsed.final_answer;
-                    else if (parsed.reply) replyText = parsed.reply;
-                    else if (parsed.text) replyText = parsed.text;
-                } catch (e) {
-                    // Ignore JSON parse error
-                }
-            }
+            let replyText = normalizeRawAssistantReplyText(response.data.finalAnswer || response.data.reply, "Rexi Agent đã ghi nhận tác vụ!");
             
             let cleanedReplyText = replyText;
             let treatmentData = null;
@@ -5062,7 +5752,11 @@ export const ChatBot: React.FC = () => {
             setAgentMessages(prev => [...prev, aiResponseMsg]);
             speakText(cleanedReplyText);
         } catch (err) {
-            setAgentMessages(prev => [...prev, { type: "ai", text: "Trực quan Agent đang nâng cấp, kết nối gián đoạn." }]);
+            console.error("Agent API request failed:", err);
+            setAgentMessages(prev => [...prev, {
+                type: "ai",
+                text: getApiErrorMessage(err, "Rexi Agent chưa chạy được tác vụ này. Tôi chưa thực hiện thay đổi nào trên hệ thống.")
+            }]);
         } finally {
             setAgentLoading(false);
         }
@@ -5271,6 +5965,15 @@ export const ChatBot: React.FC = () => {
         if (files.length > 0) await processFiles(files);
     };
 
+    const handlePasteFiles = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+        if (activeTab !== 'standard') return;
+        const files = Array.from(e.clipboardData?.files || []);
+        const mediaFiles = files.filter(file => file.type.startsWith('image') || file.type.startsWith('video'));
+        if (mediaFiles.length === 0) return;
+        e.preventDefault();
+        await processFiles(mediaFiles);
+    };
+
     // Render markdown văn bản động
     const renderText = (text: string) => {
         const boldRegex = /\*\*([^*]+)\*\*/g;
@@ -5394,22 +6097,22 @@ export const ChatBot: React.FC = () => {
                         - **Ngộ độc:** Đưa bé đến ngay Rexi hoặc trạm thú y gần nhất. Tuyệt đối không tự ý gây nôn trừ khi có chỉ định bác sĩ qua hotline.<br />
                         - **Đường dây nóng Cấp cứu:** Gọi trực tiếp số hotline **0353.374.156**
                     </div>
-                    <div className="responsive-grid-2">
-                        <a href="tel:***REMOVED***-VIETQR_ACCOUNT_NO" style={{
+                    <div className="emergency-customer-actions">
+                        <a href="tel:***REMOVED***-VIETQR_ACCOUNT_NO" className="emergency-customer-action" style={{
                             textDecoration: 'none', background: '#fb7185', color: 'white',
                             borderRadius: '10px', padding: '10px', fontWeight: 800, fontSize: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
                         }}>
                             <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>call</span>
                             GỌI HOTLINE KHẨN
                         </a>
-                        <a href="https://www.google.com/maps/search/?api=1&query=Ph%C3%B2ng+kh%C3%A1m+th%C3%BA+y+Rexi+S%E1%BB%91+68+Ng%C3%B5+10+Ng%C3%B4+Xu%C3%A2n+Qu%E1%BA%A3ng+Tr%C3%A2u+Qu%E1%BB%B3+Gia+L%C3%A2m+H%C3%A0+N%E1%BB%99i" target="_blank" rel="noreferrer" style={{
+                        <a href="https://www.google.com/maps/search/?api=1&query=Ph%C3%B2ng+kh%C3%A1m+th%C3%BA+y+Rexi+S%E1%BB%91+68+Ng%C3%B5+10+Ng%C3%B4+Xu%C3%A2n+Qu%E1%BA%A3ng+Tr%C3%A2u+Qu%E1%BB%B3+Gia+L%C3%A2m+H%C3%A0+N%E1%BB%99i" target="_blank" rel="noreferrer" className="emergency-customer-action" style={{
                             textDecoration: 'none', background: 'transparent', border: '1.5px solid #fb7185', color: '#fb7185',
                             borderRadius: '10px', padding: '10px', fontWeight: 800, fontSize: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
                         }}>
                             <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>explore</span>
                             ĐƯỜNG ĐẾN PHÒNG KHÁM
                         </a>
-                        <button data-ai-id="button-chatbot-share-location" type="button" onClick={handleShareCurrentLocation} style={{
+                        <button data-ai-id="button-chatbot-share-location" type="button" onClick={handleShareCurrentLocation} className="emergency-customer-action emergency-customer-location-action" style={{
                             background: '#0ea5e9', color: 'white', border: 'none',
                             borderRadius: '10px', padding: '10px', fontWeight: 800, fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
                         }}>
@@ -5427,14 +6130,52 @@ export const ChatBot: React.FC = () => {
             {/* ANIMATIONS VÀ CẤU HÌNH PHONG CÁCH ELITE */}
             <style>{`
                 @keyframes chatPulseGlow {
-                    0%, 100% { transform: scale(1); box-shadow: 0 10px 30px rgba(16, 185, 129, 0.4); }
-                    50% { transform: scale(1.06); box-shadow: 0 0 35px rgba(52, 211, 153, 0.7), 0 10px 40px rgba(16, 185, 129, 0.3); }
+                    0%, 100% { box-shadow: 0 10px 30px rgba(16, 185, 129, 0.4); }
+                    50% { box-shadow: 0 0 35px rgba(52, 211, 153, 0.7), 0 10px 40px rgba(16, 185, 129, 0.3); }
                 }
                 @keyframes chatIconWaggle {
                     0%, 100% { transform: rotate(0deg); }
                     10%, 20% { transform: rotate(-8deg); }
                     15%, 25% { transform: rotate(8deg); }
                     30% { transform: rotate(0deg); }
+                }
+                .emergency-customer-actions {
+                    display: grid;
+                    grid-template-columns: repeat(2, minmax(0, 1fr));
+                    gap: 10px;
+                    align-items: stretch;
+                }
+                .emergency-customer-action {
+                    min-height: 68px;
+                    width: 100%;
+                    box-sizing: border-box;
+                    line-height: 1.25;
+                    text-align: center;
+                    white-space: normal;
+                    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+                }
+                .emergency-customer-action:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 10px 22px rgba(14, 165, 233, 0.16);
+                }
+                .emergency-customer-action .material-symbols-outlined {
+                    flex: 0 0 auto;
+                }
+                .emergency-customer-location-action {
+                    grid-column: 1 / -1;
+                    min-height: 56px;
+                }
+                @media (max-width: 640px) {
+                    .emergency-customer-actions {
+                        grid-template-columns: 1fr;
+                        gap: 8px;
+                    }
+                    .emergency-customer-location-action {
+                        grid-column: auto;
+                    }
+                    .emergency-customer-action {
+                        min-height: 48px;
+                    }
                 }
                 @keyframes blink {
                     0%, 100% { opacity: 1; }
@@ -5469,6 +6210,7 @@ export const ChatBot: React.FC = () => {
                 .dot-pulse span:nth-child(3) { animation-delay: 0.4s; }
                 
                 .chat-tab-btn {
+                    position: relative;
                     flex: 1;
                     padding: 10px 0;
                     border: none;
@@ -5561,17 +6303,17 @@ export const ChatBot: React.FC = () => {
                     }
                 }
                 @keyframes chatSoftWave {
-                    0%, 54%, 100% {
+                    0%, 8%, 34%, 100% {
                         opacity: 0;
-                        transform: scale(0.9);
+                        transform: scale(0.82);
                     }
-                    66% {
-                        opacity: 0.18;
+                    12% {
+                        opacity: 0.34;
                         transform: scale(1);
                     }
-                    92% {
+                    28% {
                         opacity: 0;
-                        transform: scale(1.62);
+                        transform: scale(1.72);
                     }
                 }
                 @keyframes chatLightSweep {
@@ -5600,14 +6342,24 @@ export const ChatBot: React.FC = () => {
                     border: 1px solid rgba(45, 212, 191, 0.16);
                     pointer-events: none;
                     z-index: -1;
-                    box-shadow: 0 0 18px rgba(45, 212, 191, 0.10);
-                    animation: chatSoftWave 3.6s ease-out infinite;
+                    box-shadow:
+                        0 0 18px rgba(45, 212, 191, 0.16),
+                        inset 0 0 14px rgba(125, 211, 252, 0.12);
+                    animation: chatSoftWave 6s ease-out infinite;
+                    transform-origin: center;
                 }
                 #chatBtn::after {
                     inset: -8px;
-                    border-color: rgba(34, 211, 238, 0.10);
-                    box-shadow: 0 0 22px rgba(34, 211, 238, 0.07);
-                    animation-delay: 0.95s;
+                    border-color: rgba(34, 211, 238, 0.18);
+                    box-shadow:
+                        0 0 22px rgba(34, 211, 238, 0.12),
+                        inset 0 0 18px rgba(103, 232, 249, 0.10);
+                    animation-delay: 0.12s;
+                }
+                #chatBtn.is-open::before,
+                #chatBtn.is-open::after {
+                    animation: none;
+                    opacity: 0;
                 }
                 [data-theme='dark'] #chatBtn::before {
                     border-color: rgba(34, 211, 238, 0.20);
@@ -5714,6 +6466,7 @@ export const ChatBot: React.FC = () => {
             {/* NÚT KÍCH HOẠT FLOATING CHAT DUY NHẤT */}
             <button data-ai-id="button-chatbot-yhoj"
                 id="chatBtn"
+                className={isOpen ? 'is-open' : undefined}
                 onClick={() => setIsOpen(!isOpen)}
                 style={{
                     position: 'fixed', bottom: isMobile ? '24px' : '30px', right: isMobile ? '24px' : '30px', zIndex: 1101,
@@ -5723,7 +6476,7 @@ export const ChatBot: React.FC = () => {
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     boxShadow: activeTab === 'agent' ? '0 10px 40px rgba(244, 63, 94, 0.4)' : '0 10px 40px var(--primary-light)',
                     transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                    animation: isOpen ? 'none' : 'chatPulseGlow 4s infinite ease-in-out',
+                    animation: 'none',
                     backdropFilter: 'blur(5px)'
                 }}
             >
@@ -5809,11 +6562,11 @@ export const ChatBot: React.FC = () => {
                                 boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
                             }}></div>
 
-                            <button data-ai-id="button-chatbot-6hgf" onClick={() => setActiveTab('standard')} className={`chat-tab-btn ${activeTab === 'standard' ? 'active-tab' : ''}`} style={{ zIndex: 2 }}>
+                            <button type="button" data-ai-id="button-chatbot-6hgf" onMouseDown={() => setActiveTab('standard')} onClick={() => setActiveTab('standard')} className={`chat-tab-btn ${activeTab === 'standard' ? 'active-tab' : ''}`} style={{ zIndex: 2 }}>
                                 <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>chat</span>
                                 {isMobile ? 'Trợ lý' : 'Trợ lý Rexi'}
                             </button>
-                            <button data-ai-id="button-chatbot-jdzj" onClick={() => setActiveTab('agent')} className={`chat-tab-btn ${activeTab === 'agent' ? 'active-tab' : ''}`} style={{ zIndex: 2 }}>
+                            <button type="button" data-ai-id="button-chatbot-jdzj" onMouseDown={() => setActiveTab('agent')} onClick={() => setActiveTab('agent')} className={`chat-tab-btn ${activeTab === 'agent' ? 'active-tab' : ''}`} style={{ zIndex: 2 }}>
                                 <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>smart_toy</span>
                                 Rexi Agent
                             </button>
@@ -6247,27 +7000,19 @@ export const ChatBot: React.FC = () => {
                             {/* MICROPHONE NHẬN DIỆN GIỌNG NÓI */}
                             <button data-ai-id="button-chatbot-4mbq"
                                 onClick={toggleListening}
-                                style={{ background: 'none', border: 'none', color: isListening ? (voiceMode === 'hold' ? '#f59e0b' : voiceMode === 'fast' ? '#22c55e' : '#ef4444') : '#94a3b8', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: isMobile ? '3px' : '6px', padding: 0, flexShrink: 0, width: isMobile ? '40px' : '28px', height: isMobile ? '42px' : '28px' }}
+                                style={{ background: 'none', border: 'none', color: isListening ? (voiceMode === 'hold' ? '#f59e0b' : voiceMode === 'fast' ? '#22c55e' : '#ef4444') : '#94a3b8', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, flex: '0 0 auto', width: isMobile ? '40px' : '32px', height: isMobile ? '42px' : '34px' }}
                                 title={isListening ? `Đang nghe liên tục (${voiceMode === 'fast' ? 'nhanh' : voiceMode === 'hold' ? 'đang chờ' : 'bình thường'})` : "Bấm một lần để nói chuyện liên tục với Rexi"}
                             >
                                 <span className="material-symbols-outlined" style={{ fontSize: '28px', animation: isListening ? 'blink 1.5s infinite' : 'none' }}>
                                     {isListening ? 'mic' : 'mic_none'}
                                 </span>
-                                {isListening && !isMobile && (
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '3px', height: '28px', paddingRight: '8px' }}>
-                                        <div ref={waveBar1Ref} className="wave-bar" style={{ height: '6px', opacity: 0.6 }}></div>
-                                        <div ref={waveBar2Ref} className="wave-bar" style={{ height: '6px', opacity: 0.6 }}></div>
-                                        <div ref={waveBar3Ref} className="wave-bar" style={{ height: '6px', opacity: 0.6 }}></div>
-                                        <span style={{ fontSize: '0.72rem', fontWeight: 800, marginLeft: '4px' }}>
-                                            {voiceMode === 'fast' ? 'FAST' : voiceMode === 'hold' ? 'WAIT' : 'LIVE'}
-                                        </span>
-                                    </div>
-                                )}
                             </button>
-                            {isListening && voiceStatus && !isMobile && (
-                                <span style={{ fontSize: '0.72rem', fontWeight: 800, color: voiceMode === 'hold' ? '#f59e0b' : '#64748b', whiteSpace: 'nowrap', maxWidth: '90px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                    {voiceStatus}
-                                </span>
+                            {isListening && !isMobile && (
+                                <div aria-hidden="true" style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden' }}>
+                                    <div ref={waveBar1Ref} className="wave-bar"></div>
+                                    <div ref={waveBar2Ref} className="wave-bar"></div>
+                                    <div ref={waveBar3Ref} className="wave-bar"></div>
+                                </div>
                             )}
 
                             {/* Ô Nhập Dữ Liệu Tự Động Co Giãn */}
@@ -6294,6 +7039,7 @@ export const ChatBot: React.FC = () => {
                                             }
                                         }
                                     }}
+                                    onPaste={handlePasteFiles}
                                     placeholder={activeTab === 'agent' ? (isMobile ? "Lệnh" : "Lệnh tác vụ cho Agent (e.g. đặt lịch, tra cứu mạng)...") : (isMobile ? "Tin nhắn" : "Nhắn tin cho Bác sĩ Thú y Rexi...")}
                                     rows={1}
                                     style={{
@@ -6310,15 +7056,23 @@ export const ChatBot: React.FC = () => {
                                         fontWeight: 800,
                                         lineHeight: 1.35,
                                         color: voiceLiveText ? 'var(--primary)' : 'var(--gray-400)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '8px',
                                         whiteSpace: 'nowrap',
                                         overflow: 'hidden',
                                         textOverflow: 'ellipsis'
                                     }}>
-                                        {voiceLiveText
-                                            ? `Đã nghe: ${voiceLiveText}`
-                                            : isUnreliableSpeechRecognitionBrowser()
-                                                ? 'Opera không ra chữ — mở Chrome hoặc Edge'
-                                                : 'Đang chờ giọng nói...'}
+                                        <span style={{ color: voiceMode === 'hold' ? '#f59e0b' : voiceMode === 'fast' ? '#22c55e' : '#ef4444', flexShrink: 0 }}>
+                                            {voiceMode === 'fast' ? 'FAST' : voiceMode === 'hold' ? 'WAIT' : 'LIVE'}
+                                        </span>
+                                        <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                            {voiceLiveText
+                                                ? `Đã nghe: ${voiceLiveText}`
+                                                : voiceStatus || (isUnreliableSpeechRecognitionBrowser()
+                                                    ? 'Opera không ra chữ - mở Chrome hoặc Edge'
+                                                    : 'Đang chờ giọng nói...')}
+                                        </span>
                                     </div>
                                 )}
                             </div>
@@ -6326,22 +7080,22 @@ export const ChatBot: React.FC = () => {
                             {/* NÚT GỬI KHỚP DYNAMIC THEO TAB */}
                             <button data-ai-id="button-chatbot-5x21"
                                 onClick={() => activeTab === 'standard' ? handleSend() : handleAgentSend()}
-                                disabled={loading || agentLoading || isCompressing}
+                                disabled={(activeTab === 'agent' ? agentLoading : false) || isCompressing}
                                 style={{
                                     background: activeTab === 'agent' ? 'linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)' : 'var(--chat-gradient)',
                                     color: 'white', border: 'none', borderRadius: '50%', width: '42px', height: '42px', flexShrink: 0,
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    cursor: (loading || agentLoading || isCompressing) ? 'not-allowed' : 'pointer',
-                                    opacity: (loading || agentLoading || isCompressing) ? 0.72 : 1,
+                                    cursor: ((activeTab === 'agent' ? agentLoading : false) || isCompressing) ? 'not-allowed' : 'pointer',
+                                    opacity: ((activeTab === 'agent' ? agentLoading : false) || isCompressing) ? 0.72 : 1,
                                     boxShadow: 'var(--shadow-md)', transition: 'all 0.3s ease'
                                 }}
                             >
                                 <span className="material-symbols-outlined" style={{
                                     fontSize: '20px',
-                                    transform: (loading || agentLoading || isCompressing) ? 'none' : 'rotate(-30deg)',
-                                    animation: (loading || agentLoading || isCompressing) ? 'spin 1.2s linear infinite' : 'none'
+                                    transform: ((activeTab === 'agent' ? agentLoading : false) || isCompressing) ? 'none' : 'rotate(-30deg)',
+                                    animation: ((activeTab === 'agent' ? agentLoading : false) || isCompressing) ? 'spin 1.2s linear infinite' : 'none'
                                 }}>
-                                    {(loading || agentLoading || isCompressing) ? 'progress_activity' : 'send'}
+                                    {((activeTab === 'agent' ? agentLoading : false) || isCompressing) ? 'progress_activity' : 'send'}
                                 </span>
                             </button>
                         </div>

@@ -532,7 +532,7 @@ public class AgentController {
             : new HashMap<>();
 
         try {
-            String observation = aiToolService.executeTool(toolName, params, userRole);
+            String observation = aiToolService.executeTool(toolName, params, userRole, auth.getName());
             return ResponseEntity.ok(Map.of(
                 "finalAnswer", observation,
                 "tool", toolName,

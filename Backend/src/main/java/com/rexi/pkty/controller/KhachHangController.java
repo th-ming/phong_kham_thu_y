@@ -152,7 +152,8 @@ public class KhachHangController {
                     kh.getTen_khach_hang(),
                     kh.getEmail(),
                     kh.getSdt(),
-                    kh.getDia_chi());
+                    kh.getDia_chi(),
+                    kh.getNam_sinh());
 
             // Stored procedure hiện chỉ cập nhật thông tin chữ. Avatar lưu trực tiếp qua JPA
             // để trang cá nhân khách hàng đổi ảnh đại diện được ngay.

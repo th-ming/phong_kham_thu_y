@@ -15,13 +15,14 @@ public interface KhachHangRepository extends JpaRepository<KhachHang, String> {
     java.util.Optional<KhachHang> findByEmail(String email);
 
     // Gọi Stored Procedure cập nhật thông tin khách hàng
-    @Query(value = "EXEC sp_CapNhatThongTinKhachHang :id, :name, :email, :phone, :address", nativeQuery = true)
+    @Query(value = "EXEC sp_CapNhatThongTinKhachHang :id, :name, :email, :phone, :address, :namSinh", nativeQuery = true)
     List<Map<String, Object>> callSpUpdateKhachHang(
         @Param("id") String id,
         @Param("name") String name,
         @Param("email") String email,
         @Param("phone") String phone,
-        @Param("address") String address
+        @Param("address") String address,
+        @Param("namSinh") Integer namSinh
     );
 
     @Modifying
@@ -30,5 +31,3 @@ public interface KhachHangRepository extends JpaRepository<KhachHang, String> {
                    "UPDATE TaiKhoan SET trang_thai = N'inactive' WHERE id_khach_hang = :id", nativeQuery = true)
     void deactivateAccountByKhachHangId(@Param("id") String id);
 }
-
-
