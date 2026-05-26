@@ -1,5 +1,6 @@
 import { toast } from './Toast';
 import { confirmAction } from './ConfirmModal';
+import { isSensitiveAction } from '../utils/agentCommandParser';
 
 const escapeCssIdent = (value: string) => {
   const css = (window as any).CSS;
@@ -11,10 +12,12 @@ const getAiElement = <T extends HTMLElement = HTMLElement>(id: string): T | null
   return document.querySelector(`[data-ai-id="${escapeCssIdent(id)}"]`) as T | null;
 };
 
-const isSensitiveElement = (element: HTMLElement, payload: string) => {
-  const label = `${payload} ${element.getAttribute('aria-label') || ''} ${element.getAttribute('title') || ''} ${element.textContent || ''}`.toLowerCase();
-  return ['xóa', 'xoa', 'delete', 'hủy', 'huy', 'khóa', 'khoa', 'thanh toán', 'thanh toan', 'thu tiền', 'thu tien', 'duyệt', 'duyet', 'gửi đồng loạt', 'gui dong loat']
-    .some(keyword => label.includes(keyword));
+const isSensitiveElement = (el: HTMLElement, payload: string) => {
+  const tag = el.tagName.toLowerCase();
+  if (tag === "input" || tag === "textarea") return true;
+
+  const text = `${payload} ${el.getAttribute('aria-label') || ''} ${el.getAttribute('title') || ''} ${el.textContent || ''}`.toLowerCase();
+  return isSensitiveAction(text);
 };
 
 /**
