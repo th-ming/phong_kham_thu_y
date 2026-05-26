@@ -539,7 +539,7 @@ public class AgentController {
     }
 
     // Cỗ máy ReAct Agent v5 tối thượng — Tự chủ suy luận (Reason -> Act -> Observe).
-    // Cho AI tự lên kế hoạch, tự gọi tool, quan sát kết quả rồi lặp lại để trả ra câu trả lời chuẩn xác nhất cho sếp.
+    // Cho AI tự chủ lên kế hoạch, gọi tool, quan sát kết quả rồi lặp lại để trả ra kết quả tối ưu nhất.
     @PostMapping("/react")
     @PreAuthorize(RexiSecurityRoles.AUTHENTICATED)
     public ResponseEntity<?> reactAgent(@RequestBody Map<String, String> body, jakarta.servlet.http.HttpServletRequest request) {
