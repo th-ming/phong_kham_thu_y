@@ -102,6 +102,18 @@ public class ChatController {
 
     private final ConcurrentHashMap<String, RateLimit> rateLimiter = new ConcurrentHashMap<>();
 
+    // Dọn rác RAM tự động định kỳ 1 tiếng 1 lần để tránh rò rỉ bộ nhớ lâu dài.
+    // Tác vụ Scheduled này dùng cơ chế fixedDelay cứ mỗi 1 tiếng quét sạch đống IP rác đã hết hạn resetTime
+    // nhằm chủ động giải phóng tài nguyên bộ nhớ tối đa cho máy chủ mà không cần đợi dung lượng map vượt ngưỡng.
+    @org.springframework.scheduling.annotation.Scheduled(fixedDelay = 3600000)
+    public void cleanExpiredRateLimits() {
+        logger.info("Bắt đầu dọn dẹp ConcurrentHashMap rateLimiter tránh rò rỉ bộ nhớ máy chủ... 🧹");
+        int beforeSize = rateLimiter.size();
+        rateLimiter.entrySet().removeIf(entry -> java.time.Instant.now().isAfter(entry.getValue().resetTime));
+        int afterSize = rateLimiter.size();
+        logger.info("Đã dọn dẹp xong rateLimiter. Kích thước trước: " + beforeSize + ", Kích thước sau: " + afterSize);
+    }
+
     @PostMapping("/prewarm")
     public Map<String, Object> prewarm() {
         java.util.concurrent.CompletableFuture.runAsync(() -> {
@@ -121,7 +133,11 @@ public class ChatController {
             @RequestHeader(value = "Accept", defaultValue = "application/json") String acceptHeader) {
 
         ChatPayload payload = parseChatPayload(requestBody);
-        List<ChatMessage> history = payload.history;
+        // Phòng thủ tổng lực: LUÔN wrap thành ArrayList mutable bất kể nguồn nào gửi đến.
+        // Vì Arrays.asList() hoặc List.of() trả về List bất biến, gọi removeIf/add là nổ ngay.
+        List<ChatMessage> history = payload.history != null
+                ? new ArrayList<>(payload.history)
+                : new ArrayList<>();
         // Chặn spam chat nhanh quá gây nghẽn hệ thống. Cho tối đa 20 tin text hoặc 15 video mỗi phút nha sếp.
         String clientIp = request.getRemoteAddr();
         org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
@@ -561,7 +577,9 @@ ChatMessage systemMsg = new ChatMessage();
         ObjectMapper mapper = new ObjectMapper();
         try {
             if (requestBody.isArray()) {
-                payload.history = Arrays.asList(mapper.treeToValue(requestBody, ChatMessage[].class));
+                // Arrays.asList() trả về List CỐ ĐỊNH (fixed-size), gọi add/remove là nổ ngay.
+                // Wrap bằng ArrayList để chắc chắn mutable 100%.
+                payload.history = new ArrayList<>(Arrays.asList(mapper.treeToValue(requestBody, ChatMessage[].class)));
                 return payload;
             }
 

@@ -46,7 +46,7 @@ type QuickSuggestion = {
     tone?: "default" | "danger" | "warning" | "success" | "info" | "agent";
 };
 
-/** Opera có thể trả transcript không ổn định, nhưng vẫn nên thử nếu trình duyệt có expose API. */
+/** Opera can trả transcript ko ổn định */
 const isUnreliableSpeechRecognitionBrowser = (): boolean =>
     /\bOPR\/|Opera/i.test(navigator.userAgent);
 
