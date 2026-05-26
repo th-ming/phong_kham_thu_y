@@ -11,12 +11,18 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Bộ xử lý lỗi tập trung cho toàn hệ thống Rexi.
+ * Mọi Exception ko mong muốn đều phải in ra log chi tiết để debug,
+ * tuyệt đối ko nuốt lỗi chìm như kiểu "Loi he thong" rồi ko ai biết lỗi gì.
  */
 @RestControllerAdvice
 public class BoXuLyLoiHeThong {
+
+    private static final Logger logger = Logger.getLogger(BoXuLyLoiHeThong.class.getName());
 
     /**
      * Xử lý lỗi khi dữ liệu đầu vào không khớp với các quy tắc bảo mật
@@ -48,8 +54,12 @@ public class BoXuLyLoiHeThong {
         return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(Map.of("message", "Phuong thuc khong duoc ho tro."));
     }
 
+    // Bẫy cuối cùng: bắt hết mọi lỗi ko lường trước.
+    // IN RA LOG ĐẦY ĐỦ STACK TRACE để lần sau mở file log là thấy ngay thủ phạm,
+    // ko phải đoán mò kiểu "Loi he thong" rồi ko biết lỗi cái gì.
     @ExceptionHandler(Exception.class)
     public ResponseEntity<?> handleGlobalException(Exception ex) {
+        logger.log(Level.SEVERE, "[BoXuLyLoiHeThong] Lỗi hệ thống chưa xử lý: " + ex.getMessage(), ex);
         return ResponseEntity.status(500).body(Map.of("message", "Loi he thong. Vui long thu lai sau."));
     }
 }
