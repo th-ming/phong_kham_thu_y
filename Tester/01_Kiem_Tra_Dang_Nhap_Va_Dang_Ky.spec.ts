@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-// Thay đổi PORT tùy theo cấu hình Frontend hiện tại (3000, 3001 hoặc 5173)
+// Thay đổi PORT tùy theo config Frontend hiện tại (3000, 3001 hoặc 5173)
 const FRONTEND_PORT = 3005;
 // Cổng Backend API (Mặc định là 8081)
 const BACKEND_PORT = 8081;
@@ -28,7 +28,7 @@ test.describe('Kiểm thử luồng Đăng nhập và Đăng ký hệ thống', 
     // --- PHẦN 1: CHỨC NĂNG ĐĂNG NHẬP ---
 
     test('TC01: Đăng nhập Admin thành công và kiểm tra tính năng Ghi nhớ tài khoản', async ({ page }) => {
-        // Điền thông tin đăng nhập Admin
+        // Điền thông tin đăng nhập ADMIN
         await page.getByPlaceholder('Tên đăng nhập').fill('admin');
         await page.getByPlaceholder('Mật khẩu').fill('admin@rexi.com');
 
@@ -37,7 +37,7 @@ test.describe('Kiểm thử luồng Đăng nhập và Đăng ký hệ thống', 
 
         await page.getByRole('button', { name: 'Đăng nhập ngay' }).click();
 
-        // Xác nhận điều hướng vào Dashboard quản trị
+        // xn điều hướng vào Dashboard quản trị
         await expect(page).toHaveURL(/.*\/quan-ly\/dashboard/, { timeout: 10000 });
 
         // Kiểm tra dữ liệu được lưu sau khi quay lại trang login
@@ -71,7 +71,7 @@ test.describe('Kiểm thử luồng Đăng nhập và Đăng ký hệ thống', 
 
         await page.getByPlaceholder('Họ và tên').fill('Automation Tester');
         await page.getByPlaceholder('Email').fill(`tester_${ts}@rexi.com`);
-        // SỬA LỖI: Tạo số điện thoại ảo ngẫu nhiên để tránh lỗi 409 trùng lặp khách hàng
+        // SỬA LỖI: Tạo sđt ảo ngẫu nhiên để tránh lỗi 409 trùng lặp khách hàng
         await page.getByPlaceholder('Số điện thoại').fill(`09${ts.toString().slice(-8)}`);
         await page.getByPlaceholder('Địa chỉ').fill('123 Testing St, Hanoi');
         await page.getByPlaceholder('Tên đăng nhập').fill(`user_${ts}`);
@@ -100,7 +100,7 @@ test.describe('Kiểm thử luồng Đăng nhập và Đăng ký hệ thống', 
         // Kiểm tra thông báo nhắc kiểm tra hòm thư rác (Spam)
         await expect(page.getByText('Vui lòng kiểm tra hòm thư (bao gồm cả thư rác/Spam)!')).toBeVisible({ timeout: 10000 });
 
-        // Xác nhận hiển thị trường nhập mã xác thực
+        // xn hiển thị trường nhập mã xác thực
         await expect(page.getByPlaceholder('Nhập 6 chữ số OTP')).toBeVisible();
     });
 

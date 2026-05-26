@@ -5,7 +5,7 @@ import lombok.Data;
 import java.time.LocalDate;
 
 @Entity
-@Table(name = "TiemChung") // Kết nối bảng tiêm chủng
+@Table(name = "TiemChung") // Table tiem chung
 @Data
 public class TiemChung {
     @Id

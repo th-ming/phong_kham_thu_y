@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import { RevealSection } from "@components/SpecialEffects";
 
 const faqs = [

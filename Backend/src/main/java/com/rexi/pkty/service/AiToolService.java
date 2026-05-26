@@ -1,4 +1,4 @@
-package com.rexi.pkty.service;
+﻿package com.rexi.pkty.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rexi.pkty.security.RoleAccessPolicy;
@@ -12,10 +12,7 @@ import java.time.ZoneId;
 import java.util.*;
 import java.util.logging.Logger;
 
-/**
- * Định nghĩa và thực thi 10 tools thực tế cho ReAct Agent (Level 5).
- * Mỗi tool là một hành động cụ thể với database hoặc dịch vụ ngoài.
- */
+// * * Định nghĩa và thực thi 10 tools thực tế cho ReAct Agent (Level 5). * Mỗi tool là một hành động cụ thể với DB hoặc dịch vụ ngoài.
 @Service
 public class AiToolService {
 
@@ -33,87 +30,6 @@ public class AiToolService {
     // ─────────────────────────────────────────────
     // SCHEMA MÔ TẢ TOOLS — inject vào system prompt
     // ─────────────────────────────────────────────
-
-    public String getToolsSchema() {
-        return """
-            Bạn là một agent thông minh có thể gọi các TOOL sau để thực hiện tác vụ thực tế.
-            Khi cần thực hiện một hành động, hãy trả về CHÍNH XÁC định dạng JSON sau (không kèm text khác):
-            {"tool": "<tên_tool>", "params": {<tham_số>}}
-            
-            DANH SÁCH TOOLS KHẢ DỤNG:
-            
-            1. tim_lich_hen_hom_nay
-               Mô tả: Lấy danh sách lịch hẹn khám bệnh hôm nay từ database.
-               Params: {} (không cần tham số)
-            
-            2. tim_khach_hang
-               Mô tả: Tìm kiếm thông tin khách hàng theo tên hoặc số điện thoại. (MẸO: Nếu tiếng Việt có dấu tìm không ra, hãy thử tìm với từ ngắn gọn hoặc từ cuối tên, VD: "Cương" thay vì "văn cương").
-               Params: {"tu_khoa": "tên hoặc SĐT cần tìm"}
-            
-            3. tim_thu_cung
-               Mô tả: Tìm kiếm thú cưng theo tên, loài hoặc ID khách hàng. (MẸO: Giống khách hàng, nếu tìm tiếng Việt có dấu không ra thì thử tìm từ khóa ngắn gọn không dấu).
-               Params: {"tu_khoa": "tên bé hoặc loài"}
-            
-            4. xem_benh_an
-               Mô tả: Xem toàn bộ lịch sử bệnh án và phác đồ điều trị của một thú cưng.
-               Params: {"id_thu_cung": "ID thú cưng"}
-            
-            5. tim_lich_trong
-               Mô tả: Tìm khung giờ trống còn khả dụng để đặt lịch khám theo ngày.
-               Params: {"ngay": "YYYY-MM-DD"}
-            
-            6. dat_lich_hen
-               Mô tả: Tạo lịch hẹn khám bệnh mới vào database. [QUAN TRỌNG: TRƯỚC KHI ĐẶT, bạn phải tóm tắt lại Ngày, Giờ, Tên khách, Tên thú cưng và HỎI XÁC NHẬN: "Sếp chốt lịch này chưa?"].
-               Params: {"id_khach_hang": "...", "id_thu_cung": "...", "id_bac_si": "...", "id_dich_vu": "...", "ngay_kham": "YYYY-MM-DD", "gio_kham": "HH:mm", "ghi_chu": "..."}
-            
-            7. xem_kho_thuoc
-               Mô tả: Kiểm tra tồn kho thuốc, tìm thuốc theo tên hoặc loại.
-               Params: {"tu_khoa": "tên thuốc (để trống để xem tất cả)"}
-            
-            8. thong_ke_doanh_thu
-               Mô tả: Xem thống kê doanh thu theo ngày, tuần hoặc tháng hiện tại.
-               Params: {"khoang_thoi_gian": "hom_nay | tuan_nay | thang_nay"}
-            
-            9. tim_kiem_web
-               Mô tả: Tìm kiếm thông tin y khoa, tin tức thú y mới nhất trên internet.
-               Params: {"query": "nội dung cần tìm"}
-            
-            10. gui_email_don_le
-                Mô tả: Gửi email thông báo, nhắc lịch đến một khách hàng cụ thể. [QUAN TRỌNG: TRƯỚC KHI GỬI, bạn phải đọc lại nội dung email cho sếp duyệt và HỎI XÁC NHẬN: "Sếp chốt gửi nội dung này chưa?"].
-                Params: {"email": "địa chỉ email", "tieu_de": "tiêu đề", "noi_dung": "nội dung"}
-
-            11. kiem_tra_cau_hinh_ai
-                Mô tả: Kiểm tra provider AI nào đã cấu hình key/model, không bao giờ tiết lộ API key.
-                Params: {} (không cần tham số)
-
-            12. kiem_tra_phan_he
-                Mô tả: Xem danh sách phân hệ, route và quyền truy cập chính trong hệ thống.
-                Params: {} (không cần tham số)
-
-            13. kiem_tra_kien_truc_he_thong
-                Mô tả: Xem bản đồ mã nguồn và luồng xử lý AI/Agent chính. Chỉ dùng cho admin/IT nội bộ.
-                Params: {} (không cần tham số)
-
-            14. tra_cuu_ma_nguon
-                Mô tả: Tra cứu index mã nguồn whitelist theo từ khóa để biết module/file/API/tool liên quan. Chỉ admin, không trả raw source/API key/secret.
-                Params: {"tu_khoa": "chatbot | agent | đặt lịch | phân quyền | ..."}
-
-            15. xem_hoa_don
-                Mô tả: Xem danh sách hóa đơn theo trạng thái để hỗ trợ kế toán/đối soát.
-                Params: {"trang_thai": "CHO_THANH_TOAN | DA_THANH_TOAN | all"}
-            
-            16. thao_tac_tai_khoan
-                Mô tả: Khóa, Xóa mềm hoặc Mở khóa tài khoản khách hàng. [QUAN TRỌNG: ĐÂY LÀ HÀNH ĐỘNG NHẠY CẢM. Trước tiên bạn phải dùng tool tim_khach_hang hoặc tim_tai_khoan_bi_khoa. Sau khi có kết quả, BẠN PHẢI TRÌNH BÀY RÕ THÔNG TIN (Tên, SĐT, ID) VÀ HỎI XÁC NHẬN. CHỈ KHI SẾP XÁC NHẬN RÕ RÀNG như "ok", "đồng ý", "xác nhận", "làm đi" thì mới được gọi tool này].
-                Params: {"id_khach_hang": "...", "id_tai_khoan": "...", "hanh_dong": "KHOA | XOA | MO_KHOA"}
-
-            17. tim_tai_khoan_bi_khoa
-                Mô tả: Xem danh sách các tài khoản đang bị khóa trong hệ thống.
-                Params: {} (không cần tham số)
-            
-            Khi đã có đủ thông tin để trả lời CUỐI CÙNG (không cần gọi tool thêm),
-            hãy trả về: {"final_answer": "<câu trả lời đầy đủ cho người dùng>"}
-            """;
-    }
 
     public String getToolsSchemaForRole(String userRole) {
         if (RoleAccessPolicy.isCustomerRole(userRole)) {
@@ -133,7 +49,7 @@ public class AiToolService {
         appendToolIfAllowed(sb, userRole, "tim_lich_hen_hom_nay",
             "Lấy danh sách lịch hẹn khám hôm nay.", "{}");
         appendToolIfAllowed(sb, userRole, "tim_khach_hang",
-            "Tìm khách hàng theo tên hoặc SĐT.", "{\"tu_khoa\": \"...\"}");
+            "Tìm khách hàng theo tên, SĐT hoặc Email.", "{\"tu_khoa\": \"...\"}");
         appendToolIfAllowed(sb, userRole, "tim_thu_cung",
             "Tìm thú cưng theo tên, loài hoặc ID.", "{\"tu_khoa\": \"...\"}");
         appendToolIfAllowed(sb, userRole, "xem_benh_an",
@@ -149,8 +65,10 @@ public class AiToolService {
         appendToolIfAllowed(sb, userRole, "cap_nhat_benh_an",
             "Cập nhật thông tin bệnh án chuyên môn. Chỉ bác sĩ/y tá/quản trị lâm sàng được dùng.",
             "{\"id_ho_so_benh_an\":\"...\",\"trieu_chung\":\"...\",\"chan_doan\":\"...\",\"phac_do_dieu_tri\":\"...\",\"huong_dan_cham_soc\":\"...\"}");
-        appendToolIfAllowed(sb, userRole, "xem_kho_thuoc",
-            "Kiểm tra tồn kho thuốc.", "{\"tu_khoa\": \"\"}");
+        String khoThuocDesc = (RoleAccessPolicy.normalizeRole(userRole).equals("bac_si") || RoleAccessPolicy.normalizeRole(userRole).equals("y_ta"))
+            ? "Kiểm tra tồn kho thuốc. Dùng để tra cứu xem thuốc định kê còn không hoặc tham khảo thành phần."
+            : "Kiểm tra tồn kho thuốc. Đây là dữ liệu kho, không tự biến thành chỉ định điều trị vì vai trò không phải lâm sàng.";
+        appendToolIfAllowed(sb, userRole, "xem_kho_thuoc", khoThuocDesc, "{\"tu_khoa\": \"\"}");
         appendToolIfAllowed(sb, userRole, "thong_ke_doanh_thu",
             "Thống kê doanh thu.", "{\"khoang_thoi_gian\": \"hom_nay|tuan_nay|thang_nay\"}");
         appendToolIfAllowed(sb, userRole, "tim_kiem_web",
@@ -173,6 +91,8 @@ public class AiToolService {
             "{\"id_khach_hang\":\"...\",\"hanh_dong\":\"KHOA|XOA|MO_KHOA\"}");
         appendToolIfAllowed(sb, userRole, "tim_tai_khoan_bi_khoa",
             "Danh sách tài khoản bị khóa.", "{}");
+        appendToolIfAllowed(sb, userRole, "tra_cuu_tai_lieu_y_khoa",
+            "Tra cứu tài liệu VNUA, giáo trình thú y, phác đồ điều trị sếp đã tải lên hệ thống.", "{\"tu_khoa\":\"...\"}");
         sb.append("""
             
             Khi đủ thông tin: {"final_answer": "<câu trả lời>"}
@@ -212,6 +132,10 @@ public class AiToolService {
                Mô tả: Xem danh sách phân hệ, route và quyền truy cập chính trong hệ thống.
                Params: {} (không cần tham số)
 
+            5. tra_cuu_tai_lieu_y_khoa
+               Mô tả: Tra cứu tài liệu VNUA/giáo trình thú y đã được Rexi nạp. Khách hàng chỉ được nhận giải thích an toàn, không nhận liều dùng hay chỉ định thuốc kê đơn.
+               Params: {"tu_khoa": "..."}
+
             Khi đã có đủ thông tin để trả lời CUỐI CÙNG (không cần gọi tool thêm),
             hãy trả về: {"final_answer": "<câu trả lời đầy đủ cho người dùng>"}
             """;
@@ -229,10 +153,11 @@ public class AiToolService {
         return executeTool(toolName, params, userRole, null);
     }
 
+
     public String executeTool(String toolName, Map<String, Object> params, String userRole, String username) {
         logger.info("[TOOL EXEC] Đang chạy tool: " + toolName + " | Params: " + params);
         if (userRole != null && !RoleAccessPolicy.canUseAgentTool(userRole, toolName)) {
-            return RoleAccessPolicy.permissionDeniedMessage(toolName);
+            return RoleAccessPolicy.permissionDeniedMessage(toolName, userRole);
         }
         try {
             return switch (toolName) {
@@ -254,7 +179,8 @@ public class AiToolService {
                 case "kiem_tra_phan_he"      -> toolKiemTraPhanHe();
                 case "xem_hoa_don"           -> toolXemHoaDon((String) params.getOrDefault("trang_thai", "all"));
                 case "thao_tac_tai_khoan"    -> toolThaoTacTaiKhoan(params);
-                case "tim_tai_khoan_bi_khoa" -> toolTimTaiKhoanBiKhoa();
+                case "tim_tai_khoan_bi_khoa"       -> toolTimTaiKhoanBiKhoa();
+                case "tra_cuu_tai_lieu_y_khoa"     -> toolTraCuuTaiLieuYKhoa((String) params.getOrDefault("tu_khoa", ""), userRole);
                 default -> "Lỗi: Tool '" + toolName + "' không tồn tại.";
             };
         } catch (Exception e) {
@@ -313,7 +239,8 @@ public class AiToolService {
         );
         
         List<Object> args = new ArrayList<>();
-        sql.append(" AND (sdt LIKE ? OR (1=1 ");
+        sql.append(" AND (sdt LIKE ? OR email LIKE ? OR (1=1 ");
+        args.add("%" + tuKhoa.trim() + "%");
         args.add("%" + tuKhoa.trim() + "%");
         
         for (String kw : keywords) {
@@ -651,7 +578,7 @@ public class AiToolService {
         sql.append(" GROUP BY t.id_thuoc, t.ten_thuoc, t.don_vi, t.gia_ban ");
 
         if (!isSearch) {
-            // Nếu không có từ khóa, SQL Server tự động sort theo số lượng tồn tăng dần
+            // Nếu ko có từ khóa, SQL Server tự động sort theo số lượng tồn tăng dần
             sql.append(" ORDER BY COALESCE(SUM(l.so_luong_ton), 0) ASC ");
         } else {
             sql.append(" ORDER BY t.ten_thuoc ASC ");
@@ -1097,5 +1024,115 @@ public class AiToolService {
         if (rows.isEmpty()) return null;
         Object value = rows.get(0).get("id_khach_hang");
         return value != null ? value.toString() : null;
+    }
+
+    private String toolTraCuuTaiLieuYKhoa(String tuKhoa, String userRole) {
+        StringBuilder sb = new StringBuilder();
+        try {
+            boolean isSearch = tuKhoa != null && !tuKhoa.trim().isEmpty();
+            
+            // 1. Đọc tài liệu VNUA từ file RAG tĩnh cực kỳ tối ưu.
+            java.nio.file.Path path = java.util.List.of(
+                    java.nio.file.Paths.get("uploads/docs/DANH_SACH_TAI_LIEU_VNUA.md"),
+                    java.nio.file.Paths.get("../uploads/docs/DANH_SACH_TAI_LIEU_VNUA.md")
+                ).stream()
+                .filter(java.nio.file.Files::exists)
+                .findFirst()
+                .orElse(java.nio.file.Paths.get("uploads/docs/DANH_SACH_TAI_LIEU_VNUA.md"));
+            if (java.nio.file.Files.exists(path)) {
+                List<String> staticLines = java.nio.file.Files.readAllLines(path, java.nio.charset.StandardCharsets.UTF_8);
+                sb.append("📚 [HỆ THỐNG RAG] Đang truy xuất giáo trình VNUA từ thư viện tĩnh:\n");
+
+                boolean foundInStatic = false;
+                String normalizedSearch = isSearch ? normalizeVietnamese(tuKhoa.toLowerCase()) : "";
+                String currentSubject = "Tài liệu VNUA";
+                StringBuilder currentBlock = new StringBuilder();
+                for (String line : staticLines) {
+                    if (line.startsWith("## ")) {
+                        foundInStatic = appendVnuaIndexBlock(sb, currentSubject, currentBlock.toString(), normalizedSearch, isSearch) || foundInStatic;
+                        currentSubject = line.replace("#", "").trim();
+                        currentBlock.setLength(0);
+                    } else if (!line.startsWith("# ")) {
+                        currentBlock.append(line).append("\n");
+                    }
+                }
+                foundInStatic = appendVnuaIndexBlock(sb, currentSubject, currentBlock.toString(), normalizedSearch, isSearch) || foundInStatic;
+
+                if (foundInStatic) {
+                    String[] lines = sb.toString().split("\\R");
+                    if (lines.length > 80) {
+                        StringBuilder trimmed = new StringBuilder();
+                        int kept = 0;
+                        for (String line : lines) {
+                            if (line.startsWith("📚") || line.startsWith("- Môn") || line.startsWith("  - File") || line.startsWith("  - Đường dẫn") || line.startsWith("  - Từ khóa")) {
+                                trimmed.append(line).append("\n");
+                                kept++;
+                            }
+                            if (kept >= 80) {
+                                trimmed.append("... đã rút gọn danh sách, hãy tìm từ khóa cụ thể hơn nếu cần.\n");
+                                break;
+                            }
+                        }
+                        sb.setLength(0);
+                        sb.append(trimmed);
+                    }
+                }
+
+                if (!foundInStatic && isSearch) {
+                    sb.append("(Không tìm thấy giáo trình VNUA tĩnh nào khớp trực tiếp với từ khóa '").append(tuKhoa).append("')\n");
+                }
+                sb.append("\n");
+            }
+
+            // 2. Kết hợp truy vấn Database bảng file_dinh_kem (nếu sau này sếp upload thêm file vật lý mới)
+            String sql = "SELECT id, ten_file, duong_dan, loai, kich_thuoc " +
+                         "FROM file_dinh_kem " +
+                         "WHERE loai = N'Tài liệu' OR loai = 'Tài liệu' OR ten_file LIKE '%.pdf' OR ten_file LIKE '%.docx'";
+            
+            List<Map<String, Object>> dbRows;
+            if (isSearch) {
+                String searchSql = sql + " AND (ten_file COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI)";
+                dbRows = jdbcTemplate.queryForList(searchSql, "%" + tuKhoa.trim() + "%");
+            } else {
+                dbRows = jdbcTemplate.queryForList(sql);
+            }
+
+            if (!dbRows.isEmpty()) {
+                sb.append("📂 [TÀI LIỆU TẢI LÊN] Phát hiện ").append(dbRows.size()).append(" tài liệu sếp vừa upload lên hệ thống:\n");
+                for (int i = 0; i < Math.min(dbRows.size(), 5); i++) {
+                    var r = dbRows.get(i);
+                    double sizeMb = (r.get("kich_thuoc") != null) ? ((Long) r.get("kich_thuoc")) / (1024.0 * 1024.0) : 0.0;
+                    sb.append(String.format("  - %s | ID: %s | %.2f MB\n", r.get("ten_file"), r.get("id"), sizeMb));
+                    sb.append("    ➔ Mở xem nhanh: ").append(r.get("duong_dan")).append("\n");
+                }
+                if (dbRows.size() > 5) {
+                    sb.append("  ... và một số tài liệu tải lên khác.\n");
+                }
+            }
+
+            if (sb.length() == 0) {
+                return "Không tìm thấy bất kỳ tài liệu y khoa VNUA nào phù hợp với từ khóa: \"" + (isSearch ? tuKhoa : "tất cả") + "\".";
+            }
+
+            sb.append("\nHướng dẫn cho AI: Hãy đưa ra chẩn đoán dựa trên tài liệu VNUA này và cung cấp đường dẫn Link tải/xem PDF trực tiếp cho sếp bấm mở nhé!");
+            return sb.toString();
+        } catch (Exception e) {
+            return "Lỗi khi truy xuất tài liệu y khoa: " + e.getMessage();
+        }
+    }
+
+    private boolean appendVnuaIndexBlock(StringBuilder sb, String subject, String block, String normalizedSearch, boolean isSearch) {
+        if (block == null || block.isBlank()) return false;
+        String normalizedBlock = normalizeVietnamese((subject + "\n" + block).toLowerCase());
+        if (isSearch && !normalizedBlock.contains(normalizedSearch)) return false;
+
+        sb.append("- Môn [").append(subject).append("]:\n");
+        for (String rawLine : block.split("\\R")) {
+            String line = rawLine.trim();
+            if (line.startsWith("- File:") || line.startsWith("- Đường dẫn") || line.startsWith("- Từ khóa")) {
+                sb.append("  ").append(line).append("\n");
+            }
+        }
+        return true;
     }
 }

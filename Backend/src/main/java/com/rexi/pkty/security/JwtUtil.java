@@ -16,29 +16,25 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.logging.Logger;
 
-/**
- * CÔNG CỤ XỬ LÝ JWT TOKEN
- * - Quản lý việc tạo, trích xuất và xác thực thẻ bài (Token)
- * - Token có thời hạn sử dụng và được mã hóa bảo mật
- */
+/** CÔNG CỤ XỬ LÝ JWT TOKEN (Tạo, giải mã, validate) */
 @Component
 public class JwtUtil {
 
     private static final Logger logger = Logger.getLogger(JwtUtil.class.getName());
 
-    // Khóa bí mật dùng để ký tên lên Token (lấy từ cấu hình hoặc dùng mặc định)
+    // Secret Key ký Token
     @Value("${jwt.secret:}")
     private String secretKey;
 
-    // Thời gian hết hạn của Token (mặc định 7 ngày)
+    // Expire Token (mặc định 7 ngày)
     @Value("${jwt.expiration:604800000}")
     private long expiration;
 
-    // Thời gian hết hạn của Refresh Token (mặc định 30 ngày)
+    // Expire Refresh Token (mặc định 30 ngày)
     @Value("${jwt.refreshExpiration:2592000000}")
     private long refreshExpiration;
 
-    // Lấy khóa ký tên (Đảm bảo độ dài tối thiểu 32 bytes để an toàn)
+    // Lấy khóa ký (min 32 bytes an toàn)
     private Key getSigningKey() {
         if (secretKey == null || secretKey.isBlank()) {
             throw new IllegalStateException("JWT_SECRET chua duoc cau hinh.");
@@ -47,24 +43,17 @@ public class JwtUtil {
         if (keyBytes.length < 32) {
             throw new IllegalStateException("JWT_SECRET phai co it nhat 32 bytes.");
         }
-        if (keyBytes.length < 32) {
-            logger.warning("CẢNH BÁO: Khóa bí mật JWT quá ngắn, không an toàn!");
-        }
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
-    /**
-     * Tạo Token mới kèm theo vai trò (Role) của người dùng
-     */
+    /** Tạo Token kèm Role */
     public String generateToken(String username, String role) {
         Map<String, Object> claims = new HashMap<>();
-        claims.put("role", role); // Gắn chức danh vào Token
+        claims.put("role", role); // Set role vào payload
         return createToken(claims, username);
     }
 
-     /**
-     * Tạo Refresh Token dài hạn (Chỉ chứa username)
-     */
+    /** Tạo Refresh Token dài hạn */
     public String generateRefreshToken(String username) {
         Instant now = Instant.now();
         Instant expiresAt = now.plus(refreshExpiration, ChronoUnit.MILLIS);
@@ -72,7 +61,7 @@ public class JwtUtil {
                 .setExpiration(Date.from(expiresAt)).signWith(getSigningKey(), SignatureAlgorithm.HS256).compact();
     }
 
-    // Khởi tạo các thông số kỹ thuật cho Token
+    // Build Token params
     private String createToken(Map<String, Object> claims, String subject) {
         Instant now = Instant.now();
         Instant expiresAt = now.plus(expiration, ChronoUnit.MILLIS);
@@ -86,9 +75,7 @@ public class JwtUtil {
                 .compact();
     }
 
-    /**
-     * Kiểm tra xem Token còn hiệu lực và đúng người dùng không
-     */
+    /** Validate Token */
     public Boolean validateToken(String token, String username) {
         try {
             final String extractedUsername = extractUsername(token);
@@ -99,21 +86,17 @@ public class JwtUtil {
         }
     }
 
-    /**
-     * Lấy Tên đăng nhập từ Token
-     */
+    /** Get username từ Token */
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
     }
 
-     /**
-     * Lấy Vai trò (Role) từ Token
-     */
+    /** Get Role từ Token */
     public String extractRole(String token) {
         return extractAllClaims(token).get("role", String.class);
     }
 
-    // Kiểm tra thời hạn của Token
+    // Get ngày hết hạn
     public Date extractExpiration(String token) {
         return extractClaim(token, Claims::getExpiration);
     }
@@ -123,7 +106,7 @@ public class JwtUtil {
         return claimsResolver.apply(claims);
     }
 
-    // Đọc toàn bộ nội dung bên trong Token
+    // Decode claims từ Token
     private Claims extractAllClaims(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(getSigningKey())
@@ -132,9 +115,8 @@ public class JwtUtil {
                 .getBody();
     }
 
-    // Kiểm tra xem Token đã hết hạn chưa
+    // Check expired ko
     private Boolean isTokenExpired(String token) {
         return extractExpiration(token).before(new Date());
     }
 }
-

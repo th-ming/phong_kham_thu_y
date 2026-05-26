@@ -48,7 +48,7 @@ public class SecurityConfig {
         http
             .csrf(csrf -> csrf.disable())
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            // STATELESS: Không tạo và lưu trữ session vào RAM của server.
+            // STATELESS: ko session RAM
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .headers(headers -> headers
                 .contentTypeOptions(contentTypeOptions -> {})

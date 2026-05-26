@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState, useEffect, useRef } from "react";
+﻿import React, { useCallback, useMemo, useState, useEffect, useRef } from "react";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import axiosInstance from "@services/axios";
 import { formatTienVND, getCustomerIdFromProfile, getUserProfile, normalizeUserRole } from "@utils/index";
@@ -23,7 +23,7 @@ const DatLichHen: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [serviceScrollHintOpacity, setServiceScrollHintOpacity] = useState(1);
 
-  // Trạng thái của lái tự động (Autopilot) cho Sếp/Khách hàng
+  // Trạng thái của lái tự động (Autopilot) cho /Khách hàng
   const [autopilotStep, setAutopilotStep] = useState(0);
   const [autopilotMsg, setAutopilotMsg] = useState("");
   const [isAutopilotRunning, setIsAutopilotRunning] = useState(false);
@@ -133,7 +133,7 @@ const DatLichHen: React.FC = () => {
                 }, 45);
               }, 1200);
             } else if (checkSlotsCount > 15) {
-              // Timeout sau 3 giây nếu không lấy được slot
+              // Timeout sau 3 giây nếu ko lấy được slot
               clearInterval(checkSlotsInterval);
               toast.error("Không thể tải giờ rảnh tự động. Sen vui lòng chọn giờ thủ công nhé!");
               setIsAutopilotRunning(false);

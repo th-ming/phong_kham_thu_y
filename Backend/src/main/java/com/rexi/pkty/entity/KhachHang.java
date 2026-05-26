@@ -20,10 +20,10 @@ public class KhachHang {
     private String hinh_anh;
     private Boolean da_xoa;
 
-    // Cấu hình khách hàng đồng ý nhận email marketing (true/false)
+    // Chk opt-in nhan email marketing
     private Boolean nhan_email;
 
-    // Cấu hình khách hàng đồng ý nhận thông báo qua SMS (true/false)
+    // Chk opt-in nhan sms notifications
     private Boolean nhan_sms;
 
     private Integer nam_sinh;

@@ -85,7 +85,7 @@ const BangGiaDichVu: React.FC = () => {
         }).filter(cat => cat.items.length > 0);
     }, [services]);
 
-    // Những dịch vụ không thuộc nhóm nào sẽ vào nhóm "Dịch vụ khác"
+    // Những dịch vụ ko thuộc nhóm nào sẽ vào nhóm "Dịch vụ khác"
     const otherServices = useMemo(() => {
         return services.filter(s =>
             s.trang_thai && !categorizedServices.some(cat => cat.items.some(item => item.id_dich_vu === s.id_dich_vu))

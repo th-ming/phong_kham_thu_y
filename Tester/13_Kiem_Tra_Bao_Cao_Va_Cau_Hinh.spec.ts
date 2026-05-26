@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 // ──────────────────────────────────────────────────────────
-// Cấu hình chung
+// config chung
 // ──────────────────────────────────────────────────────────
 const FRONTEND_PORT = 3005;
 const BASE_URL = `http://localhost:${FRONTEND_PORT}`;
@@ -16,7 +16,7 @@ const TEN_TAB = {
     backup: 'Backup & Nhật ký',
 };
 
-// Hàm dùng chung: đăng nhập và điều hướng tới trang cấu hình
+// Hàm dùng chung: đăng nhập và điều hướng tới trang config
 async function dangNhapVaDiToi(page: any, url: string) {
     await page.goto(`${BASE_URL}/dang-nhap`);
     await page.getByPlaceholder('Tên đăng nhập').fill('admin');
@@ -33,7 +33,7 @@ async function dangNhapVaDiToi(page: any, url: string) {
 test.describe('Kiểm thử E2E: Trang Cấu hình & Quản trị Hệ thống', () => {
 
     // ──────────────────────────────────────────────────────
-    // TC-CH01: Tải trang và xác nhận 5 tab hiển thị đúng
+    // TC-CH01: Tải trang và xn 5 tab hiển thị đúng
     // ──────────────────────────────────────────────────────
     test('TC-CH01: Tải trang cấu hình và xác nhận 5 tab hiển thị', async ({ page }) => {
         await dangNhapVaDiToi(page, CAU_HINH_URL);
@@ -41,27 +41,27 @@ test.describe('Kiểm thử E2E: Trang Cấu hình & Quản trị Hệ thống',
         // Kiểm tra tiêu đề h1
         await expect(page.locator('h1')).toContainText('Cấu hình hệ thống', { timeout: 10000 });
 
-        // Xác nhận 5 tab đúng tên hiển thị
+        // xn 5 tab đúng tên hiển thị
         for (const tenTab of Object.values(TEN_TAB)) {
             await expect(page.getByRole('button', { name: tenTab })).toBeVisible({ timeout: 5000 });
         }
     });
 
     // ──────────────────────────────────────────────────────
-    // TC-CH02: Lưu cấu hình hệ thống thành công
+    // TC-CH02: Lưu config hệ thống thành công
     // ──────────────────────────────────────────────────────
     test('TC-CH02: Lưu cấu hình hệ thống thành công', async ({ page }) => {
         await dangNhapVaDiToi(page, CAU_HINH_URL);
         await expect(page.locator('h1')).toContainText('Cấu hình hệ thống', { timeout: 10000 });
 
-        // Đảm bảo đang ở tab Cấu hình chung
+        // Đảm bảo đang ở tab config chung
         await page.getByRole('button', { name: TEN_TAB.chung }).click();
         await page.waitForTimeout(500);
 
         // Nhấn nút Lưu tất cả thay đổi
         await page.getByRole('button', { name: /Lưu tất cả thay đổi/i }).click();
 
-        // Xác nhận toast thành công hoặc lỗi xuất hiện (cả 2 đều chứng tỏ logic chạy đúng)
+        // xn toast thành công hoặc lỗi xuất hiện (cả 2 đều chứng tỏ logic chạy đúng)
         const toastThanhCong = page.getByText(/Đã lưu cấu hình thành công/i);
         const toastLoi = page.getByText(/Lỗi khi lưu/i);
         await expect(toastThanhCong.or(toastLoi)).toBeVisible({ timeout: 10000 });
@@ -85,13 +85,13 @@ test.describe('Kiểm thử E2E: Trang Cấu hình & Quản trị Hệ thống',
         await page.getByRole('button', { name: 'Gửi Test' }).click();
         await expect(page.getByText(/Vui lòng nhập email nhận test/i)).toBeVisible({ timeout: 5000 });
 
-        // Nhập email hợp lệ và xác nhận
+        // Nhập email hợp lệ và xn
         await truongEmailTest.fill('test@rexi.com');
         await expect(truongEmailTest).toHaveValue('test@rexi.com');
     });
 
     // ──────────────────────────────────────────────────────
-    // TC-CH04: Nút xóa nhật ký hệ thống – yêu cầu xác nhận
+    // TC-CH04: Nút xóa nhật ký hệ thống – yêu cầu xn
     // ──────────────────────────────────────────────────────
     test('TC-CH04: Nút xóa nhật ký hệ thống hiển thị và yêu cầu xác nhận', async ({ page }) => {
         await dangNhapVaDiToi(page, CAU_HINH_URL);
@@ -100,17 +100,17 @@ test.describe('Kiểm thử E2E: Trang Cấu hình & Quản trị Hệ thống',
         // Chuyển sang tab Backup & Nhật ký
         await page.getByRole('button', { name: TEN_TAB.backup }).click();
 
-        // Xác nhận phần Nhật ký hoạt động hiển thị
+        // xn phần Nhật ký hoạt động hiển thị
         await expect(page.getByText('Nhật ký hoạt động')).toBeVisible({ timeout: 8000 });
 
-        // Xác nhận nút Xóa nhật ký tồn tại
+        // xn nút Xóa nhật ký tồn tại
         const nutXoaNhatKy = page.getByRole('button', { name: /Xóa nhật ký/i });
         await expect(nutXoaNhatKy).toBeVisible();
 
-        // Click nút, bắt dialog confirm → dismiss để không xóa thật
+        // Click nút, bắt dialog confirm → dismiss để ko xóa thật
         page.once('dialog', dialog => dialog.dismiss());
         await nutXoaNhatKy.click();
-        // Xác nhận UI không bị crash sau khi hủy dialog
+        // xn UI ko bị crash sau khi hủy dialog
         await expect(page.getByText('Nhật ký hoạt động')).toBeVisible({ timeout: 3000 });
     });
 
@@ -124,15 +124,15 @@ test.describe('Kiểm thử E2E: Trang Cấu hình & Quản trị Hệ thống',
         // Chuyển sang tab Backup
         await page.getByRole('button', { name: TEN_TAB.backup }).click();
 
-        // Xác nhận phần Sao lưu thủ công hiển thị
+        // xn phần Sao lưu thủ công hiển thị
         await expect(page.getByText('Sao lưu thủ công')).toBeVisible({ timeout: 8000 });
 
-        // Xác nhận nút Sao lưu ngay có thể tương tác
+        // xn nút Sao lưu ngay có thể tương tác
         const nutSaoLuu = page.getByRole('button', { name: /Sao lưu ngay/i });
         await expect(nutSaoLuu).toBeVisible();
         await expect(nutSaoLuu).toBeEnabled();
 
-        // Xác nhận nút Làm mới danh sách
+        // xn nút Làm mới danh sách
         await expect(page.getByRole('button', { name: /Làm mới danh sách/i })).toBeVisible();
     });
 
@@ -156,11 +156,11 @@ test.describe('Kiểm thử E2E: Trang Cấu hình & Quản trị Hệ thống',
         const soLuong = await danhSachItem.count();
 
         if (soLuong > 0) {
-            // Xác nhận nút download (title="Tải xuống") xuất hiện trên item đầu tiên
+            // xn nút download (title="Tải xuống") xuất hiện trên item đầu tiên
             const nutTaiXuong = danhSachItem.first().locator('button[title="Tải xuống"]');
             await expect(nutTaiXuong).toBeVisible({ timeout: 5000 });
         } else {
-            // Chưa có backup → xác nhận thông báo trống hiển thị
+            // Chưa có backup → xn thông báo trống hiển thị
             await expect(page.getByText('Chưa có file backup')).toBeVisible({ timeout: 5000 });
         }
     });
@@ -175,15 +175,15 @@ test.describe('Kiểm thử E2E: Trang Cấu hình & Quản trị Hệ thống',
         // Chuyển sang tab AI & Phân quyền
         await page.getByRole('button', { name: TEN_TAB.ai }).click();
 
-        // Xác nhận tiêu đề h2 Ma trận phân quyền hiển thị (dùng heading để tránh strict mode)
+        // xn tiêu đề h2 Ma trận phân quyền hiển thị (dùng heading để tránh strict mode)
         await expect(page.getByRole('heading', { name: /Ma trận phân quyền tác vụ AI/i })).toBeVisible({ timeout: 8000 });
 
-        // Xác nhận ít nhất 1 checkbox phân quyền trong bảng
+        // xn ít nhất 1 checkbox phân quyền trong bảng
         const checkboxes = page.locator('input[type="checkbox"]');
         const soCheckbox = await checkboxes.count();
         expect(soCheckbox).toBeGreaterThan(0);
 
-        // Toggle checkbox đầu tiên → xác nhận UI phản hồi đúng (đảo trạng thái)
+        // Toggle checkbox đầu tiên → xn UI phản hồi đúng (đảo trạng thái)
         const trangThaiDau = await checkboxes.first().isChecked();
         await checkboxes.first().click();
         const trangThaiSau = await checkboxes.first().isChecked();

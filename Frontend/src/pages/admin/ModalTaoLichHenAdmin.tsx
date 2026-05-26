@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+﻿import React, { useState, useEffect, useCallback } from 'react';
 import axiosInstance from '@services/axios';
 import { Modal } from '@components/CommonUI';
 import { toast } from '@components/Toast';
@@ -66,7 +66,7 @@ export const ModalTaoLichHenAdmin: React.FC<ModalProps> = ({ isOpen, onClose, on
         }
     }, [isOpen, resetState]);
 
-    // Tự động tải danh sách bác sĩ có lịch trực vào ngày được chọn
+    // Tự động tải danh sách bs có lịch trực vào ngày được chọn
     useEffect(() => {
         if (isOpen) {
             if (!appointmentDate) {
@@ -86,7 +86,7 @@ export const ModalTaoLichHenAdmin: React.FC<ModalProps> = ({ isOpen, onClose, on
         }
     }, [isOpen, appointmentDate]);
 
-    // Tự động tìm kiếm các khung giờ trống của bác sĩ khi các thông tin liên quan thay đổi
+    // Tự động tìm kiếm các khung giờ trống của bs khi các thông tin liên quan thay đổi
     useEffect(() => {
         if (selectedDoctorId && appointmentDate && selectedServiceId) {
             setIsLoadingSlots(true);
@@ -105,7 +105,7 @@ export const ModalTaoLichHenAdmin: React.FC<ModalProps> = ({ isOpen, onClose, on
         }
     }, [selectedDoctorId, appointmentDate, selectedServiceId]);
 
-    // Xử lý tìm kiếm khách hàng theo số điện thoại
+    // Xử lý tìm kiếm khách hàng theo sđt
     const handleSearchCustomer = async () => {
         if (!phoneQuery.trim()) return;
         setIsLoading(true);
@@ -174,7 +174,7 @@ export const ModalTaoLichHenAdmin: React.FC<ModalProps> = ({ isOpen, onClose, on
                     });
                     petId = petRes.data.id_thu_cung;
                 } catch (err) {
-                    // CƠ CHẾ HOÀN TÁC (ROLLBACK): Xóa khách vừa tạo nếu không tạo được thú cưng
+                    // CƠ CHẾ HOÀN TÁC (ROLLBACK): Xóa khách vừa tạo nếu ko tạo được thú cưng
                     if (customerId) {
                         await axiosInstance.delete(`/api/khach-hang/${customerId}`).catch(e => console.error("Lỗi hoàn tác khách hàng:", e));
                     }
@@ -257,7 +257,7 @@ export const ModalTaoLichHenAdmin: React.FC<ModalProps> = ({ isOpen, onClose, on
                             ))}
                         </div>
 
-                        {/* Gợi ý tạo khách mới nếu không tìm thấy SĐT */}
+                        {/* Gợi ý tạo khách mới nếu ko tìm thấy SĐT */}
                         {isNewCustomer && (
                             <div style={{ marginTop: '20px', padding: '24px', background: 'var(--primary-light)', border: '1px dashed var(--primary)', borderRadius: '20px' }}>
                                 <p style={{ fontWeight: 800, color: 'var(--primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>

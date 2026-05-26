@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from "react";
+﻿import React, { useRef, useState, useEffect } from "react";
 
 interface StatItem {
     value: number;
@@ -17,10 +17,7 @@ const stats: StatItem[] = [
     { value: 98, suffix: "%", label: "Khách hài lòng", sublabel: "Dựa trên 1.200+ đánh giá thực tế", icon: "thumb_up", color: "#2563eb", bg: "#eff6ff" },
 ];
 
-/**
- * PHẦN SỐ LIỆU THỐNG KÊ - Đếm số tự động khi scroll vào view
- * Hiển thị các con số ấn tượng của phòng khám Rexi
- */
+// * * PHẦN SỐ LIỆU THỐNG KÊ - Đếm số tự động khi scroll vào view * Hiển thị các con số ấn tượng của phòng khám Rexi
 const PhanThongKe: React.FC = () => {
     const [counts, setCounts] = useState(stats.map(() => 0));
     const [started, setStarted] = useState(false);

@@ -72,7 +72,7 @@ public class SecurityAlertService {
                     userAgent == null ? "" : userAgent
             );
         } catch (Exception ignored) {
-            // Nhật ký là phụ trợ; không được làm hỏng luồng chặn.
+            // Nhật ký là phụ trợ; ko được làm hỏng luồng chặn.
         }
 
         if (messagingTemplate != null) {
@@ -148,7 +148,7 @@ public class SecurityAlertService {
                     userAgent == null ? "" : userAgent
             );
         } catch (Exception ignored) {
-            // Không để lỗi ghi log làm hỏng trải nghiệm người dùng.
+            // ko để lỗi ghi log làm hỏng trải nghiệm người dùng.
         }
 
         if (messagingTemplate != null) {

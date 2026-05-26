@@ -19,7 +19,7 @@ public abstract class BaseControllerTest {
     @Autowired
     protected ObjectMapper objectMapper;
 
-    // MOCK TOÀN BỘ 17 REPOSITORY CỦA HỆ THỐNG
+    // Mock 17 repositories he thong
     @MockBean protected ThuCungRepository thuCungRepository;
     @MockBean protected LichHenRepository lichHenRepository;
     @MockBean protected NhanVienRepository nhanVienRepository;
@@ -38,7 +38,7 @@ public abstract class BaseControllerTest {
     @MockBean protected NhaCungCapRepository nhaCungCapRepository;
     @MockBean protected VaiTroHeThongRepository vaiTroHeThongRepository;
 
-    // MOCK CÁC SERVICE QUAN TRỌNG
+    // Mock core services
     @MockBean protected AuditLogService auditLogService;
     @MockBean protected EmailService emailService;
     @MockBean protected AiMemoryService aiMemoryService;

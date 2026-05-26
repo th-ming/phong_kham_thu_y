@@ -29,7 +29,7 @@ public class ThuocController {
         return thuocRepository.findAll();
     }
 
-    // API Dành cho cơ chế Autocomplete ở Frontend
+    // Autocomplete search API for FE
     @GetMapping("/search")
     @PreAuthorize(RexiSecurityRoles.INVENTORY_READ)
     public List<Thuoc> searchThuoc(@RequestParam String keyword) {
@@ -55,7 +55,7 @@ public class ThuocController {
         if (!isAdmin())
             return org.springframework.http.ResponseEntity.status(403).body("Bạn không có quyền quản lý kho thuốc!");
         Thuoc saved = thuocRepository.save(thuoc);
-        // GHI LOG
+        // LOG ACTION
         auditLogService.logAction("THÊM MỚI", "Thuoc", "Thêm thuốc: " + saved.getTen_thuoc());
         return org.springframework.http.ResponseEntity.ok(saved);
     }
@@ -80,7 +80,7 @@ public class ThuocController {
                 existing.setMo_ta(thuoc.getMo_ta());
             
             Thuoc saved = thuocRepository.save(existing);
-            // GHI LOG
+            // LOG ACTION
             auditLogService.logAction("CẬP NHẬT", "Thuoc", "Sửa thuốc ID " + id + ": " + tenCu 
                     + " -> " + saved.getTen_thuoc());
             return org.springframework.http.ResponseEntity.ok(saved);
@@ -104,7 +104,7 @@ public class ThuocController {
                 countDonThuoc = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM DonThuocChiTiet WHERE id_thuoc = ?", Integer.class, id);
             } catch (Exception e) {}
             
-            // XÓA MỀM TUYỆT ĐỐI (100% KHÔNG DÙNG deleteById ĐỂ BẢO TOÀN LỊCH SỬ)
+            // Xoa mem 100% de bao toan history
             t.setDa_xoa(true);
             t.setTrang_thai(false);
             thuocRepository.save(t);

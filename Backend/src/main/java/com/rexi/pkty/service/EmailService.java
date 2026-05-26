@@ -9,11 +9,7 @@ import org.springframework.stereotype.Service;
 import java.util.concurrent.CompletableFuture;
 import java.util.logging.Logger;
 
-/**
- * DỊCH VỤ EMAIL HỆ THỐNG - REXI VET
- * - Xử lý gửi các loại email: Xác nhận đặt lịch, Nhắc hẹn, Marketing...
- * - Chạy bất đồng bộ (Async) để không làm chậm trải nghiệm người dùng
- */
+// * * DỊCH VỤ EMAIL HỆ THỐNG - REXI VET * - Xử lý gửi các loại email: xn đặt lịch, Nhắc hẹn, Marketing... * - Chạy bất đồng bộ (Async) để ko làm chậm trải nghiệm người dùng
 @Service
 public class EmailService {
 
@@ -53,14 +49,12 @@ public class EmailService {
                 return impl;
             }
         } catch (Exception e) {
-            // Lỗi truy vấn hoặc cấu hình trống -> Fallback sang mailSender tĩnh
+            // Lỗi truy vấn hoặc config trống -> Fallback sang mailSender tĩnh
         }
         return mailSender;
     }
 
-    /**
-     * Gửi email xác nhận khi khách hàng đặt lịch thành công
-     */
+    // * * Gửi email xn khi khách hàng đặt lịch thành công
     public void sendBookingConfirmation(String toEmail, String customerName, String petName, String doctorName,
             String date, String time, String serviceName) {
         JavaMailSender sender = getDynamicMailSender();
@@ -80,9 +74,7 @@ public class EmailService {
         });
     }
 
-    /**
-     * Gửi email chào mừng khi đăng nhập lần đầu (Thiết kế Premium HTML)
-     */
+    // * * Gửi email chào mừng khi đăng nhập lần đầu (Thiết kế Premium HTML)
     public void sendWelcomeEmailHTML(String toEmail, String customerName) {
         JavaMailSender sender = getDynamicMailSender();
         if (sender == null) return;
@@ -138,9 +130,7 @@ public class EmailService {
                "</html>";
     }
 
-    /**
-     * Gửi email OTP lấy lại mật khẩu
-     */
+    // * * Gửi email OTP lấy lại mật khẩu
     public boolean sendOtpEmail(String toEmail, String otp) {
         JavaMailSender sender = getDynamicMailSender();
         if (sender == null) return false;
@@ -160,9 +150,7 @@ public class EmailService {
         }
     }
 
-    /**
-     * Gửi email nhắc hẹn cho khách hàng
-     */
+    // * * Gửi email nhắc hẹn cho khách hàng
     public void sendReminderEmail(String toEmail, String customerName, String petName, String doctorName,
             String date, String time, String serviceName) {
         JavaMailSender sender = getDynamicMailSender();
@@ -182,9 +170,7 @@ public class EmailService {
         });
     }
 
-    /**
-     * Gửi mật khẩu cho tài khoản mới được tạo bởi nhân viên
-     */
+    // * * Gửi mật khẩu cho tài khoản mới được tạo bởi nhân viên
     public void sendPasswordEmail(String toEmail, String customerName, String password) {
         JavaMailSender sender = getDynamicMailSender();
         if (sender == null) return;
@@ -204,9 +190,7 @@ public class EmailService {
         });
     }
 
-    /**
-     * Gửi email nhắc nợ cho khách hàng còn hóa đơn chưa thanh toán
-     */
+    // * * Gửi email nhắc nợ cho khách hàng còn hóa đơn chưa thanh toán
     public void sendDebtReminderEmail(String toEmail, String customerName, String invoiceId, java.math.BigDecimal amount) {
         JavaMailSender sender = getDynamicMailSender();
         if (sender == null) return;
@@ -224,9 +208,7 @@ public class EmailService {
             }
         });
     }
-    /**
-     * Gửi email Marketing / Mass email
-     */
+    // * * Gửi email Marketing / Mass email
     public void sendMassEmail(String toEmail, String subject, String htmlContent) {
         JavaMailSender sender = getDynamicMailSender();
         if (sender == null) return;

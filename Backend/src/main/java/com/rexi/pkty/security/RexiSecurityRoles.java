@@ -1,9 +1,6 @@
 package com.rexi.pkty.security;
 
-/**
- * Biểu thức SpEL dùng chung cho {@link org.springframework.security.access.prepost.PreAuthorize}.
- * Khớp ma trận quyền Frontend (permissions.ts) và JWT role (ROLE_*).
- */
+// SpEL expressions cho @PreAuthorize, map role JWT vs permission FE
 public final class RexiSecurityRoles {
 
     public static final String AUTHENTICATED = "isAuthenticated()";

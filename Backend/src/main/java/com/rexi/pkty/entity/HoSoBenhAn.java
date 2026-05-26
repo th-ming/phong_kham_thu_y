@@ -7,7 +7,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "HoSoBenhAn") // Kết nối bảng hồ sơ bệnh án
+@Table(name = "HoSoBenhAn") // Table hs benh an
 @Data
 public class HoSoBenhAn {
     @Id

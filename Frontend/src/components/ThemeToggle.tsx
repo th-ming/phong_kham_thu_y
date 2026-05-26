@@ -47,7 +47,7 @@ const ThemeToggle: React.FC = () => {
           transform: scale(0.95);
         }
 
-        /* Hiệu ứng tia sáng khi hover */
+        // Hiệu ứng tia sáng khi hover
         .theme-toggle-btn::after {
           content: '';
           position: absolute;

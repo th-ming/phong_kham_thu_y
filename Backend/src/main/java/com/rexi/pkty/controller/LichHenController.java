@@ -68,7 +68,7 @@ public class LichHenController {
 
             if (username != null && !username.equals("anonymousUser")) {
                 taiKhoanRepository.findByTenDangNhap(username).ifPresent(tk -> {
-                    // Chỉ cho khách hàng đặt lịch của chính mình thui (khách A cấm đặt hộ hay dòm lịch khách B nha)
+                    // Chỉ cho khách hàng đặt lịch của chính mình
                     if (tk.getId_vai_tro() != null && "VT-5".equals(tk.getId_vai_tro())) { 
                         if (lichHen.getId_khach_hang() == null || lichHen.getId_khach_hang().isEmpty()) {
                             lichHen.setId_khach_hang(tk.getId_khach_hang());
@@ -213,7 +213,7 @@ public class LichHenController {
                         + " phút) với một khách hàng khác. Vui lòng chọn khung giờ rộng hơn nhé!");
             }
 
-            // Ktra xem bé cưng này có bị trùng lịch hẹn nào khác cùng giờ cùng ngày k để tránh chồng chéo
+            // Ktra xem bé cưng bị trùng lịch hẹn khác cùng giờ ko
             boolean isPetConflict = false;
             if (lichHen.getId_thu_cung() != null && !lichHen.getId_thu_cung().isEmpty()) {
                 List<Map<String, Object>> existingPetApps = jdbcTemplate.queryForList(
@@ -388,7 +388,7 @@ public class LichHenController {
             @RequestParam(required = false) Integer size,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String search) {
-        // Tự động dựng câu truy vấn SQL để lọc dữ liệu theo trạng thái hoặc từ khóa tìm kiếm.
+        // Gen SQL loc trang thai & search keyword
         StringBuilder where = new StringBuilder("WHERE 1=1");
         java.util.List<Object> params = new java.util.ArrayList<>();
         if (status != null && !status.isEmpty()) {
@@ -412,7 +412,7 @@ public class LichHenController {
                 "LEFT JOIN NhanVien nv ON lh.id_bac_si = nv.id_nhan_vien " +
                 "LEFT JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu ";
 
-        // Phân trang danh sách nếu Client truyền tham số page và size.
+        // Phan trang neu co page & size
         if (page != null && size != null && size > 0) {
             try {
                 Integer total = jdbcTemplate.queryForObject(
@@ -445,7 +445,7 @@ public class LichHenController {
             }
         }
 
-        // Nếu k có page/size thì lấy hết danh sách ra luôn cho tương thích code cũ
+        // Backup lay tat ca neu ko page size
         String sql = baseSelect + where + " ORDER BY lh.ngay_kham DESC, lh.gio_kham DESC";
         java.util.List<Map<String, Object>> all = jdbcTemplate.queryForList(sql, params.toArray());
         return ResponseEntity.ok(all);
@@ -642,7 +642,7 @@ public class LichHenController {
                 }
             }
 
-            // Ktra xem lịch hẹn này có hóa đơn hay bệnh án chưa, có r thì cấm xóa kẻo mất dữ liệu đối soát
+            // Chan xoa neu da co hoa don/benh an
             int usageCount = 0;
             try {
                 usageCount += jdbcTemplate.queryForObject("SELECT COUNT(*) FROM HoSoBenhAn WHERE id_lich_hen = ?", Integer.class, id);
@@ -653,7 +653,7 @@ public class LichHenController {
                 return ResponseEntity.status(409).body(Map.of("message", "Không thể hủy lịch hẹn vì đã có Hóa đơn hoặc Hồ sơ Bệnh án liên kết. Nếu có sai sót, vui lòng liên hệ Quản lý để xử lý."));
             }
 
-            // Thực hiện xóa mềm: chuyển đổi trạng thái sang 'DA_HUY' để phục vụ đối soát dữ liệu sau này.
+            // Xoa mem: set trang thai DA_HUY
             lh.setTrang_thai("DA_HUY");
             lichHenRepository.save(lh);
 

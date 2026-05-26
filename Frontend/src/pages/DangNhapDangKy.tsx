@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axiosInstance from "@services/axios";
 import { normalizeUserRole } from "@utils/index";
@@ -47,7 +47,7 @@ const DangNhapDangKy: React.FC = () => {
       ? 'Dăng nhập vào tài khoản Rexi để quản lý sức khỏe thú cưng và đặt lịch khám trực tuyến.'
       : 'Đăng ký tài khoản Rexi – Hệ thống quản lý sức khỏe thú cưng chuyên nghiệp.';
     const savedUsername = localStorage.getItem("rememberedUsername");
-    if (savedUsername) {
+    if (savedUsername && !username) {
       setUsername(savedUsername);
       setRememberMe(true);
     }
@@ -165,9 +165,8 @@ const DangNhapDangKy: React.FC = () => {
         }
       } else if (!isLogin) {
         setIsLogin(true);
-        setPassword("");
         setConfirmPassword("");
-        setSuccess("Đăng ký thành công! Vui lòng đăng nhập để tiếp tục.");
+        setSuccess("Đăng ký thành công! Tài khoản và mật khẩu đã được điền sẵn, bạn chỉ cần đăng nhập để tiếp tục.");
       }
     } catch (err: any) {
       let errorMessage = "Đã xảy ra lỗi không xác định. Vui lòng thử lại.";
@@ -208,16 +207,16 @@ const DangNhapDangKy: React.FC = () => {
           position: relative;
           z-index: 10;
           display: grid;
-          grid-template-columns: 1.1fr 1.2fr; /* Tăng tỷ lệ cho phần form */
+          grid-template-columns: 1.1fr 1.2fr; // Tăng tỷ lệ cho phần form
           width: 100%;
-          max-width: 1150px; /* Nới rộng card */
+          max-width: 1150px; // Nới rộng card
           margin: auto;
           border: 1px solid var(--gray-200);
         }
 
         .auth-sidebar {
           background: #0d9488 !important;
-          padding: 40px; /* Thu nhỏ padding sidebar */
+          padding: 40px; // Thu nhỏ padding sidebar
           color: white !important;
           position: relative;
           display: flex;
@@ -373,7 +372,7 @@ const DangNhapDangKy: React.FC = () => {
         }
       `}</style>
 
-      {/* HEADER CỦA SẾP */}
+      {/* HEADER CỦA */}
       <header style={{ padding: '30px 60px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative', zIndex: 10 }}>
         <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '15px', textDecoration: 'none' }}>
           <div className="auth-logo-box" style={{ background: 'var(--primary-gradient)', width: '48px', height: '48px', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 10px 25px var(--primary-shadow)' }}>
@@ -465,7 +464,7 @@ const DangNhapDangKy: React.FC = () => {
                     <span className="material-symbols-outlined" onClick={() => setShowPassword(!showPassword)} style={{ cursor: 'pointer', color: '#94a3b8' }}>{showPassword ? 'visibility_off' : 'visibility'}</span>
                   </div>
                   
-                  {/* CHỨC NĂNG GHI NHỚ & QUÊN MẬT KHẨU CỦA SẾP ĐÂY Ạ */}
+                  {/* CHỨC NĂNG GHI NHỚ & QUÊN MẬT KHẨU CỦA ĐÂY */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '8px 0' }}>
                     <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', margin: 0, textTransform: 'none', color: 'var(--gray-500)', fontSize: '0.9rem' }}>
                       <input data-ai-id="input-dangnhapdangky-cyre" type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} style={{ width: '18px', height: '18px' }} />

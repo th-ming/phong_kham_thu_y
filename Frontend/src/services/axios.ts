@@ -1,12 +1,7 @@
 import axios, { AxiosInstance, AxiosError, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 import { reportAxiosError } from './clientErrorReporter';
 
-/**
- * Cấu hình Axios Interceptor - Hệ thống kết nối API
- * - Tự động đính kèm mã xác thực JWT (Token) vào mọi yêu cầu
- * - Xử lý đăng xuất tự động khi Token hết hạn
- * - Cấu hình tập trung cho toàn bộ ứng dụng
- */
+// * * config Axios Interceptor - Hệ thống kết nối API * - Tự động đính kèm mã xác thực JWT (TOKEN) vào mọi yêu cầu * - Xử lý đăng xuất tự động khi TOKEN hết hạn * - config tập trung cho toàn bộ ứng dụng
 
 const API_BASE_URL = ''; // Dùng Proxy trong vite.config.ts để xử lý chuyển tiếp tới localhost:8081
 
@@ -18,9 +13,7 @@ const axiosInstance: AxiosInstance = axios.create({
   },
 });
 
-/**
- * Can thiệp trước khi gửi yêu cầu (Request Interceptor) - Gắn Token xác thực
- */
+// * * Can thiệp trước khi gửi yêu cầu (Request Interceptor) - Gắn TOKEN xác thực
 axiosInstance.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
@@ -31,7 +24,7 @@ axiosInstance.interceptors.request.use(
     const requestUrl = config.url || '';
     const isChatRequest = requestUrl.includes('/api/chat') || requestUrl.includes('/api/agent');
 
-    // Đính kèm tag hành động AI nếu có. Không bao giờ gắn header này vào chat thường,
+    // Đính kèm tag hành động AI nếu có. ko bao giờ gắn header này vào chat thường,
     // vì tag Autopilot cũ có thể làm backend chặn /api/chat với 403.
     if (isChatRequest) {
         (window as any).__AI_ACTION_TAG__ = undefined;
@@ -69,16 +62,14 @@ const processQueue = (error: any, token: string | null = null) => {
   failedQueue = [];
 };
 
-/**
- * Can thiệp sau khi nhận phản hồi (Response Interceptor) - Xử lý lỗi hệ thống
- */
+// * * Can thiệp sau khi nhận phản hồi (Response Interceptor) - Xử lý lỗi hệ thống
 axiosInstance.interceptors.response.use(
   (response: AxiosResponse) => response,
   async (error: AxiosError) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
     if (error.response?.status === 401 && originalRequest && !originalRequest._retry && !originalRequest.url?.includes('/api/auth/')) {
-      // Nếu đang trong quá trình refresh token, cho các request khác vào hàng đợi
+      // Nếu đang trong quá trình refresh TOKEN, cho các request khác vào hàng đợi
       if (isRefreshing) {
         return new Promise(function (resolve, reject) {
           failedQueue.push({ resolve, reject });
@@ -93,7 +84,7 @@ axiosInstance.interceptors.response.use(
       originalRequest._retry = true;
       isRefreshing = true;
 
-      // Lấy Refresh Token từ LocalStorage (Sếp cần lưu cái này lúc đăng nhập)
+      // Lấy Refresh TOKEN từ LocalStorage ( cần lưu cái này lúc đăng nhập)
       const refreshToken = localStorage.getItem('refreshToken');
 
       if (!refreshToken) {
@@ -104,7 +95,7 @@ axiosInstance.interceptors.response.use(
       }
 
       try {
-        // Gọi API lấy Token mới (Sếp cần có endpoint này ở Backend)
+        // Gọi API lấy TOKEN mới ( cần có endpoint này ở Backend)
         const rs = await axios.post(`${API_BASE_URL}/api/auth/refresh-token`, { refreshToken });
         const newToken = rs.data.token;
 

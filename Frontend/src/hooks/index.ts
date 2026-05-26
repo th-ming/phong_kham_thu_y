@@ -1,9 +1,6 @@
 import React from 'react'
 
-/**
- * Hook custom để fetch dữ liệu từ API
- * Tối ưu: useMemo và useCallback để tránh re-render
- */
+// * * Hook custom để fetch dữ liệu từ API * Tối ưu: useMemo và useCallback để tránh re-render
 export const useFetchData = (url: string) => {
   const [data, setData] = React.useState(null)
   const [loading, setLoading] = React.useState(true)
@@ -28,9 +25,7 @@ export const useFetchData = (url: string) => {
   return { data, loading, error }
 }
 
-/**
- * Hook custom để quản lý form
- */
+// * * Hook custom để quản lý form
 export const useForm = (initialValues: Record<string, any>) => {
   const [values, setValues] = React.useState(initialValues)
 

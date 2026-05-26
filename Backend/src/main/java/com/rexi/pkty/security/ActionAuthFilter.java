@@ -16,10 +16,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-/**
- * BỘ LỌC KIỂM SOÁT TÁC VỤ AI (ACTION AUTH FILTER)
- * Kiểm tra phân quyền khi có yêu cầu AI thực hiện hành động dựa vào X-AI-ACTION header.
- */
+// Action Auth Filter: chk phan quyen AI action qua header X-AI-ACTION
 @Component
 public class ActionAuthFilter extends OncePerRequestFilter {
 
@@ -45,7 +42,7 @@ public class ActionAuthFilter extends OncePerRequestFilter {
                 }
             }
         } catch (Exception e) {
-            // Lỗi hoặc không có cấu hình DB -> Fallback về file properties
+            // Loi/ko config DB -> Fallback properties
         }
         return policy != null ? policy.getOrDefault(roleStr, Collections.emptyList()) : Collections.emptyList();
     }

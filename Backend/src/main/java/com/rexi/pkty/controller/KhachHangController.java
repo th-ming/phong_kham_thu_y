@@ -32,32 +32,32 @@ public class KhachHangController {
     @Autowired
     private com.rexi.pkty.service.AuditLogService auditLogService;
 
-    // BẢO MẬT: Kiểm tra quyền nhân viên nội bộ
+    // Check quyền nhân viên nội bộ
     private boolean isInternalStaff() {
         org.springframework.security.core.Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || auth.getName().equals("anonymousUser"))
             return false;
         String role = auth.getAuthorities().toString().toUpperCase();
-        // Chỉ cho phép nhân viên nội bộ xem danh sách khách
+        // Chỉ nhân viên nội bộ được xem list KH
         return role.contains("ADMIN") || role.contains("STAFF") || role.contains("BAC_SI") || role.contains("QUAN_LY")
                 || role.contains("KETOAN") || role.contains("TIEP_TAN");
     }
 
-    // Lấy danh sách khách hàng
+    // Get list khách hàng
     @GetMapping
     @PreAuthorize(RexiSecurityRoles.CUSTOMER_PET_READ)
     public ResponseEntity<?> getAll() {
         return ResponseEntity.ok(khachHangService.getAllKhachHang());
     }
 
-    // Đếm tổng số khách hàng (cho Dashboard)
+    // Đếm khách hàng (cho Dashboard)
     @GetMapping("/count")
     @PreAuthorize(RexiSecurityRoles.CUSTOMER_PET_READ)
     public ResponseEntity<?> countAll() {
         return ResponseEntity.ok(khachHangRepository.count());
     }
 
-    // Tìm kiếm khách hàng thông minh theo tên, SĐT, email, địa chỉ hoặc mã khách.
+    // Search khách hàng qua name/sđt/email/địa chỉ/mã KH.
     @GetMapping("/search")
     @PreAuthorize(RexiSecurityRoles.CUSTOMER_PET_READ)
     public ResponseEntity<?> searchBySdt(@RequestParam String sdt) {
@@ -73,7 +73,7 @@ public class KhachHangController {
                 .toList());
     }
 
-    // Lấy hồ sơ khách hàng hiện tại từ token, tránh phụ thuộc localStorage frontend còn đủ ID.
+    // Lấy profile KH hiện tại từ Token, tránh lag localStorage FE.
     @GetMapping("/me")
     public ResponseEntity<?> getCurrentCustomerProfile() {
         org.springframework.security.core.Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -94,10 +94,10 @@ public class KhachHangController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // Lấy thông tin 1 khách hàng theo ID
+    // Get 1 khách hàng theo ID
     @GetMapping("/{id}")
     public ResponseEntity<?> getById(@PathVariable String id) {
-        // BẢO MẬT: Kiểm tra IDOR - Ngăn khách hàng xem thông tin của người khác
+        // Chặn IDOR: KHACH_HANG ko được xem profile người khác
         org.springframework.security.core.Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String username = (auth != null) ? auth.getName() : null;
         if (username != null && !username.equals("anonymousUser")) {

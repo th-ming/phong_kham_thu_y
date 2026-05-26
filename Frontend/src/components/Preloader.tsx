@@ -1,9 +1,6 @@
-import React, { useEffect, useState, useRef } from 'react';
+﻿import React, { useEffect, useState, useRef } from 'react';
 
-/**
- * MÀN HÌNH CHỜ (PRELOADER) "MÈO CHẠY" - ĐÃ SỬA LỖI MÉO VÀ NGƯỢC HƯỚNG
- * Khắc phục tỉ lệ khung hình và hướng chạy của mèo để trông tự nhiên nhất.
- */
+// * * MÀN HÌNH CHỜ (PRELOADER) "MÈO CHẠY" - ĐÃ SỬA LỖI MÉO VÀ NGƯỢC HƯỚNG * Khắc phục tỉ lệ khung hình và hướng chạy của mèo để trông tự nhiên nhất.
 export const Preloader: React.FC = () => {
     const [isVisible, setIsVisible] = useState(() => {
         // Chỉ hiện preloader khi vào trang lần đầu tiên trong phiên làm việc
@@ -235,7 +232,7 @@ export const Preloader: React.FC = () => {
                     50% { transform: scale(1.3); opacity: 0.3; }
                 }
                 
-                /* TỐI ƯU HÓA PHÂN TỈ LỆ RESPONSIVE CHO ĐIỆN THOẠI NHỎ (DƯỚI 480PX) */
+                // TỐI ƯU HÓA PHÂN TỈ LỆ RESPONSIVE CHO ĐIỆN THOẠI NHỎ (DƯỚI 480PX)
                 @media (max-width: 480px) {
                     .preloader-cat-container {
                         height: 110px !important;

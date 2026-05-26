@@ -48,7 +48,7 @@ public class SystemController {
     @Autowired(required = false)
     private SecurityAlertService securityAlertService;
 
-    // Các biến dùng chung cho AuthController (Duy trì tính tương thích)
+    // Bien dung chung cho AuthController
     public static final Map<String, Long> verifiedEmails = new ConcurrentHashMap<>();
     private final Map<String, String> otpStorage = new ConcurrentHashMap<>();
     private final Map<String, Long> otpExpiry = new ConcurrentHashMap<>();
@@ -286,7 +286,7 @@ public class SystemController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> deleteBackup(@PathVariable String filename) {
         try {
-            // Bảo mật: Chặn Path Traversal
+            // Chan Path Traversal
             if (filename.contains("..") || filename.contains("/") || filename.contains("\\")) {
                 return ResponseEntity.status(400).body(Map.of("message", "Tên file không hợp lệ!"));
             }
@@ -306,7 +306,7 @@ public class SystemController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<org.springframework.core.io.Resource> downloadBackup(@PathVariable String filename) {
         try {
-            // Bảo mật: Chặn Path Traversal
+            // Chan Path Traversal
             if (filename.contains("..") || filename.contains("/") || filename.contains("\\")) {
                 return ResponseEntity.status(400).build();
             }
@@ -331,7 +331,7 @@ public class SystemController {
     @PreAuthorize("hasAnyRole('ADMIN', 'QUAN_LY')")
     public ResponseEntity<?> getNewsletterCount() {
         try {
-            // Lấy từ bảng KhachHang (những người có email và đồng ý nhận email marketing, chưa bị xóa)
+            // KhachHang nhan email, da_xoa = 0
             Integer count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM KhachHang WHERE email IS NOT NULL AND email <> '' AND (nhan_email = 1 OR nhan_email IS NULL) AND da_xoa = 0", Integer.class);
             return ResponseEntity.ok(Map.of("count", count != null ? count : 0));
         } catch (Exception e) {
@@ -347,7 +347,7 @@ public class SystemController {
         if (subject == null || content == null) return ResponseEntity.badRequest().body(Map.of("message", "Thiếu tiêu đề hoặc nội dung"));
 
         try {
-            // Chỉ lấy email của khách hàng đồng ý nhận email marketing và chưa bị xóa
+            // Loc email nhan_email = 1
             List<String> emails = jdbcTemplate.queryForList("SELECT email FROM KhachHang WHERE email IS NOT NULL AND email <> '' AND (nhan_email = 1 OR nhan_email IS NULL) AND da_xoa = 0", String.class);
             for (String email : emails) {
                 emailService.sendMassEmail(email, subject, content);
@@ -587,7 +587,7 @@ public class SystemController {
         ResponseEntity<?> rateLimitResponse = checkOtpSendRateLimit(rateKey);
         if (rateLimitResponse != null) return rateLimitResponse;
         
-        // Kiểm tra xem Email có tồn tại trong hệ thống (nhân viên hoặc khách hàng) không
+        // Chk email exist in db
         String sql = "SELECT COUNT(*) FROM (SELECT email FROM KhachHang WHERE LOWER(email) = LOWER(?) UNION SELECT email FROM NhanVien WHERE LOWER(email) = LOWER(?)) AS tbl";
         Integer count = jdbcTemplate.queryForObject(sql, Integer.class, email, email);
         if (count == null || count == 0) {
@@ -598,7 +598,7 @@ public class SystemController {
         otpStorage.put(email, otp);
         otpExpiry.put(email, System.currentTimeMillis() + OTP_TTL_MS);
         
-        // Thực tế gửi email OTP cho người dùng
+        // Send OTP mail
         boolean sent = emailService.sendOtpEmail(email, otp);
         if (!sent) {
             otpStorage.remove(email);

@@ -6,7 +6,7 @@ const BASE_URL = `http://localhost:${FRONTEND_PORT}`;
 test.describe('Kiểm thử chức năng: Quản lý Khách hàng & Thú cưng', () => {
 
     test.beforeEach(async ({ page }) => {
-        // Đăng nhập Admin trước mỗi kịch bản test
+        // Đăng nhập ADMIN trước mỗi kịch bản test
         await page.goto(`${BASE_URL}/dang-nhap`);
         await page.getByPlaceholder('Tên đăng nhập').fill('admin');
         await page.getByPlaceholder('Mật khẩu').fill('admin@rexi.com');
@@ -36,10 +36,10 @@ test.describe('Kiểm thử chức năng: Quản lý Khách hàng & Thú cưng',
         await page.locator('[data-ai-id="button-quanlykhachhangthucung-30dl"]').click({ force: true });
         await expect((await registerResponse).ok()).toBeTruthy();
 
-        // 5. Xác nhận hiển thị thông báo thành công
+        // 5. xn hiển thị thông báo thành công
         await expect(page.getByText('Thêm khách hàng thành công!')).toBeVisible({ timeout: 10000 });
 
-        // Chụp lại ảnh màn hình bằng chứng thực tế đăng ký thành công có Năm sinh Gen Z
+        // Chụp lại ảnh màn hình bằng auth tế đăng ký thành công có Năm sinh Gen Z
         await page.screenshot({ path: 'd:/QLy Phòng Khám Thú Y/Tester/test-results/evidence-tc01-dang-ky-nam-sinh.png', fullPage: true });
     });
 
@@ -65,10 +65,10 @@ test.describe('Kiểm thử chức năng: Quản lý Khách hàng & Thú cưng',
         // 4. Đăng ký bé
         await page.getByRole('button', { name: 'Đăng ký bé' }).click();
 
-        // 5. Xác nhận thành công
+        // 5. xn thành công
         await expect(page.getByText('Thêm thú cưng thành công!')).toBeVisible({ timeout: 20000 });
 
-        // Chụp lại ảnh màn hình bằng chứng thực tế đăng ký thú cưng thành công
+        // Chụp lại ảnh màn hình bằng auth tế đăng ký thú cưng thành công
         await page.screenshot({ path: 'd:/QLy Phòng Khám Thú Y/Tester/test-results/evidence-tc02-dang-ky-thu-cung.png', fullPage: true });
     });
 

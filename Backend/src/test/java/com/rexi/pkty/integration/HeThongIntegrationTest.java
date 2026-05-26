@@ -13,11 +13,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Test tích hợp tầng Repository với H2 Database thật.
- * Xác minh dữ liệu được lưu đúng và truy vấn ra đúng — bắt lỗi ánh xạ Entity thực tế.
- * Không dùng Controller/HTTP để tránh SQL Server-specific syntax trong JdbcTemplate.
- */
+// * * Test tích hợp tầng Repository với H2 DB thật. * Xác minh dữ liệu được lưu đúng và truy vấn ra đúng — bắt lỗi ánh x Entity thực tế. * ko dùng Controller/HTTP để tránh SQL Server-specific syntax trong JdbcTemplate.
 @DataJpaTest
 @ActiveProfiles("test")
 public class HeThongIntegrationTest {
@@ -36,7 +32,7 @@ public class HeThongIntegrationTest {
         kh.setTen_khach_hang("Chu Nhan Test");
         khachHangRepository.save(kh);
 
-        // BƯỚC 1: Thêm Thú cưng thật vào H2 Database
+        // BƯỚC 1: Thêm Thú cưng thật vào H2 DB
         ThuCung thuCung = new ThuCung();
         thuCung.setId_thu_cung("TC-TEST-001");
         thuCung.setTen_thu_cung("Gau Map");
@@ -44,7 +40,7 @@ public class HeThongIntegrationTest {
         thuCung.setId_khach_hang("KH-TEST-001");
         thuCungRepository.save(thuCung);
 
-        // BƯỚC 2: Truy vấn từ DB ra — xác minh dữ liệu không bị mất/sai
+        // BƯỚC 2: Truy vấn từ DB ra — xác minh dữ liệu ko bị mất/sai
         List<java.util.Map<String, Object>> ds = thuCungRepository.findByKhachHang("KH-TEST-001");
         assertFalse(ds.isEmpty(), "Dữ liệu phải được lưu vào Database!");
         assertEquals("Gau Map", ds.get(0).get("ten_thu_cung"), "Tên thú cưng phải khớp!");

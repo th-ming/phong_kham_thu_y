@@ -14,11 +14,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import java.util.*;
 import java.util.stream.Collectors;
 
-/**
- * Bộ điều khiển quản lý tài khoản dành riêng cho Admin.
- * Chỉ Admin mới có quyền truy cập các chức năng trong này.
- * Bao gồm: Tìm kiếm tài khoản, đặt lại mật khẩu.
- */
+/** Controller QL tài khoản cho ADMIN */
 @RestController
 @RequestMapping("/api/admin")
 public class AdminAccountController {
@@ -35,11 +31,7 @@ public class AdminAccountController {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    /**
-     * Tìm kiếm tài khoản theo tên đăng nhập, email hoặc số điện thoại.
-     * Admin có thể tìm cả tài khoản nhân viên lẫn khách hàng.
-     * Kết quả trả về KHÔNG chứa mật khẩu gốc (chỉ trả về hash).
-     */
+    /** Tìm kiếm tài khoản qua username/email/sđt. Trả về safe map (ko lộ pass gốc). */
     @GetMapping("/tai-khoan")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> findAccount(
@@ -50,14 +42,14 @@ public class AdminAccountController {
         List<TaiKhoan> result = new ArrayList<>();
 
         if (username != null && !username.isEmpty()) {
-            // Tìm theo tên đăng nhập
+            // Tìm theo username
             Optional<TaiKhoan> found = taiKhoanRepository.findByTenDangNhap(username);
             found.ifPresent(result::add);
         } else if (email != null && !email.isEmpty()) {
-            // Tìm theo email (xuyên bảng Khách hàng & Nhân viên)
+            // Tìm theo email (quét cả KH & NV)
             result = taiKhoanRepository.findByEmail(email);
         } else if (phone != null && !phone.isEmpty()) {
-            // Tìm theo số điện thoại (xuyên bảng Khách hàng & Nhân viên)
+            // Tìm theo sđt (quét cả KH & NV)
             result = taiKhoanRepository.findBySdt(phone);
         } else {
             return ResponseEntity.badRequest()
@@ -69,12 +61,12 @@ public class AdminAccountController {
                     .body(Map.of("message", "Không tìm thấy tài khoản nào phù hợp."));
         }
 
-        // Chuyển đổi kết quả sang dạng an toàn (không trả mật khẩu gốc)
+        // Trả safe map (ko lộ pass)
         List<Map<String, Object>> safeResult = result.stream()
                 .map(this::toSafeMap)
                 .collect(Collectors.toList());
 
-        // Ghi nhật ký hành động Admin
+        // Ghi log AUDIT
         String criteria = username != null ? "username=" + username
                 : email != null ? "email=" + email
                 : "phone=" + phone;
@@ -84,10 +76,7 @@ public class AdminAccountController {
         return ResponseEntity.ok(safeResult);
     }
 
-    /**
-     * Lấy danh sách toàn bộ tài khoản trong hệ thống.
-     * Chỉ Admin mới được phép gọi.
-     */
+    /** Lấy list all tài khoản cho ADMIN */
     @GetMapping("/tai-khoan/tat-ca")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> getAllAccounts() {
@@ -103,11 +92,7 @@ public class AdminAccountController {
         return ResponseEntity.ok(safeResult);
     }
 
-    /**
-     * Đặt lại mật khẩu cho tài khoản bất kỳ (nhân viên hoặc khách hàng).
-     * Hệ thống sẽ tạo mật khẩu tạm thời và trả về cho Admin.
-     * Admin thông báo mật khẩu mới cho người dùng qua kênh riêng.
-     */
+    /** Reset mk, gen mk tạm đúng policy lưu DB. ADMIN tự gửi cho user. */
     @PostMapping("/tai-khoan/{id}/reset-mk")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> resetPassword(@PathVariable String id) {
@@ -119,16 +104,16 @@ public class AdminAccountController {
 
         TaiKhoan tk = opt.get();
 
-        // Sinh mat khau tam thoi dat dung password policy hien tai.
+        // Sinh mk tạm đúng policy
         String matKhauTamThoi = "Rexi@" + UUID.randomUUID().toString().substring(0, 6);
         String matKhauHash = passwordEncoder.encode(matKhauTamThoi);
 
-        // Cập nhật mật khẩu mới (đã băm) vào Database
+        // Lưu mã hóa và cập nhật DB
         tk.setMat_khau("[ENCRYPTED]");
         tk.setMat_khau_hash(matKhauHash);
         taiKhoanRepository.save(tk);
 
-        // Ghi nhật ký hành động Admin
+        // Ghi log AUDIT
         auditLogService.logAction("UPDATE", "TaiKhoan",
                 "Admin đặt lại mật khẩu cho tài khoản: " + tk.getTen_dang_nhap() + " (ID: " + id + ")");
 
@@ -140,10 +125,7 @@ public class AdminAccountController {
         ));
     }
 
-    /**
-     * Admin được sửa trực tiếp thông tin tài khoản nhân viên: username, vai trò,
-     * trạng thái và mật khẩu mới nếu cần.
-     */
+    /** ADMIN sửa thông tin tài khoản (username, vai trò, trạng thái, pass mới). */
     @PutMapping("/tai-khoan/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> updateAccount(@PathVariable String id, @RequestBody Map<String, String> payload) {
@@ -191,10 +173,7 @@ public class AdminAccountController {
         return ResponseEntity.ok(toSafeMap(tk));
     }
 
-    /**
-     * Chuyển đổi TaiKhoan thành Map an toàn (không chứa mật khẩu gốc).
-     * Chỉ trả về các trường công khai + hash để Admin xác minh.
-     */
+    /** Convert TaiKhoan sang safe map (giấu pass) */
     private Map<String, Object> toSafeMap(TaiKhoan tk) {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("id_tai_khoan", tk.getId_tai_khoan());

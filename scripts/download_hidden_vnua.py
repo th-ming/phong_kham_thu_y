@@ -23,7 +23,7 @@ def get_confirm_token(response):
             return value
     for line in response.text.splitlines():
         if 'confirm=' in line:
-            # Trích xuất confirm token từ html nếu có
+            # Trích xuất confirm TOKEN từ html nếu có
             parts = line.split('confirm=')
             if len(parts) > 1:
                 token = parts[1].split('&')[0].split('"')[0].split("'")[0]
@@ -85,7 +85,7 @@ if os.path.exists(pdf_path) and not os.path.exists(md_path):
             page = reader.pages[page_num]
             text = page.extract_text()
             if text:
-                full_text.append(f"### TRANG {page_num + 1}\n{text}\n")
+                full_text.append(f"# ## TRANG {page_num + 1}\n{text}\n")
                 
         with open(md_path, "w", encoding="utf-8") as f:
             f.write("# GIÁO TRÌNH NGOẠI KHOA THÚ Y VNUA 2019 - ĐỘC QUYỀN\n\n")

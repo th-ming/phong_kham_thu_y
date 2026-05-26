@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+﻿import React, { useEffect } from "react";
 import { Preloader } from "@components/Preloader";
 import { MemeCat, ScrollToTop } from "@components/SpecialEffects";
 
@@ -14,7 +14,7 @@ import PhanHoiDap from "@components/home/PhanHoiDap";
 import PhanCTA from "@components/home/PhanCTA";
 import PhanLienHe from "@components/home/PhanLienHe";
 
-/* trang chủ chính */
+// trang chủ chính
 const TrangChu: React.FC = () => {
   useEffect(() => {
 
@@ -41,7 +41,7 @@ const TrangChu: React.FC = () => {
         {/* phần quy trình */}
         <PhanQuyTrinh />
 
-        {/* phần bác sĩ */}
+        {/* phần bs */}
         <PhanBacSi />
 
         {/* phần đối tác */}

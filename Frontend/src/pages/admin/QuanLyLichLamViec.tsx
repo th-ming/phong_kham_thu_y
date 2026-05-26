@@ -221,7 +221,7 @@ const QuanLyLichLamViec: React.FC = () => {
 
     const handleExportExcel = () => {
         try {
-            let csvContent = "\uFEFF"; // Thêm BOM để Excel đọc tiếng Việt không bị lỗi font
+            let csvContent = "\uFEFF"; // Thêm BOM để Excel đọc tiếng Việt ko bị lỗi font
             csvContent += "LỊCH TRỰC NHÂN SỰ REXI\n";
             csvContent += `Từ ${weekDates[0].dateStr} đến ${weekDates[6].dateStr}\n\n`;
 
@@ -350,7 +350,7 @@ const QuanLyLichLamViec: React.FC = () => {
     };
 
     const handleMoveShift = async (shift: any, targetDay: any, targetHour: number) => {
-        // KIỂM TRA QUYỀN SỞ HỮU: Nhân viên không được động vào lịch người khác
+        // KIỂM TRA QUYỀN SỞ HỮU: Nhân viên ko được động vào lịch người khác
         if (!isAdmin && String(shift.id_nhan_vien) !== currentStaffId) {
             toast.error("Bạn không có quyền di chuyển lịch trực của người khác!");
             return;
@@ -437,7 +437,7 @@ const QuanLyLichLamViec: React.FC = () => {
                     #print-section { position: absolute; left: 0; top: 0; width: 100%; padding: 0; margin: 0; }
                     .no-print { display: none !important; }
                     .print-only { display: block !important; }
-                    /* Mở rộng chiều cao để in được hết */
+                    // Mở rộng chiều cao để in được hết
                     .print-scroll-area { height: auto !important; overflow: visible !important; }
                     .glass-card { box-shadow: none !important; border: 1px solid #ccc !important; }
                 }

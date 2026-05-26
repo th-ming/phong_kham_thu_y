@@ -36,10 +36,12 @@ public class AgentController {
     @Autowired
     private com.rexi.pkty.service.AiToolService aiToolService;
 
+    @Autowired
+    private com.rexi.pkty.service.AuditLogService auditLogService;
+
     private final com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
 
-    // Tuyệt chiêu giữ chân KHACH_HANG (Retention & Upsell) chạy tự động.
-    // Quét sạch db để tìm xem bé nào quá hạn tiêm phòng hoặc triệt sản rồi nhắc khéo chủ nuôi đặt lịch gấp.
+    // Auto get goi y cham soc active KHACH_HANG (retention & upsell)
     @GetMapping("/retention-reminders")
     public ResponseEntity<?> getRetentionReminders() {
         try {
@@ -65,8 +67,7 @@ public class AgentController {
                 return ResponseEntity.ok(List.of());
             }
 
-            // Giới hạn TOP 3 bé để đề xuất chủ động, tránh spam thông báo làm KHACH_HANG ngứa mắt.
-            // Chỉ lấy thú cưng thuộc đúng khách hàng đang đăng nhập.
+            // TOP 3 be goi y, dung idKhachHang login
             String sql = "SELECT TOP 3 tc.id_thu_cung, tc.ten_thu_cung, tc.loai, tc.giong, " +
                          "tc.id_khach_hang, kh.ten_khach_hang, kh.sdt " +
                          "FROM ThuCung tc " +
@@ -79,13 +80,13 @@ public class AgentController {
             List<Map<String, Object>> reminders = new ArrayList<>();
 
             for (Map<String, Object> pet : pets) {
-                // Đọc trường loai thực tế từ DB để phân loại đúng loài
+                // check loai pet tu DB
                 String loai = pet.get("loai") != null ? pet.get("loai").toString().toLowerCase().trim() : "";
                 String tenThuCung = pet.get("ten_thu_cung") != null ? pet.get("ten_thu_cung").toString() : "Bé";
                 
                 Map<String, Object> reminder = new HashMap<>(pet);
 
-                // Phân loại đúng theo loài từ dữ liệu DB (không dùng i%2 nữa)
+                // phan loai loai pet
                 boolean laMeo = loai.contains("mèo") || loai.contains("meo") || loai.contains("cat") || loai.equals("mèo");
                 boolean lacho = loai.contains("chó") || loai.contains("cho") || loai.contains("dog") || loai.equals("chó");
 
@@ -104,7 +105,7 @@ public class AgentController {
                     reminder.put("suggested_time", "10:00");
                     reminder.put("doctor_id", "NV-003");
                 } else {
-                    // Loài khác (chim, thỏ, cá...) → đề xuất khám sức khỏe định kỳ
+                    // Khac (chim, tho...) -> kham dinh ky
                     reminder.put("type", "KHAM_DINH_KY");
                     reminder.put("message", "🐾 Sếp ơi! Bé " + tenThuCung + " nhà mình đã đến kỳ khám sức khỏe định kỳ để đảm bảo bé luôn khỏe mạnh. Sếp có muốn Rexi đặt lịch khám nhanh không ạ? 🏥✨");
                     reminder.put("service_id", "DV-001");
@@ -122,8 +123,7 @@ public class AgentController {
         }
     }
 
-    // Bộ não điều phối ĐA AGENT SWARM (Multi-Agent Swarm Orchestration).
-    // Nhận yêu cầu tiếp thị phức tạp từ ADMIN rồi chia việc cho 3 con AGENT phụ tá thảo luận ngầm để tự chốt danh sách và viết email nháp.
+    // Swarm Agent (multi-agent orchestration) post campaign
     @PostMapping("/swarm-orchestration")
     @PreAuthorize(RexiSecurityRoles.MARKETING)
     public ResponseEntity<?> handleSwarmOrchestration(@RequestBody Map<String, String> payload) {
@@ -131,7 +131,7 @@ public class AgentController {
         logger.info("[SWARM] Tiếp nhận yêu cầu điều phối đa Agent Swarm: " + query);
 
         try {
-            // Bước 1: 🤖 REXI ORCHESTRATOR phân vai phân nhiệm cho các AGENT phụ tá ngầm
+            // B1: Swarm Orchestrator phan viec
             String step1Agent = "🤖 Rexi Orchestrator";
             String step1Action = "Phân tích yêu cầu chiến dịch và phân nhỏ công việc cho các Agent phụ tá ngầm";
             String step1Output = "Đã tiếp nhận yêu cầu từ sếp: \"" + query + "\"\n" +
@@ -140,11 +140,11 @@ public class AgentController {
                     "2. Giao CreativeAgent: Tiếp nhận kết quả từ DataAgent, lên kịch bản viết email tri ân/nhắc lịch cá nhân hóa.\n" +
                     "3. Giao ReviewAgent: Kiểm tra chéo toàn bộ dữ liệu, loại bỏ lỗi chính tả và các placeholder lỗi trước khi hiển thị.";
 
-            // Bước 2: 📊 DATA ANALYST AGENT phân tích ý đồ tìm kiếm để dịch sang query db an toàn
+            // B2: Data Agent -> Hybrid Text-to-Safe-Query
             String step2Agent = "📊 Data Analyst Agent";
             String step2Action = "Dịch ý định ngôn ngữ tự nhiên sang bộ lọc tham số an toàn (Hybrid Text-to-Safe-Query)";
             
-            // Gọi Gemini để trích xuất JSON tham số tìm kiếm
+            // Get JSON param tu Gemini
             String dataPrompt = "Bạn là DataAgent - chuyên gia phân tích dữ liệu của phòng khám thú y Rexi.\n" +
                     "Nhiệm vụ của bạn là đọc yêu cầu tìm kiếm của người dùng và trích xuất thành tham số tìm kiếm an toàn dạng JSON.\n" +
                     "Bạn chỉ được chọn một trong các kiểu tìm kiếm (searchType) sau:\n" +
@@ -152,6 +152,7 @@ public class AgentController {
                     "- `PET_BREED`: Nếu người dùng tìm theo giống thú cưng (Ví dụ: Poodle, Corgi, mèo ba tư)\n" +
                     "- `PET_TYPE`: Nếu người dùng tìm theo loài thú cưng (Ví dụ: Chó, Mèo, Chim)\n" +
                     "- `CUSTOMER_NAME`: Nếu người dùng tìm theo tên chủ nuôi (Ví dụ: Trần Minh, Anh Ánh)\n" +
+                    "- `CUSTOMER_EMAIL`: Nếu người dùng tìm theo email khách hàng (Ví dụ: khachhang@gmail.com)\n" +
                     "- `ALL`: Nếu người dùng muốn lọc tất cả hoặc không có điều kiện cụ thể.\n\n" +
                     "Yêu cầu của người dùng: \"" + query + "\"\n\n" +
                     "Hãy trích xuất từ khóa tìm kiếm chính xác (keyword) và kiểu tìm kiếm (searchType).\n" +
@@ -178,7 +179,7 @@ public class AgentController {
 
             try {
                 dataLlmResponse = geminiService.chat(dataHistory);
-                // Trích xuất JSON từ markdown block nếu có
+                // Parse JSON block neu co
                 if (dataLlmResponse.contains("```")) {
                     int startIdx = dataLlmResponse.indexOf("{");
                     int endIdx = dataLlmResponse.lastIndexOf("}");
@@ -192,7 +193,7 @@ public class AgentController {
                 keyword = jsonNode.path("keyword").asText("");
             } catch (Exception e) {
                 logger.warning("Không thể phân tích phản hồi JSON từ DataAgent: " + e.getMessage());
-                // Fallback trích xuất thủ công bằng Regex đơn giản
+                // Regex fallback
                 if (query.toLowerCase().contains("lu")) {
                     searchType = "PET_NAME";
                     keyword = "Lu";
@@ -205,7 +206,7 @@ public class AgentController {
                 }
             }
 
-            // Thực thi truy vấn db an toàn, chặn đứng SQL Injection phá hoại
+            // Query an toan, chan SQLi
             String sql = "SELECT TOP 50 kh.ten_khach_hang, kh.email, kh.sdt, tc.ten_thu_cung, tc.loai, tc.giong " +
                     "FROM KhachHang kh " +
                     "JOIN ThuCung tc ON kh.id_khach_hang = tc.id_khach_hang " +
@@ -242,12 +243,18 @@ public class AgentController {
                         "kh.ten_khach_hang COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI");
                 sqlExecuted = where.toString();
                 dbResults = jdbcTemplate.queryForList(sqlExecuted, params.toArray());
+            } else if ("CUSTOMER_EMAIL".equals(searchType) && !keyword.isEmpty()) {
+                StringBuilder where = new StringBuilder(sql);
+                List<Object> params = new ArrayList<>();
+                where.append(" AND kh.email LIKE ?");
+                params.add("%" + keyword + "%");
+                sqlExecuted = where.toString();
+                dbResults = jdbcTemplate.queryForList(sqlExecuted, params.toArray());
             } else {
                 dbResults = jdbcTemplate.queryForList(sqlExecuted);
             }
 
-            // Nếu không tìm thấy kết quả thật trong DB → trả về danh sách rỗng
-            // KHÔNG inject demo data giả để tránh gửi email nhầm
+            // Dung db empty -> ko inject demo gia
             if (dbResults.isEmpty()) {
                 logger.warning("[SWARM] Không tìm thấy dữ liệu khách hàng phù hợp trong DB. Trả về kết quả rỗng.");
             }
@@ -288,7 +295,7 @@ public class AgentController {
             String step3Agent = "✍️ Copywriter Agent";
             String step3Action = "Soạn thảo kịch bản email/tin nhắn cá nhân hóa hàng loạt dựa trên thông tin chủ nuôi và boss cưng";
             
-            // Lấy 1 bản ghi làm mẫu để sinh nội dung qua LLM
+            // Template mau tu db record 0
             Map<String, Object> samplePet = dbResults.get(0);
             String sampleName = samplePet.get("ten_khach_hang").toString();
             String samplePetName = samplePet.get("ten_thu_cung").toString();
@@ -316,7 +323,7 @@ public class AgentController {
             try {
                 draftedEmail = geminiService.chat(creativeHistory);
             } catch (Exception e) {
-                logger.warning("CreativeAgent lỗi, dùng email fallback: " + e.getMessage());
+                // Email fallback neu LLM loi
                 draftedEmail = "Tiêu đề: Thư nhắc lịch tái khám sức khỏe định kỳ cho bé cưng 🐾\n\n" +
                         "Chào Sen [Tên Khách Hàng] thân mến,\n\n" +
                         "Bác sĩ Rexi gửi lời chào tới Sen và bé [Tên Thú Cưng] nhé! 🏥✨\n\n" +
@@ -327,7 +334,7 @@ public class AgentController {
 
             String step3Output = "MẪU THƯ MARKETING CÁ NHÂN HÓA ĐÃ ĐƯỢC SOẠN THÀNH CÔNG:\n\n" + draftedEmail;
 
-            // Bước 4: 🛡️ REVIEWER AGENT kiểm tra chéo nội dung email nháp xem có placeholder lỗi ko
+            // B4: Reviewer Agent check check email nhap
             String step4Agent = "🛡️ Reviewer Agent";
             String step4Action = "Kiểm tra chéo nội dung thư, phát hiện lỗi chính tả, xác thực thẻ cá nhân hóa";
             
@@ -359,7 +366,7 @@ public class AgentController {
 
             String step4Output = "KẾT QUẢ KIỂM TRA CHÉO (CROSS-AGENT REVIEW):\n" + reviewOutput;
 
-            // Sync nóng thông tin cá nhân hóa của KHACH_HANG và thú cưng vào email thật trước khi gửi
+            // Replace placeholder gui mail that
             List<Map<String, String>> contacts = new ArrayList<>();
             for (Map<String, Object> record : dbResults) {
                 String khName = record.get("ten_khach_hang") != null ? record.get("ten_khach_hang").toString() : "Khách hàng";
@@ -406,8 +413,7 @@ public class AgentController {
         }
     }
 
-    // Nút kích hoạt phê duyệt gửi email hàng loạt sau khi ADMIN bấm duyệt trên UI.
-    // Đẩy danh sách email vào hàng đợi gửi ngầm bất đồng bộ (Async background thread) để tránh làm nghẽn API chính.
+    // Approve & bulk send mail (Async task)
     @PostMapping("/bulk-send-email")
     @PreAuthorize(RexiSecurityRoles.MARKETING)
     public ResponseEntity<?> bulkSendEmail(@RequestBody Map<String, Object> request) {
@@ -441,7 +447,7 @@ public class AgentController {
                 }
             }
 
-            // Chạy luồng ngầm bất đồng bộ (Background thread) để không block HTTP request
+            // Async ThreadPool gui background
             if (!validContacts.isEmpty()) {
                 java.util.concurrent.CompletableFuture.runAsync(() -> {
                     for (Map<String, Object> contact : validContacts) {
@@ -453,12 +459,12 @@ public class AgentController {
                             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
                             helper.setTo(email);
                             helper.setSubject("Rexi Vet - " + campaignName);
-                            // Convert newlines to HTML br tags or keep as plain text
+                            // Convert \n -> <br/>
                             helper.setText(emailContent.replace("\n", "<br/>"), true); 
                             mailSender.send(message);
                             
                             logger.info(String.format("[BACKGROUND EMAIL] Đã gửi thành công tới: %s", email));
-                            // Thêm một chút delay nhỏ giữa các mail để tránh bị Google block do spam quá nhanh
+                            // Delay tranh spam IP ban
                             Thread.sleep(500);
                         } catch (Exception e) {
                             logger.warning(String.format("[BACKGROUND EMAIL] Không thể gửi tới %s: %s", contact.get("email"), e.getMessage()));
@@ -489,8 +495,7 @@ public class AgentController {
         }
     }
 
-    // Lối đi tắt (Fast path) siêu tốc cho Voice Input hoặc Agent Autopilot.
-    // Nếu UI đã bóc tách chắc chắn lệnh thì chọc thẳng vào executeTool để chạy, đỡ tốn token LLM ReAct. Vẫn check bảo mật TOKEN nhân viên cẩn thận.
+    // Direct run tool bypass LLM (Voice/Autopilot)
     @PostMapping("/tool")
     @PreAuthorize(RexiSecurityRoles.AUTHENTICATED)
     public ResponseEntity<?> runDirectTool(@RequestBody Map<String, Object> body) {
@@ -538,8 +543,7 @@ public class AgentController {
         }
     }
 
-    // Cỗ máy ReAct Agent v5 tối thượng — Tự chủ suy luận (Reason -> Act -> Observe).
-    // Cho AI tự chủ lên kế hoạch, gọi tool, quan sát kết quả rồi lặp lại để trả ra kết quả tối ưu nhất.
+    // ReAct Agent Core (Reason-Act-Observe)
     @PostMapping("/react")
     @PreAuthorize(RexiSecurityRoles.AUTHENTICATED)
     public ResponseEntity<?> reactAgent(@RequestBody Map<String, String> body, jakarta.servlet.http.HttpServletRequest request) {
@@ -548,7 +552,7 @@ public class AgentController {
             return ResponseEntity.badRequest().body(Map.of("error", "Query không được để trống."));
         }
 
-        // Lấy thông tin người dùng từ SecurityContext
+        // Get user state tu token context
         org.springframework.security.core.Authentication auth =
             org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
         String username = (auth != null && !auth.getName().equals("anonymousUser")) ? auth.getName() : null;
@@ -562,7 +566,7 @@ public class AgentController {
             logger.info("[ReAct] Yêu cầu từ [" + username + "]: " + query);
             com.rexi.pkty.service.ReActAgentService.ReActResult result = reactAgentService.run(query, username, userRole);
 
-            // Chuyển steps thành format gọn cho frontend
+            // Parse steps sang format FE
             List<Map<String, Object>> stepsData = new java.util.ArrayList<>();
             for (var step : result.steps()) {
                 Map<String, Object> s = new java.util.LinkedHashMap<>();
@@ -574,10 +578,13 @@ public class AgentController {
                 stepsData.add(s);
             }
 
+            auditAgentMedicalReplyIfNeeded(query, result.finalAnswer(), userRole, username, result.provider(), stepsData);
+
             return ResponseEntity.ok(Map.of(
                 "finalAnswer", result.finalAnswer(),
                 "steps", stepsData,
-                "totalSteps", stepsData.size()
+                "totalSteps", stepsData.size(),
+                "provider", result.provider()
             ));
         } catch (Exception e) {
             logger.severe("[ReAct] Lỗi: " + e.getMessage());
@@ -594,5 +601,55 @@ public class AgentController {
         String userRole = auth.getAuthorities().stream()
             .findFirst().map(g -> g.getAuthority().replace("ROLE_", "")).orElse("");
         return RoleAccessPolicy.isInternalStaffRole(userRole);
+    }
+
+    private void auditAgentMedicalReplyIfNeeded(String query, String answer, String userRole, String username, String provider, List<Map<String, Object>> steps) {
+        try {
+            String combined = normalizeForAudit((query == null ? "" : query) + " " + (answer == null ? "" : answer));
+            boolean medical = containsAny(combined,
+                    "thuoc", "duoc", "lieu", "khang sinh", "phac do", "dieu tri", "chan doan",
+                    "xet nghiem", "benh", "trieu chung", "cap cuu", "ngo doc", "gay me");
+            boolean usedMedicalTool = steps != null && steps.stream().anyMatch(step -> {
+                Object tool = step.get("tool");
+                return tool != null && Set.of("xem_kho_thuoc", "xem_benh_an", "cap_nhat_benh_an", "tra_cuu_tai_lieu_y_khoa")
+                        .contains(tool.toString());
+            });
+            if (!medical && !usedMedicalTool) return;
+
+            String role = RoleAccessPolicy.normalizeRole(userRole);
+            boolean clinicalRole = role.equals("bac_si") || role.equals("y_ta");
+            String detail = "scope=" + (clinicalRole ? "CLINICAL_REFERENCE" : "CUSTOMER_SAFE_ADVICE")
+                    + "; username=" + (username == null ? "anonymous" : username)
+                    + "; role=" + role
+                    + "; provider=" + provider
+                    + "; usedMedicalTool=" + usedMedicalTool
+                    + "; query=" + compactForAudit(query)
+                    + "; answerPreview=" + compactForAudit(answer);
+            auditLogService.logActionWithUsername(username == null ? "Hệ thống" : username, "AI_MEDICAL_AGENT_ADVICE", "ReActAgent", detail);
+        } catch (Exception ex) {
+            logger.warning("[ReAct] Không thể ghi audit y khoa AI: " + ex.getMessage());
+        }
+    }
+
+    private boolean containsAny(String value, String... keywords) {
+        if (value == null) return false;
+        for (String keyword : keywords) {
+            if (value.contains(keyword)) return true;
+        }
+        return false;
+    }
+
+    private String normalizeForAudit(String value) {
+        if (value == null) return "";
+        String normalized = java.text.Normalizer.normalize(value.toLowerCase(Locale.ROOT), java.text.Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
+                .replace("đ", "d");
+        return normalized.replaceAll("[^a-z0-9\\s]", " ").replaceAll("\\s+", " ").trim();
+    }
+
+    private String compactForAudit(String value) {
+        if (value == null) return "";
+        String compact = value.replaceAll("\\s+", " ").trim();
+        return compact.substring(0, Math.min(600, compact.length()));
     }
 }

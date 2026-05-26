@@ -14,11 +14,9 @@ import java.time.ZoneId;
 import java.util.*;
 import java.util.logging.Logger;
 
-/**
- * ReAct Agent Service — vòng lặp Reason → Act → Observe (Level 5).
- * AI tự lên kế hoạch, gọi tools, quan sát kết quả và lặp lại tới khi hoàn thành.
- * Tối đa 6 bước để tránh vòng lặp vô hạn.
- */
+// * * ReAct Agent Service — vòng lặp Reason → Act → Observe (Level 5).
+// * AI tự lên kế hoạch, gọi tools, quan sát kết quả và lặp lại tới khi hoàn thành.
+// * Tối đa 6 bước để tránh vòng lặp vô hạn.
 @Service
 public class ReActAgentService {
 
@@ -35,11 +33,14 @@ public class ReActAgentService {
     private final ObjectMapper mapper = new ObjectMapper();
 
     public record ReActStep(String type, String content, String toolName, Map<String, Object> toolParams, String observation) {}
-    public record ReActResult(String finalAnswer, List<ReActStep> steps) {}
+    public record ReActResult(String finalAnswer, List<ReActStep> steps, String provider) {
+        public ReActResult(String finalAnswer, List<ReActStep> steps) {
+            this(finalAnswer, steps, "System");
+        }
+    }
+    private record ModelResponse(String content, String provider) {}
 
-    /**
-     * Điểm vào chính — chạy vòng lặp ReAct cho một yêu cầu của người dùng.
-     */
+    // * * Điểm vào chính — chạy vòng lặp ReAct cho một yêu cầu của người dùng.
     public ReActResult run(String userQuery, String username, String userRole) {
         List<ReActStep> steps = new ArrayList<>();
         String originalUserIntent = extractOriginalUserIntent(userQuery);
@@ -93,9 +94,9 @@ public class ReActAgentService {
         for (int i = 0; i < MAX_ITERATIONS; i++) {
             logger.info("[ReAct] Vòng lặp #" + (i + 1));
 
-            String rawResponse;
+            ModelResponse modelResponse;
             try {
-                rawResponse = callBestAvailableModel(history);
+                modelResponse = callBestAvailableModel(history);
             } catch (Exception e) {
                 logger.severe("[ReAct] Lỗi gọi LLM: " + e.getMessage());
                 String fallback = "Rexi Agent đang bị lỗi kết nối tới nhà cung cấp AI bên ngoài. Các tác vụ tra cứu dữ liệu nội bộ vẫn cần cấu hình lại API key hoặc mạng trước khi chạy tiếp.";
@@ -104,15 +105,15 @@ public class ReActAgentService {
             }
 
             // Cắt bỏ markdown code block nếu model trả về ```json ... ```
-            String cleaned = rawResponse.trim();
+            String cleaned = modelResponse.content().trim();
             if (cleaned.startsWith("```")) {
                 cleaned = cleaned.replaceAll("^```[a-z]*\\s*", "").replaceAll("\\s*```$", "").trim();
             }
-            
+
             // Trích xuất đúng object JSON đầu tiên, kể cả khi model lỡ thêm text phía trước/sau.
             String possibleJson = extractFirstJsonObject(cleaned);
 
-            // Kiểm tra xem đây có phải JSON tool call không
+            // Kiểm tra xem đây có phải JSON tool call ko
             if (possibleJson != null) {
                 try {
                     JsonNode node = mapper.readTree(possibleJson);
@@ -124,7 +125,7 @@ public class ReActAgentService {
                             answer = "Tôi chưa đủ dữ liệu để hoàn tất tác vụ này. Bạn gửi thêm SĐT khách hàng, tên thú cưng, ngày/giờ mong muốn hoặc chuyển sang thao tác thủ công trên đúng phân hệ giúp tôi.";
                         }
                         steps.add(new ReActStep("FINAL", answer, null, null, null));
-                        return new ReActResult(answer, steps);
+                        return new ReActResult(answer, steps, modelResponse.provider());
                     }
 
                     // ── TOOL CALL ──
@@ -140,9 +141,9 @@ public class ReActAgentService {
                         steps.add(new ReActStep("TOOL_CALL", "Gọi tool: " + toolName, toolName, params, null));
                         logger.info("[ReAct] Gọi tool: " + toolName + " | Params: " + params);
 
-                        // Thực thi tool, nhưng không cho khách/ẩn danh quét dữ liệu nội bộ.
+                        // Thực thi tool — từ chối nếu không đúng vai trò, trả thông báo thân thiện
                         if (!canUseTool(userRole, toolName)) {
-                            String denial = RoleAccessPolicy.permissionDeniedMessage(toolName);
+                            String denial = RoleAccessPolicy.permissionDeniedMessage(toolName, userRole);
                             steps.set(steps.size() - 1, new ReActStep("TOOL_CALL", "Từ chối tool không đúng vai trò: " + toolName, toolName, params, denial));
                             steps.add(new ReActStep("FINAL", denial, null, null, null));
                             return new ReActResult(denial, steps);
@@ -173,7 +174,7 @@ public class ReActAgentService {
                 }
             }
 
-            // Nếu không phải JSON hợp lệ → coi đây là câu trả lời cuối
+            // Nếu ko phải JSON hợp lệ → coi đây là câu trả lời cuối
             steps.add(new ReActStep("FINAL", cleaned, null, null, null));
             return new ReActResult(cleaned, steps);
         }
@@ -196,7 +197,7 @@ public class ReActAgentService {
         if (containsAny(normalizedQuery, "thuoc", "tri ran", "ve ran", "bọ chét", "bo chet")
                 && containsAny(normalizedQuery, "tho", "thỏ")) {
             if (!canUseTool(userRole, "xem_kho_thuoc")) {
-                String denial = RoleAccessPolicy.permissionDeniedMessage("xem_kho_thuoc");
+                String denial = RoleAccessPolicy.permissionDeniedMessage("xem_kho_thuoc", userRole);
                 steps.add(new ReActStep("FINAL", denial, null, null, null));
                 return new ReActResult(denial, steps);
             }
@@ -216,7 +217,7 @@ public class ReActAgentService {
         if (containsAny(normalizedQuery, "kho", "thuoc", "ton kho", "con thuoc")
                 && containsAny(normalizedQuery, "thuoc", "ran", "ve", "bo chet", "tri ran")) {
             if (!canUseTool(userRole, "xem_kho_thuoc")) {
-                String denial = RoleAccessPolicy.permissionDeniedMessage("xem_kho_thuoc");
+                String denial = RoleAccessPolicy.permissionDeniedMessage("xem_kho_thuoc", userRole);
                 steps.add(new ReActStep("FINAL", denial, null, null, null));
                 return new ReActResult(denial, steps);
             }
@@ -235,7 +236,7 @@ public class ReActAgentService {
         if (containsAny(normalizedQuery, "ma nguon", "file", "module", "nam o dau", "xu ly o dau")
                 && containsAny(normalizedQuery, "chatbot", "giong noi", "voice", "mic", "agent")) {
             if (!canUseTool(userRole, "tra_cuu_ma_nguon")) {
-                String denial = RoleAccessPolicy.permissionDeniedMessage("tra_cuu_ma_nguon");
+                String denial = RoleAccessPolicy.permissionDeniedMessage("tra_cuu_ma_nguon", userRole);
                 steps.add(new ReActStep("FINAL", denial, null, null, null));
                 return new ReActResult(denial, steps);
             }
@@ -301,7 +302,7 @@ public class ReActAgentService {
             boolean preferMorning
     ) {
         if (!canUseTool(userRole, "tim_lich_trong")) {
-            String denial = RoleAccessPolicy.permissionDeniedMessage("tim_lich_trong");
+            String denial = RoleAccessPolicy.permissionDeniedMessage("tim_lich_trong", userRole);
             steps.add(new ReActStep("FINAL", denial, null, null, null));
             return new ReActResult(denial, steps);
         }
@@ -385,7 +386,7 @@ public class ReActAgentService {
         }
 
         if (!RoleAccessPolicy.canUseAgentTool(userRole, "thao_tac_tai_khoan")) {
-            String answer = RoleAccessPolicy.permissionDeniedMessage("thao_tac_tai_khoan");
+            String answer = RoleAccessPolicy.permissionDeniedMessage("thao_tac_tai_khoan", userRole);
             steps.add(new ReActStep("FINAL", answer, null, null, null));
             return new ReActResult(answer, steps);
         }
@@ -475,24 +476,30 @@ public class ReActAgentService {
         return jdbcTemplate.queryForList(sql, params);
     }
 
-    private String callBestAvailableModel(List<ChatMessage> history) throws Exception {
+    private ModelResponse callBestAvailableModel(List<ChatMessage> history) throws Exception {
         Exception lastError = null;
         try {
-            return openRouterService.chat(history);
+            String response = openRouterService.chat(history);
+            logger.info("[ReAct] Model phản hồi thành công: OpenRouter");
+            return new ModelResponse(response, "OpenRouter");
         } catch (Exception e) {
             lastError = e;
             logger.warning("[ReAct] OpenRouter lỗi, fallback sang Gemini: " + e.getMessage());
         }
 
         try {
-            return geminiService.chat(history);
+            String response = geminiService.chat(history);
+            logger.info("[ReAct] Model phản hồi thành công (Fallback 1): Gemini");
+            return new ModelResponse(response, "Gemini");
         } catch (Exception e) {
             lastError = e;
             logger.warning("[ReAct] Gemini lỗi, fallback sang Groq: " + e.getMessage());
         }
 
         try {
-            return groqService.chat(history);
+            String response = groqService.chat(history);
+            logger.info("[ReAct] Model phản hồi thành công (Fallback 2): Groq");
+            return new ModelResponse(response, "Groq");
         } catch (Exception e) {
             lastError = e;
             logger.warning("[ReAct] Groq lỗi: " + e.getMessage());
@@ -546,11 +553,8 @@ public class ReActAgentService {
                 .replaceAll("[đ]", "d");
     }
 
-    /**
-     * Xây dựng system prompt tích hợp ngữ cảnh người dùng + tool schema.
-     */
+    // * * Xây dựng system prompt tích hợp ngữ cảnh người dùng + tool schema.
     private String buildSystemPrompt(String userQuery, String username, String userRole) {
-        // Cung cấp thông tin phòng khám và các RAG context
         String globalCtx = memoryService.getGlobalContext(userQuery);
         String userCtx   = (username != null) ? memoryService.getUserContext(username) : "";
 
@@ -561,6 +565,17 @@ public class ReActAgentService {
             : "Bạn đang hỗ trợ khách hàng (username: " + username + "). Chỉ dùng tool khách được phép; dữ liệu cá nhân qua trang khách hàng.";
 
         String toolsSchema = toolService.getToolsSchemaForRole(userRole);
+        String normalizedRole = RoleAccessPolicy.normalizeRole(userRole);
+
+        // Tách 3 tầng câu trả lời y tế theo chuyên môn vai trò
+        String medicalRule = switch (normalizedRole) {
+            case "bac_si" ->
+                "- Với yêu cầu y tế từ BÁC SĨ: được hỗ trợ chuyên sâu ở mức tham khảo lâm sàng gồm chẩn đoán phân biệt, xét nghiệm nên cân nhắc, nhóm thuốc/phác đồ tham khảo (bao gồm liều dùng theo cân nặng/loài nếu có trong tài liệu), cảnh báo chống chỉ định và theo dõi điều trị. Luôn nói rõ quyết định cuối cùng thuộc bác sĩ sau thăm khám trực tiếp; không khẳng định chắc chắn khi thiếu dữ kiện loài/tuổi/cân nặng/tiền sử/xét nghiệm.\n";
+            case "y_ta" ->
+                "- Với yêu cầu y tế từ Y TÁ: được hỗ trợ ở mức chăm sóc và hỗ trợ lâm sàng — mô tả triệu chứng, hướng dẫn chăm sóc sau điều trị, nhận biết dấu hiệu xấu đi cần báo bác sĩ. KHÔNG cung cấp phác đồ điều trị, liều thuốc kê đơn hoặc thay thế quyết định của bác sĩ; mọi chỉ định điều trị phải do bác sĩ phụ trách xác nhận.\n";
+            default ->
+                "- Với yêu cầu y tế từ khách hàng hoặc nhân sự không lâm sàng: KHÔNG chẩn đoán khẳng định, KHÔNG kê thuốc, KHÔNG nêu liều dùng/kháng sinh/thuốc kê đơn; chỉ tư vấn sơ cứu an toàn, nhận biết dấu hiệu nguy hiểm và hướng dẫn đưa thú cưng đến gặp bác sĩ/phòng khám.\n";
+        };
 
         return buildAgentIdentityBlock(userRole, isStaff)
             + "\n\n" + toolsSchema
@@ -573,7 +588,7 @@ public class ReActAgentService {
             + "- Nếu người dùng muốn thao tác thật, hãy chọn tool phù hợp trước. Nếu tool chưa đủ dữ liệu, hỏi lại đúng một câu ngắn, không tự bịa dữ liệu.\n"
             + "- Người dùng có thể gõ teencode, không dấu, sai chính tả hoặc trộn Anh-Việt: me0/cat = Mèo; cho/cún/dog/gâu gâu = Chó; ear = tai; hair = lông; service = dịch vụ; treat = điều trị; k0/ko = không. Hãy hiểu ý định cốt lõi, nhưng luôn trả lời bằng tiếng Việt chuẩn mực, không nhại lại kiểu gõ loạn.\n"
             + "- KHI GỌI TOOL/FUNCTION: phải chuẩn hóa tham số trước khi truyền API. Ví dụ loai_thu_cung/loai phải là \"Mèo\" hoặc \"Chó\", không truyền \"me0\", \"cat\", \"dog\", \"gâu gâu\"; ngày giờ phải chuẩn YYYY-MM-DD/HH:mm; tên tool phải khớp chính xác danh sách được phép.\n"
-            + "- Với yêu cầu y tế: không chẩn đoán khẳng định, không kê thuốc kháng sinh/thuốc tây; dùng từ \"có thể\", \"dấu hiệu của\". Nếu có ra máu nhiều, ngộ độc, sùi bọt mép, co giật, khó thở hoặc tai nạn thì ưu tiên cấp cứu/hotline trước, không lề mề đặt lịch.\n"
+            + medicalRule
             + "- Nếu admin hỏi bạn là ai, đang dùng provider/model nào, hoặc AI cấu hình ra sao, hãy dùng tool kiem_tra_cau_hinh_ai nếu được phép rồi trả lời theo kết quả tool.\n"
             + "- Nếu admin hỏi mã nguồn/module/file/API/tool nào xử lý việc gì, hãy dùng tool tra_cuu_ma_nguon trước để định vị đúng nơi; nếu hỏi tổng quan kiến trúc thì dùng kiem_tra_kien_truc_he_thong.\n"
             + "- Không yêu cầu hoặc lặp lại toàn bộ DOM/source. Chỉ xin thêm đúng phần thiếu nếu tool index chưa đủ để trả lời.\n"

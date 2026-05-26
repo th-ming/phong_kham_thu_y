@@ -83,13 +83,13 @@ public class LichTrucController {
                     return ResponseEntity.status(409).body(Map.of("message", "Ca trực này đã được đăng ký rồi, sếp không cần đăng ký lại đâu! 🐾"));
                 }
 
-                // Kiểm tra xem nhân sự đang đăng ký có phải bác sĩ không
+                // Check neu nv la bac si
                 String roleCheckSql = "SELECT COUNT(*) FROM NhanVien WHERE id_nhan_vien = ? " +
                                       "AND (chuyen_mon LIKE N'%Bác sĩ%' OR chuyen_mon LIKE N'%Doctor%')";
                 Integer isDoctor = jdbcTemplate.queryForObject(roleCheckSql, Integer.class, targetNhanVienId);
                 
                 if (isDoctor != null && isDoctor > 0) {
-                    // Đếm số bác sĩ đã đăng ký trực trong cùng ngày và giờ bắt đầu này
+                    // Dem so BS truc cung gio cung ngay
                     String countSql = "SELECT COUNT(DISTINCT l.id_nhan_vien) FROM LichLamViecNhanVien l " +
                                       "JOIN NhanVien n ON l.id_nhan_vien = n.id_nhan_vien " +
                                       "WHERE l.ngay_lam = ? AND l.gio_bat_dau = ? " +
@@ -135,11 +135,9 @@ public class LichTrucController {
                         org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
                                         .getContext().getAuthentication();
                         String username = (auth != null) ? auth.getName() : null;
-
                         if (username == null || username.equals("anonymousUser")) {
                                 return ResponseEntity.status(401)
-                                                .body(Map.of("message",
-                                                                "Cảnh báo bảo mật: Yêu cầu không có Token xác thực hợp lệ!"));
+                                                .body(Map.of("message", "Token ko hop le"));
                         }
 
                         com.rexi.pkty.entity.TaiKhoan tk = taiKhoanRepository.findByTenDangNhap(username).orElse(null);
@@ -150,8 +148,7 @@ public class LichTrucController {
                                                 tk.getId_tai_khoan());
                                 if (allowedIds.isEmpty() || !allowedIds.get(0).equals(idNhanVien)) {
                                         return ResponseEntity.status(403)
-                                                        .body(Map.of("message",
-                                                                        "Cảnh báo bảo mật: Bạn không thể hủy ca trực của nhân viên khác!"));
+                                                        .body(Map.of("message", "Ko the huy ca truc nv khac"));
                                 }
                         }
 

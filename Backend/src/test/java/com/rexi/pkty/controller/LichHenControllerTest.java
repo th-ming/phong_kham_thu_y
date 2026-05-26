@@ -37,16 +37,16 @@ public class LichHenControllerTest extends BaseControllerTest {
         lichHen.setId_bac_si("BS-001");
         lichHen.setId_dich_vu("DV-001");
 
-        // Mock thời lượng dịch vụ: 30 phút
-        // Ép kiểu (Object) any() để tránh tranh chấp với queryForList(String, Class, Object...)
+        // Mock thoi luong dich vu: 30 phut
+        // Ep kieu tranh loi tranh chap queryForObject
         when(jdbcTemplate.queryForObject(anyString(), eq(Integer.class), (Object) any()))
                 .thenReturn(30);
 
-        // Ensure pet ownership check passes for the test pet/customer
+        // Chk pet owner count mock
         when(jdbcTemplate.queryForObject(org.mockito.ArgumentMatchers.contains("SELECT COUNT(*) FROM ThuCung"), eq(Integer.class), eq("TC-001"), eq("KH-001")))
                 .thenReturn(1);
 
-        // Mock ca trực của bác sĩ và lịch hẹn trùng: trả về giá trị theo trình tự
+        // Mock ca truc BS va trung lich
         when(jdbcTemplate.queryForList(anyString(), (Object) any(), (Object) any()))
                 .thenReturn(List.of(Map.of("gio_bat_dau", Time.valueOf("09:00:00"))), Collections.emptyList());
 

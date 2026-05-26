@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+﻿import React, { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { RevealSection, LottiePlayer, Typewriter, TransparentVideo } from "@components/SpecialEffects";
 import { useCountUp } from "@hooks/useCountUp";
@@ -6,7 +6,7 @@ import { useTheme } from "../../contexts/ThemeContextV2";
 import { getUserProfile, normalizeUserRole } from "@utils/index";
 import { toast } from "@components/Toast";
 
-/* banner giới thiệu trang chủ */
+// banner giới thiệu trang chủ
 const PhanGioiThieu: React.FC = () => {
     const navigate = useNavigate();
     const { theme } = useTheme();
@@ -54,7 +54,7 @@ const PhanGioiThieu: React.FC = () => {
                 position: "relative",
                 overflow: "hidden",
                 background: "var(--background)",
-                //@ts-ignore
+                // @ts-ignore
                 '--mouse-x': '50%',
                 '--mouse-y': '50%',
                 '--parallax-x': '0px',
@@ -122,16 +122,16 @@ const PhanGioiThieu: React.FC = () => {
                         100% { opacity: 0; filter: blur(10px); transform: scale(0.95); }
                     }
                     
-                    /* HIỆU ỨNG PHÁT SÁNG CHO CHỮ TRÊN BANNER (DARK MODE) - LÀM SẮC NÉT HƠN */
+                    // HIỆU ỨNG PHÁT SÁNG CHO CHỮ TRÊN BANNER (DARK MODE) - LÀM SẮC NÉT HƠN
                     [data-theme='dark'] .hero-title {
-                        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6); /* Đổ bóng tối sắc nét, tăng độ tương phản và chống mỏi mắt */
+                        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6); // Đổ bóng tối sắc nét, tăng độ tương phản và chống mỏi mắt
                     }
                     [data-theme='dark'] .hero-light-effect {
-                        mix-blend-mode: soft-light; /* Chuyển sang soft-light để bớt bị nhòe màu */
+                        mix-blend-mode: soft-light; // Chuyển sang soft-light để bớt bị nhòe màu
                         opacity: 0.8;
                     }
                     [data-theme='dark'] .floating-glass-card {
-                        background: rgba(15, 23, 42, 0.92) !important; /* Đậm hơn để nổi bật */
+                        background: rgba(15, 23, 42, 0.92) !important; // Đậm hơn để nổi bật
                         border-color: rgba(45, 212, 191, 0.5) !important;
                         box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5) !important;
                     }
@@ -167,7 +167,7 @@ const PhanGioiThieu: React.FC = () => {
                             </h1>
                             <p className="mission-text" style={{ 
                                 fontSize: "1.15rem", 
-                                color: isDark ? 'rgba(255, 255, 255, 0.85)' : '#4b5563', /* Tăng độ tương phản vượt trội: màu xám đậm trong light mode, trắng dịu trong dark mode */
+                                color: isDark ? 'rgba(255, 255, 255, 0.85)' : '#4b5563', // Tăng độ tương phản vượt trội: màu xám đậm trong light mode, trắng dịu trong dark mode
                                 maxWidth: "580px", 
                                 marginBottom: "42px", 
                                 lineHeight: 1.8, 
@@ -183,7 +183,7 @@ const PhanGioiThieu: React.FC = () => {
                             </p>
                             <div className="hero-cta-grid" style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
                                 {/* ========================================================================= */}
-                                {/* ĐÂY LÀ NÚT "ĐẶT LỊCH HẸN NGAY" Ở BANNER CHÍNH TRANG CHỦ                   */}
+                                {/* ĐÂY LÀ NÚT "ĐẶT LỊCH HẸN NGAY" Ở BANNER CHÍNH TRANG CHỦ */}
                                 {/* ========================================================================= */}
                                 <a href="#" data-ai-id="button-hero-datlich-ngay" onClick={handleBookingClick} className="btn btn-primary btn-pill hero-cta-btn cta-invite" style={{ fontWeight: 900 }}>ĐẶT LỊCH HẸN NGAY</a>
                                 <a href="#services" data-ai-id="button-hero-xem-dich-vu" onClick={(e) => { e.preventDefault(); document.querySelector('#services')?.scrollIntoView({ behavior: 'smooth' }); }} className="btn btn-outline btn-pill hero-secondary-cta" style={{ color: 'var(--ink)', background: 'var(--surface)', borderColor: 'var(--gray-300)', fontWeight: 900 }}>XEM DỊCH VỤ</a>
@@ -227,7 +227,7 @@ const PhanGioiThieu: React.FC = () => {
                         {/* ảnh video banner */}
                         <div className="hero-image-container">
                             {/* ========================================================================= */}
-                            {/* ĐÂY LÀ THẺ "TẬN TÂM 24/7 - CẤP CỨU KỊP THỜI" HIỂN THỊ NỔI TRÊN BANNER      */}
+                            {/* ĐÂY LÀ THẺ "TẬN TÂM 24/7 - CẤP CỨU KỊP THỜI" HIỂN THỊ NỔI TRÊN BANNER */}
                             {/* ========================================================================= */}
                             <div className="glass-card floating-glass-card" style={{
                                 position: 'absolute',

@@ -3,11 +3,7 @@ package com.rexi.pkty.entity;
 import jakarta.persistence.*;
 import lombok.Data;
 
-/**
- * ENTITY: Vai trò hệ thống
- * MỤC ĐÍCH: Định nghĩa các vai trò (Admin, Bác sĩ, Khách hàng...) để phân quyền người dùng.
- * KẾT NỐI: Bảng [VaiTroNhanVien] trong SQL Server.
- */
+// Entity VaiTroHeThong, map table SQL Server
 @Entity
 @Table(name = "VaiTroHeThong")
 @Data

@@ -70,7 +70,7 @@ export const reportClientError = (payload: ClientErrorPayload) => {
     body,
     keepalive: body.length < 60_000,
   }).catch(() => {
-    // Không để hệ thống báo lỗi tự gây thêm lỗi UI.
+    // ko để hệ thống báo lỗi tự gây thêm lỗi UI.
   });
 };
 

@@ -1,7 +1,7 @@
 import type { UserRoleCode } from "./index";
 import { ROLE_GROUPS, canAccessAdminPath } from "./permissions";
 
-/** Tool Agent / truy vấn nội bộ — khớp RoleAccessPolicy backend */
+// * Tool Agent / truy vấn nội bộ — khớp RoleAccessPolicy backend
 export const AGENT_TOOL_ROLES: Record<string, UserRoleCode[]> = {
   tim_lich_hen_hom_nay: ROLE_GROUPS.appointment,
   tim_khach_hang: ROLE_GROUPS.customerAndPet,
@@ -29,6 +29,7 @@ export const CUSTOMER_SAFE_AGENT_TOOLS = new Set([
   "huy_lich_hen",
   "tim_kiem_web",
   "kiem_tra_phan_he",
+  "tra_cuu_tai_lieu_y_khoa", // đồng bộ với backend — có output filter riêng cho khách hàng
 ]);
 
 export const canUseAgentTool = (role: UserRoleCode, toolName: string): boolean => {

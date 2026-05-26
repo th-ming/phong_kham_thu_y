@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect, useCallback } from 'react';
+﻿import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { generateSlug } from "@utils/index";
 import axiosInstance from "@services/axios";
@@ -144,10 +144,7 @@ const VirtualPets: React.FC<{ containerRef: React.RefObject<HTMLElement> }> = ({
     );
 };
 
-/**
- * FOOTER COMPONENT
- * Footer chính của toàn bộ hệ thống
- */
+// * * FOOTER COMPONENT * Footer chính của toàn bộ hệ thống
 const Footer: React.FC<{ isSimple?: boolean }> = ({ isSimple }) => {
     const footerRef = useRef<HTMLElement>(null);
     const [services, setServices] = useState<any[]>([]);
@@ -208,7 +205,7 @@ const Footer: React.FC<{ isSimple?: boolean }> = ({ isSimple }) => {
                     cursor: 'pointer'
                 }}>
                     {isMemePlaying ? (
-                        /* VIDEO KHI ĐƯỢC CLICK */
+                        // VIDEO KHI ĐƯỢC CLICK
                         <div style={{ 
                             height: '250px', display: 'flex', alignItems: 'flex-end',
                             filter: 'drop-shadow(0 10px 15px rgba(0,0,0,0.45))',
@@ -227,7 +224,7 @@ const Footer: React.FC<{ isSimple?: boolean }> = ({ isSimple }) => {
                             />
                         </div>
                     ) : (
-                        /* ẢNH TĨNH LÚC CHỜ (Chỉnh cho tự nhiên như Thú cưng ảo) */
+                        // ẢNH TĨNH LÚC CHỜ (Chỉnh cho tự nhiên như Thú cưng ảo)
                         <div style={{ 
                             height: '130px', display: 'flex', alignItems: 'flex-end',
                             filter: 'drop-shadow(0 10px 15px rgba(0,0,0,0.35))',

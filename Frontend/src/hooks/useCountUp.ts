@@ -1,9 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 
-/**
- * HOOK TÙY CHỈNH: useCountUp
- * Tạo hiệu ứng số đếm tăng dần khi phần tử xuất hiện trong khung hình
- */
+// * * HOOK TÙY CHỈNH: useCountUp * Tạo hiệu ứng số đếm tăng dần khi phần tử xuất hiện trong khung hình
 export const useCountUp = (end: number, duration: number = 2000) => {
     const [count, setCount] = useState(0);
     const [started, setStarted] = useState(false);

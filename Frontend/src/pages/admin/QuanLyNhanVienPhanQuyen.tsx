@@ -152,7 +152,7 @@ const QuanLyNhanVienPhanQuyen: React.FC = () => {
         return;
       }
       if (!payload.mat_khau.trim()) delete payload.mat_khau;
-      if (payload.id_nhan_vien === "") payload.id_nhan_vien = null; // Gửi null nếu không muốn liên kết
+      if (payload.id_nhan_vien === "") payload.id_nhan_vien = null; // Gửi null nếu ko muốn liên kết
       await axiosInstance.put(`/api/admin/tai-khoan/${editingAccount.id_tai_khoan}`, payload);
       toast.success("Đã cập nhật tài khoản!");
       setShowAccountModal(false);

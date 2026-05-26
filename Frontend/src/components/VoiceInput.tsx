@@ -1,85 +1,65 @@
-import { useState, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { toast } from './Toast';
+import axiosInstance from '@services/axios';
 
-/**
- * Component VoiceInput – cung cấp nút bấm thu âm giọng nói.
- * Sử dụng Web Speech API gốc của trình duyệt để chuyển đổi giọng nói thành văn bản
- * và chuyển văn bản đã nhận dạng cho ChatBot qua callback onSend.
- * Nếu trình duyệt không hỗ trợ SpeechRecognition, sẽ hiển thị thông báo hướng dẫn.
- */
-export const VoiceInput = ({ onSend, onTyping }: { onSend: (text: string) => void, onTyping?: (text: string) => void }) => {
+// * * Component VoiceInput – Sử dụng Groq Whisper AI qua MediaRecorder để nhận dạng siêu chuẩn.
+export const VoiceInput = ({ onSend, onTyping: _onTyping }: { onSend: (text: string) => void, onTyping?: (text: string) => void }) => {
   const [listening, setListening] = useState(false);
-  const [recognition, setRecognition] = useState<any>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
 
-  useEffect(() => {
-    // Khởi tạo tính năng nhận dạng giọng nói nếu trình duyệt có hỗ trợ
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (SpeechRecognition) {
-      const rec = new SpeechRecognition();
-      // Web Speech API chỉ nhận một ngôn ngữ chính mỗi phiên; vi-VN vẫn bắt tốt câu Việt
-      // và Chrome/Edge thường giữ được các thuật ngữ tiếng Anh ngắn trong câu trộn.
-      rec.lang = 'vi-VN';
-      rec.interimResults = true; // Hiện chữ ngay khi đang nói
-      rec.maxAlternatives = 3;
-      
-      let silenceTimer: ReturnType<typeof window.setTimeout>;
-      let finalTranscriptAccumulated = '';
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+              noiseSuppression: true,
+              autoGainControl: true,
+              echoCancellation: true,
+              channelCount: 1
+          }
+      });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
 
-      rec.onresult = (event: any) => {
-        let interimTranscript = '';
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-          if (event.results[i].isFinal) {
-             finalTranscriptAccumulated += event.results[i][0].transcript;
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) audioChunksRef.current.push(event.data);
+      };
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        stream.getTracks().forEach(track => track.stop());
+        const formData = new FormData();
+        formData.append('file', audioBlob, 'audio.webm');
+        toast.info('Đang gửi âm thanh cho Whisper AI...');
+        try {
+          const response = await axiosInstance.post('/api/chat/transcribe', formData, {
+              headers: { 'Content-Type': 'multipart/form-data' }
+          });
+          if (response.data.text) {
+              toast.success('🎤 Nhận dạng thành công');
+              onSend(response.data.text);
           } else {
-             interimTranscript += event.results[i][0].transcript;
+              toast.error('AI không nghe rõ âm thanh.');
           }
+        } catch (error) {
+            toast.error('Lỗi khi dịch giọng nói.');
         }
-        
-        const currentText = (finalTranscriptAccumulated + interimTranscript).trim();
-        if (onTyping) onTyping(currentText);
+      };
 
-        // Nếu người dùng im lặng 2.5 giây -> Tự động Send
-        clearTimeout(silenceTimer);
-        silenceTimer = setTimeout(() => {
-          rec.stop();
-          if (currentText) {
-             toast.success('🎤 Nhận dạng thành công');
-             onSend(currentText);
-             finalTranscriptAccumulated = '';
-          }
-        }, 2500);
-      };
-      
-      rec.onerror = (e: any) => {
-        if (e.error !== 'no-speech') {
-           toast.error('❌ Lỗi nhận dạng giọng nói');
-           console.error(e);
-        }
-        setListening(false);
-      };
-      
-      rec.onend = () => {
-        setListening(false);
-        clearTimeout(silenceTimer);
-      };
-      setRecognition(rec);
+      mediaRecorder.start();
+      setListening(true);
+    } catch (error) {
+      toast.error('Không mở được micro.');
     }
-  }, [onSend, onTyping]);
+  };
 
   const toggleListening = () => {
-    if (!recognition) {
-      toast.error('Trình duyệt không hỗ trợ SpeechRecognition, vui lòng gõ phím thay thế');
-      return;
-    }
     if (listening) {
-      recognition.stop();
+      mediaRecorderRef.current?.stop();
+      setListening(false);
     } else {
-      try {
-        recognition.start();
-        setListening(true);
-      } catch (e) {
-        console.error(e);
-      }
+      startRecording();
     }
   };
 

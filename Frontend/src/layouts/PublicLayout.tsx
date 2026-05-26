@@ -4,10 +4,7 @@ import Header from '@components/Header'
 import Footer from '@components/Footer'
 import { ChatBot } from '@components/ChatBot'
 
-/**
- * Layout công khai cho trang chủ, đăng nhập, ...
- * Includes: Topbar, Navigation, Emergency Banner, Footer
- */
+// * * Layout công khai cho trang chủ, đăng nhập, ... * Includes: Topbar, Navigation, Emergency Banner, Footer
 const PublicLayout: React.FC = () => {
   const location = useLocation()
 

@@ -14,7 +14,7 @@ import java.util.Map;
 public interface KhachHangRepository extends JpaRepository<KhachHang, String> {
     java.util.Optional<KhachHang> findByEmail(String email);
 
-    // Gọi Stored Procedure cập nhật thông tin khách hàng
+    // Call SP cap nhat khach hang
     @Query(value = "EXEC sp_CapNhatThongTinKhachHang :id, :name, :email, :phone, :address, :namSinh", nativeQuery = true)
     List<Map<String, Object>> callSpUpdateKhachHang(
         @Param("id") String id,

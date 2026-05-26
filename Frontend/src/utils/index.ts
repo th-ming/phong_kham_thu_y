@@ -205,10 +205,7 @@ export const getCustomerIdFromProfile = (user: any): string | undefined => {
   return id;
 };
 
-/**
- * Tạo Slug chuẩn SEO từ tên dịch vụ
- * Loại bỏ dấu, ký tự đặc biệt và khoảng trắng
- */
+// * * Tạo Slug chuẩn SEO từ tên dịch vụ * Loại bỏ dấu, ký tự đặc biệt và khoảng trắng
 export const generateSlug = (str: string): string => {
   if (!str) return "";
   return str.normalize("NFD")

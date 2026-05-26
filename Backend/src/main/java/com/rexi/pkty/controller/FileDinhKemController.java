@@ -14,10 +14,7 @@ import java.nio.file.*;
 import java.util.*;
 import java.util.logging.Logger;
 
-/**
- * Quản lý File Đính kèm (Upload / Download / Delete)
- * Lưu file vào thư mục uploads/ trong project
- */
+/** QL File Đính kèm (Upload/Download/Delete) lưu thư mục uploads/ */
 @RestController
 @RequestMapping("/api/file-dinh-kem")
 @CrossOrigin(origins = "${cors.allowed-origins:http://localhost:3000}")
@@ -44,7 +41,7 @@ public class FileDinhKemController {
     @Autowired
     private com.rexi.pkty.service.AuditLogService auditLogService;
 
-    // BẢO MẬT: Hàm kiểm tra quyền thao tác với file
+    // Check quyền thao tác file
     private boolean hasPermission() {
         org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
                 .getContext().getAuthentication();
@@ -62,7 +59,7 @@ public class FileDinhKemController {
                     .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền xem tài liệu của hệ thống!"));
         }
         try {
-            // Tự động trả về danh sách từ Database
+            // Trả list file từ DB
             return ResponseEntity.ok(fileDinhKemRepository.findAll());
         } catch (Exception e) {
             logger.severe("Lỗi khi liệt kê danh sách file: " + e.getMessage());
@@ -88,7 +85,7 @@ public class FileDinhKemController {
                 return ResponseEntity.badRequest().body(Map.of("message", "File quá lớn! Tối đa 10MB."));
             }
 
-            // BẢO MẬT: Khai báo Whitelist - Chỉ cho phép các định dạng an toàn
+            // Check whitelist định dạng an toàn
             String originalFilename = StringUtils
                     .cleanPath(file.getOriginalFilename() != null ? file.getOriginalFilename() : "file");
             String fileExtension = originalFilename.contains(".")
@@ -105,7 +102,7 @@ public class FileDinhKemController {
                         "Nội dung file không khớp với định dạng khai báo!"));
             }
 
-            // Phân loại thư mục
+            // Phân loại folder lưu trữ
             String subFolder = "others/";
             String loaiFile = "Khác";
 
@@ -123,13 +120,13 @@ public class FileDinhKemController {
                 }
             }
 
-            // Tạo thư mục vật lý nếu chưa có
+            // Create folder vật lý nếu chưa có
             Path uploadPath = Paths.get(UPLOAD_DIR + "/" + subFolder);
             if (!Files.exists(uploadPath)) {
                 Files.createDirectories(uploadPath);
             }
 
-            // Xử lý tên file bằng UUID tránh trùng lặp
+            // Gen tên file qua UUID tránh trùng
             String newFileName = UUID.randomUUID().toString() + fileExtension;
 
             Path filePath = uploadPath.resolve(newFileName);
@@ -167,7 +164,7 @@ public class FileDinhKemController {
         }
     }
 
-    // Xóa file (BẢO MẬT: Chỉ Admin, Bác sĩ hoặc Nhân viên mới được xóa)
+    // Xóa file (ADMIN, BAC_SI, Y_TA)
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteFile(@PathVariable String id) {
         if (!hasPermission()) {
@@ -177,12 +174,12 @@ public class FileDinhKemController {
         try {
             return fileDinhKemRepository.findById(id).map(file -> {
                 try {
-                    // Lấy đường dẫn và xóa file vật lý
+                    // Xóa file vật lý
                     String filePathStr = file.getDuongDan().replaceFirst("^/", "");
                     Path filePath = Paths.get(filePathStr);
                     Files.deleteIfExists(filePath);
 
-                    // Xóa dòng dữ liệu trong DB
+                    // Xóa record trong DB
                     fileDinhKemRepository.delete(file);
                     org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
                             .getContext().getAuthentication();

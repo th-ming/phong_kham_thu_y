@@ -13,7 +13,7 @@ import java.util.Map;
 @Repository
 public interface HoSoBenhAnRepository extends JpaRepository<HoSoBenhAn, String> {
 
-    // Gọi Stored Procedure tạo hồ sơ bệnh án mới
+    // Call SP tao hs benh an
     @Query(value = "EXEC sp_AddMedicalRecord :apptId, :date, :doctorId, :weight, :temp, :symptoms, :diagnosis, :treatment, :care, :creatorId", nativeQuery = true)
     List<Map<String, Object>> callSpAddMedicalRecord(
         @Param("apptId") String apptId,
@@ -28,13 +28,13 @@ public interface HoSoBenhAnRepository extends JpaRepository<HoSoBenhAn, String> 
         @Param("creatorId") String creatorId
     );
 
-    // Lấy kết quả xét nghiệm từ bảng BenhAn_XetNghiem thông qua id_ho_so
+    // Get ket qua XN tu BenhAn_XetNghiem
     @Query(value = "SELECT bx.*, l.ten_xet_nghiem FROM BenhAn_XetNghiem bx " +
                    "JOIN LoaiXetNghiem l ON bx.id_loai_xet_nghiem = l.id_loai_xet_nghiem " +
                    "WHERE bx.id_ho_so = :hosoId", nativeQuery = true)
     List<Map<String, Object>> findXetNghiemByHoSo(@Param("hosoId") String hosoId);
 
-    // Lấy danh sách hồ sơ bệnh án theo ID khách hàng
+    // Get ds hs benh an by idKhachHang
     @Query(value = "SELECT h.*, t.ten_thu_cung, k.ten_khach_hang, nv.ho_ten as ten_bac_si FROM HoSoBenhAn h " +
                    "JOIN LichHen l ON h.id_lich_hen = l.id_lich_hen " +
                    "JOIN ThuCung t ON l.id_thu_cung = t.id_thu_cung " +
@@ -44,7 +44,7 @@ public interface HoSoBenhAnRepository extends JpaRepository<HoSoBenhAn, String> 
                    "ORDER BY h.ngay_kham DESC", nativeQuery = true)
     List<Map<String, Object>> findByCustomerId(@Param("customerId") String customerId);
 
-    // Lấy tất cả hồ sơ bệnh án (cho Admin)
+    // Get all hs benh an (ADMIN)
     @Query(value = "SELECT h.*, t.ten_thu_cung, k.ten_khach_hang, nv.ho_ten as ten_bac_si FROM HoSoBenhAn h " +
                    "JOIN LichHen l ON h.id_lich_hen = l.id_lich_hen " +
                    "JOIN ThuCung t ON l.id_thu_cung = t.id_thu_cung " +
@@ -53,14 +53,14 @@ public interface HoSoBenhAnRepository extends JpaRepository<HoSoBenhAn, String> 
                    "ORDER BY h.ngay_kham DESC", nativeQuery = true)
     List<Map<String, Object>> getAllHoSoBenhAn();
 
-    // Lấy tất cả xét nghiệm (cho Admin)
+    // Get all XN (ADMIN)
     @Query(value = "SELECT bx.*, l.ten_xet_nghiem, nv.ho_ten as ten_bac_si FROM BenhAn_XetNghiem bx " +
                    "JOIN LoaiXetNghiem l ON bx.id_loai_xet_nghiem = l.id_loai_xet_nghiem " +
                    "LEFT JOIN NhanVien nv ON bx.id_bac_si = nv.id_nhan_vien " +
                    "ORDER BY bx.ngay_lay_mau DESC", nativeQuery = true)
     List<Map<String, Object>> getAllXetNghiem();
 
-    // Lấy tất cả đơn thuốc (cho Admin)
+    // Get all don thuoc (ADMIN)
     @Query(value = "SELECT dt.*, t.ten_thuoc, tc.ten_thu_cung FROM DonThuoc_ChiTiet dt " +
                    "JOIN Thuoc t ON dt.id_thuoc = t.id_thuoc " +
                    "JOIN HoSoBenhAn hs ON dt.id_ho_so_benh_an = hs.id_ho_so " +

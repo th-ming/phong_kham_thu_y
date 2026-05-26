@@ -1,7 +1,7 @@
-import React from "react";
+﻿import React from "react";
 import { Modal } from "@components/CommonUI";
 
-// Interface Props định nghĩa chặt chẽ để đảm bảo compiler không gắt lỗi.
+// Interface Props định nghĩa chặt chẽ để đảm bảo compiler ko gắt lỗi.
 interface ModalThemThuCungProps {
   isOpen: boolean;
   onClose: () => void;

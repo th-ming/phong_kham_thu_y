@@ -6,7 +6,7 @@ const BASE_URL = `http://localhost:${FRONTEND_PORT}`;
 test.describe('Kiểm thử chức năng: Quản lý Lịch trực & Phân bổ ca trực', () => {
 
     test.beforeEach(async ({ page }) => {
-        // Đăng nhập Admin trước mỗi kịch bản test
+        // Đăng nhập ADMIN trước mỗi kịch bản test
         await page.goto(`${BASE_URL}/dang-nhap`);
         await page.getByPlaceholder('Tên đăng nhập').fill('admin');
         await page.getByPlaceholder('Mật khẩu').fill('admin@rexi.com');
@@ -40,7 +40,7 @@ test.describe('Kiểm thử chức năng: Quản lý Lịch trực & Phân bổ 
         if (await addBtn.isVisible()) {
             await addBtn.click();
 
-            // 3. Xác nhận Modal Đăng Ký Ca Trực hiển thị thành công
+            // 3. xn Modal Đăng Ký Ca Trực hiển thị thành công
             await expect(page.getByText('Đăng Ký Ca Trực')).toBeVisible();
 
             // 4. Đóng modal (Hủy bỏ)

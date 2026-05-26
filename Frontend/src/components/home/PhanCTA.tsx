@@ -1,11 +1,9 @@
-import React from "react";
+﻿import React from "react";
 import { useNavigate } from "react-router-dom";
 import { getUserProfile, normalizeUserRole } from "@utils/index";
 import { toast } from "@components/Toast";
 
-/**
- * PHẦN KÊU GỌI HÀNH ĐỘNG (CTA)
- */
+// * * PHẦN KÊU GỌI HÀNH ĐỘNG (CTA)
 const PhanCTA: React.FC = () => {
     const navigate = useNavigate();
 
@@ -128,7 +126,7 @@ const PhanCTA: React.FC = () => {
 
                     {/* Bên phải: Thẻ đăng ký trực tuyến */}
                     <div className="cta-action-card" style={{ flex: '0 0 auto', background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(16px)', borderRadius: '32px', padding: '40px 36px', border: '1px solid rgba(255,255,255,0.2)', minWidth: '320px', textAlign: 'center' }}>
-                        {/* Nhóm ảnh đại diện bác sĩ nổi bật */}
+                        {/* Nhóm ảnh đại diện bs nổi bật */}
                         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
                             {["/img/bac_si_minh_anh.png", "/img/bac_si_khanh_linh.png", "/img/bac_si_hoang_nam.png"].map((src, i) => (
                                 <div key={i} className="cta-avatar" style={{ width: '52px', height: '52px', borderRadius: '50%', border: '3px solid rgba(255,255,255,0.5)', overflow: 'hidden', marginLeft: i === 0 ? 0 : '-16px', position: 'relative', zIndex: 3 - i, background: 'var(--primary)', animationDelay: `${i * 0.18}s` }}>

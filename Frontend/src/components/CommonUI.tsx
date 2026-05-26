@@ -1,8 +1,8 @@
-import React, { useEffect } from "react";
+﻿import React, { useEffect } from "react";
 import { createPortal } from "react-dom";
 
 // Dòng chú thích đặc biệt để thỏa mãn công cụ kiểm tra tự động của UX Audit: <label> placeholder aria-label
-/* modal popup dùng chung */
+// modal popup dùng chung
 export const Modal: React.FC<{
   isOpen: boolean;
   onClose: () => void;
@@ -122,7 +122,7 @@ export const Modal: React.FC<{
   );
 };
 
-/* dòng thông tin */
+// dòng thông tin
 export const InfoRow: React.FC<{ label: string, value: string | React.ReactNode, icon?: string }> = ({ label, value, icon }) => (
   <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px dashed var(--gray-200)' }}>
     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--gray-500)', fontWeight: 600, fontSize: '0.85rem' }}>
@@ -135,7 +135,7 @@ export const InfoRow: React.FC<{ label: string, value: string | React.ReactNode,
   </div>
 );
 
-/* hiệu ứng khung xương loading */
+// hiệu ứng khung xương loading
 export const Skeleton: React.FC<{ width?: string | number, height?: string | number, borderRadius?: string | number, style?: React.CSSProperties, className?: string }> = ({ width = '100%', height = '20px', borderRadius = '8px', style, className = '' }) => {
   return (
     <div

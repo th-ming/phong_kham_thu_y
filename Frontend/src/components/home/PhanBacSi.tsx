@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { Link } from "react-router-dom";
 import { RevealSection } from "@components/SpecialEffects";
 
@@ -126,21 +126,21 @@ const PhanBacSi: React.FC = () => {
                     }
                 `}</style>
 
-                {/* tiêu đề bác sĩ */}
+                {/* tiêu đề bs */}
                 <div className="container">
                     <div style={{ marginBottom: '56px' }}>
                         <h2 style={{ fontSize: "clamp(2rem, 4vw, 3rem)", fontWeight: 950, color: "var(--ink)", letterSpacing: '-1px' }}>Chuyên Gia <span style={{ color: "var(--primary)" }}>Tận Tâm</span></h2>
                     </div>
 
-                    {/* bố cục bác sĩ */}
+                    {/* bố cục bs */}
                     <div className="doctors-layout" style={{ display: 'flex', gap: '28px', alignItems: 'stretch' }}>
 
-                        {/* cột bác sĩ nổi bật */}
+                        {/* cột bs nổi bật */}
                         <div className="doc-featured" style={{ flex: '0 0 auto', width: '38%', borderRadius: '32px', overflow: 'hidden', background: 'var(--surface)', border: '1px solid var(--gray-300)', boxShadow: 'var(--shadow-xl)', display: 'flex', flexDirection: 'column', cursor: 'default' }}>
                             <div style={{ height: '400px', position: 'relative', overflow: 'hidden', background: isDark ? 'linear-gradient(180deg, #0f172a 0%, #1e293b 100%)' : 'linear-gradient(180deg, #f0fdfa 0%, #ccfbf1 100%)' }}>
 
                                 <img src={MOCK_DOCTORS[0].hinh_anh} alt={MOCK_DOCTORS[0].ho_ten} className="doc-featured-img" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center' }} />
-                                {/* nhãn bác sĩ */}
+                                {/* nhãn bs */}
                                 <div style={{ position: 'absolute', top: '20px', left: '20px', background: 'var(--surface)', padding: '8px 16px', borderRadius: '50px', fontSize: '0.7rem', fontWeight: 900, color: 'var(--primary)', border: '1px solid var(--gray-200)', display: 'flex', alignItems: 'center', gap: '6px', backdropFilter: 'blur(8px)' }}>
                                     <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>verified</span>
                                     BÁC SĨ CHUYÊN KHOA
@@ -160,7 +160,7 @@ const PhanBacSi: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* cột danh sách bác sĩ */}
+                        {/* cột danh sách bs */}
                         <div className="doc-grid" style={{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '20px', alignContent: 'start' }}>
                             {MOCK_DOCTORS.slice(1).map((d, i) => (
                                 <div key={i} className="doc-card-small glass-card" style={{ borderRadius: '24px', overflow: 'hidden', background: 'var(--surface)', display: 'flex', flexDirection: 'column' }}>

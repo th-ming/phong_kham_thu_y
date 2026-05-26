@@ -6,12 +6,12 @@ const BASE_URL = `http://localhost:${FRONTEND_PORT}`;
 test.describe('Kiểm thử Trang Bảng điều khiển Admin (Dashboard)', () => {
 
     test.beforeEach(async ({ page }) => {
-        // Đăng nhập Admin trước mỗi test case
+        // Đăng nhập ADMIN trước mỗi test case
         await page.goto(`${BASE_URL}/dang-nhap`);
         await page.getByPlaceholder('Tên đăng nhập').fill('admin');
         await page.getByPlaceholder('Mật khẩu').fill('admin@rexi.com');
         await page.getByRole('button', { name: 'Đăng nhập ngay' }).click();
-        // SỬA LỖI TIMEOUT: Chờ trang lưu Token xong mới test tiếp
+        // SỬA LỖI TIMEOUT: Chờ trang lưu TOKEN xong mới test tiếp
         await page.waitForURL(/.*\/quan-ly\/dashboard/, { timeout: 15000 });
     });
 
@@ -61,7 +61,7 @@ test.describe('Kiểm thử Trang Bảng điều khiển Admin (Dashboard)', () 
         // Kiểm tra xem tiêu đề vẫn hiển thị (hoặc theo logic mobile của bạn)
         await expect(page.getByRole('heading', { name: /Tổng quan hệ thống/i })).toBeVisible();
 
-        // Kiểm tra xem Sidebar có bị ẩn hoặc chuyển thành menu mobile không 
+        // Kiểm tra xem Sidebar có bị ẩn hoặc chuyển thành menu mobile ko
         // (Tùy thuộc vào implementation của SidebarAdmin.tsx)
     });
 

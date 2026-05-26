@@ -1,12 +1,10 @@
-import React, { useState, useEffect, useRef } from "react";
+﻿import React, { useState, useEffect, useRef } from "react";
 import Lottie from "lottie-react";
 
 // Bộ nhớ đệm toàn cục (Global Cache) để lưu trữ dữ liệu JSON Lottie trên RAM, tránh tải lại nhiều lần
 const lottieCache: Record<string, any> = {};
 
-/**
- * TRÌNH PHÁT LOTTIE
- */
+// * * TRÌNH PHÁT LOTTIE
 export const LottiePlayer: React.FC<{ url: string, style?: React.CSSProperties }> = ({ url, style }) => {
   const [animationData, setAnimationData] = useState<any>(null);
 
@@ -30,9 +28,7 @@ export const LottiePlayer: React.FC<{ url: string, style?: React.CSSProperties }
   return <Lottie animationData={animationData} loop={true} style={style} />;
 };
 
-/**
- * MÈO MEME (BANANA CAT)
- */
+// * * MÈO MEME (BANANA CAT)
 export const MemeCat: React.FC = () => {
   const [shouldRender, setShouldRender] = useState(true);
 
@@ -164,7 +160,7 @@ const MemeCatCore: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
     };
   }, [isVisible]);
 
-  // TỐI ƯU HIỆU NĂNG 1: Tách sự kiện chuột ra riêng để không bị tháo lắp 60 lần/giây
+  // TỐI ƯU HIỆU NĂNG 1: Tách sự kiện chuột ra riêng để ko bị tháo lắp 60 lần/giây
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => { mousePosRef.current = { x: e.clientX, y: e.clientY }; };
     window.addEventListener('mousemove', handleMouseMove);
@@ -516,9 +512,7 @@ const MemeCatCore: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
   );
 };
 
-/**
- * TRÌNH PHÁT VIDEO NỀN TRONG SUỐT (TÍCH HỢP TẨY PHÔNG XANH)
- */
+// * * TRÌNH PHÁT VIDEO NỀN TRONG SUỐT (TÍCH HỢP TẨY PHÔNG XANH)
 export const TransparentVideo: React.FC<{ src: string, style?: React.CSSProperties, className?: string, playbackRate?: number, isDark?: boolean, loop?: boolean, muted?: boolean, onEnded?: () => void, removeBlack?: boolean }> = ({ src, style, className, playbackRate = 1, isDark = false, loop = true, muted = true, onEnded, removeBlack = false }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -607,9 +601,7 @@ export const TransparentVideo: React.FC<{ src: string, style?: React.CSSProperti
   );
 };
 
-/**
- * CON TRỎ CHUỘT TÙY CHỈNH (HIỆU ỨNG REXI)
- */
+// * * CON TRỎ CHUỘT TÙY CHỈNH (HIỆU ỨNG REXI)
 export const CustomCursor: React.FC = () => {
   const [pos, setPos] = useState({ x: -100, y: -100 });
   const [isHover, setIsHover] = useState(false);
@@ -634,9 +626,7 @@ export const CustomCursor: React.FC = () => {
   );
 };
 
-/**
- * NÚT CUỘN LÊN ĐẦU TRANG
- */
+// * * NÚT CUỘN LÊN ĐẦU TRANG
 export const ScrollToTop: React.FC = () => {
   const [show, setShow] = useState(false);
   useEffect(() => {
@@ -659,9 +649,7 @@ export const ScrollToTop: React.FC = () => {
   );
 };
 
-/**
- * HIỆU ỨNG HIỆN DẦN KHI CUỘN TRANG (REVEAL)
- */
+// * * HIỆU ỨNG HIỆN DẦN KHI CUỘN TRANG (REVEAL)
 export const RevealSection: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef<HTMLDivElement>(null);
@@ -680,9 +668,7 @@ export const RevealSection: React.FC<{ children: React.ReactNode }> = ({ childre
   );
 };
 
-/**
- * HIỆU ỨNG ĐÁNH MÁY CHỮ (TYPEWRITER)
- */
+// * * HIỆU ỨNG ĐÁNH MÁY CHỮ (TYPEWRITER)
 export const Typewriter: React.FC<{ words: string[] }> = ({ words }) => {
   const [index, setIndex] = useState(0);
   const [text, setText] = useState('');

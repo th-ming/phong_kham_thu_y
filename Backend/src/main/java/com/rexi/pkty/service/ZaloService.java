@@ -16,7 +16,7 @@ public class ZaloService {
 
     private static final Logger logger = Logger.getLogger(ZaloService.class.getName());
 
-    // Cấu hình thông tin từ Zalo Developer tại đây.
+    // config thông tin từ Zalo Developer tại đây.
     private final String ZALO_ACCESS_TOKEN = "YOUR_ZALO_ACCESS_TOKEN";
     private final String TEMPLATE_ID = "YOUR_TEMPLATE_ID"; // ID mẫu tin nhắn đã duyệt
 

@@ -18,7 +18,7 @@ const ChiTietHoSoBenhAn: React.FC = () => {
         .then(res => {
           setRecord(res.data);
           setLoading(false);
-          // BUG FIX: Lịch sử tư vấn (Chatbot AI) được lưu theo Khách hàng, không phải Thú cưng
+          // BUG FIX: Lịch sử tư vấn (Chatbot AI) được lưu theo Khách hàng, ko phải Thú cưng
           if (res.data?.id_khach_hang) {
             setLoadingConsult(true);
             axiosInstance.get(`/api/lich-su-tu-van/khach-hang/${res.data.id_khach_hang}`)
