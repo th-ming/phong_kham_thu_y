@@ -138,14 +138,14 @@ public class ChatController {
         List<ChatMessage> history = payload.history != null
                 ? new ArrayList<>(payload.history)
                 : new ArrayList<>();
-        // Chặn spam chat nhanh quá gây nghẽn hệ thống. Cho tối đa 20 tin text hoặc 15 video mỗi phút nha sếp.
+        // Chặn spam chat để tránh nghẽn hệ thống. Giới hạn tối đa 20 tin nhắn hoặc 15 video mỗi phút.
         String clientIp = request.getRemoteAddr();
         org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
                 .getContext().getAuthentication();
         String realUsername = (auth != null && !auth.getName().equals("anonymousUser")) ? auth.getName() : null;
         String rateKey = (realUsername != null) ? realUsername : clientIp;
 
-        // Dọn rác RAM nếu lưu rate limit quá nhiều (tránh tràn RAM máy sếp cùi 😂)
+        // Giải phóng bộ nhớ RAM khi số lượng bản ghi trong rateLimiter vượt quá 1000.
         if (rateLimiter.size() > 1000) {
             rateLimiter.entrySet().removeIf(entry -> Instant.now().isAfter(entry.getValue().resetTime));
         }
@@ -183,7 +183,7 @@ public class ChatController {
                 return Map.of("reply", welcomeMessage);
             }
 
-            // Chỉ nhớ 40 tin nhắn gần nhất thui kẻo quá tải LLM (token nhiều ➜ load chậm + tốn tiền API sếp ơi)
+            // Giới hạn lưu tối đa 40 tin nhắn gần nhất để tối ưu hóa số lượng token và tốc độ xử lý của LLM.
             if (history.size() > 40) {
                 history = new ArrayList<>(history.subList(history.size() - 40, history.size()));
             }

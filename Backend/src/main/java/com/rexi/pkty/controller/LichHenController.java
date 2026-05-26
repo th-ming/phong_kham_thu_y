@@ -388,7 +388,7 @@ public class LichHenController {
             @RequestParam(required = false) Integer size,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String search) {
-        // Tự xây câu SQL lọc dữ liệu theo trạng thái (status) hoặc thanh tìm kiếm (search) sếp chọn
+        // Tự động dựng câu truy vấn SQL để lọc dữ liệu theo trạng thái hoặc từ khóa tìm kiếm.
         StringBuilder where = new StringBuilder("WHERE 1=1");
         java.util.List<Object> params = new java.util.ArrayList<>();
         if (status != null && !status.isEmpty()) {
@@ -412,7 +412,7 @@ public class LichHenController {
                 "LEFT JOIN NhanVien nv ON lh.id_bac_si = nv.id_nhan_vien " +
                 "LEFT JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu ";
 
-        // Phân trang nếu frontend truyền page/size để load danh sách nhanh hơn sếp nha
+        // Phân trang danh sách nếu Client truyền tham số page và size.
         if (page != null && size != null && size > 0) {
             try {
                 Integer total = jdbcTemplate.queryForObject(
@@ -653,7 +653,7 @@ public class LichHenController {
                 return ResponseEntity.status(409).body(Map.of("message", "Không thể hủy lịch hẹn vì đã có Hóa đơn hoặc Hồ sơ Bệnh án liên kết. Nếu có sai sót, vui lòng liên hệ Quản lý để xử lý."));
             }
 
-            // Xóa mềm nè sếp: chỉ đổi trạng thái sang 'DA_HUY' chứ k xóa cứng khỏi DB để sếp còn đối soát
+            // Thực hiện xóa mềm: chuyển đổi trạng thái sang 'DA_HUY' để phục vụ đối soát dữ liệu sau này.
             lh.setTrang_thai("DA_HUY");
             lichHenRepository.save(lh);
 
