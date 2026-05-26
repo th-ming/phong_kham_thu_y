@@ -29,7 +29,7 @@ axiosInstance.interceptors.request.use(
     }
     
     const requestUrl = config.url || '';
-    const isChatRequest = requestUrl.includes('/api/chat');
+    const isChatRequest = requestUrl.includes('/api/chat') || requestUrl.includes('/api/agent');
 
     // Đính kèm tag hành động AI nếu có. Không bao giờ gắn header này vào chat thường,
     // vì tag Autopilot cũ có thể làm backend chặn /api/chat với 403.

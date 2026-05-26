@@ -53,7 +53,7 @@ public class ActionAuthFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res, FilterChain chain) throws IOException, ServletException {
         String requestUri = req.getRequestURI();
-        if (requestUri != null && (requestUri.equals("/api/chat") || requestUri.startsWith("/api/chat/"))) {
+        if (requestUri != null && (requestUri.startsWith("/api/chat") || requestUri.startsWith("/api/agent"))) {
             chain.doFilter(req, res);
             return;
         }

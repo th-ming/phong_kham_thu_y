@@ -5,6 +5,11 @@ import { useTheme } from "../contexts/ThemeContextV2";
 import { getCustomerIdFromProfile, getUserProfile, matchesSearchFields, normalizeSearchText, normalizeUserRole, scoreSearchFields } from "../utils/index";
 import { ADMIN_ROUTE_ROLES, canAccessAdminPath, isInternalRole } from "../utils/permissions";
 import {
+    isSensitiveAction,
+    isAffirmationCommand,
+    isCancelCommand,
+} from "../utils/agentCommandParser";
+import {
     agentPermissionDeniedMessage,
     canAgentNavigateHoaDon,
     canAgentQueryBenhAn,
@@ -3112,15 +3117,7 @@ export const ChatBot: React.FC = () => {
         }, delayMs);
     };
 
-    const isAffirmationCommand = (text: string) => {
-        const normalized = normalizeSearchText(text).trim();
-        return /^(ok|oke|okay|dong y|xac nhan|chot|lam di|duoc|yes|y|tiep tuc|toi dong y)$/.test(normalized);
-    };
-
-    const isCancelCommand = (text: string) => {
-        const normalized = normalizeSearchText(text).trim();
-        return /^(huy|bo qua|khong|khong lam nua|dung lai|thoi)$/.test(normalized);
-    };
+    // Lấy logic isAffirmationCommand và isCancelCommand từ agentCommandParser (đã import)
 
     const isCustomerCancelAppointmentCommand = (text: string) => {
         const normalized = normalizeSearchText(text);
@@ -3131,18 +3128,8 @@ export const ChatBot: React.FC = () => {
     };
 
     const isSensitiveAgentCommand = (text: string) => {
-        const normalized = normalizeSearchText(text);
         if (!isClinicStaff && isCustomerCancelAppointmentCommand(text)) return false;
-        const sensitivePhrases = [
-            "xoa", "xoa mem", "xoa tai khoan", "xoa khach hang", "xoa hoa don",
-            "khoa tai khoan", "mo khoa tai khoan", "gui hang loat", "gui dong loat",
-            "xac nhan thu tien", "xac nhan thanh toan", "doi trang thai hoa don",
-            "cap nhat hoa don", "sua hoa don",
-            ...(isClinicStaff ? ["huy lich", "huy lich hen"] : []),
-            "tai khoan bi khoa", "danh sach tai khoan", "phan quyen", "nhan su",
-            "khach hang phong kham", "danh sach khach hang", "doanh thu", "cong no"
-        ];
-        return sensitivePhrases.some(phrase => normalized.includes(phrase));
+        return isSensitiveAction(text);
     };
 
     const isSelfIdentityQuery = (text: string) => {
@@ -3211,16 +3198,11 @@ export const ChatBot: React.FC = () => {
 
     const isSensitiveVisibleElement = (el: HTMLElement) => {
         const label = getElementAgentLabel(el);
-        return [
-            "xoa", "delete", "huy", "khoa", "thanh toan", "thu tien",
-            "gui hang loat", "gui dong loat", "xac nhan", "duyet"
-        ].some(phrase => label.includes(phrase));
+        return isSensitiveAction(label);
     };
 
     const isSensitiveAutopilotTag = (tag: string) => {
-        const normalized = normalizeSearchText(tag);
-        return ["xoa", "delete", "huy", "khoa", "thanh toan", "thu tien", "gui hang loat", "duyet", "xac nhan thu tien"]
-            .some(phrase => normalized.includes(phrase));
+        return isSensitiveAction(tag);
     };
 
     const canRunAutopilotTag = (tag: string, isConfirmed: boolean = false) => {
