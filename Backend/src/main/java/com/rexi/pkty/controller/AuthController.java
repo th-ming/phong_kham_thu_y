@@ -62,11 +62,11 @@ public class AuthController {
     @Autowired
     private com.rexi.pkty.service.EmailService emailService;
 
-    /**
-     * SỬA LỖI #2: Đăng nhập - Sử dụng BCrypt để kiểm tra mật khẩu
-     * SỬA LỖI #7: Thêm bước kiểm tra dữ liệu đầu vào (Validation)
-     * SỬA LỖI #8: Bảo mật thông tin lỗi (Không trả về chi tiết Exception)
-     */
+    @Autowired(required = false)
+    private com.rexi.pkty.service.SecurityAlertService securityAlertService;
+
+    // Bẫy nghiệp vụ login: Sử dụng mã hóa BCrypt để kiểm tra mật khẩu.
+    // Ép Validation chặt chẽ dữ liệu đầu vào và tuyệt đối bảo mật thông tin lỗi (không trả Exception thô ra ngoài).
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request, BindingResult bindingResult,
             jakarta.servlet.http.HttpServletRequest httpRequest) {
@@ -74,8 +74,8 @@ public class AuthController {
         String clientIp = httpRequest.getRemoteAddr();
         String lockoutKey = username + "-" + clientIp;
 
-        // BẢO MẬT: Kiểm tra Lockout (Chống Brute Force)
-        // GIẢI TỎA LOCKOUT: Thay đổi nhỏ này kích hoạt Spring Boot DevTools tự động restart server để giải tỏa lockout tài khoản của sếp!
+        // BẪY BẢO MẬT: Chặn đứng Brute Force tấn công mò pass bằng cơ chế Lockout tạm thời 15 phút.
+        // GIẢI TỎA LOCKOUT: Lưu RAM tạm lockout key theo IP/Username để quản trị viên dễ kiểm soát.
         Long lockTime = lockoutTime.get(lockoutKey);
         if (lockTime != null) {
             if (System.currentTimeMillis() < lockTime) {
@@ -98,11 +98,11 @@ public class AuthController {
 
         com.rexi.pkty.entity.TaiKhoan tk = null;
         try {
-            // SỬA LỖI: Tìm trực tiếp bằng Repository thay vì gọi qua Stored Procedure để tránh lỗi logic bên trong SQL
+            // Chọc trực tiếp thông qua JPA Repository thay vì Stored Procedure để tránh lỗi logic bên SQL.
             Optional<com.rexi.pkty.entity.TaiKhoan> tkOpt = taiKhoanRepository.findByTenDangNhap(username);
 
             if (tkOpt.isEmpty()) {
-                handleFailedAttempt(lockoutKey);
+                handleFailedAttempt(lockoutKey, clientIp, username);
                 auditLogService.logActionWithUsername(username, "CẢNH BÁO", "TaiKhoan",
                         "Đăng nhập thất bại (Không tìm thấy tài khoản)");
                 return ResponseEntity.status(401).body(Map.of("message", "Sai tài khoản hoặc mật khẩu!"));
@@ -110,7 +110,7 @@ public class AuthController {
 
             tk = tkOpt.get();
 
-                // BẢO MẬT: Chặn đăng nhập nếu tài khoản đã bị khóa hoặc vô hiệu hóa
+                // BẪY BẢO MẬT: Chặn đứng ngay lập tức nếu tài khoản của KHACH_HANG hoặc NHAN_VIEN đã bị khóa (`da_xoa` hoặc `inactive`).
                 String status = tk.getTrang_thai();
                 if (status != null && (status.equalsIgnoreCase("Đã khóa") || status.equalsIgnoreCase("inactive"))) {
                     logger.warning("Cảnh báo: Cố gắng đăng nhập vào tài khoản đã bị khóa: " + request.getUsername());
@@ -118,7 +118,7 @@ public class AuthController {
                             "Tài khoản của bạn đã bị vô hiệu hóa. Vui lòng liên hệ phòng khám để biết thêm chi tiết!"));
                 }
 
-                // Nếu mat_khau_hash null (do đăng ký qua SP), lấy từ mat_khau
+                // Tự động fallback lấy mật khẩu thô nếu chưa được migrate sang hash_code.
                 String storedHash = (tk.getMat_khau_hash() != null && !tk.getMat_khau_hash().isEmpty())
                         ? tk.getMat_khau_hash()
                         : tk.getMat_khau();
@@ -132,7 +132,7 @@ public class AuthController {
                         // Hỗ trợ đăng nhập bằng mật khẩu chưa mã hóa (Bản cũ)
                         isMatch = storedHash.equals(request.getPassword());
                         if (isMatch) {
-                            // Tự động migrate sang mã hóa BCrypt
+                            // Cơ chế tự động migrate âm thầm nâng cấp lên BCrypt ngay khi đăng nhập đúng pass cũ.
                             tk.setMat_khau_hash(passwordEncoder.encode(request.getPassword()));
                             taiKhoanRepository.save(tk);
                         }
@@ -141,7 +141,7 @@ public class AuthController {
 
                 if (!isMatch) {
                     logger.warning("Đăng nhập thất bại cho tài khoản: " + request.getUsername());
-                    handleFailedAttempt(lockoutKey);
+                    handleFailedAttempt(lockoutKey, clientIp, username);
                     auditLogService.logActionWithUsername(username, "CẢNH BÁO", "TaiKhoan",
                             "Đăng nhập thất bại (Sai mật khẩu)");
                     return ResponseEntity.status(401).body(Map.of("message", "Sai tài khoản hoặc mật khẩu!"));
@@ -268,11 +268,17 @@ public class AuthController {
         }
     }
 
-    private void handleFailedAttempt(String lockoutKey) {
+    // Ghi nhận số lần đăng nhập sai của KHACH_HANG hoặc NHAN_VIEN để kích hoạt LOCKOUT chặn dò pass.
+    // Nếu sập bẫy brute-force, hệ thống sẽ tự động gọi securityAlertService báo động đỏ IP phá hoại.
+    private void handleFailedAttempt(String lockoutKey, String ip, String username) {
         int attempts = loginAttempts.getOrDefault(lockoutKey, 0) + 1;
         loginAttempts.put(lockoutKey, attempts);
         if (attempts >= MAX_ATTEMPTS) {
             lockoutTime.put(lockoutKey, System.currentTimeMillis() + LOCKOUT_DURATION);
+            if (attempts == MAX_ATTEMPTS && securityAlertService != null) {
+                securityAlertService.reportAndBlock(ip, "Brute-force Login", "/api/auth/login", "POST", "Automated Script", 
+                    "User: " + username + " failed " + attempts + " times", "Hệ thống tự động phát hiện và chặn đứng hành vi dò mật khẩu liên tục.");
+            }
         }
     }
 
@@ -779,7 +785,7 @@ public class AuthController {
         }
 
         try {
-            // BẢO MẬT: Kiểm tra nhanh trước khi tạo
+            // BẪY BẢO MẬT: Check trùng lặp SĐT hoặc Email trong db trước khi tạo, tránh trùng lặp dữ liệu.
             String sdt = request.get("sdt");
             String email = request.get("email");
             if (sdt == null || sdt.trim().isEmpty()) {
@@ -794,7 +800,7 @@ public class AuthController {
                 return ResponseEntity.status(409).body(Map.of("message", "Email này đã được sử dụng."));
             }
 
-            // Tạo Khách Hàng
+            // Bắt đầu khởi tạo entity KHACH_HANG mới trong hệ thống.
             com.rexi.pkty.entity.KhachHang kh = new com.rexi.pkty.entity.KhachHang();
             kh.setId_khach_hang("KH-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase());
             kh.setTen_khach_hang(request.get("ten_khach_hang"));
@@ -806,7 +812,7 @@ public class AuthController {
             kh.setEmail(email);
             kh.setDia_chi("");
             
-            // Lấy năm sinh từ dữ liệu gửi lên nếu có (tiện cho lễ tân nhập nhanh)
+            // Đọc năm sinh do TIEP_TAN gõ nhanh từ UI để đồng bộ phân loại GENZ/MATURE sau này.
             String namSinhStr = request.get("nam_sinh");
             if (namSinhStr != null && !namSinhStr.trim().isEmpty()) {
                 try {
@@ -821,7 +827,7 @@ public class AuthController {
             kh.setNgay_cap_nhat(java.time.LocalDateTime.now());
             kh = khachHangRepository.save(kh);
 
-            // Tao tai khoan nhanh voi mat khau tam thoi ngau nhien.
+            // Tạo tài khoản đăng nhập nhanh cho KHACH_HANG với mật khẩu tạm thời ngẫu nhiên.
             com.rexi.pkty.entity.TaiKhoan tk = new com.rexi.pkty.entity.TaiKhoan();
             tk.setId_tai_khoan("TK-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase());
             tk.setTen_dang_nhap(request.get("sdt"));

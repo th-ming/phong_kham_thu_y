@@ -38,10 +38,8 @@ public class AgentController {
 
     private final com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
 
-    /**
-     * API gợi ý chăm sóc chủ động (Retention & Upsell)
-     * Quét các bé thú cưng trong hệ thống để tìm bé quá hạn tiêm phòng hoặc đến tuổi triệt sản
-     */
+    // Tuyệt chiêu giữ chân KHACH_HANG (Retention & Upsell) chạy tự động.
+    // Quét sạch db để tìm xem bé nào quá hạn tiêm phòng hoặc triệt sản rồi nhắc khéo chủ nuôi đặt lịch gấp.
     @GetMapping("/retention-reminders")
     public ResponseEntity<?> getRetentionReminders() {
         try {
@@ -67,7 +65,7 @@ public class AgentController {
                 return ResponseEntity.ok(List.of());
             }
 
-            // Lấy tối đa 3 bé thú cưng để đề xuất chăm sóc chủ động
+            // Giới hạn TOP 3 bé để đề xuất chủ động, tránh spam thông báo làm KHACH_HANG ngứa mắt.
             // Chỉ lấy thú cưng thuộc đúng khách hàng đang đăng nhập.
             String sql = "SELECT TOP 3 tc.id_thu_cung, tc.ten_thu_cung, tc.loai, tc.giong, " +
                          "tc.id_khach_hang, kh.ten_khach_hang, kh.sdt " +
@@ -124,10 +122,8 @@ public class AgentController {
         }
     }
 
-    /**
-     * API Điều phối Đa Agent Swarm (Multi-Agent Swarm Orchestration)
-     * Nhận yêu cầu phức tạp từ giao diện và trả về chuỗi log thảo luận ngầm của các Agent phụ tá y khoa
-     */
+    // Bộ não điều phối ĐA AGENT SWARM (Multi-Agent Swarm Orchestration).
+    // Nhận yêu cầu tiếp thị phức tạp từ ADMIN rồi chia việc cho 3 con AGENT phụ tá thảo luận ngầm để tự chốt danh sách và viết email nháp.
     @PostMapping("/swarm-orchestration")
     @PreAuthorize(RexiSecurityRoles.MARKETING)
     public ResponseEntity<?> handleSwarmOrchestration(@RequestBody Map<String, String> payload) {
@@ -135,7 +131,7 @@ public class AgentController {
         logger.info("[SWARM] Tiếp nhận yêu cầu điều phối đa Agent Swarm: " + query);
 
         try {
-            // Bước 1: 🤖 Rexi Orchestrator phân vai
+            // Bước 1: 🤖 REXI ORCHESTRATOR phân vai phân nhiệm cho các AGENT phụ tá ngầm
             String step1Agent = "🤖 Rexi Orchestrator";
             String step1Action = "Phân tích yêu cầu chiến dịch và phân nhỏ công việc cho các Agent phụ tá ngầm";
             String step1Output = "Đã tiếp nhận yêu cầu từ sếp: \"" + query + "\"\n" +
@@ -144,7 +140,7 @@ public class AgentController {
                     "2. Giao CreativeAgent: Tiếp nhận kết quả từ DataAgent, lên kịch bản viết email tri ân/nhắc lịch cá nhân hóa.\n" +
                     "3. Giao ReviewAgent: Kiểm tra chéo toàn bộ dữ liệu, loại bỏ lỗi chính tả và các placeholder lỗi trước khi hiển thị.";
 
-            // Bước 2: 📊 Data Analyst Agent
+            // Bước 2: 📊 DATA ANALYST AGENT phân tích ý đồ tìm kiếm để dịch sang query db an toàn
             String step2Agent = "📊 Data Analyst Agent";
             String step2Action = "Dịch ý định ngôn ngữ tự nhiên sang bộ lọc tham số an toàn (Hybrid Text-to-Safe-Query)";
             
@@ -209,7 +205,7 @@ public class AgentController {
                 }
             }
 
-            // Thực thi truy vấn database an toàn
+            // Thực thi truy vấn db an toàn, chặn đứng SQL Injection phá hoại
             String sql = "SELECT TOP 50 kh.ten_khach_hang, kh.email, kh.sdt, tc.ten_thu_cung, tc.loai, tc.giong " +
                     "FROM KhachHang kh " +
                     "JOIN ThuCung tc ON kh.id_khach_hang = tc.id_khach_hang " +
@@ -288,7 +284,7 @@ public class AgentController {
                 return ResponseEntity.ok(Map.of("reply", swarmPayload));
             }
 
-            // Bước 3: ✍️ Copywriter Agent
+            // Bước 3: ✍️ COPYWRITER AGENT lên kịch bản viết email cá nhân hóa
             String step3Agent = "✍️ Copywriter Agent";
             String step3Action = "Soạn thảo kịch bản email/tin nhắn cá nhân hóa hàng loạt dựa trên thông tin chủ nuôi và boss cưng";
             
@@ -331,7 +327,7 @@ public class AgentController {
 
             String step3Output = "MẪU THƯ MARKETING CÁ NHÂN HÓA ĐÃ ĐƯỢC SOẠN THÀNH CÔNG:\n\n" + draftedEmail;
 
-            // Bước 4: 🛡️ Reviewer Agent
+            // Bước 4: 🛡️ REVIEWER AGENT kiểm tra chéo nội dung email nháp xem có placeholder lỗi ko
             String step4Agent = "🛡️ Reviewer Agent";
             String step4Action = "Kiểm tra chéo nội dung thư, phát hiện lỗi chính tả, xác thực thẻ cá nhân hóa";
             
@@ -363,7 +359,7 @@ public class AgentController {
 
             String step4Output = "KẾT QUẢ KIỂM TRA CHÉO (CROSS-AGENT REVIEW):\n" + reviewOutput;
 
-            // Xây dựng danh sách contacts thật kèm email đã điền thông tin cá nhân hóa
+            // Sync nóng thông tin cá nhân hóa của KHACH_HANG và thú cưng vào email thật trước khi gửi
             List<Map<String, String>> contacts = new ArrayList<>();
             for (Map<String, Object> record : dbResults) {
                 String khName = record.get("ten_khach_hang") != null ? record.get("ten_khach_hang").toString() : "Khách hàng";
@@ -410,10 +406,8 @@ public class AgentController {
         }
     }
 
-    /**
-     * API phê duyệt & gửi email hàng loạt sau khi Admin duyệt chiến dịch
-     * Nhận danh sách contacts từ SwarmConsole và xử lý gửi đồng loạt
-     */
+    // Nút kích hoạt phê duyệt gửi email hàng loạt sau khi ADMIN bấm duyệt trên UI.
+    // Đẩy danh sách email vào hàng đợi gửi ngầm bất đồng bộ (Async background thread) để tránh làm nghẽn API chính.
     @PostMapping("/bulk-send-email")
     @PreAuthorize(RexiSecurityRoles.MARKETING)
     public ResponseEntity<?> bulkSendEmail(@RequestBody Map<String, Object> request) {
@@ -495,10 +489,8 @@ public class AgentController {
         }
     }
 
-    /**
-     * Fast path cho voice/agent: frontend đã phân loại chắc chắn thì gọi tool trực tiếp,
-     * không cần đi qua vòng LLM ReAct. Các tool đọc dữ liệu nội bộ vẫn yêu cầu tài khoản nhân sự.
-     */
+    // Lối đi tắt (Fast path) siêu tốc cho Voice Input hoặc Agent Autopilot.
+    // Nếu UI đã bóc tách chắc chắn lệnh thì chọc thẳng vào executeTool để chạy, đỡ tốn token LLM ReAct. Vẫn check bảo mật TOKEN nhân viên cẩn thận.
     @PostMapping("/tool")
     @PreAuthorize(RexiSecurityRoles.AUTHENTICATED)
     public ResponseEntity<?> runDirectTool(@RequestBody Map<String, Object> body) {
@@ -546,10 +538,8 @@ public class AgentController {
         }
     }
 
-    /**
-     * ReAct Agent v5 — Vòng lặp tự chủ Reason→Act→Observe
-     * AI tự lên kế hoạch, gọi tools, quan sát, lặp lại rồi trả lời cuối cùng.
-     */
+    // Cỗ máy ReAct Agent v5 tối thượng — Tự chủ suy luận (Reason -> Act -> Observe).
+    // Cho AI tự lên kế hoạch, tự gọi tool, quan sát kết quả rồi lặp lại để trả ra câu trả lời chuẩn xác nhất cho sếp.
     @PostMapping("/react")
     @PreAuthorize(RexiSecurityRoles.AUTHENTICATED)
     public ResponseEntity<?> reactAgent(@RequestBody Map<String, String> body, jakarta.servlet.http.HttpServletRequest request) {
