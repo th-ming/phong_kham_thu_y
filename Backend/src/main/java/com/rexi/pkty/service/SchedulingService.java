@@ -22,16 +22,16 @@ public class SchedulingService {
     private EmailService emailService;
 
     /**
-     * Tự động chuyển lịch hẹn CHƯA XỬ LÝ sang 'KHONG_DEN' cuối ngày (23:59).
-     * BUG FIX #1: Trước đây dùng N'Chờ xác nhận' (tiếng Việt) nhưng DB lưu 'CHO_XAC_NHAN'
+     * Tự chuyển lịch hẹn CHƯA XỬ LÝ thành 'KHONG_DEN' cuối ngày (23:59).
+     * BUG FIX #1: Trước dùng N'Chờ xác nhận' (tiếng Việt) nhưng DB lưu 'CHO_XAC_NHAN'
      * → scheduled task chạy nhưng KHÔNG UPDATE được dòng nào! Task chạy nhưng vô ích.
-     * BUG FIX #2: Trước đây expire cả lịch hẹn NGÀY HÔM NAY, nhưng bác sĩ có thể vẫn
+     * BUG FIX #2: Trước expire cả lịch hẹn NGÀY HÔM NAY, nhưng bác sĩ có thể vẫn
      * đang xử lý muộn → chỉ expire lịch hẹn ĐÃ QUA (ngay_kham < today).
      */
     @Scheduled(cron = "0 59 23 * * *", zone = "Asia/Ho_Chi_Minh")
     public void autoCancelExpiredAppointments() {
         try {
-            // Lấy ngày hôm nay theo giờ VN để tránh lệch ngày khi host ở nước ngoài
+            // Lấy giờ VN để tránh lệch ngày khi host ở nước ngoài
             java.time.LocalDate today = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"));
 
             String sql = "UPDATE LichHen SET trang_thai = 'KHONG_DEN' " +
