@@ -1,5 +1,3 @@
-<<<<<<< Updated upstream
-=======
 import { toast } from './Toast';
 import { confirmAction } from './ConfirmModal';
 import { isSensitiveAction } from '../utils/agentCommandParser';
@@ -258,4 +256,3 @@ export const executeAction = async (tag: string, skipConfirm: boolean = false) =
     }));
   }
 };
->>>>>>> Stashed changes
