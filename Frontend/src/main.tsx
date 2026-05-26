@@ -10,6 +10,7 @@ import { installClientErrorReporter, reportAxiosError } from './services/clientE
 installClientErrorReporter();
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 // Bắt phản hồi lỗi 403 từ Backend và hiển thị toast cảnh báo cho người dùng
 =======
 // config Axios Interceptor để tự động gắn TOKEN vào tất cả request
@@ -31,6 +32,9 @@ axios.interceptors.request.use((config) => {
 });
 
 // Bắt phản hồi lỗi từ Backend (Đặc biệt: Bắt lỗi phân quyền 403 từ ActionAuthFilter)
+>>>>>>> Stashed changes
+=======
+// Bắt phản hồi lỗi 403 từ Backend và hiển thị toast cảnh báo cho người dùng
 >>>>>>> Stashed changes
 axios.interceptors.response.use(
   (response) => response,
