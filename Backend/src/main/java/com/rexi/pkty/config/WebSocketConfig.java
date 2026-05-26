@@ -18,15 +18,15 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
-        // Enable a simple memory-based message broker to carry the messages back to the client on destinations prefixed with "/topic"
+        // Broker mem-based, topic nhan msg
         config.enableSimpleBroker("/topic");
-        // Prefix for messages that are bound for methods annotated with @MessageMapping
+        // Prefix gui msg len @MessageMapping
         config.setApplicationDestinationPrefixes("/app");
     }
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        // Register the "/ws" endpoint, enabling the SockJS fallback options so that alternate transports can be used if WebSocket is not available
+        // Endpoint WS, ho tro SockJS backup
         String[] origins = Arrays.stream(allowedOrigins.split(","))
                 .map(String::trim)
                 .filter(origin -> !origin.isEmpty())

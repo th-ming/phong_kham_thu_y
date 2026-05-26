@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import axiosInstance from "@services/axios";
 import { formatTienVND, matchesSearchFields } from "@utils/index";
 import { Modal } from "@components/CommonUI";
@@ -147,7 +147,7 @@ const QuanLyHoaDon: React.FC = () => {
       h.ten_nhan_vien || 'Hệ thống'
     ]);
 
-    // Thêm dấu nháy đơn để tránh lỗi CSV Injection khi sếp xuất file hóa đơn
+    // Thêm dấu nháy đơn để tránh lỗi CSV Injection khi xuất file hóa đơn
     const sanitizeCSV = (val: string) => {
       if (/^[=+\-@]/.test(val)) return `'${val}`;
       return val;

@@ -54,19 +54,19 @@ test.describe('Kiểm thử luồng Đặt lịch hẹn dành cho Khách hàng (
         await expect(dateInput).toBeVisible();
         await dateInput.fill(dateStr);
 
-        // 5. Chọn Bác sĩ điều trị chỉ định (tùy chọn)
+        // 5. Chọn bs điều trị chỉ định (tùy chọn)
         const doctorSelect = page.locator('select[data-ai-id="select-datlichhen-33v9"]');
         await expect(doctorSelect).toBeEnabled();
-        // Đợi đến khi danh sách bác sĩ được tải từ API xong (dropdown có nhiều hơn 1 option)
+        // Đợi đến khi danh sách bs được tải từ API xong (dropdown có nhiều hơn 1 option)
         try {
             await page.waitForFunction(
                 (sel) => (sel as HTMLSelectElement).options.length > 1,
                 await doctorSelect.elementHandle(),
                 { timeout: 5000 }
             );
-            await doctorSelect.selectOption({ index: 1 }); // Chọn bác sĩ đầu tiên nếu hệ thống có lịch trực
+            await doctorSelect.selectOption({ index: 1 }); // Chọn bs đầu tiên nếu hệ thống có lịch trực
         } catch {
-            // Bác sĩ là tùy chọn; nếu ngày chọn chưa có lịch trực thì tiếp tục kiểm tra phần còn lại của form.
+            // bs là tùy chọn; nếu ngày chọn chưa có lịch trực thì tiếp tục kiểm tra phần còn lại của form.
         }
 
         // 6. Chọn Khung giờ khám rảnh trong ngày (Click vào nút giờ rảnh đầu tiên)
@@ -88,7 +88,7 @@ test.describe('Kiểm thử luồng Đặt lịch hẹn dành cho Khách hàng (
         await expect(confirmBtn).toBeVisible();
         await confirmBtn.click();
 
-        // 9. Xác nhận hệ thống đưa ra thông báo đăng ký đặt lịch thành công
+        // 9. xn hệ thống đưa ra thông báo đăng ký đặt lịch thành công
         await expect(page.getByText(/thành công/i)).toBeVisible({ timeout: 10000 });
     });
 
@@ -96,11 +96,11 @@ test.describe('Kiểm thử luồng Đặt lịch hẹn dành cho Khách hàng (
         // 1. Điều hướng sang trang Đặt lịch hẹn
         await page.goto(`${BASE_URL}/khach-hang/dat-lich-hen`);
 
-        // 2. Không điền bất kỳ thông tin nào và nhấn trực tiếp nút Đặt lịch
+        // 2. ko điền bất kỳ thông tin nào và nhấn trực tiếp nút Đặt lịch
         const confirmBtn = page.getByRole('button', { name: /Đặt lịch|Xác nhận/i });
         await confirmBtn.click();
 
-        // 3. Đảm bảo trang web không được chuyển tiếp do vi phạm Validation
+        // 3. Đảm bảo trang web ko được chuyển tiếp do vi phạm Validation
         await expect(page).toHaveURL(/.*\/khach-hang\/dat-lich-hen/);
     });
 

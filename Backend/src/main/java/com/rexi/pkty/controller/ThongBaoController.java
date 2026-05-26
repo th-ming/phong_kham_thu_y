@@ -15,9 +15,7 @@ public class ThongBaoController {
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
 
-    /**
-     * API để trigger bắn thông báo tới tất cả các client đang kết nối (broadcast)
-     */
+    // Trigger broadcast notification toi tat ca clients
     @PostMapping("/broadcast")
     public org.springframework.http.ResponseEntity<?> broadcastNotification(@RequestBody Map<String, Object> payload) {
         try {

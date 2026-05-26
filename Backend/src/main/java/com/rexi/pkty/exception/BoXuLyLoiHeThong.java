@@ -14,19 +14,13 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * Bộ xử lý lỗi tập trung cho toàn hệ thống Rexi.
- * Mọi Exception ko mong muốn đều phải in ra log chi tiết để debug,
- * tuyệt đối ko nuốt lỗi chìm như kiểu "Loi he thong" rồi ko ai biết lỗi gì.
- */
+// Global Exception Handler, log loi chi tiet debug
 @RestControllerAdvice
 public class BoXuLyLoiHeThong {
 
     private static final Logger logger = Logger.getLogger(BoXuLyLoiHeThong.class.getName());
 
-    /**
-     * Xử lý lỗi khi dữ liệu đầu vào không khớp với các quy tắc bảo mật
-     */
+    // Handle validation errors
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<?> handleValidationExceptions(MethodArgumentNotValidException ex) {
         Map<String, String> errors = new HashMap<>();
@@ -36,14 +30,12 @@ public class BoXuLyLoiHeThong {
             errors.put(fieldName, errorMessage);
         });
         
-        // Trả về thông báo lỗi đầu tiên để hiển thị cho người dùng
+        // Get first validation error message
         String firstError = errors.values().stream().findFirst().orElse("Dữ liệu không hợp lệ");
         return ResponseEntity.badRequest().body(Map.of("message", firstError));
     }
 
-    /**
-     * Xử lý lỗi các lỗi hệ thống không mong muốn khác
-     */
+    // Handle other system errors
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<?> handleAccessDenied(AccessDeniedException ex) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", "Khong co quyen truy cap."));
@@ -54,9 +46,7 @@ public class BoXuLyLoiHeThong {
         return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(Map.of("message", "Phuong thuc khong duoc ho tro."));
     }
 
-    // Bẫy cuối cùng: bắt hết mọi lỗi ko lường trước.
-    // IN RA LOG ĐẦY ĐỦ STACK TRACE để lần sau mở file log là thấy ngay thủ phạm,
-    // ko phải đoán mò kiểu "Loi he thong" rồi ko biết lỗi cái gì.
+    // Fallback: log full stack trace debug
     @ExceptionHandler(Exception.class)
     public ResponseEntity<?> handleGlobalException(Exception ex) {
         logger.log(Level.SEVERE, "[BoXuLyLoiHeThong] Lỗi hệ thống chưa xử lý: " + ex.getMessage(), ex);

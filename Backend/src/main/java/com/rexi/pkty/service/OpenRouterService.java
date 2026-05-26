@@ -194,7 +194,7 @@ public class OpenRouterService {
                 }
                 
                 if (!freeModels.isEmpty()) {
-                    // Giới hạn lấy tối đa 10 model free để không làm mảng API quá dài gây nghẽn
+                    // Giới hạn lấy tối đa 10 model free để ko làm mảng API quá dài gây nghẽn
                     cachedFreeModels = freeModels.subList(0, Math.min(freeModels.size(), 10));
                     lastModelFetchTime = now;
                     logger.info("Đã quét tự động và cập nhật " + cachedFreeModels.size() + " model Free từ OpenRouter.");

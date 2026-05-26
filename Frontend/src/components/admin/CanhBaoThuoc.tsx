@@ -13,7 +13,7 @@ const CanhBaoThuoc: React.FC = () => {
             .catch(err => console.error("Lỗi tải cảnh báo thuốc:", err));
     }, []);
 
-    // Nếu kho thuốc an toàn (Không có gì hết hạn) -> Ẩn widget
+    // Nếu kho thuốc an toàn (ko có gì hết hạn) -> Ẩn widget
     if (thuocHetHan.length === 0) return null;
 
     return (

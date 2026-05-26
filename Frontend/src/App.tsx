@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useEffect, useState } from "react";
+﻿import React, { lazy, Suspense, useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import ErrorBoundary from "@components/ErrorBoundary";
 import PublicLayout from "@layouts/PublicLayout";
@@ -94,10 +94,7 @@ const SystemTitle: React.FC = () => {
   return null;
 };
 
-/**
- * Xử lý lỗi tập trung bằng Error Boundary
- * Tự động hiển thị chỉ báo khi các trang đang tải
- */
+// * * Xử lý lỗi tập trung bằng Error Boundary * Tự động hiển thị chỉ báo khi các trang đang tải
 const ScrollToTopOnNavigate: React.FC = () => {
   const location = useLocation();
   const isFirstRender = React.useRef(true);
@@ -208,7 +205,7 @@ const App: React.FC = () => {
               <Route path="/quan-ly/kho-thuoc" element={<QuanLyKhoThuoc />} />
             </Route>
 
-            {/* LỚP 3: Nhân sự cho Admin/Quản lý, cấu hình hệ thống chỉ Admin */}
+            {/* LỚP 3: Nhân sự cho ADMIN/Quản lý, config hệ thống chỉ ADMIN */}
             <Route element={<ProtectedRoute allowedRoles={ROLE_GROUPS.staffAccountManage} />}>
               <Route path="/quan-ly/nhan-vien-phan-quyen" element={<QuanLyNhanVienPhanQuyen />} />
             </Route>

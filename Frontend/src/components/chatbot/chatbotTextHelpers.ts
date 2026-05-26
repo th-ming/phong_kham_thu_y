@@ -14,6 +14,9 @@ export const scoreAssistantVoice = (voice: SpeechSynthesisVoice) => {
 
     if (lang === "vi-vn") score += 160;
     else if (lang.includes("vi")) score += 120;
+    
+    // Ưu tiên giọng Natural của Edge (công nghệ Neural của nó đọc song ngữ Anh-Việt siêu mượt()
+    if (name.includes("microsoft hoai my online (natural)")) score += 500;
     if (/multilingual|multi-lingual|multi language|multi-language/.test(name)) score += 80;
     if (/natural|neural|online|premium/.test(name)) score += 55;
     if (/hoaimy|hoai my|linh|an|mai|female|woman|zira/.test(name)) score += 38;
@@ -107,7 +110,14 @@ const applyInlineEnglishPronunciation = (text: string) => text
     .replace(/\bGoogle\b/gi, "gu gồ")
     .replace(/\bChrome\b/gi, "crôm")
     .replace(/\bEdge\b/gi, "ét")
-    .replace(/\bEmail\b/gi, "i meo");
+    .replace(/\bEmail\b/gi, "i meo")
+    .replace(/\bVoucher\b/gi, "vau chờ")
+    .replace(/\bBooking\b/gi, "búc king")
+    .replace(/\bApp\b/gi, "áp")
+    .replace(/\bWeb\b/gi, "oép")
+    .replace(/\bHotline\b/gi, "hót lai")
+    .replace(/\bDatabase\b/gi, "đa ta bây")
+    .replace(/\bToken\b/gi, "tốc cần");
 
 export const splitSpeechByLanguage = (text: string): Array<{ text: string; lang: SpeechLang }> => {
     const sentences = text

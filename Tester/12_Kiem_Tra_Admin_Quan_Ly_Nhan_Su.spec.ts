@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-// Thay đổi PORT tùy theo cấu hình Frontend hiện tại (3000, 3001 hoặc 5173)
+// Thay đổi PORT tùy theo config Frontend hiện tại (3000, 3001 hoặc 5173)
 const FRONTEND_PORT = 3005;
 const BASE_URL = `http://localhost:${FRONTEND_PORT}`;
 
@@ -26,7 +26,7 @@ test.describe('Kiểm thử nâng cao: Quản lý Nhân sự & Xác minh Phân q
 
         await page.getByLabel(/HỌ VÀ TÊN/i).fill(hoTen);
         await page.locator('select').first().selectOption('Bác sĩ');
-        // SỬA LỖI: Tự động tạo SĐT ngẫu nhiên để không bị báo trùng lặp
+        // SỬA LỖI: Tự động tạo SĐT ngẫu nhiên để ko bị báo trùng lặp
         await page.getByLabel(/SỐ ĐIỆN THOẠI/i).fill(`09${ts.toString().slice(-8)}`);
         await page.getByLabel(/EMAIL/i).fill(testEmail);
 
@@ -38,7 +38,7 @@ test.describe('Kiểm thử nâng cao: Quản lý Nhân sự & Xác minh Phân q
 
         await page.getByRole('button', { name: /LƯU THÔNG TIN/i }).click();
 
-        // Xác nhận thông báo thành công
+        // xn thông báo thành công
         await expect(page.getByText('Đã thêm nhân sự mới!')).toBeVisible({ timeout: 10000 });
 
         // --- BƯỚC 3: ĐĂNG XUẤT VÀ ĐĂNG NHẬP BẰNG TÀI KHOẢN MỚI ---
@@ -51,16 +51,16 @@ test.describe('Kiểm thử nâng cao: Quản lý Nhân sự & Xác minh Phân q
         await page.getByRole('button', { name: 'Đăng nhập ngay' }).click();
 
         // --- BƯỚC 4: XÁC MINH QUYỀN TRUY CẬP CỦA BÁC SĨ ---
-        // Bác sĩ cũng vào được trang quản lý nhưng sẽ bị giới hạn module (nếu hệ thống đã cấu hình)
+        // bs cũng vào được trang quản lý nhưng sẽ bị giới hạn module (nếu hệ thống đã config)
         await expect(page).toHaveURL(/.*\/quan-ly\/dashboard/, { timeout: 10000 });
 
-        // Kiểm tra xem Bác sĩ có thấy mục "Nhân sự & Phân quyền" không (Lẽ ra là KHÔNG ĐƯỢC THẤY)
+        // Kiểm tra xem bs có thấy mục "Nhân sự & Phân quyền" ko (Lẽ ra là KHÔNG ĐƯỢC THẤY)
         const staffMenu = page.locator('text=Nhân sự & Phân quyền');
         await expect(staffMenu).not.toBeVisible();
     });
 
     test('TC02: Kiểm tra chức năng Lọc và Chỉnh sửa thông tin', async ({ page }) => {
-        // Đăng nhập Admin
+        // Đăng nhập ADMIN
         await page.goto(`${BASE_URL}/dang-nhap`);
         await page.getByPlaceholder('Tên đăng nhập').fill('admin');
         await page.getByPlaceholder('Mật khẩu').fill('admin@rexi.com');
@@ -79,7 +79,7 @@ test.describe('Kiểm thử nâng cao: Quản lý Nhân sự & Xác minh Phân q
         if (await editBtn.isVisible()) {
             await editBtn.click();
             await expect(page.getByText(/Cập nhật nhân viên/i)).toBeVisible();
-            // Xác nhận ô mật khẩu KHÔNG hiển thị khi sửa
+            // xn ô mật khẩu KHÔNG hiển thị khi sửa
             await expect(page.getByPlaceholder(/Nhập mật khẩu/i)).not.toBeVisible();
         }
     });

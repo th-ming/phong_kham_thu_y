@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import axiosInstance from '@services/axios';
 import { toast } from '@components/Toast';
 import { RevealSection } from '@components/SpecialEffects';
@@ -250,102 +250,7 @@ const ThongTinCaNhanNhanVien: React.FC = () => {
                             />
                             {isEditing && (
                                 <label style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 'calc(100% - 12px)', height: 'calc(100% - 12px)', background: 'rgba(0,0,0,0.5)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', cursor: 'pointer', transition: 'all 0.3s', zIndex: 10 }}>
-                                    <input data-ai-id="input-thongtincanhannhanvien-p2ps" type="file" accept="image/*" onChange={handleImageChange} style={{ display: 'none' }} />
-                                    <span className="material-symbols-outlined" style={{ fontSize: '32px' }}>photo_camera</span>
-                                </label>
-                            )}
-                            {(profile.trang_thai === 'ACTIVE' || profile.trang_thai === 'Đang làm việc' || !profile.trang_thai) && (
-                                <div style={{ position: 'absolute', bottom: '5px', right: '5px', width: '20px', height: '20px', background: '#10b981', border: '4px solid var(--surface)', borderRadius: '50%', zIndex: 2 }}></div>
-                            )}
-                        </div>
-                        
-                        {isEditing ? (
-                            <input data-ai-id="input-thongtincanhannhanvien-59by" 
-                                type="text" 
-                                name="ho_ten" 
-                                value={formData.ho_ten || formData.hoTen || ''} 
-                                onChange={handleChange} 
-                                className="form-input-edit" 
-                                style={{ marginBottom: '10px', textAlign: 'center', fontSize: '1.2rem' }}
-                                placeholder="Họ và tên"
-                            />
-                        ) : (
-                            <h2 style={{ fontSize: '1.6rem', fontWeight: 950, color: 'var(--ink)', margin: '0 0 10px 0', letterSpacing: '-0.5px' }}>{displayHoTen}</h2>
-                        )}
-                        
-                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'var(--primary-light)', color: 'var(--primary)', padding: '8px 20px', borderRadius: '50px', fontSize: '0.85rem', fontWeight: 800, marginBottom: '32px' }}>
-                            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>verified_user</span>
-                            {displayRole}
-                        </div>
-                        
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', textAlign: 'left' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', background: 'var(--background)', borderRadius: '20px', border: '1px solid var(--gray-100)' }}>
-                                <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                    <span className="material-symbols-outlined">badge</span>
-                                </div>
-                                <div>
-                                    <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--gray-400)', letterSpacing: '1px' }}>MÃ NHÂN SỰ</div>
-                                    <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--ink)' }}>{profile.id_nhan_vien || currentUserId}</div>
-                                </div>
-                            </div>
-
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', background: 'var(--background)', borderRadius: '20px', border: '1px solid var(--gray-100)' }}>
-                                <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'var(--blue-50)', color: 'var(--blue-600)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                    <span className="material-symbols-outlined">mail</span>
-                                </div>
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--gray-400)', letterSpacing: '1px' }}>EMAIL LIÊN HỆ</div>
-                                    {isEditing ? (
-                                        <input data-ai-id="input-thongtincanhannhanvien-8fb5" 
-                                            type="email" 
-                                            name="email" 
-                                            value={formData.email || ''} 
-                                            onChange={handleChange} 
-                                            className="form-input-edit" 
-                                        />
-                                    ) : (
-                                        <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{profile.email || 'Chưa cập nhật'}</div>
-                                    )}
-                                </div>
-                            </div>
-
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', background: 'var(--background)', borderRadius: '20px', border: '1px solid var(--gray-100)' }}>
-                                <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'var(--green-50)', color: 'var(--green-600)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                    <span className="material-symbols-outlined">call</span>
-                                </div>
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--gray-400)', letterSpacing: '1px' }}>ĐIỆN THOẠI</div>
-                                    {isEditing ? (
-                                        <input data-ai-id="input-thongtincanhannhanvien-rivm" 
-                                            type="tel" 
-                                            name="so_dien_thoai" 
-                                            value={formData.so_dien_thoai || formData.soDienThoai || ''} 
-                                            onChange={handleChange} 
-                                            className="form-input-edit" 
-                                        />
-                                    ) : (
-                                        <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--ink)' }}>{profile.so_dien_thoai || profile.soDienThoai || 'Chưa cập nhật'}</div>
-                                    )}
-                                </div>
-                            </div>
-
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', background: 'var(--background)', borderRadius: '20px', border: '1px solid var(--gray-100)' }}>
-                                <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'var(--orange-50)', color: 'var(--orange-600)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                    <span className="material-symbols-outlined">event_available</span>
-                                </div>
-                                <div>
-                                    <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--gray-400)', letterSpacing: '1px' }}>NGÀY GIA NHẬP</div>
-                                    <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--ink)' }}>
-                                        {(profile.ngay_vao_lam || profile.ngay_tao || profile.createdAt) 
-                                            ? new Date(profile.ngay_vao_lam || profile.ngay_tao || profile.createdAt).toLocaleDateString('vi-VN') 
-                                            : new Date().toLocaleDateString('vi-VN')}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Cột phải: Chi tiết và Đổi mật khẩu */}
+                                    <input data-ai-id="input-thongtincanhannhanvien-p2ps" type="file" accept="image/*" onChange={handleImageChange} style={{ display: 'none' }} /> <span className="material-symbols-outlined" style={{ fontSize: '32px' }}>photo_camera</span> </label> )} {(profile.trang_thai === 'ACTIVE' || profile.trang_thai === 'Đang làm việc' || !profile.trang_thai) && ( <div style={{ position: 'absolute', bottom: '5px', right: '5px', width: '20px', height: '20px', background: '#10b981', border: '4px solid var(--surface)', borderRadius: '50%', zIndex: 2 }}></div> )} </div> {isEditing ? ( <input data-ai-id="input-thongtincanhannhanvien-59by" type="text" name="ho_ten" value={formData.ho_ten || formData.hoTen || ''} onChange={handleChange} className="form-input-edit" style={{ marginBottom: '10px', textAlign: 'center', fontSize: '1.2rem' }} placeholder="Họ và tên" /> ) : ( <h2 style={{ fontSize: '1.6rem', fontWeight: 950, color: 'var(--ink)', margin: '0 0 10px 0', letterSpacing: '-0.5px' }}>{displayHoTen}</h2> )} <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'var(--primary-light)', color: 'var(--primary)', padding: '8px 20px', borderRadius: '50px', fontSize: '0.85rem', fontWeight: 800, marginBottom: '32px' }}> <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>verified_user</span> {displayRole} </div> <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', textAlign: 'left' }}> <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', background: 'var(--background)', borderRadius: '20px', border: '1px solid var(--gray-100)' }}> <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}> <span className="material-symbols-outlined">badge</span> </div> <div> <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--gray-400)', letterSpacing: '1px' }}>MÃ NHÂN SỰ</div> <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--ink)' }}>{profile.id_nhan_vien || currentUserId}</div> </div> </div> <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', background: 'var(--background)', borderRadius: '20px', border: '1px solid var(--gray-100)' }}> <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'var(--blue-50)', color: 'var(--blue-600)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}> <span className="material-symbols-outlined">mail</span> </div> <div style={{ flex: 1, minWidth: 0 }}> <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--gray-400)', letterSpacing: '1px' }}>EMAIL LIÊN HỆ</div> {isEditing ? ( <input data-ai-id="input-thongtincanhannhanvien-8fb5" type="email" name="email" value={formData.email || ''} onChange={handleChange} className="form-input-edit" /> ) : ( <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{profile.email || 'Chưa cập nhật'}</div> )} </div> </div> <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', background: 'var(--background)', borderRadius: '20px', border: '1px solid var(--gray-100)' }}> <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'var(--green-50)', color: 'var(--green-600)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}> <span className="material-symbols-outlined">call</span> </div> <div style={{ flex: 1, minWidth: 0 }}> <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--gray-400)', letterSpacing: '1px' }}>ĐIỆN THOẠI</div> {isEditing ? ( <input data-ai-id="input-thongtincanhannhanvien-rivm" type="tel" name="so_dien_thoai" value={formData.so_dien_thoai || formData.soDienThoai || ''} onChange={handleChange} className="form-input-edit" /> ) : ( <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--ink)' }}>{profile.so_dien_thoai || profile.soDienThoai || 'Chưa cập nhật'}</div> )} </div> </div> <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', background: 'var(--background)', borderRadius: '20px', border: '1px solid var(--gray-100)' }}> <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'var(--orange-50)', color: 'var(--orange-600)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}> <span className="material-symbols-outlined">event_available</span> </div> <div> <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--gray-400)', letterSpacing: '1px' }}>NGÀY GIA NHẬP</div> <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--ink)' }}> {(profile.ngay_vao_lam || profile.ngay_tao || profile.createdAt) ? new Date(profile.ngay_vao_lam || profile.ngay_tao || profile.createdAt).toLocaleDateString('vi-VN') : new Date().toLocaleDateString('vi-VN')} </div> </div> </div> </div> </div> {/* Cột phải: Chi tiết và Đổi mật khẩu */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
                         <div className="glass-card" style={{ padding: '40px', borderRadius: '32px' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>

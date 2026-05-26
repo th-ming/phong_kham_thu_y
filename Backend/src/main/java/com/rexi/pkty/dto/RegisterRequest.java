@@ -3,9 +3,7 @@ package com.rexi.pkty.dto;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 
-/**
- * Cấu trúc Dữ liệu yêu cầu Đăng ký Tài khoản (Có kiểm tra tính hợp lệ)
- */
+// Req register DTO, validate ok
 @Data
 public class RegisterRequest {
     
@@ -32,6 +30,6 @@ public class RegisterRequest {
     @Size(max = 200, message = "Địa chỉ không quá 200 ký tự")
     private String dia_chi;
 
-    // Năm sinh của khách hàng để phân loại độ tuổi (GenZ vs Mature)
+    // Nam sinh KHACH_HANG de phan loai GenZ vs Mature
     private Integer nam_sinh;
 }

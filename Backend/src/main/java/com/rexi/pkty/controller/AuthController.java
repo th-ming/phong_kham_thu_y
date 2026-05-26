@@ -29,13 +29,13 @@ public class AuthController {
 
     private static final Logger logger = Logger.getLogger(AuthController.class.getName());
 
-    // Cấu trúc giới hạn Login chống Brute Force (User -> Attempts)
+    // Giới hạn login chống BRUTE_FORCE (User -> Attempts)
     private static final ConcurrentHashMap<String, Integer> loginAttempts = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<String, Long> lockoutTime = new ConcurrentHashMap<>();
     private static final int MAX_ATTEMPTS = 5;
     private static final long LOCKOUT_DURATION = 15 * 60 * 1000; // 15 phút
 
-    // Cấu trúc giới hạn Đăng ký chống Spam tạo tài khoản ảo (IP -> thời gian)
+    // Giới hạn register chống spam account ảo (IP -> time)
     private static final ConcurrentHashMap<String, Long> lastRegisterTime = new ConcurrentHashMap<>();
 
     @Autowired
@@ -65,8 +65,7 @@ public class AuthController {
     @Autowired(required = false)
     private com.rexi.pkty.service.SecurityAlertService securityAlertService;
 
-    // Bẫy nghiệp vụ login: Sử dụng mã hóa BCrypt để kiểm tra mật khẩu.
-    // Ép Validation chặt chẽ dữ liệu đầu vào và tuyệt đối bảo mật thông tin lỗi (không trả Exception thô ra ngoài).
+    // Login dùng BCrypt check pass. Ép Validation, giấu exception thô.
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request, BindingResult bindingResult,
             jakarta.servlet.http.HttpServletRequest httpRequest) {
@@ -74,8 +73,7 @@ public class AuthController {
         String clientIp = httpRequest.getRemoteAddr();
         String lockoutKey = username + "-" + clientIp;
 
-        // BẪY BẢO MẬT: Chặn đứng Brute Force tấn công mò pass bằng cơ chế Lockout tạm thời 15 phút.
-        // GIẢI TỎA LOCKOUT: Lưu RAM tạm lockout key theo IP/Username để quản trị viên dễ kiểm soát.
+        // Chặn BRUTE_FORCE: LOCKOUT 15p. Key lưu RAM.
         Long lockTime = lockoutTime.get(lockoutKey);
         if (lockTime != null) {
             if (System.currentTimeMillis() < lockTime) {
@@ -98,7 +96,7 @@ public class AuthController {
 
         com.rexi.pkty.entity.TaiKhoan tk = null;
         try {
-            // Chọc trực tiếp thông qua JPA Repository thay vì Stored Procedure để tránh lỗi logic bên SQL.
+            // Query thẳng qua JPA Repository tránh SP logic lỗi.
             Optional<com.rexi.pkty.entity.TaiKhoan> tkOpt = taiKhoanRepository.findByTenDangNhap(username);
 
             if (tkOpt.isEmpty()) {
@@ -110,7 +108,7 @@ public class AuthController {
 
             tk = tkOpt.get();
 
-                // BẪY BẢO MẬT: Chặn đứng ngay lập tức nếu tài khoản của KHACH_HANG hoặc NHAN_VIEN đã bị khóa (`da_xoa` hoặc `inactive`).
+                // Chặn đăng nhập nếu KHACH_HANG hoặc NHAN_VIEN bị khóa (da_xoa/inactive).
                 String status = tk.getTrang_thai();
                 if (status != null && (status.equalsIgnoreCase("Đã khóa") || status.equalsIgnoreCase("inactive"))) {
                     logger.warning("Cảnh báo: Cố gắng đăng nhập vào tài khoản đã bị khóa: " + request.getUsername());
@@ -118,21 +116,21 @@ public class AuthController {
                             "Tài khoản của bạn đã bị vô hiệu hóa. Vui lòng liên hệ phòng khám để biết thêm chi tiết!"));
                 }
 
-                // Tự động fallback lấy mật khẩu thô nếu chưa được migrate sang hash_code.
+                // Fallback lấy pass thô nếu chưa migrate sang hash.
                 String storedHash = (tk.getMat_khau_hash() != null && !tk.getMat_khau_hash().isEmpty())
                         ? tk.getMat_khau_hash()
                         : tk.getMat_khau();
 
                 boolean isMatch = false;
                 if (storedHash != null) {
-                    // Kiểm tra xem chuỗi có phải là Hash BCrypt không
+                    // Check chuỗi có phải Hash BCrypt ko
                     if (storedHash.startsWith("$2a$") || storedHash.startsWith("$2b$") || storedHash.startsWith("$2y$")) {
                         isMatch = passwordEncoder.matches(request.getPassword(), storedHash);
                     } else {
-                        // Hỗ trợ đăng nhập bằng mật khẩu chưa mã hóa (Bản cũ)
+                        // Đăng nhập bằng pass chưa mã hóa (bản cũ)
                         isMatch = storedHash.equals(request.getPassword());
                         if (isMatch) {
-                            // Cơ chế tự động migrate âm thầm nâng cấp lên BCrypt ngay khi đăng nhập đúng pass cũ.
+                            // Tự động migrate lên BCrypt khi nhập đúng pass cũ.
                             tk.setMat_khau_hash(passwordEncoder.encode(request.getPassword()));
                             taiKhoanRepository.save(tk);
                         }

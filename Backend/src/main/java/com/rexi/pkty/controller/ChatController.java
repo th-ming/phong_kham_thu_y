@@ -9,6 +9,7 @@ import com.rexi.pkty.service.GroqService;
 import com.rexi.pkty.service.GeminiService;
 import com.rexi.pkty.service.OpenRouterService;
 import com.rexi.pkty.service.AiMemoryService;
+import com.rexi.pkty.service.AuditLogService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.*;
@@ -54,7 +55,10 @@ public class ChatController {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    // Cấu trúc giới hạn Rate Limit đơn giản trong RAM
+    @Autowired
+    private AuditLogService auditLogService;
+
+    // Rate Limit RAM logic
     private static class RateLimit {
         int count;
         Instant resetTime;
@@ -102,9 +106,7 @@ public class ChatController {
 
     private final ConcurrentHashMap<String, RateLimit> rateLimiter = new ConcurrentHashMap<>();
 
-    // Dọn rác RAM tự động định kỳ 1 tiếng 1 lần để tránh rò rỉ bộ nhớ lâu dài.
-    // Tác vụ Scheduled này dùng cơ chế fixedDelay cứ mỗi 1 tiếng quét sạch đống IP rác đã hết hạn resetTime
-    // nhằm chủ động giải phóng tài nguyên bộ nhớ tối đa cho máy chủ mà không cần đợi dung lượng map vượt ngưỡng.
+    // Auto clean rateLimit map moi 1 tieng tranh mem leak RAM
     @org.springframework.scheduling.annotation.Scheduled(fixedDelay = 3600000)
     public void cleanExpiredRateLimits() {
         logger.info("Bắt đầu dọn dẹp ConcurrentHashMap rateLimiter tránh rò rỉ bộ nhớ máy chủ... 🧹");
@@ -126,6 +128,17 @@ public class ChatController {
         return Map.of("ok", true, "provider", "groq", "mode", "background");
     }
 
+    @PostMapping("/transcribe")
+    public Map<String, Object> transcribeAudio(@RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
+        try {
+            String text = groqService.transcribeAudio(file);
+            return Map.of("text", text);
+        } catch (Exception e) {
+            logger.severe("Lỗi dịch giọng nói Whisper: " + e.getMessage());
+            return Map.of("error", e.getMessage());
+        }
+    }
+
     @PostMapping
     public Object chat(
             @RequestBody JsonNode requestBody,
@@ -133,19 +146,18 @@ public class ChatController {
             @RequestHeader(value = "Accept", defaultValue = "application/json") String acceptHeader) {
 
         ChatPayload payload = parseChatPayload(requestBody);
-        // Phòng thủ tổng lực: LUÔN wrap thành ArrayList mutable bất kể nguồn nào gửi đến.
-        // Vì Arrays.asList() hoặc List.of() trả về List bất biến, gọi removeIf/add là nổ ngay.
+        // ArrayList mutable 100% de tranh unsupported exception
         List<ChatMessage> history = payload.history != null
                 ? new ArrayList<>(payload.history)
                 : new ArrayList<>();
-        // Chặn spam chat để tránh nghẽn hệ thống. Giới hạn tối đa 20 tin nhắn hoặc 15 video mỗi phút.
+        // Rate limit chong spam chat
         String clientIp = request.getRemoteAddr();
         org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
                 .getContext().getAuthentication();
         String realUsername = (auth != null && !auth.getName().equals("anonymousUser")) ? auth.getName() : null;
         String rateKey = (realUsername != null) ? realUsername : clientIp;
 
-        // Giải phóng bộ nhớ RAM khi số lượng bản ghi trong rateLimiter vượt quá 1000.
+        // Auto clean map neu > 1000 items
         if (rateLimiter.size() > 1000) {
             rateLimiter.entrySet().removeIf(entry -> Instant.now().isAfter(entry.getValue().resetTime));
         }
@@ -158,7 +170,7 @@ public class ChatController {
             return currentLimit;
         });
 
-        // Kiểm tra xem tin nhắn cuối cùng có video không
+        // Check neu tin cuoi co video
         boolean hasVideoInRequest = history != null && !history.isEmpty() && 
                                    history.get(history.size()-1).getVideos() != null && 
                                    !history.get(history.size()-1).getVideos().isEmpty();
@@ -183,12 +195,12 @@ public class ChatController {
                 return Map.of("reply", welcomeMessage);
             }
 
-            // Giới hạn lưu tối đa 40 tin nhắn gần nhất để tối ưu hóa số lượng token và tốc độ xử lý của LLM.
+            // Max 40 tin nhan gan nhat de tiet kiem token
             if (history.size() > 40) {
                 history = new ArrayList<>(history.subList(history.size() - 40, history.size()));
             }
 
-            // Lấy nội dung câu hỏi cuối cùng của khách hàng
+            // Lay cu phap chat cuoi
             ChatMessage lastMsg = history.get(history.size() - 1);
             String userQuery = lastMsg.getContent() != null ? lastMsg.getContent() : "";
             String normalizedUserQuery = normalizeVietnamese(userQuery.toLowerCase());
@@ -196,6 +208,19 @@ public class ChatController {
             boolean hasVideo = lastMsg.getVideos() != null && !lastMsg.getVideos().isEmpty();
             boolean hasImage = lastMsg.getImages() != null && !lastMsg.getImages().isEmpty();
             boolean hasMedia = hasVideo || hasImage;
+
+            EmergencyTriage emergencyTriage = classifyEmergencyTriage(normalizedUserQuery);
+            if (emergencyTriage.emergency()) {
+                return Map.of(
+                        "reply", buildEmergencyReply(normalizedUserQuery, emergencyTriage),
+                        "source", "local_triage",
+                        "triage", Map.of(
+                                "score", emergencyTriage.score(),
+                                "category", emergencyTriage.category(),
+                                "reason", emergencyTriage.reason()
+                        )
+                );
+            }
 
             String localFollowUpReply = tryLocalFollowUpReply(history, normalizedUserQuery);
             if (!hasMedia && localFollowUpReply != null) {
@@ -211,23 +236,10 @@ public class ChatController {
                 return Map.of("reply", localDocumentReply, "source", "local_document");
             }
 
-            // Giới hạn chat max 1000 ký tự để chặn spam tin siêu dài, đỡ tốn token API.
+            // Max 1000 ky tu de tranh spam tin sieu dai
             if (userQuery.length() > 1000) {
                 return Map.of("reply",
                         "Sen ơi tin nhắn hơi dài quá òi! 😿 Sen tóm tắt lại tình trạng của bé ngắn gọn (dưới 1000 ký tự) để Rexi đọc và tư vấn chuẩn xác nhất nha!");
-            }
-
-            EmergencyTriage emergencyTriage = classifyEmergencyTriage(normalizedUserQuery);
-            if (emergencyTriage.emergency()) {
-                return Map.of(
-                        "reply", buildEmergencyReply(normalizedUserQuery, emergencyTriage),
-                        "source", "local_triage",
-                        "triage", Map.of(
-                                "score", emergencyTriage.score(),
-                                "category", emergencyTriage.category(),
-                                "reason", emergencyTriage.reason()
-                        )
-                );
             }
 
             String localVetReply = tryLocalVeterinaryReply(normalizedUserQuery, userQuery);
@@ -255,14 +267,14 @@ public class ChatController {
             boolean autopilotRequested = requestPlan.route() == ChatRoute.AUTOPILOT_AI;
             boolean clinicContextNeeded = requestPlan.needsClinicContext();
 
-            // Lọc ngữ cảnh thông minh dựa vào câu chat để AI biết đường trả lời cho chuẩn.
+            // Smart context filter truoc khi goi LLM
             String userContext = (realUsername != null && clinicContextNeeded)
                     ? aiMemoryService.getUserContext(realUsername)
                     : "";
             String knowledgeContext = (medicalQuery || hasMedia || webSearchRequested)
                     ? aiMemoryService.getKnowledgeBaseContext(userQuery)
                     : "";
-            // Ghép thêm dữ liệu thực tế phòng khám Rexi vào bối cảnh giúp AI rep chuẩn chỉ.
+            // Context clinic kem theo
             String globalContext = clinicContextNeeded ? aiMemoryService.getGlobalContext(userQuery) : "";
             String webSearchContext = "";
             List<Map<String, String>> webResults = java.util.Collections.emptyList();
@@ -271,7 +283,7 @@ public class ChatController {
                 webSearchContext = buildWebSearchContext(userQuery, webResults);
             }
 
-            // Lấy từ Body JSON thay vì Header, tránh sập web server vì 431 Entity Too Large
+            // Get payload currentPath va domContext tu HTTP body
             String currentPath = payload.currentPath != null ? payload.currentPath : "/";
             String currentDomContext = autopilotRequested && payload.domContext != null && !payload.domContext.isBlank() 
                                         ? payload.domContext 
@@ -313,7 +325,7 @@ public class ChatController {
                     : "\n--- BỐI CẢNH GIAO DIỆN TỐI GIẢN ---\n"
                     + "Người dùng hiện đang ở màn hình: " + currentPath + ". Chỉ hướng dẫn bằng lời, không dùng thẻ Autopilot trừ khi người dùng yêu cầu thao tác giao diện rõ ràng.\n";
 
-            // Xác định trạng thái đăng nhập để AI biết đường tư vấn
+            // Check auth state de chan AUTO_BOOK
             boolean isLoggedIn = (realUsername != null);
             String loginContext = isLoggedIn 
                 ? "Sen hiện ĐÃ ĐĂNG NHẬP với tài khoản: " + realUsername + ". Bạn CÓ QUYỀN đặt lịch khám ngay cho Sen."
@@ -338,11 +350,10 @@ public class ChatController {
                 }
             }
             ChatPersonaContext personaContext = buildPersonaContext(isStaff, userRoleName, requestPlan, isLoggedIn);
+            boolean isClinicalStaff = "Bác sĩ".equals(userRoleName) || "Y tá".equals(userRoleName);
             String personaBlock = renderPersonaBlock(personaContext, requestPlan, currentPath);
 
-            // Chọc trực tiếp vào db lấy năm sinh của KHACH_HANG đang chat dựa trên tài khoản hiện tại.
-            // Đây là mấu chốt sống còn để phân loại độ tuổi GENZ vs MATURE chuẩn chỉ cho con chatbot AI REXI.
-            // Lỡ KHACH_HANG khai báo láo hoặc db lỗi ko tìm thấy thì trả về null để chatbot tự động xử lý lịch sự theo dạng mặc định.
+            // Get nam sinh KHACH_HANG tu DB de phan loai style chat GenZ/Mature
             Integer namSinh = null;
             if (realUsername != null) {
                 try {
@@ -368,6 +379,10 @@ public class ChatController {
                         + "3. PHONG CÁCH: Chuyên nghiệp, đồng nghiệp, ngắn gọn, súc tích, không vòng vo. Gọi họ là 'sếp' hoặc 'đồng nghiệp'. Tuyệt đối KHÔNG gọi họ là 'Sen', không xưng hô kiểu bán hàng.\n"
                         + "4. HOTLINE & ĐỊA CHỈ: Dùng số hotline phòng khám: 0353.374.156 và địa chỉ: Gia Lâm, Hà Nội khi đồng nghiệp cần thông tin.\n"
                         + "5. SƠ CỨU KHẨN CẤP (HEIMLICH): Sẵn sàng cung cấp hướng dẫn sơ cứu nhanh khi có ca khẩn cấp.\n"
+                        + "5b. PHÂN QUYỀN Y KHOA THEO VAI TRÒ: "
+                        + (isClinicalStaff
+                            ? "Người dùng là nhân sự lâm sàng (" + userRoleName + "), được phép nhận phân tích chuyên sâu, chẩn đoán phân biệt, gợi ý xét nghiệm, nhóm thuốc/phác đồ tham khảo và checklist theo dõi. Tuy nhiên phải ghi rõ đây là hỗ trợ chuyên môn tham khảo, quyết định cuối cùng thuộc bác sĩ phụ trách sau khi khám trực tiếp, cân nặng, tuổi, tiền sử và kết quả xét nghiệm.\n"
+                            : "Người dùng không phải vai trò lâm sàng trực tiếp (" + userRoleName + "), chỉ giải thích ở mức vận hành/tổng quan. Không đưa phác đồ thuốc, liều dùng, chỉ định kháng sinh/gây mê hoặc hướng dẫn điều trị chuyên sâu; hãy hướng dẫn chuyển cho bác sĩ/y tá.\n")
                         + "6. QUY TẮC QUAN TRỌNG NHẤT - ƯU TIÊN TRẢ LỜI TRỰC TIẾP:\n"
                         + "   Khi đồng nghiệp đặt câu hỏi bất kỳ (ví dụ: 'khóa tài khoản khách hàng thì sao?', 'làm thế nào để thêm nhân viên?'...), bạn BẮT BUỘC phải TRẢ LỜI THẲNG VÀO NỘI DUNG CÂU HỎI trước. TUYỆT ĐỐI KHÔNG tự nhảy vào chế độ Autopilot/điều hướng khi đồng nghiệp chỉ hỏi thông tin.\n"
                         + "7. BẢO MẬT & TRUY CẬP DỮ LIỆU (CỰC KỲ QUAN TRỌNG):\n"
@@ -418,7 +433,7 @@ public class ChatController {
                         + "5. SƠ CỨU KHẨN CẤP (HEIMLICH, NGỘ ĐỘC, TAI NẠN, CHẢY MÁU): Khi Sen hỏi về tình trạng khẩn cấp, KHÔNG dọa dẫm gây hoảng loạn. BẮT BUỘC bắt đầu bằng tag [EMERGENCY], hướng dẫn sơ cứu cơ bản trước, sau đó CHỦ ĐỘNG HỎI VỊ TRÍ của Sen để chỉ hướng đến phòng khám gần nhất.\n"
                         + "6. ĐẶT LỊCH HẸN: " + loginContext + " Khi Sen chốt lịch, BẮT BUỘC in ra chuỗi [AUTO_BOOK:Ngày|Giờ|TênThúCưng|DịchVụ|TênBácSĩ]. Định dạng ngày YYYY-MM-DD, giờ HH:mm.\n"
                         + "7. THU THẬP TIỂU SỬ THÚ CƯNG: Bắt buộc chủ động hỏi Sen về Giống (chó/mèo/...), Độ tuổi và Cân nặng của thú cưng nếu chưa có thông tin, để đưa ra tư vấn sát thực tế nhất.\n"
-                        + "8. TRÁNH KÊ ĐƠN THUỐC TÙY TIỆN: Chỉ tư vấn dinh dưỡng, hành vi, và hướng dẫn sơ cứu. TUYỆT ĐỐI KHÔNG TỰ TIỆN KÊ ĐƠN THUỐC.\n"
+                        + "8. TRÁNH KÊ ĐƠN THUỐC TÙY TIỆN: Chỉ tư vấn dinh dưỡng, hành vi, dấu hiệu cần theo dõi, sơ cứu an toàn và thời điểm phải đi khám. TUYỆT ĐỐI không đưa liều dùng, không chỉ định kháng sinh/thuốc giảm đau/thuốc gây mê/thuốc kê đơn, không thay thế bác sĩ.\n"
                         + "9. TRUY CẬP DỮ LIỆU HỆ THỐNG (CỰC KỲ QUAN TRỌNG):\n"
                         + "   Ở chế độ này, bạn KHÔNG CÓ CÔNG CỤ tra cứu CSDL (tìm khách hàng, bệnh án). Nếu Sen yêu cầu tra cứu thông tin cụ thể trong hệ thống, TUYỆT ĐỐI KHÔNG BỊA ĐẶT DỮ LIỆU HOẶC TỰ NHẬN LÀ KHÔNG TÌM THẤY. Bắt buộc trả lời: 'Dạ Sen ơi, ở chế độ này em không thể xem dữ liệu hệ thống ạ. Sen bấm nút **Chuyển sang Rexi Agent** ngay dưới tin nhắn này hoặc mở tab **Rexi Agent** ở trên cùng khung chat để em quét dữ liệu thực tế giúp Sen nha!'.\n"
                         + "10. QUY TẮC ĐIỀU HƯỚNG TÁC VỤ NGHIÊM NGẶT (STRICT NAVIGATION GATE):\n"
@@ -451,19 +466,18 @@ ChatMessage systemMsg = new ChatMessage();
                 latest.setContent(buildMediaPrompt(latest.getContent(), hasImage, hasVideo));
             }
 
-            // Phân tích từ khóa để định tuyến thông minh dựa trên thế mạnh của từng AI
+            // LLM routing kem y te va teencode check
             String userQueryStr = latest.getContent() != null ? latest.getContent() : "";
             String normalizedQuery = normalizeVietnamese(userQueryStr.toLowerCase());
 
-            // Tập hợp từ khóa y tế mở rộng bao gồm cả viết tắt, tiếng lóng, từ địa phương và gõ sai bộ gõ telex
+            // Check tu khoa y te
             boolean isMedicalQuery = isMedicalQuery(normalizedQuery);
 
-            // CHỐT CHẶN BẢO MẬT STREAMING: Chỉ cho phép Stream nếu không có hình ảnh/video và không phải câu hỏi y tế
-            // Nếu có Media hoặc là Y tế, bẻ luồng sang xử lý đồng bộ để Gemini và DeepSeek xử lý
+            // Chan streaming neu co media hoac la cau y te
             if (acceptHeader != null && acceptHeader.contains("text/event-stream") && !hasMedia && !isMedicalQuery) {
                 org.springframework.web.servlet.mvc.method.annotation.SseEmitter emitter = new org.springframework.web.servlet.mvc.method.annotation.SseEmitter(-1L);
                 try {
-                    // Tạm thời bỏ qua lưu log DB cho stream để tối ưu hiệu năng
+                    // Stream luong chat qua Groq
                     groqService.streamChat(history, emitter);
                 } catch (Exception e) {
                     emitter.completeWithError(e);
@@ -471,29 +485,30 @@ ChatMessage systemMsg = new ChatMessage();
                 return emitter;
             }
 
-            // Hàm ẩn giúp phát hiện lỗi Timeout để cắt đuôi Fallback
+            // Predicate check Timeout error
             java.util.function.Predicate<Exception> isTimeoutError = (ex) -> {
                 String msg = ex.getMessage() != null ? ex.getMessage().toLowerCase(Locale.ROOT) : "";
                 return msg.contains("timeout") || msg.contains("timed out") || msg.contains("read timed out");
             };
 
             String reply;
-            // Định tuyến AI thông minh: Gemini trị ảnh/video, DeepSeek cân y tế, Groq chat thường cho nhanh.
+            String providerUsed = "Unknown";
+            // LLM Router logic: Gemini (media), Deepseek (medical), Groq (FAQ/Autopilot)
             if (hasMedia) {
                 // 🎥/🖼️ THẾ MẠNH CỦA GEMINI: Đa phương tiện (Video, Hình ảnh)
                 logger.info("[AI ROUTER] Định tuyến câu hỏi Media sang: Gemini");
                 try {
                     reply = geminiService.chat(history);
+                    providerUsed = "Gemini";
                 } catch (Exception geminiEx) {
-                    if (isTimeoutError.test(geminiEx)) {
-                        throw new RuntimeException("Gemini timeout khi phân tích Media", geminiEx);
-                    }
                     if (hasVideo) {
                         logger.warning("[AI ROUTER] Gemini lỗi khi phân tích video; không fallback sang model text-only để tránh bịa kết quả video: " + geminiEx.getMessage());
-                        reply = "Tôi chưa phân tích được video này vì model đa phương tiện đang lỗi hoặc quá tải. Để tránh nhận định bịa, bạn vui lòng gửi lại video ngắn hơn/rõ hơn hoặc gửi 2-3 ảnh chụp từ video. Nếu bé có dấu hiệu khó thở, co giật, chảy máu nhiều, tím tái hoặc lịm đi thì đưa bé đi cấp cứu ngay.";
+                        reply = buildVideoAnalysisFallbackReply(isTimeoutError.test(geminiEx));
+                        providerUsed = "System Fallback";
                     } else {
                         logger.warning("[AI ROUTER] Gemini lỗi khi phân tích ảnh, chuyển dự phòng sang Groq Vision...");
                         reply = groqService.chat(history);
+                        providerUsed = "Groq Vision";
                     }
                 }
             } else if (isMedicalQuery) {
@@ -501,17 +516,21 @@ ChatMessage systemMsg = new ChatMessage();
                 logger.info("[AI ROUTER] Định tuyến câu hỏi Tư vấn Y tế sang: Gemini");
                 try {
                     reply = geminiService.chat(history);
+                    providerUsed = "Gemini";
                 } catch (Exception geminiEx) {
                     if (isTimeoutError.test(geminiEx)) {
                         logger.warning("[AI ROUTER] Gemini timeout, chuyển nhanh sang Groq để tránh treo chat...");
                         reply = groqService.chat(history);
+                        providerUsed = "Groq";
                     } else {
                         logger.warning("[AI ROUTER] Gemini lỗi, chuyển hướng dự phòng sang: OpenRouter...");
                         try {
                             reply = openRouterService.chat(history);
+                            providerUsed = "OpenRouter";
                         } catch (Exception openRouterEx) {
                             logger.warning("[AI ROUTER] OpenRouter lỗi, chuyển hướng dự phòng cuối cùng sang: Groq...");
                             reply = groqService.chat(history);
+                            providerUsed = "Groq";
                         }
                     }
                 }
@@ -520,6 +539,7 @@ ChatMessage systemMsg = new ChatMessage();
                 logger.info("[AI ROUTER] Định tuyến câu hỏi Chat/Autopilot thông thường sang: Groq");
                 try {
                     reply = groqService.chat(history);
+                    providerUsed = "Groq";
                 } catch (Exception groqException) {
                     if (isTimeoutError.test(groqException)) {
                         // Groq là model nhanh nhất mà còn timeout thì mạng hoặc server đang có vấn đề nặng. Báo lỗi ngay lập tức.
@@ -528,19 +548,22 @@ ChatMessage systemMsg = new ChatMessage();
                     logger.warning("[AI ROUTER] Groq lỗi, chuyển hướng dự phòng sang: Gemini...");
                     try {
                         reply = geminiService.chat(history);
+                        providerUsed = "Gemini";
                     } catch (Exception geminiException) {
                         logger.warning("[AI ROUTER] Gemini lỗi, chuyển hướng dự phòng cuối cùng sang: OpenRouter (DeepSeek V4)...");
                         reply = openRouterService.chat(history);
+                        providerUsed = "OpenRouter";
                     }
                 }
             }
 
             reply = sanitizeChatReply(reply);
+            auditMedicalAiReplyIfNeeded(userQuery, reply, userRoleName, providerUsed, requestPlan.route().name());
 
-            // Khử ký tự đặc biệt (HtmlEscape) để chặn đứng lỗi XSS khi lưu tin nhắn vào DB.
+            // HtmlEscape tranh XSS injection
             String safeUserQuery = org.springframework.web.util.HtmlUtils.htmlEscape(userQuery);
 
-            // Lưu lịch sử chat của sen và Rexi vào DB để tiện đối soát.
+            // Luu lich su chat vao DB tu van
             try {
                 String customerId = aiMemoryService.getCurrentCustomerId();
                 if (customerId != null) {
@@ -556,9 +579,9 @@ ChatMessage systemMsg = new ChatMessage();
             }
 
             if (!webResults.isEmpty()) {
-                return Map.of("reply", reply, "webResults", webResults);
+                return Map.of("reply", reply, "webResults", webResults, "provider", providerUsed);
             }
-            return Map.of("reply", reply);
+            return Map.of("reply", reply, "provider", providerUsed);
         } catch (Exception e) {
             logger.severe("Chat API error: " + e.getMessage());
             String errorCode = classifyAiRuntimeError(e);
@@ -577,8 +600,7 @@ ChatMessage systemMsg = new ChatMessage();
         ObjectMapper mapper = new ObjectMapper();
         try {
             if (requestBody.isArray()) {
-                // Arrays.asList() trả về List CỐ ĐỊNH (fixed-size), gọi add/remove là nổ ngay.
-                // Wrap bằng ArrayList để chắc chắn mutable 100%.
+                // ArrayList mutable 100% de tranh loi add/remove
                 payload.history = new ArrayList<>(Arrays.asList(mapper.treeToValue(requestBody, ChatMessage[].class)));
                 return payload;
             }
@@ -645,6 +667,14 @@ ChatMessage systemMsg = new ChatMessage();
         }
 
         return "Hiện hệ thống AI đang tạm quá tải hoặc gián đoạn. Sen thử lại sau ít phút nhé. Nếu bé có dấu hiệu khẩn cấp, vui lòng gọi hotline phòng khám ngay.";
+    }
+
+    private String buildVideoAnalysisFallbackReply(boolean timeout) {
+        String reason = timeout
+                ? "model đa phương tiện phản hồi quá lâu"
+                : "model đa phương tiện đang lỗi hoặc quá tải";
+        return "Tôi chưa phân tích được video này vì " + reason + ". Để tránh nhận định bịa từ video, Sen vui lòng gửi lại video ngắn hơn/rõ hơn hoặc gửi 2-3 ảnh chụp từ video.\n\n"
+                + "Trong lúc chờ, nếu bé có dấu hiệu khó thở, co giật, chảy máu nhiều, tím tái, lịm đi, sốc nhiệt/say nắng hoặc thân nhiệt rất cao thì đưa bé đi cấp cứu ngay và gọi hotline 0353.374.156.";
     }
 
     private String currentRoleText() {
@@ -1050,6 +1080,32 @@ ChatMessage systemMsg = new ChatMessage();
                 : Arrays.asList(normalizedQuery.split("\\s+")).contains(normalizedKeyword);
     }
 
+    private void auditMedicalAiReplyIfNeeded(String userQuery, String reply, String userRoleName, String provider, String route) {
+        try {
+            String combined = normalizeVietnamese(((userQuery == null ? "" : userQuery) + " " + (reply == null ? "" : reply)).toLowerCase(Locale.ROOT));
+            boolean medical = containsAny(combined,
+                    "thuoc", "duoc", "lieu", "khang sinh", "phac do", "dieu tri", "chan doan",
+                    "xet nghiem", "benh", "trieu chung", "cap cuu", "ngo doc", "gay me");
+            if (!medical) return;
+
+            boolean clinicalRole = "Bác sĩ".equals(userRoleName) || "Y tá".equals(userRoleName);
+            String detail = "scope=" + (clinicalRole ? "CLINICAL_REFERENCE" : "CUSTOMER_SAFE_ADVICE")
+                    + "; role=" + userRoleName
+                    + "; provider=" + provider
+                    + "; route=" + route
+                    + "; query=" + compactForAudit(userQuery)
+                    + "; replyPreview=" + compactForAudit(reply);
+            auditLogService.logAction("AI_MEDICAL_ADVICE", "ChatController", detail);
+        } catch (Exception ex) {
+            logger.warning("Không thể ghi audit y khoa AI: " + ex.getMessage());
+        }
+    }
+
+    private String compactForAudit(String value) {
+        if (value == null) return "";
+        return value.replaceAll("\\s+", " ").trim().substring(0, Math.min(600, value.replaceAll("\\s+", " ").trim().length()));
+    }
+
     private ChatPersonaContext buildPersonaContext(boolean isStaff, String userRoleName, ChatRequestPlan plan, boolean isLoggedIn) {
         String audience = isStaff ? ("nhân sự nội bộ phòng khám - " + userRoleName) : "khách hàng/chủ nuôi";
         String tone = isStaff
@@ -1067,17 +1123,26 @@ ChatMessage systemMsg = new ChatMessage();
             case QUICK_LOCAL -> "trả lời nhanh nội bộ";
         };
 
+        boolean isClinicalStaff = isStaff && ("Bác sĩ".equals(userRoleName) || "Y tá".equals(userRoleName));
+
         String allowedActions = switch (plan.route()) {
             case MEDIA_AI -> "mô tả dấu hiệu nhìn thấy, đánh giá mức độ khẩn, hỏi thêm thông tin còn thiếu";
-            case MEDICAL_AI -> "tư vấn chăm sóc/sơ cứu, nêu khả năng, khuyến nghị đi khám khi có dấu hiệu nguy hiểm";
+            case MEDICAL_AI -> isClinicalStaff
+                    ? "hỗ trợ lâm sàng chuyên sâu: chẩn đoán phân biệt, xét nghiệm cần cân nhắc, nhóm thuốc/phác đồ tham khảo, cảnh báo chống chỉ định"
+                    : "tư vấn chăm sóc/sơ cứu, nêu khả năng, khuyến nghị đi khám khi có dấu hiệu nguy hiểm";
             case WEB_AI -> "tổng hợp thông tin từ nguồn thật và trích link rõ ràng";
             case AUTOPILOT_AI -> "chỉ dùng tag thao tác khi người dùng yêu cầu rõ và data-ai-id tồn tại";
             case CHAT_AI -> "trả lời trực tiếp, hỏi thêm khi thiếu dữ kiện, hướng dẫn dùng hệ thống";
             default -> "trả lời theo dữ liệu đã được backend cung cấp";
         };
 
+        String medicalForbidden = isClinicalStaff
+                ? "không ra quyết định thay bác sĩ phụ trách; không khẳng định chẩn đoán khi thiếu khám trực tiếp/xét nghiệm; không bỏ qua cân nặng, tuổi, loài và chống chỉ định khi nhắc tới thuốc; "
+                : "không chẩn đoán chắc chắn, không kê đơn thuốc, không nêu liều dùng/kháng sinh/thuốc kê đơn; ";
+
         String forbiddenActions = "không bịa dữ liệu hệ thống; không tự nhận đã tra DB nếu route không cho đọc DB; "
-                + "không chẩn đoán chắc chắn hoặc kê đơn thuốc; không tạo link nguồn giả; "
+                + medicalForbidden
+                + "không tạo link nguồn giả; "
                 + (isLoggedIn ? "" : "không tạo lịch/đơn/hành động tài khoản khi người dùng chưa đăng nhập; ")
                 + "không dùng Autopilot nếu người dùng chỉ hỏi thông tin.";
 
@@ -1159,7 +1224,7 @@ ChatMessage systemMsg = new ChatMessage();
         String[] keywords = {
                 "tim khach", "tra khach", "tim thu cung", "tim boss", "tim benh an",
                 "tra benh an", "tim hoa don", "hoa don cua", "lich su kham cua",
-                "khach hang ten", "so dien thoai khach"
+                "khach hang ten", "so dien thoai khach", "email khach", "email cua khach"
         };
         for (String kw : keywords) {
             if (q.contains(kw)) return true;

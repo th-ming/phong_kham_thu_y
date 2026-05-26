@@ -20,7 +20,7 @@ public class AuditController {
     public Map<String, Object> audit() {
         Map<String, Object> result = new HashMap<>();
         try {
-            // SỬA LỖI: Chuẩn hóa tên vai trò để khớp với Repository
+            // Chuan hoa ten vai tro de khop repo
             
             result.put("VaiTroHeThong", jdbcTemplate.queryForList("SELECT * FROM VaiTroHeThong"));
             result.put("Doctor_Links", jdbcTemplate.queryForList("SELECT ho_ten, id_tai_khoan FROM NhanVien WHERE chuyen_mon LIKE N'%Bác sĩ%' OR chuyen_mon LIKE N'%bác sĩ%'"));

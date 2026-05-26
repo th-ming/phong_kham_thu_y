@@ -40,7 +40,7 @@ test.describe('Kiểm thử chức năng: Cổng Khách hàng - Hóa đơn & Vie
         if (await qrPaymentBtn.isVisible()) {
             await qrPaymentBtn.click();
 
-            // 3. Xác nhận Modal Quét Mã VietQR xuất hiện đầy đủ
+            // 3. xn Modal Quét Mã VietQR xuất hiện đầy đủ
             await expect(page.getByText('Thanh toán chuyển khoản')).toBeVisible();
             await expect(page.getByText('NỘI DUNG CHUYỂN KHOẢN (BẮT BUỘC)')).toBeVisible();
 

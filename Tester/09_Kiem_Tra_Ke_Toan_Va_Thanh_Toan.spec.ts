@@ -6,7 +6,7 @@ const BASE_URL = `http://localhost:${FRONTEND_PORT}`;
 test.describe('Kiểm thử chức năng Kế toán & Quản lý Hóa đơn', () => {
 
     test.beforeEach(async ({ page }) => {
-        // Đăng nhập Admin trước mỗi test case (Admin có quyền kế toán)
+        // Đăng nhập ADMIN trước mỗi test case (ADMIN có quyền kế toán)
         await page.goto(`${BASE_URL}/dang-nhap`);
         await page.getByPlaceholder('Tên đăng nhập').fill('admin');
         await page.getByPlaceholder('Mật khẩu').fill('admin@rexi.com');
@@ -41,7 +41,7 @@ test.describe('Kiểm thử chức năng Kế toán & Quản lý Hóa đơn', ()
         if (await firstViewBtn.isVisible()) {
             await firstViewBtn.click();
 
-            // 3. Xác nhận Modal Chi tiết Hóa đơn mở lên thành công
+            // 3. xn Modal Chi tiết Hóa đơn mở lên thành công
             await expect(page.getByRole('dialog')).toBeVisible();
             await expect(page.getByText('MÃ HÓA ĐƠN')).toBeVisible();
             await expect(page.getByText('TỔNG CỘNG:')).toBeVisible();

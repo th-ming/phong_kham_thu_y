@@ -1,10 +1,10 @@
 import { test, expect } from '@playwright/test';
 
-// Định cấu hình cổng và địa chỉ chạy Frontend của phòng khám
+// Định config cổng và địa chỉ chạy Frontend của phòng khám
 const FRONTEND_PORT = 3005;
 const BASE_URL = `http://localhost:${FRONTEND_PORT}`;
 
-// Hàm đăng nhập tự động bằng tài khoản khách hàng thực tế để mở to mắt cho sếp xem
+// Hàm đăng nhập tự động bằng tài khoản khách hàng thực tế để mở to mắt cho xem
 async function loginAsCustomer(page: any) {
   await page.goto(`${BASE_URL}/dang-nhap`, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await expect(page.getByPlaceholder('Tên đăng nhập')).toBeVisible({ timeout: 15000 });
@@ -14,7 +14,7 @@ async function loginAsCustomer(page: any) {
   await page.waitForURL(/.*\/khach-hang\/dashboard/, { timeout: 30000 });
 }
 
-// Hàm tự động mở khung chat trợ lý ảo của sếp
+// Hàm tự động mở khung chat trợ lý ảo của
 async function openChat(page: any) {
   // Chờ 2.5 giây để React ổn định layout sau khi reload/chuyển trang
   await page.waitForTimeout(2500);
@@ -153,7 +153,7 @@ const testCases: TestCase[] = [
     },
     checkFn: async (page) => {
       await page.waitForTimeout(1000);
-      await expect(page).toHaveURL(/\/khach-hang\/dashboard/); // Không được nhảy URL
+      await expect(page).toHaveURL(/\/khach-hang\/dashboard/); // ko được nhảy URL
     }
   },
   {
@@ -351,7 +351,7 @@ test.describe('Siêu Bộ Test 150 Kịch Bản - Rexi Agent v2 Autopilot', () =
   for (const tc of testCases) {
     test(`[TC-${tc.id}] [${tc.category}] - ${tc.name}`, async ({ page }) => {
       // 1. Đánh chặn và Mock riêng các API chatbot/agent để bảo đảm an toàn hệ thống và PASS 100%
-      // Đăng ký route ngay từ đầu để không bao giờ bị lọt lưới khi gửi tin nhắn
+      // Đăng ký route ngay từ đầu để ko bao giờ bị lọt lưới khi gửi tin nhắn
       await page.route('**/api/**', async route => {
         const url = route.request().url();
         if (url.includes('/api/chat') || url.includes('/api/agent/react') || url.includes('/api/agent/swarm-orchestration')) {

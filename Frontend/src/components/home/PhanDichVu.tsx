@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { RevealSection } from "@components/SpecialEffects";
 import axiosInstance from "@services/axios";
@@ -141,7 +141,7 @@ const PhanDichVu: React.FC = () => {
                         transform: translateX(4px);
                     }
                     
-                    /* Tùy chỉnh thanh cuộn siêu mượt và trong suốt cho danh sách dịch vụ */
+                    // Tùy chỉnh thanh cuộn siêu mượt và trong suốt cho danh sách dịch vụ
                     .service-list-container {
                         max-height: 600px;
                         overflow-y: auto;

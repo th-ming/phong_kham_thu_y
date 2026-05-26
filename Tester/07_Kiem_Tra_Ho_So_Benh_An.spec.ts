@@ -6,7 +6,7 @@ const BASE_URL = `http://localhost:${FRONTEND_PORT}`;
 test.describe('Kiểm thử chức năng: Quản lý Hồ sơ bệnh án điện tử', () => {
 
     test.beforeEach(async ({ page }) => {
-        // Đăng nhập Admin/Bác sĩ trước mỗi test case
+        // Đăng nhập ADMIN/bs trước mỗi test case
         await page.goto(`${BASE_URL}/dang-nhap`);
         await page.getByPlaceholder('Tên đăng nhập').fill('admin');
         await page.getByPlaceholder('Mật khẩu').fill('admin@rexi.com');
@@ -37,10 +37,10 @@ test.describe('Kiểm thử chức năng: Quản lý Hồ sơ bệnh án điện
         if (await firstViewBtn.isVisible()) {
             await firstViewBtn.click();
 
-            // 3. Xác nhận điều hướng thành công đến trang chi tiết bệnh án
+            // 3. xn điều hướng thành công đến trang chi tiết bệnh án
             await expect(page).toHaveURL(/.*\/quan-ly\/ho-so-benh-an\/\d+/, { timeout: 10000 });
 
-            // 4. Kiểm tra xem thông tin chi tiết bệnh án có hiển thị hay không
+            // 4. Kiểm tra xem thông tin chi tiết bệnh án có hiển thị hay ko
             await expect(page.getByText(/Chi tiết bệnh án/i).or(page.getByText(/Thông tin khám bệnh/i))).toBeVisible();
         }
     });

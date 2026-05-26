@@ -40,7 +40,7 @@ public class AuditLogService {
                 deviceInfo = request.getHeader("User-Agent");
             }
         } catch (Exception e) {
-            // Bỏ qua lỗi nếu gọi từ môi trường không có HTTP Request
+            // Bỏ qua lỗi nếu gọi từ môi trường ko có HTTP Request
         }
 
         final String finalIp = ipAddress;

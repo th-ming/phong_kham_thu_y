@@ -1,7 +1,4 @@
-/**
- * Context để quản lý trạng thái xác thực toàn cầu
- * Chia sẻ user data và authentication status cho toàn app
- */
+// * * Context để quản lý trạng thái xác thực toàn cầu * Chia sẻ user data và authentication status cho toàn app
 
 import React from 'react'
 

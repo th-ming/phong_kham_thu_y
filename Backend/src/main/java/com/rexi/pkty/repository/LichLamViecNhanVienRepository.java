@@ -10,7 +10,7 @@ import java.util.List;
 @Repository
 public interface LichLamViecNhanVienRepository extends JpaRepository<LichLamViecNhanVien, Long> {
     
-    // Tìm lịch làm việc theo id nhân viên (Dùng dấu gạch dưới để khớp Entity)
+    // Get lich lam viec by idNhanVien
     @Query("SELECT l FROM LichLamViecNhanVien l WHERE l.id_nhan_vien = :id")
     List<LichLamViecNhanVien> findByIdNhanVien(@Param("id") String id);
 }

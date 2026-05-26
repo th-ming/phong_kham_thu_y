@@ -1,9 +1,7 @@
 import React from 'react';
 
 
-/**
- * NÂNG CẤP: Giao diện bắt lỗi (Error Boundary) nâng cao hỗ trợ khôi phục tự động và hiển thị chi tiết lỗi.
- */
+// * * NÂNG CẤP: Giao diện bắt lỗi (Error Boundary) nâng cao hỗ trợ khôi phục tự động và hiển thị chi tiết lỗi.
 
 interface Props {
   children: React.ReactNode;
@@ -36,7 +34,7 @@ class ErrorBoundary extends React.Component<Props, State> {
 
   render() {
     if (this.state.hasError) {
-      // Hiển thị giao diện thông báo lỗi thân thiện kèm nút thử lại
+      // Hiển thị giao diện thông báo lỗi kèm nút thử lại
       return <ErrorFallback error={this.state.error} retry={this.retry} />;
     }
 
@@ -45,7 +43,7 @@ class ErrorBoundary extends React.Component<Props, State> {
 }
 
 const ErrorFallback: React.FC<{ error?: Error; retry: () => void }> = ({ error, retry }) => {
-  // Đã loại bỏ hook useTheme() để tránh lỗi lặp (secondary crash) khi render giao diện lỗi
+  // Loại bỏ hook useTheme() tránh lỗi lặp (secondary crash) khi render giao diện lỗi
 
   return (
     <div style={{

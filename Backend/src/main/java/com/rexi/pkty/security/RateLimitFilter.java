@@ -11,11 +11,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * BỘ LỌC CHỐNG SPAM & RATE LIMITING TOÀN CỤC
- * Giới hạn số lượng request từ một IP trong một khoảng thời gian nhất định (ví
- * dụ: 100 requests / 1 phút)
- */
+/** BỘ LỌC CHỐNG SPAM & RATE LIMITING TOÀN CỤC */
 @Component
 public class RateLimitFilter extends OncePerRequestFilter {
 
@@ -27,7 +23,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     private final ConcurrentHashMap<String, java.util.concurrent.atomic.AtomicInteger> requestCounts = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Long> requestTimestamps = new ConcurrentHashMap<>();
-    private static final int MAX_REQUESTS_PER_MINUTE = 200; // Ngưỡng chặn an toàn
+    private static final int MAX_REQUESTS_PER_MINUTE = 200; // Ngưỡng chặn
 
     private java.util.Set<String> blockedIps = new java.util.HashSet<>();
     private long lastCheckTime = 0;
@@ -45,20 +41,19 @@ public class RateLimitFilter extends OncePerRequestFilter {
             return;
         }
 
-        // BẢO MẬT: Kiểm tra Blacklist IP (Cập nhật từ DB mỗi phút 1 lần để không làm
-        // chậm hệ thống)
+        // Check Blacklist IP từ DB (1 phút load 1 lần tránh chậm DB)
         if (currentTime - lastCheckTime > 60000) {
             try {
                 String ips = jdbcTemplate.queryForObject(
                         "SELECT gia_tri FROM CauHinhHeThong WHERE ten_cau_hinh = 'blocked_ips'", String.class);
                 if (ips != null && !ips.trim().isEmpty()) {
-                    // Loại bỏ khoảng trắng thừa và cắt chuỗi theo dấu phẩy
+                    // Loại bỏ khoảng trắng và split comma
                     blockedIps = new java.util.HashSet<>(java.util.Arrays.asList(ips.replace(" ", "").split(",")));
                 } else {
                     blockedIps.clear();
                 }
             } catch (Exception e) {
-                // Bỏ qua nếu bảng chưa tạo
+                // Table chưa tạo -> bỏ qua
             }
             lastCheckTime = currentTime;
         }
@@ -69,7 +64,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
         }
 
         if (localhost) {
-            // Localhost vẫn bị chặn nếu nằm trong blacklist, nhưng bỏ qua dò tấn công/rate limit để tiện chạy dev.
+            // Localhost trong blacklist vẫn chặn, nhưng skip rate limit để tiện dev
             filterChain.doFilter(request, response);
             return;
         }

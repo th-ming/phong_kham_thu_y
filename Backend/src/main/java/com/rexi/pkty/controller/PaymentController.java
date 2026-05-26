@@ -97,25 +97,20 @@ public class PaymentController {
         return null;
     }
 
-    // BẢO MẬT: Secret dùng để xác thực Webhook từ SePay/Casso/PayOS
-    // Cấu hình trong application.properties: webhook.secret=YOUR_SECRET
-    @org.springframework.beans.factory.annotation.Value("${webhook.secret:}")
-    private String webhookSecret;
-
-    // =========================================================================
-    // TÍCH HỢP VNPAY
-    // =========================================================================
-    @org.springframework.beans.factory.annotation.Value("${vnpay.tmn.code:YOUR_VNPAY_TMN_CODE}")
-    private String vnp_TmnCode;
-
-    @org.springframework.beans.factory.annotation.Value("${vnpay.hash.secret:YOUR_VNPAY_HASH_SECRET}")
-    private String vnp_HashSecret;
-
     @org.springframework.beans.factory.annotation.Value("${vnpay.url:https://sandbox.vnpayment.vn/paymentv2/vpcpay.html}")
     private String vnp_Url;
 
+    @org.springframework.beans.factory.annotation.Value("${vnpay.tmn.code:}")
+    private String vnp_TmnCode;
+
+    @org.springframework.beans.factory.annotation.Value("${vnpay.hash.secret:}")
+    private String vnp_HashSecret;
+
     @org.springframework.beans.factory.annotation.Value("${vnpay.return.url:http://localhost:5173/khach-hang/hoa-don-thanh-toan}")
     private String vnp_ReturnUrl;
+
+    @org.springframework.beans.factory.annotation.Value("${webhook.secret:}")
+    private String webhookSecret;
 
     private String getVnpTmnCode() {
         try {
@@ -157,7 +152,7 @@ public class PaymentController {
             if (accessError != null) {
                 return accessError;
             }
-            // BẢO MẬT: Kiểm tra số tiền thật từ Database thay vì tin tưởng Frontend
+            // Check số tiền thật từ DB (chống tin FE)
             java.math.BigDecimal amountFromDb = jdbcTemplate.queryForObject(
                 "SELECT tong_tien_cuoi FROM HoaDon WHERE id_hoa_don = ?", 
                 java.math.BigDecimal.class, idHoaDon);
@@ -231,7 +226,7 @@ public class PaymentController {
                     java.math.BigDecimal amountPaid = new java.math.BigDecimal(queryParams.get("vnp_Amount"))
                             .divide(new java.math.BigDecimal(100));
 
-                    // BẢO MẬT: Kiểm tra số tiền đã trả có khớp với số tiền trong hóa đơn không
+                    // Check amount trả có khớp/đủ với hóa đơn ko
                     java.math.BigDecimal amountExpected = jdbcTemplate.queryForObject(
                         "SELECT tong_tien_cuoi FROM HoaDon WHERE id_hoa_don = ?", 
                         java.math.BigDecimal.class, idHoaDon);
@@ -326,8 +321,7 @@ public class PaymentController {
             String amount = amountFromDb.toPlainString();
 
 
-            // Nội dung chuyển khoản chuẩn: REXI HD + ID Hóa đơn
-            // Ví dụ: REXI HD123
+            // Nội dung ck mẫu: REXI HD123
             String addInfo = "REXI " + idHoaDon;
 
             String qrUrl = String.format(
@@ -345,14 +339,13 @@ public class PaymentController {
         }
     }
 
-    // API Webhook - Hệ thống tự động gạch nợ (Hứng từ PayOS / SePay / Casso)
+    // Webhook VietQR tự động gạch nợ (PayOS / SePay / Casso)
     @PostMapping("/vietqr/webhook")
     public ResponseEntity<?> vietqrWebhook(
             @RequestBody Map<String, Object> payload,
             @RequestHeader(value = "X-Webhook-Secret", required = false) String receivedSecret) {
         try {
-            // BẢO MẬT LỚP 1: Xác thực chữ ký bí mật từ SePay/Casso
-            // Nếu không khớp → từ chối ngay, không xử lý gì cả
+            // Check secret từ SePay/Casso (Unauthorized nếu sai)
             if (webhookSecret == null || webhookSecret.isBlank()
                     || receivedSecret == null || !receivedSecret.equals(webhookSecret)) {
                 logger.warning("Webhook bị từ chối: Sai hoặc thiếu X-Webhook-Secret!");
@@ -361,7 +354,7 @@ public class PaymentController {
 
             logger.info("Nhận Webhook hợp lệ: " + payload);
 
-            // Bóc tách nội dung chuyển khoản linh hoạt (Hỗ trợ PayOS / SePay / Casso)
+            // Parse content ck linh hoạt (PayOS / SePay / Casso)
             String content = "";
             java.math.BigDecimal soTien = java.math.BigDecimal.ZERO;
 
@@ -386,7 +379,7 @@ public class PaymentController {
 
             content = content.toUpperCase();
 
-            // Regex bắt mã hóa đơn trong nội dung (REXI HD123, REXI HD-123, REXI 123...)
+            // Regex tìm ID hóa đơn: REXI HD123, REXI 123...
             java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("REXI\\s*(HD-?[A-Z0-9]+|[0-9]+)");
             java.util.regex.Matcher matcher = pattern.matcher(content);
 

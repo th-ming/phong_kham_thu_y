@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+﻿import React, { useCallback, useState } from "react";
 import { Link } from "react-router-dom";
 import { MemeCat, ScrollToTop, RevealSection } from "@components/SpecialEffects";
 import axiosInstance from "@services/axios";
@@ -125,7 +125,7 @@ const BacSi: React.FC = () => {
                             {doctors.map((d) => (
                                 <div key={d.id_nhan_vien} className="doctor-card" style={{ borderRadius: "32px", overflow: "hidden", border: '1px solid var(--gray-200)', background: 'var(--surface)', position: 'relative', transition: 'all 0.4s ease', boxShadow: 'var(--shadow-md)' }}>
                                     <div style={{ height: "360px", overflow: 'hidden', position: 'relative', backgroundColor: 'var(--gray-50)' }}>
-                                        {/* hình ảnh mặc định avatar nếu bác sĩ chưa có ảnh */}
+                                        {/* hình ảnh mặc định avatar nếu bs chưa có ảnh */}
                                         <img
                                             src={d.hinh_anh?.trim() || "/img/avtpkty.png"}
                                             alt={d.ho_ten}

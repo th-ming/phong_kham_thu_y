@@ -1,10 +1,10 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axiosInstance from "@services/axios";
 import { Modal } from "@components/CommonUI";
-import { toast } from "@components/Toast";
 import { getUserProfile } from "@utils/index";
 import { useAutoRefresh } from "@hooks/useAutoRefresh";
+import { toast } from "@components/Toast";
 
 const formatTienVND = (tien: number) => {
   return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(tien);
@@ -36,109 +36,58 @@ const DashboardKhachHang: React.FC = () => {
   const [isTipsModalOpen, setIsTipsModalOpen] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<string>("");
   const [petRowsForTrend, setPetRowsForTrend] = useState<any[]>([]);
-  const [showOnboardingModal, setShowOnboardingModal] = useState(false);
-  const [birthYear, setBirthYear] = useState<string>("");
-  const [updatingBirthYear, setUpdatingBirthYear] = useState(false);
-  const [fullCustomerProfile, setFullCustomerProfile] = useState<any>(null);
 
-  const randomTip = useMemo(() => PET_CARE_TIPS[Math.floor(Math.random() * PET_CARE_TIPS.length)], []);
+  // Các state cho Modal hỏi năm sinh tự động kích hoạt
+  const [showAgeModal, setShowAgeModal] = useState(() => {
+    const cachedUser = getUserProfile();
+    return !cachedUser?.nam_sinh;
+  });
+  const [inputNamSinh, setInputNamSinh] = useState("");
+  const [savingAge, setSavingAge] = useState(false);
+  const [ageError, setAgeError] = useState("");
+  const [confettiActive, setConfettiActive] = useState(false);
 
-  // KIỂM TRA NĂM SINH ĐỂ HIỂN THỊ ONBOARDING MODAL CHO KHÁCH HÀNG MỚI
-  useEffect(() => {
-    const checkBirthYear = async () => {
-      const currentUser = getUserProfile();
-      if (!currentUser) return;
-      
-      const idKhachHang = currentUser.id_khach_hang || currentUser.idKhachHang || currentUser.id;
-      if (!idKhachHang) return;
-
-      try {
-        // Chọc API lấy profile chi tiết của KHACH_HANG trong db để cập nhật dữ liệu mới nhất, tránh lag sync local.
-        const res = await axiosInstance.get(`/api/khach-hang/${idKhachHang}`);
-        const profile = res.data;
-        setFullCustomerProfile(profile);
-
-        // Cắt bẫy nghiệp vụ: Nếu db chưa có năm sinh (null/0), ép KHACH_HANG phải khai báo qua onboarding modal ngay để phân luồng cá nhân hóa.
-        if (profile && (profile.nam_sinh === undefined || profile.nam_sinh === null || profile.nam_sinh === 0)) {
-          setShowOnboardingModal(true);
-        } else {
-          // Lỡ KHACH_HANG có sẵn năm sinh từ db rồi thì sync ngược lại localStorage để chatbot REXI ăn giọng liền lập tức.
-          if (currentUser.nam_sinh !== profile.nam_sinh) {
-            localStorage.setItem("user", JSON.stringify({
-              ...currentUser,
-              nam_sinh: profile.nam_sinh
-            }));
-          }
-        }
-      } catch (err) {
-        console.error("Lỗi khi tải thông tin khách hàng để check năm sinh:", err);
-      }
-    };
-
-    checkBirthYear();
-  }, []);
-
-  const handleSaveBirthYear = async (e: React.FormEvent) => {
+  const handleSaveAge = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!birthYear || isNaN(Number(birthYear))) {
-      toast.error("Vui lòng nhập năm sinh hợp lệ!");
-      return;
-    }
-
-    const yearNum = Number(birthYear);
+    setAgeError("");
+    const namSinhNum = Number(inputNamSinh);
     const currentYear = new Date().getFullYear();
-    if (yearNum < 1920 || yearNum > currentYear) {
-      toast.error(`Năm sinh phải nằm trong khoảng từ 1920 đến ${currentYear}!`);
+    if (!inputNamSinh || isNaN(namSinhNum) || namSinhNum < 1900 || namSinhNum > currentYear) {
+      setAgeError(`Vui lòng nhập năm sinh hợp lệ (từ 1900 đến ${currentYear})!`);
       return;
     }
 
-    const currentUser = getUserProfile();
-    const idKhachHang = currentUser?.id_khach_hang || currentUser?.idKhachHang || currentUser?.id;
-    if (!idKhachHang) {
-      toast.error("Không tìm thấy thông tin khách hàng. Vui lòng thử đăng nhập lại!");
-      return;
-    }
-
-    setUpdatingBirthYear(true);
+    setSavingAge(true);
     try {
-      // Gộp năm sinh vào profile hiện tại
-      const updatedProfile = {
-        ...fullCustomerProfile,
-        id_khach_hang: idKhachHang,
-        nam_sinh: yearNum
-      };
-
-      await axiosInstance.put(`/api/khach-hang/${idKhachHang}`, updatedProfile);
+      const idKhachHang = user.id_khach_hang || user.id_tai_khoan || user.id;
+      await axiosInstance.put(`/api/khach-hang/${idKhachHang}`, {
+        ten_khach_hang: user.ten_khach_hang || user.displayName || user.ho_ten || user.fullName || user.ten_dang_nhap || "",
+        email: user.email || "",
+        sdt: user.sdt || "",
+        dia_chi: user.dia_chi || "",
+        nam_sinh: namSinhNum
+      });
       
-      // Ép sync nóng năm sinh vào localStorage để toàn bộ UI và chatbot REXI lột xác đổi giọng ngay khum cần F5.
-      const nextUser = {
-        ...currentUser,
-        nam_sinh: yearNum
-      };
-      localStorage.setItem("user", JSON.stringify(nextUser));
-
-      // Đóng modal
-      setShowOnboardingModal(false);
-
-      // Hiển thị lời chào cá nhân hóa độc đáo theo lứa tuổi
-      if (yearNum >= 1997) {
-        toast.success("Oki kiki! Bạn đã gia nhập Câu lạc bộ Gen Z nhây nhây siêu đáng yêu. Hãy trò chuyện với chatbot Rexi phiên bản Genz cực khìn cực iu nhé! 🐱🎉");
-      } else {
-        toast.success("Cập nhật thành công! Giao diện phòng khám và Trợ lý y khoa Rexi chuyên nghiệp đã được thiết lập sẵn sàng phục vụ Quý khách! 🩺✨");
-      }
-
-      // Reload nhẹ trang để áp dụng tone giọng mới tức thì
+      const updatedUser = { ...user, nam_sinh: namSinhNum };
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+      
+      setConfettiActive(true);
+      toast.success("Đã kích hoạt phong cách phục vụ mới! 🎉");
+      
       setTimeout(() => {
+        setShowAgeModal(false);
+        setConfettiActive(false);
         window.location.reload();
-      }, 2500);
-
-    } catch (err: any) {
-      console.error("Lỗi khi lưu năm sinh onboarding:", err);
-      toast.error(err.response?.data?.message || "Cập nhật năm sinh thất bại. Vui lòng thử lại!");
+      }, 2000);
+    } catch (err) {
+      console.error("Lỗi cập nhật năm sinh:", err);
+      setAgeError("Không thể cập nhật năm sinh lúc này. Sếp thử lại sau nhé!");
     } finally {
-      setUpdatingBirthYear(false);
+      setSavingAge(false);
     }
   };
+
+  const randomTip = useMemo(() => PET_CARE_TIPS[Math.floor(Math.random() * PET_CARE_TIPS.length)], []);
 
   const user = getUserProfile();
   const userName = user?.display_name || user?.displayName || user?.ho_ten || user?.hoTen || user?.fullName || user?.ten_khach_hang || user?.ten_dang_nhap || user?.username || "Sen";
@@ -484,7 +433,7 @@ const DashboardKhachHang: React.FC = () => {
           box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
 
-        /* Hiệu ứng hover cao cấp cho thẻ Cẩm nang chăm sóc */
+        // Hiệu ứng hover cao cấp cho thẻ Cẩm nang chăm sóc
         .tip-card {
           transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
           background: var(--surface);
@@ -495,9 +444,9 @@ const DashboardKhachHang: React.FC = () => {
           transform: translateY(-4px) scale(1.015);
           border-color: var(--primary) !important;
           background: var(--surface) !important;
-          /* Hiệu ứng phát sáng (glow) kết hợp bóng đổ mượt mà */
+          // Hiệu ứng phát sáng (glow) kết hợp bóng đổ mượt mà
           box-shadow: 0 15px 30px rgba(15, 157, 138, 0.2), 0 0 12px rgba(15, 157, 138, 0.15);
-          /* Tăng độ sáng khi di chuột để làm nổi bật thẻ */
+          // Tăng độ sáng khi di chuột để làm nổi bật thẻ
           filter: brightness(1.2);
         }
         .tip-card .tip-icon-container {
@@ -655,114 +604,159 @@ const DashboardKhachHang: React.FC = () => {
         </div>
       </Modal>
 
-      {/* ONBOARDING MODAL GLASSMORPHISM LỘNG LẪY CHO KHÁCH HÀNG MỚI */}
-      {showOnboardingModal && (
+      {/* MODAL HỎI NĂM SINH GLASSMORPHISM ĐỘC QUYỀN REXI */}
+      {showAgeModal && (
         <div style={{
-          position: "fixed",
-          top: 0, left: 0, right: 0, bottom: 0,
-          background: "rgba(15, 23, 42, 0.45)",
-          backdropFilter: "blur(20px) saturate(180%)",
-          WebkitBackdropFilter: "blur(20px) saturate(180%)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          zIndex: 9999,
-          padding: "20px",
-          animation: "fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1)"
+          position: 'fixed', inset: 0, zIndex: 99999,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'rgba(15, 23, 42, 0.4)',
+          backdropFilter: 'blur(16px)',
+          animation: 'fadeIn 0.3s ease-out'
         }}>
-          <div style={{
-            background: "rgba(255, 255, 255, 0.75)",
-            backdropFilter: "blur(40px)",
-            WebkitBackdropFilter: "blur(40px)",
-            border: "1px solid rgba(255, 255, 255, 0.4)",
-            borderRadius: "32px",
-            width: "100%",
-            maxWidth: "460px",
-            padding: "40px",
-            boxShadow: "0 30px 60px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.6)",
-            textAlign: "center",
-            transform: "translateY(0)",
-            animation: "slideUpFade 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)"
+          {/* CONFETTI EFFECT */}
+          {confettiActive && (
+            <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 10 }}>
+              {Array.from({ length: 45 }).map((_, idx) => {
+                const colors = ['#0f9d8a', '#14b8a6', '#f59e0b', '#3b82f6', '#e11d48', '#10b981'];
+                const left = Math.random() * 100;
+                const delay = Math.random() * 2;
+                const duration = Math.random() * 2 + 1.5;
+                const size = Math.random() * 8 + 6;
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                return (
+                  <div key={idx} style={{
+                    position: 'absolute', top: '-20px', left: `${left}%`,
+                    width: `${size}px`, height: `${size}px`,
+                    background: color, borderRadius: Math.random() > 0.5 ? '50%' : '2px',
+                    opacity: 0.8,
+                    transform: `rotate(${Math.random() * 360}deg)`,
+                    animation: `fallAndSpin ${duration}s linear ${delay}s infinite`
+                  }} />
+                );
+              })}
+              <style>{`
+                @keyframes fallAndSpin {
+                  0% { top: -20px; transform: translateX(0) rotate(0deg); opacity: 1; }
+                  100% { top: 105%; transform: translateX(${Math.random() * 100 - 50}px) rotate(${Math.random() * 720}deg); opacity: 0; }
+                }
+              `}</style>
+            </div>
+          )}
+
+          <div className="glass-card" style={{
+            width: '90%', maxWidth: '500px',
+            padding: '48px 40px',
+            borderRadius: '40px',
+            background: 'var(--surface)',
+            border: '2.5px solid var(--primary)',
+            boxShadow: '0 25px 60px rgba(0,0,0,0.15), 0 0 30px rgba(15, 157, 138, 0.25)',
+            textAlign: 'center',
+            position: 'relative',
+            animation: 'slideUpFade 0.5s cubic-bezier(0.16, 1, 0.3, 1)'
           }}>
             <div style={{
-              width: "80px",
-              height: "80px",
-              background: "linear-gradient(135deg, var(--primary) 0%, #14b8a6 100%)",
-              borderRadius: "28px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              margin: "0 auto 24px auto",
-              boxShadow: "0 12px 24px rgba(15, 157, 138, 0.3)",
-              animation: "float 4s ease-in-out infinite"
+              width: '80px', height: '80px',
+              background: 'var(--primary-light)',
+              borderRadius: '26px',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: 'var(--primary)',
+              margin: '0 auto 24px',
+              boxShadow: '0 10px 24px rgba(15, 157, 138, 0.15)'
             }}>
-              <span className="material-symbols-outlined" style={{ fontSize: "40px", color: "white" }}>face</span>
+              <span className="material-symbols-outlined" style={{ fontSize: '40px' }}>face_5</span>
             </div>
 
-            <h3 style={{ fontSize: "1.6rem", fontWeight: 900, color: "var(--ink)", margin: "0 0 12px 0", letterSpacing: "-0.5px" }}>Chào mừng bạn đến với Rexi!</h3>
-            <p style={{ fontSize: "0.95rem", color: "var(--gray-500)", fontWeight: 600, lineHeight: "1.6", margin: "0 0 32px 0" }}>
-              Hãy cho phòng khám biết năm sinh của bạn để chúng tôi cá nhân hóa giao diện và mang đến phong cách trò chuyện phù hợp nhất nhé!
+            <h2 style={{ fontSize: '1.8rem', fontWeight: 950, color: 'var(--ink)', margin: '0 0 12px 0', letterSpacing: '-1px' }}>
+              Chào mừng Sen ghé thăm! 🐾
+            </h2>
+            <p style={{ fontSize: '0.98rem', color: 'var(--gray-500)', fontWeight: 650, margin: '0 0 32px 0', lineHeight: 1.6 }}>
+              Sen cho Rexi biết năm sinh của Sen nha! Rexi muốn chọn đúng phong cách trò chuyện phù hợp dới Sen nhất đó meow~ 🐱
             </p>
 
-            <form onSubmit={handleSaveBirthYear}>
-              <div style={{ position: "relative", marginBottom: "24px" }}>
+            <form onSubmit={handleSaveAge} style={{ display: 'grid', gap: '24px' }}>
+              <div style={{ position: 'relative' }}>
                 <input
                   type="number"
-                  placeholder="Nhập năm sinh của bạn (VD: 1998)"
-                  value={birthYear}
-                  onChange={(e) => setBirthYear(e.target.value)}
-                  min="1920"
-                  max={new Date().getFullYear()}
-                  style={{
-                    width: "100%",
-                    padding: "16px 20px",
-                    borderRadius: "16px",
-                    border: "2px solid rgba(15, 157, 138, 0.2)",
-                    background: "rgba(255, 255, 255, 0.8)",
-                    fontSize: "1.05rem",
-                    fontWeight: 700,
-                    textAlign: "center",
-                    color: "var(--ink)",
-                    outline: "none",
-                    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
+                  placeholder="Nhập năm sinh của bạn (Ví dụ: 1999)"
+                  value={inputNamSinh}
+                  onChange={(e) => {
+                    setInputNamSinh(e.target.value);
+                    setAgeError("");
                   }}
-                  onFocus={(e) => e.target.style.borderColor = "var(--primary)"}
-                  onBlur={(e) => e.target.style.borderColor = "rgba(15, 157, 138, 0.2)"}
-                  disabled={updatingBirthYear}
-                  autoFocus
-                  required
+                  disabled={savingAge}
+                  style={{
+                    width: '100%',
+                    padding: '16px 20px',
+                    borderRadius: '20px',
+                    border: '2px solid var(--gray-200)',
+                    background: 'var(--background)',
+                    color: 'var(--ink)',
+                    fontSize: '1rem',
+                    fontWeight: 800,
+                    outline: 'none',
+                    textAlign: 'center',
+                    transition: 'all 0.3s'
+                  }}
+                  className="yob-input-neon"
                 />
+                <style>{`
+                  .yob-input-neon:focus {
+                    border-color: var(--primary) !important;
+                    box-shadow: 0 0 15px rgba(15, 157, 138, 0.25) !important;
+                  }
+                  /* Ẩn nút tăng giảm của input number */
+                  input::-webkit-outer-spin-button,
+                  input::-webkit-inner-spin-button {
+                    -webkit-appearance: none;
+                    margin: 0;
+                  }
+                  input[type=number] {
+                    -moz-appearance: textfield;
+                  }
+                `}</style>
               </div>
+
+              {/* DỰ ĐOÁN PHONG CÁCH CHAT DỘNG THỜI GIAN THỰC */}
+              {inputNamSinh && !isNaN(Number(inputNamSinh)) && Number(inputNamSinh) >= 1900 && Number(inputNamSinh) <= new Date().getFullYear() && (
+                <div className="animate-fade-in" style={{
+                  padding: '16px 20px',
+                  borderRadius: '20px',
+                  background: Number(inputNamSinh) >= 1997 ? 'rgba(20, 184, 166, 0.08)' : 'rgba(245, 158, 11, 0.06)',
+                  border: `1.5px dashed ${Number(inputNamSinh) >= 1997 ? 'var(--primary)' : '#f59e0b'}`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+                  animation: 'slideUpFade 0.3s ease-out'
+                }}>
+                  <span className="material-symbols-outlined" style={{ color: Number(inputNamSinh) >= 1997 ? 'var(--primary)' : '#f59e0b' }}>
+                    {Number(inputNamSinh) >= 1997 ? 'celebration' : 'workspace_premium'}
+                  </span>
+                  <span style={{ fontSize: '0.88rem', fontWeight: 900, color: Number(inputNamSinh) >= 1997 ? 'var(--primary)' : '#f59e0b' }}>
+                    {Number(inputNamSinh) >= 1997 ? "PHONG CÁCH: Gen Z vui tươi nhí nhố 🐱🎉" : "PHONG CÁCH: Trưởng thành chu đáo chuẩn mực 🩺✨"}
+                  </span>
+                </div>
+              )}
+
+              {ageError && (
+                <div style={{ color: 'var(--danger)', fontSize: '0.85rem', fontWeight: 800, textAlign: 'center', animation: 'shake 0.3s ease' }}>
+                  {ageError}
+                </div>
+              )}
 
               <button
                 type="submit"
-                disabled={updatingBirthYear}
+                disabled={savingAge || !inputNamSinh}
                 className="btn btn-primary"
                 style={{
-                  width: "100%",
-                  padding: "16px",
-                  borderRadius: "16px",
-                  fontWeight: 800,
-                  fontSize: "1rem",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: "8px",
-                  boxShadow: "0 8px 20px rgba(15, 157, 138, 0.25)",
-                  transition: "all 0.3s"
+                  width: '100%',
+                  padding: '16px',
+                  borderRadius: '50px',
+                  fontSize: '1rem',
+                  fontWeight: 900,
+                  boxShadow: '0 10px 20px var(--primary-shadow)',
+                  opacity: (!inputNamSinh || savingAge) ? 0.6 : 1,
+                  cursor: (!inputNamSinh || savingAge) ? 'not-allowed' : 'pointer'
                 }}
               >
-                {updatingBirthYear ? (
-                  <>
-                    <div className="dot-pulse" style={{ scale: "0.8" }}></div>
-                    Đang thiết lập...
-                  </>
-                ) : (
-                  <>
-                    Xác nhận & Khám phá ngay
-                    <span className="material-symbols-outlined">arrow_forward</span>
-                  </>
-                )}
+                {savingAge ? "Đang chuẩn bị lộ trình..." : "Bắt đầu hành trình cùng Rexi 🐾"}
               </button>
             </form>
           </div>

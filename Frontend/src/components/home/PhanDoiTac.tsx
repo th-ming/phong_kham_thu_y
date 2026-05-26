@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { RevealSection } from "@components/SpecialEffects";
 
 const partners = [
@@ -108,7 +108,7 @@ const PhanDoiTac: React.FC = () => {
                             <feComponentTransfer in="luma" result="alphaMask">
                                 <feFuncA type="linear" slope="-10" intercept="9.5" />
                             </feComponentTransfer>
-                            {/* 3. Phủ mặt nạ trong suốt lên ảnh gốc */}
+                            {/* 3. Phủ mặt n trong suốt lên ảnh gốc */}
                             <feComposite in="SourceGraphic" in2="alphaMask" operator="in" />
                         </filter>
                     </defs>
@@ -202,7 +202,7 @@ const PhanDoiTac: React.FC = () => {
                     padding: 10px 14px;
                     transition: border-color 0.35s ease, background 0.35s ease;
                     border: 1px solid color-mix(in srgb, var(--gray-200) 55%, transparent);
-                    /* Nền xám nhạt: multiply xóa trắng PNG mà logo vẫn đậm */
+                    // Nền xám nhạt: multiply xóa trắng PNG mà logo vẫn đậm
                     background: color-mix(in srgb, var(--gray-100) 85%, var(--surface));
                 }
                 [data-theme='dark'] .partner-logo-box {
@@ -213,7 +213,7 @@ const PhanDoiTac: React.FC = () => {
                     border-color: color-mix(in srgb, var(--partner-accent) 35%, var(--gray-200));
                 }
 
-                /* Light: logo gốc rõ — không dùng knockout */
+                // Light: logo gốc rõ — ko dùng knockout
                 .partner-logo-img {
                     display: block;
                     width: auto;
@@ -239,7 +239,7 @@ const PhanDoiTac: React.FC = () => {
                     }
                 }
 
-                /* Dark mode: Xóa phông trắng bằng SVG Filter, ánh sáng chỉ bám sát viền chữ/logo */
+                // Dark mode: Xóa phông trắng bằng SVG Filter, ánh sáng chỉ bám sát viền chữ/logo
                 [data-theme='dark'] .partner-logo-img {
                     mix-blend-mode: normal;
                     animation: partnerLogoPulse 3s ease-in-out infinite;
@@ -249,7 +249,7 @@ const PhanDoiTac: React.FC = () => {
                     filter: contrast(1.15) saturate(1.2);
                 }
                 [data-theme='dark'] .partner-card-new:hover .partner-logo-img {
-                    animation: none; /* Tắt nhịp thở khi rê chuột vào để ánh sáng giữ mức rực rỡ nhất */
+                    animation: none; // Tắt nhịp thở khi rê chuột vào để ánh sáng giữ mức rực rỡ nhất
                     filter: url(#smart-knockout) brightness(1.7) drop-shadow(0 0 32px color-mix(in srgb, var(--partner-accent) 100%, transparent));
                     opacity: 1;
                     transform: scale(1.08);

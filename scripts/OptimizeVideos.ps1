@@ -1,7 +1,7 @@
 
 # OptimizeVideos.ps1 - Co may phau thuat Video cua Sep
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-# HUONG DAN: 
+# HUONG DAN:
 # Tai FFmpeg tai: https://www.gyan.dev/ffmpeg/builds/ffmpeg-git-full.7z
 # Giai nen va them thu muc 'bin' vao PATH cua Windows (hoac chep file ffmpeg.exe vao thu muc du an nay).
 # Chay script nay de got giua toan bo video.

@@ -55,8 +55,8 @@ while pages_to_visit and page_count < MAX_PAGES:
             full_url = urllib.parse.urljoin(BASE_URL, href)
             
             # Remove fragments
-            if '#' in full_url:
-                full_url = full_url.split('#')[0]
+            if '# ' in full_url:
+                full_url = full_url.split('# ')[0]
                 
             if full_url.lower().endswith('.pdf'):
                 pdf_links.add(full_url)
@@ -102,7 +102,7 @@ for pdf_url in pdf_links:
             for page_num, page in enumerate(reader.pages):
                 text = page.extract_text()
                 if text:
-                    full_text.append(f"### TRANG {page_num + 1}\n{text}\n")
+                    full_text.append(f"# ## TRANG {page_num + 1}\n{text}\n")
             
             if full_text:
                 with open(md_path, "w", encoding="utf-8") as f:

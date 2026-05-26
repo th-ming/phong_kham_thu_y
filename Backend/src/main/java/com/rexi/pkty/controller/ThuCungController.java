@@ -37,7 +37,7 @@ public class ThuCungController {
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String search) {
         try {
-            // Dùng JdbcTemplate để ổn định nhất, tránh lỗi mapping JPA/Serialization
+            // Dung JdbcTemplate tranh serialization error
             String sql;
             List<Map<String, Object>> allPets;
             if (search != null && !search.trim().isEmpty()) {
@@ -80,7 +80,7 @@ public class ThuCungController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "999") int size) {
         try {
-            // BẢO MẬT: Kiểm tra IDOR
+            // Chk IDOR get pet detail
             org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
                     .getContext().getAuthentication();
             String username = (auth != null) ? auth.getName() : null;
@@ -100,7 +100,7 @@ public class ThuCungController {
             
             List<Map<String, Object>> allPets = thuCungRepository.findByKhachHang(idKhachHang);
             
-            // Hỗ trợ phân trang giả lập để khớp với frontend request (?page=0&size=999)
+            // Fake paging tuong thich FE query
             int start = Math.min(page * size, allPets.size());
             int end = Math.min(start + size, allPets.size());
             List<Map<String, Object>> content = allPets.subList(start, end);
@@ -125,7 +125,7 @@ public class ThuCungController {
             if (optional.isPresent()) {
                 ThuCung tc = optional.get();
  
-                // BẢO MẬT: Kiểm tra IDOR
+                // Chk IDOR update pet
                 org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
                         .getContext().getAuthentication();
                 String username = (auth != null) ? auth.getName() : null;
@@ -169,7 +169,7 @@ public class ThuCungController {
                 return ResponseEntity.badRequest().body(Map.of("message", "Lỗi: Thiếu ID Khách hàng!"));
             }
  
-            // BẢO MẬT: Kiểm tra IDOR
+            // Chk IDOR add pet
             org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
                     .getContext().getAuthentication();
             String username = (auth != null) ? auth.getName() : null;
@@ -215,7 +215,7 @@ public class ThuCungController {
             if (optional.isPresent()) {
                 ThuCung tc = optional.get();
  
-                // BẢO MẬT: Kiểm tra IDOR
+                // Chk IDOR delete pet
                 org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
                         .getContext().getAuthentication();
                 String username = (auth != null) ? auth.getName() : null;
@@ -229,20 +229,18 @@ public class ThuCungController {
                     }
                 }
  
+                // Xoa mem neu da co history transaction
                 if (hasBusinessData(id)) {
                     tc.setDa_xoa(true);
                     tc.setNgay_cap_nhat(java.time.LocalDateTime.now());
                     thuCungRepository.save(tc);
-
-                    auditLogService.logAction("XÓA MỀM", "ThuCung",
-                            "Ẩn thú cưng có dữ liệu liên kết: " + tc.getTen_thu_cung() + " (ID: " + tc.getId_thu_cung() + ") bởi " + (username != null ? username : "Hệ thống"));
-                    return ResponseEntity.ok(Map.of("message", "Bé đã có lịch sử nghiệp vụ nên hệ thống đã ẩn thay vì xóa vĩnh viễn."));
+                    auditLogService.logAction("XÓA MỀM", "ThuCung", "An thu cung: " + tc.getTen_thu_cung());
+                    return ResponseEntity.ok(Map.of("message", "Da an thu cung"));
                 }
 
                 thuCungRepository.delete(tc);
-                auditLogService.logAction("XÓA CỨNG", "ThuCung",
-                        "Xóa vĩnh viễn thú cưng chưa có dữ liệu liên kết: " + tc.getTen_thu_cung() + " (ID: " + tc.getId_thu_cung() + ") bởi " + (username != null ? username : "Hệ thống"));
-                return ResponseEntity.ok(Map.of("message", "Đã xóa vĩnh viễn thú cưng chưa có dữ liệu nghiệp vụ."));
+                auditLogService.logAction("XÓA CỨNG", "ThuCung", "Xoa cung thu cung: " + tc.getTen_thu_cung());
+                return ResponseEntity.ok(Map.of("message", "Da xoa cung thu cung"));
             } else {
                 return ResponseEntity.status(404).body(Map.of("message", "Không tìm thấy thú cưng này!"));
             }

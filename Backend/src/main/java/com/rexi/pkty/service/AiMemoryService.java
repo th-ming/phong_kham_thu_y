@@ -229,11 +229,20 @@ public class AiMemoryService {
     }
 
     private List<String> extractSearchTerms(String normalizedQuery) {
-        return List.of(normalizedQuery.split("\\s+")).stream()
+        List<String> terms = List.of(normalizedQuery.split("\\s+")).stream()
             .filter(term -> term.length() >= 3)
             .filter(term -> !KNOWLEDGE_STOP_WORDS.contains(term))
             .distinct()
             .limit(10)
+            .collect(Collectors.toList());
+        if (!terms.isEmpty()) {
+            return terms;
+        }
+
+        return List.of(normalizedQuery.split("\\s+")).stream()
+            .filter(term -> Set.of("benh", "cho", "meo", "thuoc", "duoc", "phau", "truyen", "nhiem").contains(term))
+            .distinct()
+            .limit(5)
             .collect(Collectors.toList());
     }
 
@@ -280,7 +289,7 @@ public class AiMemoryService {
         
         String cleanQuery = (query != null) ? query.toLowerCase() : "";
         
-        // Smart Router: Chỉ nhét Bác Sĩ nếu câu hỏi nhắc đến bác sĩ
+        // Smart Router: Chỉ nhét Bác Sĩ nếu câu hỏi nhắc đến bs
         if (cleanQuery.contains("bác sĩ") || cleanQuery.contains("bs") || cleanQuery.contains("ai khám") || cleanQuery.contains("khám bệnh")) {
             sb.append(getDoctorsContext());
         }

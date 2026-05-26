@@ -6,7 +6,7 @@ const BASE_URL = `http://localhost:${FRONTEND_PORT}`;
 test.describe('Kiểm thử chức năng: Quản lý Xét nghiệm Lâm sàng', () => {
 
     test.beforeEach(async ({ page }) => {
-        // Đăng nhập Admin trước mỗi kịch bản test
+        // Đăng nhập ADMIN trước mỗi kịch bản test
         await page.goto(`${BASE_URL}/dang-nhap`);
         await page.getByPlaceholder('Tên đăng nhập').fill('admin');
         await page.getByPlaceholder('Mật khẩu').fill('admin@rexi.com');
@@ -36,7 +36,7 @@ test.describe('Kiểm thử chức năng: Quản lý Xét nghiệm Lâm sàng', 
         if (await firstViewBtn.isVisible()) {
             await firstViewBtn.click();
 
-            // 3. Xác nhận Modal Kết quả xét nghiệm hiển thị đầy đủ
+            // 3. xn Modal Kết quả xét nghiệm hiển thị đầy đủ
             await expect(page.getByRole('dialog')).toBeVisible();
             await expect(page.getByText('Kết quả xét nghiệm')).toBeVisible();
             await expect(page.getByText('KẾT QUẢ PHÂN TÍCH')).toBeVisible();

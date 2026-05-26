@@ -242,7 +242,7 @@ const LichSuLichHen: React.FC = () => {
   }, [petId, status]);
 
   const rows = useMemo(() => {
-    if (isServerPaginated) return lichHens; // Nếu backend đã phân trang thì không cần lọc ở client nữa
+    if (isServerPaginated) return lichHens; // Nếu backend đã phân trang thì ko cần lọc ở client nữa
     return lichHens
       .filter((l) => (petId === "all" ? true : String(getPetId(l)) === petId))
       .filter((l) => (status === "all" ? true : getAppointmentStatus(l) === status || (status === 'DA_KHAM' && getAppointmentStatus(l) === 'HOAN_THANH')))
@@ -307,7 +307,7 @@ const LichSuLichHen: React.FC = () => {
         <div style={{ display: 'flex', gap: '16px', position: 'relative', zIndex: 1, flexWrap: 'wrap' }}>
           <div style={{ position: 'relative' }}>
             <span className="material-symbols-outlined" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', fontSize: '20px', color: 'rgba(255,255,255,0.6)', pointerEvents: 'none' }}>pets</span>
-            <select className="filter-select" value={petId} onChange={e => setPetId(e.target.value)} style={{ minWidth: '220px', borderRadius: '18px', padding: '14px 20px 14px 48px', background: 'rgba(255,255,255,0.1)', color: 'white', fontWeight: 800, outline: 'none', cursor: 'pointer', backdropFilter: 'blur(12px)', fontSize: '0.9rem' }}>
+            <select aria-label="Lọc theo thú cưng" className="filter-select" value={petId} onChange={e => setPetId(e.target.value)} style={{ minWidth: '220px', borderRadius: '18px', padding: '14px 20px 14px 48px', background: 'rgba(255,255,255,0.1)', color: 'white', fontWeight: 800, outline: 'none', cursor: 'pointer', backdropFilter: 'blur(12px)', fontSize: '0.9rem' }}>
               <option value="all" style={{ color: 'var(--ink)' }}>Tất cả thú cưng</option>
               {thuCungs.map(pet => (
                 <option key={pet.id_thu_cung ?? pet.idThuCung ?? pet.id} value={String(pet.id_thu_cung ?? pet.idThuCung ?? pet.id)} style={{ color: 'var(--ink)' }}>{pet.ten_thu_cung ?? pet.tenThuCung}</option>
@@ -317,7 +317,7 @@ const LichSuLichHen: React.FC = () => {
 
           <div style={{ position: 'relative' }}>
             <span className="material-symbols-outlined" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', fontSize: '20px', color: 'rgba(255,255,255,0.6)', pointerEvents: 'none' }}>label</span>
-            <select className="filter-select" value={status} onChange={e => setStatus(e.target.value)} style={{ minWidth: '200px', borderRadius: '18px', padding: '14px 20px 14px 48px', background: 'rgba(255,255,255,0.1)', color: 'white', fontWeight: 800, outline: 'none', cursor: 'pointer', backdropFilter: 'blur(12px)', fontSize: '0.9rem' }}>
+            <select aria-label="Lọc theo trạng thái" className="filter-select" value={status} onChange={e => setStatus(e.target.value)} style={{ minWidth: '200px', borderRadius: '18px', padding: '14px 20px 14px 48px', background: 'rgba(255,255,255,0.1)', color: 'white', fontWeight: 800, outline: 'none', cursor: 'pointer', backdropFilter: 'blur(12px)', fontSize: '0.9rem' }}>
               <option value="all" style={{ color: 'var(--ink)' }}>Tất cả trạng thái</option>
               <option value="CHO_XAC_NHAN" style={{ color: 'var(--ink)' }}>Chờ xác nhận</option>
               <option value="DA_XAC_NHAN" style={{ color: 'var(--ink)' }}>Đã xác nhận</option>

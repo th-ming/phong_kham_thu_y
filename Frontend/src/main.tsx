@@ -9,7 +9,29 @@ import { installClientErrorReporter, reportAxiosError } from './services/clientE
 
 installClientErrorReporter();
 
+<<<<<<< Updated upstream
 // Bắt phản hồi lỗi 403 từ Backend và hiển thị toast cảnh báo cho người dùng
+=======
+// config Axios Interceptor để tự động gắn TOKEN vào tất cả request
+axios.interceptors.request.use((config) => {
+  const token = localStorage.getItem("token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  
+  // Lấy thẻ lệnh từ ActionExecutor (nếu AI đang trong phiên "lái tự động")
+  const aiActionTag = (window as any).__AI_ACTION_TAG__;
+  if (aiActionTag) {
+    config.headers['X-AI-ACTION'] = aiActionTag;
+  }
+  
+  return config;
+}, (error) => {
+  return Promise.reject(error);
+});
+
+// Bắt phản hồi lỗi từ Backend (Đặc biệt: Bắt lỗi phân quyền 403 từ ActionAuthFilter)
+>>>>>>> Stashed changes
 axios.interceptors.response.use(
   (response) => response,
   (error) => {

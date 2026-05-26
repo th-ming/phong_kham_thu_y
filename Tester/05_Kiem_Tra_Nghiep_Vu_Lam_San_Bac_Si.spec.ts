@@ -54,10 +54,10 @@ test.describe('Kiểm thử chức năng: Nghiệp vụ Bác sĩ Lâm sàng & K�
                 await page.getByPlaceholder('Liều dùng').fill('Sáng 1 viên, tối 1 viên sau ăn.');
             }
 
-            // 6. Nhập lời dặn dò bác sĩ gửi chủ nuôi
+            // 6. Nhập lời dặn dò bs gửi chủ nuôi
             await page.getByPlaceholder('Kiêng ăn mặn').fill('Cho uống nhiều nước, ăn cháo loãng ấm trong 3 ngày.');
 
-            // 7. Nhấp nút xác nhận hoàn thành lưu hồ sơ & chốt hóa đơn tự động
+            // 7. Nhấp nút xn hoàn thành lưu hồ sơ & chốt hóa đơn tự động
             const submitBtn = page.getByRole('button', { name: /LƯU BỆNH ÁN/i });
             await expect(submitBtn).toBeVisible();
         }

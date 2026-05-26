@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useEffect, useMemo } from 'react';
+﻿import React, { useCallback, useState, useEffect, useMemo } from 'react';
 import axiosInstance from '@services/axios';
 import { formatTienVND } from '@utils/index';
 import { toast } from '@components/Toast';
@@ -70,7 +70,7 @@ const KeToanDashboard: React.FC = () => {
         setCurrentPage(1);
     }, [filterStatus, fromDate, toDate]);
 
-    // Hàm Kế toán xác nhận khách đã đóng tiền (Tiền mặt / Chuyển khoản thủ công)
+    // Hàm Kế toán xn khách đã đóng tiền (Tiền mặt / Chuyển khoản thủ công)
     const handleConfirmPayment = async (id: number) => {
         if (window.confirm('Xác nhận khách hàng đã thanh toán hóa đơn này?')) {
             try {
@@ -178,7 +178,7 @@ const KeToanDashboard: React.FC = () => {
         let data: number[] = [];
 
         if (!revenueData || revenueData.length === 0) {
-            // Hiển thị mặc định 7 ngày gần nhất với doanh thu 0 nếu không có dữ liệu
+            // Hiển thị mặc định 7 ngày gần nhất với doanh thu 0 nếu ko có dữ liệu
             for (let i = 6; i >= 0; i--) {
                 const d = new Date();
                 d.setDate(d.getDate() - i);
@@ -247,7 +247,7 @@ const KeToanDashboard: React.FC = () => {
         scales: {
             y: {
                 beginAtZero: true,
-                suggestedMax: 1000000, // Đảm bảo trục Y không bị co lại quá mức khi doanh thu bằng 0
+                suggestedMax: 1000000, // Đảm bảo trục Y ko bị co lại quá mức khi doanh thu bằng 0
                 grid: { color: 'rgba(0, 0, 0, 0.05)' },
                 ticks: { 
                     callback: (value: any) => {

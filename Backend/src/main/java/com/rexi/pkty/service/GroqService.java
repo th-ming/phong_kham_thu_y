@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rexi.pkty.dto.ChatMessage;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service;
 
 import java.net.URI;
 import java.net.http.*;
+import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -60,6 +62,7 @@ public class GroqService {
     private String apiKey;
 
     private static final String GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
+    private static final String GROQ_AUDIO_URL = "https://api.groq.com/openai/v1/audio/transcriptions";
 
     @Value("${groq.model:llama-3.3-70b-versatile}")
     private String modelName;
@@ -393,10 +396,72 @@ public class GroqService {
             });
     }
 
-    /**
-     * Bỏ dấu tiếng Việt để so sánh từ khóa khẩn cấp,
-     * giúp nhận diện khi user gõ không dấu.
-     */
+    public String transcribeAudio(MultipartFile file) throws Exception {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("File âm thanh trống.");
+        }
+
+        List<String> apiKeys = getAvailableApiKeys(getApiKeys());
+        if (apiKeys.isEmpty()) {
+            throw new RuntimeException("Không tìm thấy Groq API Key nào được cấu hình!");
+        }
+
+        Exception lastException = null;
+        int keyStart = Math.floorMod(keyCursor.getAndIncrement(), apiKeys.size());
+        for (int offset = 0; offset < apiKeys.size(); offset++) {
+            int i = (keyStart + offset) % apiKeys.size();
+            String currentApiKey = apiKeys.get(i);
+            try {
+                String boundary = "----RexiGroqBoundary" + System.currentTimeMillis();
+                String filename = file.getOriginalFilename() != null ? file.getOriginalFilename() : "audio.webm";
+
+                ByteArrayOutputStream body = new ByteArrayOutputStream();
+                writeMultipartField(body, boundary, "model", "whisper-large-v3-turbo");
+                writeMultipartField(body, boundary, "response_format", "json");
+                writeMultipartField(body, boundary, "language", "vi");
+                body.write(("--" + boundary + "\r\n").getBytes(StandardCharsets.UTF_8));
+                body.write(("Content-Disposition: form-data; name=\"file\"; filename=\"" + filename + "\"\r\n").getBytes(StandardCharsets.UTF_8));
+                body.write(("Content-Type: " + (file.getContentType() != null ? file.getContentType() : "audio/webm") + "\r\n\r\n").getBytes(StandardCharsets.UTF_8));
+                body.write(file.getBytes());
+                body.write(("\r\n--" + boundary + "--\r\n").getBytes(StandardCharsets.UTF_8));
+
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(URI.create(GROQ_AUDIO_URL))
+                        .header("Authorization", "Bearer " + currentApiKey)
+                        .header("Content-Type", "multipart/form-data; boundary=" + boundary)
+                        .POST(HttpRequest.BodyPublishers.ofByteArray(body.toByteArray()))
+                        .timeout(Duration.ofSeconds(60))
+                        .build();
+
+                HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+                if (response.statusCode() != 200) {
+                    markKeyFailure(currentApiKey, response.statusCode(), "audio-transcription");
+                    lastException = new RuntimeException("Groq audio API Error " + response.statusCode() + ": " + response.body());
+                    continue;
+                }
+
+                markKeySuccess(currentApiKey);
+                JsonNode rootNode = objectMapper.readTree(response.body());
+                return rootNode.path("text").asText("");
+            } catch (Exception e) {
+                lastException = e;
+                markKeyFailure(currentApiKey, e);
+                logger.warning("Groq audio key không khả dụng, thử key dự phòng tiếp theo. keyIndex=" + i
+                        + " error=" + e.getMessage());
+            }
+        }
+
+        throw new RuntimeException("Tất cả Groq API Key đều thất bại khi dịch giọng nói: "
+                + (lastException != null ? lastException.getMessage() : "không rõ lỗi"));
+    }
+
+    private void writeMultipartField(ByteArrayOutputStream body, String boundary, String name, String value) throws Exception {
+        body.write(("--" + boundary + "\r\n").getBytes(StandardCharsets.UTF_8));
+        body.write(("Content-Disposition: form-data; name=\"" + name + "\"\r\n\r\n").getBytes(StandardCharsets.UTF_8));
+        body.write((value + "\r\n").getBytes(StandardCharsets.UTF_8));
+    }
+
+    // * * Bỏ dấu tiếng Việt để so sánh từ khóa khẩn cấp, * giúp nhận diện khi user gõ ko dấu.
     private String normalizeVietnamese(String input) {
         String result = input
                 .replaceAll("[àáạảãâầấậẩẫăằắặẳẵ]", "a")

@@ -46,7 +46,7 @@ public class DichVuController {
         return dichVuRepository.findAll();
     }
 
-    // Tối ưu: Chỉ lấy dịch vụ đang hoạt động (cho trang đặt lịch, bảng giá)
+    // Lay dich vu active (dat lich, bang gia)
     @GetMapping(value = "/active", produces = "application/json;charset=UTF-8")
     public List<Map<String, Object>> getActive() {
         Map<String, Map<String, Object>> publicServices = new LinkedHashMap<>();

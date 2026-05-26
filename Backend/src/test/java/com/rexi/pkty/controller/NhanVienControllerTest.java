@@ -29,7 +29,7 @@ public class NhanVienControllerTest extends BaseControllerTest {
 
         when(nhanVienRepository.save(any(NhanVien.class))).thenReturn(nhanVien);
         when(taiKhoanRepository.save(any())).thenReturn(new com.rexi.pkty.entity.TaiKhoan());
-        // Ensure jdbcTemplate returns 0 for generated ID existence checks to avoid NPE
+        // Mock JdbcTemplate tranh NPE queryForObject count
         when(jdbcTemplate.queryForObject(anyString(), eq(Integer.class), (Object) any())).thenReturn(0);
 
         mockMvc.perform(post("/api/nhan-vien")

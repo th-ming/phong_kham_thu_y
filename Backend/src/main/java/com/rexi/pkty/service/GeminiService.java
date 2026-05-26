@@ -83,6 +83,13 @@ public class GeminiService {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final AtomicInteger keyCursor = new AtomicInteger(0);
     private final AtomicInteger modelCursor = new AtomicInteger(0);
+    // Giới hạn key/model thử khi phân tích video để tránh treo request quá lâu
+    private static final int MAX_VIDEO_KEYS_PER_REQUEST = 2;
+    private static final int MAX_VIDEO_MODELS_PER_REQUEST = 2;
+    // Giới hạn token output video để phản hồi nhanh, đủ thông tin y khoa
+    private static final int MAX_VIDEO_OUTPUT_TOKENS = 600;
+    // Giới hạn số lượt hội thoại gửi kèm khi có video (chỉ giữ turn cuối để giảm payload)
+    private static final int MAX_HISTORY_TURNS_WITH_VIDEO = 1;
 
     // Sử dụng chung 1 HttpClient cho toàn bộ service để tăng hiệu suất
     private final HttpClient client = HttpClient.newBuilder()
@@ -139,7 +146,14 @@ public class GeminiService {
         List<Map<String, Object>> contents = new ArrayList<>();
         boolean hasVideo = false;
 
-        for (ChatMessage msg : userModelHistory) {
+        // Kiểm tra trước xem có video không để cắt bớt lịch sử hội thoại
+        boolean videoInHistory = userModelHistory.stream().anyMatch(m -> m.getVideos() != null && !m.getVideos().isEmpty());
+        // Nếu có video, chỉ lấy MAX_HISTORY_TURNS_WITH_VIDEO turn cuối để giảm payload gửi lên Gemini
+        List<ChatMessage> effectiveHistory = (videoInHistory && userModelHistory.size() > MAX_HISTORY_TURNS_WITH_VIDEO)
+                ? userModelHistory.subList(userModelHistory.size() - MAX_HISTORY_TURNS_WITH_VIDEO, userModelHistory.size())
+                : userModelHistory;
+
+        for (ChatMessage msg : effectiveHistory) {
             Map<String, Object> contentItem = new HashMap<>();
 
             // Chuyển role sang chuẩn của Gemini (user / model)
@@ -155,6 +169,9 @@ public class GeminiService {
                     textContent = "Phân tích các ảnh này theo góc nhìn bác sĩ thú y. Nêu rõ những dấu hiệu nhìn thấy, mức độ khẩn cấp, khả năng nguyên nhân, khuyến nghị chăm sóc ban đầu và khi nào cần đưa bé đi khám. Không chẩn đoán chắc chắn chỉ dựa trên ảnh.";
                 parts.add(Map.of("text", textContent));
                 for (String imgBase64 : msg.getImages()) {
+                    if (imgBase64 == null || imgBase64.isBlank()) {
+                        continue;
+                    }
                     String mimeType = "image/jpeg";
                     String base64Data = imgBase64;
                     if (base64Data != null && base64Data.startsWith("data:")) {
@@ -178,6 +195,9 @@ public class GeminiService {
                 hasVideo = true;
 
                 for (String vidData : msg.getVideos()) {
+                    if (vidData == null || vidData.isBlank()) {
+                        continue;
+                    }
                     String mimeType = "video/mp4";
                     String base64Data = vidData;
 
@@ -211,20 +231,38 @@ public class GeminiService {
 
         requestBodyMap.put("contents", contents);
 
+        // Cấu hình sinh văn bản: giới hạn output token, chỉ 1 candidate, tắt thinking để tăng tốc
+        Map<String, Object> generationConfig = new HashMap<>();
+        generationConfig.put("candidateCount", 1);
+        if (hasVideo) {
+            // Video: giới hạn token để phản hồi nhanh, đủ thông tin y khoa
+            generationConfig.put("maxOutputTokens", MAX_VIDEO_OUTPUT_TOKENS);
+            // Tắt chain-of-thought thinking (tiết kiệm ~30-40% thời gian xử lý)
+            generationConfig.put("thinkingConfig", Map.of("thinkingBudget", 0));
+        }
+        requestBodyMap.put("generationConfig", generationConfig);
+
         String requestBody = objectMapper.writeValueAsString(requestBodyMap);
 
+        List<String> activeKeys = hasVideo && keys.size() > MAX_VIDEO_KEYS_PER_REQUEST
+                ? keys.subList(0, MAX_VIDEO_KEYS_PER_REQUEST)
+                : keys;
         List<String> modelCandidates = getModelCandidates();
-        int keyStart = Math.floorMod(keyCursor.getAndIncrement(), keys.size());
-        int modelStart = Math.floorMod(modelCursor.getAndIncrement(), modelCandidates.size());
+        List<String> activeModels = hasVideo && modelCandidates.size() > MAX_VIDEO_MODELS_PER_REQUEST
+                ? modelCandidates.subList(0, MAX_VIDEO_MODELS_PER_REQUEST)
+                : modelCandidates;
+        int keyStart = Math.floorMod(keyCursor.getAndIncrement(), activeKeys.size());
+        int modelStart = Math.floorMod(modelCursor.getAndIncrement(), activeModels.size());
 
         // Duyệt round-robin qua danh sách model/key để tránh dồn tải vào key đầu.
-        for (int keyOffset = 0; keyOffset < keys.size(); keyOffset++) {
-            int keyIndex = (keyStart + keyOffset) % keys.size();
-            String currentKey = keys.get(keyIndex).trim();
+        // Với video, giới hạn số lần thử để một request đa phương tiện ko treo qua nhiều timeout liên tiếp.
+        for (int keyOffset = 0; keyOffset < activeKeys.size(); keyOffset++) {
+            int keyIndex = (keyStart + keyOffset) % activeKeys.size();
+            String currentKey = activeKeys.get(keyIndex).trim();
             if (currentKey.isEmpty()) continue;
             
-            for (int modelOffset = 0; modelOffset < modelCandidates.size(); modelOffset++) {
-                String selectedModel = modelCandidates.get((modelStart + modelOffset) % modelCandidates.size());
+            for (int modelOffset = 0; modelOffset < activeModels.size(); modelOffset++) {
+                String selectedModel = activeModels.get((modelStart + modelOffset) % activeModels.size());
 
                 String apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/" + selectedModel + ":generateContent?key="
                         + currentKey;
@@ -232,7 +270,10 @@ public class GeminiService {
                 HttpRequest request = HttpRequest.newBuilder()
                         .uri(URI.create(apiUrl))
                         .header("Content-Type", "application/json")
+                        // Nén header Accept-Encoding để tăng tốc nhận response
+                        .header("Accept-Encoding", "gzip, deflate")
                         .POST(HttpRequest.BodyPublishers.ofString(requestBody, StandardCharsets.UTF_8))
+                        // Video cần timeout cao hơn (60s) vì payload nặng hơn text
                         .timeout(Duration.ofSeconds(hasVideo ? 60 : 15))
                         .build();
 
@@ -279,8 +320,8 @@ public class GeminiService {
         if (configured != null && !configured.trim().isEmpty()) {
             models.add(configured.trim());
         }
+        models.add("gemini-3.5-flash");
         models.add("gemini-flash-lite-latest");
-        models.add("gemini-2.5-flash");
         models.add("gemini-2.0-flash");
         return new ArrayList<>(models);
     }

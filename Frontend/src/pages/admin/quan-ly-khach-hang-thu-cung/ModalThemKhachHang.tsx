@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { Modal } from "@components/CommonUI";
 
 // Khai báo kiểu Props rõ ràng, an toàn để tránh lỗi TypeScript lúc build dự án.

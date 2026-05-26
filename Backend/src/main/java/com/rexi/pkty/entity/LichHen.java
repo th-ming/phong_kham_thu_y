@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 @Entity
-@Table(name = "LichHen") // Kết nối bảng lịch hẹn
+@Table(name = "LichHen") // Table lich hen
 @Data
 public class LichHen {
     @Id
@@ -23,7 +23,7 @@ public class LichHen {
     private String id_khach_hang;
     private String id_thu_cung;
     private String id_bac_si;
-    private String id_dich_vu; // Thêm trường này
+    private String id_dich_vu; // id dich vu khám
     private String id_nguoi_dat;
     private String phong_kham;
     private String ghi_chu;

@@ -86,7 +86,7 @@ const DashboardQuanLy: React.FC = () => {
   const userRole = normalizeUserRole(user);
 
   const fetchData = useCallback(async () => {
-    // Nếu role có dashboard riêng, không cần fetch data cho dashboard chung
+    // Nếu role có dashboard riêng, ko cần fetch data cho dashboard chung
     if (['ke_toan', 'bac_si', 'y_ta', 'tiep_tan'].includes(userRole)) return;
 
     try {

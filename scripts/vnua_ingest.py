@@ -81,7 +81,7 @@ for name, url in DOCS.items():
             for page_num, page in enumerate(reader.pages):
                 text = page.extract_text()
                 if text:
-                    full_text.append(f"### TRANG {page_num + 1}\n{text}\n")
+                    full_text.append(f"# ## TRANG {page_num + 1}\n{text}\n")
             
             # Lưu lại nguyên văn
             with open(md_path, "w", encoding="utf-8") as f:

@@ -6,7 +6,7 @@ const BASE_URL = `http://localhost:${FRONTEND_PORT}`;
 test.describe('Kiểm thử chức năng: Quản lý Danh mục Dịch vụ & Kho thuốc', () => {
 
     test.beforeEach(async ({ page }) => {
-        // Đăng nhập Admin trước mỗi test case
+        // Đăng nhập ADMIN trước mỗi test case
         await page.goto(`${BASE_URL}/dang-nhap`);
         await page.getByPlaceholder('Tên đăng nhập').fill('admin');
         await page.getByPlaceholder('Mật khẩu').fill('admin@rexi.com');
@@ -34,7 +34,7 @@ test.describe('Kiểm thử chức năng: Quản lý Danh mục Dịch vụ & Kh
         // 4. Lưu thông tin
         await page.locator('[data-ai-id="button-quanlydichvu-zqdb"]').click();
 
-        // 5. Xác nhận thêm thành công và tìm thấy trong bảng
+        // 5. xn thêm thành công và tìm thấy trong bảng
         await expect(page.getByText('Thêm dịch vụ mới thành công!')).toBeVisible({ timeout: 10000 });
         await expect(page.getByText(tenDichVu)).toBeVisible();
 

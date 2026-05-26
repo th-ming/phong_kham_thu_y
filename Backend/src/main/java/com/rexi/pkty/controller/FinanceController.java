@@ -28,20 +28,20 @@ public class FinanceController {
     @Autowired
     private com.rexi.pkty.service.AuditLogService auditLogService;
 
-    // BẢO MẬT: Hàm kiểm tra quyền truy cập dữ liệu Tài chính
+    // Check quyền FINANCE của user
     private boolean hasFinancePermission() {
         org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
                 .getContext().getAuthentication();
         if (auth == null || auth.getName().equals("anonymousUser"))
             return false;
 
-        // Kiểm tra nhanh qua Spring Security authorities (role code) — chỉ tài chính
+        // Check nhanh qua authority (ADMIN/QUAN_LY/KE_TOAN)
         String authorities = auth.getAuthorities().toString().toUpperCase();
         if (authorities.contains("ADMIN") || authorities.contains("QUAN_LY") || authorities.contains("KE_TOAN")) {
             return true;
         }
 
-        // Fallback: Kiểm tra qua DB nếu authority không khớp
+        // Fallback: Check qua DB nếu authority ko khớp
         try {
             com.rexi.pkty.entity.TaiKhoan tk = taiKhoanRepository.findByTenDangNhap(auth.getName()).orElse(null);
             if (tk == null || tk.getId_vai_tro() == null)
@@ -60,14 +60,14 @@ public class FinanceController {
         }
     }
 
-    // Lập hóa đơn mới (Dùng SP)
+    // Lập hóa đơn mới qua SP
     @PostMapping("/hoa-don")
     public ResponseEntity<?> addInvoice(@RequestBody HoaDon hd) {
         org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
                 .getContext().getAuthentication();
         String role = (auth != null) ? auth.getAuthorities().toString().toUpperCase() : "";
 
-        // BẢO MẬT: Chặn khách hàng tự lập hóa đơn ảo
+        // Chặn KHACH_HANG tự tạo hóa đơn ảo
         if (!role.contains("ADMIN") && !role.contains("QUAN_LY") && !role.contains("KETOAN") && !role.contains("KE_TOAN")
                 && !role.contains("STAFF") && !role.contains("TIEP_TAN")) {
             return ResponseEntity.status(403)
@@ -86,7 +86,7 @@ public class FinanceController {
         }
     }
 
-    // Lấy danh sách thuốc sắp hết hạn (từ View)
+    // Get thuốc sắp hết hạn (từ View)
     @GetMapping("/kho/thuoc-sap-het-han")
     @PreAuthorize(RexiSecurityRoles.INVENTORY_READ)
     public ResponseEntity<?> getThuocSapHetHan() {
@@ -98,11 +98,11 @@ public class FinanceController {
         }
     }
 
-    // Lấy danh sách hóa đơn theo ID khách hàng
+    // Get list hóa đơn theo id khách hàng
     @GetMapping("/hoa-don/khach/{id}")
     public ResponseEntity<?> getInvoicesByCustomerId(@PathVariable String id) {
         try {
-            // BẢO MẬT: Kiểm tra IDOR - Ngăn khách hàng xem hóa đơn của người khác
+            // Chặn IDOR: KHACH_HANG ko được xem hóa đơn người khác
             org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
                     .getContext().getAuthentication();
             String username = (auth != null) ? auth.getName() : null;
@@ -124,7 +124,7 @@ public class FinanceController {
         }
     }
 
-    // Lấy tất cả hóa đơn (cho Admin)
+    // Get all hóa đơn (ADMIN)
     @GetMapping("/hoa-don")
     @PreAuthorize(RexiSecurityRoles.INVOICE_READ)
     public ResponseEntity<?> getAllInvoices() {
@@ -136,11 +136,11 @@ public class FinanceController {
         }
     }
 
-    // Lấy chi tiết hóa đơn (Gộp cả Tiền Khám và Tiền Thuốc)
+    // Chi tiết hóa đơn (Tiền Khám + Tiền Thuốc)
     @GetMapping("/hoa-don/{id}/chi-tiet")
     public ResponseEntity<?> getInvoiceDetails(@PathVariable String id) {
         try {
-            // BẢO MẬT: Kiểm tra IDOR - Ngăn khách hàng xem chi tiết hóa đơn của người khác
+            // Chặn IDOR: KHACH_HANG ko được xem chi tiết hóa đơn người khác
             org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
                     .getContext().getAuthentication();
             String username = (auth != null) ? auth.getName() : null;
@@ -157,7 +157,7 @@ public class FinanceController {
                 }
             }
 
-            // Lấy chi tiết dịch vụ khám
+            // Lấy phí khám dịch vụ
             String sqlDv = "SELECT dv.ten_dich_vu as ten_muc, 1 as so_luong, dv.gia as don_gia, dv.gia as thanh_tien " +
                     "FROM HoaDon hd " +
                     "JOIN LichHen lh ON hd.id_lich_hen = lh.id_lich_hen " +
@@ -165,7 +165,7 @@ public class FinanceController {
                     "WHERE hd.id_hoa_don = ?";
             List<Map<String, Object>> dichVu = jdbcTemplate.queryForList(sqlDv, id);
 
-            // Lấy chi tiết từng món thuốc
+            // Lấy phí mua thuốc
             String sqlThuoc = "SELECT t.ten_thuoc as ten_muc, dtct.so_luong, t.gia_ban as don_gia, (dtct.so_luong * t.gia_ban) as thanh_tien "
                     +
                     "FROM HoaDon hd " +
@@ -176,7 +176,7 @@ public class FinanceController {
                     "WHERE hd.id_hoa_don = ?";
             List<Map<String, Object>> thuoc = jdbcTemplate.queryForList(sqlThuoc, id);
 
-            // Gộp cả 2 danh sách lại trả về cho Kế toán
+            // Merge list trả về cho KE_TOAN
             List<Map<String, Object>> chiTiet = new java.util.ArrayList<>();
             chiTiet.addAll(dichVu);
             chiTiet.addAll(thuoc);
@@ -187,7 +187,7 @@ public class FinanceController {
         }
     }
 
-    // Lấy lịch sử thanh toán của một hóa đơn
+    // Lấy lịch sử thanh toán của hóa đơn
     @GetMapping("/hoa-don/{id}/thanh-toan")
     public ResponseEntity<?> getInvoicePaymentHistory(@PathVariable String id) {
         try {
@@ -220,7 +220,7 @@ public class FinanceController {
         }
     }
 
-    // Lấy tất cả thuốc
+    // Get all thuốc
     @GetMapping("/kho/thuoc")
     @PreAuthorize(RexiSecurityRoles.INVENTORY_READ)
     public ResponseEntity<?> getAllThuoc() {
@@ -232,7 +232,7 @@ public class FinanceController {
         }
     }
 
-    // Lấy tất cả lô thuốc
+    // Get all lô thuốc
     @GetMapping("/kho/lo-thuoc")
     @PreAuthorize(RexiSecurityRoles.INVENTORY_READ)
     public ResponseEntity<?> getAllLoThuoc() {
@@ -244,7 +244,7 @@ public class FinanceController {
         }
     }
 
-    // Cập nhật trạng thái hóa đơn (Lễ tân thu tiền mặt hoặc chuyển khoản thủ công)
+    // Update trạng thái hóa đơn (thu tiền mặt / ck thủ công)
     @PutMapping("/hoa-don/{id}/status")
     @PreAuthorize(RexiSecurityRoles.INVOICE_WRITE)
     public ResponseEntity<?> updateInvoiceStatus(@PathVariable String id, @RequestBody Map<String, String> payload) {
@@ -258,8 +258,7 @@ public class FinanceController {
                 status = status.toUpperCase(); // CHUẨN HÓA ENUM IN HOA
             }
 
-            // BẢO MẬT LỚP 2: Chống nhân viên "ăn chặn" tiền bằng cách hủy hóa đơn đã thanh
-            // toán
+            // Chống nhân viên "ăn chặn" bằng cách hủy hóa đơn DA_THANH_TOAN
             String currentStatus = jdbcTemplate.queryForObject("SELECT trang_thai FROM HoaDon WHERE id_hoa_don = ?",
                     String.class, id);
             if ("DA_THANH_TOAN".equalsIgnoreCase(currentStatus) && !"DA_THANH_TOAN".equalsIgnoreCase(status)) {
@@ -271,7 +270,7 @@ public class FinanceController {
 
             int updated = jdbcTemplate.update("UPDATE HoaDon SET trang_thai = ? WHERE id_hoa_don = ?", status, id);
             if (updated > 0 && "DA_THANH_TOAN".equals(status) && !"DA_THANH_TOAN".equalsIgnoreCase(currentStatus)) {
-                // Ghi nhận dòng tiền mặt vào lịch sử để kế toán đối soát
+                // Ghi nhận dòng tiền mặt vào log thanh toán
                 jdbcTemplate.update(
                         "INSERT INTO ThanhToan (id_thanh_toan, id_hoa_don, ngay_tra_tien, so_tien, phuong_thuc, ghi_chu) VALUES (?, ?, GETDATE(), (SELECT tong_tien_cuoi FROM HoaDon WHERE id_hoa_don = ?), 'Tien_mat', N'Thanh toán tiền mặt thành công')",
                         "TT-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase(), id, id);
@@ -284,7 +283,7 @@ public class FinanceController {
         }
     }
 
-    // Nhập lô thuốc mới và tự động cộng dồn tồn kho
+    // Nhập lô thuốc mới & cộng tồn kho
     @PostMapping("/kho/lo-thuoc")
     @org.springframework.transaction.annotation.Transactional
     @PreAuthorize(RexiSecurityRoles.INVENTORY_WRITE)
@@ -297,7 +296,7 @@ public class FinanceController {
             Integer soLuongNhap = Integer.parseInt(payload.get("so_luong_nhap").toString());
             java.math.BigDecimal giaNhap = new java.math.BigDecimal(payload.get("gia_nhap").toString());
 
-            // BẢO MẬT: Chống hack số lượng âm để bào rút kho
+            // Chặn hack qty âm rút kho trái phép
             if (soLuongNhap <= 0) {
                 return ResponseEntity.badRequest()
                         .body(Map.of("message", "Cảnh báo bảo mật: Số lượng nhập kho phải lớn hơn 0!"));
@@ -327,7 +326,7 @@ public class FinanceController {
         }
     }
 
-    // Tổng quan tài chính chuẩn: chỉ tính hóa đơn đã thanh toán
+    // Tổng quan tài chính: chỉ tính hóa đơn DA_THANH_TOAN
     @GetMapping("/bao-cao/tong-quan-tai-chinh")
     @PreAuthorize(RexiSecurityRoles.FINANCE_READ)
     public ResponseEntity<?> getTongQuanTaiChinh() {

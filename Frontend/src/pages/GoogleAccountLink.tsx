@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+﻿import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axiosInstance from "@services/axios";
 import { normalizeUserRole } from "@utils/index";
@@ -40,7 +40,7 @@ const GoogleAccountLink: React.FC = () => {
     setError(null);
 
     try {
-      // Gửi Token JWT của Google để tạo tài khoản mới an toàn
+      // Gửi TOKEN JWT của Google để tạo tài khoản mới an toàn
       const token = window.sessionStorage.getItem("pending_google_token");
       const res = await axiosInstance.post("/api/auth/google-register", {
         token: token

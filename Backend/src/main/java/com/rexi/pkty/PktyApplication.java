@@ -21,7 +21,7 @@ public class PktyApplication {
 	public static void main(String[] args) {
 		logger.info("PKTY APPLICATION STARTING...");
 		
-		// NẠP BIẾN MÔI TRƯỜNG TỪ FILE .ENV (BẢO MẬT)
+		// Nap env tu file .env (security)
 		try {
 			Dotenv dotenv = Dotenv.configure().ignoreIfMissing().load();
 			dotenv.entries().forEach(entry -> {

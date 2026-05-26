@@ -22,7 +22,7 @@ test.describe('Kiểm tra Chatbot AI - Tính năng Khẩn cấp, Bảo mật & �
         await expect(chatbotBtn).toBeVisible();
         await chatbotBtn.click({ force: true });
             
-        // 2. Xác nhận Khung chat AI hiển thị tiêu đề và lời chào chào mừng
+        // 2. xn Khung chat AI hiển thị tiêu đề và lời chào chào mừng
         await expect(page.locator('#chatWindow').getByText('Trợ lý Rexi').first()).toBeVisible();
         await expect(page.locator('.chat-message-ai').first()).toBeVisible();
 
@@ -34,7 +34,7 @@ test.describe('Kiểm tra Chatbot AI - Tính năng Khẩn cấp, Bảo mật & �
         // 4. Nhấp nút gửi tin nhắn chính thức
         await page.locator('button[data-ai-id="button-chatbot-5x21"]').click({ force: true });
 
-        // 5. Xác nhận tin nhắn của người dùng xuất hiện trên khung chat
+        // 5. xn tin nhắn của người dùng xuất hiện trên khung chat
         await expect(page.locator('#chatWindow')).toContainText('nôn ra bọt trắng');
 
         // 6. Chờ trợ lý AI phản hồi và kiểm tra sự xuất hiện của câu trả lời
@@ -53,7 +53,7 @@ test.describe('Kiểm tra Chatbot AI - Tính năng Khẩn cấp, Bảo mật & �
         // 4. Nhấp nút gửi tin nhắn chính thức
         await page.locator('button[data-ai-id="button-chatbot-5x21"]').click({ force: true });
 
-        // Xác nhận tin nhắn của người dùng xuất hiện trên khung chat
+        // xn tin nhắn của người dùng xuất hiện trên khung chat
         await expect(page.locator('#chatWindow')).toContainText('hóc dị vật');
 
         // 1. Kiểm tra Trợ lý ảo phản hồi siêu nhanh với giao diện Cảnh báo khẩn cấp nổi bật
@@ -63,10 +63,10 @@ test.describe('Kiểm tra Chatbot AI - Tính năng Khẩn cấp, Bảo mật & �
         // 2. Xác minh Trợ lý AI khuyên dùng quy trình sơ cứu cơ học Heimlich
         await expect(responseContainer).toContainText(/Heimlich/i);
 
-        // 3. Xác minh Trợ lý AI đồng bộ hóa đúng số điện thoại khẩn cấp chính thức của Rexi Clinic
+        // 3. Xác minh Trợ lý AI đồng bộ hóa đúng sđt khẩn cấp chính thức của Rexi Clinic
         await expect(responseContainer).toContainText(/0353.*374.*156/);
 
-        // Chụp lại ảnh màn hình bằng chứng thực tế AI phản hồi khẩn cấp Heimlich trực quan lộng lẫy
+        // Chụp lại ảnh màn hình bằng auth tế AI phản hồi khẩn cấp Heimlich trực quan lộng lẫy
         await page.screenshot({ path: 'd:/QLy Phòng Khám Thú Y/Tester/test-results/evidence-tc03-chatbot-emergency.png', fullPage: true });
     });
 

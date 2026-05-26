@@ -1,11 +1,8 @@
-import React from "react";
+﻿import React from "react";
 import { RevealSection } from "@components/SpecialEffects";
 import { useTheme } from "../../contexts/ThemeContextV2";
 
-/**
- * PHẦN LIÊN HỆ (CONTACT SECTION)
- * Cung cấp thông tin địa chỉ, hotline và bản đồ tương tác với hiệu ứng Spotlight
- */
+// * * PHẦN LIÊN HỆ (CONTACT SECTION) * Cung cấp thông tin địa chỉ, hotline và bản đồ tương tác với hiệu ứng Spotlight
 const PhanLienHe: React.FC = () => {
     const { theme } = useTheme();
     const isDark = theme === 'dark';

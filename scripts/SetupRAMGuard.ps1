@@ -13,7 +13,7 @@ $Action = New-ScheduledTaskAction -Execute 'PowerShell.exe' `
 # 2. Định nghĩa Trigger: Chạy khi người dùng đăng nhập (Logon)
 $Trigger = New-ScheduledTaskTrigger -AtLogOn
 
-# 3. Cấu hình cài đặt: Chạy bền bỉ, không dừng khi dùng pin, tự chạy lại nếu lỗi
+# 3. config cài đặt: Chạy bền bỉ, ko dừng khi dùng pin, tự chạy lại nếu lỗi
 $Settings = New-ScheduledTaskSettingsSet `
     -AllowStartIfOnBatteries `
     -DontStopIfGoingOnBatteries `

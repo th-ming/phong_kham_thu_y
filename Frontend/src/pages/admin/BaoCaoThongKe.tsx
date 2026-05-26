@@ -162,7 +162,7 @@ const BaoCaoThongKe: React.FC = () => {
     return `${direction} ${percentText} (${diff >= 0 ? "+" : "-"}${unit === "đ" ? formatMoney(absDiff) : `${absDiff} ${unit}`})`;
   };
 
-  // Bác sĩ có hiệu suất cao nhất (nhiều ca hoàn thành nhất)
+  // bs có hiệu suất cao nhất (nhiều ca hoàn thành nhất)
   const topDoctor = useMemo(() => {
     if (doctorStats.length === 0) return null;
     return [...doctorStats].sort((a, b) => (b.SoHoSo || b.so_ho_so || 0) - (a.SoHoSo || a.so_ho_so || 0))[0];
@@ -345,7 +345,7 @@ const BaoCaoThongKe: React.FC = () => {
 
   const handleExportExcel = () => {
     try {
-      // Khử các ký tự nhạy cảm ở đầu ô để tránh lỗi CSV Injection khi sếp xuất file
+      // Khử các ký tự nhạy cảm ở đầu ô để tránh lỗi CSV Injection khi xuất file
       const sanitizeCSV = (val: string) => {
         if (/^[=+\-@]/.test(val)) return `'${val}`;
         return val;
@@ -620,7 +620,7 @@ const BaoCaoThongKe: React.FC = () => {
           </div>
         </div>
 
-        {/* Hiệu suất bác sĩ */}
+        {/* Hiệu suất bs */}
         <div className="glass-card" style={{ padding: '32px', borderRadius: 'var(--radius-xl)' }}>
           <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '24px', color: 'var(--ink)' }}>Hiệu suất đội ngũ</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>

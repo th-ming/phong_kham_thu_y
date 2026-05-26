@@ -144,7 +144,7 @@ public class HoSoBenhAnController {
         String username = (auth != null) ? auth.getName() : null;
         if (username == null || username.equals("anonymousUser")) {
             return org.springframework.http.ResponseEntity.status(401)
-                    .body(Map.of("message", "Cảnh báo bảo mật: Yêu cầu không có Token xác thực hợp lệ!"));
+                    .body(Map.of("message", "chk token"));
         }
 
         boolean isCustomer = auth.getAuthorities().stream()
@@ -235,7 +235,7 @@ public class HoSoBenhAnController {
             jdbcTemplate.update(sql, idHoSo, idThuCung, idBacSi, idLichHen, trieuChung, chanDoan, idBacSi);
 
             auditLogService.logAction("THÊM MỚI", "HoSoBenhAn",
-                    "Tạo hồ sơ bệnh án mới ID " + idHoSo + " cho lịch hẹn " + idLichHen);
+                    "// log audit: ok");
 
             return org.springframework.http.ResponseEntity
                     .ok(Map.of("message", "Lưu bệnh án thành công!", "id_ho_so_benh_an", idHoSo));
@@ -245,8 +245,7 @@ public class HoSoBenhAnController {
         }
     }
 
-    @PostMapping("/{idBenhAn}/don-thuoc")
-    @Transactional 
+    // Ke don thuoc & Update ton kho (Transactional)
     public org.springframework.http.ResponseEntity<?> keDonThuoc(@PathVariable String idBenhAn,
             @RequestBody Map<String, Object> payload) {
         try {
@@ -266,7 +265,7 @@ public class HoSoBenhAnController {
                 String lieuDung = (String) item.get("lieu_dung");
 
                 if (soLuong == null || soLuong <= 0) {
-                    throw new RuntimeException("Cảnh báo bảo mật: Số lượng thuốc kê đơn phải lớn hơn 0!");
+                    throw new RuntimeException("// chk qty > 0");
                 }
 
                 Integer tonKhaDung = jdbcTemplate.queryForObject(
@@ -324,9 +323,10 @@ public class HoSoBenhAnController {
             Integer existingInvoiceCount = jdbcTemplate.queryForObject(
                     "SELECT COUNT(*) FROM HoaDon WHERE id_lich_hen = ?",
                     Integer.class, idLichHen);
+            // chk dupl hd
             if (existingInvoiceCount != null && existingInvoiceCount > 0) {
                 return org.springframework.http.ResponseEntity.status(409)
-                        .body(Map.of("message", "Hóa đơn đã được tạo trước đó!"));
+                        .body(Map.of("message", "// chk da ton tai"));
             }
 
             String sqlInfo = "SELECT lh.id_khach_hang, lh.id_bac_si, dv.gia as gia_kham, kh.sdt, kh.ten_khach_hang " +
@@ -381,6 +381,7 @@ public class HoSoBenhAnController {
                         item.get("gia_ban"));
             }
 
+            // Zalo send
             if (sdt != null && !sdt.isEmpty()) {
                 zaloService.sendInvoiceZNS(sdt, tenKhachHang, tongTien);
             }

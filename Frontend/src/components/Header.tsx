@@ -203,7 +203,7 @@ const Header: React.FC<{ hideMenu?: boolean }> = ({ hideMenu }) => {
           )}
           <button data-ai-id="button-header-datlich" onClick={handleBookingRedirect} className="mobile-hide header-booking-cta" style={{ background: 'var(--primary-gradient)', color: 'white', padding: '10px 24px', borderRadius: '50px', textDecoration: 'none', fontWeight: 800, fontSize: '0.9rem', boxShadow: '0 10px 20px var(--primary-shadow)', border: 'none', cursor: 'pointer' }}><span>Đặt lịch hẹn</span></button>
 
-          {/* nút mở menu trên điện thoại */}
+          {/* nút mở menu trên dt */}
           <button data-ai-id="button-header-x3hq"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             className="mobile-show"
@@ -216,14 +216,14 @@ const Header: React.FC<{ hideMenu?: boolean }> = ({ hideMenu }) => {
         </div>
       </nav>
 
-      {/* menu hiển thị trên điện thoại */}
+      {/* menu hiển thị trên dt */}
       {isMenuOpen && (
         <div className="mobile-nav-panel" style={{ position: 'absolute', top: '100%', left: 0, width: '100%', background: 'var(--background)', padding: '18px 20px 20px', display: 'flex', flexDirection: 'column', gap: '10px', borderBottom: '1px solid var(--gray-200)', zIndex: 10, boxShadow: 'var(--shadow-xl)' }}>
           {navItems.map((item, idx) => (
             <button data-ai-id="button-header-8sdi"
               key={idx}
               onClick={() => handleNavClick(item)}
-              className="mobile-nav-item"
+              className="mobile-menu-action"
               style={{ ['--item-index' as any]: idx, background: 'rgba(15, 157, 138, 0.05)', border: '1px solid transparent', textAlign: 'left', color: 'var(--ink)', fontWeight: 800, padding: '15px 16px', borderRadius: '14px', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}
             >
               <span className="material-symbols-outlined" style={{ color: 'var(--primary)' }}>{item.icon}</span>
@@ -273,7 +273,7 @@ const Header: React.FC<{ hideMenu?: boolean }> = ({ hideMenu }) => {
           transform-origin: top center;
           animation: mobileMenuDrop 0.24s cubic-bezier(0.22, 1, 0.36, 1) both;
         }
-        .mobile-nav-item {
+        .mobile-menu-action {
           position: relative;
           overflow: hidden;
           transform: translateY(8px);
@@ -282,7 +282,7 @@ const Header: React.FC<{ hideMenu?: boolean }> = ({ hideMenu }) => {
           animation-delay: calc(var(--item-index) * 55ms);
           transition: transform 0.2s ease, color 0.2s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
         }
-        .mobile-nav-item::after {
+        .mobile-menu-action::after {
           content: "";
           position: absolute;
           inset: 0;
@@ -290,8 +290,8 @@ const Header: React.FC<{ hideMenu?: boolean }> = ({ hideMenu }) => {
           transform: translateX(-120%);
           transition: transform 0.45s ease;
         }
-        .mobile-nav-item:hover,
-        .mobile-nav-item:focus-visible {
+        .mobile-menu-action:hover,
+        .mobile-menu-action:focus-visible {
           color: var(--primary) !important;
           background: rgba(15, 157, 138, 0.12) !important;
           border-color: rgba(15, 157, 138, 0.25) !important;
@@ -299,12 +299,12 @@ const Header: React.FC<{ hideMenu?: boolean }> = ({ hideMenu }) => {
           transform: translateX(4px);
           outline: none;
         }
-        .mobile-nav-item:hover::after,
-        .mobile-nav-item:focus-visible::after { transform: translateX(120%); }
-        .mobile-nav-item:active { transform: translateX(4px) scale(0.98); }
-        .mobile-nav-item .material-symbols-outlined { transition: transform 0.2s ease, color 0.2s ease; }
-        .mobile-nav-item:hover .material-symbols-outlined,
-        .mobile-nav-item:focus-visible .material-symbols-outlined { transform: translateX(2px) scale(1.08); }
+        .mobile-menu-action:hover::after,
+        .mobile-menu-action:focus-visible::after { transform: translateX(120%); }
+        .mobile-menu-action:active { transform: translateX(4px) scale(0.98); }
+        .mobile-menu-action .material-symbols-outlined { transition: transform 0.2s ease, color 0.2s ease; }
+        .mobile-menu-action:hover .material-symbols-outlined,
+        .mobile-menu-action:focus-visible .material-symbols-outlined { transform: translateX(2px) scale(1.08); }
         @keyframes mobileMenuDrop {
           from { opacity: 0; transform: translateY(-10px) scaleY(0.98); }
           to { opacity: 1; transform: translateY(0) scaleY(1); }
@@ -314,7 +314,7 @@ const Header: React.FC<{ hideMenu?: boolean }> = ({ hideMenu }) => {
         }
         @media (max-width: 991px) { .mobile-hide { display: none !important; } }
         @media (min-width: 992px) { .mobile-show { display: none !important; } }
-        /* Tối ưu chống vỡ layout, lệch nút trên màn hình điện thoại cực nhỏ (dưới 380px) */
+        // Tối ưu chống vỡ layout, lệch nút trên màn hình dt cực nhỏ (dưới 380px)
         @media (max-width: 380px) {
           .header-action-group { gap: 8px !important; }
           .logo-container { display: none !important; }
