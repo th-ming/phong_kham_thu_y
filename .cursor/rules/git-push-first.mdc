@@ -1,29 +1,17 @@
 ---
-description: Luôn git push trước mọi lệnh git khác; hoàn tất hết yêu cầu trước khi dừng
+description: Cho phép tự do Git Push; Nghiêm cấm tuyệt đối dùng Git để lấy/khôi phục code cũ đè lên file của sếp
 alwaysApply: true
 ---
 
-# Git — luôn push trước
+# Git — Tự do Sao Lưu, Nghiêm Cấm Lấy Code Cũ Gây Mất Mát
 
-## Quy tắc bắt buộc
+## Quy tắc bắt buộc đối với AI:
 
-Trước khi chạy **bất kỳ** lệnh `git` nào khác (`status`, `pull`, `checkout`, `merge`, `branch`, `diff`, …):
+Sếp phân định rõ ràng ranh giới an toàn cho Git như sau:
 
-1. **`git push`** lên `origin` (branch hiện tại). Nếu branch chưa có upstream: `git push -u origin <branch>`.
-2. Chỉ khi push báo lỗi hoặc còn commit local chưa đẩy: xử lý (pull/rebase nếu cần) rồi **push lại** cho tới khi remote đồng bộ hoặc báo rõ blocker cho user.
-3. **Sau khi push xong** (hoặc `Everything up-to-date`), mới được chạy lệnh `git` tiếp theo.
+1. **KHUYẾN KHÍCH VÀ CHO PHÉP THOẢI MÁI PUSH CODE**: AI được tự do chạy các lệnh lưu và đẩy code mới nhất lên GitHub (`git add .`, `git commit`, `git push`, hoặc chạy script `auto_push.ps1`) bất kỳ lúc nào để bảo toàn mã nguồn.
+2. **CẤM TUYỆT ĐỐI CÁC LỆNH LẤY CODE CŨ VỀ ĐÈ LÊN FILE**: Nghiêm cấm hoàn toàn các lệnh khôi phục hoặc lùi code cũ đè lên file thực tế trên máy sếp (như `git checkout <bản_cũ>`, `git restore`, `git reset --hard`, `git revert`,...).
+3. **QUY TẮC ĐỌC XEM CODE CŨ AN TOÀN**: Nếu cần đối chiếu hoặc xem lại code cũ, AI bắt buộc **chỉ được dùng công cụ đọc file** (`view_file` trỏ vào file commit cũ, đọc log tĩnh,...) chứ tuyệt đối không được chạy lệnh khôi phục đè lên thư mục làm việc của sếp.
 
-Remote dự án: `https://github.com/tranminh09818/phong_kham_thu_y.git`
 
-Máy user có wrapper **`[REX-AI-AUTO-PUSH]`** (tự push trước khi gọi git) — **không bypass**, giữ cùng thứ tự: push trước → rồi mới git khác.
 
-## Commit
-
-- **`git commit`** chỉ khi user **yêu cầu rõ** commit (quy tắc repo).
-- Push trước **không** có nghĩa tự ý commit mọi thay đổi; nếu cần commit để push được, hỏi user hoặc chỉ commit khi user đã yêu cầu lưu/push code.
-
-## Hoàn thành công việc — không dừng giữa chừng
-
-- Rà lại các yêu cầu trước trong hội thoại: đã làm xong chưa?
-- Chạy hết chuỗi bước liên quan (sửa code, build/test nếu cần, **push trước git**, rồi git khác) trước khi báo xong.
-- Lệnh bị interrupt hoặc Cursor bắt Run: **thử lại** hoặc nêu rõ còn thiếu gì — không kết thúc sớm.

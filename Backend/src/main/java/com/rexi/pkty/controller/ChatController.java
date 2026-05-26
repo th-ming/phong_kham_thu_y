@@ -324,9 +324,9 @@ public class ChatController {
             ChatPersonaContext personaContext = buildPersonaContext(isStaff, userRoleName, requestPlan, isLoggedIn);
             String personaBlock = renderPersonaBlock(personaContext, requestPlan, currentPath);
 
-            // Truy vấn lấy năm sinh của KHACH_HANG đang chat từ database dựa trên tài khoản của họ.
-            // Đây là mấu chốt để phân loại độ tuổi GenZ vs Mature chuẩn chỉ cho con chatbot AI.
-            // Lỡ khách gõ bậy hoặc hệ thống ko tìm thấy thì trả về null để chatbot xử lý lịch sự mặc định.
+            // Chọc trực tiếp vào db lấy năm sinh của KHACH_HANG đang chat dựa trên tài khoản hiện tại.
+            // Đây là mấu chốt sống còn để phân loại độ tuổi GENZ vs MATURE chuẩn chỉ cho con chatbot AI REXI.
+            // Lỡ KHACH_HANG khai báo láo hoặc db lỗi ko tìm thấy thì trả về null để chatbot tự động xử lý lịch sự theo dạng mặc định.
             Integer namSinh = null;
             if (realUsername != null) {
                 try {

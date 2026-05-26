@@ -53,16 +53,16 @@ const DashboardKhachHang: React.FC = () => {
       if (!idKhachHang) return;
 
       try {
-        // Lấy profile chi tiết từ API để có dữ liệu mới nhất trong DB
+        // Chọc API lấy profile chi tiết của KHACH_HANG trong db để cập nhật dữ liệu mới nhất, tránh lag sync local.
         const res = await axiosInstance.get(`/api/khach-hang/${idKhachHang}`);
         const profile = res.data;
         setFullCustomerProfile(profile);
 
-        // Nếu DB chưa có năm sinh hoặc bằng 0, bật onboarding modal
+        // Cắt bẫy nghiệp vụ: Nếu db chưa có năm sinh (null/0), ép KHACH_HANG phải khai báo qua onboarding modal ngay để phân luồng cá nhân hóa.
         if (profile && (profile.nam_sinh === undefined || profile.nam_sinh === null || profile.nam_sinh === 0)) {
           setShowOnboardingModal(true);
         } else {
-          // Nếu DB đã có năm sinh, đồng bộ ngược lại localStorage
+          // Lỡ KHACH_HANG có sẵn năm sinh từ db rồi thì sync ngược lại localStorage để chatbot REXI ăn giọng liền lập tức.
           if (currentUser.nam_sinh !== profile.nam_sinh) {
             localStorage.setItem("user", JSON.stringify({
               ...currentUser,
@@ -110,7 +110,7 @@ const DashboardKhachHang: React.FC = () => {
 
       await axiosInstance.put(`/api/khach-hang/${idKhachHang}`, updatedProfile);
       
-      // Đồng bộ thông tin mới vào localStorage
+      // Ép sync nóng năm sinh vào localStorage để toàn bộ UI và chatbot REXI lột xác đổi giọng ngay khum cần F5.
       const nextUser = {
         ...currentUser,
         nam_sinh: yearNum

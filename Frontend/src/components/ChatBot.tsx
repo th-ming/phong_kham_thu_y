@@ -18,11 +18,6 @@ import {
 import { executeAction } from "./ActionExecutor";
 import { toast } from "@components/Toast";
 import { reportClientError } from "@services/clientErrorReporter";
-import {
-    polishTextForSpeech,
-    scoreAssistantVoice,
-    splitSpeechIntoVoiceChunks,
-} from "./chatbot/chatbotTextHelpers";
 
 interface SwarmStep {
     agent: string;
@@ -398,8 +393,8 @@ const SwarmConsole: React.FC<{ data: SwarmData; isDark: boolean }> = ({ data, is
                                 >
                                     <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>send</span>
                                     ✅ PHÊ DUYỆT & GỬI ĐỒNG LOẠT ({contacts.length} EMAIL)
-                                  </button>
-                                  
+                                </button>
+
                                   <button
                                     onClick={() => setIsCancelled(true)}
                                     style={{
@@ -1894,6 +1889,24 @@ export const ChatBot: React.FC = () => {
         }, timeoutMs);
     }, []);
 
+    const scoreAssistantVoice = (voice: SpeechSynthesisVoice) => {
+        const name = `${voice.name} ${voice.voiceURI}`.toLowerCase();
+        const lang = voice.lang.toLowerCase();
+        let score = 0;
+
+        if (lang === "vi-vn") score += 160;
+        else if (lang.includes("vi")) score += 120;
+        if (/multilingual|multi-lingual|multi language|multi-language/.test(name)) score += 80;
+        if (/natural|neural|online|premium/.test(name)) score += 55;
+        if (/hoaimy|hoai my|linh|an|mai|female|woman|zira/.test(name)) score += 38;
+        if (/microsoft/.test(name)) score += 28;
+        if (/google/.test(name)) score += 18;
+        if (/namminh|nam minh|male|desktop|legacy/.test(name)) score -= 18;
+        if (voice.default) score += 4;
+
+        return score;
+    };
+
     const getBestVoice = () => {
         const voices = window.speechSynthesis.getVoices();
         const bestVoice = preferredVoiceRef.current || [...voices].sort((a, b) => scoreAssistantVoice(b) - scoreAssistantVoice(a))[0];
@@ -1902,6 +1915,133 @@ export const ChatBot: React.FC = () => {
             return bestVoice;
         }
         return null;
+    };
+
+    const englishSpeechWords = new Set([
+        "api", "ai", "agent", "chat", "voice", "email", "marketing", "booking", "dashboard", "login", "logout",
+        "invoice", "payment", "database", "server", "client", "frontend", "backend", "model", "prompt", "token",
+        "stream", "upload", "download", "file", "image", "video", "google", "chrome", "edge", "english", "vietnamese",
+        "yes", "no", "ok", "okay", "please", "check", "search", "create", "update", "delete", "send", "open",
+        "show", "filter", "report", "status", "error", "bug", "fix", "test", "build", "deploy", "cache", "data",
+        "react", "typescript", "javascript", "vite", "node", "npm", "spring", "boot", "java", "maven", "jwt",
+        "json", "html", "css", "ui", "ux", "url", "http", "https", "sql", "server", "database", "table",
+        "component", "state", "props", "hook", "hooks", "callback", "async", "await", "promise", "function",
+        "array", "object", "string", "number", "boolean", "true", "false", "null", "undefined", "browser",
+        "localstorage", "sessionstorage", "clipboard", "paste", "drag", "drop", "preview", "agent", "standard"
+    ]);
+
+    const strongEnglishSpeechWords = new Set([
+        "api", "ai", "ui", "ux", "url", "http", "https", "sql", "jwt", "json", "html", "css", "id",
+        "react", "typescript", "javascript", "vite", "node", "npm", "spring", "boot", "java", "maven",
+        "frontend", "backend", "localstorage", "sessionstorage", "google", "chrome", "edge", "opera",
+        "chatgpt", "openai", "gemini", "vnpay", "vietqr", "agent", "agnet"
+    ]);
+
+    const vietnameseAsciiSpeechWords = new Set([
+        "anh", "em", "toi", "ban", "minh", "sep", "sen", "hay", "giup", "cho", "voi", "cua", "la", "va", "hoac",
+        "khong", "duoc", "dang", "ngay", "luc", "ten", "roi", "nhe", "nha", "hom", "nay", "mai", "qua", "xem",
+        "mo", "tim", "loc", "tao", "gui", "kiem", "tra", "hoa", "don", "lich", "hen", "thu", "cung", "khach",
+        "hang", "benh", "an", "thuoc", "bac", "si", "doanh", "thu", "bao", "cao"
+    ]);
+
+    const getSpeechWord = (token: string) => token.replace(/^[^a-z0-9]+|[^a-z0-9]+$/gi, "");
+
+    const isStrongEnglishSpeechToken = (token: string) => {
+        const rawWord = getSpeechWord(token);
+        const word = rawWord.toLowerCase();
+        if (!word) return false;
+        if (strongEnglishSpeechWords.has(word)) return true;
+        if (/^[A-Z]{2,8}s?$/.test(rawWord)) return true;
+        if (/[a-z][A-Z]/.test(rawWord)) return true;
+        if (/^[a-z]+(?:\.[a-z]+)+$/i.test(rawWord)) return true;
+        if (/^[a-z]+[-_][a-z0-9_-]+$/i.test(rawWord) && !vietnameseAsciiSpeechWords.has(word)) return true;
+        return false;
+    };
+
+    const isEnglishSpeechToken = (token: string) => {
+        const rawWord = getSpeechWord(token);
+        const word = rawWord.toLowerCase();
+        if (!word) return false;
+        if (isStrongEnglishSpeechToken(token)) return true;
+        if (englishSpeechWords.has(word)) return true;
+        if (/^[A-Z]{2,6}s?$/.test(rawWord)) return true;
+        if (vietnameseAsciiSpeechWords.has(word)) return false;
+        return /^[a-z][a-z-]{3,}$/i.test(word) && /[qwfjz]|tion|ment|ing|er$|or$|ed$/.test(word);
+    };
+
+    const applyInlineEnglishPronunciation = (text: string) => text
+        .replace(/\bAI\s+Agent\b/gi, "ây ai ây dừn")
+        .replace(/\bAgent\b/gi, "ây dừn")
+        .replace(/\bAgnet\b/gi, "ây dừn")
+        .replace(/\bAI\b/g, "ây ai")
+        .replace(/\bAPI\b/g, "ây pi ai")
+        .replace(/\bUI\b/g, "du ai")
+        .replace(/\bUX\b/g, "du ích")
+        .replace(/\bURL\b/g, "du a eo")
+        .replace(/\bID\b/g, "ai đi")
+        .replace(/\bChatGPT\b/gi, "chát gi pi ti")
+        .replace(/\bOpenAI\b/gi, "âu pần ây ai")
+        .replace(/\bGoogle\b/gi, "gu gồ")
+        .replace(/\bChrome\b/gi, "crôm")
+        .replace(/\bEdge\b/gi, "ét")
+        .replace(/\bEmail\b/gi, "i meo");
+
+    const splitSpeechByLanguage = (text: string): Array<{ text: string; lang: "vi-VN" | "en-US" }> => {
+        const sentences = text
+            .split(/(?<=[.!?])\s+/)
+            .flatMap(segment => segment.length > 180 ? segment.match(/.{1,170}(?:\s|$)/g) || [segment] : [segment])
+            .map(segment => segment.trim())
+            .filter(Boolean);
+
+        const segments: Array<{ text: string; lang: "vi-VN" | "en-US" }> = [];
+        sentences.forEach(sentence => {
+            const tokens = sentence.match(/\S+\s*/g) || [sentence];
+            let vietnameseText = "";
+            let englishText = "";
+
+            const pushVietnamese = () => {
+                const trimmed = vietnameseText.trim();
+                if (trimmed) segments.push({ text: trimmed, lang: "vi-VN" });
+                vietnameseText = "";
+            };
+
+            const flushEnglish = () => {
+                if (!englishText) return;
+                // Mixed Việt/Anh phải đọc liền một hơi bằng voice Rexi; tách sang en-US là browser đổi giọng ngay.
+                vietnameseText += englishText;
+                englishText = "";
+            };
+
+            tokens.forEach(token => {
+                if (isEnglishSpeechToken(token)) {
+                    englishText += token;
+                } else {
+                    flushEnglish();
+                    vietnameseText += token;
+                }
+            });
+
+            flushEnglish();
+            pushVietnamese();
+        });
+
+        return segments;
+    };
+
+    const polishTextForSpeech = (text: string) => {
+        const withoutMarkup = text
+            .replace(/\[([^\]]+)\]\([^\)]+\)/g, "$1")
+            .replace(/<[^>]*>/g, "")
+            .replace(/[\*\_`#]/g, "")
+            .replace(/^-+\s*/gm, "")
+            .replace(/[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF]/g, "");
+
+        return applyInlineEnglishPronunciation(withoutMarkup)
+            .replace(/\bRexi\b/g, "Rếch xi")
+            .replace(/([.!?])\s+/g, "$1 ")
+            .replace(/[,;:]\s+/g, ", ")
+            .replace(/\s+/g, " ")
+            .trim();
     };
 
     const createSpeechUtterance = (text: string) => {
@@ -1944,10 +2084,10 @@ export const ChatBot: React.FC = () => {
 
         if (!cleanText) return;
 
-        const chunks = splitSpeechIntoVoiceChunks(cleanText);
-        chunks.forEach((chunk, index) => {
-            const utterance = createSpeechUtterance(chunk);
-            if (index === chunks.length - 1) utterance.onend = finishSpeechTurn;
+        const segments = splitSpeechByLanguage(cleanText);
+        segments.forEach((segment, index) => {
+            const utterance = createSpeechUtterance(segment.text);
+            if (index === segments.length - 1) utterance.onend = finishSpeechTurn;
             window.speechSynthesis.speak(utterance);
         });
     }, [finishSpeechTurn, isVoiceEnabled]);
@@ -1957,10 +2097,10 @@ export const ChatBot: React.FC = () => {
         const cleanText = polishTextForSpeech(text);
         if (!cleanText) return false;
 
-        const chunks = splitSpeechIntoVoiceChunks(cleanText);
-        chunks.forEach((chunk, index) => {
-            const utterance = createSpeechUtterance(chunk);
-            if (index === chunks.length - 1) utterance.onend = finishSpeechTurn;
+        const segments = splitSpeechByLanguage(cleanText);
+        segments.forEach((segment, index) => {
+            const utterance = createSpeechUtterance(segment.text);
+            if (index === segments.length - 1) utterance.onend = finishSpeechTurn;
             window.speechSynthesis.speak(utterance);
         });
         return true;

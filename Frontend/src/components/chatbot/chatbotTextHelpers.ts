@@ -109,13 +109,6 @@ const applyInlineEnglishPronunciation = (text: string) => text
     .replace(/\bEdge\b/gi, "ét")
     .replace(/\bEmail\b/gi, "i meo");
 
-export const splitSpeechIntoVoiceChunks = (text: string): string[] =>
-    text
-        .split(/(?<=[.!?])\s+/)
-        .flatMap(segment => segment.length > 180 ? segment.match(/.{1,170}(?:\s|$)/g) || [segment] : [segment])
-        .map(segment => segment.trim())
-        .filter(Boolean);
-
 export const splitSpeechByLanguage = (text: string): Array<{ text: string; lang: SpeechLang }> => {
     const sentences = text
         .split(/(?<=[.!?])\s+/)
@@ -128,8 +121,6 @@ export const splitSpeechByLanguage = (text: string): Array<{ text: string; lang:
         const tokens = sentence.match(/\S+\s*/g) || [sentence];
         let vietnameseText = "";
         let englishText = "";
-        let englishCount = 0;
-        let hasStrongEnglish = false;
 
         const pushVietnamese = () => {
             const trimmed = vietnameseText.trim();
@@ -139,23 +130,14 @@ export const splitSpeechByLanguage = (text: string): Array<{ text: string; lang:
 
         const flushEnglish = () => {
             if (!englishText) return;
-            const shouldSwitchVoice = englishCount >= 3 || (hasStrongEnglish && englishCount >= 2);
-            if (shouldSwitchVoice) {
-                pushVietnamese();
-                segments.push({ text: englishText.trim(), lang: "en-US" });
-            } else {
-                vietnameseText += englishText;
-            }
+            // Chatbot đọc cho KHACH_HANG/NHAN_SU nghe thì ưu tiên một giọng liền mạch; đổi en-US giữa câu nghe rất gắt.
+            vietnameseText += englishText;
             englishText = "";
-            englishCount = 0;
-            hasStrongEnglish = false;
         };
 
         tokens.forEach(token => {
             if (isEnglishSpeechToken(token)) {
                 englishText += token;
-                englishCount += 1;
-                if (isStrongEnglishSpeechToken(token)) hasStrongEnglish = true;
             } else {
                 flushEnglish();
                 vietnameseText += token;

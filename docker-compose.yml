@@ -17,7 +17,7 @@ services:
     networks:
       - rexi_network
     healthcheck:
-      test: [ "CMD", "/opt/mssql-tools/bin/sqlcmd", "-S", "localhost", "-U", "sa", "-P", "${DB_PASSWORD:123456}", "-Q", "SELECT 1" ]
+      test: [ "CMD", "/opt/mssql-tools/bin/sqlcmd", "-S", "localhost", "-U", "sa", "-P", "${DB_PASSWORD:123456}", "-C", "-Q", "SELECT 1" ]
       interval: 10s
       timeout: 3s
       retries: 10
@@ -62,7 +62,7 @@ services:
           cpus: '1.0'
           memory: 1500M
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8081/api/lich-hen/count" ]
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8081/api/lich-hen/count" ]
       interval: 30s
       timeout: 10s
       retries: 3

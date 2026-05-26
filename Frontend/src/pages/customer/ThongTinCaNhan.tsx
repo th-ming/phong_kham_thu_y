@@ -184,8 +184,8 @@ const ThongTinCaNhan: React.FC = () => {
               sdt: savedData.sdt || savedData.so_dien_thoai || currentUser.sdt,
               hinh_anh: savedData.hinh_anh || savedData.avatar || currentUser.hinh_anh,
               avatar: savedData.avatar || savedData.hinh_anh || currentUser.avatar,
-              // Sync năm sinh ngay xuống localStorage.user để UI và chatbot Rexi đổi giọng nhây vs nghiêm túc tức thì.
-              // Khách hàng bấm lưu phát là Boss mèo meme ở góc màn hình tự động bóc tách đổi tone luôn, khum cần F5.
+              // ĐỒNG BỘ (sync) năm sinh ngay xuống localStorage.user để UI và chatbot REXI đổi giọng GENZ nhây vs MATURE nghiêm túc tức thì.
+              // KHACH_HANG bấm lưu phát là Boss mèo meme ở góc màn hình tự động bóc tách đổi tone luôn, khum cần F5 làm gì cho mệt.
               nam_sinh: savedData.nam_sinh !== undefined ? savedData.nam_sinh : currentUser.nam_sinh,
             };
             localStorage.setItem("user", JSON.stringify(nextUser));
