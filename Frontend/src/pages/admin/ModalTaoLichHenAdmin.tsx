@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axiosInstance from '@services/axios';
 import { Modal } from '@components/CommonUI';
 import { toast } from '@components/Toast';
@@ -183,7 +183,7 @@ export const ModalTaoLichHenAdmin: React.FC<ModalProps> = ({ isOpen, onClose, on
             }
 
             if (!petId) {
-                setError("Sếp ơi, vui lòng chọn hoặc tạo thú cưng cho bé nhé.");
+                setError("Vui lòng chọn hoặc tạo thú cưng cho bé nhé.");
                 setIsLoading(false);
                 return;
             }
@@ -214,9 +214,9 @@ export const ModalTaoLichHenAdmin: React.FC<ModalProps> = ({ isOpen, onClose, on
 
             onSuccess();
             onClose();
-            toast.success("Đã tạo lịch hẹn thành công cho sếp rồi nhé! 🐾");
+            toast.success("Đã tạo lịch hẹn thành công rồi nhé! 🐾");
         } catch (err: any) {
-            setError(err.message || 'Có lỗi xảy ra, sếp vui lòng thử lại sau.');
+            setError(err.message || 'Có lỗi xảy ra, vui lòng thử lại sau.');
         } finally {
             setIsLoading(false);
         }
@@ -265,7 +265,7 @@ export const ModalTaoLichHenAdmin: React.FC<ModalProps> = ({ isOpen, onClose, on
                                 </p>
                                 <div style={{ display: 'grid', gap: '16px' }}>
                                     <input data-ai-id="input-modaltaolichhenadmin-1jt8" value={newCustomerName} onChange={e => setNewCustomerName(e.target.value)} placeholder="Họ và tên khách hàng" style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid rgba(15, 157, 138, 0.3)', outline: 'none', fontWeight: 600 }} autoFocus />
-                                    <input data-ai-id="input-modaltaolichhenadmin-bplk" value={newPetName} onChange={e => setNewPetName(e.target.value)} placeholder="Tên thú cưng" style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid rgba(15, 157, 138, 0.3)', outline: 'none', fontWeight: 600 }} onKeyDown={e => { if (e.key === 'Enter') { if (newCustomerName && newPetName) { setSelectedCustomer({ ten_khach_hang: newCustomerName }); setStep(2); } else { toast.error("Sếp vui lòng nhập đầy đủ Tên khách và Tên bé nhé!"); } } }} />
+                                    <input data-ai-id="input-modaltaolichhenadmin-bplk" value={newPetName} onChange={e => setNewPetName(e.target.value)} placeholder="Tên thú cưng" style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid rgba(15, 157, 138, 0.3)', outline: 'none', fontWeight: 600 }} onKeyDown={e => { if (e.key === 'Enter') { if (newCustomerName && newPetName) { setSelectedCustomer({ ten_khach_hang: newCustomerName }); setStep(2); } else { toast.error("Vui lòng nhập đầy đủ Tên khách và Tên bé nhé!"); } } }} />
                                     <button data-ai-id="button-modaltaolichhenadmin-z04y" onClick={() => {
                                         if (newCustomerName && newPetName) {
                                             setSelectedCustomer({ ten_khach_hang: newCustomerName }); setStep(2);
