@@ -20,7 +20,7 @@ const path = require('path');
     
     // 2. Chuyển sang form Đăng ký (Wizard Bước 1)
     console.log('Chuyển sang form Đăng ký (Bước 1)...');
-    await page.click('text=Đăng ký ngay');
+    await page.click('span:has-text("Đăng ký ngay")');
     await page.waitForTimeout(1000); // Chờ slide transition
     const step1Img = path.join(artifactDir, 'screenshot_register_step1_real.png');
     await page.screenshot({ path: step1Img });
