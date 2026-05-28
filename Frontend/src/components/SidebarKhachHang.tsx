@@ -1,7 +1,7 @@
 ﻿import React, { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import ThemeToggle from './ThemeToggle'
-import { getUserProfile } from '../utils/index'
+import { useLiveUserProfile } from '@hooks/useLiveUserProfile'
 
 const SidebarKhachHang: React.FC = () => {
   const location = useLocation()
@@ -9,7 +9,7 @@ const SidebarKhachHang: React.FC = () => {
 
   const [isMobileOpen, setIsMobileOpen] = useState(false)
 
-  const user = getUserProfile();
+  const user = useLiveUserProfile();
 
   const sidebarItems = [
     { label: 'Tổng quan', path: '/khach-hang/dashboard', icon: 'dashboard' },

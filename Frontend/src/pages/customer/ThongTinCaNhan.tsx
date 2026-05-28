@@ -6,6 +6,7 @@ import { Modal } from "@components/CommonUI";
 import { getUserProfile, normalizeUserRole } from "@utils/index";
 import { toast } from "@components/Toast";
 import { isValidPassword, PASSWORD_POLICY_MESSAGE } from "@utils/passwordPolicy";
+import { notifyUserProfileChanged } from "@hooks/useLiveUserProfile";
 
 const ThongTinCaNhan: React.FC = () => {
   const [data, setData] = useState<any>(null);
@@ -79,6 +80,43 @@ const ThongTinCaNhan: React.FC = () => {
       console.error("Lỗi khi đọc thông tin user từ localStorage", error);
       setLoading(false);
     }
+  }, []);
+
+  useEffect(() => {
+    const handleRealtimeProfile = (event: Event) => {
+      const payload = (event as CustomEvent).detail || {};
+      if (payload.resource !== "profile") return;
+
+      const user = getUserProfile();
+      const role = normalizeUserRole(user);
+      const customerId = user?.id_khach_hang || user?.idKhachHang;
+      const staffId = user?.id_nhan_vien || user?.idNhanVien;
+      const ownProfileChanged =
+        (payload.scope === "customer" && payload.id === customerId) ||
+        (payload.scope === "staff" && payload.id === staffId);
+      if (!ownProfileChanged) return;
+
+      const endpoint = role === "khach_hang"
+        ? `/api/khach-hang/${customerId}`
+        : `/api/nhan-vien/profile/${staffId}`;
+      axiosInstance.get(endpoint).then(res => {
+        const profileData = {
+          ...user,
+          ...res.data,
+          id_khach_hang: res.data.id_khach_hang || customerId || user?.id_khach_hang,
+          id_nhan_vien: res.data.id_nhan_vien || staffId || user?.id_nhan_vien,
+        };
+        setData(profileData);
+        setFormData(profileData);
+        setEmailNoti(profileData.nhan_email ?? true);
+        setSmsNoti(profileData.nhan_sms ?? true);
+      }).catch(err => {
+        console.error("Lỗi đồng bộ thông tin cá nhân realtime:", err);
+      });
+    };
+
+    window.addEventListener("rexi-data-changed", handleRealtimeProfile);
+    return () => window.removeEventListener("rexi-data-changed", handleRealtimeProfile);
   }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -189,6 +227,7 @@ const ThongTinCaNhan: React.FC = () => {
               nam_sinh: savedData.nam_sinh !== undefined ? savedData.nam_sinh : currentUser.nam_sinh,
             };
             localStorage.setItem("user", JSON.stringify(nextUser));
+            notifyUserProfileChanged(nextUser);
           }
           setIsEditing(false);
         })

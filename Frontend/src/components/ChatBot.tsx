@@ -1113,10 +1113,11 @@ export const ChatBot: React.FC = () => {
     const hasExplicitAgentActionIntent = (text: string) => {
         const actionWords = [
             "mo trang", "vao trang", "chuyen sang", "dieu huong", "truy cap", "di toi",
+            "qua trang", "nhay qua", "tele qua", "bay qua", "dan toi", "dan den",
             "xem danh sach", "loc danh sach", "tim khach", "tim thu cung", "tra cuu", "kiem tra form",
-            "thong ke", "tao moi", "them moi", "sua thong tin", "xoa", "dat lich", "lap lich",
+            "check", "check giup", "co khong", "thong ke", "tao moi", "them moi", "sua thong tin", "xoa", "dat lich", "book lich", "lap lich",
             "xuat file", "in hoa don", "gui email", "dien form", "tu dong",
-            "bam", "nhan", "click", "cuon", "keo xuong", "keo len"
+            "bam", "nhan", "click", "tap", "an vao", "cuon", "keo xuong", "keo len"
         ];
         return matchesNormalizedIntent(text, actionWords);
     };
@@ -1125,22 +1126,128 @@ export const ChatBot: React.FC = () => {
         const navigationPhrases = [
             "mo trang", "mo phan he", "mo muc", "vao trang", "vao phan he", "chuyen sang",
             "dieu huong", "truy cap", "di toi", "dua toi", "dua den", "nhay sang",
-            "sang trang", "toi trang", "den trang"
+            "sang trang", "toi trang", "den trang", "qua trang", "nhay qua", "tele qua",
+            "bay qua", "dan toi", "dan den", "vo trang", "vào trang"
         ];
         return matchesNormalizedIntent(text, navigationPhrases);
+    };
+
+    const resolveRelativeDateValue = (text: string) => {
+        const normalized = normalizeSearchText(text);
+        const date = new Date();
+        if (normalized.includes("hom qua") || normalized.includes("hqua") || normalized.includes("yesterday")) {
+            date.setDate(date.getDate() - 1);
+        } else if (normalized.includes("hom nay") || normalized.includes("today")) {
+            // keep today
+        } else if (normalized.includes("ngay mai") || normalized.includes("mai ") || normalized.endsWith(" mai")) {
+            date.setDate(date.getDate() + 1);
+        } else {
+            const iso = text.match(/\b(20\d{2}|19\d{2})[-/](0?[1-9]|1[0-2])[-/](0?[1-9]|[12]\d|3[01])\b/);
+            if (iso) {
+                const [, y, m, d] = iso;
+                return `${y}-${String(Number(m)).padStart(2, "0")}-${String(Number(d)).padStart(2, "0")}`;
+            }
+            const vn = text.match(/\b(0?[1-9]|[12]\d|3[01])[-/](0?[1-9]|1[0-2])[-/](20\d{2}|19\d{2})\b/);
+            if (vn) {
+                const [, d, m, y] = vn;
+                return `${y}-${String(Number(m)).padStart(2, "0")}-${String(Number(d)).padStart(2, "0")}`;
+            }
+            return null;
+        }
+        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    };
+
+    const getVisibleFieldLabel = (el: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement) => {
+        const direct = [
+            el.getAttribute("aria-label"),
+            el.getAttribute("placeholder"),
+            el.getAttribute("name"),
+            el.id,
+            el.getAttribute("data-ai-id")
+        ].filter(Boolean).join(" ");
+        const wrappingLabel = el.closest("label")?.textContent || "";
+        const containerText = el.closest("div")?.textContent || "";
+        return normalizeSearchText(`${direct} ${wrappingLabel} ${containerText}`.slice(0, 500));
+    };
+
+    const runFastVisibleFormEdit = async (text: string) => {
+        const normalized = normalizeSearchText(text);
+        const wantsEdit = ["doi", "sua", "dien", "nhap", "set", "cap nhat", "fix"].some(keyword => normalized.includes(keyword));
+        if (!wantsEdit) return false;
+        let handledAny = false;
+
+        const wantsFemale = normalized.includes("gioi tinh cai") || normalized.includes("giong cai") || normalized.includes("la cai") || normalized.endsWith(" cai");
+        const wantsMale = normalized.includes("gioi tinh duc") || normalized.includes("giong duc") || normalized.includes("la duc") || normalized.endsWith(" duc");
+        if (wantsFemale || wantsMale) {
+            const selects = Array.from(document.querySelectorAll<HTMLSelectElement>("select[data-ai-id], select"))
+                .filter(select => {
+                    const rect = select.getBoundingClientRect();
+                    return rect.width > 0 && rect.height > 0 && !select.disabled;
+                });
+            const targetSelect = selects
+                .map(select => ({ select, label: getVisibleFieldLabel(select) }))
+                .find(({ label }) => label.includes("gioi tinh") || label.includes("giong"));
+            if (targetSelect) {
+                const requested = wantsFemale ? "cai" : "duc";
+                const option = Array.from(targetSelect.select.options).find(opt => {
+                    const optionText = normalizeSearchText(`${opt.value} ${opt.textContent || ""}`);
+                    return optionText.includes(requested);
+                });
+                const aiId = targetSelect.select.getAttribute("data-ai-id");
+                if (option && aiId) {
+                    await executeAction(`[SELECT:${aiId}|${option.value}]`, true);
+                    const reply = `Đã đổi giới tính trên form thành **${option.textContent?.trim() || option.value}**.`;
+                    setAgentMessages(prev => [...prev, { type: "ai", text: reply }]);
+                    speakText(reply);
+                    handledAny = true;
+                }
+            }
+        }
+
+        const dateValue = resolveRelativeDateValue(text);
+        const wantsDateField = dateValue && ["ngay sinh", "nam sinh", "ngay nhap", "ngay thang", "ngay"].some(keyword => normalized.includes(keyword));
+        if (!wantsDateField) return handledAny;
+
+        const inputs = Array.from(document.querySelectorAll<HTMLInputElement>("input[data-ai-id], input"));
+        const visibleInputs = inputs.filter(input => {
+            const rect = input.getBoundingClientRect();
+            return rect.width > 0 && rect.height > 0 && !input.disabled && !input.readOnly;
+        });
+        const dateCandidates = visibleInputs
+            .map(input => ({ input, label: getVisibleFieldLabel(input) }))
+            .filter(({ input, label }) => {
+                if (input.type === "date") return true;
+                if (normalized.includes("ngay sinh") || normalized.includes("nam sinh")) {
+                    return label.includes("ngay sinh") || label.includes("nam sinh") || label.includes("ngay thang");
+                }
+                if (normalized.includes("ngay nhap")) {
+                    return label.includes("ngay nhap") || label.includes("ngay tao") || label.includes("ngay");
+                }
+                return label.includes("ngay");
+            });
+
+        const target = dateCandidates[0]?.input;
+        const aiId = target?.getAttribute("data-ai-id");
+        if (!target || !aiId) return handledAny;
+
+        await executeAction(`[FILL:${aiId}|${dateValue}]`, true);
+        const reply = `Đã đổi trường ngày trên form thành **${dateValue}**. Bạn kiểm tra lại rồi bấm lưu nếu thông tin đã đúng.`;
+        setAgentMessages(prev => [...prev, { type: "ai", text: reply }]);
+        speakText(reply);
+        return true;
     };
 
     const getSafeStandardNavigationTarget = (text: string): { path: string; label: string } | null => {
         if (!hasExplicitNavigationIntent(text)) return null;
         const normalized = normalizeSearchText(text);
         const safeRoutes = [
-            { keywords: ["hoa don", "thanh toan", "bien lai"], path: "/khach-hang/hoa-don-thanh-toan", label: "Hóa đơn & thanh toán" },
-            { keywords: ["dat lich", "dat kham", "lich hen moi"], path: "/khach-hang/dat-lich-hen", label: "Đặt lịch hẹn khám" },
-            { keywords: ["lich su lich hen", "lich su hen", "lich da dat"], path: "/khach-hang/lich-su-lich-hen", label: "Lịch sử lịch hẹn" },
-            { keywords: ["thu cung", "be cung", "pet"], path: "/khach-hang/quan-ly-thu-cung", label: "Quản lý thú cưng" },
-            { keywords: ["ho so y te", "benh an", "ho so benh"], path: "/khach-hang/ho-so-benh-an", label: "Hồ sơ bệnh án" },
-            { keywords: ["ca nhan", "thong tin cua toi", "profile"], path: "/khach-hang/thong-tin-ca-nhan", label: "Thông tin cá nhân" },
-            { keywords: ["tong quan", "dashboard"], path: "/khach-hang/dashboard", label: "Tổng quan khách hàng" },
+            { keywords: ["hoa don", "thanh toan", "bien lai", "bill", "pay"], path: "/khach-hang/hoa-don-thanh-toan", label: "Hóa đơn & thanh toán" },
+            { keywords: ["dat lich", "dat kham", "book lich", "lich hen moi"], path: "/khach-hang/dat-lich-hen", label: "Đặt lịch hẹn khám" },
+            { keywords: ["lich su lich hen", "lich su hen", "lich da dat", "lich cua toi"], path: "/khach-hang/lich-su-lich-hen", label: "Lịch sử lịch hẹn" },
+            { keywords: ["thu cung", "be cung", "boss", "pet", "cho meo"], path: "/khach-hang/quan-ly-thu-cung", label: "Quản lý thú cưng" },
+            { keywords: ["ho so y te", "benh an", "ho so benh", "medical"], path: "/khach-hang/ho-so-benh-an", label: "Hồ sơ bệnh án" },
+            { keywords: ["ca nhan", "thong tin cua toi", "profile", "acc", "tai khoan"], path: "/khach-hang/thong-tin-ca-nhan", label: "Thông tin cá nhân" },
+            { keywords: ["tong quan", "dashboard", "home khach"], path: "/khach-hang/dashboard", label: "Tổng quan khách hàng" },
             { keywords: ["bang gia", "gia dich vu", "chi phi"], path: "/bang-gia", label: "Bảng giá dịch vụ" },
             { keywords: ["bac si", "doi ngu"], path: "/bac-si", label: "Đội ngũ bác sĩ" },
             { keywords: ["lien he", "hotline", "dia chi"], path: "/lien-he", label: "Liên hệ" },
@@ -4294,23 +4401,6 @@ export const ChatBot: React.FC = () => {
             return;
         }
 
-        if (!images.length && !videos.length && shouldRouteStandardToAgent(textToSend)) {
-            const handoffMessage = isCustomerAccount
-                ? "Yêu cầu này cần Rexi Agent thao tác hoặc đọc dữ liệu cá nhân từ hệ thống thật. Tôi chưa tự trả lời ở chat thường để tránh đoán sai."
-                : "Yêu cầu này cần Rexi Agent thao tác hoặc đọc dữ liệu nghiệp vụ thật. Tôi chưa tự trả lời ở chat thường để tránh sai lệch.";
-            setMessages(prev => [...prev, {
-                type: "ai",
-                text: handoffMessage,
-                agentHandoff: {
-                    prompt: textToSend,
-                    label: "Để Rexi Agent làm tác vụ này"
-                }
-            }]);
-            speakText("Tôi sẽ chuyển yêu cầu này sang Rexi Agent để xử lý bằng dữ liệu thật.");
-            finishStandardTurn();
-            return;
-        }
-
         try {
             const adaptiveChatInstruction = buildAdaptiveChatInstruction(textToSend, messages);
             const apiHistory = [
@@ -4645,6 +4735,19 @@ export const ChatBot: React.FC = () => {
             speakText(aiReply.text);
             finishAgentTurn();
             return;
+        }
+
+        if (hasExplicitAgentActionIntent(textToSend) || normalizeSearchText(textToSend).includes("hom qua")) {
+            if (!alreadyDisplayedUserMessage) {
+                setAgentMessages(prev => [...prev, { type: "user", text: textToSend }]);
+                setAgentInput("");
+                alreadyDisplayedUserMessage = true;
+            }
+            const handledFastEdit = await runFastVisibleFormEdit(textToSend);
+            if (handledFastEdit) {
+                finishAgentTurn();
+                return;
+            }
         }
 
         if (!isClinicStaff && isSensitiveAgentCommand(textToSend) && !isNavigationOnlyAgentCommand(textToSend)) {

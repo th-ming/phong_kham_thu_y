@@ -1,7 +1,8 @@
 ﻿import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { getUserProfile, normalizeUserRole } from "@utils/index";
+import { normalizeUserRole } from "@utils/index";
 import { ADMIN_ROUTE_ROLES } from "@utils/permissions";
+import { useLiveUserProfile } from "@hooks/useLiveUserProfile";
 
 import ThemeToggle from './ThemeToggle';
 
@@ -13,7 +14,7 @@ const SidebarAdmin: React.FC = () => {
 
 
 
-  const user = getUserProfile() || {};
+  const user = useLiveUserProfile() || {};
 
   const userRole = normalizeUserRole(user);
 

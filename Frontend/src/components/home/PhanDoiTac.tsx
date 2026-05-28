@@ -66,6 +66,18 @@ const PhanDoiTac: React.FC = () => {
                     </div>
                 </RevealSection>
 
+                <svg aria-hidden="true" style={{ position: 'absolute', width: 0, height: 0, pointerEvents: 'none' }}>
+                    <defs>
+                        <filter id="smart-knockout" colorInterpolationFilters="sRGB">
+                            <feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0.299 0.587 0.114 0 0" result="luma" />
+                            <feComponentTransfer in="luma" result="alphaMask">
+                                <feFuncA type="linear" slope="-10" intercept="9.5" />
+                            </feComponentTransfer>
+                            <feComposite in="SourceGraphic" in2="alphaMask" operator="in" />
+                        </filter>
+                    </defs>
+                </svg>
+
                 <div className="responsive-grid-split" style={{
                     gridTemplateColumns: '1.1fr 0.9fr',
                     alignItems: 'center',
@@ -98,21 +110,6 @@ const PhanDoiTac: React.FC = () => {
                             </div>
                         </div>
                     </div>
-
-                <svg aria-hidden="true" style={{ position: 'absolute', width: 0, height: 0, pointerEvents: 'none' }}>
-                    <defs>
-                        <filter id="smart-knockout" colorInterpolationFilters="sRGB">
-                            {/* 1. Tính độ sáng (Luminance) của ảnh gốc */}
-                            <feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0.299 0.587 0.114 0 0" result="luma" />
-                            {/* 2. Ép pixel nền trắng thành trong suốt (alpha=0), giữ nguyên pixel màu */}
-                            <feComponentTransfer in="luma" result="alphaMask">
-                                <feFuncA type="linear" slope="-10" intercept="9.5" />
-                            </feComponentTransfer>
-                            {/* 3. Phủ mặt n trong suốt lên ảnh gốc */}
-                            <feComposite in="SourceGraphic" in2="alphaMask" operator="in" />
-                        </filter>
-                    </defs>
-                </svg>
 
                     <div className="responsive-grid-2">
                         {partners.map((partner) => (
@@ -202,7 +199,7 @@ const PhanDoiTac: React.FC = () => {
                     padding: 10px 14px;
                     transition: border-color 0.35s ease, background 0.35s ease;
                     border: 1px solid color-mix(in srgb, var(--gray-200) 55%, transparent);
-                    // Nền xám nhạt: multiply xóa trắng PNG mà logo vẫn đậm
+                    /* Nền xám nhạt: multiply xóa trắng PNG mà logo vẫn đậm */
                     background: color-mix(in srgb, var(--gray-100) 85%, var(--surface));
                 }
                 [data-theme='dark'] .partner-logo-box {
@@ -213,7 +210,7 @@ const PhanDoiTac: React.FC = () => {
                     border-color: color-mix(in srgb, var(--partner-accent) 35%, var(--gray-200));
                 }
 
-                // Light: logo gốc rõ — ko dùng knockout
+                /* Light: logo gốc rõ - ko dùng knockout */
                 .partner-logo-img {
                     display: block;
                     width: auto;
@@ -239,7 +236,7 @@ const PhanDoiTac: React.FC = () => {
                     }
                 }
 
-                // Dark mode: Xóa phông trắng bằng SVG Filter, ánh sáng chỉ bám sát viền chữ/logo
+                /* Dark mode: xóa phông trắng bằng SVG filter, ánh sáng chỉ bám sát viền chữ/logo */
                 [data-theme='dark'] .partner-logo-img {
                     mix-blend-mode: normal;
                     animation: partnerLogoPulse 3s ease-in-out infinite;

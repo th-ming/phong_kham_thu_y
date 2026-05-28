@@ -10,6 +10,7 @@ import com.rexi.pkty.service.GeminiService;
 import com.rexi.pkty.service.OpenRouterService;
 import com.rexi.pkty.service.AiMemoryService;
 import com.rexi.pkty.service.AuditLogService;
+import com.rexi.pkty.service.ReActAgentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.*;
@@ -57,6 +58,9 @@ public class ChatController {
 
     @Autowired
     private AuditLogService auditLogService;
+
+    @Autowired
+    private ReActAgentService reactAgentService;
 
     // Rate Limit RAM logic
     private static class RateLimit {
@@ -254,7 +258,7 @@ public class ChatController {
             }
 
             if (requestPlan.route() == ChatRoute.SENSITIVE_HANDOFF) {
-                return Map.of("reply", buildSensitiveDataHandoffReply());
+                return runAgentFromChat(userQuery, realUsername, auth);
             }
 
             if (requestPlan.route() == ChatRoute.DB_LOCAL) {
@@ -759,6 +763,8 @@ ChatMessage systemMsg = new ChatMessage();
             conn.setDoOutput(true);
             conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
             conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+            conn.setConnectTimeout(5000);
+            conn.setReadTimeout(7000);
 
             try (java.io.OutputStream os = conn.getOutputStream()) {
                 os.write(postData.getBytes(java.nio.charset.StandardCharsets.UTF_8));
@@ -1026,9 +1032,10 @@ ChatMessage systemMsg = new ChatMessage();
         if (normalizedQuery == null || normalizedQuery.isBlank()) return false;
         String[] actionKeywords = {
                 "mo trang", "dua toi den", "chuyen sang", "di toi", "vao trang",
-                "dat lich", "lap lich", "tao lich", "huy lich", "doi lich",
-                "them", "sua", "xoa", "dien", "fill", "chon", "bam", "click",
-                "tim khach", "tim ho so", "tra cuu khach", "quet du lieu"
+                "qua trang", "nhay qua", "tele qua", "bay qua", "dan toi", "dan den",
+                "dat lich", "book lich", "lap lich", "tao lich", "huy lich", "doi lich",
+                "them", "sua", "xoa", "dien", "fill", "chon", "bam", "click", "tap", "an vao",
+                "tim khach", "tim ho so", "tra cuu khach", "quet du lieu", "check giup", "check ho"
         };
         for (String kw : actionKeywords) {
             if (normalizedQuery.contains(kw)) {
@@ -1160,7 +1167,8 @@ ChatMessage systemMsg = new ChatMessage();
                 + "Giọng điệu: " + persona.tone() + ".\n"
                 + "Được phép: " + persona.allowedActions() + ".\n"
                 + "Không được phép: " + persona.forbiddenActions() + ".\n"
-                + "Nguyên tắc tốc độ/độ đúng: trả lời ngắn và đúng việc trước; chỉ đọc DB, web, DOM hoặc gọi AI nặng khi route cho phép; nếu thiếu dữ liệu thì nói rõ thiếu dữ liệu thay vì đoán.\n"
+                + "Nguyên tắc tốc độ/độ đúng: trả lời ngắn và đúng việc trước; nếu câu hỏi là lệnh chuyển trang/thao tác rõ ràng thì phản hồi bằng hành động hoặc tag điều hướng ngay, không giải thích dài; chỉ đọc DB, web, DOM hoặc gọi AI nặng khi route cho phép; nếu thiếu dữ liệu thì nói rõ thiếu dữ liệu thay vì đoán.\n"
+                + "Hiểu ngôn ngữ tự nhiên và Gen Z: các cách nói như 'check giúp', 'qua trang', 'tele qua', 'book lịch', 'bill', 'acc', 'boss/be nhà tôi', 'khum/hông' phải được hiểu theo ý định thật, không bắt người dùng nói đúng thuật ngữ hệ thống.\n"
                 + "--- HẾT PERSONA CONTEXT ---\n\n";
     }
 
@@ -1222,11 +1230,64 @@ ChatMessage systemMsg = new ChatMessage();
         return "Dạ phần tra cứu khách hàng, thú cưng, bệnh án hoặc hóa đơn là dữ liệu nội bộ. Sen/sếp vui lòng chuyển sang **Rexi Agent** để hệ thống kiểm tra quyền và quét dữ liệu thật, tránh chatbot thường tìm nhầm hoặc lộ dữ liệu.";
     }
 
+    private Map<String, Object> runAgentFromChat(
+            String userQuery,
+            String username,
+            org.springframework.security.core.Authentication auth
+    ) {
+        if (username == null || auth == null) {
+            return Map.of(
+                    "reply", "Dạ phần này cần tra cứu dữ liệu nội bộ thời gian thực. Sen/sếp đăng nhập tài khoản trước để Rexi kiểm tra quyền và lấy dữ liệu chính xác nhé.",
+                    "source", "agent_auth_required"
+            );
+        }
+
+        String userRole = auth.getAuthorities().stream()
+                .findFirst()
+                .map(g -> g.getAuthority().replace("ROLE_", ""))
+                .orElse("");
+
+        try {
+            ReActAgentService.ReActResult result = reactAgentService.run(userQuery, username, userRole);
+            List<Map<String, Object>> stepsData = new ArrayList<>();
+            for (var step : result.steps()) {
+                Map<String, Object> s = new java.util.LinkedHashMap<>();
+                s.put("type", step.type());
+                s.put("content", step.content());
+                if (step.toolName() != null) s.put("tool", step.toolName());
+                if (step.toolParams() != null) s.put("params", step.toolParams());
+                if (step.observation() != null) s.put("observation", step.observation());
+                stepsData.add(s);
+            }
+
+            return Map.of(
+                    "reply", result.finalAnswer(),
+                    "source", "react_agent_auto",
+                    "provider", result.provider(),
+                    "steps", stepsData,
+                    "totalSteps", stepsData.size()
+            );
+        } catch (Exception e) {
+            logger.severe("[CHAT->AGENT] Lỗi tự chuyển Rexi Agent: " + e.getMessage());
+            return Map.of(
+                    "reply", "Rexi đã tự chuyển sang Agent để tra dữ liệu thật nhưng gặp lỗi hệ thống. Sếp thử lại sau ít giây hoặc kiểm tra backend/AI provider giúp em nhé.",
+                    "source", "react_agent_auto_error"
+            );
+        }
+    }
+
     private boolean isSensitiveDataLookup(String q) {
         String[] keywords = {
                 "tim khach", "tra khach", "tim thu cung", "tim boss", "tim benh an",
                 "tra benh an", "tim hoa don", "hoa don cua", "lich su kham cua",
-                "khach hang ten", "so dien thoai khach", "email khach", "email cua khach"
+                "khach hang ten", "so dien thoai khach", "email khach", "email cua khach",
+                "thong tin ca nhan", "profile cua toi", "ho so cua toi", "tai khoan cua toi",
+                "lich hen cua toi", "lich kham cua toi", "hoa don cua toi", "thu cung cua toi",
+                "be cua toi", "pet cua toi", "don thuoc cua toi", "benh an cua toi",
+                "lich hen hom nay", "hoa don chua thanh toan", "kho thuoc", "ton kho",
+                "khach hang nao", "co khach hang", "co hoa don", "co lich hen",
+                "check profile", "check lich", "check hoa don", "check bill", "bill cua toi",
+                "boss cua toi", "be nha toi", "pet nha toi", "acc cua toi", "info cua toi"
         };
         for (String kw : keywords) {
             if (q.contains(kw)) return true;

@@ -5,6 +5,7 @@ import { normalizeSearchText } from "./index";
  * Đã xử lý triệt để các trường hợp trùng lặp từ vựng tiếng Việt (khoa khám bệnh vs khóa tài khoản, đo huyết áp vs hủy).
  */
 export const isSensitiveAction = (text: string): boolean => {
+    void text;
     // Theo yêu cầu của sếp: Tắt hoàn toàn việc chặn theo từ khóa ở Frontend
     // Để cho AI và Backend tự phân tích ngữ cảnh và quyết định xem có phải thao tác nhạy cảm hay không.
     return false;

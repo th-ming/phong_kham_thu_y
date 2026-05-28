@@ -43,10 +43,6 @@ export const executeAction = async (tag: string, skipConfirm: boolean = false) =
       detail: { type: 'START', tag, actionType: type, payload }
     }));
 
-    // CƠ CHẾ AUTOPILOT: Tạo độ trễ ngẫu nhiên 600ms - 900ms để người dùng kịp nhìn thấy AI thao tác
-    const delayMs = Math.floor(Math.random() * 300) + 600;
-    await new Promise(resolve => setTimeout(resolve, delayMs));
-
     switch (type) {
       case 'CLICK': {
         const el = getAiElement(payload);
@@ -74,7 +70,7 @@ export const executeAction = async (tag: string, skipConfirm: boolean = false) =
         break;
       }
       case 'FILL': {
-        const separatorIdx = payload.indexOf('|');
+        const separatorIdx = payload.includes('|') ? payload.indexOf('|') : payload.indexOf('=');
         const id = separatorIdx > -1 ? payload.slice(0, separatorIdx).trim() : payload;
         let value = separatorIdx > -1 ? payload.slice(separatorIdx + 1) : '';
         
@@ -132,7 +128,7 @@ export const executeAction = async (tag: string, skipConfirm: boolean = false) =
         break;
       }
       case 'SELECT': {
-        const separatorIdx = payload.indexOf('|');
+        const separatorIdx = payload.includes('|') ? payload.indexOf('|') : payload.indexOf('=');
         const id = separatorIdx > -1 ? payload.slice(0, separatorIdx).trim() : payload.trim();
         const option = separatorIdx > -1 ? payload.slice(separatorIdx + 1) : '';
         const select = getAiElement<HTMLSelectElement>(id);
