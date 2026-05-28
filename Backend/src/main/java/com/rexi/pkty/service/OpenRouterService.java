@@ -154,7 +154,13 @@ public class OpenRouterService {
             models.add(configuredModel.trim());
         }
         models.addAll(getDynamicFreeModels());
-        return new ArrayList<>(models);
+        
+        // GIỚI HẠN tối đa 3 models để tuân thủ quy định mới của OpenRouter free tier (không bị lỗi 400)
+        List<String> list = new ArrayList<>(models);
+        if (list.size() > 3) {
+            return list.subList(0, 3);
+        }
+        return list;
     }
 
     private synchronized List<String> getDynamicFreeModels() {
@@ -223,7 +229,7 @@ public class OpenRouterService {
         Map<String, Object> requestBodyMap = Map.of(
                 "models", candidateModels,
                 "messages", messagesForApi,
-                "max_tokens", 900,
+                "max_tokens", 2000,
                 "temperature", 0.35);
 
         String requestBody = objectMapper.writeValueAsString(requestBodyMap);

@@ -14,7 +14,7 @@ import java.time.ZoneId;
 import java.util.*;
 import java.util.logging.Logger;
 
-// * * ReAct Agent Service — vòng lặp Reason → Act → Observe (Level 5).
+// * * ReAct Agent Service — vòng lặp Reason → Act → Observe (Lvv 5).
 // * AI tự lên kế hoạch, gọi tools, quan sát kết quả và lặp lại tới khi hoàn thành.
 // * Tối đa 6 bước để tránh vòng lặp vô hạn.
 @Service
@@ -596,7 +596,43 @@ public class ReActAgentService {
             + "- Tối ưu token: chỉ tóm tắt đúng dữ liệu cần thiết, không lặp lại toàn bộ DOM hoặc lịch sử dài.\n"
             + "- Sau khi có đủ thông tin từ tools, trả về final_answer bằng tiếng Việt rõ, ngắn, đúng vai trò hiện tại.\n"
             + "- Nếu câu hỏi đơn giản (chào hỏi, hỏi thông tin chung) → trả final_answer ngay, không cần dùng tool.\n"
-            + "- KHÔNG bịa đặt dữ liệu. Chỉ dùng thông tin từ tool, bối cảnh màn hình được gửi lên hoặc kiến thức y khoa thực tế.\n";
+            + "- BẠN LÀ NGƯỜI LÁI XE CỦA HỆ THỐNG (ĐIỀU HƯỚNG): Nếu người dùng có ý định muốn xem dữ liệu, thực hiện chức năng ở một phân hệ khác (ví dụ: 'về trang chủ', 'mở chỗ nhân sự', 'cho tôi xem kho thuốc'), bạn hãy tự động phân tích ngữ nghĩa, tìm đường dẫn phù hợp trong SITEMAP và BẮT BUỘC chèn thẻ [NAVIGATE:đường_dẫn] ở cuối câu trả lời.\n"
+            + "- Với các thao tác tương tác giao diện trực tiếp, hãy dựa vào ID hoặc Role của Element trong 'Bối cảnh giao diện hiện tại' (DOM context). Bạn có thể tự động thực thi bằng cách BẮT BUỘC chèn các thẻ sau vào cuối câu trả lời:\n"
+            + "  + Để bấm nút/link: [CLICK:element_id]\n"
+            + "  + Để điền chữ vào ô nhập: [FILL:input_id=nội_dung_cần_điền]\n"
+            + "  + Để bật/tắt switch/checkbox: [TOGGLE:element_id]\n"
+            + "  + Để chọn giá trị dropdown: [SELECT:select_id=giá_trị_chọn]\n"
+            + "  + Bạn có thể kết hợp nhiều thẻ cùng lúc (VD: [NAVIGATE:/quan-ly/nhan-vien-phan-quyen][FILL:search=Nguyễn][CLICK:btn-submit]).\n"
+            + "\n=== SƠ ĐỒ HỆ THỐNG (SITEMAP) ===\n"
+            + "Sử dụng các đường dẫn này cho lệnh [NAVIGATE:...]\n"
+            + "[Dành cho Khách hàng]\n"
+            + "- / (Trang chủ)\n"
+            + "- /ve-chung-toi (Giới thiệu), /bang-gia (Bảng giá), /lien-he (Liên hệ), /bac-si (Bác sĩ)\n"
+            + "- /khach-hang/dashboard (Bảng điều khiển)\n"
+            + "- /khach-hang/quan-ly-thu-cung (Thú cưng của tôi)\n"
+            + "- /khach-hang/dat-lich-hen (Đặt lịch)\n"
+            + "- /khach-hang/lich-su-lich-hen (Lịch sử hẹn)\n"
+            + "- /khach-hang/ho-so-benh-an (Bệnh án)\n"
+            + "- /khach-hang/hoa-don-thanh-toan (Hóa đơn)\n"
+            + "- /khach-hang/thong-tin-ca-nhan (Hồ sơ cá nhân)\n"
+            + "\n[Dành cho Quản lý / Nhân viên]\n"
+            + "- /quan-ly/dashboard (Bảng tổng quan)\n"
+            + "- /quan-ly/lich-lam-viec (Lịch làm việc)\n"
+            + "- /quan-ly/thong-tin-ca-nhan (Hồ sơ nhân viên)\n"
+            + "- /quan-ly/lich-hen (Quản lý lịch hẹn)\n"
+            + "- /quan-ly/khach-hang-thu-cung (Khách hàng & Thú cưng)\n"
+            + "- /quan-ly/ho-so-benh-an (Hồ sơ bệnh án)\n"
+            + "- /quan-ly/kham-benh (Khám bệnh)\n"
+            + "- /quan-ly/don-thuoc (Đơn thuốc)\n"
+            + "- /quan-ly/xet-nghiem (Xét nghiệm)\n"
+            + "- /quan-ly/hoa-don (Hóa đơn & Thanh toán)\n"
+            + "- /quan-ly/ke-toan (Kế toán & Thu chi)\n"
+            + "- /quan-ly/bao-cao-thong-ke (Báo cáo & Thống kê)\n"
+            + "- /quan-ly/nhap-kho, /quan-ly/kho-thuoc (Quản lý Kho thuốc / Vật tư)\n"
+            + "- /quan-ly/nhan-vien-phan-quyen (Nhân sự & Phân quyền)\n"
+            + "- /quan-ly/cau-hinh (Cấu hình hệ thống)\n"
+            + "- /quan-ly/dich-vu (Quản lý dịch vụ)\n"
+            + "- /quan-ly/marketing (Chiến dịch Marketing)\n";
     }
 
     private String buildAgentIdentityBlock(String userRole, boolean isStaff) {
