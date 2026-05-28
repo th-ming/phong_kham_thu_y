@@ -1,4 +1,4 @@
-﻿import React, { useRef, useState, useEffect, useCallback } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { generateSlug } from "@utils/index";
 import axiosInstance from "@services/axios";
@@ -300,9 +300,9 @@ const Footer: React.FC<{ isSimple?: boolean }> = ({ isSimple }) => {
                                 </button>
                             </div>
                         </div>
-                        <div>
                             <h4 style={{ color: 'white', fontWeight: 800, marginBottom: '32px', letterSpacing: '1px', fontSize: '0.9rem' }}>DỊCH VỤ</h4>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            {/* BUG FIX & UX: Tăng khoảng cách gap lên 12px để tránh con sen bấm trượt trên di động */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                                 {displayServices.map((name, index) => (
                                     <Link key={index} to={`/dich-vu/${generateSlug(name)}`} className="footer-link">
                                         {name}
@@ -358,7 +358,8 @@ const Footer: React.FC<{ isSimple?: boolean }> = ({ isSimple }) => {
             )}
 
             <style>{`
-                .footer-link { color: #94a3b8; text-decoration: none; padding: 8px 0; font-size: 0.95rem; transition: all 0.3s; }
+                /* TỰ HỌC & TỐI ƯU: Thiết lập vùng chạm tối thiểu 44px chuẩn Fitts Law tránh bấm nhầm */
+                .footer-link { color: #94a3b8; text-decoration: none; padding: 12px 0; font-size: 0.95rem; transition: all 0.3s; display: inline-flex; align-items: center; min-height: 44px; }
                 .footer-link:hover { color: #0f9d8a; transform: translateX(5px); }
                 .social-circle-dark { display: flex; align-items: center; justify-content: center; border-radius: 50%; background: rgba(255,255,255,0.05); color: white; width: 40px; height: 40px; transition: all 0.3s; text-decoration: none; border: 1px solid rgba(255,255,255,0.1); }
                 .social-circle-dark:hover { background: #0f9d8a; border-color: #0f9d8a; transform: translateY(-3px); }
