@@ -275,7 +275,7 @@ const Footer: React.FC<{ isSimple?: boolean }> = ({ isSimple }) => {
                                     onClick={async () => {
                                         const email = (document.getElementById('newsletter-email') as HTMLInputElement).value;
                                         if (!email || !email.includes('@')) {
-                                            alert('Vui lòng nhập email hợp lệ sếp ơi!');
+                                            alert('Vui lòng nhập email hợp lệ nhé ạ!');
                                             return;
                                         }
                                         try {
@@ -285,13 +285,13 @@ const Footer: React.FC<{ isSimple?: boolean }> = ({ isSimple }) => {
                                                 body: JSON.stringify({ email })
                                             });
                                             if (response.ok) {
-                                                alert('Đăng ký thành công! Sếp kiểm tra mail nhé 🐾');
+                                                alert('Đăng ký nhận tin thành công! Cảm ơn bạn đã tin tưởng Rexi 🐾');
                                                 (document.getElementById('newsletter-email') as HTMLInputElement).value = '';
                                             } else {
-                                                alert('Có lỗi xảy ra, sếp thử lại sau nhé!');
+                                                alert('Có lỗi xảy ra, xin vui lòng thử lại sau nhé ạ!');
                                             }
                                         } catch (e) {
-                                            alert('Không kết nối được tới server sếp ơi!');
+                                            alert('Không kết nối được tới máy chủ, vui lòng thử lại sau nhé ạ!');
                                         }
                                     }}
                                     style={{ position: 'absolute', right: '6px', top: '6px', bottom: '6px', background: 'linear-gradient(135deg, #f59e0b, #ea580c)', border: 'none', color: 'white', padding: '0 24px', borderRadius: '50px', fontWeight: 800, cursor: 'pointer' }}
