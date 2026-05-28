@@ -1335,7 +1335,7 @@ export const ChatBot: React.FC = () => {
         if (!isOpen || chatPrewarmRequestedRef.current) return;
         chatPrewarmRequestedRef.current = true;
 
-        // Gọi prewarm TTS để nạp sẵn voice vào RAM ngay khi sếp mở khung chat
+        // Gọi prewarm TTS để nạp sẵn voice vào RAM ngay khi người dùng mở khung chat
         prewarmSpeechVoices();
 
         axiosInstance.post("/api/chat/prewarm").catch((err) => {
@@ -1500,7 +1500,7 @@ export const ChatBot: React.FC = () => {
                         setTimeout(() => {
                             setProactiveMessage({
                                 id: "payment-qr-helper",
-                                text: "💰 Sếp ơi! Hóa đơn này đang chờ thanh toán. Để tối ưu hóa trải nghiệm khách hàng và giảm sai sót tiền mặt, sếp có muốn Rexi tự động sinh mã VietQR động, gợi ý cổng VNPay, hoặc áp dụng ưu đãi Loyalty Member giảm 5% không ạ? Bấm đây em hỗ trợ sếp ngay nhé! ✨",
+                                text: "💰 Kế toán ơi! Hóa đơn này đang chờ thanh toán. Để tối ưu hóa trải nghiệm khách hàng và giảm sai sót tiền mặt, đồng nghiệp có muốn Rexi tự động sinh mã VietQR động, gợi ý cổng VNPay, hoặc áp dụng ưu đãi Loyalty Member giảm 5% không ạ? Bấm đây em hỗ trợ ngay nhé! ✨",
                                 action: () => {
                                     setActiveTab("agent");
                                     setIsOpen(true);
@@ -1526,7 +1526,7 @@ export const ChatBot: React.FC = () => {
                             
                             setProactiveMessage({
                                 id: "fpv-empty-prescription-warning",
-                                text: "⚠️ CẢNH BÁO Y KHOA: Chẩn đoán FPV (Giảm bạch cầu mèo) cực kỳ nguy hiểm nhưng sếp chưa kê đơn thuốc hỗ trợ (kháng sinh Cefovecin, chống nôn Maropitant, dịch Ringer Lactate). Để bảo vệ bé yêu, bác sĩ có muốn Rexi tự động kê phác đồ chuẩn y khoa ngay không ạ? 🩺✨",
+                                text: "⚠️ CẢNH BÁO Y KHOA: Chẩn đoán FPV (Giảm bạch cầu mèo) cực kỳ nguy hiểm nhưng bác sĩ chưa kê đơn thuốc hỗ trợ (kháng sinh Cefovecin, chống nôn Maropitant, dịch Ringer Lactate). Để bảo vệ bé yêu, bác sĩ có muốn Rexi tự động kê phác đồ chuẩn y khoa ngay không ạ? 🩺✨",
                                 action: () => {
                                     setActiveTab("agent");
                                     setIsOpen(true);
@@ -1549,12 +1549,12 @@ export const ChatBot: React.FC = () => {
                     if (!serviceEl || !dateEl?.value || !timeSelected) {
                         setProactiveMessage({
                             id: "booking-error-helper",
-                            text: "🐾 Sếp ơi! Rexi thấy đơn đặt lịch khám còn thiếu thông tin (chưa chọn dịch vụ, ngày khám hoặc khung giờ). Sếp có muốn em tự động kiểm tra và lái tự động chọn nốt khung giờ trống giúp sếp không ạ? ✨",
+                            text: "🐾 Tiếp tân ơi! Rexi thấy đơn đặt lịch khám còn thiếu thông tin (chưa chọn dịch vụ, ngày khám hoặc khung giờ). Đồng nghiệp có muốn em tự động kiểm tra và lái tự động chọn nốt khung giờ trống không ạ? ✨",
                             action: () => {
                                 setActiveTab("agent");
                                 setIsOpen(true);
                                 setTimeout(() => {
-                                    handleAgentSend("Rexi hãy tự động kiểm tra các thông tin còn trống trên form đặt lịch hẹn khám bệnh hiện tại, tìm khung giờ trống phù hợp và điền hoàn chỉnh giúp sếp nhé!");
+                                    handleAgentSend("Rexi hãy tự động kiểm tra các thông tin còn trống trên form đặt lịch hẹn khám bệnh hiện tại, tìm khung giờ trống phù hợp và điền hoàn chỉnh nhé!");
                                 }, 500);
                             }
                         });
@@ -1601,7 +1601,7 @@ export const ChatBot: React.FC = () => {
                 if (val.includes("fpv") || val.includes("parvo") || val.includes("giảm bạch cầu") || val.includes("giam bach cau")) {
                     setProactiveMessage({
                         id: "fpv-clinical-helper",
-                        text: "🩺 Sếp ơi! Em thấy sếp chẩn đoán bé bị nhiễm FPV (Giảm bạch cầu mèo) cực kỳ nguy hiểm. Sếp có muốn Rexi tự động lên phác đồ chuẩn y khoa (Kháng sinh rộng Cefovecin, chống nôn Maropitant, truyền dịch Ringer Lactate) và kê đơn nhanh vào bệnh án giúp sếp không ạ? Bấm đây em điền giúp sếp ngay nha! 🩺✨",
+                        text: "🩺 Bác sĩ ơi! Em thấy bác sĩ chẩn đoán bé bị nhiễm FPV (Giảm bạch cầu mèo) cực kỳ nguy hiểm. Bác sĩ có muốn Rexi tự động lên phác đồ chuẩn y khoa (Kháng sinh rộng Cefovecin, chống nôn Maropitant, truyền dịch Ringer Lactate) và kê đơn nhanh vào bệnh án không ạ? Bấm đây em điền ngay nha! 🩺✨",
                         action: () => {
                             setActiveTab("agent");
                             setIsOpen(true);
@@ -1620,12 +1620,12 @@ export const ChatBot: React.FC = () => {
                 if (val.trim().length > 5 && val.trim().length < 40) {
                     setProactiveMessage({
                         id: "marketing-suggestion",
-                        text: "🐾 Sếp ơi! Em thấy nội dung chiến dịch marketing của sếp hơi ngắn nè. Sếp có muốn Rexi dùng trí tuệ AI tối ưu hóa thư ngỏ gửi khách hàng thật lôi cuốn, chuyên nghiệp và đầy chuyển đổi không ạ? Bấm đây em viết giúp sếp nha! ✨",
+                        text: "🐾 Đồng nghiệp ơi! Em thấy nội dung chiến dịch marketing hơi ngắn nè. Đồng nghiệp có muốn Rexi dùng trí tuệ AI tối ưu hóa thư ngỏ gửi khách hàng thật lôi cuốn, chuyên nghiệp và đầy chuyển đổi không ạ? Bấm đây em viết giúp nha! ✨",
                         action: () => {
                             setActiveTab("agent");
                             setIsOpen(true);
                             setTimeout(() => {
-                                handleAgentSend(`Em hãy viết lại nội dung email marketing này thật hay, đầy thu hút, thêm icon biểu cảm sinh động và chuyên nghiệp nhất có thể để gửi khách hàng giúp sếp: "${val}"`);
+                                handleAgentSend(`Em hãy viết lại nội dung email marketing này thật hay, đầy thu hút, thêm icon biểu cảm sinh động và chuyên nghiệp nhất có thể để gửi khách hàng: "${val}"`);
                             }, 500);
                         }
                     });
@@ -1690,12 +1690,12 @@ export const ChatBot: React.FC = () => {
             const detail = (e as CustomEvent<{ message?: string }>).detail;
             setProactiveMessage({
                 id: "booking-error-helper",
-                text: detail?.message || "Rexi thấy đơn đặt lịch khám còn thiếu thông tin. Sếp có muốn em kiểm tra và hỗ trợ hoàn tất form không ạ?",
+                text: detail?.message || "Rexi thấy đơn đặt lịch khám còn thiếu thông tin. Đồng nghiệp có muốn em kiểm tra và hỗ trợ hoàn tất form không ạ?",
                 action: () => {
                     setActiveTab("agent");
                     setIsOpen(true);
                     setTimeout(() => {
-                        handleAgentSend("Rexi hãy tự động kiểm tra các thông tin còn trống trên form đặt lịch hẹn khám bệnh hiện tại, tìm khung giờ trống phù hợp và điền hoàn chỉnh giúp sếp nhé!");
+                        handleAgentSend("Rexi hãy tự động kiểm tra các thông tin còn trống trên form đặt lịch hẹn khám bệnh hiện tại, tìm khung giờ trống phù hợp và điền hoàn chỉnh nhé!");
                     }, 500);
                 }
             });
@@ -1781,7 +1781,7 @@ export const ChatBot: React.FC = () => {
         const contextHints: Record<string, { id: string; text: string; prompt: string }> = {
             "/quan-ly/cau-hinh": {
                 id: "context-ai-config",
-                text: "Mình thấy sếp đang ở Cấu hình hệ thống. Nếu vừa đổi API key/model AI, Rexi có thể kiểm tra provider nào đã được lưu và đang được backend đọc thật.",
+                text: "Mình thấy bạn đang ở Cấu hình hệ thống. Nếu vừa đổi API key/model AI, Rexi có thể kiểm tra provider nào đã được lưu và đang được backend đọc thật.",
                 prompt: "Kiểm tra cấu hình AI hiện tại: provider nào đã có key, model nào đang được backend đọc, action policy đã lưu chưa?"
             },
             "/quan-ly/chuc-nang": {
@@ -1791,7 +1791,7 @@ export const ChatBot: React.FC = () => {
             },
             "/quan-ly/ke-toan": {
                 id: "context-accounting-check",
-                text: "Sếp đang ở kế toán. Rexi có thể đối soát nhanh doanh thu, công nợ và hóa đơn chờ thanh toán bằng dữ liệu thật.",
+                text: "Kế toán đang ở phân hệ kế toán. Rexi có thể đối soát nhanh doanh thu, công nợ và hóa đơn chờ thanh toán bằng dữ liệu thật.",
                 prompt: "Đối soát nhanh doanh thu hôm nay, công nợ chưa thu và hóa đơn chờ thanh toán bằng dữ liệu hiện tại."
             },
             "/khach-hang/dat-lich-hen": {
@@ -2344,7 +2344,7 @@ export const ChatBot: React.FC = () => {
     const handleDownloadTreatmentPdf = (data: any) => {
         const printWindow = window.open("", "_blank");
         if (!printWindow) {
-            alert("Sếp ơi! Vui lòng cho phép trình duyệt mở tab mới để Rexi xuất phiếu điều trị và đơn thuốc nhé! 🐾");
+            alert("Vui lòng cho phép trình duyệt mở tab mới để Rexi xuất phiếu điều trị và đơn thuốc nhé! 🐾");
             return;
         }
 
@@ -2715,7 +2715,7 @@ export const ChatBot: React.FC = () => {
             dispatchHud('ERROR', 'AUTOPILOT', 'failed', `Lỗi thực thi Autopilot: ${err.message || err}`);
             setAgentMessages(prev => [...prev, {
                 type: "ai",
-                text: `❌ Lỗi Autopilot: ${err.message || err}. Vui lòng kiểm tra lại trạng thái giao diện sếp nhé!`
+                text: `❌ Lỗi Autopilot: ${err.message || err}. Vui lòng kiểm tra lại trạng thái giao diện nhé!`
             }]);
         }
     };
@@ -2816,12 +2816,12 @@ export const ChatBot: React.FC = () => {
 
         const replyMsg = {
             type: "ai",
-            text: `💰 **Rexi Payment Assistant:** Em đã phân tích nhanh hóa đơn **${hdId}** của khách hàng **${customerName}** đang có trạng thái **Chờ thanh toán**.\n\nDưới đây là quy trình quyết toán an toàn và tối ưu ưu đãi cho bé:\n\n1. **Thanh toán VietQR động tự động điền thông tin:**\n${qrContentHtml}\n\n2. **Cổng VNPay giảm giá:** Quét VNPay-QR và nhập mã khuyến mại \`VNPAYREXI\` tại quầy để được giảm trực tiếp **20.000 VND**.\n\n3. **Loyalty Member (Ưu đãi thành viên hạng Vàng - Gold):** Khách hàng **${customerName}** được giảm giá đặc quyền 5%. Bác sĩ/kế toán có thể áp dụng trực tiếp mã giảm thẻ Vàng \`LOYALTYGOLD\` giảm ngay 5% trực tiếp vào hóa đơn cho Sen nhé! ✨\n\nSếp có muốn em tự động gửi thông tin quyết toán động này qua SMS hoặc Zalo cho khách hàng không ạ? ✨🐾`,
+            text: `💰 **Rexi Payment Assistant:** Em đã phân tích nhanh hóa đơn **${hdId}** của khách hàng **${customerName}** đang có trạng thái **Chờ thanh toán**.\n\nDưới đây là quy trình quyết toán an toàn và tối ưu ưu đãi cho bé:\n\n1. **Thanh toán VietQR động tự động điền thông tin:**\n${qrContentHtml}\n\n2. **Cổng VNPay giảm giá:** Quét VNPay-QR và nhập mã khuyến mại \`VNPAYREXI\` tại quầy để được giảm trực tiếp **20.000 VND**.\n\n3. **Loyalty Member (Ưu đãi thành viên hạng Vàng - Gold):** Khách hàng **${customerName}** được giảm giá đặc quyền 5%. Bác sĩ/kế toán có thể áp dụng trực tiếp mã giảm thẻ Vàng \`LOYALTYGOLD\` giảm ngay 5% trực tiếp vào hóa đơn cho Sen nhé! ✨\n\nĐồng nghiệp có muốn em tự động gửi thông tin quyết toán động này qua SMS hoặc Zalo cho khách hàng không ạ? ✨🐾`,
             isHtml: true
         };
 
         setAgentMessages(prev => [...prev, replyMsg]);
-        speakText(`Đã trích xuất thông tin hóa đơn và sinh mã chuyển khoản nhanh VietQR động thành công cho sếp.`);
+        speakText(`Đã trích xuất thông tin hóa đơn và sinh mã chuyển khoản nhanh VietQR động thành công.`);
     };
 
     // Bong bóng thông báo tự động theo ngữ cảnh trang (Page-Aware Contextual Callouts)
@@ -2829,21 +2829,21 @@ export const ChatBot: React.FC = () => {
         const lowerPath = path.toLowerCase();
         if (isClinicStaff) {
             if (lowerPath.includes("/quan-ly/kho-thuoc")) {
-                return isMobile ? "Tra cứu thuốc? 💊" : "Cần lọc thuốc sắp hết hạn hay tìm nhanh loại thuốc nào không sếp? 💊";
+                return isMobile ? "Tra cứu thuốc? 💊" : "Cần lọc thuốc sắp hết hạn hay tìm nhanh loại thuốc nào không ạ? 💊";
             }
             if (lowerPath.includes("/quan-ly/hoa-don")) {
-                return isMobile ? "Check hóa đơn? 💳" : "Cần hỗ trợ tìm nhanh hóa đơn hay lọc doanh thu ca trực không sếp? 💳";
+                return isMobile ? "Check hóa đơn? 💳" : "Cần hỗ trợ tìm nhanh hóa đơn hay lọc doanh thu ca trực không ạ? 💳";
             }
             if (lowerPath.includes("/quan-ly/xet-nghiem")) {
-                return isMobile ? "Chỉ số máu? 🧪" : "Cần tra cứu nhanh chỉ số sinh hóa máu chuẩn để đối chiếu không sếp? 🧪";
+                return isMobile ? "Chỉ số máu? 🧪" : "Cần tra cứu nhanh chỉ số sinh hóa máu chuẩn để đối chiếu không ạ? 🧪";
             }
             if (lowerPath.includes("/quan-ly/ho-so-benh-an") || lowerPath.includes("/ho-so-benh-an")) {
-                return isMobile ? "Xem bệnh án? 🩺" : "Cần em tìm lại lịch sử điều trị hay phác đồ ca bệnh này không sếp? 🩺";
+                return isMobile ? "Xem bệnh án? 🩺" : "Cần em tìm lại lịch sử điều trị hay phác đồ ca bệnh này không ạ? 🩺";
             }
             if (lowerPath.includes("/tiep-tan") || lowerPath.includes("/quan-ly-lich-hen")) {
-                return isMobile ? "Lịch hẹn mới? 🗓️" : "Có ca đặt lịch mới kìa! Cần check-in nhanh hay tìm lịch trống bác sĩ không sếp? 🗓️";
+                return isMobile ? "Lịch hẹn mới? 🗓️" : "Có ca đặt lịch mới kìa! Cần check-in nhanh hay tìm lịch trống bác sĩ không ạ? 🗓️";
             }
-            return isMobile ? "Rexi hỗ trợ 24/7! 🐾" : "Cần Rexi hỗ trợ nghiệp vụ ca trực hay tra cứu y khoa gì không sếp? 🐾";
+            return isMobile ? "Rexi hỗ trợ 24/7! 🐾" : "Cần Rexi hỗ trợ nghiệp vụ ca trực hay tra cứu y khoa gì không ạ? 🐾";
         } else {
             if (lowerPath.includes("/dat-lich-hen")) {
                 return isMobile ? "Đặt lịch khám? 🗓️" : "Sen ơi, chọn ngày giờ rảnh nha! Hoặc gõ 'Autopilot' để em tự đặt lịch hộ Sen! 🗓️";
@@ -4558,7 +4558,7 @@ export const ChatBot: React.FC = () => {
                         }, 1500);
                     } else {
                         cleanedReplyText = hasExplicitNavigationIntent(textToSend)
-                            ? "Dạ sếp ơi! Phân hệ này là khu vực được bảo mật cao, tài khoản của sếp hiện không đủ quyền truy cập nhé! 🔒"
+                            ? "Dạ! Phân hệ này là khu vực được bảo mật cao, tài khoản hiện tại không đủ quyền truy cập nhé! 🔒"
                             : cleanedReplyText;
                     }
                 }
@@ -4603,7 +4603,7 @@ export const ChatBot: React.FC = () => {
                 });
 
                 // Stream từng ký tự nhanh hơn nhưng vẫn giữ thứ tự trả lời.
-                // TĂNG TỐC GẤP BA: Lấy 3 ký tự mỗi lần lặp thay vì 1 để chữ chạy ra cực kỳ nhanh và mượt mà cho sếp.
+                // TĂNG TỐC GẤP BA: Lấy 3 ký tự mỗi lần lặp thay vì 1 để chữ chạy ra cực kỳ nhanh và mượt mà.
                 let charIdx = 0;
                 const fullText = cleanedReplyText;
                 liveSpeechQueued = queueSpeechBySentence(cleanedReplyText);
@@ -5041,14 +5041,14 @@ export const ChatBot: React.FC = () => {
                 const aiReply = {
                     type: "ai",
                     text: backendWebResults.length > 0
-                        ? `Dạ sếp! Tôi đã tra cứu web và lấy được nguồn thật để đối chiếu. Dưới đây là phân tích kèm nguồn tham khảo:\n\n${replyText}`
-                        : `Dạ sếp! Tôi chưa lấy được nguồn web chi tiết từ backend, nên chỉ gửi link Google dự phòng để sếp tự kiểm chứng thêm. Phần phân tích bên dưới là từ mô hình AI và không coi là nguồn web đã xác thực:\n\n${replyText}`,
+                        ? `Dạ! Tôi đã tra cứu web và lấy được nguồn thật để đối chiếu. Dưới đây là phân tích kèm nguồn tham khảo:\n\n${replyText}`
+                        : `Dạ! Tôi chưa lấy được nguồn web chi tiết từ backend, nên chỉ gửi link Google dự phòng để bạn tự kiểm chứng thêm. Phần phân tích bên dưới là từ mô hình AI và không coi là nguồn web đã xác thực:\n\n${replyText}`,
                     isSearchResult: true,
                     searchResults: results
                 };
 
                 setAgentMessages(prev => [...prev, aiReply]);
-                speakText("Đã hoàn tất tra cứu y học thực tế cho sếp.");
+                speakText("Đã hoàn tất tra cứu y học thực tế.");
                 finishAgentTurn();
                 return;
             }
@@ -5219,7 +5219,7 @@ export const ChatBot: React.FC = () => {
                     const pageName = getPageDisplayName(location.pathname);
                     const aiReply = {
                         type: "ai",
-                        text: `Dạ báo cáo ${isClinicStaff ? `đồng nghiệp ${userRoleName}` : "Sen"}! Tôi đang "mở to mắt" quan sát và biết cực kỳ chính xác là **sếp/bạn đang ở trang: ${pageName}** (đường dẫn: \`${location.pathname}\`) đấy nhé! 😉\n\nRexi Agent luôn có mắt để hỗ trợ sếp thực hiện các tác vụ tự động tại trang này đấy ạ!`
+                        text: `Dạ báo cáo ${isClinicStaff ? `đồng nghiệp ${userRoleName}` : "Sen"}! Tôi đang "mở to mắt" quan sát và biết cực kỳ chính xác là **bạn đang ở trang: ${pageName}** (đường dẫn: \`${location.pathname}\`) đấy nhé! 😉\n\nRexi Agent luôn có mắt để hỗ trợ bạn thực hiện các tác vụ tự động tại trang này đấy ạ!`
                     };
                     setAgentMessages(prev => [...prev, aiReply]);
                     speakText(aiReply.text);
@@ -5446,7 +5446,7 @@ export const ChatBot: React.FC = () => {
                     if (hasPermission) {
                         const aiReply = {
                             type: "ai",
-                            text: `Dạ ${isClinicStaff ? `đồng nghiệp ${userRoleName}` : "Sen"} ơi! Tôi đang kích hoạt chế độ **Autopilot (Lái tự động)** để tự mình mở phân hệ **${matchedRule.label}** trực tiếp trên màn hình cho sếp quan sát nhé! Khởi hành ngay đây! 🚀`
+                            text: `Dạ ${isClinicStaff ? `đồng nghiệp ${userRoleName}` : "Sen"} ơi! Tôi đang kích hoạt chế độ **Autopilot (Lái tự động)** để tự mình mở phân hệ **${matchedRule.label}** trực tiếp trên màn hình cho bạn quan sát nhé! Khởi hành ngay đây! 🚀`
                         };
                         setAgentMessages(prev => [...prev, aiReply]);
                         speakText(aiReply.text);
@@ -5515,7 +5515,7 @@ export const ChatBot: React.FC = () => {
                         return `| ${idx + 1} | **${gio}** | ${khach} (${sdt}) | *${pet}* | ${dv} | ${doc} | ${sttViet} |`;
                     }).join("\n");
 
-                    const replyText = `Dạ báo cáo đồng nghiệp **${userRoleName}**, em vừa kiểm tra nhanh hệ thống và tìm thấy **${data.length} ca khám bệnh** được lên lịch cho ngày hôm nay:\n\n| STT | Giờ | Khách Hàng | Bé Cưng | Dịch Vụ | Bác Sĩ | Trạng Thái |\n| :--- | :--- | :--- | :--- | :--- | :--- | :--- |\n${tableRows}\n\nChúc sếp và các bác sĩ có một ngày làm việc tràn đầy năng lượng và chữa trị thật tốt cho các bé cưng nhé! 🩺🐾`;
+                    const replyText = `Dạ báo cáo đồng nghiệp **${userRoleName}**, em vừa kiểm tra nhanh hệ thống và tìm thấy **${data.length} ca khám bệnh** được lên lịch cho ngày hôm nay:\n\n| STT | Giờ | Khách Hàng | Bé Cưng | Dịch Vụ | Bác Sĩ | Trạng Thái |\n| :--- | :--- | :--- | :--- | :--- | :--- | :--- |\n${tableRows}\n\nChúc đồng nghiệp và các bác sĩ có một ngày làm việc tràn đầy năng lượng và chữa trị thật tốt cho các bé cưng nhé! 🩺🐾`;
 
                     const aiReply = {
                         type: "ai",
@@ -5527,7 +5527,7 @@ export const ChatBot: React.FC = () => {
                 } catch (err) {
                     const aiReply = {
                         type: "ai",
-                        text: `Gặp một chút lỗi kết nối khi tải danh sách lịch khám hôm nay rồi đồng nghiệp ơi. Sếp thử lại sau nhé! 🐾`
+                        text: `Gặp một chút lỗi kết nối khi tải danh sách lịch khám hôm nay rồi đồng nghiệp ơi. Bạn thử lại sau nhé! 🐾`
                     };
                     setAgentMessages(prev => [...prev, aiReply]);
                     finishAgentTurn();
@@ -5541,7 +5541,7 @@ export const ChatBot: React.FC = () => {
                     if (isClinicStaff) {
                         const aiReply = {
                             type: "ai",
-                            text: `Đồng nghiệp ${userRoleName} ơi, tài khoản của bạn là tài khoản quản trị nội bộ phòng khám, không có phân hệ Thú cưng cá nhân và không thể đặt lịch khám cho bản thân.\n\nĐể lập lịch khám hộ khách hàng, sếp vui lòng truy cập phân hệ **Quản lý lịch hẹn** hoặc hướng dẫn khách hàng đăng nhập tài khoản của họ nhé! ❤️`
+                            text: `Đồng nghiệp ${userRoleName} ơi, tài khoản của bạn là tài khoản quản trị nội bộ phòng khám, không có phân hệ Thú cưng cá nhân và không thể đặt lịch khám cho bản thân.\n\nĐể lập lịch khám hộ khách hàng, đồng nghiệp vui lòng truy cập phân hệ **Quản lý lịch hẹn** hoặc hướng dẫn khách hàng đăng nhập tài khoản của họ nhé! ❤️`
                         };
                         setAgentMessages(prev => [...prev, aiReply]);
                         speakText(aiReply.text);
@@ -5668,7 +5668,7 @@ export const ChatBot: React.FC = () => {
                         const choKham = soLich - daHoan;
                         setAgentMessages(prev => [...prev, {
                             type: "ai",
-                            text: `📊 **Báo cáo nhanh ngày ${today}:**\n\n- 📅 **Tổng lịch hẹn hôm nay:** ${soLich} ca\n- ✅ **Đã khám xong:** ${daHoan} ca\n- 🕐 **Còn chờ khám:** ${choKham} ca\n- 💰 **Doanh thu hôm nay:** ${doanhThu}\n\nSếp cần báo cáo chi tiết hơn hãy vào **Báo cáo & Thống kê** nhé! 📈`
+                            text: `📊 **Báo cáo nhanh ngày ${today}:**\n\n- 📅 **Tổng lịch hẹn hôm nay:** ${soLich} ca\n- ✅ **Đã khám xong:** ${daHoan} ca\n- 🕐 **Còn chờ khám:** ${choKham} ca\n- 💰 **Doanh thu hôm nay:** ${doanhThu}\n\nĐồng nghiệp cần báo cáo chi tiết hơn hãy vào **Báo cáo & Thống kê** nhé! 📈`
                         }]);
                     } catch {
                         setAgentMessages(prev => [...prev, { type: "ai", text: "Không thể lấy số liệu thống kê lúc này, thử lại sau nhé đồng nghiệp! 🐾" }]);
@@ -5991,7 +5991,7 @@ export const ChatBot: React.FC = () => {
                             navigate(navigatePath);
                         }, 1500);
                     } else {
-                        cleanedReplyText = "Dạ sếp ơi! Phân hệ này là khu vực được bảo mật cao, tài khoản của sếp hiện không đủ quyền truy cập nhé! 🔒";
+                        cleanedReplyText = "Dạ! Phân hệ này là khu vực được bảo mật cao, tài khoản hiện tại không đủ quyền truy cập nhé! 🔒";
                     }
                 }
             }
@@ -6144,7 +6144,7 @@ export const ChatBot: React.FC = () => {
             
             const bookingMessage = {
                 type: "ai",
-                text: `🎉 **Rexi Agent đã đặt lịch khám bệnh thành công cho bé!**\n\n- **Khách hàng:** ${clientName} (SĐT: ${clientPhone})\n- **Bé cưng:** ${info.petName}\n- **Thời gian:** ${info.time} ngày ${info.date}\n- **Dịch vụ:** ${info.service}\n- **Bác sĩ phụ trách:** ${info.doctorName}\n\nĐể bảo đảm vị trí giữ chỗ cho bé, sếp vui lòng chuyển khoản đặt cọc **50.000 VND** qua mã VietQR thông minh dưới đây nha sếp! ✨🐾\n${depositQrHtml}`,
+                text: `🎉 **Rexi Agent đã đặt lịch khám bệnh thành công cho bé!**\n\n- **Khách hàng:** ${clientName} (SĐT: ${clientPhone})\n- **Bé cưng:** ${info.petName}\n- **Thời gian:** ${info.time} ngày ${info.date}\n- **Dịch vụ:** ${info.service}\n- **Bác sĩ phụ trách:** ${info.doctorName}\n\nĐể bảo đảm vị trí giữ chỗ cho bé, vui lòng chuyển khoản đặt cọc **50.000 VND** qua mã VietQR thông minh dưới đây nha! ✨🐾\n${depositQrHtml}`,
                 isHtml: true
             };
             if (activeTab === 'standard') setMessages(prev => [...prev, bookingMessage]);
@@ -6995,7 +6995,7 @@ export const ChatBot: React.FC = () => {
                                                             PHÁC ĐỒ & ĐƠN THUỐC ĐIỆN TỬ REXI
                                                         </div>
                                                         <div style={{ fontSize: '0.78rem', opacity: 0.9, marginBottom: '12px', lineHeight: 1.5, fontWeight: 600 }}>
-                                                            Hồ sơ y khoa của bé <b>{msg.treatmentData.petName}</b> đã được bác sĩ Rexi thiết lập chuẩn lâm sàng. Sếp tải phiếu điều trị PDF để in ấn hoặc lưu trữ nhé!
+                                                            Hồ sơ y khoa của bé <b>{msg.treatmentData.petName}</b> đã được bác sĩ Rexi thiết lập chuẩn lâm sàng. Vui lòng tải phiếu điều trị PDF để in ấn hoặc lưu trữ nhé!
                                                         </div>
                                                         <button 
                                                             onClick={() => handleDownloadTreatmentPdf(msg.treatmentData)}
@@ -7143,7 +7143,7 @@ export const ChatBot: React.FC = () => {
                                                             PHÁC ĐỒ & ĐƠN THUỐC ĐIỆN TỬ REXI
                                                         </div>
                                                         <div style={{ fontSize: '0.78rem', opacity: 0.9, marginBottom: '12px', lineHeight: 1.5, fontWeight: 600 }}>
-                                                            Hồ sơ y khoa của bé <b>{msg.treatmentData.petName}</b> đã được bác sĩ Rexi thiết lập chuẩn lâm sàng. Sếp tải phiếu điều trị PDF để in ấn hoặc lưu trữ nhé!
+                                                            Hồ sơ y khoa của bé <b>{msg.treatmentData.petName}</b> đã được bác sĩ Rexi thiết lập chuẩn lâm sàng. Vui lòng tải phiếu điều trị PDF để in ấn hoặc lưu trữ nhé!
                                                         </div>
                                                         <button 
                                                             onClick={() => handleDownloadTreatmentPdf(msg.treatmentData)}
