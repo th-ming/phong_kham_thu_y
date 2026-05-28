@@ -12,7 +12,7 @@ const path = require('path');
   try {
     // 1. Chụp ảnh trang đăng nhập thật
     console.log('Truy cập trang đăng nhập...');
-    await page.goto('http://localhost:3005/dang-nhap', { waitUntil: 'networkidle' });
+    await page.goto('http://127.0.0.1:3005/dang-nhap', { waitUntil: 'networkidle' });
     await page.waitForTimeout(2000); // Chờ 2s để animation hoàn tất
     const loginImg = path.join(artifactDir, 'screenshot_login_real.png');
     await page.screenshot({ path: loginImg });
@@ -44,7 +44,7 @@ const path = require('path');
 
     // 4.5. Đăng nhập tài khoản Khách hàng thật để kiểm tra Dashboard và Footer
     console.log('Đăng nhập tài khoản Khách hàng thật...');
-    await page.goto('http://localhost:3005/dang-nhap', { waitUntil: 'networkidle' });
+    await page.goto('http://127.0.0.1:3005/dang-nhap', { waitUntil: 'networkidle' });
     await page.waitForTimeout(1000);
     await page.fill('input[placeholder="Tên đăng nhập"]', '***REMOVED***');
     await page.fill('input[placeholder="Mật khẩu"]', '***REMOVED***-DB_PASSWORD');
@@ -68,7 +68,7 @@ const path = require('path');
 
     // 5. Đăng nhập ADMIN để chụp AISummaryModal thật
     console.log('Trở lại đăng nhập Admin để lấy bệnh án...');
-    await page.goto('http://localhost:3005/dang-nhap', { waitUntil: 'networkidle' });
+    await page.goto('http://127.0.0.1:3005/dang-nhap', { waitUntil: 'networkidle' });
     await page.waitForTimeout(1000);
     await page.fill('input[placeholder="Tên đăng nhập"]', 'admin');
     await page.fill('input[placeholder="Mật khẩu"]', 'admin@rexi.com');
@@ -77,7 +77,7 @@ const path = require('path');
     
     // 6. Vào trang hồ sơ bệnh án
     console.log('Vào trang quản lý hồ sơ bệnh án...');
-    await page.goto('http://localhost:3005/quan-ly/ho-so-benh-an', { waitUntil: 'networkidle' });
+    await page.goto('http://127.0.0.1:3005/quan-ly/ho-so-benh-an', { waitUntil: 'networkidle' });
     await page.waitForTimeout(2000);
 
     // 7. Tìm và kích hoạt nút AI tóm tắt
