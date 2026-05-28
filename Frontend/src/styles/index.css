@@ -1878,18 +1878,6 @@ html {
   }
 }
 
-.service-layout-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 40px;
-  align-items: start;
-}
-@media screen and (max-width: 1024px) {
-  .service-layout-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
 .hero-layout-grid {
   display: grid;
   grid-template-columns: 1.15fr 0.85fr;

@@ -1,4 +1,4 @@
-﻿package com.rexi.pkty.service;
+package com.rexi.pkty.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rexi.pkty.security.RoleAccessPolicy;
@@ -667,7 +667,11 @@ public class AiToolService {
                 result.append("- ").append(stripHtmlEntities(m.group(2))).append(" → ").append(cleanDuckDuckGoUrl(m.group(1))).append("\n");
                 count++;
             }
-            return count > 0 ? result.toString() : "Không tìm thấy kết quả web.";
+            if (count > 0) {
+                result.append("\nQUAN TRỌNG: Hãy tổng hợp các kết quả này thành câu trả lời dễ hiểu, phân tích chi tiết cho người dùng và BẮT BUỘC đính kèm các đường link trên dưới dạng Markdown (ví dụ: [Tên Bài Viết](Link)) ở cuối câu để người dùng có thể bấm trực tiếp vào đọc nhé.");
+                return result.toString();
+            }
+            return "Không tìm thấy kết quả web.";
         } catch (Exception e) {
             return "Lỗi tìm kiếm web: " + e.getMessage();
         }

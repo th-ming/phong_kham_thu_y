@@ -824,18 +824,22 @@ export const ChatBot: React.FC = () => {
                 }
             });
 
-            // 4. Chỉ gửi schema phần tử tương tác cần thao tác, ko gửi toàn bộ text màn hình.
-            const interactiveElements = document.querySelectorAll("[data-ai-id]");
+            // 4. Tự động Tagging & quét toàn bộ phần tử tương tác (Mở rộng cho Autopilot)
+            let autoIdCounter = 1;
+            const interactiveElements = document.querySelectorAll("button, input, select, textarea, [role='button'], [data-ai-id]");
             interactiveElements.forEach((el, idx) => {
-                if (idx > 17) return;
-                const aiId = el.getAttribute("data-ai-id");
-                if (!aiId) return;
+                if (idx > 35) return; // Mở rộng giới hạn lên 35 phần tử
+                let aiId = el.getAttribute("data-ai-id");
+                if (!aiId) {
+                    aiId = el.id || el.getAttribute("name") || `auto-ai-id-${autoIdCounter++}`;
+                    el.setAttribute("data-ai-id", aiId);
+                }
 
                 const tagName = el.tagName.toLowerCase();
                 let label = "";
 
-                if (tagName === "button") {
-                    label = el.textContent?.trim() || "";
+                if (tagName === "button" || el.getAttribute("role") === "button") {
+                    label = el.textContent?.trim().replace(/\s+/g, ' ') || "";
                 } else if (tagName === "input" || tagName === "textarea") {
                     const placeholder = el.getAttribute("placeholder") || "";
                     const name = el.getAttribute("name") || "";
@@ -1838,6 +1842,10 @@ export const ChatBot: React.FC = () => {
     const pendingStandardChatQueueRef = useRef<Array<{
         text: string;
         files: { data: string, type: 'image' | 'video' }[];
+    }>>([]);
+    const activeAgentTurnsRef = useRef(0);
+    const pendingAgentQueueRef = useRef<Array<{
+        text: string;
     }>>([]);
     const pendingSensitiveCommandRef = useRef<string | null>(null);
     const pendingCancelAppointmentRef = useRef<{ id: string; label: string } | null>(null);
@@ -3219,6 +3227,9 @@ export const ChatBot: React.FC = () => {
     };
 
     const isSensitiveAgentCommand = (text: string) => {
+        // Nếu là nhân viên phòng khám hoặc Admin, KHÔNG chặn bằng Regex thô sơ ở FE nữa
+        // Hãy để Backend AI tự động phân tích ngữ cảnh hành động thông minh hơn!
+        if (isClinicStaff) return false;
         if (!isClinicStaff && isCustomerCancelAppointmentCommand(text)) return false;
         return isSensitiveAction(text);
     };
@@ -4014,7 +4025,7 @@ export const ChatBot: React.FC = () => {
 
     const isWebLikeQuery = (text: string) => {
         const normalized = normalizeSearchText(text);
-        return ["google", "len mang", "tra cuu mang", "tim tai lieu", "tim tren web", "tim kiem web", "nguon tham khao", "link nguon", "moi nhat"].some(kw => normalized.includes(kw));
+        return ["google", "len mang", "tra cuu mang", "tim tai lieu", "tim tren web", "tim kiem web", "nguon tham khao", "link nguon", "moi nhat", "gg", "sot", "search", "seach", "serch", "tra gg", "tim gg", "hoi gg", "sot gg"].some(kw => normalized.includes(kw));
     };
 
     const isPersonalPetProfileQuery = (text: string) => {
@@ -4530,17 +4541,46 @@ export const ChatBot: React.FC = () => {
             console.error("Chat API request failed:", err);
             setMessages(prev => [...prev, {
                 type: "ai",
-                text: getApiErrorMessage(err, "Rexi chưa nhận được phản hồi từ hệ thống tư vấn. Tôi chưa thực hiện thao tác nào, bạn thử gửi lại sau vài giây hoặc chọn gợi ý nhanh bên dưới.")
+                text: getApiErrorMessage(err, "Rexi chưa nhận được phản hồi từ hệ thống tư vấn. Tôi chưa thực hiện thao tác nào, bạn thử gửi lại sau vài giây hoặc chọn gợi ý nhanh bên dưới."),
+                isError: true
             }]);
             finishStandardTurn();
         }
     };
 
     // ĐỘC QUYỀN REXI AGENT V2: HÀM XỬ LÝ AGENT VỚI SEARCH & HỒ SƠ ĐỘNG
-    const handleAgentSend = async (textOverride?: string) => {
+    const handleAgentSend = async (textOverride?: string, alreadyDisplayedUserMessage = false, slotAlreadyReserved = false) => {
         let textToSend = textOverride || agentInput;
         if (!textToSend.trim()) return;
-        if (agentLoading) return;
+
+        if (!slotAlreadyReserved && activeAgentTurnsRef.current >= 3) {
+            if (pendingAgentQueueRef.current.length >= 3) {
+                toast.info("Rexi Agent đang xử lý 3 yêu cầu. Vui lòng chờ trong giây lát.");
+                return;
+            }
+            pendingAgentQueueRef.current.push({ text: textToSend });
+            setAgentMessages(prev => [...prev, {
+                type: "user",
+                text: textToSend,
+                isEmergency: detectEmergencyKeywords(textToSend)
+            }]);
+            setAgentInput("");
+            toast.info(`Đã xếp tác vụ vào hàng chờ (${pendingAgentQueueRef.current.length}/3).`);
+            return;
+        }
+
+        const finishAgentTurn = () => {
+            activeAgentTurnsRef.current = Math.max(0, activeAgentTurnsRef.current - 1);
+            while (activeAgentTurnsRef.current < 3 && pendingAgentQueueRef.current.length > 0) {
+                const next = pendingAgentQueueRef.current.shift();
+                if (!next) break;
+                activeAgentTurnsRef.current += 1;
+                setTimeout(() => handleAgentSend(next.text, true, true), 0);
+            }
+            const stillBusy = activeAgentTurnsRef.current > 0 || pendingAgentQueueRef.current.length > 0;
+            agentLoadingRef.current = stillBusy;
+            setAgentLoading(stillBusy);
+        };
 
         const normalizedGreetingQuery = normalizeSearchText(textToSend);
         const isSimpleGreeting = matchesNormalizedIntent(normalizedGreetingQuery, [
@@ -4550,23 +4590,43 @@ export const ChatBot: React.FC = () => {
 
         if (!user) {
             if (isSimpleGreeting) {
-                setAgentMessages(prev => [
-                    ...prev,
-                    { type: "user", text: textToSend },
-                    {
-                        type: "ai",
-                        text: "Dạ, Rexi Agent đây ạ. Tôi có thể hỗ trợ tác vụ như đặt lịch, kiểm tra form, tra cứu lịch trống và hướng dẫn dùng hệ thống. Các thao tác đọc/sửa dữ liệu thật sẽ yêu cầu đăng nhập để bảo mật."
-                    }
-                ]);
-                setAgentInput("");
+                if (!alreadyDisplayedUserMessage) {
+                    setAgentMessages(prev => [
+                        ...prev,
+                        { type: "user", text: textToSend },
+                        {
+                            type: "ai",
+                            text: "Dạ, Rexi Agent đây ạ. Tôi có thể hỗ trợ tác vụ như đặt lịch, kiểm tra form, tra cứu lịch trống và hướng dẫn dùng hệ thống. Các thao tác đọc/sửa dữ liệu thật sẽ yêu cầu đăng nhập để bảo mật."
+                        }
+                    ]);
+                    setAgentInput("");
+                } else {
+                    setAgentMessages(prev => [
+                        ...prev,
+                        {
+                            type: "ai",
+                            text: "Dạ, Rexi Agent đây ạ. Tôi có thể hỗ trợ tác vụ như đặt lịch, kiểm tra form, tra cứu lịch trống và hướng dẫn dùng hệ thống. Các thao tác đọc/sửa dữ liệu thật sẽ yêu cầu đăng nhập để bảo mật."
+                        }
+                    ]);
+                }
+                finishAgentTurn();
                 return;
             } else {
-                setAgentMessages(prev => [...prev, { type: "user", text: textToSend }, {
-                    type: "ai",
-                    text: "Sen ơi, tác vụ này cần Rexi Agent đọc hoặc thao tác dữ liệu thật nên yêu cầu đăng nhập tài khoản bảo mật.",
-                    isLoginPrompt: true
-                }]);
-                setAgentInput("");
+                if (!alreadyDisplayedUserMessage) {
+                    setAgentMessages(prev => [...prev, { type: "user", text: textToSend }, {
+                        type: "ai",
+                        text: "Sen ơi, tác vụ này cần Rexi Agent đọc hoặc thao tác dữ liệu thật nên yêu cầu đăng nhập tài khoản bảo mật.",
+                        isLoginPrompt: true
+                    }]);
+                    setAgentInput("");
+                } else {
+                    setAgentMessages(prev => [...prev, {
+                        type: "ai",
+                        text: "Sen ơi, tác vụ này cần Rexi Agent đọc hoặc thao tác dữ liệu thật nên yêu cầu đăng nhập tài khoản bảo mật.",
+                        isLoginPrompt: true
+                    }]);
+                }
+                finishAgentTurn();
                 return;
             }
         }
@@ -4576,9 +4636,14 @@ export const ChatBot: React.FC = () => {
                 type: "ai",
                 text: buildSelfIdentityAnswer()
             };
-            setAgentMessages(prev => [...prev, { type: "user", text: textToSend }, aiReply]);
-            setAgentInput("");
+            if (!alreadyDisplayedUserMessage) {
+                setAgentMessages(prev => [...prev, { type: "user", text: textToSend }, aiReply]);
+                setAgentInput("");
+            } else {
+                setAgentMessages(prev => [...prev, aiReply]);
+            }
             speakText(aiReply.text);
+            finishAgentTurn();
             return;
         }
 
@@ -4587,9 +4652,14 @@ export const ChatBot: React.FC = () => {
                 type: "ai",
                 text: "Tài khoản khách hàng không được truy vấn hoặc thao tác dữ liệu nội bộ như tài khoản, khách hàng, hóa đơn, bệnh án phòng khám. Sen có thể dùng Agent để đặt lịch, xem trang hồ sơ/hóa đơn của mình hoặc tra cứu tài liệu thú y công khai."
             };
-            setAgentMessages(prev => [...prev, { type: "user", text: textToSend }, aiReply]);
-            setAgentInput("");
+            if (!alreadyDisplayedUserMessage) {
+                setAgentMessages(prev => [...prev, { type: "user", text: textToSend }, aiReply]);
+                setAgentInput("");
+            } else {
+                setAgentMessages(prev => [...prev, aiReply]);
+            }
             speakText(aiReply.text);
+            finishAgentTurn();
             return;
         }
 
@@ -4605,38 +4675,56 @@ export const ChatBot: React.FC = () => {
                         type: "ai",
                         text: `Đã hủy lịch: ${pendingCancel.label}. Sen có thể xem lại tại Lịch sử khám.`
                     };
-                    setAgentMessages(prev => [...prev, { type: "user", text: textToSend }, aiReply]);
-                    setAgentInput("");
+                    if (!alreadyDisplayedUserMessage) {
+                        setAgentMessages(prev => [...prev, { type: "user", text: textToSend }, aiReply]);
+                        setAgentInput("");
+                    } else {
+                        setAgentMessages(prev => [...prev, aiReply]);
+                    }
                     speakText(aiReply.text);
-                    setAgentLoading(false);
+                    finishAgentTurn();
                     return;
                 } catch {
                     const aiReply = {
                         type: "ai",
                         text: "Không hủy được lịch lúc này. Sen thử vào Lịch sử khám và bấm Hủy lịch hẹn trên form."
                     };
-                    setAgentMessages(prev => [...prev, { type: "user", text: textToSend }, aiReply]);
-                    setAgentInput("");
+                    if (!alreadyDisplayedUserMessage) {
+                        setAgentMessages(prev => [...prev, { type: "user", text: textToSend }, aiReply]);
+                        setAgentInput("");
+                    } else {
+                        setAgentMessages(prev => [...prev, aiReply]);
+                    }
                     speakText(aiReply.text);
-                    setAgentLoading(false);
+                    finishAgentTurn();
                     return;
                 }
             }
             if (isCancelCommand(textToSend)) {
                 pendingCancelAppointmentRef.current = null;
                 const aiReply = { type: "ai", text: "Đã bỏ thao tác hủy lịch. Lịch hẹn vẫn giữ nguyên." };
-                setAgentMessages(prev => [...prev, { type: "user", text: textToSend }, aiReply]);
-                setAgentInput("");
+                if (!alreadyDisplayedUserMessage) {
+                    setAgentMessages(prev => [...prev, { type: "user", text: textToSend }, aiReply]);
+                    setAgentInput("");
+                } else {
+                    setAgentMessages(prev => [...prev, aiReply]);
+                }
                 speakText(aiReply.text);
+                finishAgentTurn();
                 return;
             }
             const aiReply = {
                 type: "ai",
                 text: `Tôi đang chờ xác nhận hủy lịch:\n• ${pendingCancel.label}\n\nNói "xác nhận hủy lịch" để hủy, hoặc "hủy" để bỏ.`
             };
-            setAgentMessages(prev => [...prev, { type: "user", text: textToSend }, aiReply]);
-            setAgentInput("");
+            if (!alreadyDisplayedUserMessage) {
+                setAgentMessages(prev => [...prev, { type: "user", text: textToSend }, aiReply]);
+                setAgentInput("");
+            } else {
+                setAgentMessages(prev => [...prev, aiReply]);
+            }
             speakText(aiReply.text);
+            finishAgentTurn();
             return;
         }
 
@@ -4655,9 +4743,14 @@ export const ChatBot: React.FC = () => {
                     type: "ai",
                     text: "Đã hủy lệnh nhạy cảm. Tôi chưa thực hiện thay đổi nào."
                 };
-                setAgentMessages(prev => [...prev, { type: "user", text: textToSend }, aiReply]);
-                setAgentInput("");
+                if (!alreadyDisplayedUserMessage) {
+                    setAgentMessages(prev => [...prev, { type: "user", text: textToSend }, aiReply]);
+                    setAgentInput("");
+                } else {
+                    setAgentMessages(prev => [...prev, aiReply]);
+                }
                 speakText(aiReply.text);
+                finishAgentTurn();
                 return;
             } else if (!isSensitiveAgentCommand(textToSend) || isNavigationOnlyAgentCommand(textToSend)) {
                 pendingSensitiveCommandRef.current = null;
@@ -4666,9 +4759,14 @@ export const ChatBot: React.FC = () => {
                     type: "ai",
                     text: "Tôi đang chờ xác nhận cho lệnh nhạy cảm trước đó. Bạn nói 'xác nhận' để làm tiếp hoặc 'hủy' để bỏ qua."
                 };
-                setAgentMessages(prev => [...prev, { type: "user", text: textToSend }, aiReply]);
-                setAgentInput("");
+                if (!alreadyDisplayedUserMessage) {
+                    setAgentMessages(prev => [...prev, { type: "user", text: textToSend }, aiReply]);
+                    setAgentInput("");
+                } else {
+                    setAgentMessages(prev => [...prev, aiReply]);
+                }
                 speakText(aiReply.text);
+                finishAgentTurn();
                 return;
             }
         } else if (isSensitiveAgentCommand(textToSend) && !isNavigationOnlyAgentCommand(textToSend)) {
@@ -4677,9 +4775,14 @@ export const ChatBot: React.FC = () => {
                 type: "ai",
                 text: `Tôi phát hiện đây là lệnh nhạy cảm: "${textToSend}". Tôi chưa thực hiện. Nếu muốn làm tiếp, hãy nói "xác nhận"; nếu không, nói "hủy".`
             };
-            setAgentMessages(prev => [...prev, { type: "user", text: textToSend }, aiReply]);
-            setAgentInput("");
+            if (!alreadyDisplayedUserMessage) {
+                setAgentMessages(prev => [...prev, { type: "user", text: textToSend }, aiReply]);
+                setAgentInput("");
+            } else {
+                setAgentMessages(prev => [...prev, aiReply]);
+            }
             speakText(aiReply.text);
+            finishAgentTurn();
             return;
         }
 
@@ -4689,8 +4792,14 @@ export const ChatBot: React.FC = () => {
             isEmergency: detectEmergencyKeywords(textToSend)
         };
 
-        setAgentMessages(prev => [...prev, newMsg]);
-        setAgentInput("");
+        if (!alreadyDisplayedUserMessage) {
+            setAgentMessages(prev => [...prev, newMsg]);
+            setAgentInput("");
+        }
+        if (!slotAlreadyReserved) {
+            activeAgentTurnsRef.current += 1;
+        }
+        agentLoadingRef.current = true;
         setAgentLoading(true);
 
         try {
@@ -4713,7 +4822,7 @@ export const ChatBot: React.FC = () => {
                  normalizedAgentQuery.includes("co biet"));
 
         if (await handleLocalAgentPageAction(textForLocalAction, sensitiveConfirmedInThisTurn)) {
-                setAgentLoading(false);
+                finishAgentTurn();
                 return;
             }
 
@@ -4724,7 +4833,7 @@ export const ChatBot: React.FC = () => {
                 };
                 setAgentMessages(prev => [...prev, aiReply]);
                 speakText(aiReply.text);
-                setAgentLoading(false);
+                finishAgentTurn();
                 return;
             }
 
@@ -4737,7 +4846,7 @@ export const ChatBot: React.FC = () => {
                     };
                     setAgentMessages(prev => [...prev, aiReply]);
                     speakText(aiReply.text);
-                    setAgentLoading(false);
+                    finishAgentTurn();
                     return;
                 }
 
@@ -4783,13 +4892,13 @@ export const ChatBot: React.FC = () => {
                     setAgentMessages(prev => [...prev, aiReply]);
                     speakText(aiReply.text);
                 } finally {
-                    setAgentLoading(false);
+                    finishAgentTurn();
                 }
                 return;
             }
 
             // KỸ NĂNG 1: TRA CỨU TÀI LIỆU Y KHOA THÚ Y / TRA CỨU MẠNG CÓ NGUỒN
-            if (shouldUseDirectToolRule && ["lên mạng", "tìm tài liệu", "google", "tra cứu mạng", "tài liệu thú y", "giảm bạch cầu", "bạch cầu"].some(kw => query.includes(kw))) {
+            if (shouldUseDirectToolRule && ["lên mạng", "tìm tài liệu", "google", "tra cứu mạng", "tài liệu thú y", "giảm bạch cầu", "bạch cầu", "gg", "search", "sợt", "seach", "serch", "tìm trên gg"].some(kw => query.includes(kw))) {
                 // Gọi API backend thật để lấy câu trả lời chuyên sâu sinh động của mô hình AI (Gemini/DeepSeek)
                 const response = await axiosInstance.post("/api/chat", [
                     { role: "user", content: textToSend }
@@ -4837,7 +4946,7 @@ export const ChatBot: React.FC = () => {
 
                 setAgentMessages(prev => [...prev, aiReply]);
                 speakText("Đã hoàn tất tra cứu y học thực tế cho sếp.");
-                setAgentLoading(false);
+                finishAgentTurn();
                 return;
             }
 
@@ -4845,7 +4954,7 @@ export const ChatBot: React.FC = () => {
             if (isClinicStaff && shouldUseDirectToolRule && (query.includes("tìm khách hàng") || query.includes("tra cứu khách") || query.includes("danh sách khách"))) {
                 if (!canAgentQueryKhachHang(normalizedRoleCode)) {
                     setAgentMessages(prev => [...prev, { type: "ai", text: agentPermissionDeniedMessage("tra cứu danh sách khách hàng") }]);
-                    setAgentLoading(false);
+                    finishAgentTurn();
                     return;
                 }
                 (async () => {
@@ -4910,7 +5019,7 @@ export const ChatBot: React.FC = () => {
                         setAgentMessages(prev => [...prev, aiReply]);
                         speakText(aiReply.text);
                     } finally {
-                        setAgentLoading(false);
+                        finishAgentTurn();
                     }
                 })();
                 return;
@@ -4920,7 +5029,7 @@ export const ChatBot: React.FC = () => {
             if (isClinicStaff && shouldUseDirectToolRule && (query.includes("lịch hẹn hôm nay") || query.includes("danh sách lịch hẹn") || query.includes("lịch khám hôm nay"))) {
                 if (!canAgentQueryLichHenHomNay(normalizedRoleCode)) {
                     setAgentMessages(prev => [...prev, { type: "ai", text: agentPermissionDeniedMessage("xem lịch hẹn hôm nay") }]);
-                    setAgentLoading(false);
+                    finishAgentTurn();
                     return;
                 }
                 (async () => {
@@ -4960,7 +5069,7 @@ export const ChatBot: React.FC = () => {
                         setAgentMessages(prev => [...prev, aiReply]);
                         speakText(aiReply.text);
                     } finally {
-                        setAgentLoading(false);
+                        finishAgentTurn();
                     }
                 })();
                 return;
@@ -4971,7 +5080,7 @@ export const ChatBot: React.FC = () => {
             if (isClinicStaff && shouldUseDirectToolRule && (query.includes("lọc hóa đơn") || query.includes("tìm hóa đơn") || query.includes("tra cứu hóa đơn"))) {
                 if (!canAgentNavigateHoaDon(normalizedRoleCode)) {
                     setAgentMessages(prev => [...prev, { type: "ai", text: agentPermissionDeniedMessage("tra cứu hóa đơn") }]);
-                    setAgentLoading(false);
+                    finishAgentTurn();
                     return;
                 }
                 setTimeout(() => {
@@ -4990,7 +5099,7 @@ export const ChatBot: React.FC = () => {
                     };
                     setAgentMessages(prev => [...prev, aiReply]);
                     speakText(aiReply.text);
-                    setAgentLoading(false);
+                    finishAgentTurn();
                     
                     setTimeout(() => {
                         navigate(`/quan-ly/hoa-don?search=${encodeURIComponent(searchVal)}&autopilot=true`);
@@ -5011,7 +5120,7 @@ export const ChatBot: React.FC = () => {
                     };
                     setAgentMessages(prev => [...prev, aiReply]);
                     speakText(aiReply.text);
-                    setAgentLoading(false);
+                    finishAgentTurn();
                 }, 1000);
                 return;
             }
@@ -5238,7 +5347,7 @@ export const ChatBot: React.FC = () => {
                         };
                         setAgentMessages(prev => [...prev, aiReply]);
                         speakText(aiReply.text);
-                        setAgentLoading(false);
+                        finishAgentTurn();
                         
                         setTimeout(() => {
                             navigate(matchedRule.path);
@@ -5250,7 +5359,7 @@ export const ChatBot: React.FC = () => {
                         };
                         setAgentMessages(prev => [...prev, aiReply]);
                         speakText(aiReply.text);
-                        setAgentLoading(false);
+                        finishAgentTurn();
                     }
                 }, 1500);
                 return;
@@ -5269,7 +5378,7 @@ export const ChatBot: React.FC = () => {
                         };
                         setAgentMessages(prev => [...prev, aiReply]);
                         speakText(aiReply.text);
-                        setAgentLoading(false);
+                        finishAgentTurn();
                         return;
                     }
 
@@ -5283,7 +5392,7 @@ export const ChatBot: React.FC = () => {
                         };
                         setAgentMessages(prev => [...prev, aiReply]);
                         speakText(aiReply.text);
-                        setAgentLoading(false);
+                        finishAgentTurn();
                         return;
                     }
 
@@ -5311,14 +5420,14 @@ export const ChatBot: React.FC = () => {
                     };
                     setAgentMessages(prev => [...prev, aiReply]);
                     speakText(`Báo cáo đồng nghiệp, em tìm thấy ${data.length} ca khám bệnh được lên lịch cho ngày hôm nay.`);
-                    setAgentLoading(false);
+                    finishAgentTurn();
                 } catch (err) {
                     const aiReply = {
                         type: "ai",
                         text: `Gặp một chút lỗi kết nối khi tải danh sách lịch khám hôm nay rồi đồng nghiệp ơi. Sếp thử lại sau nhé! 🐾`
                     };
                     setAgentMessages(prev => [...prev, aiReply]);
-                    setAgentLoading(false);
+                    finishAgentTurn();
                 }
                 return;
             }
@@ -5333,7 +5442,7 @@ export const ChatBot: React.FC = () => {
                         };
                         setAgentMessages(prev => [...prev, aiReply]);
                         speakText(aiReply.text);
-                        setAgentLoading(false);
+                        finishAgentTurn();
                     } else {
                         // Nếu yêu cầu "trực quan", "autopilot", hoặc "điều khiển" -> Kích hoạt Autopilot chuyển trang điền form trực tiếp trước mắt Sen!
                         if (query.includes("trực quan") || query.includes("autopilot") || query.includes("điều khiển") || query.includes("chuột")) {
@@ -5343,7 +5452,7 @@ export const ChatBot: React.FC = () => {
                             };
                             setAgentMessages(prev => [...prev, aiReply]);
                             speakText(aiReply.text);
-                            setAgentLoading(false);
+                            finishAgentTurn();
                             
                             setTimeout(() => {
                                 navigate("/khach-hang/dat-lich-hen?autopilot=true");
@@ -5360,7 +5469,7 @@ export const ChatBot: React.FC = () => {
                                 doctorName: "Bác sĩ Hoàng Nam (Trưởng khoa khám bệnh)"
                             };
                             handleAutoBook(fakeBooking);
-                            setAgentLoading(false);
+                            finishAgentTurn();
                         }
                     }
                 }, 1500);
@@ -5371,7 +5480,7 @@ export const ChatBot: React.FC = () => {
             if (isClinicStaff && shouldUseDirectToolRule && (query.includes("kho thuốc") || query.includes("tồn kho") || query.includes("còn thuốc") || query.includes("tìm thuốc") || query.includes("kiểm tra thuốc"))) {
                 if (!canAgentQueryKhoThuoc(normalizedRoleCode)) {
                     setAgentMessages(prev => [...prev, { type: "ai", text: agentPermissionDeniedMessage("tra cứu kho thuốc") }]);
-                    setAgentLoading(false);
+                    finishAgentTurn();
                     return;
                 }
                 (async () => {
@@ -5425,7 +5534,7 @@ export const ChatBot: React.FC = () => {
                     } catch {
                         setAgentMessages(prev => [...prev, { type: "ai", text: "Không thể kết nối kho thuốc, kiểm tra backend nhé! 🔒" }]);
                     } finally {
-                        setAgentLoading(false);
+                        finishAgentTurn();
                     }
                 })();
                 return;
@@ -5435,7 +5544,7 @@ export const ChatBot: React.FC = () => {
             if (isClinicStaff && shouldUseDirectToolRule && (query.includes("doanh thu") || query.includes("thống kê nhanh") || query.includes("bao nhiêu lịch") || query.includes("tổng thu") || query.includes("số liệu hôm nay"))) {
                 if (!canAgentQueryDoanhThu(normalizedRoleCode)) {
                     setAgentMessages(prev => [...prev, { type: "ai", text: agentPermissionDeniedMessage("xem doanh thu và thống kê tài chính") }]);
-                    setAgentLoading(false);
+                    finishAgentTurn();
                     return;
                 }
                 (async () => {
@@ -5461,7 +5570,7 @@ export const ChatBot: React.FC = () => {
                     } catch {
                         setAgentMessages(prev => [...prev, { type: "ai", text: "Không thể lấy số liệu thống kê lúc này, thử lại sau nhé đồng nghiệp! 🐾" }]);
                     } finally {
-                        setAgentLoading(false);
+                        finishAgentTurn();
                     }
                 })();
                 return;
@@ -5471,7 +5580,7 @@ export const ChatBot: React.FC = () => {
             if (isClinicStaff && shouldUseDirectToolRule && (query.includes("tìm bé") || query.includes("tìm pet") || query.includes("tìm thú cưng") || query.includes("danh sách thú cưng"))) {
                 if (!canAgentQueryThuCung(normalizedRoleCode)) {
                     setAgentMessages(prev => [...prev, { type: "ai", text: agentPermissionDeniedMessage("tra cứu hồ sơ thú cưng") }]);
-                    setAgentLoading(false);
+                    finishAgentTurn();
                     return;
                 }
                 (async () => {
@@ -5526,7 +5635,7 @@ export const ChatBot: React.FC = () => {
                     } catch {
                         setAgentMessages(prev => [...prev, { type: "ai", text: "Kết nối database bị gián đoạn, thử lại sau nhé! 🔒" }]);
                     } finally {
-                        setAgentLoading(false);
+                        finishAgentTurn();
                     }
                 })();
                 return;
@@ -5536,7 +5645,7 @@ export const ChatBot: React.FC = () => {
             if (isClinicStaff && shouldUseDirectToolRule && (query.includes("sắp hết") || query.includes("hết thuốc") || query.includes("cảnh báo kho") || query.includes("thuốc cần nhập"))) {
                 if (!canAgentQueryKhoThuoc(normalizedRoleCode)) {
                     setAgentMessages(prev => [...prev, { type: "ai", text: agentPermissionDeniedMessage("xem cảnh báo kho thuốc") }]);
-                    setAgentLoading(false);
+                    finishAgentTurn();
                     return;
                 }
                 (async () => {
@@ -5572,7 +5681,7 @@ export const ChatBot: React.FC = () => {
                     } catch {
                         setAgentMessages(prev => [...prev, { type: "ai", text: "Không kết nối được kho thuốc, thử lại sau nhé! 🔒" }]);
                     } finally {
-                        setAgentLoading(false);
+                        finishAgentTurn();
                     }
                 })();
                 return;
@@ -5582,7 +5691,7 @@ export const ChatBot: React.FC = () => {
             if (isClinicStaff && shouldUseDirectToolRule && (query.includes("bệnh án") || query.includes("ca khám") || query.includes("khám gần đây") || query.includes("lịch sử khám"))) {
                 if (!canAgentQueryBenhAn(normalizedRoleCode)) {
                     setAgentMessages(prev => [...prev, { type: "ai", text: agentPermissionDeniedMessage("tra cứu bệnh án") }]);
-                    setAgentLoading(false);
+                    finishAgentTurn();
                     return;
                 }
                 (async () => {
@@ -5637,7 +5746,7 @@ export const ChatBot: React.FC = () => {
                     } catch {
                         setAgentMessages(prev => [...prev, { type: "ai", text: "Không lấy được bệnh án lúc này, thử lại sau nhé! 🔒" }]);
                     } finally {
-                        setAgentLoading(false);
+                        finishAgentTurn();
                     }
                 })();
                 return;
@@ -5664,13 +5773,13 @@ export const ChatBot: React.FC = () => {
             const isMarketingCampaign = isMarketingCampaignIntent(textToSend);
 
             let response;
-            if (isClinicStaff && shouldUseDirectToolRule && isMarketingCampaign) {
+            if (isClinicStaff && isMarketingCampaign) {
                 if (!canAgentUseMarketingSwarm(normalizedRoleCode)) {
                     setAgentMessages(prev => [...prev, {
                         type: "ai",
                         text: agentPermissionDeniedMessage("chạy chiến dịch marketing Swarm")
                     }]);
-                    setAgentLoading(false);
+                    finishAgentTurn();
                     return;
                 }
                 response = await axiosInstance.post("/api/agent/swarm-orchestration", { query: textToSend });
@@ -5769,18 +5878,17 @@ export const ChatBot: React.FC = () => {
                     const navigatePath = navMatch[1].trim();
                     cleanedReplyText = cleanedReplyText.replace(/\[NAVIGATE:[^\]]+\]/g, "").trim();
                     
-                    const hasPermission = hasExplicitNavigationIntent(textToSend) && (navigatePath.startsWith("/quan-ly/")
+                    // Cho phép AI tự do điều hướng dựa trên Sitemap, chỉ cần check quyền
+                    const hasPermission = navigatePath.startsWith("/quan-ly/")
                         ? canAccessAdminPath(normalizedRoleCode, navigatePath)
-                        : true);
+                        : true;
                     
                     if (hasPermission) {
                         setTimeout(() => {
                             navigate(navigatePath);
                         }, 1500);
                     } else {
-                        cleanedReplyText = hasExplicitNavigationIntent(textToSend)
-                            ? "Dạ sếp ơi! Phân hệ này là khu vực được bảo mật cao, tài khoản của sếp hiện không đủ quyền truy cập nhé! 🔒"
-                            : cleanedReplyText;
+                        cleanedReplyText = "Dạ sếp ơi! Phân hệ này là khu vực được bảo mật cao, tài khoản của sếp hiện không đủ quyền truy cập nhé! 🔒";
                     }
                 }
             }
@@ -5822,10 +5930,11 @@ export const ChatBot: React.FC = () => {
             console.error("Agent API request failed:", err);
             setAgentMessages(prev => [...prev, {
                 type: "ai",
-                text: getApiErrorMessage(err, "Rexi Agent chưa chạy được tác vụ này. Tôi chưa thực hiện thay đổi nào trên hệ thống.")
+                text: getApiErrorMessage(err, "Rexi Agent chưa chạy được tác vụ này. Tôi chưa thực hiện thay đổi nào trên hệ thống."),
+                isError: true
             }]);
         } finally {
-            setAgentLoading(false);
+            finishAgentTurn();
         }
     };
 
@@ -6128,7 +6237,7 @@ export const ChatBot: React.FC = () => {
     const isClinicalUser = normalizedRoleCode === "bac_si" || normalizedRoleCode === "y_ta";
 
     const getClinicalBadge = (msg: any) => {
-        if (!msg || msg.type !== "ai") return null;
+        if (!msg || msg.type !== "ai" || msg.isError) return null;
         const text = String(msg.text || "");
         const normalized = normalizeSearchText(text);
         const hasMedicalSignal = [

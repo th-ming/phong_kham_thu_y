@@ -207,16 +207,16 @@ const DangNhapDangKy: React.FC = () => {
           position: relative;
           z-index: 10;
           display: grid;
-          grid-template-columns: 1.1fr 1.2fr; // Tăng tỷ lệ cho phần form
+          grid-template-columns: 1.1fr 1.2fr; /* Tăng tỷ lệ cho phần form */
           width: 100%;
-          max-width: 1150px; // Nới rộng card
+          max-width: 1150px; /* Nới rộng card */
           margin: auto;
           border: 1px solid var(--gray-200);
         }
 
         .auth-sidebar {
           background: #0d9488 !important;
-          padding: 40px; // Thu nhỏ padding sidebar
+          padding: 40px; /* Thu nhỏ padding sidebar */
           color: white !important;
           position: relative;
           display: flex;

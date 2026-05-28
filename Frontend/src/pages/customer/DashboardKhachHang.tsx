@@ -23,6 +23,12 @@ const PET_CARE_TIPS = [
 
 const isPetActive = (pet: any) => pet?.da_xoa !== true && pet?.daXoa !== true;
 const AUTO_REFRESH_MS = 10_000;
+const hasValidBirthYear = (value: any) => {
+  if (value === undefined || value === null || value === "") return false;
+  const year = Number(value);
+  const currentYear = new Date().getFullYear();
+  return Number.isInteger(year) && year >= 1900 && year <= currentYear;
+};
 
 const DashboardKhachHang: React.FC = () => {
   const navigate = useNavigate();
@@ -40,7 +46,7 @@ const DashboardKhachHang: React.FC = () => {
   // Các state cho Modal hỏi năm sinh tự động kích hoạt
   const [showAgeModal, setShowAgeModal] = useState(() => {
     const cachedUser = getUserProfile();
-    return !cachedUser?.nam_sinh;
+    return !hasValidBirthYear(cachedUser?.nam_sinh);
   });
   const [inputNamSinh, setInputNamSinh] = useState("");
   const [savingAge, setSavingAge] = useState(false);
@@ -93,6 +99,13 @@ const DashboardKhachHang: React.FC = () => {
   const userName = user?.display_name || user?.displayName || user?.ho_ten || user?.hoTen || user?.fullName || user?.ten_khach_hang || user?.ten_dang_nhap || user?.username || "Sen";
   const userAvatar = user?.hinh_anh || user?.avatar || "";
   const userInitial = String(userName).replace(/^\d+\.\s*/, '').trim().charAt(0).toUpperCase() || "S";
+
+  React.useEffect(() => {
+    // Khi profile đã có năm sinh hợp lệ (VD đồng bộ từ backend), tắt popup vĩnh viễn ở phiên hiện tại.
+    if (hasValidBirthYear(user?.nam_sinh)) {
+      setShowAgeModal(false);
+    }
+  }, [user?.nam_sinh]);
 
   // Bẫy nghiệp vụ phân loại KHACH_HANG: Cắt mốc từ 1997 trở đi gán cứng là GENZ.
   // Quyết định này giúp đổi banner động dới chatbot Rexi nhây nhây siêu bựa.

@@ -823,7 +823,8 @@ ChatMessage systemMsg = new ChatMessage();
                 || normalized.contains("tim kiem web")
                 || normalized.contains("nguon tham khao")
                 || normalized.contains("link nguon")
-                || normalized.contains("moi nhat");
+                || normalized.contains("moi nhat")
+                || normalized.matches(".*\\b(gg|gugol|gut go|sot|search|seach|serch|tra gg|hoi gg|len gg|tim gg|sot gg)\\b.*");
     }
 
     private String buildWebSearchContext(String query, List<Map<String, String>> results) {
@@ -844,6 +845,7 @@ ChatMessage systemMsg = new ChatMessage();
                     .append(item.getOrDefault("snippet", ""))
                     .append("\n");
         }
+        sb.append("\nQUAN TRỌNG: Khi trả lời, bạn BẮT BUỘC phải đính kèm các link ở trên dưới dạng thẻ Markdown thân thiện (VD: [Tên Trang](URL)) vào cuối phần tư vấn để người dùng có thể bấm trực tiếp vào xem luôn.\n");
         return sb.toString();
     }
 

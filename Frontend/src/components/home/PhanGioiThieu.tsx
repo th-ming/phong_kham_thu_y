@@ -122,16 +122,16 @@ const PhanGioiThieu: React.FC = () => {
                         100% { opacity: 0; filter: blur(10px); transform: scale(0.95); }
                     }
                     
-                    // HIỆU ỨNG PHÁT SÁNG CHO CHỮ TRÊN BANNER (DARK MODE) - LÀM SẮC NÉT HƠN
+                    /* HIỆU ỨNG PHÁT SÁNG CHO CHỮ TRÊN BANNER (DARK MODE) - LÀM SẮC NÉT HƠN */
                     [data-theme='dark'] .hero-title {
-                        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6); // Đổ bóng tối sắc nét, tăng độ tương phản và chống mỏi mắt
+                        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6); /* Đổ bóng tối sắc nét, tăng độ tương phản và chống mỏi mắt */
                     }
                     [data-theme='dark'] .hero-light-effect {
-                        mix-blend-mode: soft-light; // Chuyển sang soft-light để bớt bị nhòe màu
+                        mix-blend-mode: soft-light; /* Chuyển sang soft-light để bớt bị nhòe màu */
                         opacity: 0.8;
                     }
                     [data-theme='dark'] .floating-glass-card {
-                        background: rgba(15, 23, 42, 0.92) !important; // Đậm hơn để nổi bật
+                        background: rgba(15, 23, 42, 0.92) !important; /* Đậm hơn để nổi bật */
                         border-color: rgba(45, 212, 191, 0.5) !important;
                         box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5) !important;
                     }

@@ -249,7 +249,7 @@ const PhanDoiTac: React.FC = () => {
                     filter: contrast(1.15) saturate(1.2);
                 }
                 [data-theme='dark'] .partner-card-new:hover .partner-logo-img {
-                    animation: none; // Tắt nhịp thở khi rê chuột vào để ánh sáng giữ mức rực rỡ nhất
+                    animation: none; /* Tắt nhịp thở khi rê chuột vào để ánh sáng giữ mức rực rỡ nhất */
                     filter: url(#smart-knockout) brightness(1.7) drop-shadow(0 0 32px color-mix(in srgb, var(--partner-accent) 100%, transparent));
                     opacity: 1;
                     transform: scale(1.08);

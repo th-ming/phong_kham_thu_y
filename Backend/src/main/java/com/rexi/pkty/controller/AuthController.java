@@ -154,28 +154,28 @@ public class AuthController {
             String tenVaiTro = "Khách hàng";
 
             if (idVaiTro != null) {
-                if (idVaiTro.equals("VT-1") || idVaiTro.contains("ADMIN")) {
+                if (idVaiTro.equals("VT-1") || idVaiTro.contains("ADMIN") || idVaiTro.equals("1")) {
                     loaiTaiKhoan = "ADMIN";
                     tenVaiTro = "Quản trị";
-                } else if (idVaiTro.equals("VT-6") || idVaiTro.contains("QL")) {
+                } else if (idVaiTro.equals("VT-6") || idVaiTro.contains("QL") || idVaiTro.equals("6")) {
                     loaiTaiKhoan = "QUAN_LY";
                     tenVaiTro = "Quản lý";
-                } else if (idVaiTro.equals("VT-2") || idVaiTro.contains("BS")) {
+                } else if (idVaiTro.equals("VT-2") || idVaiTro.contains("BS") || idVaiTro.equals("2")) {
                     loaiTaiKhoan = "BAC_SI";
                     tenVaiTro = "Bác sĩ";
-                } else if (idVaiTro.equals("VT-4") || idVaiTro.contains("KT")) {
+                } else if (idVaiTro.equals("VT-4") || idVaiTro.contains("KT") || idVaiTro.equals("4")) {
                     loaiTaiKhoan = "KE_TOAN";
                     tenVaiTro = "Kế toán";
-                } else if (idVaiTro.equals("VT-7") || idVaiTro.contains("TT")) {
+                } else if (idVaiTro.equals("VT-7") || idVaiTro.contains("TT") || idVaiTro.equals("7")) {
                     loaiTaiKhoan = "TIEP_TAN";
                     tenVaiTro = "Tiếp tân";
-                } else if (idVaiTro.equals("VT-8") || idVaiTro.contains("YT")) {
+                } else if (idVaiTro.equals("VT-8") || idVaiTro.contains("YT") || idVaiTro.equals("8")) {
                     loaiTaiKhoan = "Y_TA";
                     tenVaiTro = "Y tá";
-                } else if (idVaiTro.equals("VT-3") || idVaiTro.contains("NV")) {
+                } else if (idVaiTro.equals("VT-3") || idVaiTro.contains("NV") || idVaiTro.equals("3")) {
                     loaiTaiKhoan = "STAFF";
                     tenVaiTro = "Nhân viên";
-                } else if (idVaiTro.equals("VT-5")) {
+                } else if (idVaiTro.equals("VT-5") || idVaiTro.equals("5")) {
                     loaiTaiKhoan = "CUSTOMER";
                     tenVaiTro = "Khách hàng";
                 }
@@ -188,7 +188,13 @@ public class AuthController {
             userData.put("loai_tai_khoan", loaiTaiKhoan);
             userData.put("ten_vai_tro", tenVaiTro);
 
-            if (!"CUSTOMER".equals(loaiTaiKhoan)) {
+            if ("ADMIN".equals(loaiTaiKhoan)) {
+                // Tự động gán thông tin hệ thống cho Admin tối cao
+                displayName = "Admin Rexi System";
+                userData.put("ho_ten", displayName);
+                userData.put("id_nhan_vien", null);
+                userData.put("avatar", "https://api.dicebear.com/7.x/avataaars/svg?seed=Admin&backgroundColor=0f9d8a");
+            } else if (!"CUSTOMER".equals(loaiTaiKhoan)) {
                 String idNv = tk.getId_nhan_vien();
                 userData.put("id_nhan_vien", idNv);
                 try {
