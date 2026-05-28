@@ -1,7 +1,7 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axiosInstance from "@services/axios";
-import { Modal } from "@components/CommonUI";
+import { Modal, Skeleton } from "@components/CommonUI";
 import { getUserProfile } from "@utils/index";
 import { useAutoRefresh } from "@hooks/useAutoRefresh";
 import { toast } from "@components/Toast";
@@ -348,7 +348,84 @@ const DashboardKhachHang: React.FC = () => {
     ];
   }, [pets, petRowsForTrend, upcoming, allAppointments, hoanTat, paidInvoices, totalSpent]);
 
-  if (loading) return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}><div className="dot-pulse"></div></div>;
+  if (loading) {
+    return (
+      <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+        {/* Khung xương Header */}
+        <div style={{ padding: '48px', borderRadius: 'var(--radius-xl)', background: 'var(--secondary-gradient)', color: 'white', opacity: 0.15, display: 'flex', alignItems: 'center', gap: '24px' }}>
+          <Skeleton width="88px" height="88px" borderRadius="50%" />
+          <div style={{ flex: 1 }}>
+            <Skeleton width="400px" height="40px" borderRadius="12px" style={{ marginBottom: '12px' }} />
+            <Skeleton width="600px" height="20px" borderRadius="8px" />
+          </div>
+        </div>
+
+        {/* Khung xương KPIs (4 cột) */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '32px' }}>
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="glass-card" style={{ padding: '32px', borderRadius: '32px', border: '1px solid var(--gray-100)', minHeight: '190px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Skeleton width="60px" height="60px" borderRadius="20px" />
+                <Skeleton width="80px" height="28px" borderRadius="50px" />
+              </div>
+              <div>
+                <Skeleton width="100px" height="16px" borderRadius="6px" style={{ marginBottom: '8px' }} />
+                <Skeleton width="180px" height="32px" borderRadius="8px" />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Khung xương Grid dưới */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '32px' }}>
+          {/* Cột trái: Lịch hẹn sắp tới */}
+          <div className="glass-card" style={{ padding: '32px', borderRadius: 'var(--radius-xl)', border: '1px solid var(--gray-100)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+              <Skeleton width="200px" height="24px" borderRadius="8px" />
+              <Skeleton width="120px" height="36px" borderRadius="50px" />
+            </div>
+            <div style={{ display: 'grid', gap: '16px' }}>
+              {[1, 2].map((i) => (
+                <div key={i} style={{ padding: '20px', borderRadius: '20px', border: '1px solid var(--gray-100)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <Skeleton width="48px" height="48px" borderRadius="12px" />
+                    <div>
+                      <Skeleton width="150px" height="18px" borderRadius="6px" style={{ marginBottom: '6px' }} />
+                      <Skeleton width="100px" height="14px" borderRadius="4px" />
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
+                    <Skeleton width="80px" height="16px" borderRadius="4px" />
+                    <Skeleton width="50px" height="14px" borderRadius="4px" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Cột phải: Mẹo & Hỗ trợ */}
+          <div style={{ display: 'grid', gap: '32px' }}>
+            <div className="glass-card" style={{ padding: '48px', borderRadius: '40px', background: 'var(--primary-light)', border: '1px solid var(--primary-light)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '220px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <Skeleton width="32px" height="32px" borderRadius="50%" />
+                <Skeleton width="150px" height="24px" borderRadius="6px" />
+              </div>
+              <Skeleton width="100%" height="60px" borderRadius="12px" />
+              <Skeleton width="100%" height="48px" borderRadius="50px" />
+            </div>
+
+            <div className="glass-card" style={{ padding: '32px', borderRadius: 'var(--radius-xl)', border: '1px solid var(--gray-100)', display: 'flex', alignItems: 'center', gap: '20px' }}>
+              <Skeleton width="56px" height="56px" borderRadius="16px" />
+              <div>
+                <Skeleton width="120px" height="20px" borderRadius="6px" style={{ marginBottom: '6px' }} />
+                <Skeleton width="220px" height="16px" borderRadius="4px" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="animate-fade-in">
