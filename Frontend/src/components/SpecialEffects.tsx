@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Lottie from "lottie-react";
 
 // Bộ nhớ đệm toàn cục (Global Cache) để lưu trữ dữ liệu JSON Lottie trên RAM, tránh tải lại nhiều lần
@@ -538,12 +538,25 @@ export const TransparentVideo: React.FC<{ src: string, style?: React.CSSProperti
       if (video.paused || video.ended) { animationFrameId = requestAnimationFrame(processFrame); return; }
 
       if (video.videoWidth > 0) {
-        canvas.width = Math.min(video.videoWidth, 1024);
-        canvas.height = (video.videoHeight / video.videoWidth) * canvas.width;
+        // TĂNG MẬT ĐỘ ĐIỂM ẢNH: Nhân hệ số DPI màn hình (DPR) cho Canvas siêu nét.
+        // Hạn chế scale tối đa 1.3 để bảo vệ tài nguyên CPU/RAM của hệ thống.
+        const dpr = window.devicePixelRatio || 1;
+        const scale = Math.min(Math.max(dpr, 1.2), 1.3);
+
+        const baseWidth = Math.min(video.videoWidth, 1024);
+        const baseHeight = (video.videoHeight / video.videoWidth) * baseWidth;
+
+        canvas.width = Math.round(baseWidth * scale);
+        canvas.height = Math.round(baseHeight * scale);
+
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         const frame = ctx.getImageData(0, 0, canvas.width, canvas.height);
         const data = frame.data;
+
+        // CẤU HÌNH NGƯỠNG CHROMA KEY MƯỢT MÀ (ANTI-ALIASING FRINGES)
+        const minDiff = 5;   // Ngưỡng bắt đầu làm mờ rìa xanh lá
+        const maxDiff = 17;  // Ngưỡng trong suốt hoàn toàn phông nền
 
         for (let i = 0; i < data.length; i += 4) {
           const r = data[i], g = data[i + 1], b = data[i + 2];
@@ -562,7 +575,7 @@ export const TransparentVideo: React.FC<{ src: string, style?: React.CSSProperti
               data[i + 3] = 0; 
               continue;
             } else if (r < 45 && g < 45 && b < 45 && luma < 40) {
-              // Khử viền đen mượt mà (Anti-aliasing fringes)
+              // Khử viền đen mượt mà
               data[i + 3] = Math.max(0, 255 * ((luma - 20) / 20)); 
               continue;
             }
@@ -572,9 +585,18 @@ export const TransparentVideo: React.FC<{ src: string, style?: React.CSSProperti
           // XỬ LÝ ĐẶC BIỆT CHO CHỮ TRÊN CHẾ ĐỘ TỐI (LÀM TRẮNG CHỮ)
           if (isDark && isTextArea && diff < 15 && luma < 240) {
             data[i] = 255; data[i + 1] = 255; data[i + 2] = 255; data[i + 3] = 255;
-          } else if (diff > 20) { data[i + 3] = 0; }
-          else if (diff > 5) { data[i + 3] = Math.max(0, 255 * (1 - (diff - 5) / 15)); data[i + 1] = maxRB * 0.7; }
-          else if (g > maxRB) data[i + 1] = maxRB;
+          } else if (diff > maxDiff) {
+            data[i + 3] = 0; // Trong suốt hoàn toàn phông xanh
+          } else if (diff > minDiff) {
+            // SMOOTH CHROMA KEY: Nội suy tuyến tính để làm mịn viền răng cưa (lông mèo, tay vẫy)
+            const ratio = (diff - minDiff) / (maxDiff - minDiff);
+            data[i + 3] = Math.round(255 * (1 - ratio));
+            // SPILL_SUPPRESSION: Khử viền xanh ám ở phần rìa giao nhau
+            data[i + 1] = Math.round(maxRB * 0.78);
+          } else if (g > maxRB) {
+            // Khử sắc xanh lá nhẹ phản chiếu vào lông mèo cho màu sắc tự nhiên
+            data[i + 1] = Math.round(maxRB * 0.88);
+          }
         }
         ctx.putImageData(frame, 0, 0);
       }

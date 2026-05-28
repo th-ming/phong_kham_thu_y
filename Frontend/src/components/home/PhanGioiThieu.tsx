@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { RevealSection, LottiePlayer, Typewriter, TransparentVideo } from "@components/SpecialEffects";
 import { useCountUp } from "@hooks/useCountUp";
@@ -224,11 +224,7 @@ const PhanGioiThieu: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* ảnh video banner */}
                         <div className="hero-image-container">
-                            {/* ========================================================================= */}
-                            {/* ĐÂY LÀ THẺ "TẬN TÂM 24/7 - CẤP CỨU KỊP THỜI" HIỂN THỊ NỔI TRÊN BANNER */}
-                            {/* ========================================================================= */}
                             <div className="glass-card floating-glass-card" style={{
                                 position: 'absolute',
                                 bottom: '20px',
@@ -253,7 +249,6 @@ const PhanGioiThieu: React.FC = () => {
                                 </div>
                             </div>
 
-                            {/* khung chứa vật nuôi trong suốt */}
                             <div style={{ position: "relative", width: "100%", height: "100%", overflow: "visible" }}>
                                 <div style={{
                                     position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
@@ -267,7 +262,10 @@ const PhanGioiThieu: React.FC = () => {
                                             width: '170%', height: '170%', objectFit: 'contain',
                                             position: 'absolute', bottom: '-3%', left: '50%', transform: 'translateX(-50%)',
                                             objectPosition: 'center',
-                                            filter: 'contrast(1.1) saturate(1.05)'
+                                            imageRendering: '-webkit-optimize-contrast' as any,
+                                            filter: isDark 
+                                                ? 'contrast(1.08) saturate(1.08) drop-shadow(0 18px 36px rgba(0, 0, 0, 0.55)) drop-shadow(0 4px 14px rgba(45, 212, 191, 0.22))' 
+                                                : 'contrast(1.05) saturate(1.05) drop-shadow(0 15px 30px rgba(0, 0, 0, 0.16))'
                                         }} 
                                     />
                                 </div>
@@ -284,7 +282,10 @@ const PhanGioiThieu: React.FC = () => {
                                             width: '170%', height: '170%', objectFit: 'contain',
                                             position: 'absolute', bottom: '-3%', left: '50%', transform: 'translateX(-50%)',
                                             objectPosition: 'center',
-                                            filter: 'contrast(1.1) saturate(1.05)'
+                                            imageRendering: '-webkit-optimize-contrast' as any,
+                                            filter: isDark 
+                                                ? 'contrast(1.08) saturate(1.08) drop-shadow(0 18px 36px rgba(0, 0, 0, 0.55)) drop-shadow(0 4px 14px rgba(45, 212, 191, 0.22))' 
+                                                : 'contrast(1.05) saturate(1.05) drop-shadow(0 15px 30px rgba(0, 0, 0, 0.16))'
                                         }} 
                                     />
                                 </div>
