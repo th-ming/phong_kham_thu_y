@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axiosInstance from "@services/axios";
 import { normalizeUserRole } from "@utils/index";
@@ -31,6 +31,14 @@ const DangNhapDangKy: React.FC = () => {
     }
   }, []);
 
+  const [step, setStep] = useState(1);
+
+  const handlePhoneChange = (val: string) => {
+    // Bắt buộc SĐT chỉ chứa chữ số để an toàn nghiệp vụ
+    const numericValue = val.replace(/[^0-9]/g, "");
+    setPhone(numericValue);
+  };
+
   useEffect(() => {
     // Cập nhật title trang để tốt cho SEO theo ngữ cảnh
     document.title = isLogin
@@ -44,7 +52,7 @@ const DangNhapDangKy: React.FC = () => {
       document.head.appendChild(metaDesc);
     }
     (metaDesc as HTMLMetaElement).content = isLogin
-      ? 'Dăng nhập vào tài khoản Rexi để quản lý sức khỏe thú cưng và đặt lịch khám trực tuyến.'
+      ? 'Đăng nhập vào tài khoản Rexi để quản lý sức khỏe thú cưng và đặt lịch khám trực tuyến.'
       : 'Đăng ký tài khoản Rexi – Hệ thống quản lý sức khỏe thú cưng chuyên nghiệp.';
     const savedUsername = localStorage.getItem("rememberedUsername");
     if (savedUsername && !username) {
@@ -122,6 +130,33 @@ const DangNhapDangKy: React.FC = () => {
     }
   };
 
+  const handleNextStep = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setError("");
+    if (!fullname || !email || !phone || !address) {
+      setError("Vui lòng nhập đầy đủ các trường thông tin cá nhân!");
+      return;
+    }
+    // Validate email đơn giản
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError("Định dạng Email không hợp lệ!");
+      return;
+    }
+    // Validate độ dài SĐT tối thiểu
+    if (phone.length < 9) {
+      setError("Số điện thoại không hợp lệ (tối thiểu 9 chữ số)!");
+      return;
+    }
+    setStep(2);
+  };
+
+  const handlePrevStep = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setError("");
+    setStep(1);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -129,6 +164,25 @@ const DangNhapDangKy: React.FC = () => {
     setSuccess("");
 
     if (!isLogin) {
+      if (step === 1) {
+        // Nếu người dùng nhấn Enter và tự động submit khi đang ở bước 1
+        if (!fullname || !email || !phone || !address) {
+          setError("Vui lòng nhập đầy đủ các trường thông tin cá nhân!");
+          setLoading(false);
+          return;
+        }
+        setStep(2);
+        setLoading(false);
+        return;
+      }
+
+      // Xác thực bước 2
+      if (!username || !password || !confirmPassword) {
+        setError("Vui lòng điền đầy đủ thông tin tài khoản đăng nhập!");
+        setLoading(false);
+        return;
+      }
+
       if (!isValidPassword(password)) {
         setError(PASSWORD_POLICY_MESSAGE);
         setLoading(false);
@@ -165,6 +219,7 @@ const DangNhapDangKy: React.FC = () => {
         }
       } else if (!isLogin) {
         setIsLogin(true);
+        setStep(1);
         setConfirmPassword("");
         setSuccess("Đăng ký thành công! Tài khoản và mật khẩu đã được điền sẵn, bạn chỉ cần đăng nhập để tiếp tục.");
       }
@@ -365,10 +420,104 @@ const DangNhapDangKy: React.FC = () => {
         .blob-1 { top: -150px; left: -150px; background: #0d9488; }
         .blob-2 { bottom: -150px; right: -150px; background: #14b8a6; }
 
+        /* Wizard UI styles */
+        .progress-container {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          position: relative;
+          margin-bottom: 40px;
+          padding: 0 40px;
+        }
+        .progress-bar-bg {
+          position: absolute;
+          top: 50%;
+          left: 40px;
+          right: 40px;
+          height: 4px;
+          background: var(--gray-200);
+          z-index: 1;
+          transform: translateY(-50%);
+          border-radius: 2px;
+        }
+        .progress-bar-fill {
+          position: absolute;
+          top: 50%;
+          left: 40px;
+          height: 4px;
+          background: #0d9488;
+          z-index: 2;
+          transform: translateY(-50%);
+          transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+          border-radius: 2px;
+        }
+        .step-dot {
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          background: var(--surface);
+          border: 2px solid var(--gray-300);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 3;
+          font-weight: 800;
+          color: var(--gray-500);
+          transition: all 0.3s ease;
+        }
+        .step-dot.active {
+          border-color: #0d9488;
+          background: #0d9488;
+          color: white;
+          box-shadow: 0 0 12px rgba(13, 148, 136, 0.4);
+        }
+        .step-label {
+          position: absolute;
+          top: 38px;
+          font-size: 0.75rem;
+          font-weight: 800;
+          color: var(--gray-500);
+          white-space: nowrap;
+          transition: color 0.3s ease;
+        }
+        .step-label.active {
+          color: #0d9488;
+        }
+        @keyframes slideIn {
+          from {
+            opacity: 0;
+            transform: translateY(12px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-slide-in {
+          animation: slideIn 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        [data-theme='dark'] .progress-bar-bg {
+          background: #334155 !important;
+        }
+        [data-theme='dark'] .step-dot {
+          background: #1e293b !important;
+          border-color: #475569 !important;
+          color: #94a3b8 !important;
+        }
+        [data-theme='dark'] .step-dot.active {
+          background: #0d9488 !important;
+          border-color: #0d9488 !important;
+          color: white !important;
+        }
+
         @media (max-width: 900px) {
           .auth-card { grid-template-columns: 1fr; }
           .auth-sidebar { display: none; }
           .auth-form-panel { padding: 36px 24px; }
+          .progress-container { padding: 0 20px; }
+          .progress-bar-bg { left: 20px; right: 20px; }
+          .progress-bar-fill { left: 20px; }
         }
       `}</style>
 
@@ -410,47 +559,84 @@ const DangNhapDangKy: React.FC = () => {
           </div>
 
           <div className="auth-form-panel">
-            <div style={{ marginBottom: '40px' }}>
+            <div style={{ marginBottom: '30px' }}>
               <h3 className="auth-title">{isLogin ? 'Chào mừng trở lại!' : 'Tham gia cùng Rexi'}</h3>
-              <p style={{ color: 'var(--gray-500)', fontWeight: 600, marginTop: '8px' }}>Vui lòng nhập thông tin tài khoản</p>
+              <p style={{ color: 'var(--gray-500)', fontWeight: 600, marginTop: '8px' }}>
+                {isLogin ? 'Vui lòng nhập thông tin tài khoản' : `Bước ${step}: ${step === 1 ? 'Thông tin cá nhân' : 'Thông tin tài khoản'}`}
+              </p>
             </div>
 
             {error && <div style={{ background: '#fef2f2', border: '1px solid #fee2e2', color: '#b91c1c', padding: '14px', borderRadius: '16px', marginBottom: '24px', fontSize: '0.85rem', fontWeight: 700 }}>{error}</div>}
             {success && <div style={{ background: '#f0fdf4', border: '1px solid #dcfce7', color: '#15803d', padding: '14px', borderRadius: '16px', marginBottom: '24px', fontSize: '0.85rem', fontWeight: 700 }}>{success}</div>}
 
+            {!isLogin && (
+              <div className="progress-container">
+                <div className="progress-bar-bg" />
+                <div className="progress-bar-fill" style={{ width: step === 1 ? '0%' : '100%' }} />
+                
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
+                  <div className={`step-dot ${step >= 1 ? 'active' : ''}`}>1</div>
+                  <span className={`step-label ${step >= 1 ? 'active' : ''}`} style={{ left: '50%', transform: 'translateX(-50%)' }}>Cá nhân</span>
+                </div>
+                
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
+                  <div className={`step-dot ${step === 2 ? 'active' : ''}`}>2</div>
+                  <span className={`step-label ${step === 2 ? 'active' : ''}`} style={{ left: '50%', transform: 'translateX(-50%)' }}>Tài khoản</span>
+                </div>
+              </div>
+            )}
+
             <form onSubmit={handleSubmit} style={{ display: 'grid', gap: '12px' }}>
               {!isLogin ? (
-                <div className="responsive-grid-2">
-                  <div className="input-group">
-                    <span className="material-symbols-outlined" style={{ color: '#0d9488', opacity: 0.7, fontSize: '18px' }}>badge</span>
-                    <input data-ai-id="input-dangnhapdangky-wgtk" placeholder="Họ và tên" value={fullname} onChange={e => setFullname(e.target.value)} required />
-                  </div>
-                  <div className="input-group">
-                    <span className="material-symbols-outlined" style={{ color: '#0d9488', opacity: 0.7, fontSize: '18px' }}>mail</span>
-                    <input data-ai-id="input-dangnhapdangky-mw60" type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} required />
-                  </div>
-                  <div className="input-group">
-                    <span className="material-symbols-outlined" style={{ color: '#0d9488', opacity: 0.7, fontSize: '18px' }}>phone</span>
-                    <input data-ai-id="input-dangnhapdangky-v63p" placeholder="Số điện thoại" value={phone} onChange={e => setPhone(e.target.value)} required />
-                  </div>
-                  <div className="input-group">
-                    <span className="material-symbols-outlined" style={{ color: '#0d9488', opacity: 0.7, fontSize: '18px' }}>location_on</span>
-                    <input data-ai-id="input-dangnhapdangky-gejq" placeholder="Địa chỉ" value={address} onChange={e => setAddress(e.target.value)} required />
-                  </div>
-                  <div className="input-group">
-                    <span className="material-symbols-outlined" style={{ color: '#0d9488', opacity: 0.7, fontSize: '18px' }}>person</span>
-                    <input data-ai-id="input-dangnhapdangky-0l0l" placeholder="Tên đăng nhập" value={username} onChange={e => setUsername(e.target.value)} required />
-                  </div>
-                  <div className="input-group">
-                    <span className="material-symbols-outlined" style={{ color: '#0d9488', opacity: 0.7, fontSize: '18px' }}>lock</span>
-                    <input data-ai-id="input-dangnhapdangky-ond4" type={showPassword ? "text" : "password"} placeholder="Mật khẩu" value={password} onChange={e => setPassword(e.target.value)} required />
-                    <span className="material-symbols-outlined" onClick={() => setShowPassword(!showPassword)} style={{ cursor: 'pointer', color: '#94a3b8', fontSize: '18px' }}>{showPassword ? 'visibility_off' : 'visibility'}</span>
-                  </div>
-                  <div className="input-group" style={{ gridColumn: 'span 2' }}>
-                    <span className="material-symbols-outlined" style={{ color: '#0d9488', opacity: 0.7, fontSize: '18px' }}>lock_reset</span>
-                    <input data-ai-id="input-dangnhapdangky-t0t3" type={showPassword ? "text" : "password"} placeholder="Xác nhận mật khẩu" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required />
-                    <span className="material-symbols-outlined" onClick={() => setShowPassword(!showPassword)} style={{ cursor: 'pointer', color: '#94a3b8', fontSize: '18px' }}>{showPassword ? 'visibility_off' : 'visibility'}</span>
-                  </div>
+                <div className="animate-slide-in" key={`step-${step}`}>
+                  {step === 1 ? (
+                    <div style={{ display: 'grid', gap: '12px' }}>
+                      <div className="input-group">
+                        <span className="material-symbols-outlined" style={{ color: '#0d9488', opacity: 0.7, fontSize: '18px' }}>badge</span>
+                        <input data-ai-id="input-dangnhapdangky-wgtk" placeholder="Họ và tên" value={fullname} onChange={e => setFullname(e.target.value)} required />
+                      </div>
+                      <div className="input-group">
+                        <span className="material-symbols-outlined" style={{ color: '#0d9488', opacity: 0.7, fontSize: '18px' }}>mail</span>
+                        <input data-ai-id="input-dangnhapdangky-mw60" type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} required />
+                      </div>
+                      <div className="input-group">
+                        <span className="material-symbols-outlined" style={{ color: '#0d9488', opacity: 0.7, fontSize: '18px' }}>phone</span>
+                        <input data-ai-id="input-dangnhapdangky-v63p" placeholder="Số điện thoại" value={phone} onChange={e => handlePhoneChange(e.target.value)} required />
+                      </div>
+                      <div className="input-group">
+                        <span className="material-symbols-outlined" style={{ color: '#0d9488', opacity: 0.7, fontSize: '18px' }}>location_on</span>
+                        <input data-ai-id="input-dangnhapdangky-gejq" placeholder="Địa chỉ" value={address} onChange={e => setAddress(e.target.value)} required />
+                      </div>
+                      <button data-ai-id="button-dangnhapdangky-next" onClick={handleNextStep} className="btn-auth" style={{ width: '100%', background: '#0d9488', color: 'white', border: 'none', borderRadius: '50px', padding: '16px', fontWeight: 800, cursor: 'pointer', marginTop: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                        Tiếp theo <span className="material-symbols-outlined">arrow_forward</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'grid', gap: '12px' }}>
+                      <div className="input-group">
+                        <span className="material-symbols-outlined" style={{ color: '#0d9488', opacity: 0.7, fontSize: '18px' }}>person</span>
+                        <input data-ai-id="input-dangnhapdangky-0l0l" placeholder="Tên đăng nhập" value={username} onChange={e => setUsername(e.target.value)} required />
+                      </div>
+                      <div className="input-group">
+                        <span className="material-symbols-outlined" style={{ color: '#0d9488', opacity: 0.7, fontSize: '18px' }}>lock</span>
+                        <input data-ai-id="input-dangnhapdangky-ond4" type={showPassword ? "text" : "password"} placeholder="Mật khẩu" value={password} onChange={e => setPassword(e.target.value)} required />
+                        <span className="material-symbols-outlined" onClick={() => setShowPassword(!showPassword)} style={{ cursor: 'pointer', color: '#94a3b8', fontSize: '18px' }}>{showPassword ? 'visibility_off' : 'visibility'}</span>
+                      </div>
+                      <div className="input-group">
+                        <span className="material-symbols-outlined" style={{ color: '#0d9488', opacity: 0.7, fontSize: '18px' }}>lock_reset</span>
+                        <input data-ai-id="input-dangnhapdangky-t0t3" type={showPassword ? "text" : "password"} placeholder="Xác nhận mật khẩu" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required />
+                        <span className="material-symbols-outlined" onClick={() => setShowPassword(!showPassword)} style={{ cursor: 'pointer', color: '#94a3b8', fontSize: '18px' }}>{showPassword ? 'visibility_off' : 'visibility'}</span>
+                      </div>
+                      <div style={{ display: 'flex', gap: '12px', marginTop: '14px' }}>
+                        <button data-ai-id="button-dangnhapdangky-back" onClick={handlePrevStep} className="btn-auth" style={{ flex: 1, background: 'transparent', color: 'var(--ink)', border: '1px solid var(--gray-300)', borderRadius: '50px', padding: '16px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                          <span className="material-symbols-outlined">arrow_back</span> Quay lại
+                        </button>
+                        <button data-ai-id="button-dangnhapdangky-submit" type="submit" disabled={loading} className="btn-auth" style={{ flex: 2, background: loading ? '#94a3b8' : '#0d9488', color: 'white', border: 'none', borderRadius: '50px', padding: '16px', fontWeight: 800, cursor: loading ? 'not-allowed' : 'pointer' }}>
+                          {loading ? 'Đang xử lý...' : 'Đăng ký ngay'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <>
@@ -467,21 +653,21 @@ const DangNhapDangKy: React.FC = () => {
                   {/* CHỨC NĂNG GHI NHỚ & QUÊN MẬT KHẨU CỦA ĐÂY */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '8px 0' }}>
                     <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', margin: 0, textTransform: 'none', color: 'var(--gray-500)', fontSize: '0.9rem' }}>
-                      <input data-ai-id="input-dangnhapdangky-cyre" type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} style={{ width: '18px', height: '18px' }} />
+                       <input data-ai-id="input-dangnhapdangky-cyre" type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} style={{ width: '18px', height: '18px' }} />
                       Ghi nhớ đăng nhập
                     </label>
                     <Link to="/quen-mat-khau" style={{ color: '#0d9488', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 800 }}>Quên mật khẩu?</Link>
                   </div>
+                  <button data-ai-id="button-dangnhapdangky-xgfa" type="submit" disabled={loading} className="btn-auth" style={{ background: loading ? '#94a3b8' : '#0d9488', color: 'white', border: 'none', borderRadius: '50px', padding: '16px', fontWeight: 800, cursor: loading ? 'not-allowed' : 'pointer', marginTop: '10px' }}>{loading ? 'Đang xử lý...' : 'Đăng nhập ngay'}</button>
                 </>
               )}
-              <button data-ai-id="button-dangnhapdangky-xgfa" type="submit" disabled={loading} className="btn-auth" style={{ background: loading ? '#94a3b8' : '#0d9488', color: 'white', border: 'none', borderRadius: '50px', padding: '16px', fontWeight: 800, cursor: loading ? 'not-allowed' : 'pointer', marginTop: '10px' }}>{loading ? 'Đang xử lý...' : (isLogin ? 'Đăng nhập ngay' : 'Đăng ký')}</button>
             </form>
 
             <div style={{ marginTop: '20px', textAlign: 'center' }}>
               <p className="auth-register-copy" style={{ color: 'var(--gray-500)', fontWeight: 700, fontSize: '0.9rem' }}>
                 {isLogin ? "Chưa có tài khoản? " : "Đã có tài khoản? "}
                 <span 
-                  onClick={() => setIsLogin(!isLogin)} 
+                  onClick={() => { setIsLogin(!isLogin); setStep(1); setError(""); setSuccess(""); }} 
                   style={{ color: '#0d9488', cursor: 'pointer', textDecoration: 'underline' }}
                 >
                   {isLogin ? "Đăng ký ngay" : "Đăng nhập"}
