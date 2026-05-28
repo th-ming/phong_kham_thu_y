@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import axiosInstance from "@services/axios";
 import { formatTienVND, matchesSearchFields } from "@utils/index";
 import { Modal } from "@components/CommonUI";
@@ -19,6 +19,10 @@ const QuanLyHoaDon: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [viewingHD, setViewingHD] = useState<any>(null);
   const [searchHoaDon, setSearchHoaDon] = useState("");
+  const [scrollTop, setScrollTop] = useState(0);
+
+  const ROW_HEIGHT = 72; // Chiều cao cố định mỗi dòng hóa đơn
+  const VISIBLE_HEIGHT = 432; // Hiển thị 6 dòng cùng lúc cùng thanh cuộn mượt mà
 
   const filteredHoaDons = React.useMemo(() => {
     return hoaDons.filter((h) => {
@@ -197,6 +201,12 @@ const QuanLyHoaDon: React.FC = () => {
           border-color: rgba(148, 163, 184, 0.24) !important;
           color: #0f172a;
         }
+        .virtual-row-hover {
+          transition: background-color 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .virtual-row-hover:hover {
+          background-color: var(--gray-50) !important;
+        }
       `}</style>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', flexWrap: 'wrap', gap: '16px' }}>
@@ -211,7 +221,7 @@ const QuanLyHoaDon: React.FC = () => {
 
       <div className="glass-card" style={{ borderRadius: 'var(--radius-xl)', overflow: 'hidden' }}>
         <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--gray-100)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', background: 'var(--surface)' }}>
-          <h2 style={{ fontSize: '1.1rem', fontWeight: 900, color: 'var(--ink)', margin: 0 }}>Danh sách hóa đơn ({filteredHoaDons.length})</h2>
+          <h2 style={{ fontSize: '1.1rem', fontWeight: 900, color: 'var(--ink)', margin: 0 }}>Danh sách hóa đơn ({filteredHoaDons.length}) <span style={{ fontSize: '0.75rem', background: 'var(--primary-light)', color: 'var(--primary)', padding: '2px 8px', borderRadius: '20px', marginLeft: '6px', fontWeight: 800 }}>Virtual List</span></h2>
           <div className="glass-card" style={{ display: 'flex', alignItems: 'center', padding: '0 16px', borderRadius: '16px', border: '1px solid var(--gray-200)', background: 'var(--surface)', width: '300px' }}>
             <span className="material-symbols-outlined" style={{ color: 'var(--gray-400)', marginRight: '8px' }}>search</span>
             <input data-ai-id="input-quanlyhoadon-unv9"
@@ -224,59 +234,121 @@ const QuanLyHoaDon: React.FC = () => {
           </div>
         </div>
         <div className="table-responsive-wrapper">
-<div style={{ minWidth: '800px' }}>
-<table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ background: 'var(--gray-50)', textAlign: 'left' }}>
-              <th style={{ padding: '20px', fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800 }}>MÃ HÓA ĐƠN</th>
-              <th style={{ padding: '20px', fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800 }}>NGÀY LẬP</th>
-              <th style={{ padding: '20px', fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800 }}>KHÁCH HÀNG</th>
-              <th style={{ padding: '20px', fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800, textAlign: 'right' }}>TỔNG TIỀN</th>
-              <th style={{ padding: '20px', fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800 }}>TRẠNG THÁI</th>
-              <th style={{ padding: '20px', fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800, textAlign: 'center' }}>XEM</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredHoaDons.map((h) => (
-              <tr key={h.id_hoa_don} style={{ borderBottom: '1px solid var(--gray-50)', transition: 'all 0.2s' }}>
-                <td style={{ padding: '20px', fontWeight: 800, color: 'var(--gray-400)' }}>#HD-{h.id_hoa_don}</td>
-                <td style={{ padding: '20px', fontWeight: 700 }}>{chuyenNgayISO_SangVN(h.ngay_lap_hoa_don)}</td>
-                <td style={{ padding: '20px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span className="material-symbols-outlined" style={{ fontSize: '18px', color: 'var(--gray-400)' }}>person</span>
-                    <span style={{ fontWeight: 800 }}>{h.ten_khach_hang || `KH-${h.id_khach_hang}`}</span>
-                  </div>
-                </td>
-                <td style={{ padding: '20px', textAlign: 'right', fontWeight: 900, color: 'var(--primary)', fontSize: '1.1rem' }}>
-                  {formatTienVND(h.tong_tien_cuoi ?? 0)}
-                </td>
-                <td style={{ padding: '20px' }}>
-                  <span style={{
-                    padding: '6px 16px', borderRadius: '50px', fontSize: '0.75rem', fontWeight: 800,
-                    background: h.trang_thai?.toLowerCase() === 'da_thanh_toan' ? 'var(--primary-light)' : 'var(--warning-light, rgba(245, 158, 11, 0.15))',
-                    color: h.trang_thai?.toLowerCase() === 'da_thanh_toan' ? 'var(--primary)' : 'var(--warning, #d97706)'
-                  }}>
-                    {h.trang_thai?.toLowerCase() === 'da_thanh_toan' ? 'ĐÃ QUYẾT TOÁN' : 'CHỜ THANH TOÁN'}
-                  </span>
-                </td>
-                <td style={{ padding: '20px', textAlign: 'center' }}>
-                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                    <button data-ai-id="button-quanlyhoadon-1zou" className="btn" onClick={() => setViewingHD(h)} style={{ padding: '8px', background: 'var(--gray-50)', color: 'var(--ink)' }} title="Xem chi tiết">
-                      <span className="material-symbols-outlined">visibility</span>
-                    </button>
-                    {h.trang_thai?.toLowerCase() === 'cho_thanh_toan' && (
-                      <button data-ai-id="button-quanlyhoadon-h34e" className="btn" onClick={() => handleConfirmPayment(h.id_hoa_don)} style={{ padding: '8px', background: 'var(--primary-light)', color: 'var(--primary)' }} title="Xác nhận đã nhận tiền">
-                        <span className="material-symbols-outlined">check_circle</span>
-                      </button>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-</div></div>
+          <div style={{ minWidth: '800px' }}>
+            {/* Tiêu đề cột dạng CSS Grid */}
+            <div style={{ 
+              display: 'grid', 
+              gridTemplateColumns: '1.2fr 1.2fr 1.5fr 1.2fr 1.2fr 0.8fr', 
+              background: 'var(--gray-50)', 
+              padding: '16px 20px',
+              borderBottom: '1px solid var(--gray-100)',
+              boxSizing: 'border-box'
+            }}>
+              <div style={{ fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800 }}>MÃ HÓA ĐƠN</div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800 }}>NGÀY LẬP</div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800 }}>KHÁCH HÀNG</div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800, textAlign: 'right' }}>TỔNG TIỀN</div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800, paddingLeft: '20px' }}>TRẠNG THÁI</div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800, textAlign: 'center' }}>XEM</div>
+            </div>
+
+            {/* Thân danh sách cuộn ảo hiệu năng cao */}
+            <div 
+              onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
+              style={{ 
+                height: `${VISIBLE_HEIGHT}px`, 
+                overflowY: 'auto', 
+                position: 'relative',
+                background: 'var(--surface)'
+              }}
+            >
+              {filteredHoaDons.length === 0 ? (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--gray-400)', fontWeight: 700 }}>
+                  Không tìm thấy hóa đơn nào phù hợp.
+                </div>
+              ) : (
+                <div style={{ height: `${filteredHoaDons.length * ROW_HEIGHT}px`, position: 'relative', width: '100%' }}>
+                  {(() => {
+                    const startIndex = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - 1);
+                    const endIndex = Math.min(filteredHoaDons.length, Math.ceil((scrollTop + VISIBLE_HEIGHT) / ROW_HEIGHT) + 1);
+                    const visibleInvoices = filteredHoaDons.slice(startIndex, endIndex);
+
+                    return visibleInvoices.map((h: any, idx: number) => {
+                      const globalIndex = startIndex + idx;
+                      return (
+                        <div 
+                          key={h.id_hoa_don} 
+                          className="virtual-row-hover"
+                          style={{
+                            position: 'absolute',
+                            top: `${globalIndex * ROW_HEIGHT}px`,
+                            left: 0,
+                            width: '100%',
+                            height: `${ROW_HEIGHT}px`,
+                            display: 'grid',
+                            gridTemplateColumns: '1.2fr 1.2fr 1.5fr 1.2fr 1.2fr 0.8fr',
+                            alignItems: 'center',
+                            borderBottom: '1px solid var(--gray-50)',
+                            padding: '0 20px',
+                            boxSizing: 'border-box'
+                          }}
+                        >
+                          {/* Mã hóa đơn */}
+                          <div style={{ fontWeight: 800, color: 'var(--gray-400)' }}>
+                            #HD-{h.id_hoa_don}
+                          </div>
+
+                          {/* Ngày lập */}
+                          <div style={{ fontWeight: 700 }}>
+                            {chuyenNgayISO_SangVN(h.ngay_lap_hoa_don)}
+                          </div>
+
+                          {/* Khách hàng */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            <span className="material-symbols-outlined" style={{ fontSize: '18px', color: 'var(--gray-400)' }}>person</span>
+                            <span style={{ fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {h.ten_khach_hang || `KH-${h.id_khach_hang}`}
+                            </span>
+                          </div>
+
+                          {/* Tổng tiền */}
+                          <div style={{ textAlign: 'right', fontWeight: 900, color: 'var(--primary)', fontSize: '1.1rem' }}>
+                            {formatTienVND(h.tong_tien_cuoi ?? 0)}
+                          </div>
+
+                          {/* Trạng thái */}
+                          <div style={{ paddingLeft: '20px' }}>
+                            <span style={{
+                              padding: '6px 16px', borderRadius: '50px', fontSize: '0.75rem', fontWeight: 800,
+                              background: h.trang_thai?.toLowerCase() === 'da_thanh_toan' ? 'var(--primary-light)' : 'var(--warning-light, rgba(245, 158, 11, 0.15))',
+                              color: h.trang_thai?.toLowerCase() === 'da_thanh_toan' ? 'var(--primary)' : 'var(--warning, #d97706)'
+                            }}>
+                              {h.trang_thai?.toLowerCase() === 'da_thanh_toan' ? 'ĐÃ QUYẾT TOÁN' : 'CHỜ THANH TOÁN'}
+                            </span>
+                          </div>
+
+                          {/* Xem */}
+                          <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                            <button data-ai-id="button-quanlyhoadon-1zou" className="btn" onClick={() => setViewingHD(h)} style={{ padding: '8px', background: 'var(--gray-50)', color: 'var(--ink)' }} title="Xem chi tiết">
+                              <span className="material-symbols-outlined">visibility</span>
+                            </button>
+                            {h.trang_thai?.toLowerCase() === 'cho_thanh_toan' && (
+                              <button data-ai-id="button-quanlyhoadon-h34e" className="btn" onClick={() => handleConfirmPayment(h.id_hoa_don)} style={{ padding: '8px', background: 'var(--primary-light)', color: 'var(--primary)' }} title="Xác nhận đã nhận tiền">
+                                <span className="material-symbols-outlined">check_circle</span>
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
+
 
       {/* MODAL CHI TIẾT HÓA ĐƠN */}
       <Modal isOpen={!!viewingHD} onClose={() => setViewingHD(null)} title="Chi tiết Hóa đơn" maxWidth="700px">
