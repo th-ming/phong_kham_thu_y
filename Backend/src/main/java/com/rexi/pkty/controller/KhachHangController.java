@@ -6,6 +6,7 @@ import com.rexi.pkty.service.KhachHangService;
 import com.rexi.pkty.security.RexiSecurityRoles;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
@@ -31,6 +32,24 @@ public class KhachHangController {
 
     @Autowired
     private com.rexi.pkty.service.AuditLogService auditLogService;
+
+    @Autowired(required = false)
+    private SimpMessagingTemplate messagingTemplate;
+
+    private void broadcastDataChanged(String resource, String action, String id, String scope) {
+        if (messagingTemplate == null) {
+            return;
+        }
+        try {
+            messagingTemplate.convertAndSend("/topic/data-changes", Map.of(
+                    "resource", resource,
+                    "action", action,
+                    "id", id,
+                    "scope", scope,
+                    "timestamp", System.currentTimeMillis()));
+        } catch (Exception ignored) {
+        }
+    }
 
     // Check quyền nhân viên nội bộ
     private boolean isInternalStaff() {
@@ -169,10 +188,12 @@ public class KhachHangController {
                 if (!isKhachHang) {
                     auditLogService.logAction("CẬP NHẬT", "KhachHang", "Cập nhật thông tin khách hàng ID " + id);
                 }
+                broadcastDataChanged("profile", "updated", id, "customer");
                 return khachHangRepository.findById(id)
                         .<ResponseEntity<?>>map(ResponseEntity::ok)
                         .orElseGet(() -> ResponseEntity.ok(result.get(0)));
             }
+            broadcastDataChanged("profile", "updated", id, "customer");
             return khachHangRepository.findById(id)
                     .<ResponseEntity<?>>map(ResponseEntity::ok)
                     .orElseGet(() -> ResponseEntity.ok(Map.of("message", "Cập nhật thành công!")));

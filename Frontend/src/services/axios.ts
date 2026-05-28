@@ -64,7 +64,30 @@ const processQueue = (error: any, token: string | null = null) => {
 
 // * * Can thiệp sau khi nhận phản hồi (Response Interceptor) - Xử lý lỗi hệ thống
 axiosInstance.interceptors.response.use(
-  (response: AxiosResponse) => response,
+  (response: AxiosResponse) => {
+    const method = response.config.method?.toUpperCase();
+    const url = response.config.url || "";
+    if (
+      method &&
+      ["POST", "PUT", "PATCH", "DELETE"].includes(method) &&
+      url.startsWith("/api/") &&
+      !url.startsWith("/api/auth/") &&
+      !url.startsWith("/api/chat") &&
+      !url.startsWith("/api/agent") &&
+      !url.startsWith("/api/client-errors")
+    ) {
+      window.dispatchEvent(new CustomEvent("rexi-data-changed", {
+        detail: {
+          resource: "global",
+          action: "local-mutation",
+          method,
+          path: url,
+          timestamp: Date.now()
+        }
+      }));
+    }
+    return response;
+  },
   async (error: AxiosError) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 

@@ -51,6 +51,23 @@ public class LichHenController {
         return value == null || value.trim().isEmpty() ? null : value.trim();
     }
 
+    private void broadcastLichHenChanged(String action, LichHen lichHen) {
+        if (messagingTemplate == null || lichHen == null) {
+            return;
+        }
+        try {
+            messagingTemplate.convertAndSend("/topic/appointments", Map.of(
+                    "type", "appointments-changed",
+                    "action", action,
+                    "id_lich_hen", lichHen.getId_lich_hen(),
+                    "id_khach_hang", lichHen.getId_khach_hang() != null ? lichHen.getId_khach_hang() : "",
+                    "ngay_kham", lichHen.getNgay_kham() != null ? lichHen.getNgay_kham().toString() : "",
+                    "timestamp", System.currentTimeMillis()));
+        } catch (Exception e) {
+            logger.warning("Không thể phát realtime lịch hẹn: " + e.getMessage());
+        }
+    }
+
     @PostMapping
     @Transactional
     public ResponseEntity<?> createLichHen(@RequestBody LichHen lichHen) {
@@ -268,6 +285,7 @@ public class LichHenController {
             }
 
             LichHen saved = lichHenRepository.save(lichHen);
+            broadcastLichHenChanged("created", saved);
 
             if (isInternal) {
                 try {
@@ -374,6 +392,7 @@ public class LichHenController {
             lichHen.setNgay_tao(LocalDateTime.now());
 
             LichHen saved = lichHenRepository.save(lichHen);
+            broadcastLichHenChanged("quick-created", saved);
             return ResponseEntity.ok(saved);
         } catch (Exception e) {
             e.printStackTrace();
@@ -612,6 +631,7 @@ public class LichHenController {
         }
 
         LichHen saved = lichHenRepository.save(lh);
+        broadcastLichHenChanged("status-updated", saved);
         if (!isCustomer) {
             auditLogService.logAction("ĐỔI TRẠNG THÁI", "LichHen",
                     "Cập nhật trạng thái lịch hẹn ID " + id + " thành " + status);
@@ -655,7 +675,8 @@ public class LichHenController {
 
             // Xoa mem: set trang thai DA_HUY
             lh.setTrang_thai("DA_HUY");
-            lichHenRepository.save(lh);
+            LichHen saved = lichHenRepository.save(lh);
+            broadcastLichHenChanged("cancelled", saved);
 
             if (!isCustomer) {
                 auditLogService.logAction("HỦY LỊCH (XÓA MỀM)", "LichHen", "Đã hủy lịch hẹn ID " + id);

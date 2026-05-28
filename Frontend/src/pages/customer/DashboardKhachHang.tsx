@@ -195,6 +195,18 @@ const DashboardKhachHang: React.FC = () => {
 
   useAutoRefresh(fetchDashboardData, { intervalMs: AUTO_REFRESH_MS });
 
+  React.useEffect(() => {
+    const handleRealtimeUpdate = (event: Event) => {
+      const payload = (event as CustomEvent).detail || {};
+      const currentCustomerId = user?.id_khach_hang || user?.id_tai_khoan || user?.id;
+      if (!payload.id_khach_hang || payload.id_khach_hang === currentCustomerId) {
+        fetchDashboardData();
+      }
+    };
+    window.addEventListener('rexi-appointments-changed', handleRealtimeUpdate);
+    return () => window.removeEventListener('rexi-appointments-changed', handleRealtimeUpdate);
+  }, [fetchDashboardData, user]);
+
   const isDateInThisMonth = (value: any) => {
     if (!value) return false;
     const date = new Date(value);
@@ -370,7 +382,13 @@ const DashboardKhachHang: React.FC = () => {
         
         .icon-bounce:hover span { animation: bounceLocal 0.3s ease infinite alternate; }
 
-        .kpi-card { position: relative; overflow: visible; }
+        .kpi-card {
+          position: relative;
+          overflow: visible;
+          display: flex;
+          flex-direction: column;
+          justify-content: flex-end;
+        }
         .kpi-trend-badge {
           position: absolute;
           top: 22px;
@@ -424,12 +442,23 @@ const DashboardKhachHang: React.FC = () => {
           width: min(250px, calc(100% - 36px));
           padding: 14px 15px;
           border-radius: 16px;
+          opacity: 0;
+          pointer-events: none;
+          transform: translateY(-8px);
+          z-index: 4;
+          background: var(--surface);
+          border: 1px solid var(--gray-200);
+          box-shadow: var(--shadow-lg);
           transition: all 0.3s ease;
+        }
+        [data-theme='dark'] .kpi-trend-popover {
+          background: rgba(15, 23, 42, 0.96);
+          border-color: rgba(148, 163, 184, 0.24);
+          box-shadow: 0 18px 40px rgba(0, 0, 0, 0.38);
         }
         .kpi-trend-badge:hover + .kpi-trend-popover,
         .kpi-trend-badge:focus + .kpi-trend-popover,
-        .kpi-trend-popover:hover,
-        .kpi-card:hover .kpi-trend-popover {
+        .kpi-trend-popover:hover {
           opacity: 1;
           transform: translateY(0);
           pointer-events: auto;
@@ -446,7 +475,7 @@ const DashboardKhachHang: React.FC = () => {
           box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
 
-        // Hiệu ứng hover cao cấp cho thẻ Cẩm nang chăm sóc
+        /* Hiệu ứng hover cao cấp cho thẻ Cẩm nang chăm sóc */
         .tip-card {
           transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
           background: var(--surface);
@@ -457,9 +486,9 @@ const DashboardKhachHang: React.FC = () => {
           transform: translateY(-4px) scale(1.015);
           border-color: var(--primary) !important;
           background: var(--surface) !important;
-          // Hiệu ứng phát sáng (glow) kết hợp bóng đổ mượt mà
+          /* Hiệu ứng phát sáng (glow) kết hợp bóng đổ mượt mà */
           box-shadow: 0 15px 30px rgba(15, 157, 138, 0.2), 0 0 12px rgba(15, 157, 138, 0.15);
-          // Tăng độ sáng khi di chuột để làm nổi bật thẻ
+          /* Tăng độ sáng khi di chuột để làm nổi bật thẻ */
           filter: brightness(1.2);
         }
         .tip-card .tip-icon-container {

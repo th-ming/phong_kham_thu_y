@@ -134,13 +134,14 @@ public final class RoleAccessPolicy {
             .replace("-", "_")
             .replace(" ", "_");
         return switch (r) {
-            case "administrator" -> "admin";
-            case "quanly", "manager" -> "quan_ly";
-            case "bacsi", "doctor" -> "bac_si";
-            case "ketoan", "accountant" -> "ke_toan";
-            case "tieptan", "reception" -> "tiep_tan";
-            case "yta", "nurse" -> "y_ta";
-            case "khachhang", "customer", "vt5" -> "khach_hang";
+            case "administrator", "vt_1", "vt_admin" -> "admin";
+            case "quanly", "manager", "vt_6", "vt_ql" -> "quan_ly";
+            case "bacsi", "doctor", "vt_2", "vt_bs" -> "bac_si";
+            case "ketoan", "accountant", "vt_4", "vt_kt" -> "ke_toan";
+            case "tieptan", "letan", "reception", "vt_7", "vt_tt" -> "tiep_tan";
+            case "yta", "dieuduong", "nurse", "vt_8", "vt_yt" -> "y_ta";
+            case "khachhang", "customer", "vt_5", "vt5" -> "khach_hang";
+            case "nhanvien", "employee", "vt_3", "vt_nv" -> "staff";
             default -> r;
         };
     }

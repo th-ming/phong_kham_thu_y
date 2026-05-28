@@ -39,10 +39,16 @@ export const useAutoRefresh = (
       runRefresh();
     }
     const timer = window.setInterval(runRefresh, intervalMs);
+    const handleDataChanged = () => {
+      runRefresh();
+    };
+
+    window.addEventListener("rexi-data-changed", handleDataChanged);
 
     return () => {
       cancelled = true;
       window.clearInterval(timer);
+      window.removeEventListener("rexi-data-changed", handleDataChanged);
     };
   }, [intervalMs, refreshWhenHidden, runImmediately]);
 };

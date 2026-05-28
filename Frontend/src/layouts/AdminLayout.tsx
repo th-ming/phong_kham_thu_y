@@ -3,7 +3,9 @@ import { Outlet, useNavigate } from "react-router-dom";
 import SidebarAdmin from "@components/SidebarAdmin";
 import { ScrollToTop } from "@components/SpecialEffects";
 import { ChatBot } from "@components/ChatBot";
-import { normalizeUserRole } from "@utils/index";
+import axiosInstance from "@services/axios";
+import { getUserProfile, normalizeUserRole } from "@utils/index";
+import { notifyUserProfileChanged } from "@hooks/useLiveUserProfile";
 
 const AdminLayout: React.FC = () => {
   const navigate = useNavigate();
@@ -27,6 +29,44 @@ const AdminLayout: React.FC = () => {
       navigate("/dang-nhap");
     }
   }, [navigate]);
+
+  useEffect(() => {
+    const syncStaffProfile = async (id: string) => {
+      const currentUser = getUserProfile();
+      if (!currentUser) return;
+      try {
+        const res = await axiosInstance.get(`/api/nhan-vien/profile/${id}`);
+        const profile = res.data || {};
+        const nextUser = {
+          ...currentUser,
+          id_nhan_vien: profile.id_nhan_vien || currentUser.id_nhan_vien,
+          ho_ten: profile.ho_ten || currentUser.ho_ten,
+          display_name: profile.ho_ten || currentUser.display_name,
+          displayName: profile.ho_ten || currentUser.displayName,
+          email: profile.email || currentUser.email,
+          so_dien_thoai: profile.so_dien_thoai || currentUser.so_dien_thoai,
+          hinh_anh: profile.hinh_anh || currentUser.hinh_anh,
+          avatar: profile.hinh_anh || currentUser.avatar
+        };
+        localStorage.setItem("user", JSON.stringify(nextUser));
+        notifyUserProfileChanged(nextUser);
+      } catch (err) {
+        console.error("Lỗi đồng bộ hồ sơ nhân sự realtime:", err);
+      }
+    };
+
+    const handler = (event: Event) => {
+      const payload = (event as CustomEvent).detail || {};
+      const currentUser = getUserProfile();
+      const currentStaffId = currentUser?.id_nhan_vien || currentUser?.id;
+      if (payload.resource === "profile" && payload.scope === "staff" && payload.id === currentStaffId) {
+        syncStaffProfile(currentStaffId);
+      }
+    };
+
+    window.addEventListener("rexi-data-changed", handler);
+    return () => window.removeEventListener("rexi-data-changed", handler);
+  }, []);
 
   useEffect(() => {
     const handler = (event: Event) => {

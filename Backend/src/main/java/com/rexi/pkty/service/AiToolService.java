@@ -652,23 +652,34 @@ public class AiToolService {
             conn.setDoOutput(true);
             conn.setRequestProperty("User-Agent", "Mozilla/5.0");
             conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
-            conn.setConnectTimeout(8000);
-            conn.setReadTimeout(12000);
+            conn.setConnectTimeout(5000);
+            conn.setReadTimeout(7000);
             try (var os = conn.getOutputStream()) { os.write(("q=" + encodedQuery).getBytes()); }
             StringBuilder resp = new StringBuilder();
             try (var br = new java.io.BufferedReader(new java.io.InputStreamReader(conn.getInputStream(), "UTF-8"))) {
                 String line; while ((line = br.readLine()) != null) resp.append(line);
             }
             var titlePattern = java.util.regex.Pattern.compile("class=\"result__a\" href=\"([^\"]+)\">([^<]+)<");
-            var m = titlePattern.matcher(resp.toString());
-            StringBuilder result = new StringBuilder("Kết quả DuckDuckGo cho \"" + query + "\":\n");
+            var snippetPattern = java.util.regex.Pattern.compile("class=\"result__snippet\"[^>]*>(.*?)</a>");
+            String html = resp.toString();
+            var m = titlePattern.matcher(html);
+            var snippetMatcher = snippetPattern.matcher(html);
+            List<String> snippets = new ArrayList<>();
+            while (snippetMatcher.find() && snippets.size() < 5) {
+                snippets.add(stripHtmlEntities(snippetMatcher.group(1)));
+            }
+            StringBuilder result = new StringBuilder("Kết quả web đã chắt lọc cho \"" + query + "\":\n");
             int count = 0;
             while (m.find() && count < 3) {
-                result.append("- ").append(stripHtmlEntities(m.group(2))).append(" → ").append(cleanDuckDuckGoUrl(m.group(1))).append("\n");
+                String title = stripHtmlEntities(m.group(2));
+                String snippet = count < snippets.size() ? snippets.get(count) : "";
+                result.append(count + 1).append(". ").append(title).append("\n")
+                    .append("   Ý chính: ").append(snippet.isBlank() ? "Nguồn này có thể liên quan nhưng không có đoạn mô tả ngắn." : snippet).append("\n")
+                    .append("   Nguồn: ").append(cleanDuckDuckGoUrl(m.group(1))).append("\n");
                 count++;
             }
             if (count > 0) {
-                result.append("\nQUAN TRỌNG: Hãy tổng hợp các kết quả này thành câu trả lời dễ hiểu, phân tích chi tiết cho người dùng và BẮT BUỘC đính kèm các đường link trên dưới dạng Markdown (ví dụ: [Tên Bài Viết](Link)) ở cuối câu để người dùng có thể bấm trực tiếp vào đọc nhé.");
+                result.append("\nYêu cầu trả lời: đừng chỉ liệt kê link. Hãy đọc các ý chính ở trên, tổng hợp thành câu trả lời tiếng Việt dễ hiểu, nêu điểm đáng tin/cần kiểm chứng, rồi đặt link nguồn Markdown ở cuối.");
                 return result.toString();
             }
             return "Không tìm thấy kết quả web.";

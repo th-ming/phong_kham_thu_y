@@ -1,7 +1,9 @@
 {
   "scripts": {
     "backend": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/ensure_backend_dev_running.ps1",
-    "backend:dev": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start_backend_dev.ps1"
+    "backend:dev": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start_backend_dev.ps1",
+    "backend:lowram": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start_backend_low_ram.ps1",
+    "frontend:lowram": "cmd /c scripts\\start_frontend_low_ram.cmd"
   },
   "devDependencies": {
     "@playwright/test": "^1.60.0",

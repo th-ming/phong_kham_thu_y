@@ -78,6 +78,26 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                     console.error('Lỗi parse web error alert', e);
                 }
             });
+
+            client.subscribe('/topic/appointments', (message) => {
+                if (!message.body) return;
+                try {
+                    const payload = JSON.parse(message.body);
+                    window.dispatchEvent(new CustomEvent('rexi-appointments-changed', { detail: payload }));
+                } catch (e) {
+                    console.error('Lỗi parse appointment realtime event', e);
+                }
+            });
+
+            client.subscribe('/topic/data-changes', (message) => {
+                if (!message.body) return;
+                try {
+                    const payload = JSON.parse(message.body);
+                    window.dispatchEvent(new CustomEvent('rexi-data-changed', { detail: payload }));
+                } catch (e) {
+                    console.error('Lỗi parse data realtime event', e);
+                }
+            });
         };
 
         client.onStompError = (frame) => {

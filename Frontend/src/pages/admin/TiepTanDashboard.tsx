@@ -1,5 +1,6 @@
 ﻿import React, { useCallback, useState, useMemo } from "react";
 import axiosInstance from "@services/axios";
+import { useEffect } from "react";
 import { getUserProfile, matchesSearchFields } from "@utils/index";
 import ModalTaoLichHenAdmin from "./ModalTaoLichHenAdmin";
 import { toast } from "@components/Toast";
@@ -54,6 +55,14 @@ const TiepTanDashboard: React.FC = () => {
     }, [appointments.length]);
 
     useAutoRefresh(() => fetchData(false), { intervalMs: 10_000 });
+
+    useEffect(() => {
+        const handleRealtimeUpdate = () => {
+            fetchData(false);
+        };
+        window.addEventListener('rexi-appointments-changed', handleRealtimeUpdate);
+        return () => window.removeEventListener('rexi-appointments-changed', handleRealtimeUpdate);
+    }, [fetchData]);
 
     const filteredAppointments = useMemo(() => {
         if (!searchTerm.trim()) return appointments;

@@ -7,6 +7,7 @@ import com.rexi.pkty.repository.NhanVienRepository;
 import com.rexi.pkty.repository.TaiKhoanRepository;
 import com.rexi.pkty.security.PasswordPolicy;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -30,8 +31,27 @@ public class NhanVienController {
     @Autowired
     private NhanVienRepository nhanVienRepository;
 
+    @Autowired(required = false)
+    private SimpMessagingTemplate messagingTemplate;
+
     @Autowired
     private LichLamViecNhanVienRepository lichLamViecRepository;
+
+    private void broadcastDataChanged(String resource, String action, String id, String scope) {
+        if (messagingTemplate == null) {
+            return;
+        }
+        try {
+            messagingTemplate.convertAndSend("/topic/data-changes", Map.of(
+                    "resource", resource,
+                    "action", action,
+                    "id", id,
+                    "scope", scope,
+                    "timestamp", System.currentTimeMillis()));
+        } catch (Exception e) {
+            logger.warning("Không thể phát realtime dữ liệu: " + e.getMessage());
+        }
+    }
 
     @Autowired
     private TaiKhoanRepository taiKhoanRepository;
@@ -332,7 +352,9 @@ public class NhanVienController {
 
             if (adminUpdate && !selfUpdate) {
                 nv.setId_nhan_vien(id);
-                return org.springframework.http.ResponseEntity.ok(nhanVienRepository.save(nv));
+                NhanVien saved = nhanVienRepository.save(nv);
+                broadcastDataChanged("profile", "updated", id, "staff");
+                return org.springframework.http.ResponseEntity.ok(saved);
             }
 
             existing.setHo_ten(nv.getHo_ten());
@@ -341,7 +363,9 @@ public class NhanVienController {
             existing.setDia_chi(nv.getDia_chi());
             existing.setHinh_anh(nv.getHinh_anh());
             existing.setGioi_thieu(nv.getGioi_thieu());
-            return org.springframework.http.ResponseEntity.ok(nhanVienRepository.save(existing));
+            NhanVien saved = nhanVienRepository.save(existing);
+            broadcastDataChanged("profile", "updated", id, "staff");
+            return org.springframework.http.ResponseEntity.ok(saved);
         } catch (Exception e) {
             return org.springframework.http.ResponseEntity.status(500)
                     .body(Map.of("message", "Lỗi khi cập nhật nhân viên: " + e.getMessage()));

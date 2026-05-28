@@ -96,6 +96,14 @@ const isCloseSearchToken = (queryToken: string, fieldToken: string): boolean => 
 export type UserRoleCode = "admin" | "quan_ly" | "bac_si" | "ke_toan" | "tiep_tan" | "y_ta" | "staff" | "khach_hang" | "guest";
 
 export const normalizeUserRole = (user: any): UserRoleCode => {
+  const rawSource = [
+    user?.loai_tai_khoan,
+    user?.ten_vai_tro,
+    user?.id_vai_tro,
+    user?.role,
+    user?.quyen,
+    user?.chuc_vu
+  ].filter(Boolean).join(" ").toLowerCase();
   const source = normalizeSearchText([
     user?.loai_tai_khoan,
     user?.ten_vai_tro,
@@ -104,16 +112,18 @@ export const normalizeUserRole = (user: any): UserRoleCode => {
     user?.quyen,
     user?.chuc_vu
   ].filter(Boolean).join(" "));
+  const compactSource = source.replace(/\s+/g, "");
+  const rawCompactSource = rawSource.replace(/[\s_-]+/g, "");
 
   if (!source) return "guest";
-  if (source.includes("vt-1") || source.includes("admin") || source.includes("quan tri")) return "admin";
-  if (source.includes("vt-6") || source.includes("quan_ly") || source.includes("quan ly") || source.includes("manager")) return "quan_ly";
-  if (source.includes("vt-2") || source.includes("bac_si") || source.includes("bac si") || source.includes("doctor")) return "bac_si";
-  if (source.includes("vt-4") || source.includes("ke_toan") || source.includes("ke toan") || source.includes("accountant")) return "ke_toan";
-  if (source.includes("vt-7") || source.includes("tiep_tan") || source.includes("tiep tan") || source.includes("le tan") || source.includes("reception")) return "tiep_tan";
-  if (source.includes("vt-8") || source.includes("y_ta") || source.includes("y ta") || source.includes("dieu duong") || source.includes("nurse")) return "y_ta";
-  if (source.includes("vt-5") || source.includes("khach_hang") || source.includes("khach hang") || source.includes("customer") || user?.id_khach_hang) return "khach_hang";
-  if (source.includes("vt-3") || source.includes("nhan vien") || source.includes("staff")) return "staff";
+  if (compactSource.includes("vt1") || rawCompactSource.includes("vtadmin") || source.includes("admin") || source.includes("quan tri")) return "admin";
+  if (compactSource.includes("vt6") || rawCompactSource.includes("vtql") || source.includes("quan ly") || source.includes("manager")) return "quan_ly";
+  if (compactSource.includes("vt2") || rawCompactSource.includes("vtbs") || source.includes("bac si") || source.includes("doctor")) return "bac_si";
+  if (compactSource.includes("vt4") || rawCompactSource.includes("vtkt") || source.includes("ke toan") || source.includes("accountant")) return "ke_toan";
+  if (compactSource.includes("vt7") || rawCompactSource.includes("vttt") || source.includes("tiep tan") || source.includes("le tan") || source.includes("reception")) return "tiep_tan";
+  if (compactSource.includes("vt8") || rawCompactSource.includes("vtyt") || source.includes("y ta") || source.includes("dieu duong") || source.includes("nurse")) return "y_ta";
+  if (compactSource.includes("vt5") || source.includes("khach hang") || source.includes("customer") || user?.id_khach_hang) return "khach_hang";
+  if (compactSource.includes("vt3") || source.includes("nhan vien") || source.includes("staff")) return "staff";
 
   return user?.id_nhan_vien ? "staff" : "guest";
 };

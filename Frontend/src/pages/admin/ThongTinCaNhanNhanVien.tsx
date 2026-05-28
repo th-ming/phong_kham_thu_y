@@ -5,6 +5,7 @@ import { RevealSection } from '@components/SpecialEffects';
 import { getUserProfile, normalizeUserRole } from '@utils/index';
 import { Modal } from '@components/CommonUI';
 import { isValidPassword, PASSWORD_POLICY_MESSAGE } from '@utils/passwordPolicy';
+import { notifyUserProfileChanged } from '@hooks/useLiveUserProfile';
 
 const ThongTinCaNhanNhanVien: React.FC = () => {
     const user = getUserProfile() || {};
@@ -36,6 +37,17 @@ const ThongTinCaNhanNhanVien: React.FC = () => {
         } else {
             setLoading(false);
         }
+    }, [currentUserId]);
+
+    useEffect(() => {
+        const handleRealtimeProfile = (event: Event) => {
+            const payload = (event as CustomEvent).detail || {};
+            if (payload.resource === "profile" && payload.scope === "staff" && payload.id === currentUserId) {
+                fetchProfile();
+            }
+        };
+        window.addEventListener("rexi-data-changed", handleRealtimeProfile);
+        return () => window.removeEventListener("rexi-data-changed", handleRealtimeProfile);
     }, [currentUserId]);
 
     const fetchProfile = async () => {
@@ -91,7 +103,7 @@ const ThongTinCaNhanNhanVien: React.FC = () => {
                     localUser.email = updatedData.email;
                 }
                 localStorage.setItem("user", JSON.stringify(localUser));
-                window.dispatchEvent(new Event("storage"));
+                notifyUserProfileChanged(localUser);
             };
 
             if (currentUserId === 'NV-SYSTEM' || currentUserId === '1') {

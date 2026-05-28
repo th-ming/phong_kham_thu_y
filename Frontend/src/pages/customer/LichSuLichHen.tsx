@@ -214,6 +214,19 @@ const LichSuLichHen: React.FC = () => {
 
   useAutoRefresh(fetchLichHen, { runImmediately: false });
 
+  useEffect(() => {
+    const handleRealtimeUpdate = (event: Event) => {
+      const payload = (event as CustomEvent).detail || {};
+      const currentUser = getUserProfile();
+      const currentCustomerId = getCustomerId(currentUser);
+      if (!payload.id_khach_hang || payload.id_khach_hang === currentCustomerId) {
+        fetchLichHen();
+      }
+    };
+    window.addEventListener('rexi-appointments-changed', handleRealtimeUpdate);
+    return () => window.removeEventListener('rexi-appointments-changed', handleRealtimeUpdate);
+  }, [fetchLichHen]);
+
   const handleCancelAppointment = async (id: number | string) => {
     if (window.confirm("Sếp chắc chắn muốn hủy lịch hẹn này chứ? Bé cưng sẽ buồn lắm đấy... 😿")) {
       try {

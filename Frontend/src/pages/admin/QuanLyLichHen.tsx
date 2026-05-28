@@ -37,7 +37,7 @@ const QuanLyLichHen: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
 
-  const fetchData = () => {
+  const fetchData = React.useCallback(() => {
     if (lichHens.length === 0) setLoading(true);
     // Truyền page/size để backend có thể phân trang nếu hỗ trợ (tránh lấy toàn bộ 10k+ bản ghi)
     axiosInstance.get("/api/lich-hen", {
@@ -63,7 +63,7 @@ const QuanLyLichHen: React.FC = () => {
         console.error("Lỗi lấy dữ liệu:", err);
         setLoading(false);
       });
-  };
+  }, [currentPage, filterStatus, lichHens.length, searchLichHen]);
 
   const handleUpdateStatus = async (id: number, newStatus: string) => {
     setUpdating(true);
@@ -84,6 +84,14 @@ const QuanLyLichHen: React.FC = () => {
   }, [currentPage, filterStatus, searchLichHen]);
 
   useAutoRefresh(fetchData, { runImmediately: false });
+
+  useEffect(() => {
+    const handleRealtimeUpdate = () => {
+      fetchData();
+    };
+    window.addEventListener('rexi-appointments-changed', handleRealtimeUpdate);
+    return () => window.removeEventListener('rexi-appointments-changed', handleRealtimeUpdate);
+  }, [fetchData]);
 
   // Reset về trang 1 mỗi khi đổi bộ lọc
   useEffect(() => {

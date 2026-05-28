@@ -6,6 +6,7 @@ import { ChatBot } from "@components/ChatBot";
 import { toast } from "@components/Toast";
 import axiosInstance from "@services/axios";
 import { getCustomerIdFromProfile, getUserProfile, normalizeUserRole } from "@utils/index";
+import { notifyUserProfileChanged } from "@hooks/useLiveUserProfile";
 
 const CustomerLayout: React.FC = () => {
   const navigate = useNavigate();
@@ -17,7 +18,7 @@ const CustomerLayout: React.FC = () => {
   useEffect(() => {
     let isMounted = true;
 
-    const checkCustomerBirthYear = async () => {
+    const syncCustomerProfile = async () => {
       const currentUser = getUserProfile();
       if (!currentUser) return;
 
@@ -31,16 +32,24 @@ const CustomerLayout: React.FC = () => {
         const profile = res.data;
         setCustomerProfile(profile);
 
+        const nextUser = {
+          ...currentUser,
+          id_khach_hang: profile.id_khach_hang || currentUser.id_khach_hang,
+          ten_khach_hang: profile.ten_khach_hang || currentUser.ten_khach_hang,
+          ho_ten: profile.ten_khach_hang || currentUser.ho_ten,
+          email: profile.email || currentUser.email,
+          sdt: profile.sdt || currentUser.sdt,
+          dia_chi: profile.dia_chi || currentUser.dia_chi,
+          hinh_anh: profile.hinh_anh || currentUser.hinh_anh,
+          avatar: profile.hinh_anh || currentUser.avatar,
+          nam_sinh: profile.nam_sinh !== undefined ? profile.nam_sinh : currentUser.nam_sinh
+        };
+        localStorage.setItem("user", JSON.stringify(nextUser));
+        notifyUserProfileChanged(nextUser);
+
         if (profile?.nam_sinh === undefined || profile?.nam_sinh === null || Number(profile.nam_sinh) === 0) {
           setShowBirthYearGate(true);
           return;
-        }
-
-        if (currentUser.nam_sinh !== profile.nam_sinh) {
-          localStorage.setItem("user", JSON.stringify({
-            ...currentUser,
-            nam_sinh: profile.nam_sinh
-          }));
         }
       } catch (err) {
         console.error("Lỗi khi kiểm tra năm sinh khách hàng sau đăng nhập:", err);
@@ -66,13 +75,24 @@ const CustomerLayout: React.FC = () => {
           isMounted = false;
         };
       }
-      checkCustomerBirthYear();
+      syncCustomerProfile();
     } catch (e) {
       navigate("/dang-nhap");
     }
 
+    const handleRealtimeDataChange = (event: Event) => {
+      const payload = (event as CustomEvent).detail || {};
+      const currentUser = getUserProfile();
+      const currentCustomerId = getCustomerIdFromProfile(currentUser);
+      if (payload.resource === "profile" && payload.scope === "customer" && payload.id === currentCustomerId) {
+        syncCustomerProfile();
+      }
+    };
+    window.addEventListener("rexi-data-changed", handleRealtimeDataChange);
+
     return () => {
       isMounted = false;
+      window.removeEventListener("rexi-data-changed", handleRealtimeDataChange);
     };
   }, [navigate]);
 
@@ -112,10 +132,12 @@ const CustomerLayout: React.FC = () => {
 
       await axiosInstance.put(`/api/khach-hang/${idKhachHang}`, nextProfile);
 
-      localStorage.setItem("user", JSON.stringify({
+      const nextUser = {
         ...currentUser,
         nam_sinh: yearNum
-      }));
+      };
+      localStorage.setItem("user", JSON.stringify(nextUser));
+      notifyUserProfileChanged(nextUser);
 
       setShowBirthYearGate(false);
       setCustomerProfile(nextProfile);

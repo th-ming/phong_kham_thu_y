@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import ThemeToggle from "./ThemeToggle";
-import { getUserProfile, normalizeUserRole } from "../utils/index";
+import { normalizeUserRole } from "../utils/index";
 import { toast } from "@components/Toast";
+import { useLiveUserProfile } from "@hooks/useLiveUserProfile";
 
 const Header: React.FC<{ hideMenu?: boolean }> = ({ hideMenu }) => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -10,7 +11,7 @@ const Header: React.FC<{ hideMenu?: boolean }> = ({ hideMenu }) => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const user = getUserProfile();
+  const user = useLiveUserProfile();
 
   // Điều hướng đặt lịch thông minh cho Nhân viên / Quản lý / Khách hàng
   const handleBookingRedirect = (e?: React.MouseEvent) => {
