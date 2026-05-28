@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from "react";
+
+import React, { useState, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axiosInstance from "@services/axios";
 import { Modal, Skeleton } from "@components/CommonUI";
@@ -87,7 +88,7 @@ const DashboardKhachHang: React.FC = () => {
       }, 2000);
     } catch (err) {
       console.error("Lỗi cập nhật năm sinh:", err);
-      setAgeError("Không thể cập nhật năm sinh lúc này. Sếp thử lại sau nhé!");
+      setAgeError("Không thể cập nhật năm sinh lúc này. Bạn vui lòng thử lại sau nhé! 🐾");
     } finally {
       setSavingAge(false);
     }

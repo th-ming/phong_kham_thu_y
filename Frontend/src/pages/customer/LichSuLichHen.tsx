@@ -201,7 +201,7 @@ const LichSuLichHen: React.FC = () => {
       }
 
       if (failed) {
-        setServerError("Rất tiếc! Hệ thống đang gặp chút sự cố khi tải dữ liệu. Sếp thử lại sau nhé! 🐾");
+        setServerError("Rất tiếc! Hệ thống đang gặp chút sự cố khi tải dữ liệu. Bạn vui lòng thử lại sau nhé! 🐾");
         toast.error("Lỗi kết nối máy chủ!");
       }
       hasLoadedRef.current = true;
@@ -229,13 +229,13 @@ const LichSuLichHen: React.FC = () => {
   }, [fetchLichHen]);
 
   const handleCancelAppointment = async (id: number | string) => {
-    if (window.confirm("Sếp chắc chắn muốn hủy lịch hẹn này chứ? Bé cưng sẽ buồn lắm đấy... 😿")) {
+    if (window.confirm("Bạn chắc chắn muốn hủy lịch hẹn này chứ? Bé cưng sẽ buồn lắm đấy... 😿")) {
       try {
         await axiosInstance.put(`/api/lich-hen/${id}/status`, { trang_thai: "DA_HUY" });
         toast.success("Đã hủy lịch hẹn thành công!");
         fetchLichHen();
       } catch (err) {
-        toast.error("Không thể hủy lịch lúc này, sếp thử lại sau nhé!");
+        toast.error("Không thể hủy lịch lúc này, bạn vui lòng thử lại sau nhé!");
       }
     }
   };
