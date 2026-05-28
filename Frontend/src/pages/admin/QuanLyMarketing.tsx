@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import axiosInstance from '@services/axios';
 import { useAutoRefresh } from '@hooks/useAutoRefresh';
 
@@ -35,7 +35,7 @@ const QuanLyMarketing: React.FC = () => {
 
     const handleSend = async () => {
         if (!subject || !content) {
-            setStatus({ type: 'error', msg: 'Sếp vui lòng nhập đủ tiêu đề và nội dung nhé!' });
+            setStatus({ type: 'error', msg: 'Vui lòng nhập đủ tiêu đề và nội dung nhé!' });
             return;
         }
 
@@ -54,7 +54,7 @@ const QuanLyMarketing: React.FC = () => {
                 setContent('');
             }
         } catch (error) {
-            setStatus({ type: 'error', msg: 'Có lỗi khi gửi mail, sếp kiểm tra lại quyền hạn hoặc kết nối nhé!' });
+            setStatus({ type: 'error', msg: 'Có lỗi khi gửi mail, vui lòng kiểm tra lại quyền hạn hoặc kết nối nhé!' });
         } finally {
             setLoading(false);
         }
@@ -103,7 +103,7 @@ const QuanLyMarketing: React.FC = () => {
                                 rows={8}
                                 value={content}
                                 onChange={(e) => setContent(e.target.value)}
-                                placeholder="Sếp nhập nội dung ưu đãi vào đây nhé..."
+                                placeholder="Nhập nội dung ưu đãi vào đây nhé..."
                                 style={{ width: '100%', padding: '20px', borderRadius: '20px', border: '1px solid var(--gray-200)', background: 'var(--surface)', color: 'var(--ink)', outline: 'none', transition: '0.3s', fontSize: '1rem', resize: 'vertical' }}
                             />
                         </div>
