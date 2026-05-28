@@ -300,6 +300,7 @@ const Footer: React.FC<{ isSimple?: boolean }> = ({ isSimple }) => {
                                 </button>
                             </div>
                         </div>
+                        <div>
                             <h4 style={{ color: 'white', fontWeight: 800, marginBottom: '32px', letterSpacing: '1px', fontSize: '0.9rem' }}>DỊCH VỤ</h4>
                             {/* BUG FIX & UX: Tăng khoảng cách gap lên 12px để tránh con sen bấm trượt trên di động */}
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
