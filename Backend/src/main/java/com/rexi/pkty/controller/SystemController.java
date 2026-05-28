@@ -615,7 +615,8 @@ public class SystemController {
     }
 
     @PostMapping("/verify-otp")
-    public ResponseEntity<?> verifyOtp(@RequestBody Map<String, String> payload) {
+    public ResponseEntity<?> verifyOtp(@RequestBody Map<String, String> payload,
+            jakarta.servlet.http.HttpServletRequest request) {
         String email = normalizeEmail(payload.get("email"));
         String otp = payload.get("otp");
         if (email == null || otp == null) return ResponseEntity.badRequest().body(Map.of("message", "Thiếu email hoặc mã OTP"));
@@ -641,6 +642,24 @@ public class SystemController {
             otpVerifyLockedUntil.put(email, System.currentTimeMillis() + OTP_VERIFY_LOCK_MS);
             otpStorage.remove(email);
             otpExpiry.remove(email);
+            
+            // BẪY BẢO MẬT: Nếu kẻ tấn công nhập sai mã OTP liên tục 5 lần,
+            // hệ thống sẽ tự động gọi báo động đỏ và khóa vĩnh viễn địa chỉ IP đó.
+            if (securityAlertService != null) {
+                String clientIp = getClientIp(request);
+                String cfCountry = request.getHeader("CF-IPCountry");
+                String locationHint = cfCountry != null && !cfCountry.isBlank() ? "IPCountry: " + cfCountry : "Nhập sai OTP liên tiếp";
+                securityAlertService.reportAndBlock(
+                        clientIp,
+                        "Brute-force OTP",
+                        "/api/system/verify-otp",
+                        "POST",
+                        request.getHeader("User-Agent"),
+                        "Email: " + email + " failed " + failures + " times",
+                        locationHint
+                );
+            }
+            
             return ResponseEntity.status(429).body(Map.of("message", "Bạn đã nhập sai OTP quá nhiều lần. Vui lòng gửi mã mới sau 10 phút."));
         }
         return ResponseEntity.status(400).body(Map.of("message", "Mã OTP không chính xác"));
