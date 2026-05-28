@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axiosInstance from "@services/axios";
@@ -193,7 +192,7 @@ const QuenMatKhau: React.FC = () => {
               <span className="material-symbols-outlined" style={{ fontSize: '40px' }}>{step === 4 ? 'lock_reset' : 'person_search'}</span>
             </div>
             <h2 style={{ fontSize: '2.5rem', fontWeight: 950, lineHeight: 1.1, marginBottom: '20px' }}>{step === 4 ? 'Mật khẩu mới' : 'Quên mật khẩu?'}</h2>
-            <p style={{ opacity: 0.9 }}>Rexi sẽ giúp sếp lấy lại tài khoản nhanh nhất! 🐾</p>
+            <p style={{ opacity: 0.9 }}>Rexi sẽ giúp bạn lấy lại tài khoản nhanh nhất! 🐾</p>
           </div>
 
           <div className="auth-form-panel">
