@@ -6563,7 +6563,6 @@ export const ChatBot: React.FC = () => {
                     0%, 100% { opacity: 1; }
                     50% { opacity: 0.4; }
                 }
-                // Fix D: thêm keyframe spin cho SwarmConsole + icon loading
                 @keyframes spin {
                     0% { transform: rotate(0deg); }
                     100% { transform: rotate(360deg); }
