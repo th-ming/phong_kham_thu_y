@@ -170,7 +170,7 @@ export const executeAction = async (tag: string, skipConfirm: boolean = false) =
         let isActionConfirmed = skipConfirm;
         if (!isActionConfirmed) {
           window.dispatchEvent(new CustomEvent('agent-action', {
-            detail: { type: 'PROGRESS', tag, message: `Đang chờ sếp xác nhận lệnh XÓA: ${payload}` }
+            detail: { type: 'PROGRESS', tag, message: `Đang chờ xác nhận lệnh XÓA: ${payload}` }
           }));
           isActionConfirmed = await confirmAction(`AI đang cố gắng thực thi lệnh XÓA "${payload}". Bạn có chắc chắn muốn cho phép hành động này không?`);
         }
@@ -190,7 +190,7 @@ export const executeAction = async (tag: string, skipConfirm: boolean = false) =
         } else {
           toast.info('Đã hủy lệnh xóa từ AI.');
           window.dispatchEvent(new CustomEvent('agent-action', {
-            detail: { type: 'ERROR', tag, message: `Sếp đã từ chối lệnh xóa: ${payload}` }
+            detail: { type: 'ERROR', tag, message: `Bạn đã từ chối lệnh xóa: ${payload}` }
           }));
         }
         break;
