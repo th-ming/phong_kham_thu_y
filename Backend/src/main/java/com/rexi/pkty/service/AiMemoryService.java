@@ -25,8 +25,8 @@ import java.time.ZoneId;
 @Service
 public class AiMemoryService {
 
-    private static final int KNOWLEDGE_MAX_CONTEXT_CHARS = 3800;
-    private static final int KNOWLEDGE_SNIPPET_RADIUS = 520;
+    private static final int KNOWLEDGE_MAX_CONTEXT_CHARS = 1800;  // Giam de tiet kiem token (was 3800)
+    private static final int KNOWLEDGE_SNIPPET_RADIUS = 280;  // Giam snippet radius de tiet kiem token (was 520)
     private static final long KNOWLEDGE_CACHE_TTL_MS = 60_000L;
     private static final ZoneId VN_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
     private static final Set<String> KNOWLEDGE_STOP_WORDS = Set.of(
@@ -300,7 +300,9 @@ public class AiMemoryService {
         }
         
         // Smart Router: Chỉ nhét Lịch Làm Việc nếu câu hỏi nhắc đến lịch
-        if (cleanQuery.contains("lịch") || cleanQuery.contains("trực") || cleanQuery.contains("hôm nay") || cleanQuery.contains("ngày mai") || cleanQuery.contains("giờ làm") || cleanQuery.contains("thứ")) {
+        if (cleanQuery.contains("lịch") || cleanQuery.contains("trực") || cleanQuery.contains("hôm nay") || cleanQuery.contains("ngày mai") || cleanQuery.contains("giờ làm") || cleanQuery.contains("thứ") ||
+            cleanQuery.contains("slot") || cleanQuery.contains("giờ") || cleanQuery.contains("ngày") ||
+            cleanQuery.contains("khám") || cleanQuery.contains("mai") || cleanQuery.contains("sáng") || cleanQuery.contains("chiều")) {
             sb.append(getScheduleContext());
         }
 

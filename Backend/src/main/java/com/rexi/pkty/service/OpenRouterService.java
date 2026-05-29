@@ -91,7 +91,7 @@ public class OpenRouterService {
 
     private final HttpClient client = HttpClient.newBuilder()
             .version(HttpClient.Version.HTTP_2)
-            .connectTimeout(Duration.ofSeconds(10))
+            .connectTimeout(Duration.ofSeconds(6))
             .build();
 
     public String chat(List<ChatMessage> history) throws Exception {
@@ -241,7 +241,7 @@ public class OpenRouterService {
                 .header("HTTP-Referer", "http://localhost:3000")
                 .header("X-Title", "Rexi Vet Clinic")
                 .POST(HttpRequest.BodyPublishers.ofString(requestBody, StandardCharsets.UTF_8))
-                .timeout(Duration.ofSeconds(25))
+                .timeout(Duration.ofSeconds(12))
                 .build();
 
         return client.send(request, HttpResponse.BodyHandlers.ofString());

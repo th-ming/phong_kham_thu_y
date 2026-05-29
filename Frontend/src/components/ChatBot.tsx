@@ -4675,7 +4675,8 @@ export const ChatBot: React.FC = () => {
         const normalizedGreetingQuery = normalizeSearchText(textToSend);
         const isSimpleGreeting = matchesNormalizedIntent(normalizedGreetingQuery, [
             "chao", "hi", "hello", "xin chao", "chao ban", "chao ad", "alo", "helo", "hey",
-            "ban la ai", "ai do", "ten gi"
+            "ban la ai", "ai do", "ten gi", "ban lam dc gi", "ban lam duoc gi", "chuc nang", "co the lam gi", "giup duoc gi",
+            "huong dan", "tro giup", "help"
         ]);
 
         if (!user) {
@@ -4701,24 +4702,71 @@ export const ChatBot: React.FC = () => {
                 }
                 finishAgentTurn();
                 return;
-            } else {
+            }
+
+            // Câu hỏi công khai: dịch vụ, bác sĩ, giá, địa chỉ, thú y tổng quát
+            // → Không cần auth, forward thẳng sang API chat thông thường
+            const isPublicClinicQuery = matchesNormalizedIntent(normalizedGreetingQuery, [
+                // Dịch vụ
+                "dich vu", "dichvu", "co dich vu", "nhung dich vu", "cac dich vu", "dich vu gi",
+                "dich vu nao", "phong kham co", "phong kham cung cap",
+                // Bác sĩ
+                "bac si", "bsi", "bac sy", "doi ngu bac si", "bac si nao", "bac si gi",
+                "co bac si", "bac si ten", "gioi thieu bac si",
+                // Giá cả
+                "gia", "bao nhieu", "chi phi", "bang gia", "gia tien", "phi dich vu",
+                "gia kham", "gia tiem", "gia spa", "gia phau thuat",
+                // Thông tin phòng khám
+                "dia chi", "o dau", "o cho nao", "hotline", "lien he", "gio mo cua",
+                "gio lam viec", "phong kham", "rexi o dau",
+                // Thú y tổng quát (không cần dữ liệu cá nhân)
+                "cho an gi", "meo an gi", "tiem vaccine", "vacxin", "cat tia long", "spa cho",
+                "spa meo", "kham tong quat", "can tiem gi", "bieu hien benh", "trieu chung",
+                "so cuu", "cap cuu",
+            ]);
+
+            if (isPublicClinicQuery) {
+                // Forward sang API /api/chat thông thường — không cần auth
                 if (!alreadyDisplayedUserMessage) {
-                    setAgentMessages(prev => [...prev, { type: "user", text: textToSend }, {
-                        type: "ai",
-                        text: "Sen ơi, tác vụ này cần Rexi Agent đọc hoặc thao tác dữ liệu thật nên yêu cầu đăng nhập tài khoản bảo mật.",
-                        isLoginPrompt: true
-                    }]);
+                    setAgentMessages(prev => [...prev, { type: "user", text: textToSend }]);
                     setAgentInput("");
-                } else {
+                    alreadyDisplayedUserMessage = true;
+                }
+                try {
+                    const publicRes = await axiosInstance.post("/api/chat", [
+                        bilingualChatInstruction,
+                        { role: "user", content: textToSend }
+                    ]);
+                    const publicReply = publicRes.data?.reply || "Dạ, Rexi chưa tìm được thông tin phù hợp. Sen thử hỏi cụ thể hơn nhé!";
+                    setAgentMessages(prev => [...prev, { type: "ai", text: publicReply }]);
+                } catch (err) {
+                    console.error("Lỗi khi tải thông tin công khai:", err);
                     setAgentMessages(prev => [...prev, {
                         type: "ai",
-                        text: "Sen ơi, tác vụ này cần Rexi Agent đọc hoặc thao tác dữ liệu thật nên yêu cầu đăng nhập tài khoản bảo mật.",
-                        isLoginPrompt: true
+                        text: "Dạ Rexi đang tải thông tin, Sen thử hỏi lại sau giây lát nhé!"
                     }]);
                 }
                 finishAgentTurn();
                 return;
             }
+
+            // Câu hỏi cần dữ liệu thật / tác vụ cá nhân → yêu cầu đăng nhập
+            if (!alreadyDisplayedUserMessage) {
+                setAgentMessages(prev => [...prev, { type: "user", text: textToSend }, {
+                    type: "ai",
+                    text: "Sen ơi, tác vụ này cần Rexi Agent đọc hoặc thao tác dữ liệu thật nên yêu cầu đăng nhập tài khoản bảo mật.",
+                    isLoginPrompt: true
+                }]);
+                setAgentInput("");
+            } else {
+                setAgentMessages(prev => [...prev, {
+                    type: "ai",
+                    text: "Sen ơi, tác vụ này cần Rexi Agent đọc hoặc thao tác dữ liệu thật nên yêu cầu đăng nhập tài khoản bảo mật.",
+                    isLoginPrompt: true
+                }]);
+            }
+            finishAgentTurn();
+            return;
         }
 
         if (isSelfIdentityQuery(textToSend)) {
