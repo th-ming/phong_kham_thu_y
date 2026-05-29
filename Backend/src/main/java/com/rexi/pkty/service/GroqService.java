@@ -251,8 +251,8 @@ public class GroqService {
         Map<String, Object> requestBodyMap = Map.of(
                 "model", selectedModel,
                 "messages", messagesForApi,
-                "max_tokens", hasImage ? 900 : 600,
-                "temperature", 0.4);
+                "max_tokens", hasImage ? 1024 : 800,
+                "temperature", 0.1);
 
         String requestBody = objectMapper.writeValueAsString(requestBodyMap);
 
@@ -334,8 +334,8 @@ public class GroqService {
         Map<String, Object> requestBodyMap = Map.of(
                 "model", selectedModel,
                 "messages", messagesForApi,
-                "max_tokens", hasImage ? 900 : 600,
-                "temperature", 0.4,
+                "max_tokens", hasImage ? 1024 : 800,
+                "temperature", 0.1,
                 "stream", true
         );
 
