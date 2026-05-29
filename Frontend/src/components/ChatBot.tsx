@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import axiosInstance from "@services/axios";
+import DOMPurify from "dompurify";
 import { useTheme } from "../contexts/ThemeContextV2";
 import { getCustomerIdFromProfile, getUserProfile, matchesSearchFields, normalizeSearchText, normalizeUserRole, scoreSearchFields } from "../utils/index";
 import { ADMIN_ROUTE_ROLES, canAccessAdminPath, isInternalRole } from "../utils/permissions";
@@ -7025,7 +7026,7 @@ export const ChatBot: React.FC = () => {
                                                     <video key={i} src={vid} controls style={{ width: '100%', borderRadius: '12px', marginBottom: '8px' }} />
                                                 ))}
                                                 {renderClinicalBadge(msg)}
-                                                {msg.text && (msg.isHtml ? <div dangerouslySetInnerHTML={{ __html: msg.text }} /> : renderText(msg.text))}
+                                                {msg.text && (msg.isHtml ? <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(msg.text) }} /> : renderText(msg.text))}
 
                                                 {msg.swarmData && (
                                                     <SwarmConsole data={msg.swarmData} isDark={isDark} />
