@@ -39,6 +39,19 @@ public class OpenRouterService {
         return modelName;
     }
 
+    public String getMedicalModelName() {
+        try {
+            String dbModel = jdbcTemplate.queryForObject(
+                "SELECT gia_tri FROM CauHinhHeThong WHERE ten_cau_hinh = 'openrouter_medical_model'", 
+                String.class);
+            if (dbModel != null && !dbModel.trim().isEmpty()) {
+                return dbModel.trim();
+            }
+        } catch (Exception e) {
+        }
+        return getModelName();
+    }
+
     private String getApiKey() {
         List<String> keys = getApiKeys();
         return keys.isEmpty() ? "" : keys.get(0);
@@ -95,6 +108,10 @@ public class OpenRouterService {
             .build();
 
     public String chat(List<ChatMessage> history) throws Exception {
+        return chat(history, false);
+    }
+
+    public String chat(List<ChatMessage> history, boolean isMedical) throws Exception {
         List<String> apiKeys = getApiKeys();
         if (apiKeys.isEmpty()) {
             throw new RuntimeException("Không tìm thấy OpenRouter API Key nào được cấu hình!");
@@ -115,7 +132,7 @@ public class OpenRouterService {
         }
 
         Exception lastException = null;
-        List<String> candidateModels = getCandidateModels();
+        List<String> candidateModels = getCandidateModels(isMedical);
         int keyStart = Math.floorMod(keyCursor.getAndIncrement(), apiKeys.size());
         
         for (int keyOffset = 0; keyOffset < apiKeys.size(); keyOffset++) {
@@ -147,9 +164,9 @@ public class OpenRouterService {
                 + (lastException != null ? lastException.getMessage() : "không rõ lỗi"));
     }
 
-    private List<String> getCandidateModels() {
+    private List<String> getCandidateModels(boolean isMedical) {
         Set<String> models = new LinkedHashSet<>();
-        String configuredModel = getModelName();
+        String configuredModel = isMedical ? getMedicalModelName() : getModelName();
         if (configuredModel != null && !configuredModel.trim().isEmpty()) {
             models.add(configuredModel.trim());
         }

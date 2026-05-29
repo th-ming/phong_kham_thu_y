@@ -41,6 +41,19 @@ public class GeminiService {
         return modelName;
     }
 
+    public String getMediaModelName() {
+        try {
+            String dbModel = jdbcTemplate.queryForObject(
+                "SELECT gia_tri FROM CauHinhHeThong WHERE ten_cau_hinh = 'gemini_media_model'", 
+                String.class);
+            if (dbModel != null && !dbModel.trim().isEmpty()) {
+                return dbModel.trim();
+            }
+        } catch (Exception e) {
+        }
+        return getModelName();
+    }
+
     private static final Logger logger = Logger.getLogger(GeminiService.class.getName());
 
     @Value("${gemini.api.key}")
@@ -148,6 +161,8 @@ public class GeminiService {
 
         // Kiểm tra trước xem có video không để cắt bớt lịch sử hội thoại
         boolean videoInHistory = userModelHistory.stream().anyMatch(m -> m.getVideos() != null && !m.getVideos().isEmpty());
+        boolean imageInHistory = userModelHistory.stream().anyMatch(m -> m.getImages() != null && !m.getImages().isEmpty());
+        boolean hasMediaInHistory = videoInHistory || imageInHistory;
         // Nếu có video, chỉ lấy MAX_HISTORY_TURNS_WITH_VIDEO turn cuối để giảm payload gửi lên Gemini
         List<ChatMessage> effectiveHistory = (videoInHistory && userModelHistory.size() > MAX_HISTORY_TURNS_WITH_VIDEO)
                 ? userModelHistory.subList(userModelHistory.size() - MAX_HISTORY_TURNS_WITH_VIDEO, userModelHistory.size())
@@ -247,7 +262,7 @@ public class GeminiService {
         List<String> activeKeys = hasVideo && keys.size() > MAX_VIDEO_KEYS_PER_REQUEST
                 ? keys.subList(0, MAX_VIDEO_KEYS_PER_REQUEST)
                 : keys;
-        List<String> modelCandidates = getModelCandidates();
+        List<String> modelCandidates = getModelCandidates(hasMediaInHistory);
         List<String> activeModels = hasVideo && modelCandidates.size() > MAX_VIDEO_MODELS_PER_REQUEST
                 ? modelCandidates.subList(0, MAX_VIDEO_MODELS_PER_REQUEST)
                 : modelCandidates;
@@ -314,9 +329,9 @@ public class GeminiService {
         throw new RuntimeException("Tất cả các Gemini API Key đều thất bại hoặc không hợp lệ!");
     }
 
-    private List<String> getModelCandidates() {
+    private List<String> getModelCandidates(boolean hasMedia) {
         Set<String> models = new LinkedHashSet<>();
-        String configured = getModelName();
+        String configured = hasMedia ? getMediaModelName() : getModelName();
         if (configured != null && !configured.trim().isEmpty()) {
             models.add(configured.trim());
         }
