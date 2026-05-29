@@ -66,6 +66,11 @@ public class SystemController {
     private static final int MAX_OTP_VERIFY_FAILURES = 5;
     private static final SecureRandom OTP_RANDOM = new SecureRandom();
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    // Rate limit gửi mass email: mỗi user chỉ được gửi 1 lần/giờ
+    private final Map<String, Long> massEmailLastSentAt = new ConcurrentHashMap<>();
+    private static final long MASS_EMAIL_COOLDOWN_MS = 60 * 60 * 1000; // 1 giờ
+    private static final int MASS_EMAIL_MAX_BATCH = 500; // Giới hạn tối đa 500 địa chỉ 1 lần
     private final HttpClient aiTestClient = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(8))
             .build();
@@ -341,21 +346,66 @@ public class SystemController {
 
     @PostMapping("/send-mass-email")
     @PreAuthorize("hasAnyRole('ADMIN', 'QUAN_LY')")
-    public ResponseEntity<?> sendMassEmail(@RequestBody Map<String, String> payload) {
+    public ResponseEntity<?> sendMassEmail(
+            @RequestBody Map<String, String> payload,
+            org.springframework.security.core.Authentication authentication) {
+
         String subject = payload.get("subject");
         String content = payload.get("content");
-        if (subject == null || content == null) return ResponseEntity.badRequest().body(Map.of("message", "Thiếu tiêu đề hoặc nội dung"));
+        if (subject == null || subject.isBlank() || content == null || content.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Thiếu tiêu đề hoặc nội dung email"));
+        }
+
+        // Giới hạn độ dài để tránh payload khổng lồ
+        if (subject.length() > 200) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Tiêu đề không được vượt quá 200 ký tự"));
+        }
+        if (content.length() > 50000) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Nội dung email quá dài (tối đa 50.000 ký tự)"));
+        }
+
+        // Rate limit: 1 lần/giờ per user — chặn spam nếu tài khoản bị chiếm
+        String userKey = authentication != null ? authentication.getName() : "anonymous";
+        Long lastSent = massEmailLastSentAt.get(userKey);
+        long now = System.currentTimeMillis();
+        if (lastSent != null && now - lastSent < MASS_EMAIL_COOLDOWN_MS) {
+            long minutesLeft = (MASS_EMAIL_COOLDOWN_MS - (now - lastSent)) / 60000;
+            return ResponseEntity.status(429).body(Map.of(
+                "message", "Bạn vừa gửi email hàng loạt. Vui lòng chờ thêm " + minutesLeft + " phút nữa trước khi gửi tiếp."
+            ));
+        }
 
         try {
-            // Loc email nhan_email = 1
-            List<String> emails = jdbcTemplate.queryForList("SELECT email FROM KhachHang WHERE email IS NOT NULL AND email <> '' AND (nhan_email = 1 OR nhan_email IS NULL) AND da_xoa = 0", String.class);
+            List<String> emails = jdbcTemplate.queryForList(
+                "SELECT TOP (" + MASS_EMAIL_MAX_BATCH + ") email FROM KhachHang " +
+                "WHERE email IS NOT NULL AND email <> '' AND (nhan_email = 1 OR nhan_email IS NULL) AND da_xoa = 0",
+                String.class
+            );
+
+            if (emails.isEmpty()) {
+                return ResponseEntity.ok(Map.of("success", true, "message", "Không có khách hàng nào đăng ký nhận email.", "count", 0));
+            }
+
+            // Ghi thời điểm gửi vào rate limit map TRƯỚC khi gửi để tránh double-click
+            massEmailLastSentAt.put(userKey, now);
+
             for (String email : emails) {
                 emailService.sendMassEmail(email, subject, content);
             }
-            auditLogService.logAction("MARKETING", "EMAIL", "Gửi mail marketing tới " + emails.size() + " khách hàng");
-            return ResponseEntity.ok(Map.of("success", true, "message", "Đã bắt đầu tiến trình gửi mail hàng loạt"));
+
+            auditLogService.logAction("MARKETING", "EMAIL",
+                "Gửi mail marketing tới " + emails.size() + " khách hàng. Người gửi: " + userKey);
+            logger.info("Mass email sent by " + userKey + " to " + emails.size() + " recipients");
+
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "Đã bắt đầu gửi email tới " + emails.size() + " khách hàng",
+                "count", emails.size()
+            ));
         } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of("message", "Lỗi hệ thống: " + e.getMessage()));
+            // Xóa rate limit nếu gửi thất bại để cho phép thử lại
+            massEmailLastSentAt.remove(userKey);
+            return ResponseEntity.status(500).body(Map.of("message", "Lỗi hệ thống khi gửi email hàng loạt. Vui lòng thử lại sau."));
         }
     }
     

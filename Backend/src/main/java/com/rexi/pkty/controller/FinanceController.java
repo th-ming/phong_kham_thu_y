@@ -365,7 +365,7 @@ public class FinanceController {
         try {
             return ResponseEntity.ok(hoaDonRepository.getDoanhThuTheoNgay());
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Error: " + e.getMessage() + " | Cause: " + e.getCause());
+            return ResponseEntity.status(500).body(Map.of("message", "Lỗi hệ thống khi truy xuất doanh thu. Vui lòng thử lại sau."));
         }
     }
 

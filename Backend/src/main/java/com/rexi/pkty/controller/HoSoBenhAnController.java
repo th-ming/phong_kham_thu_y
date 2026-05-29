@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/ho-so-benh-an")
@@ -54,6 +55,9 @@ public class HoSoBenhAnController {
 
     @Autowired
     private com.rexi.pkty.service.AuditLogService auditLogService;
+
+    @Autowired
+    private com.rexi.pkty.repository.TaiKhoanRepository taiKhoanRepository;
 
     @GetMapping
     @PreAuthorize(RexiSecurityRoles.CLINICAL_READ)
@@ -122,15 +126,17 @@ public class HoSoBenhAnController {
                 .getContext().getAuthentication();
         String username = (auth != null) ? auth.getName() : null;
 
-        boolean isCustomer = auth != null && auth.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("KHACH_HANG") || a.getAuthority().equals("ROLE_KHACH_HANG"));
-        if (isCustomer) {
-            String recordKhachHangId = String.valueOf(results.get(0).get("id_khach_hang"));
-            List<String> userKhIds = jdbcTemplate.queryForList(
-                    "SELECT id_khach_hang FROM TaiKhoan WHERE ten_dang_nhap = ?", String.class, username);
-            if (!userKhIds.isEmpty() && !userKhIds.get(0).equals(recordKhachHangId)) {
-                return org.springframework.http.ResponseEntity.status(403)
-                        .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền xem bệnh án của người khác!"));
+        // BẢO MẬT IDOR: Check bằng id_vai_tro VT-5 qua DB — nhất quán với toàn hệ thống.
+        // CẢNH BÁO: TUYỆT ĐỐI không check authority string "KHACH_HANG" vì JWT thực tế
+        // của hệ thống không gán authority đó cho KHACH_HANG, dẫn đến bypass toàn bộ!
+        if (username != null && !username.equals("anonymousUser")) {
+            com.rexi.pkty.entity.TaiKhoan tk = taiKhoanRepository.findByTenDangNhap(username).orElse(null);
+            if (tk != null && "VT-5".equals(tk.getId_vai_tro())) { // Là khách hàng
+                String recordKhachHangId = String.valueOf(results.get(0).get("id_khach_hang"));
+                if (tk.getId_khach_hang() == null || !tk.getId_khach_hang().equals(recordKhachHangId)) {
+                    return org.springframework.http.ResponseEntity.status(403)
+                            .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền xem bệnh án của người khác!"));
+                }
             }
         }
 
@@ -147,12 +153,12 @@ public class HoSoBenhAnController {
                     .body(Map.of("message", "chk token"));
         }
 
-        boolean isCustomer = auth.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("KHACH_HANG") || a.getAuthority().equals("ROLE_KHACH_HANG"));
-        if (isCustomer) {
-            List<String> userKhIds = jdbcTemplate.queryForList(
-                    "SELECT id_khach_hang FROM TaiKhoan WHERE ten_dang_nhap = ?", String.class, username);
-            if (!userKhIds.isEmpty() && !userKhIds.get(0).equals(id)) {
+        // BẢO MẬT IDOR: Check bằng id_vai_tro VT-5 qua DB — nhất quán với toàn hệ thống.
+        // CẢNH BÁO: TUYỆT ĐỐI không check authority string "KHACH_HANG" vì JWT thực tế
+        // của hệ thống không gán authority đó cho KHACH_HANG, dẫn đến bypass toàn bộ!
+        com.rexi.pkty.entity.TaiKhoan tk = taiKhoanRepository.findByTenDangNhap(username).orElse(null);
+        if (tk != null && "VT-5".equals(tk.getId_vai_tro())) { // Là khách hàng
+            if (tk.getId_khach_hang() == null || !tk.getId_khach_hang().equals(id)) {
                 return org.springframework.http.ResponseEntity.status(403)
                         .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền xem bệnh án của người khác!"));
             }

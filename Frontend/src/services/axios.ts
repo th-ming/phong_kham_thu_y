@@ -1,30 +1,35 @@
 import axios, { AxiosInstance, AxiosError, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 import { reportAxiosError } from './clientErrorReporter';
 
-// * * config Axios Interceptor - Hệ thống kết nối API * - Tự động đính kèm mã xác thực JWT (TOKEN) vào mọi yêu cầu * - Xử lý đăng xuất tự động khi TOKEN hết hạn * - config tập trung cho toàn bộ ứng dụng
+// Axios Interceptor — Hệ thống kết nối API:
+// - Tự động gửi httpOnly cookie (bảo mật chính)
+// - Fallback sang Bearer header nếu cookie chưa có (backward-compatible)
+// - Xử lý tự động refresh token khi hết hạn
 
 const API_BASE_URL = ''; // Dùng Proxy trong vite.config.ts để xử lý chuyển tiếp tới localhost:8081
 
 const axiosInstance: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
   timeout: 60000,
+  withCredentials: true, // Tự động gửi httpOnly cookie trong mọi request — chặn XSS đánh cắp token
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// * * Can thiệp trước khi gửi yêu cầu (Request Interceptor) - Gắn TOKEN xác thực
+// Can thiệp trước khi gửi request — Gắn Bearer token như fallback (backward-compatible)
 axiosInstance.interceptors.request.use(
   (config) => {
+    // Fallback: nếu server chưa set cookie (ví dụ: lần đầu login cũ), vẫn dùng localStorage
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    
+
     const requestUrl = config.url || '';
     const isChatRequest = requestUrl.includes('/api/chat') || requestUrl.includes('/api/agent');
 
-    // Đính kèm tag hành động AI nếu có. ko bao giờ gắn header này vào chat thường,
+    // Đính kèm tag hành động AI nếu có. Không gắn vào chat thường
     // vì tag Autopilot cũ có thể làm backend chặn /api/chat với 403.
     if (isChatRequest) {
         (window as any).__AI_ACTION_TAG__ = undefined;
@@ -38,7 +43,7 @@ axiosInstance.interceptors.request.use(
     } else if ((window as any).__AI_ACTION_TAG__) {
         config.headers['X-AI-ACTION'] = (window as any).__AI_ACTION_TAG__;
     }
-    
+
     return config;
   },
   (error: AxiosError) => {
@@ -47,7 +52,7 @@ axiosInstance.interceptors.request.use(
   }
 );
 
-// Biến hỗ trợ hàng đợi (Queue) khi có nhiều request cùng lúc bị lỗi 401
+// Biến hỗ trợ hàng đợi khi nhiều request cùng lúc bị lỗi 401
 let isRefreshing = false;
 let failedQueue: any[] = [];
 
@@ -62,7 +67,7 @@ const processQueue = (error: any, token: string | null = null) => {
   failedQueue = [];
 };
 
-// * * Can thiệp sau khi nhận phản hồi (Response Interceptor) - Xử lý lỗi hệ thống
+// Can thiệp sau khi nhận response — Xử lý lỗi và tự động refresh token
 axiosInstance.interceptors.response.use(
   (response: AxiosResponse) => {
     const method = response.config.method?.toUpperCase();
@@ -92,7 +97,7 @@ axiosInstance.interceptors.response.use(
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
     if (error.response?.status === 401 && originalRequest && !originalRequest._retry && !originalRequest.url?.includes('/api/auth/')) {
-      // Nếu đang trong quá trình refresh TOKEN, cho các request khác vào hàng đợi
+      // Nếu đang refresh, cho các request khác vào hàng đợi chờ
       if (isRefreshing) {
         return new Promise(function (resolve, reject) {
           failedQueue.push({ resolve, reject });
@@ -107,19 +112,36 @@ axiosInstance.interceptors.response.use(
       originalRequest._retry = true;
       isRefreshing = true;
 
-      // Lấy Refresh TOKEN từ LocalStorage ( cần lưu cái này lúc đăng nhập)
+      // Thử refresh qua cookie trước (server sẽ đọc rexi_refresh_token cookie tự động)
+      // Fallback: đọc từ localStorage nếu có
       const refreshToken = localStorage.getItem('refreshToken');
 
       if (!refreshToken) {
+        // Cookie refresh flow: thử gọi refresh mà không cần body (server đọc cookie)
+        try {
+          const rs = await axios.post(`${API_BASE_URL}/api/auth/refresh-token`, {}, { withCredentials: true });
+          const newToken = rs.data.token;
+          if (newToken) {
+            localStorage.setItem('token', newToken);
+            axiosInstance.defaults.headers.common['Authorization'] = 'Bearer ' + newToken;
+            originalRequest.headers.Authorization = 'Bearer ' + newToken;
+            processQueue(null, newToken);
+            isRefreshing = false;
+            return axiosInstance(originalRequest);
+          }
+        } catch {
+          // Cookie refresh cũng thất bại → logout
+        }
         localStorage.removeItem('token');
         localStorage.removeItem('user');
+        isRefreshing = false;
         window.location.href = '/dang-nhap';
         return Promise.reject(error);
       }
 
       try {
-        // Gọi API lấy TOKEN mới ( cần có endpoint này ở Backend)
-        const rs = await axios.post(`${API_BASE_URL}/api/auth/refresh-token`, { refreshToken });
+        // Gọi API refresh token (dùng body khi có localStorage refreshToken)
+        const rs = await axios.post(`${API_BASE_URL}/api/auth/refresh-token`, { refreshToken }, { withCredentials: true });
         const newToken = rs.data.token;
 
         localStorage.setItem('token', newToken);

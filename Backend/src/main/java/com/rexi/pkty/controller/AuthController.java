@@ -24,7 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "${cors.allowed-origins:http://localhost:3000}")
+@CrossOrigin(origins = "${cors.allowed-origins:http://localhost:3000}", allowCredentials = "true")
 public class AuthController {
 
     private static final Logger logger = Logger.getLogger(AuthController.class.getName());
@@ -65,10 +65,14 @@ public class AuthController {
     @Autowired(required = false)
     private com.rexi.pkty.service.SecurityAlertService securityAlertService;
 
+    @Autowired
+    private com.rexi.pkty.security.CookieUtil cookieUtil;
+
     // Login dùng BCrypt check pass. Ép Validation, giấu exception thô.
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request, BindingResult bindingResult,
-            jakarta.servlet.http.HttpServletRequest httpRequest) {
+            jakarta.servlet.http.HttpServletRequest httpRequest,
+            jakarta.servlet.http.HttpServletResponse httpResponse) {
         String username = request.getUsername();
         String clientIp = httpRequest.getRemoteAddr();
         String lockoutKey = username + "-" + clientIp;
@@ -261,6 +265,10 @@ public class AuthController {
                 }
             }
 
+            // Set httpOnly cookie — token vẫn trả về body để backward-compatible
+            cookieUtil.setAccessTokenCookie(httpResponse, token);
+            cookieUtil.setRefreshTokenCookie(httpResponse, refreshToken);
+
             return ResponseEntity.ok(Map.of(
                     "token", token,
                     "refreshToken", refreshToken,
@@ -290,7 +298,8 @@ public class AuthController {
      * SỬA LỖI #9: Đăng nhập Google - Kiểm tra Token chuẩn xác
      */
     @PostMapping("/google-login")
-    public ResponseEntity<?> googleLogin(@RequestBody Map<String, String> requestData) {
+    public ResponseEntity<?> googleLogin(@RequestBody Map<String, String> requestData,
+            jakarta.servlet.http.HttpServletResponse httpResponse) {
         try {
             String googleToken = requestData.get("token");
             Map<String, Object> googleProfile = verifyGoogleToken(googleToken);
@@ -490,6 +499,10 @@ public class AuthController {
                 }
             }
 
+            // Set httpOnly cookie
+            cookieUtil.setAccessTokenCookie(httpResponse, token);
+            cookieUtil.setRefreshTokenCookie(httpResponse, refreshToken);
+
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             logger.severe("Google login error: " + e.getMessage());
@@ -501,7 +514,8 @@ public class AuthController {
      * Google Register - Tạo tài khoản mới từ thông tin Google
      */
     @PostMapping("/google-register")
-    public ResponseEntity<?> googleRegister(@RequestBody Map<String, String> requestData) {
+    public ResponseEntity<?> googleRegister(@RequestBody Map<String, String> requestData,
+            jakarta.servlet.http.HttpServletResponse httpResponse) {
         try {
             String googleToken = requestData.get("token");
             Map<String, Object> googleProfile = verifyGoogleToken(googleToken);
@@ -572,6 +586,10 @@ public class AuthController {
             userData.put("displayName", kh.getTen_khach_hang());
             if (picture != null)
                 userData.put("avatar", picture); // Truyền ảnh Google xuống cho Frontend
+
+            // Set httpOnly cookie
+            cookieUtil.setAccessTokenCookie(httpResponse, token);
+            cookieUtil.setRefreshTokenCookie(httpResponse, refreshToken);
 
             logger.info("Google register successful for: " + email);
             return ResponseEntity
@@ -669,6 +687,13 @@ public class AuthController {
             logger.severe("Google link error: " + e.getMessage());
             return ResponseEntity.status(500).body(Map.of("message", "Lỗi liên kết tài khoản: " + e.getMessage()));
         }
+    }
+
+    /** Đăng xuất — xóa httpOnly cookie và trả về 200 */
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(jakarta.servlet.http.HttpServletResponse httpResponse) {
+        cookieUtil.clearAllTokenCookies(httpResponse);
+        return ResponseEntity.ok(Map.of("message", "Đăng xuất thành công!"));
     }
 
     /**

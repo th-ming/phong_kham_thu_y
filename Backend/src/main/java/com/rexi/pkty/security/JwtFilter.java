@@ -14,7 +14,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.logging.Logger;
 
-/** BỘ LỌC KIỂM SOÁT JWT TOKEN */
+/** BỘ LỌC KIỂM SOÁT JWT TOKEN — đọc cookie trước, fallback sang Bearer header */
 @Component
 public class JwtFilter extends OncePerRequestFilter {
 
@@ -23,35 +23,42 @@ public class JwtFilter extends OncePerRequestFilter {
     @Autowired(required = false)
     private JwtUtil jwtUtil;
 
+    @Autowired(required = false)
+    private CookieUtil cookieUtil;
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
 
-        // Lấy token từ header Authorization
-        final String authHeader = request.getHeader("Authorization");
-
-        String username = null;
         String jwt = null;
 
-        // Token dạng: Bearer <token>
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            jwt = authHeader.substring(7);
+        // Ưu tiên đọc token từ httpOnly cookie (bảo mật hơn)
+        if (cookieUtil != null) {
+            jwt = cookieUtil.getAccessTokenFromCookie(request);
+        }
+
+        // Fallback: đọc từ Authorization header (backward-compatible cho mobile/API client)
+        if (jwt == null) {
+            final String authHeader = request.getHeader("Authorization");
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                jwt = authHeader.substring(7);
+            }
+        }
+
+        String username = null;
+        if (jwt != null && jwtUtil != null) {
             try {
-                if (jwtUtil != null) {
-                    username = jwtUtil.extractUsername(jwt);
-                }
+                username = jwtUtil.extractUsername(jwt);
             } catch (Exception e) {
                 logger.warning("Không thể đọc được Token: " + e.getMessage());
             }
         }
 
-        // Check auth hiện tại trong Context
+        // Inject vào SecurityContext nếu token hợp lệ và chưa có auth
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            
-            // Validate token
             if (jwtUtil != null && jwtUtil.validateToken(jwt, username)) {
                 String role = jwtUtil.extractRole(jwt);
-                
+
                 // Ép SimpleGrantedAuthority kèm tiền tố ROLE_
                 java.util.List<org.springframework.security.core.GrantedAuthority> authorities = new java.util.ArrayList<>();
                 if (role != null && !role.isEmpty()) {
@@ -63,11 +70,11 @@ public class JwtFilter extends OncePerRequestFilter {
                         username, null, authorities);
                 authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authenticationToken);
-                
+
                 logger.info("Xác thực thành công cho: " + username + " (Quyền: " + role + ")");
             }
         }
-        
+
         // Pass sang filter tiếp theo
         chain.doFilter(request, response);
     }

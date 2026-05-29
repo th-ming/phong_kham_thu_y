@@ -9,7 +9,7 @@ import java.util.Map;
 import java.util.HashMap;
 
 @RestController
-@RequestMapping("/public/audit")
+@RequestMapping("/api/audit") // Đổi từ /public/audit → /api/audit để tránh bypass SecurityConfig permitAll("/public/**")
 public class AuditController {
 
     @Autowired
