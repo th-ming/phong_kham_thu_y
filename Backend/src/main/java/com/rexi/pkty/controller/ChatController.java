@@ -482,7 +482,11 @@ ChatMessage systemMsg = new ChatMessage();
                 org.springframework.web.servlet.mvc.method.annotation.SseEmitter emitter = new org.springframework.web.servlet.mvc.method.annotation.SseEmitter(-1L);
                 try {
                     // Stream luong chat qua Groq
-                    groqService.streamChat(history, emitter);
+                    if (autopilotRequested) {
+                        groqService.streamChat(history, emitter, groqService.getAutopilotModelName());
+                    } else {
+                        groqService.streamChat(history, emitter);
+                    }
                 } catch (Exception e) {
                     emitter.completeWithError(e);
                 }
@@ -529,7 +533,7 @@ ChatMessage systemMsg = new ChatMessage();
                     } else {
                         logger.warning("[AI ROUTER] Gemini lỗi, chuyển hướng dự phòng sang: OpenRouter...");
                         try {
-                            reply = openRouterService.chat(history);
+                            reply = openRouterService.chat(history, true);
                             providerUsed = "OpenRouter";
                         } catch (Exception openRouterEx) {
                             logger.warning("[AI ROUTER] OpenRouter lỗi, chuyển hướng dự phòng cuối cùng sang: Groq...");
@@ -555,7 +559,7 @@ ChatMessage systemMsg = new ChatMessage();
                         providerUsed = "Gemini";
                     } catch (Exception geminiException) {
                         logger.warning("[AI ROUTER] Gemini lỗi, chuyển hướng dự phòng cuối cùng sang: OpenRouter (DeepSeek V4)...");
-                        reply = openRouterService.chat(history);
+                        reply = openRouterService.chat(history, false);
                         providerUsed = "OpenRouter";
                     }
                 }

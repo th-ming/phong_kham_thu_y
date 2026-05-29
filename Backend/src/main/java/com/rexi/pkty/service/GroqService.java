@@ -56,6 +56,32 @@ public class GroqService {
         return visionModelName;
     }
 
+    public String getAutopilotModelName() {
+        try {
+            String dbModel = jdbcTemplate.queryForObject(
+                "SELECT gia_tri FROM CauHinhHeThong WHERE ten_cau_hinh = 'groq_autopilot_model'", 
+                String.class);
+            if (dbModel != null && !dbModel.trim().isEmpty()) {
+                return dbModel.trim();
+            }
+        } catch (Exception e) {
+        }
+        return getModelName();
+    }
+
+    public String getAudioModelName() {
+        try {
+            String dbModel = jdbcTemplate.queryForObject(
+                "SELECT gia_tri FROM CauHinhHeThong WHERE ten_cau_hinh = 'groq_audio_model'", 
+                String.class);
+            if (dbModel != null && !dbModel.trim().isEmpty()) {
+                return dbModel.trim();
+            }
+        } catch (Exception e) {
+        }
+        return "whisper-large-v3-turbo";
+    }
+
     private static final Logger logger = java.util.logging.Logger.getLogger(GroqService.class.getName());
 
     @Value("${groq.api.key}")
@@ -211,6 +237,10 @@ public class GroqService {
     }
 
     public String chat(List<ChatMessage> history) throws Exception {
+        return chat(history, null);
+    }
+
+    public String chat(List<ChatMessage> history, String modelOverride) throws Exception {
         ChatMessage latest = history.get(history.size() - 1);
         String latestContent = latest.getContent() != null ? latest.getContent() : "";
         String latestNormalized = normalizeVietnamese(latestContent.toLowerCase());
@@ -219,7 +249,12 @@ public class GroqService {
 
         // Kiểm tra ảnh → chọn model phù hợp (Sử dụng list images mới)
         boolean hasImage = latest.getImages() != null && !latest.getImages().isEmpty();
-        String selectedModel = hasImage ? getVisionModelName() : getModelName();
+        String selectedModel;
+        if (modelOverride != null && !modelOverride.trim().isEmpty() && !hasImage) {
+            selectedModel = modelOverride.trim();
+        } else {
+            selectedModel = hasImage ? getVisionModelName() : getModelName();
+        }
 
         // Chuẩn bị danh sách messages cho API
         List<Map<String, Object>> messagesForApi = new ArrayList<>();
@@ -301,11 +336,20 @@ public class GroqService {
     }
 
     public void streamChat(List<ChatMessage> history, SseEmitter emitter) throws Exception {
+        streamChat(history, emitter, null);
+    }
+
+    public void streamChat(List<ChatMessage> history, SseEmitter emitter, String modelOverride) throws Exception {
         ChatMessage latest = history.get(history.size() - 1);
         String latestContent = latest.getContent() != null ? latest.getContent() : "";
 
         boolean hasImage = latest.getImages() != null && !latest.getImages().isEmpty();
-        String selectedModel = hasImage ? getVisionModelName() : getModelName();
+        String selectedModel;
+        if (modelOverride != null && !modelOverride.trim().isEmpty() && !hasImage) {
+            selectedModel = modelOverride.trim();
+        } else {
+            selectedModel = hasImage ? getVisionModelName() : getModelName();
+        }
 
         List<Map<String, Object>> messagesForApi = new ArrayList<>();
 
@@ -416,7 +460,7 @@ public class GroqService {
                 String filename = file.getOriginalFilename() != null ? file.getOriginalFilename() : "audio.webm";
 
                 ByteArrayOutputStream body = new ByteArrayOutputStream();
-                writeMultipartField(body, boundary, "model", "whisper-large-v3-turbo");
+                writeMultipartField(body, boundary, "model", getAudioModelName());
                 writeMultipartField(body, boundary, "response_format", "json");
                 writeMultipartField(body, boundary, "language", "vi");
                 body.write(("--" + boundary + "\r\n").getBytes(StandardCharsets.UTF_8));

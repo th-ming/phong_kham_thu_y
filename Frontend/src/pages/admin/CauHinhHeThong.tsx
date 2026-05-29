@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import axiosInstance from '@services/axios';
 import { toast } from '@components/Toast';
 
@@ -654,41 +654,71 @@ const CauHinhHeThong: React.FC = () => {
                             </div>
 
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '18px' }}>
-                                <div style={{ padding: '20px', border: '1px solid var(--gray-200)', borderRadius: '16px', background: 'var(--surface)' }}>
-                                    <h3 style={{ margin: '0 0 16px', color: 'var(--ink)', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <div style={{ padding: '20px', border: '1px solid var(--gray-200)', borderRadius: '16px', background: 'var(--surface)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                    <h3 style={{ margin: '0 0 4px', color: 'var(--ink)', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '8px' }}>
                                         <span className="material-symbols-outlined" style={{ color: '#10b981' }}>speed</span>
                                         Groq
                                     </h3>
-                                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, color: 'var(--gray-600)' }}>API Key</label>
-                                    <input type="password" className="form-input" value={configs.groq_api_key || ''} onChange={e => setConfigs({...configs, groq_api_key: e.target.value})} placeholder="gsk_..." />
-                                    <label style={{ display: 'block', margin: '14px 0 8px', fontWeight: 700, color: 'var(--gray-600)' }}>Model</label>
-                                    <input type="text" className="form-input" value={configs.groq_model || ''} onChange={e => setConfigs({...configs, groq_model: e.target.value})} placeholder="llama-3.3-70b-versatile" />
-                                    <label style={{ display: 'block', margin: '14px 0 8px', fontWeight: 700, color: 'var(--gray-600)' }}>Model phân tích ảnh</label>
-                                    <input type="text" className="form-input" value={configs.groq_vision_model || ''} onChange={e => setConfigs({...configs, groq_vision_model: e.target.value})} placeholder="meta-llama/llama-4-scout-17b-16e-instruct" />
+                                    <div>
+                                        <label style={{ display: 'block', marginBottom: '6px', fontWeight: 700, color: 'var(--gray-600)', fontSize: '0.85rem' }}>API Key</label>
+                                        <input type="password" className="form-input" value={configs.groq_api_key || ''} onChange={e => setConfigs({...configs, groq_api_key: e.target.value})} placeholder="gsk_..." />
+                                    </div>
+                                    <div>
+                                        <label style={{ display: 'block', marginBottom: '6px', fontWeight: 700, color: 'var(--gray-600)', fontSize: '0.85rem' }}>Model Chat & FAQ</label>
+                                        <input type="text" className="form-input" value={configs.groq_model || ''} onChange={e => setConfigs({...configs, groq_model: e.target.value})} placeholder="llama-3.3-70b-versatile" />
+                                    </div>
+                                    <div>
+                                        <label style={{ display: 'block', marginBottom: '6px', fontWeight: 700, color: 'var(--gray-600)', fontSize: '0.85rem' }}>Model Autopilot (Tự động hóa)</label>
+                                        <input type="text" className="form-input" value={configs.groq_autopilot_model || ''} onChange={e => setConfigs({...configs, groq_autopilot_model: e.target.value})} placeholder="llama-3.3-70b-versatile" />
+                                    </div>
+                                    <div>
+                                        <label style={{ display: 'block', marginBottom: '6px', fontWeight: 700, color: 'var(--gray-600)', fontSize: '0.85rem' }}>Model Audio (Dịch Whisper)</label>
+                                        <input type="text" className="form-input" value={configs.groq_audio_model || ''} onChange={e => setConfigs({...configs, groq_audio_model: e.target.value})} placeholder="whisper-large-v3-turbo" />
+                                    </div>
+                                    <div>
+                                        <label style={{ display: 'block', marginBottom: '6px', fontWeight: 700, color: 'var(--gray-600)', fontSize: '0.85rem' }}>Model Phân tích ảnh</label>
+                                        <input type="text" className="form-input" value={configs.groq_vision_model || ''} onChange={e => setConfigs({...configs, groq_vision_model: e.target.value})} placeholder="meta-llama/llama-4-scout-17b-16e-instruct" />
+                                    </div>
                                     {renderAiTestPanel('groq')}
                                 </div>
 
-                                <div style={{ padding: '20px', border: '1px solid var(--gray-200)', borderRadius: '16px', background: 'var(--surface)' }}>
-                                    <h3 style={{ margin: '0 0 16px', color: 'var(--ink)', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <div style={{ padding: '20px', border: '1px solid var(--gray-200)', borderRadius: '16px', background: 'var(--surface)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                    <h3 style={{ margin: '0 0 4px', color: 'var(--ink)', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '8px' }}>
                                         <span className="material-symbols-outlined" style={{ color: '#f59e0b' }}>auto_awesome</span>
                                         Gemini
                                     </h3>
-                                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, color: 'var(--gray-600)' }}>API Key</label>
-                                    <input type="password" className="form-input" value={configs.gemini_api_key || ''} onChange={e => setConfigs({...configs, gemini_api_key: e.target.value})} placeholder="AIza... hoặc nhiều key cách nhau bằng dấu phẩy" />
-                                    <label style={{ display: 'block', margin: '14px 0 8px', fontWeight: 700, color: 'var(--gray-600)' }}>Model</label>
-                                    <input type="text" className="form-input" value={configs.gemini_model || ''} onChange={e => setConfigs({...configs, gemini_model: e.target.value})} placeholder="gemini-3.5-flash" />
+                                    <div>
+                                        <label style={{ display: 'block', marginBottom: '6px', fontWeight: 700, color: 'var(--gray-600)', fontSize: '0.85rem' }}>API Key</label>
+                                        <input type="password" className="form-input" value={configs.gemini_api_key || ''} onChange={e => setConfigs({...configs, gemini_api_key: e.target.value})} placeholder="AIza... hoặc nhiều key cách nhau bằng dấu phẩy" />
+                                    </div>
+                                    <div>
+                                        <label style={{ display: 'block', marginBottom: '6px', fontWeight: 700, color: 'var(--gray-600)', fontSize: '0.85rem' }}>Model Chat & Y tế</label>
+                                        <input type="text" className="form-input" value={configs.gemini_model || ''} onChange={e => setConfigs({...configs, gemini_model: e.target.value})} placeholder="gemini-3.5-flash" />
+                                    </div>
+                                    <div>
+                                        <label style={{ display: 'block', marginBottom: '6px', fontWeight: 700, color: 'var(--gray-600)', fontSize: '0.85rem' }}>Model Phân tích Đa phương tiện</label>
+                                        <input type="text" className="form-input" value={configs.gemini_media_model || ''} onChange={e => setConfigs({...configs, gemini_media_model: e.target.value})} placeholder="gemini-3.5-flash" />
+                                    </div>
                                     {renderAiTestPanel('gemini')}
                                 </div>
 
-                                <div style={{ padding: '20px', border: '1px solid var(--gray-200)', borderRadius: '16px', background: 'var(--surface)' }}>
-                                    <h3 style={{ margin: '0 0 16px', color: 'var(--ink)', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <div style={{ padding: '20px', border: '1px solid var(--gray-200)', borderRadius: '16px', background: 'var(--surface)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                    <h3 style={{ margin: '0 0 4px', color: 'var(--ink)', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '8px' }}>
                                         <span className="material-symbols-outlined" style={{ color: '#22d3ee' }}>route</span>
                                         OpenRouter
                                     </h3>
-                                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, color: 'var(--gray-600)' }}>API Key</label>
-                                    <input type="password" className="form-input" value={configs.openrouter_api_key || ''} onChange={e => setConfigs({...configs, openrouter_api_key: e.target.value})} placeholder="sk-or-..." />
-                                    <label style={{ display: 'block', margin: '14px 0 8px', fontWeight: 700, color: 'var(--gray-600)' }}>Model</label>
-                                    <input type="text" className="form-input" value={configs.openrouter_model || ''} onChange={e => setConfigs({...configs, openrouter_model: e.target.value})} placeholder="deepseek/deepseek-v4-flash:free" />
+                                    <div>
+                                        <label style={{ display: 'block', marginBottom: '6px', fontWeight: 700, color: 'var(--gray-600)', fontSize: '0.85rem' }}>API Key</label>
+                                        <input type="password" className="form-input" value={configs.openrouter_api_key || ''} onChange={e => setConfigs({...configs, openrouter_api_key: e.target.value})} placeholder="sk-or-..." />
+                                    </div>
+                                    <div>
+                                        <label style={{ display: 'block', marginBottom: '6px', fontWeight: 700, color: 'var(--gray-600)', fontSize: '0.85rem' }}>Model Chat & FAQ</label>
+                                        <input type="text" className="form-input" value={configs.openrouter_model || ''} onChange={e => setConfigs({...configs, openrouter_model: e.target.value})} placeholder="deepseek/deepseek-v4-flash:free" />
+                                    </div>
+                                    <div>
+                                        <label style={{ display: 'block', marginBottom: '6px', fontWeight: 700, color: 'var(--gray-600)', fontSize: '0.85rem' }}>Model Y khoa Chuyên sâu</label>
+                                        <input type="text" className="form-input" value={configs.openrouter_medical_model || ''} onChange={e => setConfigs({...configs, openrouter_medical_model: e.target.value})} placeholder="deepseek/deepseek-v4-flash:free" />
+                                    </div>
                                     {renderAiTestPanel('openrouter')}
                                 </div>
 
