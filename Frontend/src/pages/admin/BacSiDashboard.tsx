@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useState, useMemo } from "react";
+import React, { useCallback, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import axiosInstance from "@services/axios";
 import { getUserProfile } from "@utils/index";
@@ -111,20 +111,19 @@ const BacSiDashboard: React.FC = () => {
 
             {/* Các thẻ thống kê */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '24px', marginBottom: '40px' }}>
-                <div className="glass-card" style={{ padding: '24px', borderRadius: '24px', borderLeft: '4px solid #3b82f6' }}>
-                    <p style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--gray-400)', margin: '0 0 8px 0' }}>CA KHÁM HÔM NAY</p>
-                    <h3 style={{ fontSize: '2rem', fontWeight: 900, color: '#3b82f6', margin: 0 }}>{myAppointments.length} ca</h3>
+                <div className="glass-card hover-lift" style={{ padding: '24px', borderRadius: '24px', border: '1px solid rgba(59, 130, 246, 0.25)', background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, var(--surface) 100%)' }}>
+                    <p style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--gray-500)', margin: '0 0 8px 0' }}>CA KHÁM HÔM NAY</p>
+                    <h3 style={{ fontSize: '2rem', fontWeight: 900, color: '#3b82f6', margin: 0, textShadow: '0 2px 10px rgba(59, 130, 246, 0.1)' }}>{myAppointments.length} ca</h3>
                 </div>
-                <div className="glass-card" style={{ padding: '24px', borderRadius: '24px', borderLeft: '4px solid #f59e0b' }}>
-                    <p style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--gray-400)', margin: '0 0 8px 0' }}>BỆNH NHÂN ĐANG CHỜ</p>
-                    {/* BUG FIX #3: Trước đây render waitingPatients 2 lần trong 2 thẻ h3 riêng biệt */}
-                    <h3 className={waitingPatients > 0 ? 'pulse-text' : ''} style={{ fontSize: '2rem', fontWeight: 900, color: '#f59e0b', margin: 0, display: 'inline-block', transformOrigin: 'left center' }}>
+                <div className="glass-card hover-lift" style={{ padding: '24px', borderRadius: '24px', border: '1px solid rgba(245, 158, 11, 0.25)', background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, var(--surface) 100%)' }}>
+                    <p style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--gray-500)', margin: '0 0 8px 0' }}>BỆNH NHÂN ĐANG CHỜ</p>
+                    <h3 className={waitingPatients > 0 ? 'pulse-text' : ''} style={{ fontSize: '2rem', fontWeight: 900, color: '#f59e0b', margin: 0, display: 'inline-block', transformOrigin: 'left center', textShadow: '0 2px 10px rgba(245, 158, 11, 0.1)' }}>
                         {waitingPatients} bé
                     </h3>
                 </div>
-                <div className="glass-card" style={{ padding: '24px', borderRadius: '24px', borderLeft: '4px solid #10b981' }}>
-                    <p style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--gray-400)', margin: '0 0 8px 0' }}>CA ĐÃ HOÀN THÀNH</p>
-                    <h3 style={{ fontSize: '2rem', fontWeight: 900, color: '#10b981', margin: 0 }}>{completedPatients} ca</h3>
+                <div className="glass-card hover-lift" style={{ padding: '24px', borderRadius: '24px', border: '1px solid rgba(16, 185, 129, 0.25)', background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, var(--surface) 100%)' }}>
+                    <p style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--gray-500)', margin: '0 0 8px 0' }}>CA ĐÃ HOÀN THÀNH</p>
+                    <h3 style={{ fontSize: '2rem', fontWeight: 900, color: '#10b981', margin: 0, textShadow: '0 2px 10px rgba(16, 185, 129, 0.1)' }}>{completedPatients} ca</h3>
                 </div>
             </div>
 

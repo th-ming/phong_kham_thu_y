@@ -219,6 +219,7 @@ const Footer: React.FC<{ isSimple?: boolean }> = ({ isSimple }) => {
                                 loop={false}
                                 muted={false}
                                 removeBlack={true}
+                                isCat={true}
                                 onEnded={() => setIsMemePlaying(false)}
                                 style={{ height: '100%', width: 'auto', objectFit: 'contain', cursor: 'pointer' }}
                             />

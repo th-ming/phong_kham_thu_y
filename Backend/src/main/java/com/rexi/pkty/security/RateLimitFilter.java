@@ -25,7 +25,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private final ConcurrentHashMap<String, Long> requestTimestamps = new ConcurrentHashMap<>();
     private static final int MAX_REQUESTS_PER_MINUTE = 200; // Ngưỡng chặn
 
-    private java.util.Set<String> blockedIps = new java.util.HashSet<>();
+    // Dùng ConcurrentHashMap.newKeySet() thay vì HashSet để đảm bảo thread-safe
+    private final java.util.Set<String> blockedIps = java.util.concurrent.ConcurrentHashMap.newKeySet();
     private long lastCheckTime = 0;
 
     @Override
@@ -48,12 +49,13 @@ public class RateLimitFilter extends OncePerRequestFilter {
                         "SELECT gia_tri FROM CauHinhHeThong WHERE ten_cau_hinh = 'blocked_ips'", String.class);
                 if (ips != null && !ips.trim().isEmpty()) {
                     // Loại bỏ khoảng trắng và split comma
-                    blockedIps = new java.util.HashSet<>(java.util.Arrays.asList(ips.replace(" ", "").split(",")));
+                    blockedIps.clear();
+                    blockedIps.addAll(java.util.Arrays.asList(ips.replace(" ", "").split(",")));
                 } else {
                     blockedIps.clear();
                 }
             } catch (Exception e) {
-                // Table chưa tạo -> bỏ qua
+                logger.warning("Không thể load blocked IPs từ DB: " + e.getMessage());
             }
             lastCheckTime = currentTime;
         }
@@ -93,12 +95,14 @@ public class RateLimitFilter extends OncePerRequestFilter {
                 requestCounts.put(ip, new java.util.concurrent.atomic.AtomicInteger(1));
                 return currentTime;
             } else {
-                java.util.concurrent.atomic.AtomicInteger count = requestCounts.get(ip);
-                if (count != null) {
-                    count.incrementAndGet();
-                } else {
-                    requestCounts.put(ip, new java.util.concurrent.atomic.AtomicInteger(1));
-                }
+                // AtomicInteger được compute an toàn trong ConcurrentHashMap
+                requestCounts.compute(ip, (k, existing) -> {
+                    if (existing == null) {
+                        return new java.util.concurrent.atomic.AtomicInteger(1);
+                    }
+                    existing.incrementAndGet();
+                    return existing;
+                });
                 return timestamp;
             }
         });
@@ -192,9 +196,11 @@ public class RateLimitFilter extends OncePerRequestFilter {
             if (updated == 0) {
                 jdbcTemplate.update("INSERT INTO CauHinhHeThong (ten_cau_hinh, gia_tri) VALUES ('blocked_ips', ?)", value);
             }
-            blockedIps = new java.util.HashSet<>(next);
+            blockedIps.clear();
+            blockedIps.addAll(next);
             lastCheckTime = 0;
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            logger.warning("Không thể persist blocked IP " + ip + ": " + e.getMessage());
         }
     }
 

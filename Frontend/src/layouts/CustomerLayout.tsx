@@ -198,14 +198,16 @@ const CustomerLayout: React.FC = () => {
               width: "72px",
               height: "72px",
               borderRadius: "22px",
-              background: "var(--primary-gradient)",
+              background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
               color: "white",
               display: "grid",
               placeItems: "center",
               margin: "0 auto 22px",
-              boxShadow: "0 12px 26px var(--primary-shadow)"
+              boxShadow: "0 12px 26px rgba(16, 185, 129, 0.35)",
+              animation: "pulse-soft 2s infinite ease-in-out"
             }}>
-              <span className="material-symbols-outlined" style={{ fontSize: "38px" }}>person_celebrate</span>
+              {/* Sử dụng icon lấp lánh AI (auto_awesome) để thể hiện Rexi đang cá nhân hóa trải nghiệm thông minh */}
+              <span className="material-symbols-outlined" style={{ fontSize: "38px", animation: "spin-slow 6s infinite linear" }}>auto_awesome</span>
             </div>
 
             <h3 style={{ fontSize: "1.55rem", fontWeight: 900, color: "var(--ink)", margin: "0 0 12px" }}>
@@ -280,4 +282,3 @@ const CustomerLayout: React.FC = () => {
 };
 
 export default React.memo(CustomerLayout);
-

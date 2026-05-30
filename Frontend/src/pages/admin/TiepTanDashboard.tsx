@@ -156,17 +156,17 @@ const TiepTanDashboard: React.FC = () => {
 
             {/* Các thẻ thống kê */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '24px', marginBottom: '40px' }}>
-                <div className="glass-card" style={{ padding: '24px', borderRadius: '24px', borderLeft: '4px solid #3b82f6' }}>
-                    <p style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--gray-400)', margin: '0 0 8px 0' }}>TỔNG LỊCH HẸN NAY</p>
-                    <h3 style={{ fontSize: '2rem', fontWeight: 900, color: '#3b82f6', margin: 0 }}>{appointments.length} ca</h3>
+                <div className="glass-card hover-lift" style={{ padding: '24px', borderRadius: '24px', border: '1px solid rgba(59, 130, 246, 0.25)', background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, var(--surface) 100%)' }}>
+                    <p style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--gray-500)', margin: '0 0 8px 0' }}>TỔNG LỊCH HẸN NAY</p>
+                    <h3 style={{ fontSize: '2rem', fontWeight: 900, color: '#3b82f6', margin: 0, textShadow: '0 2px 10px rgba(59, 130, 246, 0.1)' }}>{appointments.length} ca</h3>
                 </div>
-                <div className="glass-card" style={{ padding: '24px', borderRadius: '24px', borderLeft: '4px solid #f59e0b' }}>
-                    <p style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--gray-400)', margin: '0 0 8px 0' }}>CHỜ XÁC NHẬN</p>
-                    <h3 style={{ fontSize: '2rem', fontWeight: 900, color: '#f59e0b', margin: 0 }}>{stats.pendingConfirmation} ca</h3>
+                <div className="glass-card hover-lift" style={{ padding: '24px', borderRadius: '24px', border: '1px solid rgba(245, 158, 11, 0.25)', background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, var(--surface) 100%)' }}>
+                    <p style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--gray-500)', margin: '0 0 8px 0' }}>CHỜ XÁC NHẬN</p>
+                    <h3 style={{ fontSize: '2rem', fontWeight: 900, color: '#f59e0b', margin: 0, textShadow: '0 2px 10px rgba(245, 158, 11, 0.1)' }}>{stats.pendingConfirmation} ca</h3>
                 </div>
-                <div className="glass-card" style={{ padding: '24px', borderRadius: '24px', borderLeft: '4px solid #ef4444' }}>
-                    <p style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--gray-400)', margin: '0 0 8px 0' }}>HÓA ĐƠN CHỜ THU</p>
-                    <h3 className={stats.pendingPayment > 0 ? "pulse-danger-text" : ""} style={{ fontSize: '2rem', fontWeight: 900, color: '#ef4444', margin: 0, display: 'inline-block', transformOrigin: 'left center' }}>
+                <div className="glass-card hover-lift" style={{ padding: '24px', borderRadius: '24px', border: '1px solid rgba(239, 68, 68, 0.25)', background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, var(--surface) 100%)' }}>
+                    <p style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--gray-500)', margin: '0 0 8px 0' }}>HÓA ĐƠN CHỜ THU</p>
+                    <h3 className={stats.pendingPayment > 0 ? "pulse-danger-text" : ""} style={{ fontSize: '2rem', fontWeight: 900, color: '#ef4444', margin: 0, display: 'inline-block', transformOrigin: 'left center', textShadow: '0 2px 10px rgba(239, 68, 68, 0.1)' }}>
                         {stats.pendingPayment} hóa đơn
                     </h3>
                 </div>

@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { toast } from '@components/Toast';
+import { kiemTraLaAdmin } from '@utils/permissions';
 
 interface WebSocketContextType {
     connected: boolean;
@@ -54,9 +55,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                 try {
                     const payload = JSON.parse(message.body);
                     const user = JSON.parse(localStorage.getItem('user') || '{}');
-                    const role = String(`${user?.vai_tro || ''} ${user?.role || ''} ${user?.ten_vai_tro || ''} ${user?.id_vai_tro || ''}`).toLowerCase();
-                    const isAdmin = role.includes('admin') || role.includes('vt-1') || role.includes('vt-admin');
-                    if (!isAdmin) return;
+                    if (!kiemTraLaAdmin(user)) return;
                     window.dispatchEvent(new CustomEvent('rexi-security-alert', { detail: payload }));
                     toast.error(payload.message || 'Cảnh báo bảo mật: phát hiện tấn công và đã chặn IP.');
                 } catch (e) {
@@ -69,9 +68,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                 try {
                     const payload = JSON.parse(message.body);
                     const user = JSON.parse(localStorage.getItem('user') || '{}');
-                    const role = String(`${user?.vai_tro || ''} ${user?.role || ''} ${user?.ten_vai_tro || ''} ${user?.id_vai_tro || ''}`).toLowerCase();
-                    const isAdminOnly = role.includes('admin') || role.includes('vt-1') || role.includes('vt-admin');
-                    if (!isAdminOnly) return;
+                    if (!kiemTraLaAdmin(user)) return;
                     window.dispatchEvent(new CustomEvent('rexi-web-error-alert', { detail: payload }));
                     toast.error(payload.message ? `Lỗi web: ${payload.message}` : 'Rexi phát hiện lỗi web cần Admin kiểm tra.');
                 } catch (e) {

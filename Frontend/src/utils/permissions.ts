@@ -58,3 +58,23 @@ export const canAccessAdminPath = (role: UserRoleCode, path: string): boolean =>
 export const isInternalRole = (role: UserRoleCode): boolean => {
   return ROLE_GROUPS.allInternal.includes(role);
 };
+
+/**
+ * Kiểm tra exact match vai trò admin, tránh false positive với username chứa 'admin'.
+ * Dùng Set.has() thay vì String.includes() để chống bypass.
+ */
+const DANH_SACH_QUYEN_ADMIN = new Set(['vt-1', 'vt-admin', 'vt-ql', 'admin', 'quan_tri', 'super_admin']);
+
+export function kiemTraLaAdmin(user: Record<string, any>): boolean {
+  const cacGiaTri = [
+    user?.vai_tro,
+    user?.role,
+    user?.ten_vai_tro,
+    user?.id_vai_tro,
+    user?.chuc_vu,
+  ]
+    .filter(Boolean)
+    .map((r: string) => r.toString().toLowerCase().trim())
+    .filter((r: string) => r.length > 0);
+  return cacGiaTri.some((r: string) => DANH_SACH_QUYEN_ADMIN.has(r));
+}

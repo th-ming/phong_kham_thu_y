@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useMemo, useState, useEffect, useRef } from "react";
+import React, { useCallback, useMemo, useState, useEffect, useRef } from "react";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import axiosInstance from "@services/axios";
 import { formatTienVND, getCustomerIdFromProfile, getUserProfile, normalizeUserRole } from "@utils/index";
@@ -33,6 +33,13 @@ const DatLichHen: React.FC = () => {
   const userRole = normalizeUserRole(user);
   const isCustomerUser = userRole === "khach_hang";
   const idKhachHang = getCustomerIdFromProfile(user);
+
+  const currentStep = useMemo(() => {
+    if (!idThuCung) return 1;
+    if (!idDichVu) return 2;
+    if (!date || !time) return 3;
+    return 4;
+  }, [idThuCung, idDichVu, date, time]);
 
   const bookingStateRef = useRef({
     idThuCung,
@@ -436,6 +443,42 @@ const DatLichHen: React.FC = () => {
 
       <div className="stagger-2 responsive-grid-booking">
         <form className="glass-card" style={{ padding: '40px', borderRadius: 'var(--radius-xl)', display: 'grid', gap: '32px' }} onSubmit={handleBooking}>
+          {/* 🚀 Thanh Tiến Trình (Progress Steps Bar) chuẩn Wadhah Aloui */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', background: 'rgba(34, 211, 238, 0.04)', padding: '20px 24px', borderRadius: '24px', border: '1px solid rgba(34, 211, 238, 0.08)' }}>
+            {[
+              { step: 1, label: 'Bé yêu', icon: 'pets' },
+              { step: 2, label: 'Dịch vụ', icon: 'medical_services' },
+              { step: 3, label: 'Thời gian & BS', icon: 'schedule' },
+              { step: 4, label: 'Xác nhận', icon: 'check_circle' }
+            ].map((item, idx) => {
+              const isCompleted = currentStep > item.step;
+              const isActive = currentStep === item.step;
+              return (
+                <React.Fragment key={idx}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', opacity: isActive || isCompleted ? 1 : 0.4, transition: 'all 0.3s' }}>
+                    <div style={{
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '50%',
+                      background: isCompleted ? 'var(--primary)' : isActive ? 'var(--primary-gradient)' : 'var(--gray-200)',
+                      color: isCompleted || isActive ? 'white' : 'var(--gray-400)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: 800,
+                      fontSize: '0.85rem',
+                      boxShadow: isActive ? '0 8px 16px rgba(34, 211, 238, 0.25)' : 'none'
+                    }}>
+                      {isCompleted ? '✓' : item.step}
+                    </div>
+                    <span style={{ fontSize: '0.85rem', fontWeight: isActive || isCompleted ? 800 : 600, color: isActive ? 'var(--primary)' : 'var(--ink)' }}>{item.label}</span>
+                  </div>
+                  {idx < 3 && <div style={{ flex: 1, height: '2px', background: currentStep > item.step ? 'var(--primary)' : 'var(--gray-200)', margin: '0 12px', opacity: 0.2, transition: 'all 0.3s' }}></div>}
+                </React.Fragment>
+              );
+            })}
+          </div>
+
           <div style={{ display: 'grid', gap: '12px' }}>
             <label style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gray-400)', letterSpacing: '1px' }}>1. CHỌN THÚ CƯNG <span style={{ color: '#ff4d4f' }}>*</span></label>
             {pets.length === 0 ? (
@@ -483,15 +526,27 @@ const DatLichHen: React.FC = () => {
           </div>
 
           <div style={{ display: 'grid', gap: '12px' }}>
-            <label>3. CHỌN BÁC SĨ & NGÀY KHÁM</label>
-            <div className="responsive-grid-1-5-1">
-              <select data-ai-id="select-datlichhen-33v9" value={idBacSi} onChange={e => setIdBacSi(e.target.value)} disabled={!date}>
+            <label>3. CHỌN NGÀY KHÁM & BÁC SĨ</label>
+            <div style={{ display: 'grid', gridTemplateColumns: '190px 1fr', gap: '16px', maxWidth: '640px', alignItems: 'center' }}>
+              <input 
+                data-ai-id="input-datlichhen-mc0h" 
+                required 
+                type="date" 
+                value={date} 
+                onChange={e => setDate(e.target.value)} 
+                min={new Date().toISOString().split("T")[0]} 
+                style={{ width: '100%', boxSizing: 'border-box' }}
+              />
+              <select 
+                data-ai-id="select-datlichhen-33v9" 
+                value={idBacSi} 
+                onChange={e => setIdBacSi(e.target.value)} 
+                disabled={!date}
+                style={{ width: '100%', boxSizing: 'border-box' }}
+              >
                 <option value="">{date ? "-- Bác sĩ khám (Tùy chọn) --" : "-- Vui lòng chọn ngày khám trước --"}</option>
                 {doctors.map(d => <option key={d.id_nhan_vien} value={d.id_nhan_vien}>{d.ho_ten} ({d.chuyen_mon})</option>)}
               </select>
-              <div style={{ display: 'grid', gap: '8px' }}>
-                <input data-ai-id="input-datlichhen-mc0h" required type="date" value={date} onChange={e => setDate(e.target.value)} min={new Date().toISOString().split("T")[0]} />
-              </div>
             </div>
           </div>
 

@@ -5,6 +5,7 @@ import com.rexi.pkty.security.RoleAccessPolicy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -24,6 +25,9 @@ public class AiToolService {
 
     @Autowired
     private EmailService emailService;
+
+    @Autowired
+    private AiToolService self;
 
     private final ObjectMapper mapper = new ObjectMapper();
 
@@ -166,7 +170,8 @@ public class AiToolService {
                 case "tim_thu_cung"          -> toolTimThuCung((String) params.getOrDefault("tu_khoa", ""));
                 case "xem_benh_an"           -> toolXemBenhAn((String) params.getOrDefault("id_thu_cung", ""));
                 case "tim_lich_trong"        -> toolTimLichTrong((String) params.getOrDefault("ngay", LocalDate.now(VN_ZONE).toString()));
-                case "dat_lich_hen"          -> toolDatLichHen(params);
+                // Gọi qua proxy self để @Transactional hoạt động (Spring AOP proxy pattern)
+                case "dat_lich_hen"          -> self.toolDatLichHen(params);
                 case "huy_lich_hen"          -> toolHuyLichHen(params, userRole, username);
                 case "cap_nhat_benh_an"      -> toolCapNhatBenhAn(params);
                 case "xem_kho_thuoc"         -> toolXemKhoThuoc((String) params.getOrDefault("tu_khoa", ""));
@@ -390,7 +395,8 @@ public class AiToolService {
         return "Ngày " + ngay + " còn " + available.size() + " khung giờ trống: " + String.join(", ", available);
     }
 
-    private String toolDatLichHen(Map<String, Object> p) {
+    @Transactional
+    String toolDatLichHen(Map<String, Object> p) {
         try {
             String idKhachHang = Objects.toString(p.get("id_khach_hang"), "").trim();
             String idThuCung = Objects.toString(p.get("id_thu_cung"), "").trim();
@@ -411,6 +417,8 @@ public class AiToolService {
             if (ngayKham.equals(today) && gioKham.isBefore(LocalTime.now(VN_ZONE).plusMinutes(30))) {
                 return "Lỗi đặt lịch: giờ khám phải cách thời điểm hiện tại tối thiểu 30 phút.";
             }
+
+            // Validate all entities exist before proceeding
             Integer customerExists = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM KhachHang WHERE id_khach_hang = ? AND (da_xoa = 0 OR da_xoa IS NULL)",
                 Integer.class, idKhachHang);
@@ -423,24 +431,40 @@ public class AiToolService {
             Integer serviceExists = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM DichVu WHERE id_dich_vu = ? AND (da_xoa = 0 OR da_xoa IS NULL)",
                 Integer.class, idDichVu);
-            if (Objects.requireNonNullElse(customerExists, 0) == 0) return "Lỗi đặt lịch: không tìm thấy khách hàng hợp lệ.";
-            if (Objects.requireNonNullElse(petExists, 0) == 0) return "Lỗi đặt lịch: thú cưng không thuộc khách hàng này hoặc đã bị xóa.";
-            if (Objects.requireNonNullElse(doctorExists, 0) == 0) return "Lỗi đặt lịch: không tìm thấy bác sĩ hợp lệ.";
-            if (Objects.requireNonNullElse(serviceExists, 0) == 0) return "Lỗi đặt lịch: không tìm thấy dịch vụ hợp lệ.";
-            Integer duplicateCount = jdbcTemplate.queryForObject(
+
+            // Null-safe validation
+            if (customerExists == null || customerExists == 0) return "Lỗi đặt lịch: không tìm thấy khách hàng hợp lệ.";
+            if (petExists == null || petExists == 0) return "Lỗi đặt lịch: thú cưng không thuộc khách hàng này hoặc đã bị xóa.";
+            if (doctorExists == null || doctorExists == 0) return "Lỗi đặt lịch: không tìm thấy bác sĩ hợp lệ.";
+            if (serviceExists == null || serviceExists == 0) return "Lỗi đặt lịch: không tìm thấy dịch vụ hợp lệ.";
+
+            // Check duplicate: cùng bác sĩ + cùng giờ
+            Integer duplicateDoctorSlot = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM LichHen WHERE ngay_kham = ? AND gio_kham = ? AND id_bac_si = ? AND trang_thai != 'DA_HUY'",
                 Integer.class, java.sql.Date.valueOf(ngayKham), java.sql.Time.valueOf(gioKham), idBacSi);
-            if (Objects.requireNonNullElse(duplicateCount, 0) > 0) {
+            if (duplicateDoctorSlot != null && duplicateDoctorSlot > 0) {
                 return "Lỗi đặt lịch: khung giờ này đã có lịch với bác sĩ đã chọn. Hãy chọn giờ khác.";
             }
+
+            // NEW: Check duplicate: cùng thú cưng + cùng giờ (chống đặt trùng lịch cho 1 thú cưng)
+            Integer duplicatePetSlot = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM LichHen WHERE ngay_kham = ? AND gio_kham = ? AND id_thu_cung = ? AND trang_thai != 'DA_HUY'",
+                Integer.class, java.sql.Date.valueOf(ngayKham), java.sql.Time.valueOf(gioKham), idThuCung);
+            if (duplicatePetSlot != null && duplicatePetSlot > 0) {
+                return "Lỗi đặt lịch: thú cưng này đã có lịch hẹn trùng giờ. Vui lòng chọn giờ khác cho bé.";
+            }
+
             String newId = "LH-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+            String ghiChu = Objects.toString(p.getOrDefault("ghi_chu", ""), "").trim();
+            if (ghiChu.isBlank()) ghiChu = "Đặt lịch qua Rexi AI Agent";
+
             String sql = "INSERT INTO LichHen (id_lich_hen, id_khach_hang, id_thu_cung, id_bac_si, id_dich_vu, ngay_kham, gio_kham, ghi_chu, trang_thai) " +
                          "VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'CHO_XAC_NHAN')";
             jdbcTemplate.update(sql,
                 newId,
                 idKhachHang, idThuCung, idBacSi,
                 idDichVu, java.sql.Date.valueOf(ngayKham), gioKham.toString(),
-                p.getOrDefault("ghi_chu", "Đặt lịch qua Rexi AI Agent"));
+                ghiChu);
             return "✅ Đặt lịch thành công! Mã lịch hẹn: " + newId + " vào " + ngayKham + " lúc " + gioKham;
         } catch (Exception e) {
             return "Lỗi đặt lịch: " + e.getMessage();

@@ -61,6 +61,23 @@ const PhanGioiThieu: React.FC = () => {
                 '--parallax-y': '0px'
             }}>
                 <style>{`
+                    @keyframes gradientAnimation {
+                        0% { background-position: 0% 50%; }
+                        50% { background-position: 100% 50%; }
+                        100% { background-position: 0% 50%; }
+                    }
+                    .hero-gradient-backdrop {
+                        position: absolute;
+                        top: 0;
+                        left: 0;
+                        width: 100%;
+                        height: 100%;
+                        background: linear-gradient(-45deg, rgba(34, 211, 238, 0.08), rgba(20, 184, 166, 0.08), rgba(16, 185, 129, 0.05), rgba(34, 211, 238, 0.03));
+                        background-size: 400% 400%;
+                        animation: gradientAnimation 12s ease infinite;
+                        z-index: 1;
+                        pointer-events: none;
+                    }
                     .hero-bg-layer {
                         position: absolute;
                         top: -10%;
@@ -80,8 +97,8 @@ const PhanGioiThieu: React.FC = () => {
                         width: 100%;
                         height: 100%;
                         background: ${isDark
-                        ? 'linear-gradient(180deg, rgba(15, 23, 42, 0.82), rgba(15, 23, 42, 0.70))'
-                        : 'linear-gradient(180deg, rgba(255,255,255,0.87), rgba(255,255,255,0.75))'};
+                        ? 'linear-gradient(180deg, rgba(15, 23, 42, 0.85), rgba(15, 23, 42, 0.72))'
+                        : 'linear-gradient(180deg, rgba(255,255,255,0.89), rgba(255,255,255,0.78))'};
                         z-index: 1;
                     }
                     .hero-light-effect {
@@ -90,7 +107,7 @@ const PhanGioiThieu: React.FC = () => {
                         left: 0;
                         width: 100%;
                         height: 100%;
-                        background: radial-gradient(circle at var(--mouse-x) var(--mouse-y), rgba(255,255,255,0.3) 0%, transparent 60%);
+                        background: radial-gradient(circle at var(--mouse-x) var(--mouse-y), rgba(255,255,255,0.25) 0%, transparent 60%);
                         pointer-events: none;
                         z-index: 2;
                         mix-blend-mode: overlay;
@@ -121,17 +138,93 @@ const PhanGioiThieu: React.FC = () => {
                         50%, 95% { opacity: 1; filter: blur(0); transform: scale(1); }
                         100% { opacity: 0; filter: blur(10px); transform: scale(0.95); }
                     }
+                    @keyframes floatSlow {
+                        0% { transform: translateY(0) rotate(0deg); opacity: 0.15; }
+                        50% { transform: translateY(-20px) rotate(15deg); opacity: 0.35; }
+                        100% { transform: translateY(0) rotate(0deg); opacity: 0.15; }
+                    }
+                    .floating-paw-1 {
+                        animation: floatSlow 7s ease-in-out infinite;
+                    }
+                    .floating-paw-2 {
+                        animation: floatSlow 9s ease-in-out infinite 2s;
+                    }
                     
-                    /* HIỆU ỨNG PHÁT SÁNG CHO CHỮ TRÊN BANNER (DARK MODE) - LÀM SẮC NÉT HƠN */
+                    /* HIỆU ỨNG PHÁT SÁNG NÚT CTA BẰNG GRADIENT WADHAH ALOUI STYLE */
+                    .cta-invite {
+                        position: relative;
+                        overflow: hidden;
+                        box-shadow: 0 0 20px rgba(34, 211, 238, 0.35);
+                        background: var(--primary-gradient) !important;
+                        border: none !important;
+                        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+                    }
+                    .cta-invite:hover {
+                        transform: translateY(-3px) scale(1.03);
+                        box-shadow: 0 12px 28px rgba(34, 211, 238, 0.55);
+                    }
+                    .cta-invite::after {
+                        content: '';
+                        position: absolute;
+                        top: -50%;
+                        left: -60%;
+                        width: 30%;
+                        height: 200%;
+                        background: rgba(255, 255, 255, 0.38);
+                        transform: rotate(35deg);
+                        pointer-events: none;
+                        transition: none;
+                    }
+                    .cta-invite:hover::after {
+                        left: 140%;
+                        transition: all 0.8s ease-in-out;
+                    }
+
+                    .hero-title {
+                        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+                    }
                     [data-theme='dark'] .hero-title {
-                        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6); /* Đổ bóng tối sắc nét, tăng độ tương phản và chống mỏi mắt */
+                        text-shadow: 0 0 55px rgba(45, 212, 191, 0.28), 0 0 22px rgba(15, 157, 138, 0.35), 0 2px 8px rgba(0, 0, 0, 0.55);
+                    }
+                    .hero-glow-text {
+                        color: #0f9d8a;
+                        text-shadow: 0 0 12px rgba(15, 157, 138, 0.25), 0 0 25px rgba(45, 212, 191, 0.15);
+                        animation: glowPulse 3s ease-in-out infinite;
+                        font-weight: 900;
+                    }
+                    [data-theme='dark'] .hero-glow-text {
+                        color: var(--primary);
+                        text-shadow: 0 0 18px rgba(15, 157, 138, 0.6), 0 0 36px rgba(45, 212, 191, 0.35);
+                    }
+                    
+                    /* Chữ chào phát sáng lớn phía sau động vật */
+                    .glow-bg-text {
+                        color: #ffffff;
+                        text-shadow: 
+                            0 0 10px rgba(15, 157, 138, 0.4), 
+                            0 0 20px rgba(15, 157, 138, 0.3), 
+                            0 0 40px rgba(45, 212, 191, 0.2);
+                        filter: drop-shadow(0 4px 8px rgba(0,0,0,0.06));
+                    }
+                    [data-theme='dark'] .glow-bg-text {
+                        color: #ffffff;
+                        text-shadow: 
+                            0 0 15px rgba(45, 212, 191, 0.95), 
+                            0 0 30px rgba(15, 157, 138, 0.75), 
+                            0 0 45px rgba(20, 184, 166, 0.55),
+                            0 0 60px rgba(34, 211, 238, 0.35);
+                    }
+
+                    @keyframes glowPulse {
+                        0%, 100% { filter: drop-shadow(0 0 2px rgba(15, 157, 138, 0.2)); }
+                        50% { filter: drop-shadow(0 0 8px rgba(15, 157, 138, 0.5)) drop-shadow(0 0 15px rgba(45, 212, 191, 0.3)); }
                     }
                     [data-theme='dark'] .hero-light-effect {
-                        mix-blend-mode: soft-light; /* Chuyển sang soft-light để bớt bị nhòe màu */
+                        mix-blend-mode: soft-light;
                         opacity: 0.8;
                     }
                     [data-theme='dark'] .floating-glass-card {
-                        background: rgba(15, 23, 42, 0.92) !important; /* Đậm hơn để nổi bật */
+                        background: rgba(15, 23, 42, 0.92) !important;
                         border-color: rgba(45, 212, 191, 0.5) !important;
                         box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5) !important;
                     }
@@ -139,10 +232,14 @@ const PhanGioiThieu: React.FC = () => {
 
                 {/* nền banner */}
                 <div className="hero-bg-layer" />
+                <div className="hero-gradient-backdrop" />
                 <div className="hero-overlay-layer" />
                 <div className="hero-light-effect" />
 
-                {/* hiệu ứng trang trí */}
+                {/* hiệu ứng trang trí lơ lửng động */}
+                <span className="material-symbols-outlined floating-paw-1" style={{ position: 'absolute', top: '15%', left: '15%', fontSize: '42px', color: 'var(--primary)', pointerEvents: 'none', zIndex: 3 }}>pets</span>
+                <span className="material-symbols-outlined floating-paw-2" style={{ position: 'absolute', bottom: '25%', right: '25%', fontSize: '36px', color: '#14b8a6', pointerEvents: 'none', zIndex: 3 }}>favorite</span>
+
                 <div className="floating-bg" style={{ position: 'absolute', top: '10%', left: '3%', width: '220px', opacity: 0.18, pointerEvents: 'none', zIndex: 3 }}>
                     <LottiePlayer url="https://assets3.lottiefiles.com/packages/lf20_syqnfe7c.json" />
                 </div>
@@ -162,12 +259,12 @@ const PhanGioiThieu: React.FC = () => {
                             </div>
 
                             <h1 className="hero-title" style={{ fontSize: "clamp(2.4rem, 4.5vw, 3.6rem)", fontWeight: 950, color: "var(--ink)", lineHeight: 1.1, marginBottom: "22px", fontFamily: "'Lora', serif", letterSpacing: "-1.5px" }}>
-                                Sức Khoẻ <span style={{ color: "var(--primary)" }}>Trọn Vẹn</span><br />
+                                Sức Khoẻ <span className="hero-glow-text">Trọn Vẹn</span><br />
                                 Cho <Typewriter words={["Thú Cưng", "Chó Cưng", "Mèo Cưng", "Người Bạn Nhỏ"]} />
                             </h1>
                             <p className="mission-text" style={{ 
                                 fontSize: "1.15rem", 
-                                color: isDark ? 'rgba(255, 255, 255, 0.85)' : '#4b5563', // Tăng độ tương phản vượt trội: màu xám đậm trong light mode, trắng dịu trong dark mode
+                                color: isDark ? 'rgba(255, 255, 255, 0.85)' : '#4b5563', 
                                 maxWidth: "580px", 
                                 marginBottom: "42px", 
                                 lineHeight: 1.8, 
@@ -182,15 +279,11 @@ const PhanGioiThieu: React.FC = () => {
                                 Rexi mang đến tiêu chuẩn y khoa quốc tế kết hợp cùng tình yêu thương vô bờ bến. Chúng tôi cam kết chăm sóc thú cưng của bạn như chính gia đình mình.
                             </p>
                             <div className="hero-cta-grid" style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-                                {/* ========================================================================= */}
-                                {/* ĐÂY LÀ NÚT "ĐẶT LỊCH HẸN NGAY" Ở BANNER CHÍNH TRANG CHỦ */}
-                                {/* ========================================================================= */}
                                 <a href="#" data-ai-id="button-hero-datlich-ngay" onClick={handleBookingClick} className="btn btn-primary btn-pill hero-cta-btn cta-invite" style={{ fontWeight: 900 }}>ĐẶT LỊCH HẸN NGAY</a>
                                 <a href="#services" data-ai-id="button-hero-xem-dich-vu" onClick={(e) => { e.preventDefault(); document.querySelector('#services')?.scrollIntoView({ behavior: 'smooth' }); }} className="btn btn-outline btn-pill hero-secondary-cta" style={{ color: 'var(--ink)', background: 'var(--surface)', borderColor: 'var(--gray-300)', fontWeight: 900 }}>XEM DỊCH VỤ</a>
                             </div>
 
-
-                            {/* Khối Chứng nhận & Đánh giá - nâng cấp thành pill cards */}
+                            {/* Khối Chứng nhận & Đánh giá */}
                             <div className="hero-stat-pill-container" style={{ display: "flex", gap: "14px", marginTop: "24px", flexWrap: 'wrap' }}>
                                 <div className="hero-stat-pill stat-item">
                                     <div style={{ background: "var(--green-50)", color: "var(--green-600)", width: "40px", height: "40px", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -225,6 +318,7 @@ const PhanGioiThieu: React.FC = () => {
                         </div>
 
                         <div className="hero-image-container">
+                            {/* Khối Glassmorphism Cấp cứu */}
                             <div className="glass-card floating-glass-card" style={{
                                 position: 'absolute',
                                 bottom: '20px',
@@ -249,43 +343,50 @@ const PhanGioiThieu: React.FC = () => {
                                 </div>
                             </div>
 
+                             {/* Khu vực trình diễn chó mèo động */}
                             <div style={{ position: "relative", width: "100%", height: "100%", overflow: "visible" }}>
+                                {/* VIDEO CHÓ VẪY TAY CHÀO */}
                                 <div style={{
                                     position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
-                                    zIndex: 2, animation: 'crossFade 10s infinite'
+                                    zIndex: 3, animation: 'crossFade 10s infinite'
                                 }}>
                                     <TransparentVideo 
-                                        src={isDark ? "/img/video_cho_chao.webm" : "/img/video_cho_chao.webm"} 
+                                        src="/img/video_cho_chao.webm" 
                                         playbackRate={0.6} 
                                         isDark={isDark} 
+                                        isCat={false}
+                                        variant="banner-dog"
                                         style={{
                                             width: '170%', height: '170%', objectFit: 'contain',
-                                            position: 'absolute', bottom: '-3%', left: '50%', transform: 'translateX(-50%)',
+                                            position: 'absolute', bottom: '-7%', left: '50%', transform: 'translateX(-50%)',
                                             objectPosition: 'center',
-                                            imageRendering: '-webkit-optimize-contrast' as any,
+                                            imageRendering: 'auto',
                                             filter: isDark 
-                                                ? 'contrast(1.08) saturate(1.08) drop-shadow(0 18px 36px rgba(0, 0, 0, 0.55)) drop-shadow(0 4px 14px rgba(45, 212, 191, 0.22))' 
-                                                : 'contrast(1.05) saturate(1.05) drop-shadow(0 15px 30px rgba(0, 0, 0, 0.16))'
+                                                ? 'contrast(1.08) saturate(1.08) drop-shadow(0 18px 36px rgba(0, 0, 0, 0.55)) drop-shadow(0 4px 14px rgba(45, 212, 191, 0.24)) drop-shadow(0 0 8px rgba(34, 211, 238, 0.18))' 
+                                                : 'contrast(1.05) saturate(1.05) drop-shadow(0 15px 30px rgba(0, 0, 0, 0.16)) drop-shadow(0 0 6px rgba(34, 211, 238, 0.12))'
                                         }} 
                                     />
                                 </div>
 
+                                {/* VIDEO MÈO VẪY TAY CHÀO */}
                                 <div style={{
                                     position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
-                                    zIndex: 1, animation: 'crossFadeReverse 10s infinite'
+                                    zIndex: 2, animation: 'crossFadeReverse 10s infinite'
                                 }}>
                                     <TransparentVideo 
                                         src="/img/video_meo_chao.webm" 
                                         playbackRate={0.6} 
                                         isDark={isDark} 
+                                        isCat={true}
+                                        variant="banner-cat"
                                         style={{
                                             width: '170%', height: '170%', objectFit: 'contain',
                                             position: 'absolute', bottom: '-3%', left: '50%', transform: 'translateX(-50%)',
                                             objectPosition: 'center',
-                                            imageRendering: '-webkit-optimize-contrast' as any,
+                                            imageRendering: 'auto',
                                             filter: isDark 
-                                                ? 'contrast(1.08) saturate(1.08) drop-shadow(0 18px 36px rgba(0, 0, 0, 0.55)) drop-shadow(0 4px 14px rgba(45, 212, 191, 0.22))' 
-                                                : 'contrast(1.05) saturate(1.05) drop-shadow(0 15px 30px rgba(0, 0, 0, 0.16))'
+                                                ? 'contrast(1.08) saturate(1.08) drop-shadow(0 18px 36px rgba(0, 0, 0, 0.55)) drop-shadow(0 4px 14px rgba(45, 212, 191, 0.24)) drop-shadow(0 0 8px rgba(34, 211, 238, 0.18))' 
+                                                : 'contrast(1.05) saturate(1.05) drop-shadow(0 15px 30px rgba(0, 0, 0, 0.16)) drop-shadow(0 0 6px rgba(34, 211, 238, 0.12))'
                                         }} 
                                     />
                                 </div>

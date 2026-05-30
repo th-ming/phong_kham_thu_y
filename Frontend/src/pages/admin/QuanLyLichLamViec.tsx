@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import axiosInstance from '@services/axios';
 import { toast } from '@components/Toast';
 import { RevealSection } from '@components/SpecialEffects';
@@ -30,11 +30,8 @@ const DOCTOR_COLORS = [
 const QuanLyLichLamViec: React.FC = () => {
     const user = getUserProfile();
     const userRole = useMemo(() => normalizeUserRole(user), [user]);
-    const userRoleRaw = userRole;
 
     const isAdmin = userRole === 'admin' || userRole === 'quan_ly';
-    
-    console.log('--- DEBUG SCHEDULE ---', { userRole, isAdmin });
 
     const [staffs, setStaffs] = useState<any[]>([]);
     const [schedules, setSchedules] = useState<any[]>([]);
@@ -58,6 +55,14 @@ const QuanLyLichLamViec: React.FC = () => {
     const [draggedShift, setDraggedShift] = useState<any>(null);
     const [dragOverSlot, setDragOverSlot] = useState<string | null>(null);
     const [isCopying, setIsCopying] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    // Confirm dialog thay thế window.confirm (đẹp hơn, không block UI)
+    const [confirmDialog, setConfirmDialog] = useState<{
+        open: boolean;
+        title: string;
+        message: string;
+        onConfirm: () => void;
+    }>({ open: false, title: '', message: '', onConfirm: () => {} });
     const currentStaffId = useMemo(() => {
         const directStaffId = user?.id_nhan_vien || user?.idNhanVien;
         if (directStaffId) return String(directStaffId);
@@ -154,7 +159,15 @@ const QuanLyLichLamViec: React.FC = () => {
                 const staffInfo = staffs.find(st => String(st.id_nhan_vien) === String(s.id_nhan_vien));
                 stats[s.id_nhan_vien] = { id_nhan_vien: s.id_nhan_vien, ho_ten: staffInfo ? staffInfo.ho_ten : 'Nhân viên', chuc_vu: staffInfo ? (staffInfo.chuyen_mon || staffInfo.chuc_vu || 'Nhân viên') : 'Nhân viên', hours: 0 };
             }
-            stats[s.id_nhan_vien].hours += 0.5; // Mỗi ca 30 phút = 0.5 giờ
+            // Tính giờ thực tế từ gio_ket_thuc - gio_bat_dau thay vì cứng 0.5h/ca
+            if (s.gio_bat_dau && s.gio_ket_thuc) {
+                const [startH, startM] = s.gio_bat_dau.split(':').map(Number);
+                const [endH, endM] = s.gio_ket_thuc.split(':').map(Number);
+                const durationHours = ((endH * 60 + endM) - (startH * 60 + startM)) / 60;
+                stats[s.id_nhan_vien].hours += durationHours > 0 ? durationHours : 0.5;
+            } else {
+                stats[s.id_nhan_vien].hours += 0.5; // Fallback nếu thiếu dữ liệu
+            }
         });
 
         return Object.values(stats).sort((a, b) => b.hours - a.hours);
@@ -198,24 +211,33 @@ const QuanLyLichLamViec: React.FC = () => {
 
     const confirmAddShift = async () => {
         if (!selectedStaffId || !selectedSlot) return;
+        // Validate nhân viên đã chọn
+        if (!selectedStaffId.trim()) {
+            toast.error("Vui lòng chọn nhân viên trước khi đăng ký ca!");
+            return;
+        }
 
+        setIsSubmitting(true);
         try {
             const payload = {
                 id_nhan_vien: selectedStaffId,
                 ngay_lam: selectedSlot.day.dateStr,
                 gio_bat_dau: `${String(selectedSlot.hour).padStart(2, '0')}:00:00`,
+                // Truyền giờ kết thúc thực tế (+1 tiếng, backend vẫn fallback nếu thiếu)
+                gio_ket_thuc: `${String(selectedSlot.hour + 1).padStart(2, '0')}:00:00`,
                 ghi_chu: isAdmin ? "Admin sắp xếp lịch" : "Đăng ký lịch trực"
             };
 
-            const headers = { Role: userRoleRaw };
-            await axiosInstance.post('/api/nhan-vien/lich-lam-viec', payload, { headers });
+            await axiosInstance.post('/api/nhan-vien/lich-lam-viec', payload);
             toast.success(isAdmin ? "Đã cập nhật ca trực!" : "Đã đăng ký ca trực thành công!");
             setShowAddModal(false);
             setStaffPickerOpen(false);
             fetchData();
         } catch (error: any) {
-            console.error('Server Error Details:', error.response?.data || error.message);
+            console.error('Lỗi đăng ký ca trực:', error.response?.data || error.message);
             toast.error(error.response?.data?.message || "Lỗi khi đăng ký ca trực. Vui lòng kiểm tra lại dữ liệu.");
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -260,97 +282,109 @@ const QuanLyLichLamViec: React.FC = () => {
     };
 
     const handleCopyScheduleToNextWeek = async (staffId: string) => {
-        if (!window.confirm("Bạn có chắc chắn muốn sao chép toàn bộ lịch trực của nhân viên này sang tuần tiếp theo không?")) return;
+        setConfirmDialog({
+            open: true,
+            title: 'Sao chép lịch trực',
+            message: 'Bạn có chắc chắn muốn sao chép toàn bộ lịch trực của nhân viên này sang tuần tiếp theo không?',
+            onConfirm: async () => {
+                setConfirmDialog(prev => ({ ...prev, open: false }));
 
-        const weekDateStrs = weekDates.map(d => d.dateStr);
-        const shiftsToCopy = schedules.filter(s => String(s.id_nhan_vien) === String(staffId) && weekDateStrs.includes(s.ngay_lam));
+                const weekDateStrs = weekDates.map(d => d.dateStr);
+                const shiftsToCopy = schedules.filter(s => String(s.id_nhan_vien) === String(staffId) && weekDateStrs.includes(s.ngay_lam));
 
-        if (shiftsToCopy.length === 0) {
-            toast.info("Nhân viên này không có ca trực nào trong tuần hiện tại để sao chép!");
-            return;
-        }
+                if (shiftsToCopy.length === 0) {
+                    toast.info("Nhân viên này không có ca trực nào trong tuần hiện tại để sao chép!");
+                    return;
+                }
 
-        let successCount = 0;
-        const headers = { Role: userRole };
+                let successCount = 0;
+                for (const shift of shiftsToCopy) {
+                    try {
+                        const date = new Date(`${shift.ngay_lam}T00:00:00`);
+                        date.setDate(date.getDate() + 7);
+                        const nextWeekDateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 
+                        const payload = {
+                            id_nhan_vien: shift.id_nhan_vien,
+                            ngay_lam: nextWeekDateStr,
+                            gio_bat_dau: shift.gio_bat_dau,
+                            gio_ket_thuc: shift.gio_ket_thuc,
+                            ghi_chu: shift.ghi_chu || "Sao chép lịch trực từ tuần trước"
+                        };
+                        await axiosInstance.post('/api/nhan-vien/lich-lam-viec', payload);
+                        successCount++;
+                    } catch (error) {
+                        // Bỏ qua lỗi trùng lịch
+                    }
+                }
 
-        for (const shift of shiftsToCopy) {
-            try {
-                const date = new Date(`${shift.ngay_lam}T00:00:00`);
-                date.setDate(date.getDate() + 7);
-                const nextWeekDateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-
-                const payload = {
-                    id_nhan_vien: shift.id_nhan_vien,
-                    ngay_lam: nextWeekDateStr,
-                    gio_bat_dau: shift.gio_bat_dau,
-                    ghi_chu: shift.ghi_chu || "Sao chép lịch trực từ tuần trước"
-                };
-                await axiosInstance.post('/api/nhan-vien/lich-lam-viec', payload, { headers });
-                successCount++;
-            } catch (error) {
-                // Bỏ qua lỗi trùng lịch
+                if (successCount > 0) {
+                    toast.success(`Đã sao chép thành công ${successCount} ca trực sang tuần tới!`);
+                    fetchData();
+                } else {
+                    toast.error("Không thể sao chép ca trực nào (Có thể do trùng lịch ở tuần tới).");
+                }
             }
-        }
-
-        if (successCount > 0) {
-            toast.success(`Đã sao chép thành công ${successCount} ca trực sang tuần tới!`);
-            fetchData();
-        } else {
-            toast.error("Không thể sao chép ca trực nào (Có thể do trùng lịch ở tuần tới).");
-        }
+        });
     };
 
     const handleCopyAllSchedulesToNextWeek = async () => {
-        if (!window.confirm("Bạn có chắc chắn muốn sao chép toàn bộ lịch trực của TẤT CẢ nhân viên trong tuần này sang tuần tiếp theo không?")) return;
+        setConfirmDialog({
+            open: true,
+            title: 'Sao chép toàn bộ lịch trực',
+            message: 'Bạn có chắc chắn muốn sao chép toàn bộ lịch trực của TẤT CẢ nhân viên trong tuần này sang tuần tiếp theo không?',
+            onConfirm: async () => {
+                setConfirmDialog(prev => ({ ...prev, open: false }));
 
-        const weekDateStrs = weekDates.map(d => d.dateStr);
-        const shiftsToCopy = schedules.filter(s => weekDateStrs.includes(s.ngay_lam));
+                const weekDateStrs = weekDates.map(d => d.dateStr);
+                const shiftsToCopy = schedules.filter(s => weekDateStrs.includes(s.ngay_lam));
 
-        if (shiftsToCopy.length === 0) {
-            toast.info("Không có ca trực nào trong tuần hiện tại để sao chép!");
-            return;
-        }
+                if (shiftsToCopy.length === 0) {
+                    toast.info("Không có ca trực nào trong tuần hiện tại để sao chép!");
+                    return;
+                }
 
-        setIsCopying(true);
-        let successCount = 0;
-        let failCount = 0;
-        const headers = { Role: userRoleRaw };
+                setIsCopying(true);
+                let successCount = 0;
+                let failCount = 0;
 
-        try {
-            for (const shift of shiftsToCopy) {
                 try {
-                    const date = new Date(`${shift.ngay_lam}T00:00:00`);
-                    date.setDate(date.getDate() + 7);
-                    const nextWeekDateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+                    for (const shift of shiftsToCopy) {
+                        try {
+                            const date = new Date(`${shift.ngay_lam}T00:00:00`);
+                            date.setDate(date.getDate() + 7);
+                            const nextWeekDateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 
-                    const payload = {
-                        id_nhan_vien: shift.id_nhan_vien,
-                        ngay_lam: nextWeekDateStr,
-                        gio_bat_dau: shift.gio_bat_dau,
-                        ghi_chu: shift.ghi_chu || "Sao chép lịch trực từ tuần trước"
-                    };
-                    await axiosInstance.post('/api/nhan-vien/lich-lam-viec', payload, { headers });
-                    successCount++;
-                } catch (error) {
-                    failCount++;
+                            const payload = {
+                                id_nhan_vien: shift.id_nhan_vien,
+                                ngay_lam: nextWeekDateStr,
+                                gio_bat_dau: shift.gio_bat_dau,
+                                gio_ket_thuc: shift.gio_ket_thuc,
+                                ghi_chu: shift.ghi_chu || "Sao chép lịch trực từ tuần trước"
+                            };
+                            await axiosInstance.post('/api/nhan-vien/lich-lam-viec', payload);
+                            successCount++;
+                        } catch (error) {
+                            failCount++;
+                        }
+                    }
+
+                    if (successCount > 0) {
+                        toast.success(`Đã sao chép thành công ${successCount} ca trực sang tuần tới!`);
+                        if (failCount > 0) toast.info(`Có ${failCount} ca bị trùng hoặc lỗi không thể sao chép.`);
+                        fetchData();
+                    } else {
+                        toast.error("Không thể sao chép ca trực nào. Có thể tất cả các ca đều đã tồn tại ở tuần tới.");
+                    }
+                } finally {
+                    setIsCopying(false);
                 }
             }
-            
-            if (successCount > 0) {
-                toast.success(`Đã sao chép thành công ${successCount} ca trực sang tuần tới!`);
-                if (failCount > 0) toast.info(`Có ${failCount} ca bị trùng hoặc lỗi không thể sao chép.`);
-                fetchData();
-            } else {
-                toast.error("Không thể sao chép ca trực nào. Có thể tất cả các ca đều đã tồn tại ở tuần tới.");
-            }
-        } finally {
-            setIsCopying(false);
-        }
+        });
     };
 
     const handleMoveShift = async (shift: any, targetDay: any, targetHour: number) => {
-        // KIỂM TRA QUYỀN SỞ HỮU: Nhân viên ko được động vào lịch người khác
+        // Kiểm tra quyền sở hữu: nhân viên không được động vào lịch người khác
         if (!isAdmin && String(shift.id_nhan_vien) !== currentStaffId) {
             toast.error("Bạn không có quyền di chuyển lịch trực của người khác!");
             return;
@@ -363,25 +397,25 @@ const QuanLyLichLamViec: React.FC = () => {
 
         const newDateStr = targetDay.dateStr;
         const newTimeStr = `${String(targetHour).padStart(2, '0')}:00:00`;
+        const newEndTimeStr = `${String(targetHour + 1).padStart(2, '0')}:00:00`;
 
         if (shift.ngay_lam === newDateStr && shift.gio_bat_dau?.startsWith(String(targetHour).padStart(2, '0'))) {
-            return; // Đã ở đúng vị trí
+            return; // Đã ở đúng vị trí rồi
         }
 
         try {
-            const headers = { Role: userRoleRaw };
-
             // Xóa lịch cũ trước
-            await axiosInstance.delete(`/api/nhan-vien/lich-lam-viec/${shift.id_lich_lam_viec}`, { headers });
+            await axiosInstance.delete(`/api/nhan-vien/lich-lam-viec/${shift.id_lich_lam_viec}`);
 
-            // Thêm lịch mới
+            // Thêm lịch mới ở vị trí đã kéo đến
             const payload = {
                 id_nhan_vien: shift.id_nhan_vien,
                 ngay_lam: newDateStr,
                 gio_bat_dau: newTimeStr,
+                gio_ket_thuc: newEndTimeStr,
                 ghi_chu: shift.ghi_chu || "Chuyển lịch trực"
             };
-            await axiosInstance.post('/api/nhan-vien/lich-lam-viec', payload, { headers });
+            await axiosInstance.post('/api/nhan-vien/lich-lam-viec', payload);
 
             toast.success("Đã cập nhật ca trực!");
             fetchData();
@@ -392,28 +426,33 @@ const QuanLyLichLamViec: React.FC = () => {
     };
 
     const handleDeleteShift = async (id: number, shiftStaffId: string) => {
-        // KIỂM TRA QUYỀN SỞ HỮU
+        // Kiểm tra quyền sở hữu
         if (!isAdmin && String(shiftStaffId) !== currentStaffId) {
             toast.error("Bạn không có quyền xóa lịch trực của người khác!");
             return;
         }
 
-        // RÀNG BUỘC: Tương tự khi xóa
+        // Ràng buộc: không được xóa ca tuần hiện tại
         if (!isAdmin && weekOffset < 1) {
             toast.error("Bạn không thể xóa lịch trực ở tuần hiện tại. Vui lòng liên hệ Admin.");
             return;
         }
 
-        if (!window.confirm("Bạn có chắc chắn muốn hủy ca trực này?")) return;
-
-        try {
-            const headers = { Role: userRoleRaw };
-            await axiosInstance.delete(`/api/nhan-vien/lich-lam-viec/${id}`, { headers });
-            toast.success("Đã hủy ca trực");
-            fetchData();
-        } catch (error: any) {
-            toast.error(error.response?.data?.message || "Lỗi khi hủy ca trực");
-        }
+        setConfirmDialog({
+            open: true,
+            title: 'Hủy ca trực',
+            message: 'Bạn có chắc chắn muốn hủy ca trực này không?',
+            onConfirm: async () => {
+                setConfirmDialog(prev => ({ ...prev, open: false }));
+                try {
+                    await axiosInstance.delete(`/api/nhan-vien/lich-lam-viec/${id}`);
+                    toast.success("Đã hủy ca trực");
+                    fetchData();
+                } catch (error: any) {
+                    toast.error(error.response?.data?.message || "Lỗi khi hủy ca trực");
+                }
+            }
+        });
     };
 
 
@@ -991,8 +1030,66 @@ const QuanLyLichLamViec: React.FC = () => {
                         </div>
 
                         <div style={{ display: 'flex', gap: '12px' }}>
-                            <button data-ai-id="button-quanlylichlamviec-9xrv" className="btn btn-outline btn-pill" style={{ flex: 1 }} onClick={() => { setShowAddModal(false); setStaffPickerOpen(false); }}>HỦY</button>
-                            <button data-ai-id="button-quanlylichlamviec-76g1" className="btn btn-primary btn-pill" style={{ flex: 1, fontWeight: 900 }} onClick={confirmAddShift}>XÁC NHẬN</button>
+                            <button
+                                data-ai-id="button-quanlylichlamviec-9xrv"
+                                className="btn btn-outline btn-pill"
+                                style={{ flex: 1 }}
+                                onClick={() => { setShowAddModal(false); setStaffPickerOpen(false); }}
+                                disabled={isSubmitting}
+                            >
+                                HỦY
+                            </button>
+                            <button
+                                data-ai-id="button-quanlylichlamviec-76g1"
+                                className="btn btn-primary btn-pill"
+                                style={{ flex: 1, fontWeight: 900, opacity: isSubmitting ? 0.7 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                                onClick={confirmAddShift}
+                                disabled={isSubmitting}
+                            >
+                                {isSubmitting && <span className="material-symbols-outlined" style={{ fontSize: '16px', animation: 'spin 1s linear infinite' }}>sync</span>}
+                                {isSubmitting ? 'ĐANG LƯU...' : 'XÁC NHẬN'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* CONFIRM DIALOG — thay thế window.confirm, không block UI trình duyệt */}
+            {confirmDialog.open && (
+                <div
+                    style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000 }}
+                    onClick={() => setConfirmDialog(prev => ({ ...prev, open: false }))}
+                >
+                    <div
+                        className="glass-card"
+                        onClick={e => e.stopPropagation()}
+                        style={{ width: '400px', padding: '36px', borderRadius: '28px', background: 'var(--surface)', boxShadow: 'var(--shadow-xl)', textAlign: 'center' }}
+                    >
+                        {/* Icon câu hỏi */}
+                        <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: 'rgba(245, 158, 11, 0.15)', border: '2px solid rgba(245, 158, 11, 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+                            <span className="material-symbols-outlined" style={{ fontSize: '28px', color: '#f59e0b' }}>help</span>
+                        </div>
+                        <h3 style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--ink)', margin: '0 0 12px', letterSpacing: '-0.5px' }}>
+                            {confirmDialog.title}
+                        </h3>
+                        <p style={{ color: 'var(--gray-500)', fontWeight: 600, margin: '0 0 28px', lineHeight: 1.6, fontSize: '0.9rem' }}>
+                            {confirmDialog.message}
+                        </p>
+                        <div style={{ display: 'flex', gap: '12px' }}>
+                            <button
+                                className="btn btn-outline btn-pill"
+                                style={{ flex: 1 }}
+                                onClick={() => setConfirmDialog(prev => ({ ...prev, open: false }))}
+                            >
+                                Hủy bỏ
+                            </button>
+                            <button
+                                className="btn btn-primary btn-pill"
+                                style={{ flex: 1, fontWeight: 900 }}
+                                onClick={confirmDialog.onConfirm}
+                            >
+                                Xác nhận
+                            </button>
                         </div>
                     </div>
                 </div>

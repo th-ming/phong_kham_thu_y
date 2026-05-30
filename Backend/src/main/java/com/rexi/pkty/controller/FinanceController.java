@@ -54,7 +54,7 @@ public class FinanceController {
 
             String roleName = roles.get(0).toLowerCase();
             return roleName.contains("admin") || roleName.contains("quản lý") || roleName.contains("kế toán")
-                    || roleName.contains("quản trị") || roleName.contains("nhân viên") || roleName.contains("bác sĩ");
+                    || roleName.contains("quản trị");
         } catch (Exception e) {
             return false;
         }
