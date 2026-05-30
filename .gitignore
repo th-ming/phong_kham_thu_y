@@ -46,3 +46,9 @@ Backend/src/main/resources/knowledge/vnua_docs/
 *.iml
 .DS_Store
 Thumbs.db
+
+# 7. Media & Kết quả Test (Không push lên GitHub)
+artifacts/
+video_out/
+test-results/
+
