@@ -87,9 +87,8 @@ public class SystemController {
             if (securityAlertService == null) {
                 return ResponseEntity.ok(Map.of("received", true, "realtime", false));
             }
-            String ip = request.getHeader("X-Forwarded-For");
-            if (ip == null || ip.isBlank()) ip = request.getRemoteAddr();
-            if (ip != null && ip.contains(",")) ip = ip.split(",")[0].trim();
+            // Dùng extractRealIp để hỗ trợ Cloudflare / nginx proxy — tránh chặn nhầm IP proxy
+            String ip = securityAlertService.extractRealIp(request);
             String userAgent = request.getHeader("User-Agent");
             Map<String, Object> alert = securityAlertService.reportClientError(payload, ip, userAgent);
             return ResponseEntity.ok(Map.of("received", true, "alertId", alert.get("id")));
@@ -329,6 +328,28 @@ public class SystemController {
                     .body(resource);
         } catch (Exception e) {
             return ResponseEntity.status(500).build();
+        }
+    }
+
+    @PostMapping("/restore/{filename}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> restoreDatabase(@PathVariable String filename) {
+        try {
+            // Delegate hoàn toàn sang service — đã có bảo vệ path traversal và kiểm tra tên file
+            databaseBackupService.restoreDatabase(filename);
+            auditLogService.logAction("RESTORE", "DATABASE", "Khôi phục CSDL từ file: " + filename);
+            logger.info("✅ Đã khôi phục CSDL từ file: " + filename);
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "Khôi phục dữ liệu thành công từ file: " + filename
+            ));
+        } catch (IllegalArgumentException | SecurityException e) {
+            return ResponseEntity.status(400).body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            logger.severe("Lỗi khi khôi phục CSDL: " + e.getMessage());
+            return ResponseEntity.status(500).body(Map.of(
+                "message", "Lỗi khôi phục CSDL: " + e.getMessage()
+            ));
         }
     }
 
@@ -745,6 +766,10 @@ public class SystemController {
     }
 
     private String getClientIp(jakarta.servlet.http.HttpServletRequest request) {
+        // Dùng extractRealIp để nhất quán với RateLimitFilter (Cloudflare, nginx, X-Forwarded-For)
+        if (securityAlertService != null) {
+            return securityAlertService.extractRealIp(request);
+        }
         String forwardedFor = request.getHeader("X-Forwarded-For");
         if (forwardedFor != null && !forwardedFor.isBlank()) {
             return forwardedFor.split(",")[0].trim();
