@@ -47,9 +47,9 @@ public class AiToolService {
             TOOLS ĐƯỢC PHÉP VỚI VAI TRÒ HIỆN TẠI:
             """);
         appendToolIfAllowed(sb, userRole, "tim_lich_hen_hom_nay",
-            "Lấy danh sách lịch hẹn khám hôm nay.", "{}");
+            "Lấy danh sách lịch hẹn khám. Truyền params 'pham_vi'='all' để lấy toàn bộ lịch sử lịch khám từ trước tới nay, mặc định chỉ lấy hôm nay.", "{\"pham_vi\": \"hom_nay|all\"}");
         appendToolIfAllowed(sb, userRole, "tim_khach_hang",
-            "Tìm khách hàng theo tên, SĐT hoặc Email.", "{\"tu_khoa\": \"...\"}");
+            "Tìm khách hàng theo tên, SĐT hoặc Email. Điền 'mới' hoặc để trống để tìm khách hàng đăng ký hôm nay.", "{\"tu_khoa\": \"...\"}");
         appendToolIfAllowed(sb, userRole, "tim_thu_cung",
             "Tìm thú cưng theo tên, loài hoặc ID.", "{\"tu_khoa\": \"...\"}");
         appendToolIfAllowed(sb, userRole, "xem_benh_an",
@@ -161,7 +161,7 @@ public class AiToolService {
         }
         try {
             return switch (toolName) {
-                case "tim_lich_hen_hom_nay" -> toolTimLichHenHomNay();
+                case "tim_lich_hen_hom_nay" -> toolTimLichHenHomNay(params);
                 case "tim_khach_hang"        -> toolTimKhachHang((String) params.getOrDefault("tu_khoa", ""));
                 case "tim_thu_cung"          -> toolTimThuCung((String) params.getOrDefault("tu_khoa", ""));
                 case "xem_benh_an"           -> toolXemBenhAn((String) params.getOrDefault("id_thu_cung", ""));
@@ -193,10 +193,12 @@ public class AiToolService {
     // IMPLEMENTATIONS
     // ─────────────────────────────────────────────
 
-    private String toolTimLichHenHomNay() {
-        LocalDate today = LocalDate.now(VN_ZONE);
+    private String toolTimLichHenHomNay(Map<String, Object> params) {
+        String phamVi = params != null ? Objects.toString(params.getOrDefault("pham_vi", "hom_nay"), "hom_nay").trim().toLowerCase() : "hom_nay";
+        boolean isAll = phamVi.equals("all") || phamVi.equals("lich_su") || phamVi.equals("toan_bo");
+
         String sql = "SELECT lh.id_lich_hen, kh.ten_khach_hang, kh.sdt, tc.ten_thu_cung, " +
-                     "dv.ten_dich_vu, nv.ho_ten AS ten_bac_si, lh.gio_kham, lh.trang_thai " +
+                     "dv.ten_dich_vu, nv.ho_ten AS ten_bac_si, lh.ngay_kham, lh.gio_kham, lh.trang_thai " +
                      "FROM LichHen lh " +
                      "JOIN KhachHang kh ON lh.id_khach_hang = kh.id_khach_hang " +
                      "LEFT JOIN ThuCung tc ON lh.id_thu_cung = tc.id_thu_cung " +
@@ -230,7 +232,33 @@ public class AiToolService {
     }
 
     private String toolTimKhachHang(String tuKhoa) {
-        if (tuKhoa == null || tuKhoa.trim().isEmpty()) return "Vui lòng cung cấp từ khóa tìm kiếm.";
+        String normalizedKw = tuKhoa != null ? normalizeVietnamese(tuKhoa.toLowerCase().trim()) : "";
+        boolean isQueryTodayNew = normalizedKw.isEmpty() 
+                                  || normalizedKw.equals("moi") 
+                                  || normalizedKw.equals("hom nay") 
+                                  || normalizedKw.equals("khach hang moi")
+                                  || normalizedKw.equals("moi nhat")
+                                  || normalizedKw.equals("khach hang moi hom nay");
+
+        if (isQueryTodayNew) {
+            LocalDate today = LocalDate.now(VN_ZONE);
+            String sql = "SELECT TOP 10 id_khach_hang, ten_khach_hang, sdt, email, dia_chi, ngay_tao " +
+                         "FROM KhachHang " +
+                         "WHERE (da_xoa = 0 OR da_xoa IS NULL) " +
+                         "AND CAST(ngay_tao AS DATE) = ? " +
+                         "ORDER BY ngay_tao DESC";
+            var matchedRows = jdbcTemplate.queryForList(sql, java.sql.Date.valueOf(today));
+            if (matchedRows.isEmpty()) {
+                return "Hôm nay phòng khám chưa ghi nhận khách hàng đăng ký mới nào sếp ơi! 🐾";
+            }
+            StringBuilder sb = new StringBuilder("Danh sách khách hàng đăng ký mới hôm nay (" + matchedRows.size() + " người):\n");
+            for (var r : matchedRows) {
+                sb.append("- Tên: ").append(r.get("ten_khach_hang"))
+                  .append(" | SĐT: ").append(r.get("sdt"))
+                  .append(" | ID: ").append(r.get("id_khach_hang")).append("\n");
+            }
+            return sb.toString();
+        }
         
         String[] keywords = tuKhoa.trim().split("\\s+");
         StringBuilder sql = new StringBuilder(

@@ -96,69 +96,75 @@ axiosInstance.interceptors.response.use(
   async (error: AxiosError) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
-    if (error.response?.status === 401 && originalRequest && !originalRequest._retry && !originalRequest.url?.includes('/api/auth/')) {
-      // Nếu đang refresh, cho các request khác vào hàng đợi chờ
-      if (isRefreshing) {
-        return new Promise(function (resolve, reject) {
-          failedQueue.push({ resolve, reject });
-        }).then(token => {
-          originalRequest.headers.Authorization = 'Bearer ' + token;
-          return axiosInstance(originalRequest);
-        }).catch(err => {
-          return Promise.reject(err);
-        });
-      }
-
-      originalRequest._retry = true;
-      isRefreshing = true;
-
-      // Thử refresh qua cookie trước (server sẽ đọc rexi_refresh_token cookie tự động)
-      // Fallback: đọc từ localStorage nếu có
-      const refreshToken = localStorage.getItem('refreshToken');
-
-      if (!refreshToken) {
-        // Cookie refresh flow: thử gọi refresh mà không cần body (server đọc cookie)
-        try {
-          const rs = await axios.post(`${API_BASE_URL}/api/auth/refresh-token`, {}, { withCredentials: true });
-          const newToken = rs.data.token;
-          if (newToken) {
-            localStorage.setItem('token', newToken);
-            axiosInstance.defaults.headers.common['Authorization'] = 'Bearer ' + newToken;
-            originalRequest.headers.Authorization = 'Bearer ' + newToken;
-            processQueue(null, newToken);
-            isRefreshing = false;
+    if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
+      // Bỏ qua tự động refresh cho các API auth (đăng nhập, đăng ký, refresh), nhưng CHO PHÉP đối với đổi mật khẩu và tạo nhanh khách hàng
+      const isAuthRoute = originalRequest.url?.includes('/api/auth/') && 
+                          !originalRequest.url?.includes('/api/auth/change-password') &&
+                          !originalRequest.url?.includes('/api/auth/register-simple');
+      if (!isAuthRoute) {
+        // Nếu đang refresh, cho các request khác vào hàng đợi chờ
+        if (isRefreshing) {
+          return new Promise(function (resolve, reject) {
+            failedQueue.push({ resolve, reject });
+          }).then(token => {
+            originalRequest.headers.Authorization = 'Bearer ' + token;
             return axiosInstance(originalRequest);
-          }
-        } catch {
-          // Cookie refresh cũng thất bại → logout
+          }).catch(err => {
+            return Promise.reject(err);
+          });
         }
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        isRefreshing = false;
-        window.location.href = '/dang-nhap';
-        return Promise.reject(error);
-      }
 
-      try {
-        // Gọi API refresh token (dùng body khi có localStorage refreshToken)
-        const rs = await axios.post(`${API_BASE_URL}/api/auth/refresh-token`, { refreshToken }, { withCredentials: true });
-        const newToken = rs.data.token;
+        originalRequest._retry = true;
+        isRefreshing = true;
 
-        localStorage.setItem('token', newToken);
-        axiosInstance.defaults.headers.common['Authorization'] = 'Bearer ' + newToken;
-        originalRequest.headers.Authorization = 'Bearer ' + newToken;
+        // Thử refresh qua cookie trước (server sẽ đọc rexi_refresh_token cookie tự động)
+        // Fallback: đọc từ localStorage nếu có
+        const refreshToken = localStorage.getItem('refreshToken');
 
-        processQueue(null, newToken);
-        return axiosInstance(originalRequest);
-      } catch (err) {
-        processQueue(err, null);
-        localStorage.removeItem('token');
-        localStorage.removeItem('refreshToken');
-        localStorage.removeItem('user');
-        window.location.href = '/dang-nhap';
-        return Promise.reject(err);
-      } finally {
-        isRefreshing = false;
+        if (!refreshToken) {
+          // Cookie refresh flow: thử gọi refresh mà không cần body (server đọc cookie)
+          try {
+            const rs = await axios.post(`${API_BASE_URL}/api/auth/refresh-token`, {}, { withCredentials: true });
+            const newToken = rs.data.token;
+            if (newToken) {
+              localStorage.setItem('token', newToken);
+              axiosInstance.defaults.headers.common['Authorization'] = 'Bearer ' + newToken;
+              originalRequest.headers.Authorization = 'Bearer ' + newToken;
+              processQueue(null, newToken);
+              isRefreshing = false;
+              return axiosInstance(originalRequest);
+            }
+          } catch {
+            // Cookie refresh cũng thất bại → logout
+          }
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          isRefreshing = false;
+          window.location.href = '/dang-nhap';
+          return Promise.reject(error);
+        }
+
+        try {
+          // Gọi API refresh token (dùng body khi có localStorage refreshToken)
+          const rs = await axios.post(`${API_BASE_URL}/api/auth/refresh-token`, { refreshToken }, { withCredentials: true });
+          const newToken = rs.data.token;
+
+          localStorage.setItem('token', newToken);
+          axiosInstance.defaults.headers.common['Authorization'] = 'Bearer ' + newToken;
+          originalRequest.headers.Authorization = 'Bearer ' + newToken;
+
+          processQueue(null, newToken);
+          return axiosInstance(originalRequest);
+        } catch (err) {
+          processQueue(err, null);
+          localStorage.removeItem('token');
+          localStorage.removeItem('refreshToken');
+          localStorage.removeItem('user');
+          window.location.href = '/dang-nhap';
+          return Promise.reject(err);
+        } finally {
+          isRefreshing = false;
+        }
       }
     }
     return Promise.reject(error);
