@@ -615,7 +615,7 @@ const DashboardKhachHang: React.FC = () => {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '32px', marginBottom: '40px' }}>
         {stats.map((item, i) => (
-          <div key={i} className="glass-card hover-lift kpi-card" style={{ padding: '32px', borderRadius: '32px', border: `1px solid ${item.color}20`, minHeight: '190px' }}>
+          <div key={i} className="glass-card hover-lift kpi-card" style={{ padding: '32px', borderRadius: '32px', border: `1px solid ${item.color}25`, background: `linear-gradient(135deg, ${item.color}15 0%, var(--surface) 100%)`, minHeight: '190px' }}>
             {item.trendData && (
               <button
                 type="button"
@@ -635,20 +635,92 @@ const DashboardKhachHang: React.FC = () => {
               </div>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-              <div style={{ background: `${item.color}15`, color: item.color, width: '60px', height: '60px', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 0 20px ${item.color}20` }}>
+              <div style={{ background: `${item.color}22`, color: item.color, width: '60px', height: '60px', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 8px 20px ${item.color}15` }}>
                 <span className="material-symbols-outlined" style={{ fontSize: '30px' }}>{item.icon}</span>
               </div>
             </div>
             <p style={{ fontSize: '0.8rem', fontWeight: 900, color: 'var(--gray-500)', margin: '0 0 8px 0', textTransform: 'uppercase', letterSpacing: '1px' }}>{item.label}</p>
-            <h3 style={{ fontSize: '2rem', fontWeight: 950, color: 'var(--ink)', margin: 0 }}>{item.value}</h3>
+            <h3 style={{ fontSize: '2rem', fontWeight: 950, color: item.color, margin: 0, textShadow: `0 2px 10px ${item.color}10` }}>{item.value}</h3>
           </div>
         ))}
+      </div>
+
+      {/* 📸 BỘ SƯU TẬP THẺ THÚ CƯNG ĐẸP NHƯ INSTAGRAM WADHAH ALOUI STYLE */}
+      <div className="stagger-2" style={{ marginBottom: '40px' }}>
+        <h3 style={{ fontSize: '1.25rem', fontWeight: 950, color: 'var(--ink)', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px', letterSpacing: '-0.5px' }}>
+          <span className="material-symbols-outlined" style={{ color: 'var(--primary)' }}>photo_library</span>
+          Boss cưng của mình ({pets.length})
+        </h3>
+        {pets.length === 0 ? (
+          <div style={{ padding: '32px', background: 'var(--gray-50)', borderRadius: '24px', border: '1px dashed var(--gray-200)', textAlign: 'center' }}>
+            <span style={{ fontSize: '2.5rem' }}>🐾</span>
+            <p style={{ fontWeight: 800, color: 'var(--gray-400)', marginTop: '8px' }}>Chưa có bé cưng nào trong hồ sơ.</p>
+            <Link to="/khach-hang/quan-ly-thu-cung" className="btn btn-primary btn-pill" style={{ marginTop: '12px' }}>+ Thêm bé ngay</Link>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', gap: '20px', overflowX: 'auto', padding: '10px 4px 20px 4px', scrollbarWidth: 'none', msOverflowStyle: 'none' }} className="pet-instagram-slider">
+            <style>{`
+              .pet-instagram-slider::-webkit-scrollbar { display: none; }
+              .pet-insta-card {
+                min-width: 160px;
+                width: 160px;
+                background: var(--surface);
+                border-radius: 28px;
+                border: 1px solid var(--gray-200);
+                padding: 20px 16px;
+                text-align: center;
+                transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+                box-shadow: var(--shadow-sm);
+                cursor: pointer;
+              }
+              .pet-insta-card:hover {
+                transform: translateY(-8px) scale(1.03);
+                border-color: var(--primary) !important;
+                box-shadow: 0 15px 30px rgba(15, 157, 138, 0.15);
+              }
+            `}</style>
+            {pets.map(p => {
+              const avatarChar = p.loai?.toLowerCase().includes("mèo") ? "🐱" : p.loai?.toLowerCase().includes("chó") ? "🐶" : "🐰";
+              return (
+                <div key={p.id_thu_cung} className="pet-insta-card" onClick={() => navigate('/khach-hang/quan-ly-thu-cung')}>
+                  <div style={{ 
+                    width: '80px', 
+                    height: '80px', 
+                    borderRadius: '50%', 
+                    background: 'var(--primary-light)', 
+                    margin: '0 auto 12px', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
+                    fontSize: p.hinh_anh ? 'unset' : '2.5rem', 
+                    boxShadow: '0 8px 20px rgba(34, 211, 238, 0.15)',
+                    overflow: 'hidden',
+                    border: '2px solid var(--gray-100)'
+                  }}>
+                    {p.hinh_anh ? (
+                      <img src={p.hinh_anh} alt={p.ten_thu_cung} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : (
+                      avatarChar
+                    )}
+                  </div>
+                  <div style={{ fontWeight: 900, color: 'var(--ink)', fontSize: '0.95rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.ten_thu_cung}</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--gray-400)', fontWeight: 800, marginTop: '4px' }}>{p.giong || p.loai}</div>
+                </div>
+              );
+            })}
+            {/* Thẻ thêm bé nhanh */}
+            <div className="pet-insta-card" onClick={() => navigate('/khach-hang/quan-ly-thu-cung')} style={{ borderStyle: 'dashed', borderColor: 'var(--primary)', background: 'rgba(34, 211, 238, 0.02)', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: '166px' }}>
+              <span className="material-symbols-outlined" style={{ fontSize: '32px', color: 'var(--primary)', marginBottom: '8px' }}>add_circle</span>
+              <span style={{ fontWeight: 800, color: 'var(--primary)', fontSize: '0.85rem' }}>Thêm bé mới</span>
+            </div>
+          </div>
+        )}
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '32px' }} className="stagger-3">
         <div className="glass-card hover-lift" style={{ padding: '32px', borderRadius: 'var(--radius-xl)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-            <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--ink)' }}>Lịch hẹn sắp tới</h3>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 950, color: 'var(--ink)', letterSpacing: '-0.5px', margin: 0 }}>Lịch hẹn sắp tới</h3>
             <Link to="/khach-hang/dat-lich-hen" className="btn btn-primary btn-pill" style={{ padding: '8px 24px', fontSize: '0.85rem' }}>
               <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>add</span>
               Đặt lịch mới
@@ -662,7 +734,6 @@ const DashboardKhachHang: React.FC = () => {
             </div>
           ) : (
             <div style={{ display: 'grid', gap: '16px' }}>
-              {/* Chỉ hiển thị tối đa 3 lịch hẹn sắp tới trên giao diện danh sách */}
               {upcoming.slice(0, 3).map((app, i) => (
                 <div key={i} className="appointment-card" style={{ background: 'var(--surface)', padding: '20px', borderRadius: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -670,8 +741,8 @@ const DashboardKhachHang: React.FC = () => {
                       <span className="material-symbols-outlined">calendar_today</span>
                     </div>
                     <div>
-                      <p style={{ fontWeight: 800, color: 'var(--ink)', margin: 0 }}>{app.ly_do || 'Khám tổng quát'}</p>
-                      <p style={{ fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 600, margin: '2px 0 0 0' }}>Dành cho: <b style={{ color: 'var(--primary)' }}>{pets.find(p => p.id_thu_cung === app.id_thu_cung)?.ten_thu_cung || 'Thú cưng'}</b></p>
+                      <p style={{ fontWeight: 850, color: 'var(--ink)', margin: 0 }}>{app.ly_do || 'Khám tổng quát'}</p>
+                      <p style={{ fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 700, margin: '2px 0 0 0' }}>Dành cho: <b style={{ color: 'var(--primary)' }}>{pets.find(p => p.id_thu_cung === app.id_thu_cung)?.ten_thu_cung || 'Thú cưng'}</b></p>
                     </div>
                   </div>
                   <div style={{ textAlign: 'right' }}>
@@ -685,23 +756,61 @@ const DashboardKhachHang: React.FC = () => {
         </div>
 
         <div style={{ display: 'grid', gap: '32px' }}>
-          <div className="glass-card hover-lift" style={{ padding: '48px', borderRadius: '40px', background: 'var(--primary-gradient)', color: 'white', position: 'relative', overflow: 'hidden', boxShadow: '0 20px 40px var(--primary-shadow)', border: 'none' }}>
+          {/* ⚡ BẢNG PHÍM TẮT TIỆN ÍCH NHANH GLASSMORPHISM */}
+          <div className="glass-card hover-lift" style={{ padding: '32px', borderRadius: '32px', border: '1px solid var(--gray-100)' }}>
+            <h3 style={{ fontSize: '1.15rem', fontWeight: 950, color: 'var(--ink)', marginBottom: '20px', letterSpacing: '-0.5px' }}>Thao tác nhanh</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              {[
+                { label: 'Đặt lịch hẹn', icon: 'calendar_month', path: '/khach-hang/dat-lich-hen', color: 'var(--primary)' },
+                { label: 'Hồ sơ bệnh án', icon: 'folder_shared', path: '/khach-hang/ho-so-benh-an', color: '#3b82f6' },
+                { label: 'Bé cưng của tôi', icon: 'pets', path: '/khach-hang/quan-ly-thu-cung', color: '#f59e0b' },
+                { label: 'Lịch sử hóa đơn', icon: 'receipt_long', path: '/khach-hang/hoa-don-thanh-toan', color: '#14b8a6' }
+              ].map((action, idx) => (
+                <div
+                  key={idx}
+                  onClick={() => navigate(action.path)}
+                  style={{
+                    padding: '16px 12px',
+                    borderRadius: '20px',
+                    background: 'var(--surface)',
+                    border: '1px solid var(--gray-150)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '10px',
+                    textAlign: 'center',
+                    transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
+                  }}
+                  className="hover-scale"
+                >
+                  <div style={{ width: '42px', height: '42px', borderRadius: '14px', background: `${action.color}12`, color: action.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '22px' }}>{action.icon}</span>
+                  </div>
+                  <span style={{ fontWeight: 850, color: 'var(--ink)', fontSize: '0.8rem' }}>{action.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="glass-card hover-lift" style={{ padding: '40px 32px', borderRadius: '40px', background: 'var(--primary-gradient)', color: 'white', position: 'relative', overflow: 'hidden', boxShadow: '0 20px 40px var(--primary-shadow)', border: 'none' }}>
             <div style={{ position: 'absolute', top: '-10%', right: '-10%', width: '200px', height: '200px', background: 'radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }}></div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px' }}>
               <span className="material-symbols-outlined" style={{ fontSize: '32px' }}>lightbulb</span>
-              <h3 style={{ fontSize: '1.5rem', fontWeight: 900, margin: 0 }}>Mẹo chăm sóc</h3>
+              <h3 style={{ fontSize: '1.4rem', fontWeight: 950, margin: 0, letterSpacing: '-0.5px' }}>Mẹo chăm sóc</h3>
             </div>
-            <p style={{ opacity: 0.95, fontSize: '1.1rem', lineHeight: '1.8', fontWeight: 600, minHeight: '100px', margin: 0 }}>{randomTip.content}</p>
-            <button data-ai-id="button-dashboardkhachhang-tppw" className="btn btn-pill" onClick={() => setIsTipsModalOpen(true)} style={{ background: 'rgba(255,255,255,0.15)', color: 'white', marginTop: '32px', width: '100%', border: '1.5px solid rgba(255,255,255,0.3)', fontWeight: 800, backdropFilter: 'blur(10px)' }}>Xem tất cả mẹo</button>
+            <p style={{ opacity: 0.95, fontSize: '1.05rem', lineHeight: '1.7', fontWeight: 600, minHeight: '80px', margin: 0 }}>{randomTip.content}</p>
+            <button data-ai-id="button-dashboardkhachhang-tppw" className="btn btn-pill" onClick={() => setIsTipsModalOpen(true)} style={{ background: 'rgba(255,255,255,0.15)', color: 'white', marginTop: '24px', width: '100%', border: '1.5px solid rgba(255,255,255,0.3)', fontWeight: 800, backdropFilter: 'blur(10px)' }}>Xem tất cả mẹo</button>
           </div>
 
-          <a href="tel:***REMOVED***-VIETQR_ACCOUNT_NO" className="glass-card hover-lift" style={{ padding: '32px', borderRadius: 'var(--radius-xl)', display: 'flex', alignItems: 'center', gap: '20px', textDecoration: 'none', cursor: 'pointer' }}>
+          <a href="tel:***REMOVED***-VIETQR_ACCOUNT_NO" className="glass-card hover-lift" style={{ padding: '24px 32px', borderRadius: 'var(--radius-xl)', display: 'flex', alignItems: 'center', gap: '20px', textDecoration: 'none', cursor: 'pointer' }}>
             <div style={{ width: '56px', height: '56px', background: 'var(--primary-light)', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
               <span className="material-symbols-outlined" style={{ fontSize: '32px' }}>support_agent</span>
             </div>
             <div>
-              <h4 style={{ margin: 0, fontWeight: 800, color: 'var(--ink)' }}>Hỗ trợ 24/7</h4>
-              <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem', color: 'var(--gray-500)', fontWeight: 600 }}>Cần tư vấn khẩn cấp? Gọi <b style={{ color: 'var(--primary)' }}>0353.374.156</b></p>
+              <h4 style={{ margin: 0, fontWeight: 900, color: 'var(--ink)' }}>Hỗ trợ 24/7</h4>
+              <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem', color: 'var(--gray-500)', fontWeight: 700 }}>Cần tư vấn khẩn cấp? Gọi <b style={{ color: 'var(--primary)' }}>0353.374.156</b></p>
             </div>
           </a>
         </div>

@@ -357,8 +357,8 @@ const QuanLyHoaDon: React.FC = () => {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '32px' }}>
               <div>
                 <div style={{ fontWeight: 900, fontSize: '1.5rem', color: 'var(--primary)', marginBottom: '4px' }}>PHÒNG KHÁM REXI</div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--gray-500)', fontWeight: 600 }}>123 Đường Láng, Đống Đa, Hà Nội</div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--gray-500)', fontWeight: 600 }}>Hotline: 024 1234 5678</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--gray-500)', fontWeight: 600 }}>{localStorage.getItem('clinic_address') || "Hệ thống Thú y Rexi Clinic"}</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--gray-500)', fontWeight: 600 }}>Hotline: {localStorage.getItem('clinic_phone') || "1900 xxxx"}</div>
               </div>
               <div style={{ textAlign: 'right' }}>
                 <div style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--ink)' }}>HÓA ĐƠN #HD-{viewingHD.id_hoa_don}</div>

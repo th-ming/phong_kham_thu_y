@@ -43,7 +43,7 @@ export const normalizeSearchText = (value: unknown): string => {
 
 const tokenizeSearchText = (value: unknown): string[] => {
   const stopWords = new Set([
-    "toi", "ban", "cho", "cua", "voi", "nay", "kia", "thi", "la", "va", "hoac", "nhung",
+    "toi", "ban", "cua", "voi", "nay", "kia", "thi", "la", "va", "hoac", "nhung",
     "mot", "cac", "gi", "nao", "sao", "the", "can", "hay", "giup", "duoc", "khong",
     "tim", "kiem", "loc", "xem", "danh", "sach", "thong", "tin"
   ]);

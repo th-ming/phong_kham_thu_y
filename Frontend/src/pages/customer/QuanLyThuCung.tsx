@@ -1,9 +1,8 @@
-﻿import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import axiosInstance from "@services/axios";
 import { getCustomerIdFromProfile, getUserProfile, matchesSearchFields } from "@utils/index";
 import { toast } from "@components/Toast";
 import { Skeleton } from "@components/CommonUI";
-import { confirmAction } from "@components/ConfirmModal";
 import { useAutoRefresh } from "@hooks/useAutoRefresh";
 
 const chuyenNgayISO_SangVN = (dateString: string) => {
@@ -140,7 +139,10 @@ const QuanLyThuCung: React.FC = () => {
       can_nang: trongLuongNum || 0,
       giong_loai: formData.loai,
       tuoi: 0,
-      ...(editingPet && { id_thu_cung: editingPet.id_thu_cung })
+      ...(editingPet && { 
+        id_thu_cung: editingPet.id_thu_cung,
+        hinh_anh: editingPet.hinh_anh
+      })
     };
 
     // FIX: Xóa trường ngày sinh nếu để trống để tránh lỗi Parse Date của Spring Boot gây Crash
@@ -184,36 +186,72 @@ const QuanLyThuCung: React.FC = () => {
       toast.error("Lỗi: Không tìm thấy mã thú cưng!");
       return;
     }
-    const ok = await confirmAction("Bạn có chắc chắn muốn xóa bé cưng này không? Thao tác này không thể hoàn tác.");
-    if (ok) {
-      setDeletingId(id);
-      try {
-        await axiosInstance.delete(`/api/thu-cung/${id}`);
-        toast.success("Đã xóa bé cưng thành công!", { duration: 3000 });
-        
-        // Optimistic UI update: remove immediately from state
-        setThuCung(prev => prev.filter(pet => pet.id_thu_cung !== id));
-        setLichHen(prev => prev.filter(l => l.id_thu_cung !== id));
-      } catch (err: any) {
-        console.error("Lỗi xóa thú cưng:", err);
-        let errorMessage = "Không thể xóa bé lúc này. Vui lòng thử lại sau!";
-        if (err.response?.data) {
-          const d = err.response.data;
-          if (typeof d === 'string' && d.trim() !== '' && !d.startsWith('<')) {
-            errorMessage = d;
-          } else if (d.message && typeof d.message === 'string') {
-            errorMessage = d.message;
-          }
+    setDeletingId(id);
+    try {
+      await axiosInstance.delete(`/api/thu-cung/${id}`);
+      toast.success("Đã xóa bé cưng thành công!", { duration: 3000 });
+      
+      // Optimistic UI update: remove immediately from state
+      setThuCung(prev => prev.filter(pet => pet.id_thu_cung !== id));
+      setLichHen(prev => prev.filter(l => l.id_thu_cung !== id));
+    } catch (err: any) {
+      console.error("Lỗi xóa thú cưng:", err);
+      let errorMessage = "Không thể xóa bé lúc này. Vui lòng thử lại sau!";
+      if (err.response?.data) {
+        const d = err.response.data;
+        if (typeof d === 'string' && d.trim() !== '' && !d.startsWith('<')) {
+          errorMessage = d;
+        } else if (d.message && typeof d.message === 'string') {
+          errorMessage = d.message;
         }
-        const lowerMsg = errorMessage.toLowerCase();
-        if (lowerMsg.includes('constraint') || lowerMsg.includes('foreign key')) {
-          errorMessage = "Không thể xóa vì bé đã có lịch hẹn hoặc bệnh án. Bạn hãy kiểm tra lại nhé!";
-        }
-        toast.error(errorMessage, { duration: 5000 });
-      } finally {
-        setDeletingId(null);
       }
+      const lowerMsg = errorMessage.toLowerCase();
+      if (lowerMsg.includes('constraint') || lowerMsg.includes('foreign key')) {
+        errorMessage = "Không thể xóa vì bé đã có lịch hẹn hoặc bệnh án. Bạn hãy kiểm tra lại nhé!";
+      }
+      toast.error(errorMessage, { duration: 5000 });
+    } finally {
+      setDeletingId(null);
     }
+  };
+
+  const handleUploadImage = async (pet: any, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Kích thước ảnh quá lớn! Vui lòng chọn ảnh dưới 2MB nhé.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const base64String = reader.result as string;
+      const payload = {
+        id_thu_cung: pet.id_thu_cung,
+        id_khach_hang: pet.id_khach_hang,
+        ten_thu_cung: pet.ten_thu_cung,
+        loai: pet.loai,
+        giong: pet.giong,
+        gioi_tinh: pet.gioi_tinh,
+        ngay_sinh: pet.ngay_sinh ? pet.ngay_sinh.split("T")[0] : undefined,
+        mau_sac: pet.mau_sac,
+        trong_luong: pet.trong_luong || pet.can_nang || 0,
+        can_nang: pet.trong_luong || pet.can_nang || 0,
+        giong_loai: pet.loai,
+        hinh_anh: base64String
+      };
+
+      try {
+        await axiosInstance.put(`/api/thu-cung/${pet.id_thu_cung}`, payload);
+        toast.success(`Đã cập nhật ảnh cho bé ${pet.ten_thu_cung}! 🎉`);
+        fetchUserData();
+      } catch (err: any) {
+        console.error("Lỗi cập nhật ảnh thú cưng:", err);
+        toast.error("Không thể tải lên ảnh lúc này. Bạn thử lại sau nhé!");
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   const petsWithHistory = useMemo(() => {
@@ -295,12 +333,14 @@ const QuanLyThuCung: React.FC = () => {
           to { opacity: 1; transform: translateY(0); }
         }
         .stagger-1 { animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both; }
-        .stagger-2 { animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both; }
-        .item-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); border: 1px solid transparent; background: var(--surface); }
-        .item-card:hover { border-color: var(--primary) !important; background: var(--surface) !important; transform: translateY(-6px); box-shadow: 0 20px 40px rgba(15, 157, 138, 0.1); z-index: 10; position: relative; }
         .btn-action { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important; font-weight: 800; }
         .btn-action:hover:not(:disabled) { transform: translateY(-3px) scale(1.02); box-shadow: 0 10px 20px rgba(13, 148, 136, 0.2); filter: brightness(1.05); }
         .btn-action.btn-delete:hover:not(:disabled) { box-shadow: 0 10px 20px rgba(239, 68, 68, 0.2); background: var(--danger) !important; color: white !important; }
+        .camera-upload-btn:hover {
+          transform: scale(1.18) rotate(-8deg) !important;
+          background: var(--ink) !important;
+          box-shadow: 0 6px 14px rgba(15, 157, 138, 0.5) !important;
+        }
       `}</style>
       <div className="stagger-1" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', padding: '48px', borderRadius: 'var(--radius-xl)', background: 'var(--secondary-gradient)', color: 'white', position: 'relative', overflow: 'hidden', boxShadow: 'var(--shadow-2xl)' }}>
         <div style={{ position: 'absolute', top: '-10%', left: '-5%', width: '300px', height: '300px', background: 'radial-gradient(circle, var(--primary-light) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }}></div>
@@ -400,10 +440,63 @@ const QuanLyThuCung: React.FC = () => {
       ) : (
         <div className="stagger-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' }}>
           {filteredPets.map(pet => (
-            <div key={pet.id_thu_cung} className="glass-card item-card" style={{ padding: '32px', borderRadius: 'var(--radius-xl)', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <div key={pet.id_thu_cung} className="glass-card" style={{ padding: '32px', borderRadius: 'var(--radius-xl)', display: 'flex', flexDirection: 'column', gap: '24px' }}>
               <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
-                <div style={{ width: '80px', height: '80px', background: 'var(--primary-light)', borderRadius: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
-                  <span className="material-symbols-outlined" style={{ fontSize: '40px' }}>pets</span>
+                <div style={{ position: 'relative', width: '80px', height: '80px', flexShrink: 0 }}>
+                  <div style={{ 
+                    width: '100%', 
+                    height: '100%', 
+                    background: 'var(--primary-light)', 
+                    borderRadius: '24px', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
+                    color: 'var(--primary)',
+                    overflow: 'hidden',
+                    border: '2px solid var(--gray-100)'
+                  }}>
+                    {pet.hinh_anh ? (
+                      <img src={pet.hinh_anh} alt={pet.ten_thu_cung} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : (
+                      <span style={{ fontSize: '2rem' }}>
+                        {pet.loai?.toLowerCase().includes("mèo") ? "🐱" : pet.loai?.toLowerCase().includes("chó") ? "🐶" : "🐰"}
+                      </span>
+                    )}
+                  </div>
+                  
+                  {/* Icon máy ảnh đổi avatar nhanh */}
+                  <label 
+                    htmlFor={`upload-avatar-${pet.id_thu_cung}`} 
+                    style={{ 
+                      position: 'absolute', 
+                      bottom: '-4px', 
+                      right: '-4px', 
+                      width: '28px', 
+                      height: '28px', 
+                      borderRadius: '50%', 
+                      background: 'var(--primary)', 
+                      color: 'white', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center', 
+                      cursor: 'pointer',
+                      boxShadow: '0 4px 10px rgba(15, 157, 138, 0.4)',
+                      border: '2px solid var(--surface)',
+                      transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                      zIndex: 2
+                    }}
+                    className="camera-upload-btn"
+                    title="Đổi ảnh đại diện"
+                  >
+                    <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>photo_camera</span>
+                  </label>
+                  <input 
+                    type="file" 
+                    id={`upload-avatar-${pet.id_thu_cung}`} 
+                    accept="image/*" 
+                    style={{ display: 'none' }} 
+                    onChange={(e) => handleUploadImage(pet, e)} 
+                  />
                 </div>
                 <div>
                   <h3 style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--ink)', margin: 0 }}>{pet.ten_thu_cung}</h3>

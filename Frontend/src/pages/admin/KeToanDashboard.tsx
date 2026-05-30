@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useState, useEffect, useMemo } from 'react';
+import React, { useCallback, useState, useEffect, useMemo } from 'react';
 import axiosInstance from '@services/axios';
 import { formatTienVND } from '@utils/index';
 import { toast } from '@components/Toast';
@@ -311,11 +311,11 @@ const KeToanDashboard: React.FC = () => {
         details: React.ReactNode;
         icon: string;
     }) => (
-        <div className="ketoan-kpi-card glass-card" tabIndex={0} style={{ padding: '24px', borderRadius: '24px', borderLeft: `4px solid ${accent}` }}>
+        <div className="ketoan-kpi-card glass-card" tabIndex={0} style={{ padding: '24px', borderRadius: '24px', border: `1px solid ${accent}25`, background: `linear-gradient(135deg, ${accent}15 0%, var(--surface) 100%)` }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
                 <div>
-                    <p style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--gray-400)', margin: '0 0 8px 0' }}>{title}</p>
-                    <h3 style={{ fontSize: '2rem', fontWeight: 900, color: accent, margin: 0 }}>{value}</h3>
+                    <p style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--gray-500)', margin: '0 0 8px 0' }}>{title}</p>
+                    <h3 style={{ fontSize: '2rem', fontWeight: 900, color: accent, margin: 0, textShadow: `0 2px 10px ${accent}10` }}>{value}</h3>
                 </div>
                 <span className="material-symbols-outlined" style={{ color: accent, fontSize: '28px' }}>{icon}</span>
             </div>

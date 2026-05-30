@@ -33,7 +33,6 @@ export const MemeCat: React.FC = () => {
   const [shouldRender, setShouldRender] = useState(true);
 
   useEffect(() => {
-    // TỐI ƯU THÔNG MINH: Chỉ hiện nếu mạng ngon (4G/5G)
     const conn = (navigator as any).connection || (navigator as any).mozConnection || (navigator as any).webkitConnection;
     const isSlowNetwork = conn && (conn.saveData || ['slow-2g', '2g', '3g'].includes(conn.effectiveType));
     
@@ -64,16 +63,13 @@ const MemeCatCore: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
   const trailIdCounter = useRef(0);
   const frameCountRef = useRef(0);
 
-  // KIỂM TRA TRẠNG THÁI TAB TRÌNH DUYỆT
   useEffect(() => {
     const handleVisibilityChange = () => setIsVisible(!document.hidden);
     document.addEventListener("visibilitychange", handleVisibilityChange);
     return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
   }, []);
 
-  // LỜI THOẠI NGẪU NHIÊN CỦA BOSS DỰA TRÊN ĐỘ TUỔI (GEN Z VS MATURE)
   useEffect(() => {
-    // Đọc thông tin năm sinh từ localStorage để phân loại phong cách thoại
     let userNamSinh: number | null = null;
     try {
       const userStr = localStorage.getItem("user");
@@ -87,7 +83,6 @@ const MemeCatCore: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
       console.error("Lỗi đọc nam_sinh cho MemeCat:", e);
     }
 
-    // GenZ từ 1997 trở đi thì dùng tone vui vẻ nhây nhây teencode
     const isGenZ = userNamSinh !== null && userNamSinh >= 1997;
 
     const baseMessages = isGenZ 
@@ -131,7 +126,6 @@ const MemeCatCore: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
     return () => clearInterval(interval);
   }, [isVisible]);
 
-  // CHẠY NHANH NGẪU NHIÊN (SPRINT) - KHÔNG CẦN CUỘN TRANG
   useEffect(() => {
     let sprintTimeout: number;
     let checkInterval: number;
@@ -139,7 +133,6 @@ const MemeCatCore: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
     const triggerSprint = () => {
       if (!isVisible) return;
       isSprintingRef.current = true;
-      // Phóng nhanh trong 1 đến 2.5 giây
       sprintTimeout = window.setTimeout(() => {
         isSprintingRef.current = false;
       }, Math.random() * 1500 + 1000);
@@ -147,9 +140,9 @@ const MemeCatCore: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
 
     const scheduleNextCheck = () => {
       checkInterval = window.setTimeout(() => {
-        if (Math.random() > 0.7) triggerSprint(); // 30% cơ hội phóng nhanh
+        if (Math.random() > 0.7) triggerSprint();
         scheduleNextCheck();
-      }, Math.random() * 4000 + 3000); // Lặp lại ngẫu nhiên sau 3-7 giây
+      }, Math.random() * 4000 + 3000);
     };
 
     scheduleNextCheck();
@@ -160,7 +153,6 @@ const MemeCatCore: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
     };
   }, [isVisible]);
 
-  // TỐI ƯU HIỆU NĂNG 1: Tách sự kiện chuột ra riêng để ko bị tháo lắp 60 lần/giây
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => { mousePosRef.current = { x: e.clientX, y: e.clientY }; };
     window.addEventListener('mousemove', handleMouseMove);
@@ -191,7 +183,6 @@ const MemeCatCore: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
 
       if (video.paused) video.play().catch(() => { });
 
-      // XỬ LÝ LẶP VIDEO MƯỢT MÀ
       if (video.currentTime < 0.2) video.currentTime = 0.2;
       if (video.duration > 0 && video.currentTime > video.duration - 0.2) video.currentTime = 0.2;
 
@@ -200,7 +191,7 @@ const MemeCatCore: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
 
         const baseSize = Math.max(65, Math.min(120, window.innerWidth * 0.075));
         const targetSize = isSprintingRef.current ? baseSize * 0.7 : baseSize;
-        const size = pos.size + (targetSize - pos.size) * 0.1; // Chuyển đổi kích thước mượt mà
+        const size = pos.size + (targetSize - pos.size) * 0.1;
         const intSize = Math.round(size);
 
         if (canvas.width !== intSize) { canvas.width = intSize; canvas.height = intSize; }
@@ -211,7 +202,6 @@ const MemeCatCore: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
         if (drawH > intSize) { drawH = intSize; drawW = intSize / videoRatio; }
         ctx.drawImage(video, (intSize - drawW) / 2, (intSize - drawH) / 2, drawW, drawH);
 
-        // TẨY PHÔNG XANH (GREEN SCREEN)
         const frame = ctx.getImageData(0, 0, intSize, intSize);
         const data = frame.data;
         for (let i = 0; i < data.length; i += 4) {
@@ -230,17 +220,14 @@ const MemeCatCore: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
 
         const isHovered = mousePosRef.current.x >= x && mousePosRef.current.x <= x + size && mousePosRef.current.y >= y && mousePosRef.current.y <= y + size;
 
-        // TỐC ĐỘ DI CHUYỂN VÀ TỐC ĐỘ PHÁT VIDEO DỰA TRÊN NGẪU NHIÊN
         const isSprinting = isSprintingRef.current;
         const currentSpeed = isHovered ? baseSpeed * 0.25 : (isSprinting ? baseSpeed * 2.8 : baseSpeed);
         video.playbackRate = isHovered ? 0.45 : (isSprinting ? 2.8 : 1.95);
 
-        // CHỤP ẢNH TÀN ẢNH (SNAPSHOT) KHI ĐANG CHẠY NHANH
         if (isSprinting) {
           frameCountRef.current += 1;
-          // TỐI ƯU HIỆU NĂNG 2: Giảm tải RAM bằng cách chỉ chụp tàn ảnh mỗi 3 frame
           if (frameCountRef.current % 3 === 0) {
-            const snapshot = canvas.toDataURL('image/webp', 0.3); // Giảm chất lượng ảnh để tối ưu tốc độ
+            const snapshot = canvas.toDataURL('image/webp', 0.3);
             trailIdCounter.current += 1;
             setTrail(prev => [{ id: trailIdCounter.current, x, y, rotation, image: snapshot, age: 0, size: intSize }, ...prev.map(t => ({ ...t, age: t.age + 1 })).filter(t => t.age < 6)]);
           }
@@ -331,7 +318,6 @@ const MemeCatCore: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
         }}>
           <span className="material-symbols-outlined" style={{ fontSize: isMobile ? '14px' : '18px', opacity: 0.7 }}>pets</span>
           {message}
-          {/* Đuôi bong bóng chat */}
           {bubbleBelowCat ? (
             <div style={{
               position: 'absolute',
@@ -369,25 +355,13 @@ const MemeCatCore: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
             animation: darkBubblePulse 1.8s infinite ease-in-out !important;
           }
           @keyframes bananaAuraPulse {
-            0%, 100% {
-              filter: none;
-            }
-            50% {
-              filter: none;
-            }
+            0%, 100% { filter: none; }
+            50% { filter: none; }
           }
           @keyframes bananaAuraWave {
-            0% {
-              opacity: 0;
-              transform: translate(-50%, -50%) scale(0.6);
-            }
-            18% {
-              opacity: 0.16;
-            }
-            76%, 100% {
-              opacity: 0;
-              transform: translate(-50%, -50%) scale(1.18);
-            }
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.6); }
+            18% { opacity: 0.16; }
+            76%, 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.18); }
           }
           @keyframes bananaAuraPulseDark {
             0%, 100% {
@@ -456,10 +430,8 @@ const MemeCatCore: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
           }
         `}</style>
 
-      {/* HIỂN THỊ CÁC TÀN ẢNH TRUY ĐUỔI (GHOST TRAIL) */}
       {trail.map((t) => (
         <React.Fragment key={t.id}>
-          {/* VỆT SÁNG TRẮNG TỐC ĐỘ CAO (SPEED TRAIL) */}
           <div style={{
             position: 'fixed', top: t.y + t.size / 2, left: t.x + t.size / 2,
             width: `${t.size * 1.5}px`, height: `${t.size * 0.15}px`,
@@ -492,28 +464,39 @@ const MemeCatCore: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
         transition: 'filter 0.1s ease'
       }}>
         <canvas ref={canvasRef} className="banana-cat-canvas" style={{
-        width: '100%',
-        height: '100%',
-        imageRendering: 'auto',
-        filter: `
-          contrast(1.18) 
-          brightness(1.12) 
-          saturate(1.28) 
-          drop-shadow(0 5px 10px rgba(0,0,0,0.28))
-          drop-shadow(0 0 12px rgba(250, 204, 21, 0.95))
-          drop-shadow(0 0 28px rgba(245, 158, 11, 0.62))
-          drop-shadow(0 0 46px rgba(251, 191, 36, 0.34))
-          ${isSprintingRef.current ? `blur(2px)` : ''}
-        `,
-        transition: 'filter 0.1s ease'
+          width: '100%',
+          height: '100%',
+          imageRendering: 'auto',
+          filter: `
+            contrast(1.18) 
+            brightness(1.12) 
+            saturate(1.28) 
+            drop-shadow(0 5px 10px rgba(0,0,0,0.28))
+            drop-shadow(0 0 12px rgba(250, 204, 21, 0.95))
+            drop-shadow(0 0 28px rgba(245, 158, 11, 0.62))
+            drop-shadow(0 0 46px rgba(251, 191, 36, 0.34))
+            ${isSprintingRef.current ? 'blur(2px)' : ''}
+          `,
+          transition: 'filter 0.1s ease'
         }} />
       </div>
     </>
   );
 };
 
-// * * TRÌNH PHÁT VIDEO NỀN TRONG SUỐT (TÍCH HỢP TẨY PHÔNG XANH)
-export const TransparentVideo: React.FC<{ src: string, style?: React.CSSProperties, className?: string, playbackRate?: number, isDark?: boolean, loop?: boolean, muted?: boolean, onEnded?: () => void, removeBlack?: boolean }> = ({ src, style, className, playbackRate = 1, isDark = false, loop = true, muted = true, onEnded, removeBlack = false }) => {
+export const TransparentVideo: React.FC<{ 
+  src: string, 
+  style?: React.CSSProperties, 
+  className?: string, 
+  playbackRate?: number, 
+  isDark?: boolean, 
+  loop?: boolean, 
+  muted?: boolean, 
+  onEnded?: () => void, 
+  removeBlack?: boolean,
+  isCat?: boolean,
+  variant?: 'banner-dog' | 'banner-cat' | 'footer-cat'
+}> = ({ src, style, className, playbackRate = 1, isDark = false, loop = true, muted = true, onEnded, removeBlack = false, isCat = false, variant }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [inView, setInView] = useState(false);
@@ -538,73 +521,86 @@ export const TransparentVideo: React.FC<{ src: string, style?: React.CSSProperti
       if (video.paused || video.ended) { animationFrameId = requestAnimationFrame(processFrame); return; }
 
       if (video.videoWidth > 0) {
-        // TĂNG MẬT ĐỘ ĐIỂM ẢNH: Nhân hệ số DPI màn hình (DPR) cho Canvas siêu nét.
-        // Hạn chế scale tối đa 1.3 để bảo vệ tài nguyên CPU/RAM của hệ thống.
-        const dpr = window.devicePixelRatio || 1;
-        const scale = Math.min(Math.max(dpr, 1.2), 1.3);
+        const effectiveVariant = variant ?? (isCat ? 'footer-cat' : 'banner-dog');
+        const isBannerCat = effectiveVariant === 'banner-cat';
+        const isFooterCat = effectiveVariant === 'footer-cat';
+        const isDog = effectiveVariant === 'banner-dog';
+        const isBannerVideo = isBannerCat || isDog;
 
-        const baseWidth = Math.min(video.videoWidth, 1024);
+        const dpr = window.devicePixelRatio || 1;
+        const scale = isBannerVideo
+          ? Math.min(Math.max(dpr, 1.25), 1.5)
+          : Math.min(Math.max(dpr, 1.2), 1.3);
+
+        const baseWidth = Math.min(video.videoWidth, isBannerVideo ? 1280 : 1024);
         const baseHeight = (video.videoHeight / video.videoWidth) * baseWidth;
 
         canvas.width = Math.round(baseWidth * scale);
         canvas.height = Math.round(baseHeight * scale);
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
         const frame = ctx.getImageData(0, 0, canvas.width, canvas.height);
         const data = frame.data;
 
-        // CẤU HÌNH NGƯỠNG CHROMA KEY MƯỢT MÀ (ANTI-ALIASING FRINGES)
-        const minDiff = 5;   // Ngưỡng bắt đầu làm mờ rìa xanh lá
-        const maxDiff = 17;  // Ngưỡng trong suốt hoàn toàn phông nền
+        // Cấu hình chroma key tối ưu theo từng nơi dùng để không làm ảnh hưởng mèo footer.
+        const minDiff = isDog ? 1.5 : 3.0;
+        const maxDiff = isDog ? 14.0 : 16.0;
 
         for (let i = 0; i < data.length; i += 4) {
           const r = data[i], g = data[i + 1], b = data[i + 2];
-          const idx = i / 4, py = (idx / canvas.width) | 0, px = idx % canvas.width;
+          const greenScore = g - Math.max(r, b);
 
-          const maxRB = Math.max(r, b), diff = g - maxRB, luma = 0.299 * r + 0.587 * g + 0.114 * b;
-          if (removeBlack) {
-            // TỰ ĐỘNG LÀM TRONG SUỐT CẠNH TRÊN/DƯỚI
-            const isExtremeVerticalEdge = py < canvas.height * 0.02 || py > canvas.height * 0.98;
-            if (isExtremeVerticalEdge && r < 45 && g < 45 && b < 45) {
-              data[i + 3] = 0; continue;
+          // TÍNH TOÁN LIÊN QUAN ĐẾN ĐỘ ÁM XANH LÁ
+          if (greenScore > minDiff) {
+            const alpha = 1 - Math.min((greenScore - minDiff) / (maxDiff - minDiff), 1);
+            
+            // Chỉ khử viền ám xanh lá (color spill)
+            if (alpha < 1) {
+              data[i + 1] = Math.round(data[i + 1] * alpha + Math.max(r, b) * (1 - alpha));
             }
-
-            // TỰ ĐỘNG TÁCH NỀN ĐEN (BLACK SCREEN REMOVAL)
-            if (r < 25 && g < 25 && b < 25 && luma < 20) {
-              data[i + 3] = 0; 
-              continue;
-            } else if (r < 45 && g < 45 && b < 45 && luma < 40) {
-              // Khử viền đen mượt mà
-              data[i + 3] = Math.max(0, 255 * ((luma - 20) / 20)); 
-              continue;
-            }
+            
+            // Áp dụng alpha cho rìa phông xanh
+            data[i + 3] = Math.min(data[i + 3], Math.round(alpha * 255));
           }
-          const isTextArea = (py < canvas.height * 0.45) && (px > canvas.width * 0.40);
 
-          // XỬ LÝ ĐẶC BIỆT CHO CHỮ TRÊN CHẾ ĐỘ TỐI (LÀM TRẮNG CHỮ)
-          if (isDark && isTextArea && diff < 15 && luma < 240) {
-            data[i] = 255; data[i + 1] = 255; data[i + 2] = 255; data[i + 3] = 255;
-          } else if (diff > maxDiff) {
-            data[i + 3] = 0; // Trong suốt hoàn toàn phông xanh
-          } else if (diff > minDiff) {
-            // SMOOTH CHROMA KEY: Nội suy tuyến tính để làm mịn viền răng cưa (lông mèo, tay vẫy)
-            const ratio = (diff - minDiff) / (maxDiff - minDiff);
-            data[i + 3] = Math.round(255 * (1 - ratio));
-            // SPILL_SUPPRESSION: Khử viền xanh ám ở phần rìa giao nhau
-            data[i + 1] = Math.round(maxRB * 0.78);
-          } else if (g > maxRB) {
-            // Khử sắc xanh lá nhẹ phản chiếu vào lông mèo cho màu sắc tự nhiên
-            data[i + 1] = Math.round(maxRB * 0.88);
+          // KHỬ RĂNG CƯA ĐEN/XÁM BIÊN (ANTI-ALIASING AN TOÀN)
+          // Chỉ lọc các pixel thực sự sát viền phông xanh (greenScore nằm trong dải cận biên từ -3 đến minDiff)
+          // Tuyệt đối không đụng vào mắt/mũi/miệng nằm sâu trong cơ thể (nơi có greenScore cực kỳ âm, ví dụ < -4)
+          // Tuyệt đối không chạm vào các pixel đen tuyền có độ sáng cực thấp (brightness < 35) của mắt
+          const brightness = (r + g + b) / 3;
+          
+          // Chỉ footer mới dùng black keying để tránh ảnh hưởng video mèo chào ở banner.
+          if (isFooterCat && r < 20 && g < 20 && b < 20) {
+            data[i + 3] = 0;
+          } else if (greenScore > -3.5 && brightness >= 35) {
+            if (isBannerCat || isFooterCat) {
+              const catBrightnessLimit = isFooterCat ? 70 : 64;
+              const catAlphaRange = isFooterCat ? 58 : 52;
+              if (brightness < catBrightnessLimit) {
+                const catEdgeAlpha = Math.min(Math.max((brightness - 12) / catAlphaRange, 0), 1);
+                data[i + 3] = Math.round(data[i + 3] * catEdgeAlpha);
+              }
+            } else {
+              if (brightness < 58) {
+                const dogEdgeAlpha = Math.min(Math.max((brightness - 15) / 43, 0), 1);
+                data[i + 3] = Math.round(data[i + 3] * dogEdgeAlpha);
+              }
+            }
           }
         }
+
         ctx.putImageData(frame, 0, 0);
       }
       animationFrameId = requestAnimationFrame(processFrame);
     };
-    processFrame();
+
+    animationFrameId = requestAnimationFrame(processFrame);
     return () => cancelAnimationFrame(animationFrameId);
-  }, [src, playbackRate, inView, isDark]);
+  }, [src, inView, playbackRate, isDark, removeBlack, isCat, variant]);
 
   return (
     <>
@@ -707,6 +703,12 @@ export const Typewriter: React.FC<{ words: string[] }> = ({ words }) => {
     return () => { clearTimeout(timeout); clearTimeout(innerTimeout); };
   }, [text, isDeleting, index, words]);
   return (
-    <span style={{ color: "#0f9d8a", borderRight: "4px solid #0f9d8a", paddingRight: "4px" }}>{text}</span>
+    <span style={{
+      color: "#0f9d8a",
+      textShadow: "0 0 14px rgba(15, 157, 138, 0.6), 0 0 28px rgba(45, 212, 191, 0.35)",
+      borderRight: "3px solid #0f9d8a",
+      paddingRight: "4px",
+      filter: "drop-shadow(0 0 6px rgba(15, 157, 138, 0.45))"
+    }}>{text}</span>
   );
 };

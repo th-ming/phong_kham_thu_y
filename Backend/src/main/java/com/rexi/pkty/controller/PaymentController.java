@@ -145,7 +145,7 @@ public class PaymentController {
     }
 
     @PostMapping("/vnpay/create-url")
-    public ResponseEntity<?> createPaymentUrl(@RequestBody Map<String, Object> payload) {
+    public ResponseEntity<?> createPaymentUrl(@RequestBody Map<String, Object> payload, jakarta.servlet.http.HttpServletRequest request) {
         try {
             String idHoaDon = payload.get("id_hoa_don").toString();
             ResponseEntity<?> accessError = validateInvoiceAccess(idHoaDon);
@@ -177,7 +177,12 @@ public class PaymentController {
             String vnp_Command = "pay";
             String orderType = "other";
             String vnp_TxnRef = idHoaDon + "_" + System.currentTimeMillis();
-            String vnp_IpAddr = "127.0.0.1";
+            String vnp_IpAddr = request.getHeader("X-Forwarded-For");
+            if (vnp_IpAddr == null || vnp_IpAddr.isEmpty()) {
+                vnp_IpAddr = request.getRemoteAddr();
+            } else {
+                vnp_IpAddr = vnp_IpAddr.split(",")[0].trim();
+            }
 
             Map<String, String> vnp_Params = new HashMap<>();
             vnp_Params.put("vnp_Version", vnp_Version);

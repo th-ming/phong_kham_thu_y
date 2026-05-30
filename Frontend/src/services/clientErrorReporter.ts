@@ -1,3 +1,5 @@
+import { kiemTraLaAdmin } from "@utils/permissions";
+
 type ClientErrorPayload = {
   type: string;
   message: string;
@@ -15,14 +17,7 @@ const DEDUPE_MS = 30_000;
 const isAdminSession = () => {
   try {
     const user = JSON.parse(localStorage.getItem("user") || "{}");
-    const raw = [
-      user?.role,
-      user?.vai_tro,
-      user?.ten_vai_tro,
-      user?.id_vai_tro,
-      user?.chuc_vu,
-    ].filter(Boolean).join(" ").toLowerCase();
-    return raw.includes("admin") || raw.includes("vt-1") || raw.includes("vt-admin");
+    return kiemTraLaAdmin(user);
   } catch {
     return false;
   }
@@ -120,6 +115,17 @@ export const installClientErrorReporter = () => {
     });
   });
 
+  // Debounce MutationObserver để tránh flood báo cáo khi DOM thay đổi nhanh
+  let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+  let pendingReports: Array<ClientErrorPayload> = [];
+  
+  const flushReports = () => {
+    if (pendingReports.length === 0) return;
+    // Chỉ gửi báo cáo đầu tiên trong batch (trùng lặp đã được dedupe)
+    reportClientError(pendingReports[0]);
+    pendingReports = [];
+  };
+
   const observer = new MutationObserver((mutations) => {
     for (const mutation of mutations) {
       for (const node of Array.from(mutation.addedNodes)) {
@@ -127,7 +133,7 @@ export const installClientErrorReporter = () => {
         const text = node.textContent?.trim() || "";
         const marker = node.matches?.("[role='alert'], .error, .alert-danger, .text-danger, [data-error='true']");
         if (marker && /lỗi|error|failed|thất bại|không thể|unauthorized|forbidden/i.test(text)) {
-          reportClientError({
+          pendingReports.push({
             type: "DOM_ERROR_ALERT",
             severity: "MEDIUM",
             message: text.slice(0, 500),
@@ -136,6 +142,9 @@ export const installClientErrorReporter = () => {
         }
       }
     }
+    // Gộp và debounce 500ms
+    if (debounceTimer) clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(flushReports, 500);
   });
   observer.observe(document.body, { childList: true, subtree: true });
 };

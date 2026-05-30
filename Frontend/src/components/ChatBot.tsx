@@ -460,42 +460,63 @@ const SwarmConsole: React.FC<{ data: SwarmData; isDark: boolean }> = ({ data, is
 
 
 
-const standardThoughtSteps = [
-    "🐾 Rexi đang đón nhận yêu cầu của Sen...",
-    "🔍 Đang rà soát lại thông tin trang hiện tại...",
-    "🧠 Đang chẩn đoán triệu chứng & xem hồ sơ bệnh...",
-    "📖 Đối chiếu thư viện y khoa & dữ liệu phòng khám...",
-    "🌐 Đang kết nối tới mô hình AI (Groq/Gemini/DeepSeek)...",
-    "✍️ Đang hoàn thiện câu trả lời gửi đến Sen..."
-];
+const getDynamicLoadingText = (query: string, elapsedTime: number, isAgent: boolean) => {
+    const queryLower = (query || "").toLowerCase();
+    
+    // 1. Phân loại từ khóa nghiệp vụ đặc trưng chuẩn phòng khám
+    if (queryLower.includes("lịch") || queryLower.includes("hen") || queryLower.includes("hẹn") || queryLower.includes("book")) {
+        if (elapsedTime <= 2) return "📅 Đang kết nối phân hệ đặt lịch khám thú cưng...";
+        if (elapsedTime <= 5) return "🔍 Đang rà soát trạng thái phòng khám & lịch trống của bác sĩ...";
+        return `⏳ Thiết lập lịch hẹn lâm sàng và tạo VietQR đặt cọc... (${elapsedTime}s)`;
+    }
+    if (queryLower.includes("khách") || queryLower.includes("người") || queryLower.includes("phone") || queryLower.includes("sdt") || queryLower.includes("sđt") || queryLower.includes("chủ")) {
+        if (elapsedTime <= 2) return "📂 Đang truy vấn hồ sơ chủ nuôi trong cơ sở dữ liệu phòng khám...";
+        if (elapsedTime <= 5) return "🧠 Đối chiếu số điện thoại và thông tin liên lạc...";
+        return `⏳ Trích xuất lịch sử khám & thú cưng sở hữu... (${elapsedTime}s)`;
+    }
+    if (queryLower.includes("chó") || queryLower.includes("mèo") || queryLower.includes("thú cưng") || queryLower.includes("pet") || queryLower.includes("bệnh") || queryLower.includes("kham") || queryLower.includes("khám")) {
+        if (elapsedTime <= 2) return "🐾 Đang mở bệnh án lâm sàng của bé thú cưng...";
+        if (elapsedTime <= 5) return "📖 Đối chiếu chuyên khoa y học thú y & triệu chứng nguy cấp...";
+        return `⏳ Tổng hợp chỉ định điều trị & phác đồ chăm sóc... (${elapsedTime}s)`;
+    }
+    if (queryLower.includes("tiền") || queryLower.includes("hóa đơn") || queryLower.includes("bill") || queryLower.includes("thanh toán") || queryLower.includes("doanh thu")) {
+        if (elapsedTime <= 2) return "💳 Kết nối cổng kế toán & lịch sử hóa đơn dịch vụ...";
+        if (elapsedTime <= 5) return "📊 Đang đối soát công nợ & chi tiết dịch vụ thú y...";
+        return `⏳ Tổng hợp báo cáo thống kê tài chính... (${elapsedTime}s)`;
+    }
 
-const agentThoughtSteps = [
-    "🤖 Siêu tác tử Rexi v2 đang được kích hoạt...",
-    "🔐 Khởi tạo môi trường Sandbox an toàn...",
-    "📂 Đang thực hiện truy vấn các bảng dữ liệu (Khách Hàng, Thú Cưng, Hóa Đơn, Lịch Hẹn)...",
-    "🛠️ Đang xây dựng luồng Autopilot & tối ưu hóa kịch bản thao tác...",
-    "⚡ Đang kiểm tra ràng buộc nghiệp vụ & chống Spam...",
-    "🏁 Đang đóng gói dữ liệu và phản hồi kết quả hành động..."
-];
+    // 2. Trạng thái chung nếu không khớp từ khóa đặc biệt
+    if (isAgent) {
+        if (elapsedTime <= 2) return "🤖 Siêu tác tử Rexi đang được kích hoạt...";
+        if (elapsedTime <= 5) return "⚙️ Đang phân tích yêu cầu nâng cao & lập kế hoạch ReAct...";
+        if (elapsedTime <= 9) return "🛠️ Đang gọi công cụ nghiệp vụ (Function Calling) & đọc cơ sở dữ liệu...";
+        return `⏳ Vòng lặp ReAct đang xử lý suy nghĩ nâng cao... (${elapsedTime}s)`;
+    } else {
+        if (elapsedTime <= 2) return "🐾 Rexi đang đón nhận yêu cầu của sếp...";
+        if (elapsedTime <= 5) return "🧠 Đang chẩn đoán ý định & xem xét bối cảnh giao diện...";
+        if (elapsedTime <= 8) return "🌐 Kết nối đến mô hình AI & tạo câu trả lời tối ưu...";
+        return `✍️ Đang soạn thảo câu trả lời lâm sàng... (${elapsedTime}s)`;
+    }
+};
 
 interface ThoughtLoaderProps {
-    steps: string[];
-    activeStep: number;
+    elapsedTime: number;
+    loadingText: string;
     isDark: boolean;
 }
 
-const ThoughtLoader: React.FC<ThoughtLoaderProps> = ({ steps, activeStep, isDark }) => {
-    const stepIcons = [
-        "pets",           // pets
-        "pageview",       // context
-        "psychology",     // logic / medical
-        "local_library",  // knowledge base
-        "dns",            // model routing
-        "edit_note"       // finalizing response
-    ];
+const ThoughtLoader: React.FC<ThoughtLoaderProps> = ({ elapsedTime, loadingText, isDark }) => {
+    // Biểu tượng động dựa theo text trạng thái thực tế
+    const getLoaderIcon = (text: string) => {
+        if (text.includes("📅") || text.includes("lịch")) return "calendar_today";
+        if (text.includes("📂") || text.includes("hồ sơ")) return "folder_open";
+        if (text.includes("🐾") || text.includes("thú cưng")) return "pets";
+        if (text.includes("💳") || text.includes("toán")) return "payments";
+        if (text.includes("🤖")) return "smart_toy";
+        return "psychology";
+    };
 
-    const currentText = steps[activeStep] || steps[0];
-    const currentIcon = stepIcons[activeStep] || stepIcons[0];
+    const currentIcon = getLoaderIcon(loadingText);
 
     return (
         <div 
@@ -517,7 +538,7 @@ const ThoughtLoader: React.FC<ThoughtLoaderProps> = ({ steps, activeStep, isDark
                 transition: 'all 0.3s ease'
             }}
         >
-            {/* Spinning/pulsing action icon */}
+            {/* Spinning action icon */}
             <div style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -525,16 +546,16 @@ const ThoughtLoader: React.FC<ThoughtLoaderProps> = ({ steps, activeStep, isDark
                 width: '32px',
                 height: '32px',
                 borderRadius: '50%',
-                background: isDark ? 'rgba(59, 130, 246, 0.15)' : 'rgba(59, 130, 246, 0.1)',
-                border: '1px solid rgba(59, 130, 246, 0.25)',
-                color: '#3b82f6',
+                background: isDark ? 'rgba(244, 63, 94, 0.15)' : 'rgba(244, 63, 94, 0.1)',
+                border: '1px solid rgba(244, 63, 94, 0.25)',
+                color: 'var(--primary)',
                 flexShrink: 0
             }}>
                 <span className="material-symbols-outlined" style={{ 
                     fontSize: '18px', 
                     animation: 'spin 3s infinite linear' 
                 }}>
-                    {currentIcon === "pets" ? "progress_activity" : currentIcon}
+                    {currentIcon}
                 </span>
             </div>
 
@@ -543,11 +564,11 @@ const ThoughtLoader: React.FC<ThoughtLoaderProps> = ({ steps, activeStep, isDark
                 <span style={{ 
                     fontSize: '0.68rem', 
                     fontWeight: 800, 
-                    color: '#3b82f6', 
+                    color: 'var(--primary)', 
                     letterSpacing: '0.05em',
                     textTransform: 'uppercase'
                 }}>
-                    Rexi đang suy nghĩ
+                    Rexi đang làm việc ({elapsedTime}s)
                 </span>
                 <span style={{ 
                     fontSize: '0.78rem', 
@@ -555,16 +576,221 @@ const ThoughtLoader: React.FC<ThoughtLoaderProps> = ({ steps, activeStep, isDark
                     fontWeight: 600,
                     lineHeight: 1.35
                 }}>
-                    {currentText}
+                    {loadingText}
                 </span>
             </div>
 
             {/* Pulse dots loader */}
             <div className="dot-pulse" style={{ marginLeft: '4px', transform: 'scale(0.8)', border: 'none', background: 'transparent', padding: 0 }}>
-                <span style={{ background: '#3b82f6', width: '6px', height: '6px', borderRadius: '50%' }}></span>
-                <span style={{ background: '#3b82f6', width: '6px', height: '6px', borderRadius: '50%', animationDelay: '0.2s' }}></span>
-                <span style={{ background: '#3b82f6', width: '6px', height: '6px', borderRadius: '50%', animationDelay: '0.4s' }}></span>
+                <span style={{ background: 'var(--primary)', width: '6px', height: '6px', borderRadius: '50%' }}></span>
+                <span style={{ background: 'var(--primary)', width: '6px', height: '6px', borderRadius: '50%', animationDelay: '0.2s' }}></span>
+                <span style={{ background: 'var(--primary)', width: '6px', height: '6px', borderRadius: '50%', animationDelay: '0.4s' }}></span>
             </div>
+        </div>
+    );
+};
+
+interface ThoughtStep {
+    type: string;
+    content?: string;
+    tool?: string;
+    params?: Record<string, any>;
+    observation?: string;
+}
+
+interface ThoughtProcessAccordionProps {
+    steps: ThoughtStep[];
+    isDark: boolean;
+}
+
+const ThoughtProcessAccordion: React.FC<ThoughtProcessAccordionProps> = ({ steps, isDark }) => {
+    const [isOpen, setIsOpen] = useState(false);
+
+    if (!steps || steps.length === 0) return null;
+
+    // Phân giải icon & màu sắc cho từng loại bước để tăng độ sinh động
+    const getStepBadge = (step: ThoughtStep) => {
+        switch (step.type) {
+            case "TOOL":
+                return {
+                    icon: "build",
+                    text: `Gọi công cụ: ${step.tool}`,
+                    bg: isDark ? 'rgba(16, 185, 129, 0.15)' : 'rgba(16, 185, 129, 0.1)',
+                    border: '1px solid rgba(16, 185, 129, 0.25)',
+                    color: '#10b981'
+                };
+            case "TOOL_UNAUTHORIZED":
+                return {
+                    icon: "gpp_maybe",
+                    text: `Từ chối công cụ: ${step.tool}`,
+                    bg: isDark ? 'rgba(239, 68, 68, 0.15)' : 'rgba(239, 68, 68, 0.1)',
+                    border: '1px solid rgba(239, 68, 68, 0.25)',
+                    color: '#ef4444'
+                };
+            case "FINAL":
+                return {
+                    icon: "task_alt",
+                    text: "Hoàn tất kế hoạch",
+                    bg: isDark ? 'rgba(59, 130, 246, 0.15)' : 'rgba(59, 130, 246, 0.1)',
+                    border: '1px solid rgba(59, 130, 246, 0.25)',
+                    color: '#3b82f6'
+                };
+            case "ERROR":
+                return {
+                    icon: "error_outline",
+                    text: "Gặp sự cố hệ thống",
+                    bg: isDark ? 'rgba(244, 63, 94, 0.15)' : 'rgba(244, 63, 94, 0.1)',
+                    border: '1px solid rgba(244, 63, 94, 0.25)',
+                    color: '#f43f5e'
+                };
+            default:
+                return {
+                    icon: "psychology",
+                    text: "Phân tích tư duy",
+                    bg: isDark ? 'rgba(244, 63, 94, 0.15)' : 'rgba(244, 63, 94, 0.1)',
+                    border: '1px solid rgba(244, 63, 94, 0.25)',
+                    color: 'var(--primary)'
+                };
+        }
+    };
+
+    return (
+        <div style={{
+            margin: '8px 0 12px 0',
+            borderRadius: '12px',
+            border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(0, 0, 0, 0.06)',
+            background: isDark ? 'rgba(30, 41, 59, 0.4)' : 'rgba(248, 250, 252, 0.65)',
+            overflow: 'hidden',
+            transition: 'all 0.2s ease',
+            width: '100%'
+        }}>
+            {/* Header Accordion */}
+            <div 
+                onClick={() => setIsOpen(!isOpen)}
+                style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '10px 14px',
+                    cursor: 'pointer',
+                    userSelect: 'none',
+                    background: isDark ? 'rgba(30, 41, 59, 0.2)' : 'rgba(241, 245, 249, 0.3)',
+                    transition: 'all 0.2s',
+                }}
+                onMouseOver={(e) => e.currentTarget.style.background = isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.02)'}
+                onMouseOut={(e) => e.currentTarget.style.background = isDark ? 'rgba(30, 41, 59, 0.2)' : 'rgba(241, 245, 249, 0.3)'}
+            >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: isDark ? '#cbd5e1' : '#475569', fontSize: '0.78rem', fontWeight: 800 }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '18px', color: 'var(--primary)', animation: !isOpen ? 'pulse-soft 2s infinite' : 'none' }}>
+                        psychology
+                    </span>
+                    QUÁ TRÌNH SUY NGHĨ CỦA REXI ({steps.length} bước)
+                </div>
+                <span className="material-symbols-outlined" style={{ 
+                    fontSize: '18px', 
+                    color: isDark ? '#64748b' : '#94a3b8',
+                    transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                    transition: 'transform 0.2s ease'
+                }}>
+                    expand_more
+                </span>
+            </div>
+
+            {/* List of Steps */}
+            {isOpen && (
+                <div style={{
+                    padding: '12px 14px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '12px',
+                    borderTop: isDark ? '1px solid rgba(255, 255, 255, 0.06)' : '1px solid rgba(0, 0, 0, 0.04)',
+                    background: isDark ? 'rgba(15, 23, 42, 0.25)' : 'rgba(255, 255, 255, 0.5)',
+                }}>
+                    {steps.map((step, idx) => {
+                        const badge = getStepBadge(step);
+                        return (
+                            <div key={idx} style={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '6px',
+                                paddingLeft: '12px',
+                                borderLeft: `2.5px solid ${badge.color}`,
+                                position: 'relative'
+                            }}>
+                                {/* Badge tiêu đề bước */}
+                                <div style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    padding: '3px 8px',
+                                    borderRadius: '6px',
+                                    background: badge.bg,
+                                    border: badge.border,
+                                    color: badge.color,
+                                    fontSize: '0.68rem',
+                                    fontWeight: 900,
+                                    width: 'fit-content'
+                                }}>
+                                    <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>
+                                        {badge.icon}
+                                    </span>
+                                    {badge.text}
+                                </div>
+
+                                {/* Suy nghĩ / Content của bước */}
+                                {step.content && (
+                                    <div style={{ 
+                                        fontSize: '0.75rem', 
+                                        color: isDark ? '#cbd5e1' : '#334155', 
+                                        lineHeight: 1.45,
+                                        fontWeight: 600,
+                                        whiteSpace: 'pre-wrap'
+                                    }}>
+                                        {step.content}
+                                    </div>
+                                )}
+
+                                {/* Tham số truyền vào nếu là Tool */}
+                                {step.type === "TOOL" && step.params && Object.keys(step.params).length > 0 && (
+                                    <div style={{
+                                        fontSize: '0.7rem',
+                                        background: isDark ? 'rgba(0, 0, 0, 0.2)' : 'rgba(0, 0, 0, 0.02)',
+                                        border: isDark ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid rgba(0, 0, 0, 0.05)',
+                                        padding: '8px 10px',
+                                        borderRadius: '6px',
+                                        fontFamily: 'monospace',
+                                        color: isDark ? '#a7f3d0' : '#047857'
+                                    }}>
+                                        <b>Tham số gửi đi:</b> {JSON.stringify(step.params, null, 2)}
+                                    </div>
+                                )}
+
+                                {/* Quan sát được từ cơ sở dữ liệu */}
+                                {step.observation && (
+                                    <div style={{
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: '4px',
+                                        fontSize: '0.7rem',
+                                        background: isDark ? 'rgba(30, 41, 59, 0.8)' : 'rgba(241, 245, 249, 0.8)',
+                                        padding: '8px 10px',
+                                        borderRadius: '6px',
+                                        border: isDark ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid rgba(0, 0, 0, 0.05)',
+                                        color: isDark ? '#94a3b8' : '#475569'
+                                    }}>
+                                        <span style={{ fontWeight: 800, color: isDark ? '#38bdf8' : '#0284c7', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                            👁️ Kết quả quan sát thực tế (Observation)
+                                        </span>
+                                        <span style={{ fontFamily: 'monospace', whiteSpace: 'pre-wrap', lineHeight: 1.4 }}>
+                                            {step.observation}
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
         </div>
     );
 };
@@ -772,7 +998,16 @@ export const ChatBot: React.FC = () => {
                 if (cleaned) metrics.push(cleaned.slice(0, 180));
             };
 
-            // 1. Quét các thẻ card chỉ số (Stats cards)
+            // 1. Quét tiêu đề các Form đang active (Cựu kỳ quan trọng cho AUTOPILOT)
+            const activeFormHeaders = document.querySelectorAll("h1, h2, h3, .form-title, [class*='title']");
+            activeFormHeaders.forEach(header => {
+                const txt = header.textContent?.trim().replace(/\s+/g, ' ');
+                if (txt && (txt.includes("Cập nhật thông tin") || txt.includes("Đăng ký") || txt.includes("Đặt lịch") || txt.includes("Thông tin"))) {
+                    pushMetric(`Tiêu đề Form active: "${txt}"`);
+                }
+            });
+
+            // 2. Quét các thẻ card chỉ số (Stats cards)
             const cards = document.querySelectorAll(".glass-card, [class*='card'], .card");
             cards.forEach((card, idx) => {
                 if (idx > 7) return;
@@ -787,7 +1022,7 @@ export const ChatBot: React.FC = () => {
                 }
             });
 
-            // 2. Quét bảng đang hiển thị ở mức tóm tắt, ko gửi toàn bộ DOM/dữ liệu.
+            // 3. Quét bảng đang hiển thị ở mức tóm tắt
             const tables = document.querySelectorAll("table");
             tables.forEach((table, tableIdx) => {
                 if (tableIdx > 0) return; 
@@ -815,7 +1050,7 @@ export const ChatBot: React.FC = () => {
                 }
             });
 
-            // 3. Quét các tiêu đề cảnh báo hoặc văn bản chỉ số phụ
+            // 4. Quét các tiêu đề cảnh báo hoặc văn bản chỉ số phụ
             const alerts = document.querySelectorAll("[class*='alert'], [class*='warning'], .bg-red-50, .bg-yellow-50");
             alerts.forEach((alert, idx) => {
                 if (idx > 2) return;
@@ -825,11 +1060,11 @@ export const ChatBot: React.FC = () => {
                 }
             });
 
-            // 4. Tự động Tagging & quét toàn bộ phần tử tương tác (Mở rộng cho Autopilot)
+            // 5. Tự động Tagging & quét toàn bộ phần tử tương tác (Thu thập giá trị thực tế của FORM)
             let autoIdCounter = 1;
             const interactiveElements = document.querySelectorAll("button, input, select, textarea, [role='button'], [data-ai-id]");
             interactiveElements.forEach((el, idx) => {
-                if (idx > 35) return; // Mở rộng giới hạn lên 35 phần tử
+                if (idx > 35) return; 
                 let aiId = el.getAttribute("data-ai-id");
                 if (!aiId) {
                     aiId = el.id || el.getAttribute("name") || `auto-ai-id-${autoIdCounter++}`;
@@ -845,7 +1080,9 @@ export const ChatBot: React.FC = () => {
                     const placeholder = el.getAttribute("placeholder") || "";
                     const name = el.getAttribute("name") || "";
                     const type = el.getAttribute("type") || "";
-                    label = `[Loại: ${type || tagName}] ${placeholder ? `Gợi ý: ${placeholder}` : `Tên: ${name}`}`;
+                    const val = (el as HTMLInputElement | HTMLTextAreaElement).value || "";
+                    // BỎ SUNG giá trị thực tế đang điền trong ô input/textarea để AI nhận biết DOM
+                    label = `[Loại: ${type || tagName}] ${placeholder ? `Gợi ý: ${placeholder}` : `Tên: ${name}`}${val ? ` (Giá trị thực: "${val}")` : ""}`;
                 } else if (tagName === "select") {
                     const options: string[] = [];
                     el.querySelectorAll("option").forEach(opt => {
@@ -853,7 +1090,11 @@ export const ChatBot: React.FC = () => {
                         const txt = opt.textContent?.trim();
                         if (val) options.push(`"${txt}" (val: ${val})`);
                     });
-                    label = `[Select] Lựa chọn: ${options.slice(0, 8).join(", ")}`;
+                    const currentVal = (el as HTMLSelectElement).value || "";
+                    const selectedOpt = (el as HTMLSelectElement).options[(el as HTMLSelectElement).selectedIndex];
+                    const currentText = selectedOpt ? selectedOpt.text.trim() : "";
+                    // BỎ SUNG option đang được chọn thực tế giúp AI không hỏi lại ngu ngơ
+                    label = `[Select] Giá trị chọn: "${currentText}" (val: "${currentVal}"), Lựa chọn: ${options.slice(0, 8).join(", ")}`;
                 } else if (tagName === "div") {
                     label = el.textContent?.trim() || "";
                 }
@@ -1848,39 +2089,41 @@ export const ChatBot: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [agentLoading, setAgentLoading] = useState(false);
 
-    // Khai báo state quản lý bước suy nghĩ hiện tại của Rexi Chatbot
-    const [thoughtStep, setThoughtStep] = useState(0);
-    const [agentThoughtStep, setAgentThoughtStep] = useState(0);
+    // Khai báo state quản lý bước suy nghĩ và thời gian chạy thực tế
+    const [standardElapsedTime, setStandardElapsedTime] = useState(0);
+    const [agentElapsedTime, setAgentElapsedTime] = useState(0);
+    const [lastQuery, setLastQuery] = useState("");
+    const [lastAgentQuery, setLastAgentQuery] = useState("");
 
-    // Tự động xoay vòng bước suy nghĩ Standard mỗi 1800ms để người dùng đọc ko bị chán
+    // Bộ đếm thời gian loading cho Standard Chat
     useEffect(() => {
-        let interval: any;
-        if (loadingRef.current) {
-            setThoughtStep(0);
-            interval = window.setInterval(() => {
-                setThoughtStep(prev => (prev + 1) % standardThoughtSteps.length);
-            }, 1800);
+        let timer: any;
+        if (loading) {
+            setStandardElapsedTime(0);
+            timer = window.setInterval(() => {
+                setStandardElapsedTime(prev => prev + 1);
+            }, 1000);
         } else {
-            setThoughtStep(0);
+            setStandardElapsedTime(0);
         }
         return () => {
-            if (interval) window.clearInterval(interval);
+            if (timer) window.clearInterval(timer);
         };
     }, [loading]);
 
-    // Tự động xoay vòng bước suy nghĩ Rexi Agent mỗi 1800ms khi tác tử đang xử lý dữ liệu
+    // Bộ đếm thời gian loading cho Rexi Agent
     useEffect(() => {
-        let interval: any;
+        let timer: any;
         if (agentLoading) {
-            setAgentThoughtStep(0);
-            interval = window.setInterval(() => {
-                setAgentThoughtStep(prev => (prev + 1) % agentThoughtSteps.length);
-            }, 1800);
+            setAgentElapsedTime(0);
+            timer = window.setInterval(() => {
+                setAgentElapsedTime(prev => prev + 1);
+            }, 1000);
         } else {
-            setAgentThoughtStep(0);
+            setAgentElapsedTime(0);
         }
         return () => {
-            if (interval) window.clearInterval(interval);
+            if (timer) window.clearInterval(timer);
         };
     }, [agentLoading]);
 
@@ -4307,6 +4550,7 @@ export const ChatBot: React.FC = () => {
         slotAlreadyReserved = false
     ) => {
         const textToSend = textOverride || input;
+        setLastQuery(textToSend);
         const currentFiles = queuedFiles ? [...queuedFiles] : [...selectedFiles];
         if (!textToSend.trim() && currentFiles.length === 0) return;
         if (isCompressing) return;
@@ -4643,6 +4887,7 @@ export const ChatBot: React.FC = () => {
     const handleAgentSend = async (textOverride?: string, alreadyDisplayedUserMessage = false, slotAlreadyReserved = false) => {
         let textToSend = textOverride || agentInput;
         if (!textToSend.trim()) return;
+        setLastAgentQuery(textToSend);
 
         if (!slotAlreadyReserved && activeAgentTurnsRef.current >= 3) {
             if (pendingAgentQueueRef.current.length >= 3) {
@@ -6073,7 +6318,8 @@ export const ChatBot: React.FC = () => {
                 provider: response.data.provider,
                 isEmergency: replyText.includes("[EMERGENCY]") || detectEmergencyKeywords(cleanedReplyText),
                 treatmentData: treatmentData,
-                swarmData: swarmData
+                swarmData: swarmData,
+                steps: response.data.steps
             };
 
             setAgentMessages(prev => [...prev, aiResponseMsg]);
@@ -7146,8 +7392,8 @@ export const ChatBot: React.FC = () => {
                                     ))}
                                     {loading && (
                                         <ThoughtLoader 
-                                            steps={standardThoughtSteps} 
-                                            activeStep={thoughtStep} 
+                                            elapsedTime={standardElapsedTime} 
+                                            loadingText={getDynamicLoadingText(lastQuery, standardElapsedTime, false)} 
                                             isDark={isDark} 
                                         />
                                     )}
@@ -7174,6 +7420,9 @@ export const ChatBot: React.FC = () => {
                                                 }}
                                             >
                                                 {renderClinicalBadge(msg)}
+                                                {msg.steps && (
+                                                    <ThoughtProcessAccordion steps={msg.steps} isDark={isDark} />
+                                                )}
                                                 {msg.text && (msg.isHtml ? <div dangerouslySetInnerHTML={{ __html: msg.text }} /> : renderText(msg.text))}
 
                                                 {msg.swarmData && (
@@ -7396,8 +7645,8 @@ export const ChatBot: React.FC = () => {
                                     ))}
                                     {agentLoading && (
                                         <ThoughtLoader 
-                                            steps={agentThoughtSteps} 
-                                            activeStep={agentThoughtStep} 
+                                            elapsedTime={agentElapsedTime} 
+                                            loadingText={getDynamicLoadingText(lastAgentQuery, agentElapsedTime, true)} 
                                             isDark={isDark} 
                                         />
                                     )}

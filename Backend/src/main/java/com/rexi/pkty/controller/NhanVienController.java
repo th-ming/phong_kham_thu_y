@@ -152,17 +152,38 @@ public class NhanVienController {
 
     @PostMapping("/nhan-vien/lich-lam-viec")
     @org.springframework.cache.annotation.CacheEvict(value = "bacSiCache", allEntries = true)
-    public org.springframework.http.ResponseEntity<?> addLichLamViec(@RequestBody LichLamViecNhanVien lich,
-            @RequestHeader(value = "Role", required = false) String roleHeader) {
+    @org.springframework.transaction.annotation.Transactional
+    public org.springframework.http.ResponseEntity<?> addLichLamViec(@RequestBody LichLamViecNhanVien lich) {
         try {
+            // Xác thực token — lấy thông tin từ JWT, không tin header tùy ý
             org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
             String username = (auth != null) ? auth.getName() : null;
             if (username == null || username.equals("anonymousUser")) {
                 return org.springframework.http.ResponseEntity.status(401).body(Map.of("message", "Token không hợp lệ!"));
             }
 
-            boolean isAdmin = roleHeader != null && (roleHeader.toLowerCase().contains("admin") || roleHeader.toLowerCase().contains("quan_ly"));
+            // Đọc role từ DB qua token đã xác thực — không tin header từ client
             com.rexi.pkty.entity.TaiKhoan tk = taiKhoanRepository.findByTenDangNhap(username).orElse(null);
+            String tkRole = (tk != null && tk.getId_vai_tro() != null) ? tk.getId_vai_tro().toUpperCase() : "";
+            boolean isAdmin = tkRole.equals("VT-ADMIN") || tkRole.equals("VT-1") || tkRole.equals("VT-QL") || tkRole.equals("VT-2");
+
+            // Validate dữ liệu đầu vào bắt buộc
+            if (lich.getId_nhan_vien() == null || lich.getId_nhan_vien().isBlank()) {
+                return org.springframework.http.ResponseEntity.status(400).body(Map.of("message", "Thiếu mã nhân viên!"));
+            }
+            if (lich.getNgay_lam() == null) {
+                return org.springframework.http.ResponseEntity.status(400).body(Map.of("message", "Thiếu ngày làm!"));
+            }
+            if (lich.getGio_bat_dau() == null) {
+                return org.springframework.http.ResponseEntity.status(400).body(Map.of("message", "Thiếu giờ bắt đầu ca trực!"));
+            }
+            // Giờ phải nằm trong khung giờ hoạt động 8:00 - 20:00
+            int startHour = lich.getGio_bat_dau().getHour();
+            if (startHour < 8 || startHour > 19) {
+                return org.springframework.http.ResponseEntity.status(400).body(Map.of("message", "Giờ bắt đầu ca phải nằm trong khoảng 8:00 - 20:00!"));
+            }
+
+            // Kiểm tra quyền sở hữu: nhân viên chỉ được đăng ký cho chính mình
             if (!isAdmin && tk != null) {
                 String currentNhanVienId = null;
                 try {
@@ -176,7 +197,7 @@ public class NhanVienController {
                 }
             }
 
-            // Tuần hiện tại chỉ ADMIN/QUAN_LY được can thiệp
+            // Nhân viên thường chỉ được đăng ký tuần sau trở đi
             java.time.LocalDate today = java.time.LocalDate.now();
             java.time.LocalDate currentMonday = today.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
             java.time.LocalDate currentSunday = currentMonday.plusDays(6);
@@ -185,54 +206,48 @@ public class NhanVienController {
                 return org.springframework.http.ResponseEntity.status(403).body(Map.of("message", "Bạn chỉ có thể đăng ký lịch trực cho các tuần tiếp theo. Tuần hiện tại chỉ Admin/Quản lý mới có quyền điều chỉnh."));
             }
 
-            // Check trùng ca trực của nv này
+            // Kiểm tra trùng ca (cùng nhân viên, cùng ngày, cùng giờ)
             String checkDupSql = "SELECT COUNT(*) FROM LichLamViecNhanVien WHERE id_nhan_vien = ? AND ngay_lam = ? AND gio_bat_dau = ?";
-            Integer dupCount = jdbcTemplate.queryForObject(checkDupSql, Integer.class, lich.getId_nhan_vien(), lich.getNgay_lam(), lich.getGio_bat_dau());
+            Integer dupCount = jdbcTemplate.queryForObject(checkDupSql, Integer.class,
+                    lich.getId_nhan_vien(), lich.getNgay_lam(), lich.getGio_bat_dau());
             if (dupCount != null && dupCount > 0) {
                 return org.springframework.http.ResponseEntity.status(409)
-                        .body(Map.of("message", "Nhân viên này đã được đăng ký ca trực vào khung giờ " + 
-                                     lich.getGio_bat_dau() + " ngày " + lich.getNgay_lam() + " rồi sếp ơi! 🐾"));
+                        .body(Map.of("message", "Nhân viên này đã được đăng ký ca trực vào khung giờ " +
+                                lich.getGio_bat_dau() + " ngày " + lich.getNgay_lam() + " rồi sếp ơi! 🐾"));
             }
 
-            // Get role tính limit riêng
+            // Lấy role nhân viên từ DB (không fallback đoán bằng prefix)
             String getRoleSql = "SELECT TOP 1 id_vai_tro FROM TaiKhoan WHERE id_nhan_vien = ?";
-            String roleId = null;
+            String staffRoleId = null;
             try {
-                roleId = jdbcTemplate.queryForObject(getRoleSql, String.class, lich.getId_nhan_vien());
+                staffRoleId = jdbcTemplate.queryForObject(getRoleSql, String.class, lich.getId_nhan_vien());
             } catch (Exception ignored) {}
 
-            // Fallback đoán role qua prefix mã nhân viên
-            if (roleId == null && lich.getId_nhan_vien() != null) {
-                String id = lich.getId_nhan_vien();
-                if (id.startsWith("BS")) roleId = "VT-BS";
-                else if (id.startsWith("YT")) roleId = "VT-YT";
-                else if (id.startsWith("TT")) roleId = "VT-TT";
-                else if (id.startsWith("KT")) roleId = "VT-KT";
-                else if (id.startsWith("QL")) roleId = "VT-QL";
-            }
-
-            if (roleId != null) {
-                // Check số nhân sự cùng role trực cùng giờ
+            // Nếu không tìm được role thì bỏ qua giới hạn số người (không đoán bừa)
+            if (!isAdmin && staffRoleId != null) {
+                // Kiểm tra số nhân sự cùng chức vụ trực cùng khung giờ đó
                 String countRoleSql = "SELECT COUNT(DISTINCT l.id_nhan_vien) FROM LichLamViecNhanVien l " +
-                                      "JOIN TaiKhoan t ON l.id_nhan_vien = t.id_nhan_vien " +
-                                      "WHERE l.ngay_lam = ? AND l.gio_bat_dau = ? AND t.id_vai_tro = ?";
-                Integer roleCount = jdbcTemplate.queryForObject(countRoleSql, Integer.class, lich.getNgay_lam(), lich.getGio_bat_dau(), roleId);
-                
-                int limit = "VT-BS".equals(roleId) ? 4 : 2;
-                String roleName = "VT-BS".equals(roleId) ? "bác sĩ" : 
-                                  "VT-YT".equals(roleId) ? "y tá" : 
-                                  "VT-TT".equals(roleId) ? "lễ tân" : 
-                                  "VT-KT".equals(roleId) ? "kế toán" : "nhân viên cùng chức vụ";
-                
+                        "JOIN TaiKhoan t ON l.id_nhan_vien = t.id_nhan_vien " +
+                        "WHERE l.ngay_lam = ? AND l.gio_bat_dau = ? AND t.id_vai_tro = ?";
+                Integer roleCount = jdbcTemplate.queryForObject(countRoleSql, Integer.class,
+                        lich.getNgay_lam(), lich.getGio_bat_dau(), staffRoleId);
+
+                int limit = "VT-BS".equals(staffRoleId) ? 3 :
+                            "VT-YT".equals(staffRoleId) ? 3 : 2;
+                String roleName = "VT-BS".equals(staffRoleId) ? "bác sĩ" :
+                                  "VT-YT".equals(staffRoleId) ? "y tá" :
+                                  "VT-TT".equals(staffRoleId) ? "lễ tân" :
+                                  "VT-KT".equals(staffRoleId) ? "kế toán" : "nhân viên cùng chức vụ";
+
                 if (roleCount != null && roleCount >= limit) {
                     return org.springframework.http.ResponseEntity.status(409)
-                            .body(Map.of("message", "Đã có tối đa " + limit + " " + roleName + " trực trong khung giờ " + 
-                                         lich.getGio_bat_dau() + " ngày " + lich.getNgay_lam() + " rồi sếp ơi! 🐾"));
+                            .body(Map.of("message", "Đã có tối đa " + limit + " " + roleName + " trực trong khung giờ " +
+                                    lich.getGio_bat_dau() + " ngày " + lich.getNgay_lam() + " rồi sếp ơi! 🐾"));
                 }
             }
 
-            // Auto gán giờ kết thúc (start + 30p)
-            if (lich.getGio_ket_thuc() == null && lich.getGio_bat_dau() != null) {
+            // Gán giờ kết thúc: ưu tiên dùng giá trị từ request, fallback mới tính +30p
+            if (lich.getGio_ket_thuc() == null) {
                 lich.setGio_ket_thuc(lich.getGio_bat_dau().plusMinutes(30));
             }
 
@@ -245,8 +260,8 @@ public class NhanVienController {
 
     @DeleteMapping("/nhan-vien/lich-lam-viec/{id}")
     @org.springframework.cache.annotation.CacheEvict(value = "bacSiCache", allEntries = true)
-    public org.springframework.http.ResponseEntity<?> deleteLichLamViec(@PathVariable Long id,
-            @RequestHeader(value = "Role", required = false) String roleHeader) {
+    @org.springframework.transaction.annotation.Transactional
+    public org.springframework.http.ResponseEntity<?> deleteLichLamViec(@PathVariable Long id) {
         try {
             // Lấy ca trực cần xóa
             LichLamViecNhanVien lichToXoa = lichLamViecRepository.findById(id).orElse(null);
@@ -254,17 +269,19 @@ public class NhanVienController {
                 return org.springframework.http.ResponseEntity.status(404).body(Map.of("message", "Không tìm thấy ca trực cần xóa!"));
             }
 
-            // Get current user auth
+            // Xác thực token — đọc role từ DB, không tin header từ client
             org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
             String username = (auth != null) ? auth.getName() : null;
             if (username == null || username.equals("anonymousUser")) {
                 return org.springframework.http.ResponseEntity.status(401).body(Map.of("message", "Token không hợp lệ!"));
             }
 
-            boolean isAdmin = roleHeader != null && (roleHeader.toLowerCase().contains("admin") || roleHeader.toLowerCase().contains("quan_ly"));
-
-            // Chỉ được xóa ca trực của chính mình
+            // Đọc role từ tài khoản đã xác thực trong DB
             com.rexi.pkty.entity.TaiKhoan tk = taiKhoanRepository.findByTenDangNhap(username).orElse(null);
+            String tkRole = (tk != null && tk.getId_vai_tro() != null) ? tk.getId_vai_tro().toUpperCase() : "";
+            boolean isAdmin = tkRole.equals("VT-ADMIN") || tkRole.equals("VT-1") || tkRole.equals("VT-QL") || tkRole.equals("VT-2");
+
+            // Chỉ được hủy ca trực của chính mình
             if (!isAdmin && tk != null) {
                 String currentNhanVienId = null;
                 try {
@@ -278,7 +295,7 @@ public class NhanVienController {
                 }
             }
 
-            // Chỉ ADMIN được xóa ca trực tuần hiện tại
+            // Nhân viên thường không được hủy ca thuộc tuần hiện tại
             java.time.LocalDate today = java.time.LocalDate.now();
             java.time.LocalDate currentMonday = today.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
             java.time.LocalDate currentSunday = currentMonday.plusDays(6);
@@ -287,7 +304,17 @@ public class NhanVienController {
                 return org.springframework.http.ResponseEntity.status(403).body(Map.of("message", "Bạn không thể xóa lịch trực ở tuần hiện tại. Vui lòng liên hệ Admin."));
             }
 
-            // Check trùng lịch khám của KH
+            // Nhân viên phải hủy ca trước ít nhất 2 giờ so với giờ bắt đầu ca
+            if (!isAdmin && lichToXoa.getNgay_lam() != null && lichToXoa.getGio_bat_dau() != null) {
+                java.time.LocalDateTime caStart = java.time.LocalDateTime.of(lichToXoa.getNgay_lam(), lichToXoa.getGio_bat_dau());
+                java.time.LocalDateTime now = java.time.LocalDateTime.now();
+                if (now.isAfter(caStart.minusHours(2))) {
+                    return org.springframework.http.ResponseEntity.status(403).body(Map.of("message",
+                            "Bạn chỉ được hủy ca trực trước ít nhất 2 giờ so với giờ bắt đầu ca. Vui lòng liên hệ Admin."));
+                }
+            }
+
+            // Kiểm tra conflict với lịch khám của khách hàng
             java.time.LocalTime shiftStart = lichToXoa.getGio_bat_dau();
             java.time.LocalTime shiftEnd = lichToXoa.getGio_ket_thuc();
             if (shiftEnd == null) shiftEnd = shiftStart.plusMinutes(30);
@@ -315,7 +342,7 @@ public class NhanVienController {
                         "Không thể hủy ca! Khung giờ này đang nằm trong khoảng thời gian diễn ra dịch vụ của một khách hàng đã đặt trước. Vui lòng liên hệ lễ tân để dời lịch của khách."));
             }
 
-            // Delete ca trực
+            // Xóa ca trực
             lichLamViecRepository.deleteById(id);
             return org.springframework.http.ResponseEntity.ok(Map.of("message", "Đã hủy ca trực thành công."));
         } catch (Exception e) {
