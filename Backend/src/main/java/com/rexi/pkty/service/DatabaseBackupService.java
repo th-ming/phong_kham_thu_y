@@ -86,4 +86,50 @@ public class DatabaseBackupService {
         logger.info("✅ Đã sao lưu CSDL thành công tại: " + backupFileName);
         return backupFileName;
     }
+
+    // Khôi phục CSDL từ file .bak có sẵn trong thư mục backups/
+    // Bảo vệ: chỉ nhận filename thuần (không cho phép path traversal)
+    public void restoreDatabase(String filename) throws Exception {
+        // Chặn path traversal: chỉ cho phép tên file không có ký tự phân cách đường dẫn
+        if (filename == null || filename.contains("..") || filename.contains("/") || filename.contains("\\")) {
+            throw new IllegalArgumentException("Tên file không hợp lệ.");
+        }
+        if (!filename.endsWith(".bak")) {
+            throw new IllegalArgumentException("Chỉ hỗ trợ khôi phục từ file .bak.");
+        }
+
+        String backupDirPath = System.getProperty("user.dir") + File.separator + "backups";
+        File backupFile = new File(backupDirPath, filename);
+
+        // Xác nhận file tồn tại trong đúng thư mục backups
+        if (!backupFile.exists() || !backupFile.isFile()) {
+            throw new IllegalArgumentException("File backup không tồn tại: " + filename);
+        }
+        if (!backupFile.getCanonicalPath().startsWith(new File(backupDirPath).getCanonicalPath())) {
+            throw new SecurityException("Truy cập file ngoài thư mục backup bị từ chối.");
+        }
+
+        String dbName = jdbcTemplate.queryForObject("SELECT DB_NAME()", String.class);
+        String absolutePath = backupFile.getAbsolutePath();
+
+        // Đặt DB về single-user mode để tránh conflict, sau đó restore, rồi trả lại multi-user
+        String sqlSingleUser = "ALTER DATABASE [" + dbName + "] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;";
+        String sqlRestore = "RESTORE DATABASE [" + dbName + "] FROM DISK = '" + absolutePath + "' WITH REPLACE;";
+        String sqlMultiUser = "ALTER DATABASE [" + dbName + "] SET MULTI_USER;";
+
+        try {
+            jdbcTemplate.execute(sqlSingleUser);
+            jdbcTemplate.execute(sqlRestore);
+        } finally {
+            // Luôn trả lại multi-user dù restore thành công hay thất bại
+            try {
+                jdbcTemplate.execute(sqlMultiUser);
+            } catch (Exception ignored) {
+                // Nếu restore thất bại hoàn toàn DB có thể không khả dụng — log lại
+                logger.severe("⚠️ Không thể đặt lại MULTI_USER sau khi restore. DB có thể cần khởi động lại.");
+            }
+        }
+
+        logger.info("✅ Đã khôi phục CSDL thành công từ file: " + filename);
+    }
 }

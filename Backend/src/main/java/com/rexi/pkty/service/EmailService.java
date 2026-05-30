@@ -7,6 +7,10 @@ import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 // * * DỊCH VỤ EMAIL HỆ THỐNG - REXI VET * - Xử lý gửi các loại email: xn đặt lịch, Nhắc hẹn, Marketing... * - Chạy bất đồng bộ (Async) để ko làm chậm trải nghiệm người dùng
@@ -14,6 +18,16 @@ import java.util.logging.Logger;
 public class EmailService {
 
     private static final Logger logger = Logger.getLogger(EmailService.class.getName());
+
+    // Thread pool riêng cho mass email: tối đa 5 thread, hàng đợi 2000 task
+    // CallerRunsPolicy: khi queue đầy thì caller tự gửi thay vì reject → không mất email
+    private static final ExecutorService MASS_EMAIL_EXECUTOR = new ThreadPoolExecutor(
+        2, 5,
+        60L, TimeUnit.SECONDS,
+        new LinkedBlockingQueue<>(2000),
+        r -> { Thread t = new Thread(r, "mass-email"); t.setDaemon(true); return t; },
+        new ThreadPoolExecutor.CallerRunsPolicy()
+    );
 
     @Autowired(required = false)
     private JavaMailSender mailSender;
@@ -208,22 +222,23 @@ public class EmailService {
             }
         });
     }
-    // * * Gửi email Marketing / Mass email
+    // * * Gửi email Marketing / Mass email — chạy qua executor có giới hạn để tránh OOM và IP bị blacklist
     public void sendMassEmail(String toEmail, String subject, String htmlContent) {
         JavaMailSender sender = getDynamicMailSender();
         if (sender == null) return;
-        CompletableFuture.runAsync(() -> {
+        MASS_EMAIL_EXECUTOR.submit(() -> {
             try {
                 MimeMessage message = sender.createMimeMessage();
                 MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
                 helper.setTo(toEmail);
                 helper.setSubject(subject);
-                // Convert \n to <br> to support simple text with line breaks as HTML
+                // Chuyển \n thành <br> để hỗ trợ xuống dòng trong HTML
                 String formattedContent = htmlContent.replace("\n", "<br>");
                 helper.setText(formattedContent, true);
                 sender.send(message);
+                logger.info("✅ Gửi mass email thành công tới: " + toEmail);
             } catch (Exception e) {
-                logger.severe("Lỗi gửi mass mail cho " + toEmail + ": " + e.getMessage());
+                logger.severe("❌ Lỗi gửi mass mail cho " + toEmail + ": " + e.getMessage());
             }
         });
     }

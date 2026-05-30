@@ -51,6 +51,7 @@ const CauHinhHeThong: React.FC = () => {
     const [saving, setSaving] = useState(false);
     const [backingUp, setBackingUp] = useState(false);
     const [deletingBackups, setDeletingBackups] = useState(false);
+    const [restoringFile, setRestoringFile] = useState<string | null>(null);
     const [logs, setLogs] = useState<any[]>([]);
     const [backups, setBackups] = useState<any[]>([]);
     const [activeTab, setActiveTab] = useState('general');
@@ -227,6 +228,24 @@ const CauHinhHeThong: React.FC = () => {
             fetchLogs();
         } catch (error: any) {
             toast.error('Lỗi khi xóa file: ' + (error.response?.data?.message || error.message));
+        }
+    };
+    // Khôi phục CSDL từ file backup — hiện cảnh báo 2 lần để tránh thao tác nhầm
+    const handleRestoreBackup = async (filename: string) => {
+        const ok1 = window.confirm(`⚠️ BẠN SẮP KHÔI PHỤC DATABASE!\n\nFile: ${filename}\n\nTOÀN BỘ DỮ LIỆU HIỆN TẠI sẽ bị thay thế bởi bản sao lưu này. Thao tác KHÔNG THỂ HOÀN TÁC.\n\nBạn có chắc chắn muốn tiếp tục không?`);
+        if (!ok1) return;
+        const ok2 = window.confirm('Xác nhận lần cuối: Khôi phục database về bản sao lưu đã chọn?');
+        if (!ok2) return;
+
+        setRestoringFile(filename);
+        try {
+            await axiosInstance.post(`/api/system/restore/${encodeURIComponent(filename)}`);
+            toast.success(`✅ Khôi phục thành công từ file: ${filename}`);
+            fetchBackups();
+        } catch (err: any) {
+            toast.error('Lỗi khi khôi phục: ' + (err.response?.data?.message || err.message));
+        } finally {
+            setRestoringFile(null);
         }
     };
 
@@ -838,6 +857,26 @@ const CauHinhHeThong: React.FC = () => {
                                                         onClick={() => handleDownloadBackup(b.filename)}
                                                     >
                                                         <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>download</span>
+                                                    </button>
+                                                    {/* Nút khôi phục database từ file backup — màu cam để phân biệt */}
+                                                    <button
+                                                        title="Khôi phục DB từ file này"
+                                                        disabled={restoringFile === b.filename}
+                                                        style={{
+                                                            background: 'none',
+                                                            border: 'none',
+                                                            color: restoringFile === b.filename ? 'var(--gray-400)' : '#e67e22',
+                                                            cursor: restoringFile === b.filename ? 'not-allowed' : 'pointer',
+                                                            padding: '4px'
+                                                        }}
+                                                        onClick={() => handleRestoreBackup(b.filename)}
+                                                    >
+                                                        <span
+                                                            className="material-symbols-outlined"
+                                                            style={{ fontSize: '18px', animation: restoringFile === b.filename ? 'spinBtn 1s linear infinite' : 'none' }}
+                                                        >
+                                                            {restoringFile === b.filename ? 'sync' : 'settings_backup_restore'}
+                                                        </span>
                                                     </button>
                                                     {/* Nút xóa file backup */}
                                                     <button

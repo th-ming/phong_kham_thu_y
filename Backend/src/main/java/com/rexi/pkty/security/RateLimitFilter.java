@@ -129,6 +129,11 @@ public class RateLimitFilter extends OncePerRequestFilter {
     }
 
     private String getClientIP(HttpServletRequest request) {
+        // ưu tiên dùng extractRealIp từ SecurityAlertService (hỗ trợ Cloudflare, nginx, X-Forwarded-For)
+        if (securityAlertService != null) {
+            return securityAlertService.extractRealIp(request);
+        }
+        // Fallback nếu service chưa sẵn sàng
         String xfHeader = request.getHeader("X-Forwarded-For");
         if (xfHeader == null || xfHeader.isEmpty() || "unknown".equalsIgnoreCase(xfHeader)) {
             return request.getRemoteAddr();

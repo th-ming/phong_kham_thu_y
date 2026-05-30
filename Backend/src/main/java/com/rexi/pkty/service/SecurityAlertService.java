@@ -1,5 +1,6 @@
 package com.rexi.pkty.service;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -269,9 +270,38 @@ public class SecurityAlertService {
         return analysis;
     }
 
+    // Chột IP raw từ chuỗi (tương thích ngược với các caller nội bộ)
     private String normalizeIp(String ip) {
         if (ip == null) return "";
         return ip.trim().replace(" ", "");
+    }
+
+    // Trích xuất IP thực của người dùng qua proxy/CDN — ưu tiên header của proxy/Cloudflare
+    public String extractRealIp(HttpServletRequest request) {
+        if (request == null) return "unknown";
+
+        // Thứ tự ưu tiên: Cloudflare > nginx X-Real-IP > X-Forwarded-For > remote addr
+        String[] proxyHeaders = {
+            "CF-Connecting-IP",       // Cloudflare: IP client thực
+            "X-Real-IP",              // Nginx proxy_pass thường set header này
+            "X-Forwarded-For",        // Chuẩn mạng, có thể chứa nhiều IP (chọn cái đầu tiên)
+            "X-Forwarded",
+            "Forwarded-For",
+            "Forwarded"
+        };
+
+        for (String header : proxyHeaders) {
+            String value = request.getHeader(header);
+            if (value != null && !value.isBlank()) {
+                // X-Forwarded-For có dạng: "client, proxy1, proxy2" — lấy phần tử đầu
+                String firstIp = value.split(",")[0].trim();
+                if (!firstIp.isEmpty()) {
+                    return normalizeIp(firstIp);
+                }
+            }
+        }
+
+        return normalizeIp(request.getRemoteAddr());
     }
 
     private String trimForLog(String value, int maxLength) {
