@@ -18,7 +18,7 @@ if %errorlevel% neq 0 (
     echo     He thong van se tiep tuc chay voi ma nguon hien tai cua sep.
 ) else (
     echo.
-    echo [✓] Cap nhat thanh cong! Ma nguon hien da la moi nhat.
+    echo [v] Cap nhat thanh cong! Ma nguon hien da la moi nhat.
 )
 echo.
 echo --------------------------------------------------------------------
@@ -35,7 +35,7 @@ REM Mo Frontend o cua so moi
 start "REXI FRONTEND (Low RAM)" cmd /k "scripts\start_frontend_low_ram.cmd"
 
 echo.
-echo [✓] Khoi dong thanh cong! Toan bo he thong hien dang chay truc tiep tren database Supabase cua sep!
+echo [v] Khoi dong thanh cong! Toan bo he thong hien dang chay truc tiep tren database Supabase cua sep!
 echo [i] Sep co he tat cua so chinh nay di, Frontend va Backend van se tiep tuc chay binh thuong.
 echo ====================================================================
 echo.
