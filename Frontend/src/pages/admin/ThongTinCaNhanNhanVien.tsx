@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import axiosInstance from '@services/axios';
 import { toast } from '@components/Toast';
 import { RevealSection } from '@components/SpecialEffects';
@@ -50,21 +50,27 @@ const ThongTinCaNhanNhanVien: React.FC = () => {
         return () => window.removeEventListener("rexi-data-changed", handleRealtimeProfile);
     }, [currentUserId]);
 
+    // FIX: API trả null với 200 OK cho Admin tối cao (id_nhan_vien = null → fallback NV-SYSTEM).
+    // Axios ko throw error với 200 OK, nên phải check !res.data để ép vào catch kích hoạt fallback profile Admin.
     const fetchProfile = async () => {
         try {
             const res = await axiosInstance.get(`/api/nhan-vien/profile/${currentUserId}`);
+            if (!res.data) {
+                throw new Error("API trả về null — kích hoạt fallback Admin profile");
+            }
             setProfile(res.data);
             setFormData(res.data);
         } catch (error) {
             console.error("Lỗi lấy thông tin cá nhân:", error);
-            const fallbackEmail = user.email || 
-                                 (user.ten_dang_nhap?.includes('@') ? user.ten_dang_nhap : null) || 
-                                 (user.ten_dang_nhap === 'quanly' ? 'quanly@gmail.com' : null) || 
+            // Fallback: sinh profile giả lập từ thông tin localStorage cho Admin tối cao
+            const fallbackEmail = user.email ||
+                                 (user.ten_dang_nhap?.includes('@') ? user.ten_dang_nhap : null) ||
+                                 (user.ten_dang_nhap === 'quanly' ? 'quanly@gmail.com' : null) ||
                                  (user.ten_dang_nhap ? `${user.ten_dang_nhap}@rexi.vn` : 'admin@rexi.vn');
-            const fallbackProfile = { 
-                ho_ten: user.ho_ten || user.display_name || 'Admin', 
-                email: fallbackEmail, 
-                id_nhan_vien: currentUserId 
+            const fallbackProfile = {
+                ho_ten: user.ho_ten || user.display_name || 'Admin',
+                email: fallbackEmail,
+                id_nhan_vien: currentUserId
             };
             setProfile(fallbackProfile);
             setFormData(fallbackProfile);
@@ -88,7 +94,7 @@ const ThongTinCaNhanNhanVien: React.FC = () => {
                 ...profile,
                 ...formData
             };
-            
+
             // Đồng bộ hóa thông tin mới vào localStorage ngay lập tức để Sidebar và Header cập nhật
             const syncLocalStorage = (updatedData: any) => {
                 const localUser = JSON.parse(localStorage.getItem("user") || "{}");
@@ -113,7 +119,7 @@ const ThongTinCaNhanNhanVien: React.FC = () => {
                 setIsEditing(false);
                 return;
             }
-            
+
             await axiosInstance.put(`/api/nhan-vien/${currentUserId}`, payload);
             toast.success("Cập nhật thông tin thành công!");
             syncLocalStorage(payload);
@@ -253,16 +259,17 @@ const ThongTinCaNhanNhanVien: React.FC = () => {
                     {/* Cột trái: Avatar và Thông tin cơ bản */}
                     <div className="glass-card" style={{ padding: '40px 32px', borderRadius: '32px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
                         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '120px', background: 'var(--primary-gradient)', opacity: 0.1 }}></div>
-                        
+
                         <div style={{ width: '140px', height: '140px', margin: '0 auto 24px', borderRadius: '50%', background: 'var(--surface)', padding: '6px', border: '3px solid var(--primary)', position: 'relative', zIndex: 1, boxShadow: '0 10px 25px var(--primary-shadow)' }}>
-                            <img 
-                                src={formData.hinh_anh || profile.hinh_anh || user.avatar || "/img/avtpkty.png"} 
-                                alt={profile.ho_ten || 'Avatar'} 
-                                style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} 
+                            <img
+                                src={formData.hinh_anh || profile.hinh_anh || user.avatar || "/img/avtpkty.png"}
+                                alt={profile.ho_ten || 'Avatar'}
+                                style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
                             />
                             {isEditing && (
                                 <label style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 'calc(100% - 12px)', height: 'calc(100% - 12px)', background: 'rgba(0,0,0,0.5)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', cursor: 'pointer', transition: 'all 0.3s', zIndex: 10 }}>
-                                    <input data-ai-id="input-thongtincanhannhanvien-p2ps" type="file" accept="image/*" onChange={handleImageChange} style={{ display: 'none' }} /> <span className="material-symbols-outlined" style={{ fontSize: '32px' }}>photo_camera</span> </label> )} {(profile.trang_thai === 'ACTIVE' || profile.trang_thai === 'Đang làm việc' || !profile.trang_thai) && ( <div style={{ position: 'absolute', bottom: '5px', right: '5px', width: '20px', height: '20px', background: '#10b981', border: '4px solid var(--surface)', borderRadius: '50%', zIndex: 2 }}></div> )} </div> {isEditing ? ( <input data-ai-id="input-thongtincanhannhanvien-59by" type="text" name="ho_ten" value={formData.ho_ten || formData.hoTen || ''} onChange={handleChange} className="form-input-edit" style={{ marginBottom: '10px', textAlign: 'center', fontSize: '1.2rem' }} placeholder="Họ và tên" /> ) : ( <h2 style={{ fontSize: '1.6rem', fontWeight: 950, color: 'var(--ink)', margin: '0 0 10px 0', letterSpacing: '-0.5px' }}>{displayHoTen}</h2> )} <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'var(--primary-light)', color: 'var(--primary)', padding: '8px 20px', borderRadius: '50px', fontSize: '0.85rem', fontWeight: 800, marginBottom: '32px' }}> <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>verified_user</span> {displayRole} </div> <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', textAlign: 'left' }}> <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', background: 'var(--background)', borderRadius: '20px', border: '1px solid var(--gray-100)' }}> <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}> <span className="material-symbols-outlined">badge</span> </div> <div> <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--gray-400)', letterSpacing: '1px' }}>MÃ NHÂN SỰ</div> <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--ink)' }}>{profile.id_nhan_vien || currentUserId}</div> </div> </div> <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', background: 'var(--background)', borderRadius: '20px', border: '1px solid var(--gray-100)' }}> <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'var(--blue-50)', color: 'var(--blue-600)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}> <span className="material-symbols-outlined">mail</span> </div> <div style={{ flex: 1, minWidth: 0 }}> <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--gray-400)', letterSpacing: '1px' }}>EMAIL LIÊN HỆ</div> {isEditing ? ( <input data-ai-id="input-thongtincanhannhanvien-8fb5" type="email" name="email" value={formData.email || ''} onChange={handleChange} className="form-input-edit" /> ) : ( <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{profile.email || 'Chưa cập nhật'}</div> )} </div> </div> <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', background: 'var(--background)', borderRadius: '20px', border: '1px solid var(--gray-100)' }}> <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'var(--green-50)', color: 'var(--green-600)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}> <span className="material-symbols-outlined">call</span> </div> <div style={{ flex: 1, minWidth: 0 }}> <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--gray-400)', letterSpacing: '1px' }}>ĐIỆN THOẠI</div> {isEditing ? ( <input data-ai-id="input-thongtincanhannhanvien-rivm" type="tel" name="so_dien_thoai" value={formData.so_dien_thoai || formData.soDienThoai || ''} onChange={handleChange} className="form-input-edit" /> ) : ( <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--ink)' }}>{profile.so_dien_thoai || profile.soDienThoai || 'Chưa cập nhật'}</div> )} </div> </div> <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', background: 'var(--background)', borderRadius: '20px', border: '1px solid var(--gray-100)' }}> <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'var(--orange-50)', color: 'var(--orange-600)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}> <span className="material-symbols-outlined">event_available</span> </div> <div> <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--gray-400)', letterSpacing: '1px' }}>NGÀY GIA NHẬP</div> <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--ink)' }}> {(profile.ngay_vao_lam || profile.ngay_tao || profile.createdAt) ? new Date(profile.ngay_vao_lam || profile.ngay_tao || profile.createdAt).toLocaleDateString('vi-VN') : new Date().toLocaleDateString('vi-VN')} </div> </div> </div> </div> </div> {/* Cột phải: Chi tiết và Đổi mật khẩu */}
+                                    <input data-ai-id="input-thongtincanhannhanvien-p2ps" type="file" accept="image/*" onChange={handleImageChange} style={{ display: 'none' }} /> <span className="material-symbols-outlined" style={{ fontSize: '32px' }}>photo_camera</span> </label>
+                            )} {(profile.trang_thai === 'ACTIVE' || profile.trang_thai === 'Đang làm việc' || !profile.trang_thai) && ( <div style={{ position: 'absolute', bottom: '5px', right: '5px', width: '20px', height: '20px', background: '#10b981', border: '4px solid var(--surface)', borderRadius: '50%', zIndex: 2 }}></div> )} </div> {isEditing ? ( <input data-ai-id="input-thongtincanhannhanvien-59by" type="text" name="ho_ten" value={formData.ho_ten || formData.hoTen || ''} onChange={handleChange} className="form-input-edit" style={{ marginBottom: '10px', textAlign: 'center', fontSize: '1.2rem' }} placeholder="Họ và tên" /> ) : ( <h2 style={{ fontSize: '1.6rem', fontWeight: 950, color: 'var(--ink)', margin: '0 0 10px 0', letterSpacing: '-0.5px' }}>{displayHoTen}</h2> )} <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'var(--primary-light)', color: 'var(--primary)', padding: '8px 20px', borderRadius: '50px', fontSize: '0.85rem', fontWeight: 800, marginBottom: '32px' }}> <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>verified_user</span> {displayRole} </div> <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', textAlign: 'left' }}> <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', background: 'var(--background)', borderRadius: '20px', border: '1px solid var(--gray-100)' }}> <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}> <span className="material-symbols-outlined">badge</span> </div> <div> <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--gray-400)', letterSpacing: '1px' }}>MÃ NHÂN SỰ</div> <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--ink)' }}>{profile.id_nhan_vien || currentUserId}</div> </div> </div> <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', background: 'var(--background)', borderRadius: '20px', border: '1px solid var(--gray-100)' }}> <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'var(--blue-50)', color: 'var(--blue-600)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}> <span className="material-symbols-outlined">mail</span> </div> <div style={{ flex: 1, minWidth: 0 }}> <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--gray-400)', letterSpacing: '1px' }}>EMAIL LIÊN HỆ</div> {isEditing ? ( <input data-ai-id="input-thongtincanhannhanvien-8fb5" type="email" name="email" value={formData.email || ''} onChange={handleChange} className="form-input-edit" /> ) : ( <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{profile.email || 'Chưa cập nhật'}</div> )} </div> </div> <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', background: 'var(--background)', borderRadius: '20px', border: '1px solid var(--gray-100)' }}> <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'var(--green-50)', color: 'var(--green-600)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}> <span className="material-symbols-outlined">call</span> </div> <div style={{ flex: 1, minWidth: 0 }}> <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--gray-400)', letterSpacing: '1px' }}>ĐIỆN THOẠI</div> {isEditing ? ( <input data-ai-id="input-thongtincanhannhanvien-rivm" type="tel" name="so_dien_thoai" value={formData.so_dien_thoai || formData.soDienThoai || ''} onChange={handleChange} className="form-input-edit" /> ) : ( <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--ink)' }}>{profile.so_dien_thoai || profile.soDienThoai || 'Chưa cập nhật'}</div> )} </div> </div> <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', background: 'var(--background)', borderRadius: '20px', border: '1px solid var(--gray-100)' }}> <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'var(--orange-50)', color: 'var(--orange-600)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}> <span className="material-symbols-outlined">event_available</span> </div> <div> <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--gray-400)', letterSpacing: '1px' }}>NGÀY GIA NHẬP</div> <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--ink)' }}> {(profile.ngay_vao_lam || profile.ngay_tao || profile.createdAt) ? new Date(profile.ngay_vao_lam || profile.ngay_tao || profile.createdAt).toLocaleDateString('vi-VN') : new Date().toLocaleDateString('vi-VN')} </div> </div> </div> </div> </div> {/* Cột phải: Chi tiết và Đổi mật khẩu */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
                         <div className="glass-card" style={{ padding: '40px', borderRadius: '32px' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
@@ -273,10 +280,10 @@ const ThongTinCaNhanNhanVien: React.FC = () => {
                                     Thông Tin Chuyên Môn
                                 </h3>
                             </div>
-                            
+
                             <div style={{ padding: '24px', background: 'var(--gray-50)', borderRadius: '20px', color: 'var(--ink)', fontStyle: (profile.gioi_thieu || profile.gioiThieu) ? 'normal' : 'italic', lineHeight: '1.8', fontSize: '0.95rem', border: '1px solid var(--gray-100)' }}>
                                 {isEditing ? (
-                                    <textarea 
+                                    <textarea
                                         name="gioi_thieu"
                                         value={formData.gioi_thieu || formData.gioiThieu || ''}
                                         onChange={handleChange}
@@ -297,15 +304,15 @@ const ThongTinCaNhanNhanVien: React.FC = () => {
                                 </div>
                                 Bảo Mật Tài Khoản
                             </h3>
-                            
+
                             <form onSubmit={handlePasswordChange} style={{ display: 'grid', gap: '24px', maxWidth: '600px' }}>
                                 <div style={{ display: 'grid', gap: '10px' }}>
                                     <label style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gray-500)', letterSpacing: '1px' }}>MẬT KHẨU HIỆN TẠI</label>
                                     <div style={{ position: 'relative' }}>
                                         <span className="material-symbols-outlined" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--gray-400)', pointerEvents: 'none' }}>lock</span>
-                                        <input data-ai-id="input-thongtincanhannhanvien-eegh" 
-                                            type={showCurrentPass ? "text" : "password"} 
-                                            required 
+                                        <input data-ai-id="input-thongtincanhannhanvien-eegh"
+                                            type={showCurrentPass ? "text" : "password"}
+                                            required
                                             value={passwords.currentPass}
                                             onChange={e => setPasswords({...passwords, currentPass: e.target.value})}
                                             placeholder="Nhập mật khẩu đang sử dụng"
@@ -316,14 +323,14 @@ const ThongTinCaNhanNhanVien: React.FC = () => {
                                         </span>
                                     </div>
                                 </div>
-                                
+
                                 <div style={{ display: 'grid', gap: '10px' }}>
                                     <label style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gray-500)', letterSpacing: '1px' }}>MẬT KHẨU MỚI</label>
                                     <div style={{ position: 'relative' }}>
                                         <span className="material-symbols-outlined" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--primary)', pointerEvents: 'none' }}>key</span>
-                                        <input data-ai-id="input-thongtincanhannhanvien-59qv" 
-                                            type={showNewPass ? "text" : "password"} 
-                                            required 
+                                        <input data-ai-id="input-thongtincanhannhanvien-59qv"
+                                            type={showNewPass ? "text" : "password"}
+                                            required
                                             value={passwords.newPass}
                                             onChange={e => setPasswords({...passwords, newPass: e.target.value})}
                                             placeholder="Nhập mật khẩu mới (7-20 ký tự, có ký tự đặc biệt)"
@@ -334,14 +341,14 @@ const ThongTinCaNhanNhanVien: React.FC = () => {
                                         </span>
                                     </div>
                                 </div>
-                                
+
                                 <div style={{ display: 'grid', gap: '10px' }}>
                                     <label style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gray-500)', letterSpacing: '1px' }}>XÁC NHẬN MẬT KHẨU MỚI</label>
                                     <div style={{ position: 'relative' }}>
                                         <span className="material-symbols-outlined" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--primary)', pointerEvents: 'none' }}>fact_check</span>
-                                        <input data-ai-id="input-thongtincanhannhanvien-hgyd" 
-                                            type={showConfirmPass ? "text" : "password"} 
-                                            required 
+                                        <input data-ai-id="input-thongtincanhannhanvien-hgyd"
+                                            type={showConfirmPass ? "text" : "password"}
+                                            required
                                             value={passwords.confirmPass}
                                             onChange={e => setPasswords({...passwords, confirmPass: e.target.value})}
                                             placeholder="Nhập lại mật khẩu mới"
@@ -352,12 +359,12 @@ const ThongTinCaNhanNhanVien: React.FC = () => {
                                         </span>
                                     </div>
                                 </div>
-                                
+
                                 <div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: '8px' }}>
-                                    <button data-ai-id="button-thongtincanhannhanvien-3flh" 
-                                        type="submit" 
+                                    <button data-ai-id="button-thongtincanhannhanvien-3flh"
+                                        type="submit"
                                         disabled={isChangingPass}
-                                        className="btn btn-primary btn-pill hover-lift" 
+                                        className="btn btn-primary btn-pill hover-lift"
                                         style={{ padding: '16px 32px', fontSize: '0.95rem', fontWeight: 900 }}
                                     >
                                         <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>update</span>
@@ -366,7 +373,7 @@ const ThongTinCaNhanNhanVien: React.FC = () => {
                                 </div>
                             </form>
                         </div>
-                        
+
                         <div style={{ padding: '32px', borderRadius: '32px', background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
                             <h4 style={{ color: '#ef4444', fontWeight: 900, marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                 <span className="material-symbols-outlined">warning</span>
