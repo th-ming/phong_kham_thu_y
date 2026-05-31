@@ -3,6 +3,7 @@ package com.rexi.pkty.service;
 import jakarta.mail.internet.MimeMessage;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
@@ -34,6 +35,9 @@ public class EmailService {
 
     @Autowired
     private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
+
+    @Value("${app.frontend-url:http://localhost:3005}")
+    private String frontendUrl;
 
     private JavaMailSender getDynamicMailSender() {
         try {
@@ -133,7 +137,7 @@ public class EmailService {
                "      <p>Xin chào <span class='highlight'>" + customerName + "</span>,</p>" +
                "      <p>Chào mừng bạn đã gia nhập cộng đồng yêu thú cưng của <strong>Rexi Vet</strong>.</p>" +
                "      <p>Chúng tôi mang đến tiêu chuẩn y khoa quốc tế kết hợp cùng tình yêu thương vô bờ bến. Bé cưng của bạn sẽ được chăm sóc như chính gia đình chúng tôi.</p>" +
-               "      <a href='http://localhost:3005/khach-hang/dat-lich-hen' class='cta-button'>ĐẶT LỊCH KHÁM NGAY</a>" +
+               "      <a href='" + frontendUrl("/khach-hang/dat-lich-hen") + "' class='cta-button'>ĐẶT LỊCH KHÁM NGAY</a>" +
                "    </div>" +
                "    <div class='footer'>" +
                "      <p>Phòng Khám Thú Y Rexi - Đường dây cấp cứu 24/7: 0353 374 156</p>" +
@@ -142,6 +146,14 @@ public class EmailService {
                "  </div>" +
                "</body>" +
                "</html>";
+    }
+
+    private String frontendUrl(String path) {
+        String base = frontendUrl == null || frontendUrl.isBlank() ? "http://localhost:3005" : frontendUrl.trim();
+        while (base.endsWith("/")) {
+            base = base.substring(0, base.length() - 1);
+        }
+        return base + path;
     }
 
     // * * Gửi email OTP lấy lại mật khẩu

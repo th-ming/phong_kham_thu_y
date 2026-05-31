@@ -1,0 +1,39 @@
+import React from "react";
+
+export const TieuDeChatbot: React.FC<{
+    activeTab: 'standard' | 'agent';
+    isMobile: boolean;
+    isVoiceEnabled: boolean;
+    onToggleVoice: () => void;
+    onResetChat: () => void;
+    onClose: () => void;
+}> = ({ activeTab, isMobile, isVoiceEnabled, onToggleVoice, onResetChat, onClose }) => (
+    <div style={{
+        background: activeTab === 'agent' ? 'linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)' : 'var(--chat-gradient)',
+        padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: 'white',
+        transition: 'all 0.4s ease'
+    }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ width: '10px', height: '10px', background: '#4ade80', borderRadius: '50%', boxShadow: '0 0 10px #4ade80' }}></div>
+            <span style={{ fontWeight: 900, fontSize: '1.05rem', letterSpacing: '0.3px' }}>
+                {activeTab === 'agent' ? 'Rexi Agent' : (isMobile ? 'Trợ lý Rexi' : 'Trợ lý Rexi 🐾')}
+            </span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <span
+                className="material-symbols-outlined"
+                style={{ fontSize: '22px', cursor: 'pointer', color: isVoiceEnabled ? '#4ade80' : 'white', opacity: isVoiceEnabled ? 1 : 0.7 }}
+                onClick={onToggleVoice}
+                title={isVoiceEnabled ? "Tắt đọc thành tiếng" : "Bật đọc thành tiếng"}
+            >
+                {isVoiceEnabled ? 'volume_up' : 'volume_off'}
+            </span>
+            <span className="material-symbols-outlined" style={{ fontSize: '22px', cursor: 'pointer', opacity: 0.8 }} onClick={onResetChat} title="Làm mới cuộc hội thoại">
+                restart_alt
+            </span>
+            <span className="material-symbols-outlined" style={{ fontSize: '22px', cursor: 'pointer', opacity: 0.8 }} onClick={onClose}>
+                close
+            </span>
+        </div>
+    </div>
+);

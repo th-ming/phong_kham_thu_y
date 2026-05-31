@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rexi.pkty.security.RoleAccessPolicy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +28,7 @@ public class AiToolService {
     private EmailService emailService;
 
     @Autowired
+    @Lazy
     private AiToolService self;
 
     private final ObjectMapper mapper = new ObjectMapper();
@@ -201,6 +203,7 @@ public class AiToolService {
     private String toolTimLichHenHomNay(Map<String, Object> params) {
         String phamVi = params != null ? Objects.toString(params.getOrDefault("pham_vi", "hom_nay"), "hom_nay").trim().toLowerCase() : "hom_nay";
         boolean isAll = phamVi.equals("all") || phamVi.equals("lich_su") || phamVi.equals("toan_bo");
+        java.time.LocalDate today = java.time.LocalDate.now();
 
         String sql = "SELECT lh.id_lich_hen, kh.ten_khach_hang, kh.sdt, tc.ten_thu_cung, " +
                      "dv.ten_dich_vu, nv.ho_ten AS ten_bac_si, lh.ngay_kham, lh.gio_kham, lh.trang_thai " +

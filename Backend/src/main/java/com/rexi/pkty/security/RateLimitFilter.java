@@ -55,7 +55,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
                     blockedIps.clear();
                 }
             } catch (Exception e) {
-                logger.warning("Không thể load blocked IPs từ DB: " + e.getMessage());
+                logger.warn("Không thể load blocked IPs từ DB: " + e.getMessage());
             }
             lastCheckTime = currentTime;
         }
@@ -200,7 +200,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
             blockedIps.addAll(next);
             lastCheckTime = 0;
         } catch (Exception e) {
-            logger.warning("Không thể persist blocked IP " + ip + ": " + e.getMessage());
+            logger.warn("Không thể persist blocked IP " + ip + ": " + e.getMessage());
         }
     }
 

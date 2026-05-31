@@ -252,6 +252,9 @@ public class HoSoBenhAnController {
     }
 
     // Ke don thuoc & Update ton kho (Transactional)
+    @PostMapping("/{idBenhAn}/don-thuoc")
+    @PreAuthorize(RexiSecurityRoles.CLINICAL_WRITE)
+    @Transactional
     public org.springframework.http.ResponseEntity<?> keDonThuoc(@PathVariable String idBenhAn,
             @RequestBody Map<String, Object> payload) {
         try {

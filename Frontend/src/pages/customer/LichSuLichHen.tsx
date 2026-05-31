@@ -81,6 +81,7 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({ item, thuCungs, onCan
             </span>
 
             <button
+              data-ai-id={`button-lichsulichhen-toggle-details-${getAppointmentId(item)}`}
               onClick={() => setShowDetails(!showDetails)}
               className="btn btn-pill"
               style={{ padding: '8px', background: 'var(--gray-50)', color: 'var(--gray-500)', minWidth: '40px' }}
@@ -117,6 +118,7 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({ item, thuCungs, onCan
             {/* NÚT HỦY LỊCH - Chỉ hiện khi đang CHỜ XÁC NHẬN hoặc ĐÃ XÁC NHẬN */}
             {(['CHO_XAC_NHAN', 'DA_XAC_NHAN'].includes(statusCode)) && (
               <button
+                data-ai-id={`button-lichsulichhen-cancel-${getAppointmentId(item)}`}
                 className="btn btn-outline"
                 style={{ flex: 1, padding: '10px', color: 'var(--danger)', borderColor: 'var(--danger-light)' }}
                 onClick={() => onCancel(getAppointmentId(item))}
@@ -128,6 +130,7 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({ item, thuCungs, onCan
             {/* NÚT ĐẶT LẠI - Hiện khi đã HOÀN TẤT hoặc ĐÃ HỦY */}
             {(['DA_KHAM', 'HOAN_THANH', 'DA_HUY'].includes(statusCode)) && (
               <button
+                data-ai-id={`button-lichsulichhen-rebook-${getAppointmentId(item)}`}
                 className="btn btn-primary"
                 style={{ flex: 1, padding: '10px' }}
                 onClick={() => onRebook(item)}
@@ -356,7 +359,7 @@ const LichSuLichHen: React.FC = () => {
         <div style={{ display: 'flex', gap: '16px', position: 'relative', zIndex: 1, flexWrap: 'wrap' }}>
           <div style={{ position: 'relative' }}>
             <span className="material-symbols-outlined" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', fontSize: '20px', color: 'rgba(255,255,255,0.6)', pointerEvents: 'none' }}>pets</span>
-            <select aria-label="Lọc theo thú cưng" className="filter-select" value={petId} onChange={e => setPetId(e.target.value)} style={{ minWidth: '220px', borderRadius: '18px', padding: '14px 20px 14px 48px', background: 'rgba(255,255,255,0.1)', color: 'white', fontWeight: 800, outline: 'none', cursor: 'pointer', backdropFilter: 'blur(12px)', fontSize: '0.9rem' }}>
+            <select data-ai-id="select-lichsulichhen-filter-pet" aria-label="Lọc theo thú cưng" className="filter-select" value={petId} onChange={e => setPetId(e.target.value)} style={{ minWidth: '220px', borderRadius: '18px', padding: '14px 20px 14px 48px', background: 'rgba(255,255,255,0.1)', color: 'white', fontWeight: 800, outline: 'none', cursor: 'pointer', backdropFilter: 'blur(12px)', fontSize: '0.9rem' }}>
               <option value="all" style={{ color: 'var(--ink)' }}>Tất cả thú cưng</option>
               {thuCungs.map(pet => (
                 <option key={pet.id_thu_cung ?? pet.idThuCung ?? pet.id} value={String(pet.id_thu_cung ?? pet.idThuCung ?? pet.id)} style={{ color: 'var(--ink)' }}>{pet.ten_thu_cung ?? pet.tenThuCung}</option>
@@ -366,7 +369,7 @@ const LichSuLichHen: React.FC = () => {
 
           <div style={{ position: 'relative' }}>
             <span className="material-symbols-outlined" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', fontSize: '20px', color: 'rgba(255,255,255,0.6)', pointerEvents: 'none' }}>label</span>
-            <select aria-label="Lọc theo trạng thái" className="filter-select" value={status} onChange={e => setStatus(e.target.value)} style={{ minWidth: '200px', borderRadius: '18px', padding: '14px 20px 14px 48px', background: 'rgba(255,255,255,0.1)', color: 'white', fontWeight: 800, outline: 'none', cursor: 'pointer', backdropFilter: 'blur(12px)', fontSize: '0.9rem' }}>
+            <select data-ai-id="select-lichsulichhen-filter-status" aria-label="Lọc theo trạng thái" className="filter-select" value={status} onChange={e => setStatus(e.target.value)} style={{ minWidth: '200px', borderRadius: '18px', padding: '14px 20px 14px 48px', background: 'rgba(255,255,255,0.1)', color: 'white', fontWeight: 800, outline: 'none', cursor: 'pointer', backdropFilter: 'blur(12px)', fontSize: '0.9rem' }}>
               <option value="all" style={{ color: 'var(--ink)' }}>Tất cả trạng thái</option>
               <option value="CHO_XAC_NHAN" style={{ color: 'var(--ink)' }}>Chờ xác nhận</option>
               <option value="DA_XAC_NHAN" style={{ color: 'var(--ink)' }}>Đã xác nhận</option>
@@ -406,7 +409,7 @@ const LichSuLichHen: React.FC = () => {
             <p style={{ fontSize: '1.1rem', color: 'var(--gray-400)', fontWeight: 600, maxWidth: '450px', margin: '0 auto 24px' }}>
               {serverError}
             </p>
-            <button className="btn btn-pill" onClick={fetchLichHen} style={{ padding: '12px 32px', background: 'var(--gray-100)' }}>
+            <button data-ai-id="button-lichsulichhen-retry" className="btn btn-pill" onClick={fetchLichHen} style={{ padding: '12px 32px', background: 'var(--gray-100)' }}>
               Thử lại ngay
             </button>
           </div>
@@ -439,7 +442,7 @@ const LichSuLichHen: React.FC = () => {
             <p style={{ fontSize: '1.15rem', color: 'var(--gray-400)', fontWeight: 600, maxWidth: '450px', margin: '0 auto 32px', lineHeight: 1.6 }}>
               Dường như các bé nhà mình đang rất khỏe mạnh! <br/> Đừng quên đặt lịch khám định kỳ để bảo vệ sức khỏe cho bé nhé.
             </p>
-            <button className="btn btn-primary btn-pill" onClick={() => navigate('/khach-hang/dat-lich-hen')} style={{ padding: '16px 48px', fontSize: '1rem' }}>
+            <button data-ai-id="button-lichsulichhen-book-empty" className="btn btn-primary btn-pill" onClick={() => navigate('/khach-hang/dat-lich-hen')} style={{ padding: '16px 48px', fontSize: '1rem' }}>
               <span className="material-symbols-outlined">add_circle</span>
               Đặt lịch hẹn ngay
             </button>
@@ -452,6 +455,7 @@ const LichSuLichHen: React.FC = () => {
         {totalPages > 1 && (
           <div className="stagger-2" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '16px', marginTop: '20px' }}>
             <button
+              data-ai-id="button-lichsulichhen-prev-page"
               className="btn btn-pill"
               disabled={currentPage === 1}
               onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
@@ -467,6 +471,7 @@ const LichSuLichHen: React.FC = () => {
               Trang {currentPage} / {totalPages}
             </span>
             <button
+              data-ai-id="button-lichsulichhen-next-page"
               className="btn btn-pill"
               disabled={currentPage === totalPages}
               onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}

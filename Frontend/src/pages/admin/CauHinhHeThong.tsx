@@ -345,6 +345,7 @@ const CauHinhHeThong: React.FC = () => {
 
     const renderTabButton = (id: string, icon: string, label: string) => (
         <button
+            data-ai-id={`button-cauhinhhethong-tab-${id}`}
             onClick={() => setActiveTab(id)}
             style={{
                 padding: '12px 24px',
@@ -417,7 +418,7 @@ const CauHinhHeThong: React.FC = () => {
                     <h1 style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--ink)', letterSpacing: '-1px', marginBottom: '8px' }}>Cấu hình hệ thống</h1>
                     <p style={{ color: 'var(--gray-500)', fontWeight: 600, margin: 0 }}>Quản lý tham số động, phân quyền AI và hệ thống lõi.</p>
                 </div>
-                <button className="btn btn-primary" onClick={handleSave} disabled={saving} style={{ padding: '12px 24px', borderRadius: '12px', fontWeight: 800 }}>
+                <button data-ai-id="button-cauhinhhethong-save-all" className="btn btn-primary" onClick={handleSave} disabled={saving} style={{ padding: '12px 24px', borderRadius: '12px', fontWeight: 800 }}>
                     <span className="material-symbols-outlined">{saving ? 'sync' : 'save'}</span>
                     {saving ? 'Đang lưu...' : 'Lưu tất cả thay đổi'}
                 </button>
@@ -439,16 +440,16 @@ const CauHinhHeThong: React.FC = () => {
                         <div className="responsive-grid-2">
                             <div>
                                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, color: 'var(--gray-600)' }}>Tên hệ thống</label>
-                                <input type="text" className="form-input" value={configs.app_name || ''} onChange={e => setConfigs({...configs, app_name: e.target.value})} placeholder="Rexi Veterinary Clinic" />
+                                <input data-ai-id="input-cauhinhhethong-app-name" type="text" className="form-input" value={configs.app_name || ''} onChange={e => setConfigs({...configs, app_name: e.target.value})} placeholder="Rexi Veterinary Clinic" />
                             </div>
                             <div>
                                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, color: 'var(--gray-600)' }}>Số ngày lưu trữ Backup</label>
-                                <input type="number" className="form-input" value={configs.backup_retention_days || '7'} onChange={e => setConfigs({...configs, backup_retention_days: e.target.value})} />
+                                <input data-ai-id="input-cauhinhhethong-backup-retention-days" type="number" className="form-input" value={configs.backup_retention_days || '7'} onChange={e => setConfigs({...configs, backup_retention_days: e.target.value})} />
                             </div>
                         </div>
                         <div>
                             <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, color: 'var(--gray-600)' }}>Danh sách IP bị chặn (Blacklist)</label>
-                            <textarea className="form-input" style={{ minHeight: '100px', resize: 'vertical' }} value={configs.blocked_ips || ''} onChange={e => setConfigs({...configs, blocked_ips: e.target.value})} placeholder="192.168.1.1, 10.0.0.5" />
+                            <textarea data-ai-id="textarea-cauhinhhethong-blocked-ips" className="form-input" style={{ minHeight: '100px', resize: 'vertical' }} value={configs.blocked_ips || ''} onChange={e => setConfigs({...configs, blocked_ips: e.target.value})} placeholder="192.168.1.1, 10.0.0.5" />
                             <p style={{ fontSize: '0.85rem', color: 'var(--gray-400)', marginTop: '8px' }}>Phân cách nhiều IP bằng dấu phẩy (,).</p>
                         </div>
                     </div>
@@ -463,15 +464,15 @@ const CauHinhHeThong: React.FC = () => {
                             <div className="responsive-grid-2">
                                 <div>
                                     <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, color: 'var(--gray-600)' }}>Mã Ngân Hàng (Bank ID)</label>
-                                    <input type="text" className="form-input" value={configs.vietqr_bank_id || ''} onChange={e => setConfigs({...configs, vietqr_bank_id: e.target.value})} placeholder="VD: MB, VCB, TCB..." />
+                                    <input data-ai-id="input-cauhinhhethong-vietqr-bank-id" type="text" className="form-input" value={configs.vietqr_bank_id || ''} onChange={e => setConfigs({...configs, vietqr_bank_id: e.target.value})} placeholder="VD: MB, VCB, TCB..." />
                                 </div>
                                 <div>
                                     <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, color: 'var(--gray-600)' }}>Số Tài Khoản</label>
-                                    <input type="text" className="form-input" value={configs.vietqr_account_no || ''} onChange={e => setConfigs({...configs, vietqr_account_no: e.target.value})} placeholder="Nhập số tài khoản nhận tiền..." />
+                                    <input data-ai-id="input-cauhinhhethong-vietqr-account-no" type="text" className="form-input" value={configs.vietqr_account_no || ''} onChange={e => setConfigs({...configs, vietqr_account_no: e.target.value})} placeholder="Nhập số tài khoản nhận tiền..." />
                                 </div>
                                 <div style={{ gridColumn: 'span 2' }}>
                                     <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, color: 'var(--gray-600)' }}>Tên Chủ Tài Khoản</label>
-                                    <input type="text" className="form-input" value={configs.vietqr_account_name || ''} onChange={e => setConfigs({...configs, vietqr_account_name: e.target.value})} placeholder="TRAN MINH HOANG" />
+                                    <input data-ai-id="input-cauhinhhethong-vietqr-account-name" type="text" className="form-input" value={configs.vietqr_account_name || ''} onChange={e => setConfigs({...configs, vietqr_account_name: e.target.value})} placeholder="TRAN MINH HOANG" />
                                 </div>
                             </div>
                         </div>
@@ -485,19 +486,19 @@ const CauHinhHeThong: React.FC = () => {
                             <div className="responsive-grid-2">
                                 <div>
                                     <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, color: 'var(--gray-600)' }}>vnp_TmnCode (Mã Website)</label>
-                                    <input type="text" className="form-input" value={configs.vnpay_tmn_code || ''} onChange={e => setConfigs({...configs, vnpay_tmn_code: e.target.value})} />
+                                    <input data-ai-id="input-cauhinhhethong-vnpay-tmn-code" type="text" className="form-input" value={configs.vnpay_tmn_code || ''} onChange={e => setConfigs({...configs, vnpay_tmn_code: e.target.value})} />
                                 </div>
                                 <div>
                                     <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, color: 'var(--gray-600)' }}>vnp_HashSecret (Chuỗi Bí Mật)</label>
-                                    <input type="password" className="form-input" value={configs.vnpay_hash_secret || ''} onChange={e => setConfigs({...configs, vnpay_hash_secret: e.target.value})} />
+                                    <input data-ai-id="input-cauhinhhethong-vnpay-hash-secret" type="password" className="form-input" value={configs.vnpay_hash_secret || ''} onChange={e => setConfigs({...configs, vnpay_hash_secret: e.target.value})} />
                                 </div>
                                 <div style={{ gridColumn: 'span 2' }}>
                                     <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, color: 'var(--gray-600)' }}>vnp_Url (URL Cổng Thanh Toán)</label>
-                                    <input type="text" className="form-input" value={configs.vnpay_url || ''} onChange={e => setConfigs({...configs, vnpay_url: e.target.value})} placeholder="https://sandbox.vnpayment.vn/paymentv2/vpcpay.html" />
+                                    <input data-ai-id="input-cauhinhhethong-vnpay-url" type="text" className="form-input" value={configs.vnpay_url || ''} onChange={e => setConfigs({...configs, vnpay_url: e.target.value})} placeholder="https://sandbox.vnpayment.vn/paymentv2/vpcpay.html" />
                                 </div>
                                 <div style={{ gridColumn: 'span 2' }}>
                                     <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, color: 'var(--gray-600)' }}>vnp_ReturnUrl (URL Trả Về)</label>
-                                    <input type="text" className="form-input" value={configs.vnpay_return_url || ''} onChange={e => setConfigs({...configs, vnpay_return_url: e.target.value})} placeholder="http://localhost:5173/khach-hang/hoa-don-thanh-toan" />
+                                    <input data-ai-id="input-cauhinhhethong-vnpay-return-url" type="text" className="form-input" value={configs.vnpay_return_url || ''} onChange={e => setConfigs({...configs, vnpay_return_url: e.target.value})} placeholder="http://localhost:5173/khach-hang/hoa-don-thanh-toan" />
                                 </div>
                             </div>
                         </div>
@@ -511,19 +512,19 @@ const CauHinhHeThong: React.FC = () => {
                             <div style={{ display: 'grid', gap: '20px' }}>
                                 <div>
                                     <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, color: 'var(--gray-600)' }}>Máy chủ Mail (Host)</label>
-                                    <input type="text" className="form-input" value={configs.mail_host || ''} onChange={e => setConfigs({...configs, mail_host: e.target.value})} placeholder="smtp.gmail.com" />
+                                    <input data-ai-id="input-cauhinhhethong-mail-host" type="text" className="form-input" value={configs.mail_host || ''} onChange={e => setConfigs({...configs, mail_host: e.target.value})} placeholder="smtp.gmail.com" />
                                 </div>
                                 <div>
                                     <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, color: 'var(--gray-600)' }}>Cổng (Port)</label>
-                                    <input type="number" className="form-input" value={configs.mail_port || ''} onChange={e => setConfigs({...configs, mail_port: e.target.value})} placeholder="587" />
+                                    <input data-ai-id="input-cauhinhhethong-mail-port" type="number" className="form-input" value={configs.mail_port || ''} onChange={e => setConfigs({...configs, mail_port: e.target.value})} placeholder="587" />
                                 </div>
                                 <div>
                                     <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, color: 'var(--gray-600)' }}>Tên đăng nhập (Username)</label>
-                                    <input type="text" className="form-input" value={configs.mail_username || ''} onChange={e => setConfigs({...configs, mail_username: e.target.value})} placeholder="rexi.clinic@gmail.com" />
+                                    <input data-ai-id="input-cauhinhhethong-mail-username" type="text" className="form-input" value={configs.mail_username || ''} onChange={e => setConfigs({...configs, mail_username: e.target.value})} placeholder="rexi.clinic@gmail.com" />
                                 </div>
                                 <div>
                                     <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, color: 'var(--gray-600)' }}>Mật khẩu ứng dụng (Password)</label>
-                                    <input type="password" className="form-input" value={configs.mail_password || ''} onChange={e => setConfigs({...configs, mail_password: e.target.value})} placeholder="••••••••••••••••" />
+                                    <input data-ai-id="input-cauhinhhethong-mail-password" type="password" className="form-input" value={configs.mail_password || ''} onChange={e => setConfigs({...configs, mail_password: e.target.value})} placeholder="••••••••••••••••" />
                                 </div>
                             </div>
                         </div>
@@ -534,8 +535,8 @@ const CauHinhHeThong: React.FC = () => {
                             </p>
                             <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, color: 'var(--gray-600)' }}>Gửi đến địa chỉ Email</label>
                             <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
-                                <input type="email" className="form-input" style={{ flex: 1 }} value={testEmailTo} onChange={e => setTestEmailTo(e.target.value)} placeholder="example@gmail.com" />
-                                <button className="btn btn-primary" onClick={handleTestEmail} disabled={testingEmail} style={{ whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <input data-ai-id="input-cauhinhhethong-test-email-to" type="email" className="form-input" style={{ flex: 1 }} value={testEmailTo} onChange={e => setTestEmailTo(e.target.value)} placeholder="example@gmail.com" />
+                                <button data-ai-id="button-cauhinhhethong-test-email" className="btn btn-primary" onClick={handleTestEmail} disabled={testingEmail} style={{ whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                     {testingEmail ? <span className="material-symbols-outlined" style={{ animation: 'spinBtn 1s linear infinite' }}>sync</span> : <span className="material-symbols-outlined">send</span>}
                                     {testingEmail ? 'Đang gửi...' : 'Gửi Test'}
                                 </button>
@@ -680,23 +681,23 @@ const CauHinhHeThong: React.FC = () => {
                                     </h3>
                                     <div>
                                         <label style={{ display: 'block', marginBottom: '6px', fontWeight: 700, color: 'var(--gray-600)', fontSize: '0.85rem' }}>API Key</label>
-                                        <input type="password" className="form-input" value={configs.groq_api_key || ''} onChange={e => setConfigs({...configs, groq_api_key: e.target.value})} placeholder="gsk_..." />
+                                        <input data-ai-id="input-cauhinhhethong-groq-api-key" type="password" className="form-input" value={configs.groq_api_key || ''} onChange={e => setConfigs({...configs, groq_api_key: e.target.value})} placeholder="gsk_..." />
                                     </div>
                                     <div>
                                         <label style={{ display: 'block', marginBottom: '6px', fontWeight: 700, color: 'var(--gray-600)', fontSize: '0.85rem' }}>Model Chat & FAQ</label>
-                                        <input type="text" className="form-input" value={configs.groq_model || ''} onChange={e => setConfigs({...configs, groq_model: e.target.value})} placeholder="llama-3.3-70b-versatile" />
+                                        <input data-ai-id="input-cauhinhhethong-groq-model" type="text" className="form-input" value={configs.groq_model || ''} onChange={e => setConfigs({...configs, groq_model: e.target.value})} placeholder="llama-3.3-70b-versatile" />
                                     </div>
                                     <div>
                                         <label style={{ display: 'block', marginBottom: '6px', fontWeight: 700, color: 'var(--gray-600)', fontSize: '0.85rem' }}>Model Autopilot (Tự động hóa)</label>
-                                        <input type="text" className="form-input" value={configs.groq_autopilot_model || ''} onChange={e => setConfigs({...configs, groq_autopilot_model: e.target.value})} placeholder="llama-3.3-70b-versatile" />
+                                        <input data-ai-id="input-cauhinhhethong-groq-autopilot-model" type="text" className="form-input" value={configs.groq_autopilot_model || ''} onChange={e => setConfigs({...configs, groq_autopilot_model: e.target.value})} placeholder="llama-3.3-70b-versatile" />
                                     </div>
                                     <div>
                                         <label style={{ display: 'block', marginBottom: '6px', fontWeight: 700, color: 'var(--gray-600)', fontSize: '0.85rem' }}>Model Audio (Dịch Whisper)</label>
-                                        <input type="text" className="form-input" value={configs.groq_audio_model || ''} onChange={e => setConfigs({...configs, groq_audio_model: e.target.value})} placeholder="whisper-large-v3-turbo" />
+                                        <input data-ai-id="input-cauhinhhethong-groq-audio-model" type="text" className="form-input" value={configs.groq_audio_model || ''} onChange={e => setConfigs({...configs, groq_audio_model: e.target.value})} placeholder="whisper-large-v3-turbo" />
                                     </div>
                                     <div>
                                         <label style={{ display: 'block', marginBottom: '6px', fontWeight: 700, color: 'var(--gray-600)', fontSize: '0.85rem' }}>Model Phân tích ảnh</label>
-                                        <input type="text" className="form-input" value={configs.groq_vision_model || ''} onChange={e => setConfigs({...configs, groq_vision_model: e.target.value})} placeholder="meta-llama/llama-4-scout-17b-16e-instruct" />
+                                        <input data-ai-id="input-cauhinhhethong-groq-vision-model" type="text" className="form-input" value={configs.groq_vision_model || ''} onChange={e => setConfigs({...configs, groq_vision_model: e.target.value})} placeholder="meta-llama/llama-4-scout-17b-16e-instruct" />
                                     </div>
                                     {renderAiTestPanel('groq')}
                                 </div>
@@ -708,15 +709,15 @@ const CauHinhHeThong: React.FC = () => {
                                     </h3>
                                     <div>
                                         <label style={{ display: 'block', marginBottom: '6px', fontWeight: 700, color: 'var(--gray-600)', fontSize: '0.85rem' }}>API Key</label>
-                                        <input type="password" className="form-input" value={configs.gemini_api_key || ''} onChange={e => setConfigs({...configs, gemini_api_key: e.target.value})} placeholder="AIza... hoặc nhiều key cách nhau bằng dấu phẩy" />
+                                        <input data-ai-id="input-cauhinhhethong-gemini-api-key" type="password" className="form-input" value={configs.gemini_api_key || ''} onChange={e => setConfigs({...configs, gemini_api_key: e.target.value})} placeholder="AIza... hoặc nhiều key cách nhau bằng dấu phẩy" />
                                     </div>
                                     <div>
                                         <label style={{ display: 'block', marginBottom: '6px', fontWeight: 700, color: 'var(--gray-600)', fontSize: '0.85rem' }}>Model Chat & Y tế</label>
-                                        <input type="text" className="form-input" value={configs.gemini_model || ''} onChange={e => setConfigs({...configs, gemini_model: e.target.value})} placeholder="gemini-3.5-flash" />
+                                        <input data-ai-id="input-cauhinhhethong-gemini-model" type="text" className="form-input" value={configs.gemini_model || ''} onChange={e => setConfigs({...configs, gemini_model: e.target.value})} placeholder="gemini-3.5-flash" />
                                     </div>
                                     <div>
                                         <label style={{ display: 'block', marginBottom: '6px', fontWeight: 700, color: 'var(--gray-600)', fontSize: '0.85rem' }}>Model Phân tích Đa phương tiện</label>
-                                        <input type="text" className="form-input" value={configs.gemini_media_model || ''} onChange={e => setConfigs({...configs, gemini_media_model: e.target.value})} placeholder="gemini-3.5-flash" />
+                                        <input data-ai-id="input-cauhinhhethong-gemini-media-model" type="text" className="form-input" value={configs.gemini_media_model || ''} onChange={e => setConfigs({...configs, gemini_media_model: e.target.value})} placeholder="gemini-3.5-flash" />
                                     </div>
                                     {renderAiTestPanel('gemini')}
                                 </div>
@@ -728,15 +729,15 @@ const CauHinhHeThong: React.FC = () => {
                                     </h3>
                                     <div>
                                         <label style={{ display: 'block', marginBottom: '6px', fontWeight: 700, color: 'var(--gray-600)', fontSize: '0.85rem' }}>API Key</label>
-                                        <input type="password" className="form-input" value={configs.openrouter_api_key || ''} onChange={e => setConfigs({...configs, openrouter_api_key: e.target.value})} placeholder="sk-or-..." />
+                                        <input data-ai-id="input-cauhinhhethong-openrouter-api-key" type="password" className="form-input" value={configs.openrouter_api_key || ''} onChange={e => setConfigs({...configs, openrouter_api_key: e.target.value})} placeholder="sk-or-..." />
                                     </div>
                                     <div>
                                         <label style={{ display: 'block', marginBottom: '6px', fontWeight: 700, color: 'var(--gray-600)', fontSize: '0.85rem' }}>Model Chat & FAQ</label>
-                                        <input type="text" className="form-input" value={configs.openrouter_model || ''} onChange={e => setConfigs({...configs, openrouter_model: e.target.value})} placeholder="deepseek/deepseek-v4-flash:free" />
+                                        <input data-ai-id="input-cauhinhhethong-openrouter-model" type="text" className="form-input" value={configs.openrouter_model || ''} onChange={e => setConfigs({...configs, openrouter_model: e.target.value})} placeholder="deepseek/deepseek-v4-flash:free" />
                                     </div>
                                     <div>
                                         <label style={{ display: 'block', marginBottom: '6px', fontWeight: 700, color: 'var(--gray-600)', fontSize: '0.85rem' }}>Model Y khoa Chuyên sâu</label>
-                                        <input type="text" className="form-input" value={configs.openrouter_medical_model || ''} onChange={e => setConfigs({...configs, openrouter_medical_model: e.target.value})} placeholder="deepseek/deepseek-v4-flash:free" />
+                                        <input data-ai-id="input-cauhinhhethong-openrouter-medical-model" type="text" className="form-input" value={configs.openrouter_medical_model || ''} onChange={e => setConfigs({...configs, openrouter_medical_model: e.target.value})} placeholder="deepseek/deepseek-v4-flash:free" />
                                     </div>
                                     {renderAiTestPanel('openrouter')}
                                 </div>
@@ -776,6 +777,7 @@ const CauHinhHeThong: React.FC = () => {
                                                     <td key={role.id} style={{ padding: '16px' }}>
                                                         <label style={{ display: 'inline-flex', cursor: 'pointer', position: 'relative' }}>
                                                             <input 
+                                                                data-ai-id={`input-cauhinhhethong-policy-${role.id}-${action.id}`}
                                                                 type="checkbox" 
                                                                 checked={isChecked}
                                                                 onChange={() => handlePolicyToggle(role.id, action.id)}
@@ -804,8 +806,8 @@ const CauHinhHeThong: React.FC = () => {
                             <div className="settings-panel-interactive" onMouseMove={handlePanelMouseMove} style={{ padding: '24px', background: 'var(--gray-50)', borderRadius: '16px', border: '1px solid var(--gray-200)', marginBottom: '24px', minWidth: 0 }}>
                                 <h3 style={{ fontWeight: 800, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}><span className="material-symbols-outlined" style={{ color: 'var(--primary)' }}>inventory_2</span> Sao lưu thủ công</h3>
                                 <p style={{ fontSize: '0.9rem', color: 'var(--gray-500)', marginBottom: '20px' }}>Tạo ngay một bản sao lưu toàn bộ cơ sở dữ liệu hệ thống.</p>
-                                <button className="btn btn-outline settings-action-btn" onClick={() => fetchBackups()} style={{ width: '100%', marginBottom: '12px' }}>Làm mới danh sách</button>
-                                <button className="btn btn-primary settings-action-btn" onClick={handleCreateBackup} disabled={backingUp} style={{
+                                <button data-ai-id="button-cauhinhhethong-refresh-backups" className="btn btn-outline settings-action-btn" onClick={() => fetchBackups()} style={{ width: '100%', marginBottom: '12px' }}>Làm mới danh sách</button>
+                                <button data-ai-id="button-cauhinhhethong-create-backup" className="btn btn-primary settings-action-btn" onClick={handleCreateBackup} disabled={backingUp} style={{
                                     width: '100%',
                                     background: backingUp ? 'rgba(34, 211, 238, 0.55)' : 'var(--primary-gradient)',
                                     borderColor: 'rgba(34, 211, 238, 0.45)',
@@ -824,6 +826,7 @@ const CauHinhHeThong: React.FC = () => {
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
                                 <h3 style={{ fontWeight: 800, margin: 0 }}>Danh sách bản sao lưu</h3>
                                 <button
+                                    data-ai-id="button-cauhinhhethong-delete-all-backups"
                                     className="btn btn-outline settings-action-btn"
                                     disabled={backups.length === 0 || deletingBackups}
                                     onClick={handleDeleteAllBackups}
@@ -852,6 +855,7 @@ const CauHinhHeThong: React.FC = () => {
                                                 <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
                                                     {/* Nút tải file backup về máy */}
                                                     <button
+                                                        data-ai-id={`button-cauhinhhethong-download-backup-${idx}`}
                                                         title="Tải xuống"
                                                         style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', padding: '4px' }}
                                                         onClick={() => handleDownloadBackup(b.filename)}
@@ -860,6 +864,7 @@ const CauHinhHeThong: React.FC = () => {
                                                     </button>
                                                     {/* Nút khôi phục database từ file backup — màu cam để phân biệt */}
                                                     <button
+                                                        data-ai-id={`button-cauhinhhethong-restore-backup-${idx}`}
                                                         title="Khôi phục DB từ file này"
                                                         disabled={restoringFile === b.filename}
                                                         style={{
@@ -880,6 +885,7 @@ const CauHinhHeThong: React.FC = () => {
                                                     </button>
                                                     {/* Nút xóa file backup */}
                                                     <button
+                                                        data-ai-id={`button-cauhinhhethong-delete-backup-${idx}`}
                                                         title="Xóa"
                                                         style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', padding: '4px' }}
                                                         onClick={() => handleDeleteBackup(b.filename)}
@@ -897,7 +903,7 @@ const CauHinhHeThong: React.FC = () => {
                         <div style={{ minWidth: 0, overflow: 'hidden' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', marginBottom: '16px', minWidth: 0 }}>
                                 <h3 style={{ fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}><span className="material-symbols-outlined" style={{ color: 'var(--primary)' }}>history</span> Nhật ký hoạt động</h3>
-                                <button className="btn btn-outline settings-action-btn" style={{ padding: '6px 12px', fontSize: '0.8rem', color: 'var(--danger)', borderColor: 'var(--danger)' }}
+                                <button data-ai-id="button-cauhinhhethong-clear-logs" className="btn btn-outline settings-action-btn" style={{ padding: '6px 12px', fontSize: '0.8rem', color: 'var(--danger)', borderColor: 'var(--danger)' }}
                                     onClick={async () => {
                                         if (window.confirm('Bạn có chắc chắn muốn xóa sạch toàn bộ nhật ký hệ thống?')) {
                                             try {

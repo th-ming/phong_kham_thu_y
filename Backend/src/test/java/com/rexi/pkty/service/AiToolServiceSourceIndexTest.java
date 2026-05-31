@@ -19,7 +19,7 @@ class AiToolServiceSourceIndexTest {
         assertFalse(RoleAccessPolicy.canUseAgentTool("KHACH_HANG", "tra_cuu_ma_nguon"));
 
         String managerReply = service.executeTool("tra_cuu_ma_nguon", Map.of("tu_khoa", "agent model"), "QUAN_LY");
-        assertTrue(managerReply.contains("không có quyền"));
+        assertTrue(managerReply.contains("chỉ dành cho Admin hệ thống"));
     }
 
     @Test

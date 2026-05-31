@@ -2,6 +2,8 @@ package com.rexi.pkty.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rexi.pkty.repository.*;
+import com.rexi.pkty.security.CookieUtil;
+import com.rexi.pkty.security.JwtUtil;
 import com.rexi.pkty.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -44,4 +46,6 @@ public abstract class BaseControllerTest {
     @MockBean protected AiMemoryService aiMemoryService;
     @MockBean protected PasswordEncoder passwordEncoder;
     @MockBean protected JdbcTemplate jdbcTemplate;
+    @MockBean protected JwtUtil jwtUtil;
+    @MockBean protected CookieUtil cookieUtil;
 }

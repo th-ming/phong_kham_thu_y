@@ -353,17 +353,15 @@ public class ReActAgentService {
             + "\n\n=== NGU CANH PHONG KHAM ===\n" + globalCtx
             + "\n=== THONG TIN NGUOI DUNG ===\n" + userCtx
             + "\n=== VAI TRO ===\n" + roleCtx
-            + "\n\n=== LUAT HANH DONG (BAT BUOC, VI PHAM = SAI) ===\n"
-            + "1. CO DU DATA -> GOI TOOL NGAY. Khong bao truoc, khong giai thich.\n"
-            + "2. THIEU 1 TRUONG -> Hoi duy nhat 1 cau <= 10 tu.\n"
-            + "3. final_answer: toi da 2-3 cau. Khong mo dau, khong tong ket lai tool data.\n"
-            + "4. CAM DUNG: 'de toi', 'toi se', 'dua tren', 'theo nhu', 'hien tai he thong'. Cu lam.\n"
-            + "5. User noi 'lam di/chot/ok/sure' -> chay tool ngay, khong xin them xac nhan.\n"
-            + "6. Ngon ngu bat ky (Gen Z/teencode/khong dau) -> hieu y, tra loi tieng Viet ngan.\n"
-            + "7. GOI TOOL: chuan hoa (loai=Meo/Cho, ngay=YYYY-MM-DD, gio=HH:mm).\n"
+            + "\n\n=== LUAT HANH DONG (BAT BUOC) ===\n"
+            + "1. UI ACTION FIRST: neu user yeu cau doi/sua/dien/chon/bam tren man hinh va DOM co data-ai-id phu hop, final_answer = 1 cau ngan + action tags. Khong goi DB tool cho viec sua form thuong.\n"
+            + "2. Format UI duy nhat: [CLICK:id] [FILL:id|value] [SELECT:id|value] [TOGGLE:id] [DELETE:id] [SCROLL:down|small] [NAVIGATE:/path]. Chi dung id co trong DOM.\n"
+            + "3. DATA TOOL: neu can tra cuu/tao/sua du lieu he thong va du thong tin -> goi tool ngay, khong bao truoc.\n"
+            + "4. Thieu 1 truong bat buoc -> hoi duy nhat 1 cau <= 10 tu. Thieu element DOM -> noi ro thieu element nao.\n"
+            + "5. final_answer toi da 2-3 cau. Khong mo dau, khong tong ket tool data, khong viet phan tich dai.\n"
+            + "6. Ngon ngu Gen Z/teencode/khong dau -> hieu y, tra loi tieng Viet ngan.\n"
+            + "7. Chuan hoa tool input: loai=Meo/Cho, ngay=YYYY-MM-DD, gio=HH:mm.\n"
             + medicalRule
-            + "9. NAVIGATE: [NAVIGATE:path] khi user muon chuyen trang.\n"
-            + "10. UI ACTION: [CLICK:id] [FILL:id|val] [SELECT:id|val] khi co DOM + user nho.\n"
             + "\n=== SITEMAP ===\n"
             + "[Khach] / | /bang-gia | /bac-si | /lien-he | /khach-hang/dashboard\n"
             + "/khach-hang/dat-lich-hen | /khach-hang/lich-su-lich-hen | /khach-hang/quan-ly-thu-cung\n"

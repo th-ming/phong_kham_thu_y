@@ -1,10 +1,11 @@
 package com.rexi.pkty.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 
@@ -15,9 +16,16 @@ public class AuditController {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    @Value("${app.audit.endpoint-enabled:false}")
+    private boolean auditEndpointEnabled;
+
     @GetMapping("/data")
     @PreAuthorize("hasRole('ADMIN')")
-    public Map<String, Object> audit() {
+    public ResponseEntity<Map<String, Object>> audit() {
+        if (!auditEndpointEnabled) {
+            return ResponseEntity.status(404).body(Map.of("message", "Audit endpoint is disabled."));
+        }
+
         Map<String, Object> result = new HashMap<>();
         try {
             // Chuan hoa ten vai tro de khop repo
@@ -50,6 +58,6 @@ public class AuditController {
         } catch (Exception e) {
             result.put("error", e.getMessage());
         }
-        return result;
+        return ResponseEntity.ok(result);
     }
 }

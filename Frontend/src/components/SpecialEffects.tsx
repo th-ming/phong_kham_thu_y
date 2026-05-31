@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import Lottie from "lottie-react";
+import { useLiveUserProfile } from "@hooks/useLiveUserProfile";
 
 // Bộ nhớ đệm toàn cục (Global Cache) để lưu trữ dữ liệu JSON Lottie trên RAM, tránh tải lại nhiều lần
 const lottieCache: Record<string, any> = {};
@@ -62,6 +63,7 @@ const MemeCatCore: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
   const isSprintingRef = useRef(false);
   const trailIdCounter = useRef(0);
   const frameCountRef = useRef(0);
+  const liveUser = useLiveUserProfile();
 
   useEffect(() => {
     const handleVisibilityChange = () => setIsVisible(!document.hidden);
@@ -70,19 +72,9 @@ const MemeCatCore: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
   }, []);
 
   useEffect(() => {
-    let userNamSinh: number | null = null;
-    try {
-      const userStr = localStorage.getItem("user");
-      if (userStr) {
-        const user = JSON.parse(userStr);
-        if (user.nam_sinh !== undefined && user.nam_sinh !== null) {
-          userNamSinh = Number(user.nam_sinh);
-        }
-      }
-    } catch (e) {
-      console.error("Lỗi đọc nam_sinh cho MemeCat:", e);
-    }
-
+    const userNamSinh = liveUser?.nam_sinh !== undefined && liveUser?.nam_sinh !== null
+      ? Number(liveUser.nam_sinh)
+      : null;
     const isGenZ = userNamSinh !== null && userNamSinh >= 1997;
 
     const baseMessages = isGenZ 
@@ -124,7 +116,7 @@ const MemeCatCore: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
       setTimeout(() => setMessage(""), 3500);
     }, 15000);
     return () => clearInterval(interval);
-  }, [isVisible]);
+  }, [isVisible, liveUser?.nam_sinh]);
 
   useEffect(() => {
     let sprintTimeout: number;
@@ -495,11 +487,13 @@ export const TransparentVideo: React.FC<{
   onEnded?: () => void, 
   removeBlack?: boolean,
   isCat?: boolean,
-  variant?: 'banner-dog' | 'banner-cat' | 'footer-cat'
-}> = ({ src, style, className, playbackRate = 1, isDark = false, loop = true, muted = true, onEnded, removeBlack = false, isCat = false, variant }) => {
+  variant?: 'banner-dog' | 'banner-cat' | 'footer-cat',
+  onVideoTime?: (currentTime: number, duration: number) => void
+}> = ({ src, style, className, playbackRate = 1, isDark = false, loop = true, muted = true, onEnded, removeBlack = false, isCat = false, variant, onVideoTime }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [inView, setInView] = useState(false);
+  const lastTimeNotifyRef = useRef(0);
 
   useEffect(() => {
     const observer = new IntersectionObserver(([entry]) => setInView(entry.isIntersecting), { threshold: 0 });
@@ -521,11 +515,17 @@ export const TransparentVideo: React.FC<{
       if (video.paused || video.ended) { animationFrameId = requestAnimationFrame(processFrame); return; }
 
       if (video.videoWidth > 0) {
+        if (onVideoTime && Math.abs(video.currentTime - lastTimeNotifyRef.current) > 0.08) {
+          lastTimeNotifyRef.current = video.currentTime;
+          onVideoTime(video.currentTime, video.duration || 0);
+        }
+
         const effectiveVariant = variant ?? (isCat ? 'footer-cat' : 'banner-dog');
+        const isExplicitBannerVideo = variant === 'banner-dog' || variant === 'banner-cat';
         const isBannerCat = effectiveVariant === 'banner-cat';
         const isFooterCat = effectiveVariant === 'footer-cat';
         const isDog = effectiveVariant === 'banner-dog';
-        const isBannerVideo = isBannerCat || isDog;
+        const isBannerVideo = isExplicitBannerVideo;
 
         const dpr = window.devicePixelRatio || 1;
         const scale = isBannerVideo
@@ -541,10 +541,36 @@ export const TransparentVideo: React.FC<{
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
+        
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+
 
         const frame = ctx.getImageData(0, 0, canvas.width, canvas.height);
         const data = frame.data;
+        const embeddedCopyRegion = isBannerVideo && isDog
+          ? { minX: 0.08, maxX: 0.99, minY: 0.00, maxY: 0.52 }
+          : isBannerVideo && isBannerCat
+            ? { minX: 0.08, maxX: 0.99, minY: 0.00, maxY: 0.52 }
+            : null;
+
+        if (isBannerVideo) {
+          let sampled = 0;
+          let darkSamples = 0;
+          for (let i = 0; i < data.length; i += 64) {
+            const r = data[i], g = data[i + 1], b = data[i + 2];
+            const brightness = (r + g + b) / 3;
+            const greenScore = g - Math.max(r, b);
+            sampled++;
+            if (brightness < 24 && greenScore < 18) darkSamples++;
+          }
+
+          if (sampled > 0 && darkSamples / sampled > 0.82) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            animationFrameId = requestAnimationFrame(processFrame);
+            return;
+          }
+        }
 
         // Cấu hình chroma key tối ưu theo từng nơi dùng để không làm ảnh hưởng mèo footer.
         const minDiff = isDog ? 1.5 : 3.0;
@@ -552,7 +578,27 @@ export const TransparentVideo: React.FC<{
 
         for (let i = 0; i < data.length; i += 4) {
           const r = data[i], g = data[i + 1], b = data[i + 2];
+          const pixelIndex = i / 4;
+          const x = pixelIndex % canvas.width;
+          const y = Math.floor(pixelIndex / canvas.width);
           const greenScore = g - Math.max(r, b);
+          const brightness = (r + g + b) / 3;
+
+          // Chỉ xóa chữ chào cũ trong dải đầu video banner; không quét xuống thân mèo/chó.
+          const isInDeepCopyBand = embeddedCopyRegion !== null
+            && y <= canvas.height * 0.38;
+          const isDarkTextOrIcon = greenScore < 32
+            && (brightness < 110 || (isInDeepCopyBand && brightness < 210));
+          const isInTextRegion = embeddedCopyRegion !== null
+            && x >= canvas.width * embeddedCopyRegion.minX
+            && x <= canvas.width * embeddedCopyRegion.maxX
+            && y >= canvas.height * embeddedCopyRegion.minY
+            && y <= canvas.height * embeddedCopyRegion.maxY;
+          
+          if (isDarkTextOrIcon && isInTextRegion) {
+            data[i + 3] = 0;
+            continue;
+          }
 
           // TÍNH TOÁN LIÊN QUAN ĐẾN ĐỘ ÁM XANH LÁ
           if (greenScore > minDiff) {
@@ -571,8 +617,6 @@ export const TransparentVideo: React.FC<{
           // Chỉ lọc các pixel thực sự sát viền phông xanh (greenScore nằm trong dải cận biên từ -3 đến minDiff)
           // Tuyệt đối không đụng vào mắt/mũi/miệng nằm sâu trong cơ thể (nơi có greenScore cực kỳ âm, ví dụ < -4)
           // Tuyệt đối không chạm vào các pixel đen tuyền có độ sáng cực thấp (brightness < 35) của mắt
-          const brightness = (r + g + b) / 3;
-          
           // Chỉ footer mới dùng black keying để tránh ảnh hưởng video mèo chào ở banner.
           if (isFooterCat && r < 20 && g < 20 && b < 20) {
             data[i + 3] = 0;
@@ -593,6 +637,45 @@ export const TransparentVideo: React.FC<{
           }
         }
 
+        if (isBannerVideo) {
+          const width = canvas.width;
+          const height = canvas.height;
+          const alphaMap = new Uint8ClampedArray(width * height);
+
+          for (let i = 0; i < data.length; i += 4) {
+            alphaMap[i / 4] = data[i + 3];
+          }
+
+          for (let y = 1; y < height - 1; y++) {
+            for (let x = 1; x < width - 1; x++) {
+              const pixelIndex = y * width + x;
+              const offset = pixelIndex * 4;
+              const alpha = alphaMap[pixelIndex];
+
+              if (alpha === 0) continue;
+
+              const neighborAlpha =
+                alphaMap[pixelIndex - width - 1] + alphaMap[pixelIndex - width] + alphaMap[pixelIndex - width + 1] +
+                alphaMap[pixelIndex - 1] + alphaMap[pixelIndex + 1] +
+                alphaMap[pixelIndex + width - 1] + alphaMap[pixelIndex + width] + alphaMap[pixelIndex + width + 1];
+              const averageAlpha = neighborAlpha / 8;
+              const hasTransparentNeighbor = neighborAlpha < 255 * 8;
+
+              if (alpha < 245 || hasTransparentNeighbor) {
+                data[offset + 3] = Math.round(alpha * 0.72 + averageAlpha * 0.28);
+
+                const r = data[offset];
+                const g = data[offset + 1];
+                const b = data[offset + 2];
+                const maxNonGreen = Math.max(r, b);
+                if (g > maxNonGreen + 8) {
+                  data[offset + 1] = Math.round(maxNonGreen + 8);
+                }
+              }
+            }
+          }
+        }
+
         ctx.putImageData(frame, 0, 0);
       }
       animationFrameId = requestAnimationFrame(processFrame);
@@ -600,7 +683,7 @@ export const TransparentVideo: React.FC<{
 
     animationFrameId = requestAnimationFrame(processFrame);
     return () => cancelAnimationFrame(animationFrameId);
-  }, [src, inView, playbackRate, isDark, removeBlack, isCat, variant]);
+  }, [src, inView, playbackRate, isDark, removeBlack, isCat, variant, onVideoTime]);
 
   return (
     <>
@@ -705,10 +788,10 @@ export const Typewriter: React.FC<{ words: string[] }> = ({ words }) => {
   return (
     <span style={{
       color: "#0f9d8a",
-      textShadow: "0 0 14px rgba(15, 157, 138, 0.6), 0 0 28px rgba(45, 212, 191, 0.35)",
+      textShadow: "0 0 7px rgba(15, 157, 138, 0.46), 0 0 14px rgba(45, 212, 191, 0.24)",
       borderRight: "3px solid #0f9d8a",
       paddingRight: "4px",
-      filter: "drop-shadow(0 0 6px rgba(15, 157, 138, 0.45))"
+      filter: "drop-shadow(0 0 2px rgba(15, 157, 138, 0.28))"
     }}>{text}</span>
   );
 };

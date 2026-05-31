@@ -221,7 +221,7 @@ public class AuthController {
                 String idKh = tk.getId_khach_hang();
                 userData.put("id_khach_hang", idKh);
                 try {
-                    List<Map<String, Object>> list = jdbcTemplate.queryForList("SELECT ten_khach_hang, hinh_anh FROM KhachHang WHERE id_khach_hang = ?", idKh);
+                    List<Map<String, Object>> list = jdbcTemplate.queryForList("SELECT ten_khach_hang, hinh_anh, email, sdt, dia_chi, nam_sinh FROM KhachHang WHERE id_khach_hang = ?", idKh);
                     if (!list.isEmpty()) {
                         Map<String, Object> info = list.get(0);
                         if (info.get("ten_khach_hang") != null) {
@@ -232,6 +232,16 @@ public class AuthController {
                         if (info.get("hinh_anh") != null) {
                             userData.put("avatar", info.get("hinh_anh").toString());
                         }
+                        if (info.get("email") != null) {
+                            userData.put("email", info.get("email").toString());
+                        }
+                        if (info.get("sdt") != null) {
+                            userData.put("sdt", info.get("sdt").toString());
+                        }
+                        if (info.get("dia_chi") != null) {
+                            userData.put("dia_chi", info.get("dia_chi").toString());
+                        }
+                        userData.put("nam_sinh", info.get("nam_sinh"));
                     }
                 } catch (Exception ignored) {}
             }
@@ -719,6 +729,10 @@ public class AuthController {
 
         if (bindingResult.hasErrors()) {
             return ResponseEntity.badRequest().body(Map.of("message", "Dữ liệu không hợp lệ"));
+        }
+        if (request.getNam_sinh() == null || request.getNam_sinh() > java.time.Year.now().getValue()) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("message", "Năm sinh không hợp lệ. Vui lòng nhập năm sinh từ 1900 đến năm hiện tại."));
         }
 
         try {

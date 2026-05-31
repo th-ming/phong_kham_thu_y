@@ -93,6 +93,9 @@ public class OpenRouterService {
     @Value("${openrouter.model:deepseek/deepseek-v4-flash:free}")
     private String modelName;
 
+    @Value("${app.frontend-url:http://localhost:3005}")
+    private String frontendUrl;
+
     // Biến lưu Cache danh sách Model
     private List<String> cachedFreeModels = new ArrayList<>();
     private long lastModelFetchTime = 0;
@@ -255,7 +258,7 @@ public class OpenRouterService {
                 .uri(URI.create(OPENROUTER_API_URL))
                 .header("Content-Type", "application/json")
                 .header("Authorization", "Bearer " + currentApiKey)
-                .header("HTTP-Referer", "http://localhost:3000")
+                .header("HTTP-Referer", frontendUrl)
                 .header("X-Title", "Rexi Vet Clinic")
                 .POST(HttpRequest.BodyPublishers.ofString(requestBody, StandardCharsets.UTF_8))
                 .timeout(Duration.ofSeconds(12))

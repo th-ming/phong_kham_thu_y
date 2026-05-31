@@ -77,6 +77,18 @@ public class LichTrucController {
                 LocalTime gioBatDau = LocalTime.parse(gioBatDauStr);
                 LocalTime gioKetThuc = gioBatDau.plusMinutes(30);
 
+                Integer activeStaffCount = jdbcTemplate.queryForObject(
+                                "SELECT COUNT(*) FROM NhanVien nv " +
+                                                "JOIN TaiKhoan tk ON tk.id_nhan_vien = nv.id_nhan_vien " +
+                                                "WHERE nv.id_nhan_vien = ? " +
+                                                "AND ISNULL(nv.da_xoa, 0) = 0 " +
+                                                "AND LOWER(ISNULL(tk.trang_thai, '')) IN ('active', N'hoạt động', N'đang làm việc')",
+                                Integer.class, targetNhanVienId);
+                if (activeStaffCount == null || activeStaffCount == 0) {
+                        return ResponseEntity.status(409).body(Map.of("message",
+                                        "Không thể đăng ký lịch trực cho nhân viên đã khóa hoặc đã xóa mềm."));
+                }
+
                 String sqlCheck = "SELECT COUNT(*) FROM LichLamViecNhanVien WHERE id_nhan_vien = ? AND ngay_lam = ? AND gio_bat_dau = ?";
                 Integer count = jdbcTemplate.queryForObject(sqlCheck, Integer.class, targetNhanVienId, ngayLamStr, gioBatDauStr);
                 if (count != null && count > 0) {

@@ -122,7 +122,7 @@ public class NhanVienController {
     public List<?> getBacSi(@RequestParam(required = false) String ngay) {
         try {
             if (ngay != null && !ngay.trim().isEmpty()) {
-                String sql = "SELECT DISTINCT nv.id_nhan_vien, nv.ho_ten, nv.chuyen_mon, nv.sdt, nv.email, nv.dia_chi, nv.luong " +
+                String sql = "SELECT DISTINCT nv.id_nhan_vien, nv.ho_ten, nv.chuyen_mon, nv.so_dien_thoai, nv.email, nv.dia_chi " +
                              "FROM NhanVien nv " +
                              "JOIN LichLamViecNhanVien l ON nv.id_nhan_vien = l.id_nhan_vien " +
                              "WHERE nv.id_nhan_vien IN (SELECT id_nhan_vien FROM TaiKhoan WHERE id_vai_tro = 'VT-BS') " +
@@ -183,6 +183,18 @@ public class NhanVienController {
                 return org.springframework.http.ResponseEntity.status(400).body(Map.of("message", "Giờ bắt đầu ca phải nằm trong khoảng 8:00 - 20:00!"));
             }
 
+            Integer activeStaffCount = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM NhanVien nv " +
+                            "JOIN TaiKhoan tk ON tk.id_nhan_vien = nv.id_nhan_vien " +
+                            "WHERE nv.id_nhan_vien = ? " +
+                            "AND ISNULL(nv.da_xoa, 0) = 0 " +
+                            "AND LOWER(ISNULL(tk.trang_thai, '')) IN ('active', N'hoạt động', N'đang làm việc')",
+                    Integer.class, lich.getId_nhan_vien());
+            if (activeStaffCount == null || activeStaffCount == 0) {
+                return org.springframework.http.ResponseEntity.status(409)
+                        .body(Map.of("message", "Không thể đăng ký lịch làm việc cho nhân viên đã khóa hoặc đã xóa mềm."));
+            }
+
             // Kiểm tra quyền sở hữu: nhân viên chỉ được đăng ký cho chính mình
             if (!isAdmin && tk != null) {
                 String currentNhanVienId = null;
@@ -207,7 +219,7 @@ public class NhanVienController {
             }
 
             // Kiểm tra trùng ca (cùng nhân viên, cùng ngày, cùng giờ)
-            String checkDupSql = "SELECT COUNT(*) FROM LichLamViecNhanVien WHERE id_nhan_vien = ? AND ngay_lam = ? AND gio_bat_dau = ?";
+            String checkDupSql = "SELECT COUNT(*) FROM LichLamViecNhanVien WHERE id_nhan_vien = ? AND ngay_lam = ? AND gio_bat_dau = CAST(? AS time)";
             Integer dupCount = jdbcTemplate.queryForObject(checkDupSql, Integer.class,
                     lich.getId_nhan_vien(), lich.getNgay_lam(), lich.getGio_bat_dau());
             if (dupCount != null && dupCount > 0) {
@@ -228,7 +240,7 @@ public class NhanVienController {
                 // Kiểm tra số nhân sự cùng chức vụ trực cùng khung giờ đó
                 String countRoleSql = "SELECT COUNT(DISTINCT l.id_nhan_vien) FROM LichLamViecNhanVien l " +
                         "JOIN TaiKhoan t ON l.id_nhan_vien = t.id_nhan_vien " +
-                        "WHERE l.ngay_lam = ? AND l.gio_bat_dau = ? AND t.id_vai_tro = ?";
+                        "WHERE l.ngay_lam = ? AND l.gio_bat_dau = CAST(? AS time) AND t.id_vai_tro = ?";
                 Integer roleCount = jdbcTemplate.queryForObject(countRoleSql, Integer.class,
                         lich.getNgay_lam(), lich.getGio_bat_dau(), staffRoleId);
 

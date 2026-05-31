@@ -4,6 +4,7 @@ import com.rexi.pkty.dto.ChatMessage;
 import com.rexi.pkty.service.GeminiService;
 import com.rexi.pkty.service.GroqService;
 import com.rexi.pkty.service.OpenRouterService;
+import com.rexi.pkty.service.ReActAgentService;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -28,6 +29,7 @@ class ChatControllerRegressionTest extends BaseControllerTest {
     @MockBean private GeminiService geminiService;
     @MockBean private GroqService groqService;
     @MockBean private OpenRouterService openRouterService;
+    @MockBean private ReActAgentService reActAgentService;
 
     @Test
     void heatstrokeEmergencyBypassesLongMessageGuardAndAiProviders() throws Exception {

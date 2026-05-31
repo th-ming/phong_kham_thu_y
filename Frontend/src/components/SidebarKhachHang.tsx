@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react'
+﻿import React, { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import ThemeToggle from './ThemeToggle'
 import { useLiveUserProfile } from '@hooks/useLiveUserProfile'
@@ -36,6 +36,11 @@ const SidebarKhachHang: React.FC = () => {
   const userDisplayName = cleanName(user?.display_name || user?.displayName || user?.ho_ten || user?.hoTen || user?.fullName || user?.ten_khach_hang || user?.ten_dang_nhap || user?.username || "Thành viên");
   const userAvatar = user?.hinh_anh || user?.avatar || "";
   const userInitial = userDisplayName.charAt(0).toUpperCase() || "S";
+  const [avatarFailed, setAvatarFailed] = useState(false);
+
+  useEffect(() => {
+    setAvatarFailed(false);
+  }, [userAvatar]);
 
   return (
     <>
@@ -83,14 +88,12 @@ const SidebarKhachHang: React.FC = () => {
             <div style={{ width: '52px', height: '52px', borderRadius: '50%', display: 'grid', placeItems: 'center', flexShrink: 0, position: 'relative' }}>
               <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: '2px solid var(--primary)', boxShadow: '0 0 15px var(--primary), inset 0 0 15px var(--primary)', animation: 'pulse 2s infinite' }} />
               <div style={{ width: '44px', height: '44px', borderRadius: '50%', overflow: 'hidden', background: 'rgba(20, 184, 166, 0.1)', display: 'grid', placeItems: 'center', color: 'var(--primary)', fontWeight: 950, fontSize: '1.5rem', position: 'relative', zIndex: 1, textShadow: '0 0 10px var(--primary)' }}>
-                {userAvatar ? (
+                {userAvatar && !avatarFailed ? (
                   <img
                     src={userAvatar}
                     alt={userDisplayName}
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = 'none';
-                    }}
+                    onError={() => setAvatarFailed(true)}
                   />
                 ) : (
                   <span>{userInitial}</span>
