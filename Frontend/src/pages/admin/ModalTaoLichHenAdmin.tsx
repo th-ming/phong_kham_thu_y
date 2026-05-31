@@ -342,7 +342,7 @@ export const ModalTaoLichHenAdmin: React.FC<ModalProps> = ({ isOpen, onClose, on
 
                         <div style={{ marginTop: '20px' }}>
                             <label style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '8px', display: 'block' }}>GHI CHÚ / TRIỆU CHỨNG</label>
-                            <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Nhập triệu chứng, yêu cầu đặc biệt..." style={{ width: '100%', padding: '16px', borderRadius: '12px', border: '1px solid var(--gray-200)', background: 'var(--gray-50)', outline: 'none', fontWeight: 600, color: 'var(--ink)', minHeight: '100px', lineHeight: '1.5' }}></textarea>
+                            <textarea data-ai-id="textarea-modaltaolichhenadmin-notes" value={notes} onChange={e => setNotes(e.target.value)} placeholder="Nhập triệu chứng, yêu cầu đặc biệt..." style={{ width: '100%', padding: '16px', borderRadius: '12px', border: '1px solid var(--gray-200)', background: 'var(--gray-50)', outline: 'none', fontWeight: 600, color: 'var(--ink)', minHeight: '100px', lineHeight: '1.5' }}></textarea>
                         </div>
 
                         {/* Tùy chọn đánh dấu ca cấp cứu khẩn cấp */}

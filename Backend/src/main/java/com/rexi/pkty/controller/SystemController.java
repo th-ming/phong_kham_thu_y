@@ -67,6 +67,9 @@ public class SystemController {
     private static final SecureRandom OTP_RANDOM = new SecureRandom();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    @org.springframework.beans.factory.annotation.Value("${app.frontend-url:http://localhost:3005}")
+    private String frontendUrl;
+
     // Rate limit gửi mass email: mỗi user chỉ được gửi 1 lần/giờ
     private final Map<String, Long> massEmailLastSentAt = new ConcurrentHashMap<>();
     private static final long MASS_EMAIL_COOLDOWN_MS = 60 * 60 * 1000; // 1 giờ
@@ -549,7 +552,7 @@ public class SystemController {
                 .POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
                 .timeout(Duration.ofSeconds(20));
         if ("openrouter".equals(provider)) {
-            builder.header("HTTP-Referer", "http://localhost:3000")
+            builder.header("HTTP-Referer", frontendUrl)
                     .header("X-Title", "Rexi Vet Clinic");
         }
         return builder.build();

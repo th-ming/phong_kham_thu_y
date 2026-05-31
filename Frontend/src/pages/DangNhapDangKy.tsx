@@ -22,6 +22,7 @@ const DangNhapDangKy: React.FC = () => {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
+  const [birthYear, setBirthYear] = useState("");
 
   const GOOGLE_CLIENT_ID = "334761445329-iog83fgqrdlo0iavo68pkv17modc85du.apps.googleusercontent.com";
 
@@ -133,8 +134,14 @@ const DangNhapDangKy: React.FC = () => {
   const handleNextStep = (e: React.MouseEvent) => {
     e.preventDefault();
     setError("");
-    if (!fullname || !email || !phone || !address) {
+    if (!fullname || !email || !phone || !address || !birthYear) {
       setError("Vui lòng nhập đầy đủ các trường thông tin cá nhân!");
+      return;
+    }
+    const birthYearNum = Number(birthYear);
+    const currentYear = new Date().getFullYear();
+    if (!Number.isInteger(birthYearNum) || birthYearNum < 1900 || birthYearNum > currentYear) {
+      setError(`Năm sinh phải nằm trong khoảng từ 1900 đến ${currentYear}!`);
       return;
     }
     // Validate email đơn giản
@@ -166,7 +173,7 @@ const DangNhapDangKy: React.FC = () => {
     if (!isLogin) {
       if (step === 1) {
         // Nếu người dùng nhấn Enter và tự động submit khi đang ở bước 1
-        if (!fullname || !email || !phone || !address) {
+        if (!fullname || !email || !phone || !address || !birthYear) {
           setError("Vui lòng nhập đầy đủ các trường thông tin cá nhân!");
           setLoading(false);
           return;
@@ -197,7 +204,7 @@ const DangNhapDangKy: React.FC = () => {
 
     try {
       const endpoint = isLogin ? "/login" : "/register";
-      const payload = isLogin ? { username, password } : { ten_dang_nhap: username, mat_khau: password, ten_khach_hang: fullname, email, sdt: phone, dia_chi: address };
+      const payload = isLogin ? { username, password } : { ten_dang_nhap: username, mat_khau: password, ten_khach_hang: fullname, email, sdt: phone, dia_chi: address, nam_sinh: Number(birthYear) };
       const res = await axiosInstance.post(`${API_URL}${endpoint}`, payload);
       if (isLogin && res.data.token) {
         localStorage.setItem("token", res.data.token);
@@ -606,6 +613,20 @@ const DangNhapDangKy: React.FC = () => {
                       <div className="input-group">
                         <span className="material-symbols-outlined" style={{ color: '#0d9488', opacity: 0.7, fontSize: '18px' }}>location_on</span>
                         <input data-ai-id="input-dangnhapdangky-gejq" placeholder="Địa chỉ" value={address} onChange={e => setAddress(e.target.value)} required />
+                      </div>
+                      <div className="input-group">
+                        <span className="material-symbols-outlined" style={{ color: '#0d9488', opacity: 0.7, fontSize: '18px' }}>cake</span>
+                        <input
+                          data-ai-id="input-dangnhapdangky-namsinh"
+                          type="number"
+                          inputMode="numeric"
+                          min="1900"
+                          max={new Date().getFullYear()}
+                          placeholder="Năm sinh"
+                          value={birthYear}
+                          onChange={e => setBirthYear(e.target.value.replace(/[^0-9]/g, "").slice(0, 4))}
+                          required
+                        />
                       </div>
                       <button data-ai-id="button-dangnhapdangky-next" onClick={handleNextStep} className="btn-auth" style={{ width: '100%', background: '#0d9488', color: 'white', border: 'none', borderRadius: '50px', padding: '16px', fontWeight: 800, cursor: 'pointer', marginTop: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                         Tiếp theo <span className="material-symbols-outlined">arrow_forward</span>

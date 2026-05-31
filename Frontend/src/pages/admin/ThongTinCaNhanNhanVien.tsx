@@ -284,6 +284,7 @@ const ThongTinCaNhanNhanVien: React.FC = () => {
                             <div style={{ padding: '24px', background: 'var(--gray-50)', borderRadius: '20px', color: 'var(--ink)', fontStyle: (profile.gioi_thieu || profile.gioiThieu) ? 'normal' : 'italic', lineHeight: '1.8', fontSize: '0.95rem', border: '1px solid var(--gray-100)' }}>
                                 {isEditing ? (
                                     <textarea
+                                        data-ai-id="textarea-thongtincanhannhanvien-gioithieu"
                                         name="gioi_thieu"
                                         value={formData.gioi_thieu || formData.gioiThieu || ''}
                                         onChange={handleChange}

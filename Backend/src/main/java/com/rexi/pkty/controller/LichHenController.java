@@ -51,6 +51,10 @@ public class LichHenController {
         return value == null || value.trim().isEmpty() ? null : value.trim();
     }
 
+    private String newAppointmentId() {
+        return "LH-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+    }
+
     private void broadcastLichHenChanged(String action, LichHen lichHen) {
         if (messagingTemplate == null || lichHen == null) {
             return;
@@ -72,7 +76,7 @@ public class LichHenController {
     @Transactional
     public ResponseEntity<?> createLichHen(@RequestBody LichHen lichHen) {
         try {
-            lichHen.setId_lich_hen(null);
+            lichHen.setId_lich_hen(newAppointmentId());
             lichHen.setId_khach_hang(blankToNull(lichHen.getId_khach_hang()));
             lichHen.setId_thu_cung(blankToNull(lichHen.getId_thu_cung()));
             lichHen.setId_bac_si(blankToNull(lichHen.getId_bac_si()));
@@ -158,7 +162,7 @@ public class LichHenController {
 
             if (lichHen.getId_bac_si() == null || lichHen.getId_bac_si().isEmpty() || lichHen.getId_bac_si().equals("0")) {
                 String findDocQuery = "SELECT TOP 1 l.id_nhan_vien FROM LichLamViecNhanVien l " +
-                        "WHERE l.ngay_lam = ? AND l.gio_bat_dau = ? " +
+                        "WHERE l.ngay_lam = ? AND l.gio_bat_dau = CAST(? AS time) " +
                         "AND NOT EXISTS (SELECT 1 FROM LichHen h " +
                         "  LEFT JOIN DichVu d ON h.id_dich_vu = d.id_dich_vu " +
                         "  WHERE h.id_bac_si = l.id_nhan_vien AND h.ngay_kham = l.ngay_lam " +
@@ -264,8 +268,8 @@ public class LichHenController {
 
             if (lichHen.getLy_do() != null)
                 lichHen.setLy_do(org.springframework.web.util.HtmlUtils.htmlEscape(lichHen.getLy_do()));
-            if (lichHen.getGhi_chu() != null)
-                lichHen.setGhi_chu(org.springframework.web.util.HtmlUtils.htmlEscape(lichHen.getGhi_chu()));
+            if (lichHen.getGhi_chu() != null && (lichHen.getGhi_chu_noi_bo() == null || lichHen.getGhi_chu_noi_bo().isBlank()))
+                lichHen.setGhi_chu_noi_bo(lichHen.getGhi_chu());
             if (lichHen.getGhi_chu_noi_bo() != null)
                 lichHen.setGhi_chu_noi_bo(org.springframework.web.util.HtmlUtils.htmlEscape(lichHen.getGhi_chu_noi_bo()));
 
@@ -376,6 +380,7 @@ public class LichHenController {
                     idThuCung, idKhachHang, tc.get("ten_thu_cung"));
 
             LichHen lichHen = new LichHen();
+            lichHen.setId_lich_hen(newAppointmentId());
             lichHen.setId_khach_hang(idKhachHang);
             lichHen.setId_thu_cung(idThuCung);
             lichHen.setId_dich_vu(lh.get("id_dich_vu") != null ? lh.get("id_dich_vu").toString() : null);
@@ -422,7 +427,7 @@ public class LichHenController {
                 "nv.ho_ten COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI",
                 "dv.ten_dich_vu COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI",
                 "lh.ly_do COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI",
-                "lh.ghi_chu COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI");
+                "lh.ghi_chu_noi_bo COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI");
 
         String baseSelect = "SELECT lh.*, kh.ten_khach_hang, kh.sdt, tc.ten_thu_cung, nv.ho_ten as ten_bac_si, dv.ten_dich_vu " +
                 "FROM LichHen lh " +

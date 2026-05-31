@@ -1,10 +1,35 @@
-import React, { useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { RevealSection, LottiePlayer, Typewriter, TransparentVideo } from "@components/SpecialEffects";
 import { useCountUp } from "@hooks/useCountUp";
 import { useTheme } from "../../contexts/ThemeContextV2";
 import { getUserProfile, normalizeUserRole } from "@utils/index";
 import { toast } from "@components/Toast";
+
+type BannerTextStyle = {
+    top: string;
+    left: string;
+    fontSize: string;
+};
+
+const bannerTextStyles: Record<string, BannerTextStyle> = {
+    "Hello bạn! 🐶": { top: "-2.7%", left: "39%", fontSize: "clamp(2.2rem, 3.2vw, 3.5rem)" },
+    "Gâu gâu! Xin chào!": { top: "-2.5%", left: "39%", fontSize: "clamp(2.05rem, 2.95vw, 3.25rem)" },
+    "Chào mừng đến Rexi!": { top: "-2.3%", left: "39%", fontSize: "clamp(1.9rem, 2.62vw, 3rem)" },
+    "Rất vui được gặp bạn!": { top: "-2.3%", left: "39%", fontSize: "clamp(1.95rem, 2.78vw, 3.1rem)" },
+    "Meow meow~ 😽": { top: "-2.7%", left: "39%", fontSize: "clamp(2.15rem, 3.1vw, 3.4rem)" },
+    "Xin chào con sen!": { top: "-2.4%", left: "39%", fontSize: "clamp(2rem, 2.9vw, 3.2rem)" },
+    "Meow! Rexi Vet xin chào!": { top: "-2.1%", left: "39%", fontSize: "clamp(1.78rem, 2.48vw, 2.82rem)" }
+};
+
+const getBannerTextStyle = (text: string): React.CSSProperties => {
+    const style = bannerTextStyles[text] ?? bannerTextStyles["Hello bạn! 🐶"];
+    return {
+        '--banner-text-top': style.top,
+        '--banner-text-left': style.left,
+        '--banner-text-size': style.fontSize
+    } as React.CSSProperties;
+};
 
 // banner giới thiệu trang chủ
 const PhanGioiThieu: React.FC = () => {
@@ -13,6 +38,34 @@ const PhanGioiThieu: React.FC = () => {
     const isDark = theme === 'dark';
     const { count: petCount, elementRef: petRef } = useCountUp(5000);
     const heroRef = useRef<HTMLDivElement>(null);
+    const [dogBannerText, setDogBannerText] = useState("Hello bạn! 🐶");
+    const [catBannerText, setCatBannerText] = useState("Meow meow~ 😽");
+
+    const getDogBannerText = (currentTime: number, duration: number) => {
+        const phase = duration > 0 ? currentTime / duration : (currentTime % 6) / 6;
+        if (phase < 0.20) return "Hello bạn! 🐶";
+        if (phase < 0.44) return "Gâu gâu! Xin chào!";
+        if (phase < 0.76) return "Chào mừng đến Rexi!";
+        return "Rất vui được gặp bạn!";
+    };
+
+    const getCatBannerText = (currentTime: number, duration: number) => {
+        const phase = duration > 0 ? currentTime / duration : (currentTime % 6) / 6;
+        if (phase < 0.34) return "Meow meow~ 😽";
+        if (phase < 0.59) return "Xin chào con sen!";
+        if (phase < 0.92) return "Meow! Rexi Vet xin chào!";
+        return "Meow meow~ 😽";
+    };
+
+    const handleDogVideoTime = useCallback((currentTime: number, duration: number) => {
+        const nextText = getDogBannerText(currentTime, duration);
+        setDogBannerText((current) => current === nextText ? current : nextText);
+    }, []);
+
+    const handleCatVideoTime = useCallback((currentTime: number, duration: number) => {
+        const nextText = getCatBannerText(currentTime, duration);
+        setCatBannerText((current) => current === nextText ? current : nextText);
+    }, []);
 
     const handleBookingClick = (e: React.MouseEvent) => {
         e.preventDefault();
@@ -138,6 +191,16 @@ const PhanGioiThieu: React.FC = () => {
                         50%, 95% { opacity: 1; filter: blur(0); transform: scale(1); }
                         100% { opacity: 0; filter: blur(10px); transform: scale(0.95); }
                     }
+                    @keyframes bannerTextCrossFade {
+                        0%, 45% { opacity: 1; filter: blur(0); transform: translateX(-50%) scale(1); }
+                        50%, 95% { opacity: 0; filter: blur(10px); transform: translateX(-50%) scale(0.95); }
+                        100% { opacity: 1; filter: blur(0); transform: translateX(-50%) scale(1); }
+                    }
+                    @keyframes bannerTextCrossFadeReverse {
+                        0%, 45% { opacity: 0; filter: blur(10px); transform: translateX(-50%) scale(0.95); }
+                        50%, 95% { opacity: 1; filter: blur(0); transform: translateX(-50%) scale(1); }
+                        100% { opacity: 0; filter: blur(10px); transform: translateX(-50%) scale(0.95); }
+                    }
                     @keyframes floatSlow {
                         0% { transform: translateY(0) rotate(0deg); opacity: 0.15; }
                         50% { transform: translateY(-20px) rotate(15deg); opacity: 0.35; }
@@ -188,13 +251,13 @@ const PhanGioiThieu: React.FC = () => {
                     }
                     .hero-glow-text {
                         color: #0f9d8a;
-                        text-shadow: 0 0 12px rgba(15, 157, 138, 0.25), 0 0 25px rgba(45, 212, 191, 0.15);
+                        text-shadow: 0 0 6px rgba(15, 157, 138, 0.32), 0 0 14px rgba(45, 212, 191, 0.18);
                         animation: glowPulse 3s ease-in-out infinite;
                         font-weight: 900;
                     }
                     [data-theme='dark'] .hero-glow-text {
                         color: var(--primary);
-                        text-shadow: 0 0 18px rgba(15, 157, 138, 0.6), 0 0 36px rgba(45, 212, 191, 0.35);
+                        text-shadow: 0 0 8px rgba(45, 212, 191, 0.58), 0 0 18px rgba(34, 211, 238, 0.30);
                     }
                     
                     /* Chữ chào phát sáng lớn phía sau động vật */
@@ -216,8 +279,42 @@ const PhanGioiThieu: React.FC = () => {
                     }
 
                     @keyframes glowPulse {
-                        0%, 100% { filter: drop-shadow(0 0 2px rgba(15, 157, 138, 0.2)); }
-                        50% { filter: drop-shadow(0 0 8px rgba(15, 157, 138, 0.5)) drop-shadow(0 0 15px rgba(45, 212, 191, 0.3)); }
+                        0%, 100% { filter: drop-shadow(0 0 1px rgba(15, 157, 138, 0.18)); }
+                        50% { filter: drop-shadow(0 0 4px rgba(15, 157, 138, 0.36)) drop-shadow(0 0 8px rgba(45, 212, 191, 0.22)); }
+                    }
+                    .banner-sync-text {
+                        position: absolute;
+                        top: var(--banner-text-top);
+                        left: var(--banner-text-left);
+                        transform: translateX(-50%);
+                        z-index: 8;
+                        pointer-events: none;
+                        white-space: nowrap;
+                        font-family: 'Lora', serif;
+                        font-size: var(--banner-text-size);
+                        line-height: 1;
+                        font-weight: 950;
+                        font-style: italic;
+                        letter-spacing: 0;
+                        color: #0f9d8a;
+                        text-align: center;
+                        text-rendering: geometricPrecision;
+                        -webkit-font-smoothing: antialiased;
+                        text-shadow:
+                            0 1px 0 rgba(255,255,255,0.32),
+                            0 0 10px rgba(15, 157, 138, 0.42),
+                            0 0 24px rgba(45, 212, 191, 0.28),
+                            0 8px 20px rgba(0,0,0,0.16);
+                        filter: drop-shadow(0 0 10px rgba(20, 184, 166, 0.34));
+                    }
+                    [data-theme='dark'] .banner-sync-text {
+                        color: #7dd3fc;
+                        text-shadow:
+                            0 1px 0 rgba(255,255,255,0.12),
+                            0 0 10px rgba(125, 211, 252, 0.46),
+                            0 0 22px rgba(34, 211, 238, 0.30),
+                            0 10px 24px rgba(0,0,0,0.45);
+                        filter: drop-shadow(0 0 10px rgba(34, 211, 238, 0.34));
                     }
                     [data-theme='dark'] .hero-light-effect {
                         mix-blend-mode: soft-light;
@@ -345,6 +442,13 @@ const PhanGioiThieu: React.FC = () => {
 
                              {/* Khu vực trình diễn chó mèo động */}
                             <div style={{ position: "relative", width: "100%", height: "100%", overflow: "visible" }}>
+                                <div className="banner-sync-text" style={{ ...getBannerTextStyle(dogBannerText), animation: 'bannerTextCrossFade 10s infinite' }}>
+                                    {dogBannerText}
+                                </div>
+                                <div className="banner-sync-text" style={{ ...getBannerTextStyle(catBannerText), animation: 'bannerTextCrossFadeReverse 10s infinite' }}>
+                                    {catBannerText}
+                                </div>
+
                                 {/* VIDEO CHÓ VẪY TAY CHÀO */}
                                 <div style={{
                                     position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
@@ -356,6 +460,7 @@ const PhanGioiThieu: React.FC = () => {
                                         isDark={isDark} 
                                         isCat={false}
                                         variant="banner-dog"
+                                        onVideoTime={handleDogVideoTime}
                                         style={{
                                             width: '170%', height: '170%', objectFit: 'contain',
                                             position: 'absolute', bottom: '-7%', left: '50%', transform: 'translateX(-50%)',
@@ -379,6 +484,7 @@ const PhanGioiThieu: React.FC = () => {
                                         isDark={isDark} 
                                         isCat={true}
                                         variant="banner-cat"
+                                        onVideoTime={handleCatVideoTime}
                                         style={{
                                             width: '170%', height: '170%', objectFit: 'contain',
                                             position: 'absolute', bottom: '-3%', left: '50%', transform: 'translateX(-50%)',

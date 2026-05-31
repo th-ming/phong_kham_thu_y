@@ -62,27 +62,41 @@ test.describe('Kiểm thử luồng Đăng nhập và Đăng ký hệ thống', 
 
     // --- PHẦN 2: CHỨC NĂNG ĐĂNG KÝ ---
 
-    test('TC04: Luồng đăng ký tài khoản khách hàng mới', async ({ page }) => {
+    test('TC04: Luồng đăng ký tài khoản khách hàng mới lần đầu có năm sinh', async ({ page }) => {
         // Chuyển sang form đăng ký
         await page.getByText('Đăng ký ngay').click();
 
         // Tạo mã định danh duy nhất dựa trên thời gian thực
         const ts = Date.now();
+        const username = `user_${ts}`;
+        const password = 'Rexi@2026';
 
         await page.getByPlaceholder('Họ và tên').fill('Automation Tester');
         await page.getByPlaceholder('Email').fill(`tester_${ts}@rexi.com`);
         // SỬA LỖI: Tạo sđt ảo ngẫu nhiên để tránh lỗi 409 trùng lặp khách hàng
         await page.getByPlaceholder('Số điện thoại').fill(`09${ts.toString().slice(-8)}`);
         await page.getByPlaceholder('Địa chỉ').fill('123 Testing St, Hanoi');
-        await page.getByPlaceholder('Tên đăng nhập').fill(`user_${ts}`);
-        await page.getByPlaceholder('Mật khẩu', { exact: true }).fill('Rexi@2026');
-        await page.getByPlaceholder('Xác nhận mật khẩu').fill('Rexi@2026');
+        await page.getByPlaceholder('Năm sinh').fill('1999');
+        await page.getByRole('button', { name: /Tiếp theo/ }).click();
+
+        await page.getByPlaceholder('Tên đăng nhập').fill(username);
+        await page.getByPlaceholder('Mật khẩu', { exact: true }).fill(password);
+        await page.getByPlaceholder('Xác nhận mật khẩu').fill(password);
 
         await page.getByRole('button', { name: 'Đăng ký' }).click();
 
         // Kiểm tra thông báo thành công và chuyển hướng form
         await expect(page.getByText('Đăng ký thành công!')).toBeVisible({ timeout: 7000 });
         await expect(page.getByRole('button', { name: 'Đăng nhập ngay' })).toBeVisible();
+
+        await page.getByPlaceholder('Tên đăng nhập').fill(username);
+        await page.getByPlaceholder('Mật khẩu').fill(password);
+        await page.getByRole('button', { name: 'Đăng nhập ngay' }).click();
+        await expect(page).toHaveURL(/.*\/khach-hang\/dashboard/, { timeout: 10000 });
+        await expect(page.getByText('Cho Rexi biết năm sinh của bạn')).toHaveCount(0);
+
+        const savedUser = await page.evaluate(() => JSON.parse(localStorage.getItem('user') || '{}'));
+        expect(Number(savedUser.nam_sinh)).toBe(1999);
     });
 
     // --- PHẦN 3: CHỨC NĂNG QUÊN MẬT KHẨU ---

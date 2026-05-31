@@ -370,6 +370,7 @@ const DashboardQuanLy: React.FC = () => {
         {stats.map((item, i) => (
           <div key={i} className="glass-card hover-lift kpi-card" style={{ padding: '32px', borderRadius: '32px', border: `1px solid ${item.color}25`, background: `linear-gradient(135deg, ${item.color}15 0%, var(--surface) 100%)`, minHeight: '190px' }}>
             <button
+              data-ai-id={`button-dashboardquanly-kpi-trend-${i}`}
               type="button"
               className={`kpi-trend-badge ${item.trend.tone}`}
               aria-label={`Chi tiết tăng trưởng ${item.label}`}

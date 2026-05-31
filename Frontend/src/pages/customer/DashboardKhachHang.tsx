@@ -6,6 +6,7 @@ import { Modal, Skeleton } from "@components/CommonUI";
 import { getUserProfile } from "@utils/index";
 import { useAutoRefresh } from "@hooks/useAutoRefresh";
 import { toast } from "@components/Toast";
+import { useLiveUserProfile } from "@hooks/useLiveUserProfile";
 
 const formatTienVND = (tien: number) => {
   return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(tien);
@@ -24,6 +25,15 @@ const PET_CARE_TIPS = [
 
 const isPetActive = (pet: any) => pet?.da_xoa !== true && pet?.daXoa !== true;
 const AUTO_REFRESH_MS = 10_000;
+const layBieuTuongThuCung = (loai?: string) => {
+  const normalized = (loai || "").toLowerCase();
+  if (normalized.includes("mèo") || normalized.includes("meo") || normalized.includes("cat")) return "🐱";
+  if (normalized.includes("chó") || normalized.includes("cho") || normalized.includes("dog")) return "🐶";
+  if (normalized.includes("hamster") || normalized.includes("chuột") || normalized.includes("chuot") || normalized.includes("mouse")) return "🐹";
+  if (normalized.includes("thỏ") || normalized.includes("tho") || normalized.includes("rabbit")) return "🐰";
+  if (normalized.includes("chim") || normalized.includes("bird")) return "🐦";
+  return "🐾";
+};
 const hasValidBirthYear = (value: any) => {
   if (value === undefined || value === null || value === "") return false;
   const year = Number(value);
@@ -33,6 +43,7 @@ const hasValidBirthYear = (value: any) => {
 
 const DashboardKhachHang: React.FC = () => {
   const navigate = useNavigate();
+  const liveUser = useLiveUserProfile();
   const [pets, setPets] = useState<any[]>([]);
   const [upcoming, setUpcoming] = useState<any[]>([]);
   const [allAppointments, setAllAppointments] = useState<any[]>([]);
@@ -45,10 +56,8 @@ const DashboardKhachHang: React.FC = () => {
   const [petRowsForTrend, setPetRowsForTrend] = useState<any[]>([]);
 
   // Các state cho Modal hỏi năm sinh tự động kích hoạt
-  const [showAgeModal, setShowAgeModal] = useState(() => {
-    const cachedUser = getUserProfile();
-    return !hasValidBirthYear(cachedUser?.nam_sinh);
-  });
+  // CustomerLayout là nơi chặn onboarding năm sinh để tránh hai modal đè nhau trên dashboard.
+  const [showAgeModal, setShowAgeModal] = useState(false);
   const [inputNamSinh, setInputNamSinh] = useState("");
   const [savingAge, setSavingAge] = useState(false);
   const [ageError, setAgeError] = useState("");
@@ -96,7 +105,7 @@ const DashboardKhachHang: React.FC = () => {
 
   const randomTip = useMemo(() => PET_CARE_TIPS[Math.floor(Math.random() * PET_CARE_TIPS.length)], []);
 
-  const user = getUserProfile();
+  const user = liveUser || getUserProfile();
   const userName = user?.display_name || user?.displayName || user?.ho_ten || user?.hoTen || user?.fullName || user?.ten_khach_hang || user?.ten_dang_nhap || user?.username || "Sen";
   const userAvatar = user?.hinh_anh || user?.avatar || "";
   const userInitial = String(userName).replace(/^\d+\.\s*/, '').trim().charAt(0).toUpperCase() || "S";
@@ -618,6 +627,7 @@ const DashboardKhachHang: React.FC = () => {
           <div key={i} className="glass-card hover-lift kpi-card" style={{ padding: '32px', borderRadius: '32px', border: `1px solid ${item.color}25`, background: `linear-gradient(135deg, ${item.color}15 0%, var(--surface) 100%)`, minHeight: '190px' }}>
             {item.trendData && (
               <button
+                data-ai-id={`button-dashboardkhachhang-kpi-trend-${i}`}
                 type="button"
                 className={`kpi-trend-badge ${item.trendData.tone}`}
                 aria-label={`Chi tiết ${item.label}`}
@@ -680,7 +690,7 @@ const DashboardKhachHang: React.FC = () => {
               }
             `}</style>
             {pets.map(p => {
-              const avatarChar = p.loai?.toLowerCase().includes("mèo") ? "🐱" : p.loai?.toLowerCase().includes("chó") ? "🐶" : "🐰";
+              const avatarChar = layBieuTuongThuCung(p.loai);
               return (
                 <div key={p.id_thu_cung} className="pet-insta-card" onClick={() => navigate('/khach-hang/quan-ly-thu-cung')}>
                   <div style={{ 
@@ -698,10 +708,20 @@ const DashboardKhachHang: React.FC = () => {
                     border: '2px solid var(--gray-100)'
                   }}>
                     {p.hinh_anh ? (
-                      <img src={p.hinh_anh} alt={p.ten_thu_cung} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <img
+                        src={p.hinh_anh}
+                        alt={p.ten_thu_cung}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                          const fallback = e.currentTarget.nextElementSibling as HTMLElement | null;
+                          if (fallback) fallback.style.display = 'inline';
+                        }}
+                      />
                     ) : (
-                      avatarChar
+                      null
                     )}
+                    <span style={{ display: p.hinh_anh ? 'none' : 'inline' }}>{avatarChar}</span>
                   </div>
                   <div style={{ fontWeight: 900, color: 'var(--ink)', fontSize: '0.95rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.ten_thu_cung}</div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--gray-400)', fontWeight: 800, marginTop: '4px' }}>{p.giong || p.loai}</div>
@@ -905,6 +925,7 @@ const DashboardKhachHang: React.FC = () => {
             <form onSubmit={handleSaveAge} style={{ display: 'grid', gap: '24px' }}>
               <div style={{ position: 'relative' }}>
                 <input
+                  data-ai-id="input-dashboardkhachhang-namsinh"
                   type="number"
                   placeholder="Nhập năm sinh của bạn (Ví dụ: 1999)"
                   value={inputNamSinh}
@@ -971,6 +992,7 @@ const DashboardKhachHang: React.FC = () => {
               )}
 
               <button
+                data-ai-id="button-dashboardkhachhang-save-namsinh"
                 type="submit"
                 disabled={savingAge || !inputNamSinh}
                 className="btn btn-primary"

@@ -343,6 +343,7 @@ const QuanLyNhanVienPhanQuyen: React.FC = () => {
               <div style={{ display: 'grid', gap: '14px', padding: '16px', border: '1px solid var(--gray-200)', borderRadius: '18px', background: 'var(--surface)' }}>
                 <label htmlFor="tao_tai_khoan" style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.85rem', fontWeight: 900, color: 'var(--ink)', cursor: 'pointer' }}>
                   <input
+                    data-ai-id="input-quanlynhanvienphanquyen-tao-taikhoan"
                     id="tao_tai_khoan"
                     type="checkbox"
                     checked={formData.tao_tai_khoan}
@@ -357,6 +358,7 @@ const QuanLyNhanVienPhanQuyen: React.FC = () => {
                     <div style={{ display: 'grid', gap: '8px' }}>
                       <label htmlFor="ten_dang_nhap" style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)' }}>TÊN ĐĂNG NHẬP</label>
                       <input
+                        data-ai-id="input-quanlynhanvienphanquyen-ten-dang-nhap-moi"
                         id="ten_dang_nhap"
                         required={formData.tao_tai_khoan}
                         className="btn"
@@ -440,11 +442,11 @@ const QuanLyNhanVienPhanQuyen: React.FC = () => {
         <form onSubmit={handleSaveAccount} style={{ display: 'grid', gap: '18px' }}>
           <div style={{ display: 'grid', gap: '8px' }}>
             <label htmlFor="account_username" style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)' }}>TÊN ĐĂNG NHẬP</label>
-            <input id="account_username" required className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left', cursor: 'text' }} value={accountForm.ten_dang_nhap} onChange={e => setAccountForm({ ...accountForm, ten_dang_nhap: e.target.value })} />
+            <input data-ai-id="input-quanlynhanvienphanquyen-account-username" id="account_username" required className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left', cursor: 'text' }} value={accountForm.ten_dang_nhap} onChange={e => setAccountForm({ ...accountForm, ten_dang_nhap: e.target.value })} />
           </div>
           <div style={{ display: 'grid', gap: '8px' }}>
             <label htmlFor="account_nhan_vien" style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)' }}>LIÊN KẾT NHÂN VIÊN</label>
-            <select id="account_nhan_vien" className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left' }} value={accountForm.id_nhan_vien} onChange={e => setAccountForm({ ...accountForm, id_nhan_vien: e.target.value })}>
+            <select data-ai-id="select-quanlynhanvienphanquyen-account-nhanvien" id="account_nhan_vien" className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left' }} value={accountForm.id_nhan_vien} onChange={e => setAccountForm({ ...accountForm, id_nhan_vien: e.target.value })}>
               <option value="">-- Không liên kết (Tài khoản độc lập) --</option>
               {nhanViens.map(nv => (
                 <option key={nv.id_nhan_vien} value={nv.id_nhan_vien}>
@@ -456,7 +458,7 @@ const QuanLyNhanVienPhanQuyen: React.FC = () => {
           <div className="responsive-grid-2">
             <div style={{ display: 'grid', gap: '8px' }}>
               <label htmlFor="account_role" style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)' }}>VAI TRÒ</label>
-              <select id="account_role" className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left' }} value={accountForm.id_vai_tro} onChange={e => setAccountForm({ ...accountForm, id_vai_tro: e.target.value })}>
+              <select data-ai-id="select-quanlynhanvienphanquyen-account-role" id="account_role" className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left' }} value={accountForm.id_vai_tro} onChange={e => setAccountForm({ ...accountForm, id_vai_tro: e.target.value })}>
                 <option value="VT-ADMIN">Admin</option>
                 <option value="VT-QL">Quản lý</option>
                 <option value="VT-BS">Bác sĩ</option>
@@ -468,7 +470,7 @@ const QuanLyNhanVienPhanQuyen: React.FC = () => {
             </div>
             <div style={{ display: 'grid', gap: '8px' }}>
               <label htmlFor="account_status" style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)' }}>TRẠNG THÁI</label>
-              <select id="account_status" className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left' }} value={accountForm.trang_thai} onChange={e => setAccountForm({ ...accountForm, trang_thai: e.target.value })}>
+              <select data-ai-id="select-quanlynhanvienphanquyen-account-status" id="account_status" className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left' }} value={accountForm.trang_thai} onChange={e => setAccountForm({ ...accountForm, trang_thai: e.target.value })}>
                 <option value="active">Hoạt động</option>
                 <option value="inactive">Khóa</option>
               </select>
@@ -477,15 +479,15 @@ const QuanLyNhanVienPhanQuyen: React.FC = () => {
           <div style={{ display: 'grid', gap: '8px' }}>
             <label htmlFor="account_password" style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)' }}>MẬT KHẨU MỚI</label>
             <div style={{ position: 'relative' }}>
-              <input id="account_password" type={showAccountPassword ? "text" : "password"} placeholder="Bỏ trống nếu không đổi" className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left', cursor: 'text', width: '100%', paddingRight: '45px' }} value={accountForm.mat_khau} onChange={e => setAccountForm({ ...accountForm, mat_khau: e.target.value })} />
+              <input data-ai-id="input-quanlynhanvienphanquyen-account-password" id="account_password" type={showAccountPassword ? "text" : "password"} placeholder="Bỏ trống nếu không đổi" className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left', cursor: 'text', width: '100%', paddingRight: '45px' }} value={accountForm.mat_khau} onChange={e => setAccountForm({ ...accountForm, mat_khau: e.target.value })} />
               <span className="material-symbols-outlined" onClick={() => setShowAccountPassword(!showAccountPassword)} style={{ position: 'absolute', right: '15px', top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', color: 'var(--gray-400)', userSelect: 'none', fontSize: '20px' }}>
                 {showAccountPassword ? 'visibility_off' : 'visibility'}
               </span>
             </div>
           </div>
           <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
-            <button type="submit" className="btn btn-primary btn-pill" style={{ flex: 1, fontWeight: 900 }}>LƯU TÀI KHOẢN</button>
-            <button type="button" onClick={() => setShowAccountModal(false)} className="btn btn-pill" style={{ flex: 1, background: 'var(--gray-100)', color: 'var(--ink)', fontWeight: 800 }}>HỦY</button>
+            <button data-ai-id="button-quanlynhanvienphanquyen-account-save" type="submit" className="btn btn-primary btn-pill" style={{ flex: 1, fontWeight: 900 }}>LƯU TÀI KHOẢN</button>
+            <button data-ai-id="button-quanlynhanvienphanquyen-account-cancel" type="button" onClick={() => setShowAccountModal(false)} className="btn btn-pill" style={{ flex: 1, background: 'var(--gray-100)', color: 'var(--ink)', fontWeight: 800 }}>HỦY</button>
           </div>
         </form>
       </Modal>
@@ -540,7 +542,7 @@ const QuanLyNhanVienPhanQuyen: React.FC = () => {
                   {canManageStaff ? (
                     <div style={{ display: 'flex', gap: '8px' }}>
                       {b.da_xoa ? (
-                        <button className="btn btn-pill" onClick={() => handleRestore(b.id_nhan_vien)} style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#16a34a', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 800 }}>
+                        <button data-ai-id={`button-quanlynhanvienphanquyen-restore-${b.id_nhan_vien}`} className="btn btn-pill" onClick={() => handleRestore(b.id_nhan_vien)} style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#16a34a', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 800 }}>
                           <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>restore</span>
                           Mở lại
                         </button>
@@ -581,6 +583,7 @@ const QuanLyNhanVienPhanQuyen: React.FC = () => {
               <div className="glass-card" style={{ display: 'flex', alignItems: 'center', padding: '0 14px', borderRadius: '16px', border: '1px solid var(--gray-200)', background: 'var(--surface)', width: '320px' }}>
                 <span className="material-symbols-outlined" style={{ color: 'var(--gray-400)', marginRight: '8px' }}>search</span>
                 <input
+                  data-ai-id="input-quanlynhanvienphanquyen-account-search"
                   type="text"
                   placeholder="Tìm tài khoản, tên, email, SĐT..."
                   value={searchAccount}
@@ -588,7 +591,7 @@ const QuanLyNhanVienPhanQuyen: React.FC = () => {
                   style={{ border: 'none', outline: 'none', background: 'transparent', padding: '10px 0', fontWeight: 600, width: '100%', color: 'var(--ink)', fontSize: '0.9rem' }}
                 />
               </div>
-              <button className="btn btn-pill" onClick={fetchAccounts} style={{ background: 'var(--gray-50)', fontWeight: 800 }}>
+              <button data-ai-id="button-quanlynhanvienphanquyen-account-refresh" className="btn btn-pill" onClick={fetchAccounts} style={{ background: 'var(--gray-50)', fontWeight: 800 }}>
                 <span className="material-symbols-outlined">refresh</span>
                 Tải lại
               </button>
@@ -636,11 +639,11 @@ const QuanLyNhanVienPhanQuyen: React.FC = () => {
                   </td>
                   <td style={{ padding: '18px 20px' }}>
                     <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                      <button className="btn btn-pill" onClick={() => handleOpenAccountEdit(account)} style={{ background: 'var(--gray-50)', padding: '8px 14px', fontSize: '0.8rem', fontWeight: 800 }}>
+                      <button data-ai-id={`button-quanlynhanvienphanquyen-account-edit-${account.id_tai_khoan}`} className="btn btn-pill" onClick={() => handleOpenAccountEdit(account)} style={{ background: 'var(--gray-50)', padding: '8px 14px', fontSize: '0.8rem', fontWeight: 800 }}>
                         <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>manage_accounts</span>
                         Sửa
                       </button>
-                      <button className="btn btn-pill" onClick={() => handleResetPassword(account)} style={{ background: 'var(--primary-light)', color: 'var(--primary)', padding: '8px 14px', fontSize: '0.8rem', fontWeight: 800 }}>
+                      <button data-ai-id={`button-quanlynhanvienphanquyen-account-reset-${account.id_tai_khoan}`} className="btn btn-pill" onClick={() => handleResetPassword(account)} style={{ background: 'var(--primary-light)', color: 'var(--primary)', padding: '8px 14px', fontSize: '0.8rem', fontWeight: 800 }}>
                         <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>key</span>
                         Reset MK
                       </button>

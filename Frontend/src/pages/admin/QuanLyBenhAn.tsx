@@ -190,6 +190,7 @@ const QuanLyBenhAn: React.FC = () => {
                         </span>
                     </div>
                     <input
+                        data-ai-id="input-quanlybenhan-appointment-search"
                         className="form-input"
                         value={appointmentSearch}
                         onChange={e => setAppointmentSearch(e.target.value)}

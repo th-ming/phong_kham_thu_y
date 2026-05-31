@@ -16,6 +16,9 @@ node_modules/
 /logs/
 /Backend/logs/
 *.log
+hs_err_pid*.log
+replay_pid*.log
+nul
 npm-debug.log*
 yarn-error.log*
 
@@ -27,6 +30,7 @@ PKTY_Temp.sql
 
 # 4. Thư mục nháp, Thư mục rác của Dev & AI Agent
 /scratch/
+**/scratch/
 /brain/
 /.agent/
 scratch*.py
@@ -51,8 +55,8 @@ Thumbs.db
 artifacts/
 video_out/
 test-results/
+**/test-results/
 
 # 8. Tài nguyên Lưu trữ (Archived Resources)
 Archived_Resources/
-
 

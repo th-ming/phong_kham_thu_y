@@ -15,7 +15,7 @@ import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
-/** BỘ LỌC KIỂM SOÁT JWT TOKEN — đọc cookie trước, fallback sang Bearer header */
+/** LỌC KIỂM SOÁT JWT TOKEN — đọc cookie trước, fallback sang Bearer header */
 @Component
 public class JwtFilter extends OncePerRequestFilter {
 
@@ -35,7 +35,7 @@ public class JwtFilter extends OncePerRequestFilter {
     private static final long REVOKED_CACHE_TTL_MS = 30 * 60 * 1000L; // 30 phút
 
     /**
-     * Đánh dấu token là revoked. Gọi từ AuthController khi đổi mật khẩu / khóa tài khoản.
+       Đánh dấu token là revoked. Gọi từ AuthController khi đổi mật khẩu / khóa tài khoản.
      */
     public static void revokeToken(String token) {
         revokedTokens.put(token, System.currentTimeMillis());
@@ -47,7 +47,7 @@ public class JwtFilter extends OncePerRequestFilter {
 
         String jwt = null;
 
-        // Ưu tiên đọc token từ httpOnly cookie (bảo mật hơn)
+        // Ưu tiên đọc token từ httpOnly cookie 
         jwt = cookieUtil.getAccessTokenFromCookie(request);
 
         // Fallback: đọc từ Authorization header (backward-compatible cho mobile/API client)
@@ -71,7 +71,7 @@ public class JwtFilter extends OncePerRequestFilter {
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             if (jwtUtil.validateToken(jwt, username)) {
 
-                // Kiểm tra token có bị revoked (đổi mật khẩu, khóa tài khoản) không
+                // Kiểm tra token có bị revoked (đổi mật khẩu, khóa tk) ko
                 if (isTokenRevoked(jwt)) {
                     logger.warning("Token đã bị thu hồi cho: " + username);
                     chain.doFilter(request, response);

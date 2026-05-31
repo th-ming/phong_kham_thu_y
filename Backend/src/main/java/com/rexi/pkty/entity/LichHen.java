@@ -26,6 +26,7 @@ public class LichHen {
     private String id_dich_vu; // id dich vu khám
     private String id_nguoi_dat;
     private String phong_kham;
+    @Transient
     private String ghi_chu;
     private String ghi_chu_noi_bo;
     private LocalDateTime ngay_tao;

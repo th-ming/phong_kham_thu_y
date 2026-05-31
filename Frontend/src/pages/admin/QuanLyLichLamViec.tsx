@@ -542,6 +542,28 @@ const QuanLyLichLamViec: React.FC = () => {
                     background: rgba(20, 184, 166, 0.45);
                     border-radius: 999px;
                 }
+                .staff-hours-rail {
+                    display: flex;
+                    gap: 10px;
+                    max-width: 100%;
+                    overflow-x: auto;
+                    overflow-y: hidden;
+                    padding: 2px 2px 10px;
+                    scrollbar-gutter: stable;
+                    scroll-snap-type: x proximity;
+                }
+                .staff-hours-rail::-webkit-scrollbar {
+                    height: 8px;
+                }
+                .staff-hours-rail::-webkit-scrollbar-thumb {
+                    background: rgba(13, 148, 136, 0.24);
+                    border-radius: 999px;
+                }
+                .staff-hours-chip {
+                    flex: 0 0 auto;
+                    max-width: 260px;
+                    scroll-snap-align: start;
+                }
             `}</style>
             <main style={{ flex: 1, padding: '32px 40px', overflowY: 'auto' }}>
                 <RevealSection>
@@ -685,13 +707,13 @@ const QuanLyLichLamViec: React.FC = () => {
                     </div>
 
                     {isAdmin && (
-                            <div className="no-print" style={{ minHeight: '74px', marginBottom: '24px', animation: isAllStaffView ? 'fadeInUp 0.4s ease-out' : 'none', ...hiddenWhenPersonal }}>
+                            <div className="no-print" style={{ minHeight: '58px', marginBottom: '14px', animation: isAllStaffView ? 'fadeInUp 0.4s ease-out' : 'none', ...hiddenWhenPersonal }}>
                                 <div style={{ fontSize: '0.8rem', fontWeight: 900, color: 'var(--gray-500)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                                     ⏱️ THỐNG KÊ GIỜ LÀM TRONG TUẦN
                                 </div>
-                                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                                <div className="staff-hours-rail">
                                     {staffWorkingHours.map((staff, idx) => (
-                                        <div key={idx} style={{
+                                        <div key={idx} className="staff-hours-chip" style={{
                                             background: staff.hours > 48 ? 'var(--danger-light, rgba(239, 68, 68, 0.15))' : 'var(--surface)',
                                             border: staff.hours > 48 ? '1px dashed var(--danger)' : '1px solid var(--gray-200)',
                                             padding: '8px 16px',
@@ -702,12 +724,13 @@ const QuanLyLichLamViec: React.FC = () => {
                                             alignItems: 'center',
                                             gap: '6px',
                                             color: staff.hours > 48 ? 'var(--danger)' : 'var(--ink)',
-                                            boxShadow: 'var(--shadow-sm)'
+                                            boxShadow: 'var(--shadow-sm)',
+                                            whiteSpace: 'nowrap'
                                         }}>
                                             <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
                                                 {staff.hours > 48 ? 'warning' : 'account_circle'}
                                             </span>
-                                            {staff.ho_ten}: <span style={{ fontWeight: 900, fontSize: '0.9rem' }}>{staff.hours} giờ</span>
+                                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{staff.ho_ten}: <span style={{ fontWeight: 900, fontSize: '0.9rem' }}>{staff.hours} giờ</span></span>
                                             {isAdmin && (
                                                 <button data-ai-id="button-quanlylichlamviec-rjkj"
                                                     onClick={() => handleCopyScheduleToNextWeek(staff.id_nhan_vien)}
@@ -922,6 +945,7 @@ const QuanLyLichLamViec: React.FC = () => {
                             {isAllStaffView ? (
                                 <div data-ai-id="select-quanlylichlamviec-atmu" onClick={(e) => e.stopPropagation()} style={{ position: 'relative' }}>
                                     <button
+                                        data-ai-id="button-quanlylichlamviec-staff-picker"
                                         type="button"
                                         onClick={() => setStaffPickerOpen(v => !v)}
                                         style={{
@@ -973,6 +997,7 @@ const QuanLyLichLamViec: React.FC = () => {
                                                         const active = String(selectedStaffId) === String(s.id_nhan_vien);
                                                         return (
                                                             <button
+                                                                data-ai-id={`button-quanlylichlamviec-staff-option-${s.id_nhan_vien}`}
                                                                 key={s.id_nhan_vien}
                                                                 type="button"
                                                                 onClick={() => {
@@ -1077,6 +1102,7 @@ const QuanLyLichLamViec: React.FC = () => {
                         </p>
                         <div style={{ display: 'flex', gap: '12px' }}>
                             <button
+                                data-ai-id="button-quanlylichlamviec-confirm-cancel"
                                 className="btn btn-outline btn-pill"
                                 style={{ flex: 1 }}
                                 onClick={() => setConfirmDialog(prev => ({ ...prev, open: false }))}
@@ -1084,6 +1110,7 @@ const QuanLyLichLamViec: React.FC = () => {
                                 Hủy bỏ
                             </button>
                             <button
+                                data-ai-id="button-quanlylichlamviec-confirm-ok"
                                 className="btn btn-primary btn-pill"
                                 style={{ flex: 1, fontWeight: 900 }}
                                 onClick={confirmDialog.onConfirm}

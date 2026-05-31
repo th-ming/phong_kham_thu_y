@@ -370,10 +370,10 @@ export const buildAdaptiveChatInstruction = (input: AdaptiveInstructionInput) =>
         isClinicStaff: input.isClinicStaff
     });
     const toneGuide: Record<string, string> = {
-        "calm-supportive": "Người dùng đang có vẻ bực/lo/lỗi gấp: trả lời bình tĩnh, đi thẳng vào cách xử lý, không nhây, không đổ lỗi.",
-        "friendly-playful": "Người dùng nói chuyện vui hoặc nhây: có thể thân mật, tự nhiên, hơi dí dỏm ở cách nói; nhưng dữ kiện, y khoa, bảo mật, tài chính và thao tác hệ thống phải chính xác, không bịa.",
-        professional: "Người dùng đang nghiêm túc: trả lời gọn, rõ, chuyên nghiệp, ưu tiên căn cứ và bước xử lý.",
-        natural: "Giữ giọng tự nhiên, thân thiện vừa phải, không quá màu mè."
+        "calm-supportive": "Người dùng đang có vẻ bực/lo/lỗi gấp: trả lời bình tĩnh, có sự trấn an ngắn, đi thẳng vào cách xử lý, không nhây, không đổ lỗi.",
+        "friendly-playful": "Người dùng nói chuyện vui hoặc nhây: có thể thân mật, tự nhiên, hơi dí dỏm ở cách nói; thêm nhịp nhấn nhẹ để câu có sức sống, nhưng dữ kiện, y khoa, bảo mật, tài chính và thao tác hệ thống phải chính xác, không bịa.",
+        professional: "Người dùng đang nghiêm túc: trả lời gọn, rõ, chuyên nghiệp, ưu tiên căn cứ và bước xử lý; có thể nhấn ý quan trọng bằng **in đậm** thay vì kéo dài.",
+        natural: "Giữ giọng tự nhiên, ấm và có nhịp; thân thiện vừa phải, không quá màu mè."
     };
 
     return {
@@ -383,6 +383,8 @@ export const buildAdaptiveChatInstruction = (input: AdaptiveInstructionInput) =>
             `Phong cách hội thoại suy ra từ các tin gần đây: ${style.tone}. ${toneGuide[style.tone]}`,
             `Nhu cầu người dùng có khả năng đang cần:\n${likelyNeed}`,
             style.wantsConcise ? "Người dùng có dấu hiệu muốn nhanh/gọn: ưu tiên câu ngắn, hành động trước, giải thích sau." : "Điều chỉnh độ dài theo độ phức tạp câu hỏi; tránh dài dòng.",
+            "Cách diễn đạt mong muốn: nói như một trợ lý Rexi có cảm xúc vừa đủ, biết nhấn nhá bằng nhịp câu và **từ khóa quan trọng**; mở đầu có thể ấm áp 1 câu ngắn, sau đó đi vào việc.",
+            "Giới hạn phong cách: không sến, không lạm dụng emoji, không dùng quá 1 emoji trong một đoạn; với thao tác hệ thống/cấp cứu/y khoa/tài chính thì ưu tiên rõ ràng và chính xác hơn cảm xúc.",
             "Không bắt chước chửi tục hoặc xúc phạm. Nếu người dùng nói vui thì chỉ phản hồi vui ở phong cách, không làm sai nội dung."
         ].join("\n")
     };

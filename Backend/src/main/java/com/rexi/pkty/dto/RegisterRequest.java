@@ -30,6 +30,7 @@ public class RegisterRequest {
     @Size(max = 200, message = "Địa chỉ không quá 200 ký tự")
     private String dia_chi;
 
-    // Nam sinh KHACH_HANG de phan loai GenZ vs Mature
+    // Nam sinh KHACH_HANG de ca nhan hoa trai nghiem ngay tu lan dang nhap dau tien
+    @Min(value = 1900, message = "Năm sinh phải từ 1900 trở lên")
     private Integer nam_sinh;
 }

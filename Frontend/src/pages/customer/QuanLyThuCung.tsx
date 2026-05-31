@@ -28,6 +28,16 @@ const tinhTuoi = (ngaySinh: string) => {
 const isPetActive = (pet: any) => pet?.da_xoa !== true && pet?.daXoa !== true;
 const AUTO_REFRESH_MS = 10_000;
 
+const layBieuTuongThuCung = (loai?: string) => {
+  const normalized = (loai || "").toLowerCase();
+  if (normalized.includes("mèo") || normalized.includes("meo") || normalized.includes("cat")) return "🐱";
+  if (normalized.includes("chó") || normalized.includes("cho") || normalized.includes("dog")) return "🐶";
+  if (normalized.includes("hamster") || normalized.includes("chuột") || normalized.includes("chuot") || normalized.includes("mouse")) return "🐹";
+  if (normalized.includes("thỏ") || normalized.includes("tho") || normalized.includes("rabbit")) return "🐰";
+  if (normalized.includes("chim") || normalized.includes("bird")) return "🐦";
+  return "🐾";
+};
+
 const QuanLyThuCung: React.FC = () => {
   const [thuCung, setThuCung] = useState<any[]>([]);
   const [lichHen, setLichHen] = useState<any[]>([]);
@@ -456,12 +466,22 @@ const QuanLyThuCung: React.FC = () => {
                     border: '2px solid var(--gray-100)'
                   }}>
                     {pet.hinh_anh ? (
-                      <img src={pet.hinh_anh} alt={pet.ten_thu_cung} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <img
+                        src={pet.hinh_anh}
+                        alt={pet.ten_thu_cung}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                          const fallback = e.currentTarget.nextElementSibling as HTMLElement | null;
+                          if (fallback) fallback.style.display = 'inline';
+                        }}
+                      />
                     ) : (
-                      <span style={{ fontSize: '2rem' }}>
-                        {pet.loai?.toLowerCase().includes("mèo") ? "🐱" : pet.loai?.toLowerCase().includes("chó") ? "🐶" : "🐰"}
-                      </span>
+                      null
                     )}
+                    <span style={{ fontSize: '2rem', display: pet.hinh_anh ? 'none' : 'inline' }}>
+                      {layBieuTuongThuCung(pet.loai)}
+                    </span>
                   </div>
                   
                   {/* Icon máy ảnh đổi avatar nhanh */}
@@ -491,6 +511,7 @@ const QuanLyThuCung: React.FC = () => {
                     <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>photo_camera</span>
                   </label>
                   <input 
+                    data-ai-id={`input-quanlythucung-avatar-${pet.id_thu_cung}`}
                     type="file" 
                     id={`upload-avatar-${pet.id_thu_cung}`} 
                     accept="image/*" 
