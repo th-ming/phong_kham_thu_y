@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useMemo, useRef, useState, useEffect } from "react";
+import React, { useCallback, useMemo, useRef, useState, useEffect } from "react";
 import axiosInstance from "@services/axios";
 import { getUserProfile, matchesSearchFields } from "@utils/index";
 import { useAutoRefresh } from "@hooks/useAutoRefresh";
@@ -162,19 +162,20 @@ const HoSoBenhAn: React.FC = () => {
         </div>
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', position: 'relative', zIndex: 1 }}>
           <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+            <span className="material-symbols-outlined" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', zIndex: 2, color: '#475569', fontSize: '20px', pointerEvents: 'none' }}>search</span>
             <input data-ai-id="input-hosobenhan-1g80"
               type="text"
               className="btn"
               placeholder="Tìm bác sĩ, bé, chẩn đoán..."
               value={searchDoctor}
               onChange={(e) => setSearchDoctor(e.target.value)}
-              style={{ background: 'white', border: 'none', color: '#2563eb', fontWeight: 700, padding: '10px 36px 10px 16px', outline: 'none', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}
+              style={{ background: 'rgba(255,255,255,0.92)', border: '1px solid rgba(15, 23, 42, 0.08)', color: '#0f172a', fontWeight: 700, padding: '12px 38px 12px 46px', outline: 'none', borderRadius: '999px', boxShadow: '0 10px 24px rgba(15, 23, 42, 0.08)' }}
             />
             {searchDoctor && (
               <span
                 className="material-symbols-outlined"
                 onClick={() => setSearchDoctor("")}
-                style={{ position: 'absolute', right: '10px', cursor: 'pointer', color: 'var(--gray-400)', fontSize: '18px' }}
+                style={{ position: 'absolute', right: '12px', cursor: 'pointer', color: '#64748b', fontSize: '18px' }}
                 title="Xóa tìm kiếm"
               >
                 close
@@ -183,7 +184,7 @@ const HoSoBenhAn: React.FC = () => {
           </div>
           <select data-ai-id="select-hosobenhan-jt9q"
             className="btn"
-            style={{ background: 'white', border: 'none', color: '#2563eb', cursor: 'pointer', textAlign: 'left', fontWeight: 800, boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}
+            style={{ background: 'rgba(255,255,255,0.92)', border: '1px solid rgba(15, 23, 42, 0.08)', color: '#0f172a', cursor: 'pointer', textAlign: 'left', fontWeight: 800, borderRadius: '999px', boxShadow: '0 10px 24px rgba(15, 23, 42, 0.08)' }}
             value={petFilter}
             onChange={(e) => setPetFilter(e.target.value)}
           >

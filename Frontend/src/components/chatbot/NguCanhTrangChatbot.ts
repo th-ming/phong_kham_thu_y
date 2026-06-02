@@ -1,3 +1,22 @@
+export const isEmailLikeIdentifier = (value: string) =>
+    /^[^@\s]+@[^@\s]+\.[^@\s]+$/i.test(String(value || "").trim());
+
+/** Ưu tiên họ tên trong hồ sơ; không lấy email / tên đăng nhập dạng mail làm tên gọi. */
+export const resolveChatDisplayName = (user: any): string => {
+    const fromProfile = cleanDisplayName(user?.ten_khach_hang || user?.ho_ten || "");
+    if (fromProfile) return fromProfile;
+
+    const fromPage = readVisibleProfileNameFromPage();
+    if (fromPage) return fromPage;
+
+    const login = String(user?.ten_dang_nhap || "").trim();
+    if (login && !isEmailLikeIdentifier(login)) {
+        return cleanDisplayName(login);
+    }
+
+    return "";
+};
+
 export const cleanDisplayName = (name: string) => {
     const raw = String(name || "").replace(/^\d+\.\s*/, "").trim();
     if (!raw) return "";

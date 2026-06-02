@@ -65,6 +65,20 @@ const ThongTinCaNhan: React.FC = () => {
             };
             setData(profileData);
             setFormData(profileData);
+            const nextUser = {
+              ...user,
+              id_khach_hang: profileData.id_khach_hang || user.id_khach_hang,
+              id_nhan_vien: profileData.id_nhan_vien || user.id_nhan_vien,
+              ten_khach_hang: profileData.ten_khach_hang || profileData.ho_ten || user.ten_khach_hang,
+              ho_ten: profileData.ho_ten || profileData.ten_khach_hang || user.ho_ten,
+              email: profileData.email || user.email,
+              sdt: profileData.sdt || profileData.so_dien_thoai || user.sdt,
+              hinh_anh: profileData.hinh_anh || profileData.avatar || user.hinh_anh,
+              avatar: profileData.avatar || profileData.hinh_anh || user.avatar,
+              nam_sinh: profileData.nam_sinh !== undefined ? profileData.nam_sinh : user.nam_sinh,
+            };
+            localStorage.setItem("user", JSON.stringify(nextUser));
+            notifyUserProfileChanged(nextUser);
             // Đọc config nhận tin từ db lên, lỡ db lỗi trả về null thì cho mặc định bật hết (true).
             // Khúc này cực kỳ quan trọng để gửi email chúc mừng sinh nhật boss hoặc sms nhắc lịch khám nha.
             setEmailNoti(profileData.nhan_email ?? true);

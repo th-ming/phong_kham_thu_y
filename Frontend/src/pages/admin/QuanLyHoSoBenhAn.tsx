@@ -114,7 +114,13 @@ const QuanLyHoSoBenhAn: React.FC = () => {
             </tr>
           </thead>
           <tbody>
-            {currentRows.map((h) => (
+            {currentRows.length === 0 ? (
+              <tr>
+                <td colSpan={7} style={{ padding: '32px 20px', textAlign: 'center', color: 'var(--gray-500)', fontWeight: 700 }}>
+                  Không tìm thấy hồ sơ bệnh án phù hợp. Hãy thử xóa bộ lọc hoặc tìm kiếm khác.
+                </td>
+              </tr>
+            ) : currentRows.map((h) => (
               <tr key={h.id_ho_so} style={{ borderBottom: '1px solid var(--gray-50)', transition: 'all 0.2s' }}>
                 <td style={{ padding: '20px', fontWeight: 800, color: 'var(--gray-400)' }}>#HS-{h.id_ho_so}</td>
                 <td style={{ padding: '20px', fontWeight: 700 }}>{chuyenNgayISO_SangVN(h.ngay_kham)}</td>
@@ -143,7 +149,7 @@ const QuanLyHoSoBenhAn: React.FC = () => {
                   </span>
                 </td>
                 <td style={{ padding: '20px', textAlign: 'center' }}>
-                  <Link to={`/quan-ly/ho-so-benh-an/${h.id_ho_so}`} className="btn" style={{ padding: '8px', background: 'var(--primary-light)', color: 'var(--primary)', display: 'inline-flex' }}>
+                  <Link to={`/quan-ly/ho-so-benh-an/${h.id_ho_so}`} aria-label={`Xem hồ sơ bệnh án #${h.id_ho_so}`} title={`Xem hồ sơ bệnh án #${h.id_ho_so}`} className="btn" style={{ padding: '8px', background: 'var(--primary-light)', color: 'var(--primary)', display: 'inline-flex' }}>
                     <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>visibility</span>
                   </Link>
                 </td>

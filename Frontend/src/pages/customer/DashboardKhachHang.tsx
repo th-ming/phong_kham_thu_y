@@ -4,7 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import axiosInstance from "@services/axios";
 import { Modal, Skeleton } from "@components/CommonUI";
 import BirthYearSelect from "@components/BirthYearSelect";
-import { getUserProfile } from "@utils/index";
+import { decodeHtmlEntities, getUserProfile } from "@utils/index";
 import { customerToneCopy, isGenZBirthYear } from "@utils/customerTone";
 import { useAutoRefresh } from "@hooks/useAutoRefresh";
 import { toast } from "@components/Toast";
@@ -758,7 +758,7 @@ const DashboardKhachHang: React.FC = () => {
                       <span className="material-symbols-outlined">calendar_today</span>
                     </div>
                     <div>
-                      <p style={{ fontWeight: 850, color: 'var(--ink)', margin: 0 }}>{app.ly_do || 'Khám tổng quát'}</p>
+                      <p style={{ fontWeight: 850, color: 'var(--ink)', margin: 0 }}>{decodeHtmlEntities(app.ly_do || app.lyDo || 'Khám tổng quát')}</p>
                       <p style={{ fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 700, margin: '2px 0 0 0' }}>Dành cho: <b style={{ color: 'var(--primary)' }}>{pets.find(p => p.id_thu_cung === app.id_thu_cung)?.ten_thu_cung || 'Thú cưng'}</b></p>
                     </div>
                   </div>

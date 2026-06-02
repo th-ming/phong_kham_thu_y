@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 
 const PhanTienIch: React.FC = () => {
     const features = [
@@ -12,7 +12,7 @@ const PhanTienIch: React.FC = () => {
     return (
         <>
             <section className="premium-fluid-gradient" style={{
-                padding: "22px 0",
+                padding: "10px 0",
                 color: "white",
                 position: 'relative',
                 overflow: 'hidden'
@@ -23,55 +23,55 @@ const PhanTienIch: React.FC = () => {
                     transition: transform 0.3s ease; 
                     cursor: default; 
                     color: white !important; 
-                    background: rgba(255,255,255,0.15) !important; 
-                    backdrop-filter: blur(12px);
-                    -webkit-backdrop-filter: blur(12px);
-                    border: 1px solid rgba(255, 255, 255, 0.25) !important; 
-                    border-radius: 24px !important; 
-                    padding: 20px 18px !important; 
+                    background: rgba(255,255,255,0.12) !important; 
+                    backdrop-filter: blur(10px);
+                    -webkit-backdrop-filter: blur(10px);
+                    border: 1px solid rgba(255, 255, 255, 0.2) !important; 
+                    border-radius: 16px !important; 
+                    padding: 10px 14px !important; 
                 }
-                .feature-item:hover { transform: translateY(-4px); background: rgba(255,255,255,0.25) !important; box-shadow: 0 15px 35px rgba(0,0,0,0.1) !important; }
-                .feature-item:hover .feature-icon-box { background: rgba(255, 255, 255, 0.4) !important; border-color: rgba(255, 255, 255, 0.6) !important; transform: scale(1.05) rotate(-2deg) !important; }
+                .feature-item:hover { transform: translateY(-3px); background: rgba(255,255,255,0.2) !important; box-shadow: 0 10px 25px rgba(0,0,0,0.1) !important; }
+                .feature-item:hover .feature-icon-box { background: rgba(255, 255, 255, 0.35) !important; border-color: rgba(255, 255, 255, 0.5) !important; transform: scale(1.05) rotate(-2deg) !important; }
                 .feature-item h4, .feature-item p, .feature-item span { color: white !important; }
-                .feature-item p { opacity: 0.8 !important; margin-top: 6px !important; }
-                .feature-icon-box { background: rgba(255, 255, 255, 0.2) !important; border: 1px solid rgba(255, 255, 255, 0.3) !important; }
+                .feature-item p { opacity: 0.8 !important; margin-top: 2px !important; }
+                .feature-icon-box { background: rgba(255, 255, 255, 0.15) !important; border: 1px solid rgba(255, 255, 255, 0.25) !important; }
                 .feature-icon-box span { color: white !important; }
                 @media screen and (max-width: 1024px) {
                     .feature-divider { display: none !important; }
                 }
             `}</style>
                 {/* Shimmer overlay */}
-                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.04) 50%, transparent 100%)', pointerEvents: 'none' }} />
+                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.03) 50%, transparent 100%)', pointerEvents: 'none' }} />
                 <div className="container">
                     <div className="feature-grid">
                         {features.map((f, idx) => (
                             <div key={idx} className="feature-item" style={{
                                 display: "flex",
                                 alignItems: "center",
-                                gap: "14px",
+                                gap: "10px",
                                 position: 'relative'
                             }}>
                                 {idx < features.length - 1 && (
-                                    <div className="feature-divider" style={{ position: 'absolute', right: '-10px', top: '50%', transform: 'translateY(-50%)', width: '1px', height: '30px', background: 'rgba(255,255,255,0.15)' }} />
+                                    <div className="feature-divider" style={{ position: 'absolute', right: '-10px', top: '50%', transform: 'translateY(-50%)', width: '1px', height: '24px', background: 'rgba(255,255,255,0.15)' }} />
                                 )}
                                 <div className="feature-icon-box" style={{
-                                    width: "46px",
-                                    height: "46px",
-                                    borderRadius: "14px",
-                                    border: "1px solid rgba(255,255,255,0.25)",
+                                    width: "36px",
+                                    height: "36px",
+                                    borderRadius: "10px",
+                                    border: "1px solid rgba(255,255,255,0.2)",
                                     display: "flex",
                                     alignItems: "center",
                                     justifyContent: "center",
-                                    background: "rgba(255,255,255,0.12)",
-                                    backdropFilter: 'blur(8px)',
+                                    background: "rgba(255,255,255,0.1)",
+                                    backdropFilter: 'blur(6px)',
                                     transition: "all 0.3s ease",
                                     flexShrink: 0
                                 }}>
-                                    <span className="material-symbols-outlined" style={{ fontSize: "22px" }}>{f.icon}</span>
+                                    <span className="material-symbols-outlined" style={{ fontSize: "18px" }}>{f.icon}</span>
                                 </div>
                                 <div>
-                                    <h4 style={{ margin: 0, fontSize: "0.88rem", fontWeight: 900, letterSpacing: '-0.2px' }}>{f.title}</h4>
-                                    <p style={{ margin: 0, fontSize: "0.73rem", opacity: 0.75, fontWeight: 500, marginTop: '2px' }}>{f.desc}</p>
+                                    <h4 style={{ margin: 0, fontSize: "0.82rem", fontWeight: 850, letterSpacing: '-0.2px' }}>{f.title}</h4>
+                                    <p style={{ margin: 0, fontSize: "0.68rem", opacity: 0.75, fontWeight: 500, marginTop: '1px' }}>{f.desc}</p>
                                 </div>
                             </div>
                         ))}

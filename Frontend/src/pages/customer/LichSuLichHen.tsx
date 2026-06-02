@@ -1,7 +1,7 @@
 import React, { useCallback, useMemo, useRef, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axiosInstance from "@services/axios";
-import { getUserProfile } from "@utils/index";
+import { getUserProfile, decodeHtmlEntities } from "@utils/index";
 import { customerToneCopy, isGenZBirthYear } from "@utils/customerTone";
 import { toast } from "@components/Toast";
 import { useAutoRefresh } from "@hooks/useAutoRefresh";
@@ -59,7 +59,7 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({ item, thuCungs, onCan
             <span className="material-symbols-outlined" style={{ fontSize: '28px' }}>event_available</span>
           </div>
           <div>
-            <h3 style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--ink)', margin: 0 }}>{item.ly_do || "Khám định kỳ"}</h3>
+            <h3 style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--ink)', margin: 0 }}>{decodeHtmlEntities(item.ly_do || "Khám định kỳ")}</h3>
             <p style={{ color: 'var(--gray-400)', fontWeight: 700, margin: '2px 0', fontSize: '0.8rem' }}>
               Bệnh nhân: <b style={{ color: 'var(--ink)' }}>{getPetName(item, thuCungs)}</b>
             </p>
@@ -85,6 +85,8 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({ item, thuCungs, onCan
               data-ai-id={`button-lichsulichhen-toggle-details-${getAppointmentId(item)}`}
               onClick={() => setShowDetails(!showDetails)}
               className="btn btn-pill"
+              aria-label={showDetails ? 'Thu gọn chi tiết' : 'Mở rộng chi tiết'}
+              aria-expanded={showDetails}
               style={{ padding: '8px', background: 'var(--gray-50)', color: 'var(--gray-500)', minWidth: '40px' }}
             >
               <span className="material-symbols-outlined" style={{
@@ -110,7 +112,7 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({ item, thuCungs, onCan
               <p style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '4px' }}>DỊCH VỤ</p>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700 }}>
                 <span className="material-symbols-outlined" style={{ fontSize: '18px', color: 'var(--primary)' }}>vaccines</span>
-                {item.ten_dich_vu || item.tenDichVu || "Khám tổng quát"}
+                {decodeHtmlEntities(item.ten_dich_vu || item.tenDichVu || "Khám tổng quát")}
               </div>
             </div>
           </div>
