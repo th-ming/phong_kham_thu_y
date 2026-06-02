@@ -20,7 +20,7 @@ const PhanCTA: React.FC = () => {
         navigate('/khach-hang/dat-lich-hen');
     };
     return (
-        <section className="premium-fluid-gradient" style={{
+        <section className="premium-fluid-gradient home-cta-section" style={{
             padding: "80px 0",
             position: "relative",
             overflow: "hidden"
@@ -86,6 +86,109 @@ const PhanCTA: React.FC = () => {
                     .cta-layout { flex-direction: column !important; text-align: center !important; }
                     .cta-btn-group { justify-content: center !important; }
                     .cta-badges { justify-content: center !important; }
+                }
+                @media (max-width: 700px) {
+                    .home-cta-section {
+                        padding: 58px 0 !important;
+                    }
+                    .home-cta-section .container {
+                        padding-left: 18px !important;
+                        padding-right: 18px !important;
+                    }
+                    .cta-layout {
+                        align-items: stretch !important;
+                        gap: 18px !important;
+                        text-align: left !important;
+                        display: grid !important;
+                        grid-template-columns: 1fr !important;
+                    }
+                    .cta-badges {
+                        justify-content: flex-start !important;
+                        flex-wrap: nowrap !important;
+                        gap: 8px !important;
+                        overflow-x: auto;
+                        margin: 0 -18px 18px 0 !important;
+                        padding: 0 18px 2px 0;
+                        scrollbar-width: none;
+                    }
+                    .cta-badges::-webkit-scrollbar {
+                        display: none;
+                    }
+                    .cta-badges > div {
+                        flex: 0 0 auto;
+                        padding: 6px 12px !important;
+                    }
+                    .cta-badges span:last-child {
+                        font-size: 0.7rem !important;
+                    }
+                    .cta-layout h2 {
+                        max-width: 320px;
+                        font-size: 2.05rem !important;
+                        line-height: 1.12 !important;
+                        letter-spacing: 0 !important;
+                        margin-bottom: 12px !important;
+                    }
+                    .cta-layout h2 span {
+                        color: #ffedd5 !important;
+                    }
+                    .cta-layout p {
+                        max-width: 330px !important;
+                        font-size: 0.86rem !important;
+                        line-height: 1.55 !important;
+                    }
+                    .cta-action-card {
+                        min-width: 0 !important;
+                        width: 100% !important;
+                        display: grid;
+                        grid-template-columns: 1fr;
+                        padding: 0 !important;
+                        border-radius: 24px !important;
+                        background: rgba(255,255,255,0.10) !important;
+                        text-align: left !important;
+                        overflow: hidden;
+                    }
+                    .cta-action-card > div:first-child {
+                        justify-content: flex-start !important;
+                        margin: 0 !important;
+                        padding: 18px 18px 6px;
+                        background: rgba(255,255,255,0.08);
+                    }
+                    .cta-action-card > div:nth-child(2) {
+                        padding: 10px 18px 0;
+                        font-size: 0.76rem !important;
+                        margin-bottom: 4px !important;
+                    }
+                    .cta-action-card > div:nth-child(3) {
+                        padding: 0 18px;
+                        font-size: 0.95rem !important;
+                        margin-bottom: 16px !important;
+                    }
+                    .cta-btn-group {
+                        display: grid !important;
+                        grid-template-columns: 1fr 48px;
+                        gap: 10px !important;
+                        padding: 0 18px 18px;
+                    }
+                    .cta-btn-primary,
+                    .cta-btn-outline {
+                        border-radius: 16px !important;
+                        padding: 13px 16px !important;
+                        font-size: 0.84rem !important;
+                    }
+                    .cta-btn-outline {
+                        width: 48px;
+                        height: 48px;
+                        padding: 0 !important;
+                        background: rgba(255,255,255,0.08) !important;
+                        border-width: 1px !important;
+                    }
+                    .cta-btn-outline span:last-child {
+                        display: none;
+                    }
+                    .cta-action-card:hover,
+                    .cta-action-card:active {
+                        transform: translateY(-4px);
+                    }
                 }
             `}</style>
 

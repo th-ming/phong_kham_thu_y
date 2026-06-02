@@ -55,7 +55,7 @@ const PhanLienHe: React.FC = () => {
 
     return (
         <RevealSection>
-            <section id="contact" style={{ padding: "110px 0", background: "var(--background)", position: 'relative', overflow: 'hidden' }}>
+            <section id="contact" className="home-contact-section" style={{ padding: "110px 0", background: "var(--background)", position: 'relative', overflow: 'hidden' }}>
                 {/* Background Pattern */}
                 <div style={{
                     position: 'absolute',
@@ -116,10 +116,127 @@ const PhanLienHe: React.FC = () => {
                         .contact-grid { grid-template-columns: 1fr !important; gap: 40px !important; }
                         .contact-info-col { border-right: none !important; padding-right: 0 !important; border-bottom: 1px dashed #e2e8f0; padding-bottom: 40px; }
                     }
+                    @media (max-width: 700px) {
+                        .home-contact-section {
+                            padding: 66px 0 !important;
+                        }
+                        .home-contact-section .container {
+                            padding-left: 18px !important;
+                            padding-right: 18px !important;
+                        }
+                        .contact-heading {
+                            margin-bottom: 24px !important;
+                            text-align: left !important;
+                        }
+                        .contact-heading .section-label {
+                            margin-left: 0 !important;
+                            margin-right: 0 !important;
+                            margin-bottom: 12px !important;
+                        }
+                        .contact-heading h2 {
+                            font-size: 2rem !important;
+                            line-height: 1.12 !important;
+                            letter-spacing: 0 !important;
+                        }
+                        .contact-heading p {
+                            max-width: 330px !important;
+                            margin: 12px 0 0 !important;
+                            font-size: 0.86rem !important;
+                            line-height: 1.5 !important;
+                        }
+                        .contact-card-main {
+                            padding: 0 !important;
+                            border-radius: 24px !important;
+                            box-shadow: var(--shadow-md) !important;
+                            overflow: hidden;
+                        }
+                        .contact-grid {
+                            gap: 18px !important;
+                        }
+                        .contact-info-col {
+                            padding: 16px !important;
+                            border-bottom: 1px solid var(--gray-200) !important;
+                        }
+                        .contact-info-col h3 {
+                            font-size: 1.25rem !important;
+                            margin-bottom: 6px !important;
+                        }
+                        .contact-info-col > p {
+                            font-size: 0.78rem !important;
+                            line-height: 1.45 !important;
+                            margin-bottom: 16px !important;
+                        }
+                        .contact-info-col > div {
+                            display: grid !important;
+                            grid-template-columns: repeat(2, minmax(0, 1fr));
+                            gap: 9px !important;
+                        }
+                        .contact-info-row {
+                            margin-left: 0 !important;
+                            min-height: 118px;
+                            padding: 12px !important;
+                            border-radius: 16px !important;
+                            gap: 11px !important;
+                            background: var(--background);
+                            border: 1px solid var(--gray-200);
+                            display: flex !important;
+                            flex-direction: column;
+                            align-items: flex-start !important;
+                            justify-content: space-between;
+                        }
+                        .contact-info-row:hover,
+                        .contact-info-row:active {
+                            transform: translateY(-2px) !important;
+                            border-color: var(--primary);
+                            box-shadow: var(--shadow-sm);
+                        }
+                        .contact-info-row .icon-box {
+                            width: 38px !important;
+                            height: 38px !important;
+                            border-radius: 13px !important;
+                        }
+                        .contact-info-row .icon-box span {
+                            font-size: 22px !important;
+                        }
+                        .contact-info-row p:first-child {
+                            font-size: 0.6rem !important;
+                            letter-spacing: 0.6px !important;
+                        }
+                        .contact-info-row p:nth-child(2) {
+                            display: -webkit-box;
+                            font-size: 0.74rem !important;
+                            line-height: 1.3 !important;
+                            -webkit-line-clamp: 2;
+                            -webkit-box-orient: vertical;
+                            overflow: hidden;
+                        }
+                        .contact-info-row p:nth-child(3) {
+                            font-size: 0.7rem !important;
+                        }
+                        .contact-map-wrap {
+                            min-height: 220px !important;
+                            height: 220px !important;
+                            border-radius: 0 !important;
+                            border-left: 0 !important;
+                            border-right: 0 !important;
+                        }
+                        .contact-location-bar {
+                            margin: 0 16px 16px;
+                            padding: 12px !important;
+                            border-radius: 18px !important;
+                        }
+                        .btn-direction {
+                            width: 100%;
+                            justify-content: center;
+                            padding: 12px 16px !important;
+                            border-radius: 15px !important;
+                            font-size: 0.82rem !important;
+                        }
+                    }
                 `}</style>
                 <div className="container">
                     {/* Header Section */}
-                    <div style={{ marginBottom: "60px", textAlign: 'center' }}>
+                    <div className="contact-heading" style={{ marginBottom: "60px", textAlign: 'center' }}>
                         <div className="section-label" style={{ margin: '0 auto 20px' }}>📍 Liên hệ</div>
                         <h2 style={{ fontSize: "clamp(2rem, 5vw, 3rem)", fontWeight: 950, color: "var(--ink)", margin: 0, letterSpacing: '-1.5px' }}>Kết Nối Với <span style={{ color: "#0f9d8a" }}>Rexi</span></h2>
                         <p style={{ color: "var(--gray-500)", marginTop: '16px', fontWeight: 500, fontSize: '1.05rem', maxWidth: '600px', margin: '16px auto 0' }}>Chúng tôi luôn sẵn sàng lắng nghe và đồng hành cùng hành trình sức khỏe của thú cưng của bạn.</p>
@@ -157,7 +274,7 @@ const PhanLienHe: React.FC = () => {
 
                             {/* RIGHT: Interactive Map Area */}
                             <div style={{ display: "flex", flexDirection: "column", gap: "25px" }}>
-                                <div style={{
+                                <div className="contact-map-wrap" style={{
                                     height: "100%",
                                     minHeight: "450px",
                                     borderRadius: "32px",
@@ -178,7 +295,7 @@ const PhanLienHe: React.FC = () => {
                                 </div>
 
                                 {/* Location Info Bar */}
-                                <div style={{
+                                <div className="contact-location-bar" style={{
                                     background: "var(--surface)",
                                     padding: "24px 30px",
                                     borderRadius: "28px",

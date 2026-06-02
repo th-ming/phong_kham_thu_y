@@ -390,6 +390,13 @@ const PhanGioiThieu: React.FC = () => {
                             0 8px 20px rgba(0,0,0,0.16);
                         filter: drop-shadow(0 0 10px rgba(20, 184, 166, 0.34));
                     }
+                    .mobile-speech-bubble {
+                        display: none;
+                    }
+                    .mobile-speech-bubble--dog,
+                    .mobile-speech-bubble--cat {
+                        display: none;
+                    }
                     [data-theme='dark'] .banner-sync-text {
                         color: #7dd3fc;
                         text-shadow:
@@ -409,133 +416,392 @@ const PhanGioiThieu: React.FC = () => {
                         box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5) !important;
                     }
                     
+                    /* BASE STYLES FOR FLOATING GLASS CARD (DESKTOP) */
+                    .floating-glass-card {
+                        position: absolute !important;
+                        bottom: 20px !important;
+                        left: 10px !important;
+                        background: var(--glass) !important;
+                        backdrop-filter: var(--glass-blur) !important;
+                        -webkit-backdrop-filter: var(--glass-blur) !important;
+                        padding: 14px 20px !important;
+                        border-radius: 22px !important;
+                        display: flex !important;
+                        align-items: center !important;
+                        gap: 14px !important;
+                        z-index: 10 !important;
+                        box-shadow: var(--shadow-xl) !important;
+                        border: 1px solid var(--glass-border) !important;
+                        white-space: nowrap !important;
+                        width: auto !important;
+                    }
+                    .floating-glass-card .floating-badge-icon-box {
+                        background: linear-gradient(135deg, var(--rose-500), var(--rose-400)) !important;
+                        width: 44px !important;
+                        height: 44px !important;
+                        border-radius: 14px !important;
+                        display: flex !important;
+                        align-items: center !important;
+                        justify-content: center !important;
+                        flex-shrink: 0 !important;
+                        box-shadow: 0 8px 15px var(--rose-shadow) !important;
+                    }
+                    .floating-glass-card .glow-text-title {
+                        font-weight: 950 !important;
+                        color: var(--ink) !important;
+                        font-size: 1.15rem !important;
+                        line-height: 1.2 !important;
+                        white-space: nowrap !important;
+                    }
+                    .floating-glass-card .glow-text-sub {
+                        color: var(--ink) !important;
+                        opacity: 0.9 !important;
+                        font-size: 0.85rem !important;
+                        font-weight: 800 !important;
+                        white-space: nowrap !important;
+                    }
+                    
                     /* TỐI ƯU GIAO DIỆN DI ĐỘNG PREMIUM (MOBILE RESPONSIVE REDESIGN) */
                     @media screen and (max-width: 768px) {
+                        .hero-section {
+                            padding: 0 !important;
+                            min-height: calc(100svh - 160px) !important;
+                            background: var(--background) !important;
+                        }
+                        .hero-section > .container {
+                            max-width: none !important;
+                            width: 100% !important;
+                            padding-left: 0 !important;
+                            padding-right: 0 !important;
+                        }
+                        .hero-bg-layer {
+                            display: block !important;
+                            background-position: center center !important;
+                            opacity: 1 !important;
+                        }
+                        .hero-overlay-layer {
+                            background: ${isDark
+                                ? 'linear-gradient(180deg, rgba(2, 6, 23, 0.62), rgba(2, 6, 23, 0.86))'
+                                : 'linear-gradient(180deg, rgba(255,255,255,0.22), rgba(15, 23, 42, 0.30), rgba(8, 47, 73, 0.56))'} !important;
+                        }
+                        .floating-bg {
+                            display: block !important;
+                            opacity: 0.14 !important;
+                        }
+                        .floating-paw-1,
+                        .floating-paw-2 {
+                            display: inline-block !important;
+                            opacity: 0.22 !important;
+                        }
                         .hero-layout-grid {
-                            display: flex !important;
-                            flex-direction: column !important;
-                            align-items: flex-start !important;
+                            display: block !important;
+                            position: relative !important;
+                            min-height: calc(100svh - 160px) !important;
+                            height: calc(100svh - 160px) !important;
+                            max-height: 720px !important;
+                            border-radius: 0 !important;
+                            overflow: hidden !important;
                             text-align: left !important;
-                            gap: 20px !important;
+                            padding: 0 !important;
+                            background:
+                                linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, rgba(8, 47, 73, 0.08) 42%, rgba(8, 47, 73, 0.58) 100%) !important;
+                        }
+                        [data-theme='dark'] .hero-layout-grid {
+                            background:
+                                linear-gradient(180deg, rgba(2, 6, 23, 0.05) 0%, rgba(2, 6, 23, 0.18) 42%, rgba(2, 6, 23, 0.92) 100%) !important;
+                        }
+                        .hero-layout-grid::before {
+                            display: none !important;
+                        }
+                        [data-theme='light'] .hero-layout-grid::before {
+                            display: none !important;
                         }
                         .hero-layout-grid .hero-content {
-                            order: 2 !important;
+                            position: relative !important;
+                            z-index: 5 !important;
                             width: 100% !important;
+                            min-height: 100% !important;
+                            height: 100% !important;
+                            display: flex !important;
+                            flex-direction: column !important;
+                            justify-content: flex-end !important;
+                            padding: min(55vh, 360px) 20px 18px !important;
+                            color: #fff !important;
                         }
                         .hero-layout-grid .hero-image-container {
-                            order: 1 !important;
+                            position: absolute !important;
+                            inset: 0 0 auto 0 !important;
+                            z-index: 2 !important;
                             width: 100% !important;
-                            height: 220px !important;
-                            margin-bottom: 5px !important;
+                            height: 50vh !important;
+                            min-height: 285px !important;
+                            margin: 0 !important;
+                            pointer-events: none !important;
+                            --mobile-speech-top: clamp(42px, 10vh, 64px);
+                            --mobile-speech-dog-x: 55%;
+                            --mobile-speech-cat-x: 54%;
                         }
                         .hero-title {
-                            font-size: 1.95rem !important;
-                            line-height: 1.2 !important;
-                            margin-bottom: 12px !important;
-                            letter-spacing: -0.8px !important;
+                            font-size: clamp(2.2rem, 10.5vw, 3.35rem) !important;
+                            line-height: 1.02 !important;
+                            margin-bottom: 10px !important;
+                            letter-spacing: 0 !important;
+                            word-break: keep-all !important;
+                            color: #fff !important;
+                            text-shadow: 0 4px 22px rgba(0, 0, 0, 0.56) !important;
+                            font-family: Inter, system-ui, sans-serif !important;
+                            max-width: 11em !important;
+                        }
+                        .hero-glow-text {
+                            color: #fff !important;
+                            text-shadow: none !important;
+                            animation: none !important;
+                        }
+                        .hero-typewriter-desktop {
+                            display: inline !important;
+                        }
+                        .hero-typewriter-mobile {
+                            display: none !important;
                         }
                         .mission-text {
-                            font-size: 0.95rem !important;
-                            line-height: 1.6 !important;
-                            margin-bottom: 24px !important;
-                            padding-left: 14px !important;
+                            font-size: 0.86rem !important;
+                            line-height: 1.45 !important;
+                            margin-bottom: 14px !important;
+                            padding-left: 0 !important;
+                            border-left: 0 !important;
+                            color: rgba(255, 255, 255, 0.9) !important;
+                            font-family: Inter, system-ui, sans-serif !important;
+                            font-style: normal !important;
+                            max-width: 100% !important;
+                        }
+                        .mission-text span {
+                            display: none !important;
                         }
                         .hero-cta-grid {
-                            justify-content: flex-start !important;
+                            display: grid !important;
+                            grid-template-columns: 1.05fr 0.95fr !important;
                             width: 100% !important;
                             gap: 10px !important;
-                            margin-top: 16px !important;
+                            margin-top: 0 !important;
                         }
                         .hero-cta-grid a {
-                            flex: 1 !important;
+                            width: 100% !important;
+                            flex: none !important;
                             text-align: center !important;
-                            padding: 12px 14px !important;
-                            font-size: 0.82rem !important;
-                            border-radius: 12px !important;
+                            padding: 13px 10px !important;
+                            font-size: 0.72rem !important;
+                            border-radius: 10px !important;
                             min-width: unset !important;
+                            white-space: nowrap !important;
+                        }
+                        .hero-secondary-cta {
+                            background: rgba(15, 23, 42, 0.52) !important;
+                            border-color: rgba(255, 255, 255, 0.26) !important;
+                            color: #fff !important;
+                        }
+                        [data-theme='light'] .hero-secondary-cta {
+                            background: rgba(255, 255, 255, 0.18) !important;
+                            border-color: rgba(255, 255, 255, 0.34) !important;
                         }
                         .hero-stat-pill-container {
-                            justify-content: flex-start !important;
+                            display: grid !important;
+                            grid-template-columns: repeat(3, 1fr) !important;
                             width: 100% !important;
-                            gap: 8px !important;
-                            margin-top: 20px !important;
+                            gap: 6px !important;
+                            margin-top: 12px !important;
                         }
                         .hero-stat-pill {
-                            padding: 8px 10px !important;
-                            border-radius: 12px !important;
-                            flex: 1 !important;
-                            min-width: 90px !important;
-                            gap: 8px !important;
+                            padding: 8px 6px !important;
+                            border-radius: 9px !important;
+                            width: 100% !important;
+                            min-width: unset !important;
+                            gap: 5px !important;
+                            align-items: center !important;
+                            background: rgba(255, 255, 255, 0.9) !important;
+                            border: 0 !important;
+                            backdrop-filter: blur(8px) !important;
+                        }
+                        [data-theme='dark'] .hero-stat-pill {
+                            background: rgba(15, 23, 42, 0.72) !important;
+                            border: 1px solid rgba(125, 211, 252, 0.16) !important;
+                            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
                         }
                         .hero-stat-pill div div:first-child {
-                            font-size: 0.52rem !important;
+                            font-size: 0.46rem !important;
+                            color: #64748b !important;
+                        }
+                        [data-theme='dark'] .hero-stat-pill div div:first-child {
+                            color: rgba(203, 213, 225, 0.72) !important;
                         }
                         .hero-stat-pill div div:last-child {
-                            font-size: 0.78rem !important;
+                            font-size: 0.68rem !important;
+                            line-height: 1.05 !important;
+                            color: #0f172a !important;
+                        }
+                        [data-theme='dark'] .hero-stat-pill div div:last-child {
+                            color: #f8fafc !important;
                         }
                         .hero-stat-pill span {
-                            font-size: 16px !important;
+                            font-size: 15px !important;
                         }
                         .hero-stat-pill div:first-child {
                             width: 28px !important;
                             height: 28px !important;
-                            border-radius: 8px !important;
+                            border-radius: 7px !important;
                         }
                         
                         /* Khung video/ảnh động bo tròn sang trọng trên mobile */
                         .banner-pet-stage {
-                            background: rgba(255, 255, 255, 0.04) !important;
-                            border: 1px solid rgba(255, 255, 255, 0.1) !important;
-                            border-radius: 20px !important;
-                            height: 220px !important;
-                            overflow: hidden !important;
-                            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08) !important;
+                            background: transparent !important;
+                            border: 0 !important;
+                            border-radius: 0 !important;
+                            height: 100% !important;
+                            overflow: visible !important;
+                            box-shadow: none !important;
                         }
                         [data-theme='dark'] .banner-pet-stage {
                             background: rgba(15, 23, 42, 0.4) !important;
                             border-color: rgba(34, 211, 238, 0.15) !important;
                         }
                         .banner-pet-video {
-                            width: 130% !important;
-                            height: 130% !important;
-                            bottom: -15% !important;
+                            width: 114% !important;
+                            height: 114% !important;
+                            object-fit: contain !important;
+                            bottom: 10% !important;
+                            filter: drop-shadow(0 24px 30px rgba(0, 0, 0, 0.32)) !important;
+                        }
+                        @media screen and (min-width: 520px) and (max-width: 768px) {
+                            .hero-layout-grid .hero-image-container {
+                                height: 54vh !important;
+                                min-height: 360px !important;
+                            }
+                            .hero-layout-grid .hero-content {
+                                padding-top: min(58vh, 430px) !important;
+                            }
+                            .banner-pet-video {
+                                width: 138% !important;
+                                height: 138% !important;
+                                bottom: 0 !important;
+                            }
+                        }
+                        [data-theme='dark'] .banner-pet-video {
+                            filter: drop-shadow(0 24px 30px rgba(0, 0, 0, 0.42)) !important;
+                        }
+                        .banner-pet-layer--dog {
+                            animation: bannerPetDog ${BANNER_PET_SWAP_DURATION} cubic-bezier(0.42, 0, 0.58, 1) infinite !important;
+                        }
+                        .banner-pet-layer--cat {
+                            display: flex !important;
+                            animation: bannerPetCat ${BANNER_PET_SWAP_DURATION} cubic-bezier(0.42, 0, 0.58, 1) infinite !important;
+                        }
+                        .banner-sync-text-slot--cat,
+                        .banner-sync-text-slot--dog {
+                            display: none !important;
                         }
                         .banner-sync-text {
-                            top: 8px !important;
-                            font-size: 1.15rem !important;
+                            display: none !important;
+                        }
+                        .mobile-speech-bubble {
+                            position: absolute !important;
+                            top: var(--mobile-speech-top) !important;
+                            left: var(--mobile-speech-x, 54%) !important;
+                            transform: translateX(-50%) !important;
+                            z-index: 9 !important;
+                            display: block !important;
+                            max-width: min(78vw, 250px) !important;
+                            min-width: 0 !important;
+                            padding: 9px 15px !important;
+                            border-radius: 999px !important;
+                            background: rgba(255, 255, 255, 0.9) !important;
+                            border: 1px solid rgba(255, 255, 255, 0.38) !important;
+                            color: #0f766e !important;
+                            opacity: 1 !important;
+                            font-family: Inter, system-ui, sans-serif !important;
+                            font-size: 0.95rem !important;
+                            font-style: normal !important;
+                            font-weight: 900 !important;
+                            line-height: 1.15 !important;
+                            overflow: visible !important;
+                            text-overflow: clip !important;
+                            white-space: nowrap !important;
+                            text-align: center !important;
+                            text-shadow: none !important;
+                            box-shadow: 0 12px 26px rgba(2, 6, 23, 0.14), 0 0 22px rgba(45, 212, 191, 0.22) !important;
+                            filter: none !important;
+                        }
+                        .mobile-speech-bubble::after {
+                            content: "";
+                            position: absolute;
+                            left: var(--mobile-speech-tail-x, 50%);
+                            bottom: -7px;
+                            width: 13px;
+                            height: 13px;
+                            background: inherit;
+                            border-right: inherit;
+                            border-bottom: inherit;
+                            transform: translateX(-50%) rotate(45deg);
+                            box-shadow: 7px 7px 12px rgba(2, 6, 23, 0.08);
+                        }
+                        .mobile-speech-bubble--dog {
+                            --mobile-speech-x: var(--mobile-speech-dog-x);
+                            --mobile-speech-tail-x: 52%;
+                        }
+                        .mobile-speech-bubble--cat {
+                            --mobile-speech-x: var(--mobile-speech-cat-x);
+                            --mobile-speech-tail-x: 49%;
+                            max-width: min(64vw, 205px) !important;
+                            padding: 7px 12px !important;
+                            font-size: 0.82rem !important;
+                            line-height: 1.12 !important;
+                        }
+                        [data-theme='dark'] .mobile-speech-bubble {
+                            background: rgba(2, 6, 23, 0.82) !important;
+                            border-color: rgba(34, 211, 238, 0.34) !important;
+                            color: #e0f2fe !important;
+                            font-size: 1rem !important;
+                            box-shadow: 0 14px 30px rgba(0, 0, 0, 0.42), 0 0 24px rgba(34, 211, 238, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+                        }
+                        @media screen and (max-width: 390px) {
+                            .hero-layout-grid .hero-image-container {
+                                --mobile-speech-top: clamp(38px, 8vh, 54px);
+                                --mobile-speech-dog-x: 57%;
+                                --mobile-speech-cat-x: 56%;
+                            }
+                            .mobile-speech-bubble {
+                                max-width: 74vw !important;
+                                padding: 8px 13px !important;
+                                font-size: 0.86rem !important;
+                            }
+                            .mobile-speech-bubble--cat {
+                                max-width: 60vw !important;
+                                padding: 7px 11px !important;
+                                font-size: 0.78rem !important;
+                            }
                         }
                         
                         /* Badge cấp cứu lơ lửng trên mobile */
                         .floating-glass-card {
-                            position: absolute !important;
-                            bottom: 12px !important;
-                            left: 12px !important;
-                            margin: 0 !important;
-                            padding: 8px 12px !important;
-                            border-radius: 14px !important;
-                            z-index: 12 !important;
-                            backdrop-filter: blur(8px) !important;
-                            -webkit-backdrop-filter: blur(8px) !important;
+                            display: none !important;
                         }
                         .floating-glass-card .glow-text-title {
-                            font-size: 0.85rem !important;
+                            font-size: 0.8rem !important;
+                            white-space: nowrap !important;
                         }
                         .floating-glass-card .glow-text-sub {
-                            font-size: 0.68rem !important;
-                            opacity: 0.8 !important;
+                            font-size: 0.65rem !important;
+                            opacity: 0.82 !important;
+                            white-space: nowrap !important;
                         }
                         .floating-glass-card div:first-child {
-                            width: 28px !important;
-                            height: 28px !important;
-                            border-radius: 8px !important;
+                            width: 26px !important;
+                            height: 26px !important;
+                            border-radius: 6px !important;
                         }
                         .floating-glass-card span {
-                            font-size: 16px !important;
+                            font-size: 14px !important;
                         }
                         .section-label {
-                            margin-bottom: 16px !important;
-                            font-size: 0.68rem !important;
-                            padding: 4px 10px !important;
+                            display: none !important;
                         }
                     }
                 `}</style>
@@ -570,7 +836,7 @@ const PhanGioiThieu: React.FC = () => {
 
                             <h1 className="hero-title" style={{ fontSize: "clamp(2.4rem, 4.5vw, 3.6rem)", fontWeight: 950, color: "var(--ink)", lineHeight: 1.1, marginBottom: "22px", fontFamily: "'Lora', serif", letterSpacing: "-1.5px" }}>
                                 Sức Khoẻ <span className="hero-glow-text">Trọn Vẹn</span><br />
-                                Cho <Typewriter words={["Thú Cưng", "Chó Cưng", "Mèo Cưng", "Người Bạn Nhỏ"]} />
+                                Cho <span className="hero-typewriter-desktop"><Typewriter words={["Thú Cưng", "Chó Cưng", "Mèo Cưng", "Người Bạn Nhỏ"]} /></span><span className="hero-typewriter-mobile" style={{ display: 'none' }}>Thú Cưng</span>
                             </h1>
                             <p className="mission-text" style={{ 
                                 fontSize: "1.15rem", 
@@ -629,27 +895,13 @@ const PhanGioiThieu: React.FC = () => {
 
                         <div className="hero-image-container">
                             {/* Khối Glassmorphism Cấp cứu */}
-                            <div className="glass-card floating-glass-card" style={{
-                                position: 'absolute',
-                                bottom: '20px',
-                                left: '10px',
-                                background: 'var(--glass)',
-                                backdropFilter: 'var(--glass-blur)',
-                                padding: '14px 20px',
-                                borderRadius: '22px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '14px',
-                                zIndex: 10,
-                                boxShadow: 'var(--shadow-xl)',
-                                border: '1px solid var(--glass-border)'
-                            }}>
-                                <div style={{ background: 'linear-gradient(135deg, var(--rose-500), var(--rose-400))', width: '44px', height: '44px', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 8px 15px var(--rose-shadow)' }}>
+                            <div className="glass-card floating-glass-card">
+                                <div className="floating-badge-icon-box">
                                     <span className="material-symbols-outlined" style={{ color: 'var(--white)', fontSize: '24px' }}>volunteer_activism</span>
                                 </div>
                                 <div style={{ textAlign: 'left' }}>
-                                    <div className="glow-text-title" style={{ fontWeight: 950, color: 'var(--ink)', fontSize: '1.15rem', lineHeight: 1.2 }}>Tận Tâm 24/7</div>
-                                    <div className="glow-text-sub" style={{ color: 'var(--ink)', opacity: 0.9, fontSize: '0.85rem', fontWeight: 800 }}>Cấp cứu kịp thời</div>
+                                    <div className="glow-text-title">Tận Tâm 24/7</div>
+                                    <div className="glow-text-sub">Cấp cứu kịp thời</div>
                                 </div>
                             </div>
 
@@ -669,6 +921,7 @@ const PhanGioiThieu: React.FC = () => {
                                 </div>
 
                                 <div className="banner-pet-layer banner-pet-layer--dog">
+                                    <div className="mobile-speech-bubble mobile-speech-bubble--dog">{dogBannerText}</div>
                                     <TransparentVideo 
                                         src="/img/video_cho_chao.webm" 
                                         playbackRate={0.6} 
@@ -685,6 +938,7 @@ const PhanGioiThieu: React.FC = () => {
                                 </div>
 
                                 <div className="banner-pet-layer banner-pet-layer--cat">
+                                    <div className="mobile-speech-bubble mobile-speech-bubble--cat">{catBannerText}</div>
                                     <TransparentVideo 
                                         src="/img/video_meo_chao.webm" 
                                         playbackRate={0.6} 

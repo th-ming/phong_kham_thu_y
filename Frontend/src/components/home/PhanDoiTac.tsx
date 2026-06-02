@@ -10,7 +10,7 @@ const partners = [
 
 const PhanDoiTac: React.FC = () => {
     return (
-        <section style={{
+        <section className="home-partners-section" style={{
             backgroundColor: 'var(--background)',
             padding: '100px 0',
             overflow: 'hidden',
@@ -28,7 +28,7 @@ const PhanDoiTac: React.FC = () => {
 
             <div className="container" style={{ position: 'relative', zIndex: 1 }}>
                 <RevealSection>
-                    <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+                    <div className="home-partners-heading" style={{ textAlign: 'center', marginBottom: '32px' }}>
                         <div className="section-label" style={{
                             margin: '0 auto 16px',
                             background: 'var(--surface)',
@@ -78,13 +78,13 @@ const PhanDoiTac: React.FC = () => {
                     </defs>
                 </svg>
 
-                <div className="responsive-grid-split" style={{
+                <div className="responsive-grid-split home-partners-layout" style={{
                     gridTemplateColumns: '1.1fr 0.9fr',
                     alignItems: 'center',
                     marginTop: '56px'
                 }}>
                     <div>
-                        <div className="responsive-grid-split" style={{
+                        <div className="responsive-grid-split partner-stats-grid" style={{
                             gridTemplateColumns: 'repeat(2, minmax(0, 1fr))'
                         }}>
                             <div className="stat-card-light">
@@ -111,20 +111,27 @@ const PhanDoiTac: React.FC = () => {
                         </div>
                     </div>
 
-                    <div className="responsive-grid-2">
-                        {partners.map((partner) => (
-                            <div key={partner.name} className="partner-card-new" style={{ '--partner-accent': partner.color } as React.CSSProperties}>
-                                <div className="partner-logo-box">
-                                    <img src={partner.logo} alt={partner.name} className="partner-logo-img" loading="lazy" />
-                                </div>
-                                <div>
-                                    <div style={{ fontWeight: 800, color: 'var(--ink)', marginBottom: '4px', fontSize: '1rem' }}>{partner.name}</div>
-                                    <div style={{ color: 'var(--gray-400)', fontSize: '0.8rem', lineHeight: 1.5, fontWeight: 500 }}>
-                                        {partner.tagline}
+                    <div className="responsive-grid-2 partner-marquee">
+                        <div className="partner-marquee-track">
+                            {[...partners, ...partners].map((partner, index) => (
+                                <div
+                                    key={`${partner.name}-${index}`}
+                                    className={`partner-card-new ${index >= partners.length ? 'partner-card-duplicate' : ''}`}
+                                    style={{ '--partner-accent': partner.color } as React.CSSProperties}
+                                    aria-hidden={index >= partners.length}
+                                >
+                                    <div className="partner-logo-box">
+                                        <img src={partner.logo} alt={partner.name} className="partner-logo-img" loading="lazy" />
+                                    </div>
+                                    <div>
+                                        <div style={{ fontWeight: 800, color: 'var(--ink)', marginBottom: '4px', fontSize: '1rem' }}>{partner.name}</div>
+                                        <div style={{ color: 'var(--gray-400)', fontSize: '0.8rem', lineHeight: 1.5, fontWeight: 500 }}>
+                                            {partner.tagline}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
+                            ))}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -172,6 +179,12 @@ const PhanDoiTac: React.FC = () => {
                     transform: translateY(-6px) scale(1.02);
                     box-shadow: 0 20px 40px -10px color-mix(in srgb, var(--partner-accent) 20%, transparent);
                     border-color: color-mix(in srgb, var(--partner-accent) 45%, var(--gray-200));
+                }
+                .partner-marquee-track {
+                    display: contents;
+                }
+                .partner-card-duplicate {
+                    display: none;
                 }
 
                 [data-theme='dark'] .partner-card-new {
@@ -259,7 +272,129 @@ const PhanDoiTac: React.FC = () => {
                     .container > div:nth-child(2) { grid-template-columns: 1fr !important; }
                 }
                 @media (max-width: 640px) {
-                    .partner-card-new { padding: 20px; }
+                    .home-partners-section {
+                        padding: 70px 0 !important;
+                    }
+                    .home-partners-section .container {
+                        padding-left: 18px !important;
+                        padding-right: 18px !important;
+                    }
+                    .home-partners-heading {
+                        text-align: left !important;
+                        margin-bottom: 20px !important;
+                    }
+                    .home-partners-heading .section-label {
+                        margin-left: 0 !important;
+                        margin-right: 0 !important;
+                        margin-bottom: 12px !important;
+                        padding: 7px 12px !important;
+                        font-size: 0.68rem !important;
+                    }
+                    .home-partners-heading h2 {
+                        max-width: 330px;
+                        font-size: 1.95rem !important;
+                        line-height: 1.14 !important;
+                        letter-spacing: 0 !important;
+                    }
+                    .home-partners-heading p {
+                        display: block;
+                        max-width: 330px;
+                        margin: 12px 0 0 !important;
+                        font-size: 0.84rem !important;
+                        line-height: 1.48 !important;
+                    }
+                    .home-partners-layout {
+                        display: block !important;
+                        margin-top: 26px !important;
+                    }
+                    .partner-stats-grid {
+                        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+                        gap: 8px !important;
+                        margin-bottom: 18px;
+                    }
+                    .stat-card-light,
+                    .stat-card-light[style] {
+                        grid-column: auto !important;
+                        padding: 14px 8px !important;
+                        border-radius: 16px !important;
+                        text-align: center;
+                        box-shadow: var(--shadow-sm) !important;
+                    }
+                    .stat-card-light > div:first-child {
+                        font-size: 1.4rem !important;
+                    }
+                    .stat-card-light > div:nth-child(2) {
+                        font-size: 0.68rem !important;
+                        line-height: 1.25 !important;
+                        margin-top: 6px !important;
+                    }
+                    .stat-card-light p {
+                        display: none;
+                    }
+                    .home-partners-layout > .responsive-grid-2 {
+                        display: flex !important;
+                        gap: 12px !important;
+                        overflow-x: auto;
+                        overflow-y: hidden;
+                        margin-left: -2px;
+                        margin-right: -18px;
+                        padding: 2px 18px 10px 2px;
+                        scroll-snap-type: x mandatory;
+                        -webkit-overflow-scrolling: touch;
+                        scrollbar-width: none;
+                    }
+                    .home-partners-layout > .partner-marquee {
+                        overflow: hidden !important;
+                        margin-right: -18px;
+                        padding-right: 0;
+                        scroll-snap-type: none;
+                    }
+                    .home-partners-layout > .responsive-grid-2::-webkit-scrollbar {
+                        display: none;
+                    }
+                    .partner-marquee-track {
+                        display: flex;
+                        width: max-content;
+                        gap: 12px;
+                        padding: 2px 18px 10px 2px;
+                        animation: partnerMarqueeMobile 18s linear infinite;
+                    }
+                    .partner-marquee-track:hover,
+                    .partner-marquee-track:active {
+                        animation-play-state: paused;
+                    }
+                    .partner-card-duplicate {
+                        display: flex;
+                    }
+                    @keyframes partnerMarqueeMobile {
+                        from { transform: translateX(0); }
+                        to { transform: translateX(calc(-50% - 6px)); }
+                    }
+                    .partner-card-new {
+                        flex: 0 0 178px;
+                        scroll-snap-align: start;
+                        padding: 12px;
+                        border-radius: 16px;
+                        gap: 10px;
+                        box-shadow: var(--shadow-sm);
+                    }
+                    .partner-logo-box {
+                        min-height: 72px;
+                        height: 72px;
+                        border-radius: 12px;
+                    }
+                    .partner-logo-img {
+                        max-height: 52px;
+                        min-height: 34px;
+                    }
+                    .partner-card-new > div:last-child > div:first-child {
+                        font-size: 0.82rem !important;
+                        line-height: 1.25 !important;
+                    }
+                    .partner-card-new > div:last-child > div:last-child {
+                        font-size: 0.68rem !important;
+                        line-height: 1.35 !important;
+                    }
                 }
             `}</style>
         </section>

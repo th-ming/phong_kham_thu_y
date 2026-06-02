@@ -36,7 +36,7 @@ const PhanDanhGia: React.FC = () => {
 
     return (
         <RevealSection>
-            <section ref={sectionRef} style={{ padding: "110px 0", background: "var(--background)", position: 'relative', overflow: 'hidden' }}>
+            <section ref={sectionRef} className="home-reviews-section" style={{ padding: "110px 0", background: "var(--background)", position: 'relative', overflow: 'hidden' }}>
                 <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 80% 20%, rgba(15,157,138,0.04) 0%, transparent 60%), radial-gradient(ellipse at 20% 80%, rgba(45,212,191,0.03) 0%, transparent 60%)', pointerEvents: 'none' }} />
                 
                 {/* Background Pattern */}
@@ -88,19 +88,100 @@ const PhanDanhGia: React.FC = () => {
                         box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.6);
                     }
                     @media (max-width: 768px) {
-                        .review-card { flex: 0 0 300px; min-height: 340px; }
+                        .home-reviews-section {
+                            padding: 66px 0 !important;
+                        }
+                        .reviews-header {
+                            margin-bottom: 24px !important;
+                        }
+                        .reviews-header-row {
+                            align-items: stretch !important;
+                            gap: 14px !important;
+                        }
+                        .reviews-header-row h2 {
+                            font-size: 1.85rem !important;
+                            line-height: 1.15 !important;
+                            letter-spacing: 0 !important;
+                        }
+                        .reviews-rating-badge {
+                            width: 100%;
+                            padding: 12px 14px !important;
+                            border-radius: 999px !important;
+                            justify-content: space-between;
+                        }
+                        .reviews-rating-badge > div:first-of-type div:first-child {
+                            font-size: 2rem !important;
+                        }
+                        .review-marquee-track {
+                            gap: 14px;
+                            animation-duration: 46s;
+                            align-items: flex-start;
+                        }
+                        .review-card {
+                            flex: 0 0 274px;
+                            min-height: 0;
+                            border-radius: 22px 22px 22px 8px;
+                            padding: 15px;
+                            background: var(--surface) !important;
+                            box-shadow: var(--shadow-sm) !important;
+                        }
+                        .review-card:nth-child(even) {
+                            margin-top: 28px;
+                            border-radius: 22px 22px 8px 22px;
+                            background: var(--primary-light) !important;
+                            border-color: color-mix(in srgb, var(--primary) 18%, var(--gray-200)) !important;
+                        }
+                        .review-card:nth-child(3n) {
+                            flex-basis: 236px;
+                        }
+                        .review-card:hover,
+                        .review-card:active {
+                            transform: translateY(-4px) scale(1.01);
+                            border-color: var(--primary) !important;
+                        }
+                        .review-card p {
+                            font-size: 0.78rem !important;
+                            line-height: 1.52 !important;
+                            display: -webkit-box;
+                            -webkit-line-clamp: 4;
+                            -webkit-box-orient: vertical;
+                            overflow: hidden;
+                            margin-bottom: 10px !important;
+                        }
+                        .review-card > div:first-child {
+                            font-size: 88px !important;
+                            opacity: 0.16 !important;
+                        }
+                        .review-card > div:nth-child(2) {
+                            margin-bottom: 10px !important;
+                        }
+                        .review-card > div:last-child {
+                            gap: 9px !important;
+                            padding-top: 9px !important;
+                        }
+                        .review-card > div:last-child img,
+                        .review-card > div:last-child > div:first-child {
+                            width: 36px !important;
+                            height: 36px !important;
+                        }
+                        .review-card > div:last-child div[style*="font-weight: 900"] {
+                            font-size: 0.8rem !important;
+                        }
+                        .review-card > div:last-child div[style*="font-size: 0.78rem"] {
+                            font-size: 0.66rem !important;
+                        }
                     }
                 `}</style>
 
                 {/* Header */}
-                <div className="container" style={{ marginBottom: '60px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '20px' }}>
+                <div className="container reviews-header" style={{ marginBottom: '60px' }}>
+                    <div className="reviews-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '20px' }}>
                         <div>
                             <div className="section-label" style={{ marginBottom: '16px' }}>♥ Nhận xét khách hàng</div>
                             <h2 style={{ fontSize: "clamp(2rem, 4vw, 3rem)", fontWeight: 950, color: "var(--ink)", letterSpacing: '-1px' }}>Tin Yêu Từ <span style={{ color: "var(--primary)" }}>Mọi Nhà</span></h2>
                         </div>
                         {/* Star rating badge */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '20px', background: 'var(--primary-light)', padding: '20px 28px', borderRadius: '24px', border: '1px solid var(--primary-light)', flexShrink: 0, position: 'relative', overflow: 'hidden' }}>
+                        <div className="reviews-rating-badge" style={{ display: 'flex', alignItems: 'center', gap: '20px', background: 'var(--primary-light)', padding: '20px 28px', borderRadius: '24px', border: '1px solid var(--primary-light)', flexShrink: 0, position: 'relative', overflow: 'hidden' }}>
                             <img src="/img/phong-kham-sach-se.png" alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.07, pointerEvents: 'none' }} />
                             <div style={{ textAlign: 'center', position: 'relative', zIndex: 1 }}>
                                 <div style={{ fontSize: '2.8rem', fontWeight: 950, color: 'var(--primary)', lineHeight: 1 }}>4.9</div>
