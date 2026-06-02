@@ -88,11 +88,11 @@ public class PaymentController {
     private ResponseEntity<?> lockInvoiceForVnPay(String idHoaDon) {
         int locked = jdbcTemplate.update(
                 "UPDATE HoaDon SET trang_thai = 'DANG_THANH_TOAN' " +
-                        "WHERE id_hoa_don = ? AND trang_thai = 'CHO_THANH_TOAN'",
+                        "WHERE id_hoa_don = ? AND trang_thai IN ('CHO_THANH_TOAN', 'DANG_THANH_TOAN')",
                 idHoaDon);
         if (locked == 0) {
             return ResponseEntity.status(409)
-                    .body(Map.of("message", "Hóa đơn đang được xử lý hoặc đã thanh toán!"));
+                    .body(Map.of("message", "Hóa đơn không còn ở trạng thái có thể thanh toán."));
         }
         return null;
     }

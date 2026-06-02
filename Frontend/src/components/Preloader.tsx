@@ -1,4 +1,6 @@
-﻿import React, { useEffect, useState, useRef } from 'react';
+﻿import React, { useEffect, useMemo, useState, useRef } from 'react';
+import { useLiveUserProfile } from '@hooks/useLiveUserProfile';
+import { getUserProfile, normalizeUserRole } from '@utils/index';
 
 // * * MÀN HÌNH CHỜ (PRELOADER) "MÈO CHẠY" - ĐÃ SỬA LỖI MÉO VÀ NGƯỢC HƯỚNG * Khắc phục tỉ lệ khung hình và hướng chạy của mèo để trông tự nhiên nhất.
 export const Preloader: React.FC = () => {
@@ -9,19 +11,49 @@ export const Preloader: React.FC = () => {
     const [isExiting, setIsExiting] = useState(false);
     const [progress, setProgress] = useState(0);
     const [message, setMessage] = useState("Đang đi mua pate...");
+    const liveUser = useLiveUserProfile();
+    const user = liveUser || getUserProfile();
+    const userBirthYear = Number(user?.nam_sinh || 0);
+    const isCustomer = normalizeUserRole(user) === "khach_hang";
+    const isGenZCustomer = isCustomer && userBirthYear >= 1997;
+    const isMatureCustomer = isCustomer && userBirthYear >= 1900 && userBirthYear < 1997;
     
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
-    const messages = [
-        "Đang đi mua pate...",
-        "Đang rượt đuổi lỗi...",
-        "Chờ tí, đang liếm lông...",
-        "Đang mài móng chuẩn bị đón khách...",
-        "Đang tìm đồ chơi bị mất...",
-        "Sắp xong rồi meow meow...",
-        "Đang khởi tạo hệ thống chăm sóc..."
-    ];
+    const messages = useMemo(() => {
+        if (isGenZCustomer) {
+            return [
+                "Đang mua pate cho boss...",
+                "Đang rượt lỗi cho sen...",
+                "Chờ xíu, Rexi chỉnh lông đã...",
+                "Đang mài móng chuẩn bị đón sen...",
+                "Đang tìm đồ chơi thất lạc của boss...",
+                "Sắp xong rồi meow meow...",
+                "Đang khởi tạo hệ thống chăm boss..."
+            ];
+        }
+        if (isMatureCustomer) {
+            return [
+                "Đang chuẩn bị hệ thống chăm sóc...",
+                "Đang kiểm tra dữ liệu phục vụ anh/chị...",
+                "Vui lòng chờ trong giây lát...",
+                "Đang hoàn tất trải nghiệm Rexi...",
+                "Đang tối ưu thông tin thú cưng...",
+                "Sắp hoàn tất...",
+                "Đang khởi tạo hệ thống hỗ trợ..."
+            ];
+        }
+        return [
+            "Đang chuẩn bị hệ thống Rexi...",
+            "Đang kiểm tra dữ liệu...",
+            "Vui lòng chờ trong giây lát...",
+            "Đang hoàn tất trải nghiệm...",
+            "Đang tối ưu thông tin thú cưng...",
+            "Sắp hoàn tất...",
+            "Đang khởi tạo hệ thống chăm sóc..."
+        ];
+    }, [isGenZCustomer, isMatureCustomer]);
 
     useEffect(() => {
         const hasLoaded = sessionStorage.getItem("rexi_preloader_loaded");
@@ -54,7 +86,7 @@ export const Preloader: React.FC = () => {
             clearInterval(interval);
             clearTimeout(timer);
         };
-    }, []);
+    }, [messages]);
 
     useEffect(() => {
         const video = videoRef.current;

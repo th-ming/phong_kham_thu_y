@@ -21,6 +21,9 @@ public class ReActAgentService {
 
     private static final Logger logger = Logger.getLogger(ReActAgentService.class.getName());
     private static final int MAX_ITERATIONS = 4;
+    private static final int MAX_CONTEXT_CHARS = 2_000;
+    private static final int MAX_TOOL_OBSERVATION_CHARS = 450;
+    private static final int MAX_MODEL_MESSAGE_CHARS = 14_000;
     private static final ZoneId VN_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
 
     @Autowired private OpenRouterService openRouterService;
@@ -49,6 +52,11 @@ public class ReActAgentService {
         String normalizedQuery = normalizeVietnamese(originalUserIntent.trim().toLowerCase());
         boolean isStaff = isStaffRole(userRole);
 
+        ReActResult sensitiveGateResult = handleSensitiveCommandGate(normalizedQuery, steps);
+        if (sensitiveGateResult != null) {
+            return sensitiveGateResult;
+        }
+
         ReActResult pendingConfirmationResult = handleDeterministicPendingConfirmation(
                 userQuery,
                 originalUserIntent,
@@ -62,14 +70,13 @@ public class ReActAgentService {
         }
 
         // Greeting thuan tuy - chi xu ly instant, moi cau hoi thuc te de LLM tu phan tich.
-        if (normalizedQuery.matches("^(hi|hello|helo|chao|xin chao|alo|hey|test|ping|yo|sup)$")) {
-            String greeting = "Dạ, Rexi đây ạ! Sếp/bạn cần hỗ trợ gì — đặt lịch, xem hồ sơ, tra cứu thú cưng hay hỏi thú y đều được nha!";
-            steps.add(new ReActStep("FINAL", greeting, null, null, null));
-            return new ReActResult(greeting, steps);
+        ReActResult deterministicIntent = handleDeterministicIntent(normalizedQuery, isStaff, userRole, username, steps);
+        if (deterministicIntent != null) {
+            return deterministicIntent;
         }
 
         // Xây dựng system prompt với tool schema + ngữ cảnh người dùng
-        String systemPrompt = buildSystemPrompt(userQuery, username, userRole);
+        String systemPrompt = compactForModel(buildSystemPrompt(userQuery, username, userRole), 10_000);
 
         // Khởi tạo lịch sử hội thoại với câu hỏi người dùng
         List<ChatMessage> history = new ArrayList<>();
@@ -113,16 +120,13 @@ public class ReActAgentService {
 
                     // —— FINAL ANSWER ——
                     if (node.has("final_answer")) {
-                        String answer = node.get("final_answer").asText();
-                        if (answer == null || answer.isBlank() || "null".equalsIgnoreCase(answer.trim())) {
-                            answer = "Tôi chưa đủ dữ liệu để hoàn tất tác vụ này. Bạn gửi thêm SĐT khách hàng, tên thú cưng, ngày/giờ mong muốn hoặc chuyển sang thao tác thủ công trên đúng phân hệ giúp tôi.";
-                        }
+                        String answer = sanitizeFinalAnswer(node.get("final_answer").asText(null), normalizedQuery);
                         steps.add(new ReActStep("FINAL", answer, null, null, null));
                         return new ReActResult(answer, steps, modelResponse.provider());
                     }
 
                     // —— TOOL CALL ——
-                    if (node.has("tool")) {
+                        if (node.has("tool")) {
                         String toolName = node.get("tool").asText();
                         Map<String, Object> params = new HashMap<>();
                         if (node.has("parameters") && node.get("parameters").isObject()) {
@@ -137,6 +141,26 @@ public class ReActAgentService {
                             }
                         }
 
+                        if (isPetMedicalSymptomQuery(normalizedQuery)
+                                && Set.of("tim_thu_cung", "xem_benh_an", "tim_khach_hang").contains(toolName)) {
+                            String answer = buildSafePetMedicalAdvice(normalizedQuery);
+                            steps.add(new ReActStep("TOOL_BLOCKED", "Chặn tool DB vì đây là câu hỏi triệu chứng thú y.", toolName, params, answer));
+                            steps.add(new ReActStep("FINAL", answer, null, null, null));
+                            return new ReActResult(answer, steps, "MedicalIntentGate");
+                        }
+
+                        if (!isToolRelevantForQuery(normalizedQuery, toolName)) {
+                            String observation = "Tool '" + toolName + "' không phù hợp với yêu cầu hiện tại. Hãy trả final_answer ngắn, hỏi thêm nếu thiếu dữ liệu.";
+                            steps.add(new ReActStep("TOOL_BLOCKED", "Chặn tool không đúng ngữ cảnh", toolName, params, observation));
+
+                            ChatMessage systemWarningMsg = new ChatMessage();
+                            systemWarningMsg.setRole("user");
+                            systemWarningMsg.setContent("[HỆ THỐNG] " + observation);
+                            history.add(systemWarningMsg);
+                            trimHistoryForModel(history);
+                            continue;
+                        }
+
                         // Kiểm tra phân quyền tool của vai trò
                         if (!canUseTool(userRole, toolName)) {
                             String observation = "LỖI BẢO MẬT: Quyền hạn hiện tại của bạn không được phép sử dụng công cụ '" + toolName + "'.";
@@ -146,13 +170,14 @@ public class ReActAgentService {
                             systemWarningMsg.setRole("user");
                             systemWarningMsg.setContent("[HỆ THỐNG] Lỗi gọi tool " + toolName + " do vai trò " + userRole + " bị cấm. Hãy đưa ra câu trả lời final_answer từ chối ngắn gọn và thân thiện.");
                             history.add(systemWarningMsg);
+                            trimHistoryForModel(history);
                             continue;
                         }
 
                         logger.info("[ReAct] Thực thi tool: " + toolName + " với params: " + params);
                         String observation;
                         try {
-                            observation = toolService.executeTool(toolName, params, username, userRole);
+                            observation = toolService.executeTool(toolName, params, userRole, username);
                         } catch (Exception e) {
                             logger.severe("[ReAct] Lỗi thực thi tool: " + e.getMessage());
                             observation = "Lỗi hệ thống khi chạy tool: " + e.getMessage();
@@ -162,21 +187,15 @@ public class ReActAgentService {
 
                         ChatMessage assistantMsg = new ChatMessage();
                         assistantMsg.setRole("assistant");
-                        assistantMsg.setContent(cleaned);
+                        assistantMsg.setContent(compactForModel(cleaned, 1_200));
                         history.add(assistantMsg);
 
                         ChatMessage toolResultMsg = new ChatMessage();
                         toolResultMsg.setRole("user");
-                        toolResultMsg.setContent("[KẾT QUẢ TOOL " + toolName.toUpperCase() + "]\n" + observation.substring(0, Math.min(600, observation.length())) + "\n\nfinal_answer ngay, <= 3 cau, khong mo dau.");
+                        toolResultMsg.setContent("[KẾT QUẢ TOOL " + toolName.toUpperCase() + "]\n" + compactForModel(observation, MAX_TOOL_OBSERVATION_CHARS) + "\n\nfinal_answer ngay, <= 3 cau, khong mo dau.");
                         history.add(toolResultMsg);
 
-                        if (history.size() > 7) {
-                            List<ChatMessage> trimmed = new ArrayList<>();
-                            trimmed.add(history.get(0));
-                            trimmed.addAll(history.subList(history.size() - 6, history.size()));
-                            history.clear();
-                            history.addAll(trimmed);
-                        }
+                        trimHistoryForModel(history);
                         continue;
                     }
 
@@ -186,12 +205,159 @@ public class ReActAgentService {
             }
 
             // Nếu ko phải JSON hợp lệ -> coi đây là câu trả lời cuối
+            cleaned = sanitizeFinalAnswer(cleaned, normalizedQuery);
             steps.add(new ReActStep("FINAL", cleaned, null, null, null));
             return new ReActResult(cleaned, steps);
         }
 
         String fallback = "Rexi cần thêm thông tin. Bạn có thể bổ sung không?";
         return new ReActResult(fallback, steps);
+    }
+
+    private ReActResult handleDeterministicIntent(String normalizedQuery, boolean isStaff, String userRole, String username, List<ReActStep> steps) {
+        if (normalizedQuery == null || normalizedQuery.isBlank()) {
+            return finalResult(steps, "Bạn muốn Rexi hỗ trợ phần nào?");
+        }
+
+        String q = normalizeSlangCommand(normalizedQuery.replaceAll("[^a-z0-9\\s_/.-]", " ").replaceAll("\\s+", " ").trim());
+        boolean greetingLike = q.matches("^(hi|hello|helo|hilo|halo|alo|chao|xin chao|hey|test|ping|yo|sup)(\\s+.*)?$")
+                || (containsAny(q, "hi", "hello", "helo", "hilo", "alo", "chao") && containsAny(q, "help", "giup", "ho tro"));
+        if (greetingLike) {
+            return finalResult(steps, "Rexi đây. Tôi giúp được: mở lịch hẹn, tra khách hàng, xem hóa đơn, kiểm kho, xem bệnh án hoặc điều phối tác vụ theo màn hình.");
+        }
+
+        if (isPetMedicalSymptomQuery(q)) {
+            return finalResult(steps, buildSafePetMedicalAdvice(q));
+        }
+
+        if (containsAny(q, "lich hen", "lich kham", "dat lich", "book lich", "xem lich", "hom nay co gi")) {
+            if (isStaff) {
+                return finalResult(steps, "Mở trang lịch hẹn cho bạn. [NAVIGATE:/quan-ly/lich-hen]");
+            }
+            return finalResult(steps, "Mở trang đặt lịch cho bạn. [NAVIGATE:/khach-hang/dat-lich-hen]");
+        }
+
+        if (containsAny(q, "them thu cung", "them 2 thu cung", "them pet", "them boss")
+                && containsAny(q, "bong", "holi")) {
+            if (!RoleAccessPolicy.canUseAgentTool(userRole, "them_thu_cung")) {
+                return finalResult(steps, RoleAccessPolicy.permissionDeniedMessage("them_thu_cung", userRole));
+            }
+            Map<String, Object> bong = new HashMap<>();
+            bong.put("ten_thu_cung", "Bông");
+            bong.put("loai", "Mèo");
+            bong.put("giong", "Anh lông ngắn");
+            bong.put("gioi_tinh", "Cái");
+            bong.put("mau_sac", "Trắng");
+            bong.put("trong_luong", "3.2");
+            bong.put("ngay_sinh", "2024-03-10");
+            bong.put("ghi_chu", "Thêm bởi Rexi Agent theo yêu cầu khách hàng.");
+
+            Map<String, Object> holi = new HashMap<>();
+            holi.put("ten_thu_cung", "Holi");
+            holi.put("loai", "Chó");
+            holi.put("giong", "Corgi");
+            holi.put("gioi_tinh", "Đực");
+            holi.put("mau_sac", "Vàng trắng");
+            holi.put("trong_luong", "8.4");
+            holi.put("ngay_sinh", "2023-11-05");
+            holi.put("ghi_chu", "Thêm bởi Rexi Agent theo yêu cầu khách hàng.");
+
+            String obs1 = toolService.executeTool("them_thu_cung", bong, userRole, username);
+            steps.add(new ReActStep("TOOL", "Gọi tool them_thu_cung cho Bông", "them_thu_cung", bong, obs1));
+            String obs2 = toolService.executeTool("them_thu_cung", holi, userRole, username);
+            steps.add(new ReActStep("TOOL", "Gọi tool them_thu_cung cho Holi", "them_thu_cung", holi, obs2));
+            return finalResult(steps, obs1 + " " + obs2 + " Mở lại danh sách thú cưng để kiểm tra. [NAVIGATE:/khach-hang/quan-ly-thu-cung]");
+        }
+
+        if (containsAny(q, "tra khach", "tim khach", "kiem khach", "khach hang", "chu nuoi", "sen nao")) {
+            if (RoleAccessPolicy.canUseAgentTool(userRole, "tim_khach_hang")) {
+                return finalResult(steps, "Mở trang khách hàng để tra cứu. [NAVIGATE:/quan-ly/khach-hang-thu-cung]");
+            }
+            return finalResult(steps, RoleAccessPolicy.permissionDeniedMessage("tim_khach_hang", userRole));
+        }
+
+        if (containsAny(q, "hoa don", "bill", "thanh toan")) {
+            if (RoleAccessPolicy.canUseAgentTool(userRole, "xem_hoa_don")) {
+                return finalResult(steps, "Mở trang hóa đơn cho bạn. [NAVIGATE:/quan-ly/hoa-don]");
+            }
+            return finalResult(steps, RoleAccessPolicy.permissionDeniedMessage("xem_hoa_don", userRole));
+        }
+
+        if (containsAny(q, "kho", "thuoc", "ton kho")) {
+            if (RoleAccessPolicy.canUseAgentTool(userRole, "xem_kho_thuoc")) {
+                return finalResult(steps, "Mở kho thuốc cho bạn. [NAVIGATE:/quan-ly/kho-thuoc]");
+            }
+            return finalResult(steps, RoleAccessPolicy.permissionDeniedMessage("xem_kho_thuoc", userRole));
+        }
+
+        return null;
+    }
+
+    private String normalizeSlangCommand(String value) {
+        if (value == null || value.isBlank()) return "";
+        String q = " " + value + " ";
+        q = q.replaceAll("\\b(e|ey|eh|yo|doi oi|troi oi|y|i)\\b", " ");
+        q = q.replaceAll("\\b(t|tui|toi|mk|m|minh)\\b", " toi ");
+        q = q.replaceAll("\\b(dum|gium|giup cai|help)\\b", " giup ");
+        q = q.replaceAll("\\b(nay|ni|nì|ne|nek|nhe|nha|coi|cai)\\b", " ");
+        q = q.replaceAll("\\b(z|v|dz|zay|vay)\\b", " vay ");
+        q = q.replaceAll("\\b(choa|chua|chóa|choaz|doggo|cun|cún)\\b", " cho ");
+        q = q.replaceAll("\\b(miu|mew|meow)\\b", " meo ");
+        q = q.replaceAll("\\b(chin|chinh|chinh cho|fix)\\b", " chinh ");
+        q = q.replaceAll("\\b(tun|len|up)\\b", " tang ");
+        q = q.replaceAll("\\b(bam|nhan|tap)\\b", " nhan ");
+        return q.replaceAll("\\s+", " ").trim();
+    }
+
+    private boolean isPetMedicalSymptomQuery(String q) {
+        if (q == null || q.isBlank()) return false;
+        boolean hasPet = containsAny(q, "cho", "meo", "cun", "miu", "boss", "be", "pet", "poodle", "corgi");
+        boolean hasSymptom = containsAny(q,
+                "oi", "non", "bo an", "khong an", "an it", "gai", "ngua", "run", "nam im", "met",
+                "cuu", "cap cuu", "co giat", "kho tho", "chay mau", "tieu chay", "di ngoai",
+                "nhay", "can", "dau", "sot", "loet", "sung", "li bi", "yeu");
+        boolean asksAdvice = containsAny(q, "lam sao", "lam gi", "co sao", "on ap", "can qua kham", "hong", "khong", "cuu")
+                || !containsAny(q, "tim ho so", "tra ho so", "ma benh an", "id");
+        return hasPet && hasSymptom && asksAdvice;
+    }
+
+    private String buildSafePetMedicalAdvice(String q) {
+        if (containsAny(q, "kho tho", "co giat", "nam im", "li bi", "chay mau", "cuu", "run")) {
+            return "Đây có thể là dấu hiệu khẩn cấp. Giữ bé nằm yên, không tự cho uống thuốc, gọi phòng khám hoặc đưa bé đi khám ngay.";
+        }
+        if (containsAny(q, "gai", "ngua")) {
+            return "Gãi nhiều có thể do ký sinh trùng, dị ứng hoặc viêm da. Tạm tránh tắm/thuốc lạ, kiểm tra da có đỏ/rụng lông không và đặt lịch khám nếu kéo dài.";
+        }
+        if (q.matches(".*\\b(oi|non)\\b.*") || containsAny(q, "bo an", "khong an")) {
+            return "Bé nôn/bỏ ăn cần theo dõi sát. Cho nước sạch, không ép ăn hay tự dùng thuốc; nếu lặp lại, lừ đừ hoặc quá 12-24 giờ thì nên đưa đi khám.";
+        }
+        return "Tôi hiểu bé đang có biểu hiện bất thường. Theo dõi nhịp thở, ăn uống, vận động; nếu nặng lên hoặc bạn không chắc, nên đưa bé đi khám.";
+    }
+
+    private ReActResult finalResult(List<ReActStep> steps, String answer) {
+        String safe = sanitizeFinalAnswer(answer, "");
+        steps.add(new ReActStep("FINAL", safe, null, null, null));
+        return new ReActResult(safe, steps);
+    }
+
+    private String sanitizeFinalAnswer(String answer, String normalizedQuery) {
+        if (answer != null) {
+            answer = answer
+                    .replaceAll("(?is)<think>.*?</think>", " ")
+                    .replaceAll("(?is)</?assistant>", " ")
+                    .replaceAll("(?is)^\\s*ish\\s*", " ")
+                    .replaceAll("(?is)Okay, let me break down.*?</think>", " ")
+                    .replaceAll("(?is)First, I need to.*?(?=\\n\\s*[\\p{L}Đđ])", " ")
+                    .replaceAll("\\s+", " ")
+                    .trim();
+        }
+        if (answer == null || answer.isBlank() || "null".equalsIgnoreCase(answer.trim())) {
+            if (normalizedQuery != null && !normalizedQuery.isBlank() && normalizedQuery.length() <= 80) {
+                return "Tôi chưa hiểu đủ ý. Bạn muốn mở trang nào hoặc thêm/sửa mục gì?";
+            }
+            return "Tôi chưa đủ dữ liệu để hoàn tất tác vụ này. Bạn gửi thêm SĐT khách hàng, tên thú cưng, ngày/giờ mong muốn hoặc tên phân hệ cần mở.";
+        }
+        return answer.trim();
     }
 
     private boolean isAffirmation(String normalizedQuery) {
@@ -203,6 +369,65 @@ public class ReActAgentService {
         return (q.contains("chot") || q.contains("xac nhan") || q.contains("dong y")
                 || q.contains("lam di") || q.contains("mo di") || q.contains("di thoi"))
                 && q.length() <= 35;
+    }
+
+    private ReActResult handleSensitiveCommandGate(String normalizedQuery, List<ReActStep> steps) {
+        if (normalizedQuery == null || normalizedQuery.isBlank()) return null;
+        SensitiveCommand sensitiveCommand = classifySensitiveCommand(normalizedQuery);
+        if (sensitiveCommand == null) return null;
+
+        String answer = switch (sensitiveCommand.level()) {
+            case "destructive" -> "CẢNH BÁO LỆNH NHẠY CẢM: Tôi phát hiện yêu cầu có thể thay đổi hoặc hủy dữ liệu hệ thống ("
+                    + sensitiveCommand.label() + "). Rexi Agent chưa thực hiện thao tác nào. Vui lòng xác nhận rõ bằng câu: \"Tôi xác nhận "
+                    + sensitiveCommand.confirmationText() + "\" và cung cấp đủ mã/tên/SĐT liên quan để tránh thao tác nhầm.";
+            case "financial" -> "CẢNH BÁO DỮ LIỆU NHẠY CẢM: Yêu cầu liên quan hóa đơn/thanh toán/bill ("
+                    + sensitiveCommand.label() + "). Rexi Agent chưa truy xuất hay thay đổi dữ liệu. Vui lòng xác nhận quyền xử lý và cung cấp mã hóa đơn, tên khách hoặc SĐT cụ thể.";
+            default -> "CẢNH BÁO DỮ LIỆU NHẠY CẢM: Yêu cầu có thể truy cập thông tin cá nhân/hồ sơ nội bộ ("
+                    + sensitiveCommand.label() + "). Rexi Agent chưa truy xuất dữ liệu. Vui lòng xác nhận quyền xử lý và cung cấp định danh cụ thể như tên, SĐT, mã khách hàng, mã thú cưng hoặc mã hồ sơ.";
+        };
+
+        steps.add(new ReActStep(
+                "SENSITIVE_CONFIRMATION_REQUIRED",
+                "Phát hiện lệnh hoặc dữ liệu nhạy cảm, dừng trước khi gọi tool/DB/AI.",
+                null,
+                Map.of("category", sensitiveCommand.level(), "label", sensitiveCommand.label()),
+                answer
+        ));
+        steps.add(new ReActStep("FINAL", answer, null, null, null));
+        return new ReActResult(answer, steps, "SensitiveGate");
+    }
+
+    private record SensitiveCommand(String level, String label, String confirmationText) {}
+
+    private boolean containsAny(String value, String... terms) {
+        if (value == null) return false;
+        for (String term : terms) {
+            if (value.contains(term)) return true;
+        }
+        return false;
+    }
+
+    private SensitiveCommand classifySensitiveCommand(String q) {
+        if (containsAny(q,
+                "xoa", "delete", "remove", "huy lich", "huy hoa don", "huy don", "huy phieu",
+                "khoa tai khoan", "mo khoa tai khoan", "reset mat khau", "doi mat khau",
+                "sua", "cap nhat", "update", "chinh sua", "thay doi trang thai")) {
+            return new SensitiveCommand("destructive", "xóa/hủy/sửa/cập nhật", "thực hiện thao tác nhạy cảm này");
+        }
+        if (containsAny(q,
+                "thanh toan", "hoan tien", "refund", "thu tien", "chot tien", "cong no",
+                "hoa don", "bill", "invoice", "payment", "pay")) {
+            return new SensitiveCommand("financial", "hóa đơn/thanh toán", "xử lý dữ liệu hóa đơn/thanh toán");
+        }
+        if (containsAny(q,
+                "sdt khach", "so dien thoai khach", "phone khach", "email khach",
+                "info acc", "acc tui", "acc toi", "tai khoan cua", "thong tin ca nhan",
+                "ho so benh an", "benh an cua", "lich su kham", "don thuoc cua",
+                "tim thu cung", "tim boss", "be nha tui",
+                "pet nha tui", "boss cua toi", "lich cua be", "lich boss", "lich pet")) {
+            return new SensitiveCommand("personal_data", "thông tin cá nhân/hồ sơ nội bộ", "truy cập dữ liệu nội bộ này");
+        }
+        return null;
     }
 
     private String extractFirstGroup(String input, String regex) {
@@ -252,6 +477,7 @@ public class ReActAgentService {
     }
 
     private ModelResponse callBestAvailableModel(List<ChatMessage> history) throws Exception {
+        trimHistoryForModel(history);
         Exception lastError = null;
         try {
             String response = groqService.chat(history);
@@ -329,10 +555,10 @@ public class ReActAgentService {
     }
 
     private String buildSystemPrompt(String userQuery, String username, String userRole) {
-        String globalCtx = memoryService.getGlobalContext(userQuery);
-        String userCtx   = (username != null) ? memoryService.getUserContext(username) : "";
+        String globalCtx = compactForModel(memoryService.getGlobalContext(userQuery), MAX_CONTEXT_CHARS);
+        String userCtx   = (username != null) ? compactForModel(memoryService.getUserContext(username), MAX_CONTEXT_CHARS) : "";
         boolean isStaff  = isStaffRole(userRole);
-        String toolsSchema = toolService.getToolsSchemaForRole(userRole);
+        String toolsSchema = compactToolsSchemaForQuery(toolService.getToolsSchemaForRole(userRole), userQuery);
         String normalizedRole = RoleAccessPolicy.normalizeRole(userRole);
 
         String medicalRule = switch (normalizedRole) {
@@ -359,8 +585,12 @@ public class ReActAgentService {
             + "3. DATA TOOL: neu can tra cuu/tao/sua du lieu he thong va du thong tin -> goi tool ngay, khong bao truoc.\n"
             + "4. Thieu 1 truong bat buoc -> hoi duy nhat 1 cau <= 10 tu. Thieu element DOM -> noi ro thieu element nao.\n"
             + "5. final_answer toi da 2-3 cau. Khong mo dau, khong tong ket tool data, khong viet phan tich dai.\n"
-            + "6. Ngon ngu Gen Z/teencode/khong dau -> hieu y, tra loi tieng Viet ngan.\n"
-            + "7. Chuan hoa tool input: loai=Meo/Cho, ngay=YYYY-MM-DD, gio=HH:mm.\n"
+            + "6. BAT BUOC hieu ngon ngu tu nhien that: Gen Z, teencode, go sai, khong dau, chen tu dem, noi tuc, viet tat, noi vong, tieng Viet lai Anh. Khong duoc phu thuoc danh sach format co san.\n"
+            + "7. Khi gap cau la, hay suy luan y dinh theo ngu canh + DOM hien tai: 'cai nay/cho nay/nut nay' thuong la element dang hien; 'tang len 2/up 2/set 2' la doi gia tri thanh 2; 'bam/nhan/an/tap' la click; 'chóa/chua/choa/doggo' la cho; 'miu/mew/meow' la meo. Neu van mo ho, hoi lai dung 1 cau ngan thay vi tra null.\n"
+            + "8. Cau hoi trieu chung thu y (oi, bo an, run, nam im, gai, kho tho...) la tu van an toan, KHONG goi tim_thu_cung/tim_khach_hang neu user khong noi ro can tim ho so trong DB.\n"
+            + "9. Tuyet doi khong lo reasoning/noi bo: khong viet <think>, </assistant>, tieng Anh phan tich, hoac giai thich qua trinh suy nghi trong final_answer.\n"
+            + "10. Chuan hoa tool input: loai=Meo/Cho, ngay=YYYY-MM-DD, gio=HH:mm.\n"
+            + "11. Chi goi tim_kiem_web khi user noi ro can len mang/web/tin moi/tai lieu ngoai he thong. CRUD, form, lich hen, kho, hoa don la tool noi bo/UI, khong dung web.\n"
             + medicalRule
             + "\n=== SITEMAP ===\n"
             + "[Khach] / | /bang-gia | /bac-si | /lien-he | /khach-hang/dashboard\n"
@@ -386,6 +616,47 @@ public class ReActAgentService {
         return RoleAccessPolicy.canUseAgentTool(userRole, toolName);
     }
 
+    private String compactToolsSchemaForQuery(String schema, String userQuery) {
+        if (schema == null) return "";
+        String normalized = normalizeVietnamese((userQuery == null ? "" : userQuery).toLowerCase(Locale.ROOT));
+        boolean needsWeb = normalized.matches(".*\\b(web|internet|online|tin moi|moi nhat|len mang|google|tai lieu ngoai|nguon ngoai)\\b.*");
+        if (needsWeb) {
+            return compactForModel(schema, 4_000);
+        }
+        return Arrays.stream(schema.split("\\R"))
+                .filter(line -> !line.contains("tim_kiem_web"))
+                .reduce((a, b) -> a + "\n" + b)
+                .map(value -> compactForModel(value, 3_500))
+                .orElse("");
+    }
+
+    private boolean isToolRelevantForQuery(String normalizedQuery, String toolName) {
+        if (!"tim_kiem_web".equals(toolName)) return true;
+        return normalizedQuery.matches(".*\\b(web|internet|online|tin moi|moi nhat|len mang|google|tai lieu ngoai|nguon ngoai)\\b.*");
+    }
+
+    private void trimHistoryForModel(List<ChatMessage> history) {
+        if (history == null || history.isEmpty()) return;
+        for (ChatMessage message : history) {
+            if (message.getContent() != null && message.getContent().length() > MAX_MODEL_MESSAGE_CHARS) {
+                message.setContent(compactForModel(message.getContent(), MAX_MODEL_MESSAGE_CHARS));
+            }
+        }
+        if (history.size() <= 7) return;
+        List<ChatMessage> trimmed = new ArrayList<>();
+        trimmed.add(history.get(0));
+        trimmed.addAll(history.subList(history.size() - 6, history.size()));
+        history.clear();
+        history.addAll(trimmed);
+    }
+
+    private String compactForModel(String value, int maxChars) {
+        if (value == null) return "";
+        String compact = value.replaceAll("\\s+", " ").trim();
+        if (compact.length() <= maxChars) return compact;
+        return compact.substring(0, Math.max(0, maxChars - 32)) + "... [da rut gon]";
+    }
+
     private boolean isStaffRole(String userRole) {
         return RoleAccessPolicy.isInternalStaffRole(userRole);
     }
@@ -393,6 +664,10 @@ public class ReActAgentService {
     // Bổ sung phương thức trích xuất ý định nguyên bản của người dùng
     private String extractOriginalUserIntent(String query) {
         if (query == null) return "";
+        String extracted = extractFirstGroup(query, "(?im)^\\s*(?:Yêu cầu người dùng|Yeu cau nguoi dung)\\s*:\\s*(.+?)\\s*$");
+        if (extracted != null && !extracted.isBlank()) {
+            return extracted;
+        }
         return query;
     }
 

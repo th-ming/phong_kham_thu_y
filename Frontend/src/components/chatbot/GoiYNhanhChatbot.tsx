@@ -3,7 +3,7 @@ import React from "react";
 export type QuickSuggestion = {
     label: string;
     prompt: string;
-    tone?: "default" | "danger" | "warning" | "success" | "info" | "agent";
+    tone?: "default" | "danger" | "warning" | "success" | "info" | "agent" | "doctor";
 };
 
 const sharedClinicalSuggestions: QuickSuggestion[] = [
@@ -18,6 +18,7 @@ const sharedClinicalSuggestions: QuickSuggestion[] = [
 const standardSuggestionMap: Record<string, QuickSuggestion[]> = {
     customer: [
         { label: "Đặt lịch khám", prompt: "Tôi muốn đặt lịch khám sức khỏe cho thú cưng", tone: "success" },
+        { label: "Thông tin bác sĩ", prompt: "Cho tôi biết thông tin bác sĩ phụ trách khám cho thú cưng", tone: "doctor" },
         { label: "Hồ sơ bé", prompt: "Tôi muốn xem và hiểu hồ sơ y tế của thú cưng", tone: "info" },
         { label: "Hóa đơn của tôi", prompt: "Tôi muốn kiểm tra các hóa đơn và trạng thái thanh toán", tone: "warning" },
         ...sharedClinicalSuggestions,
@@ -77,12 +78,16 @@ const standardSuggestionMap: Record<string, QuickSuggestion[]> = {
         { label: "Kho thuốc", prompt: "Kiểm tra kho thuốc tồn kho", tone: "warning" },
         ...sharedClinicalSuggestions,
     ],
-    guest: sharedClinicalSuggestions,
+    guest: [
+        { label: "Thông tin bác sĩ", prompt: "Cho tôi biết thông tin bác sĩ của phòng khám", tone: "info" },
+        ...sharedClinicalSuggestions,
+    ],
 };
 
 const agentSuggestionMap: Record<string, QuickSuggestion[]> = {
     customer: [
         { label: "Tự điền lịch khám", prompt: "Tự động điền lịch khám cho thú cưng của tôi vào khung giờ phù hợp", tone: "agent" },
+        { label: "Thông tin bác sĩ", prompt: "Cho tôi biết thông tin bác sĩ phụ trách khám cho thú cưng", tone: "info" },
         { label: "Tìm hóa đơn", prompt: "Mở trang hóa đơn và tìm hóa đơn chưa thanh toán của tôi", tone: "warning" },
         { label: "Mở hồ sơ y tế", prompt: "Mở hồ sơ y tế thú cưng của tôi", tone: "info" },
         { label: "Tìm tài liệu mèo mang thai", prompt: "Lên mạng tìm tài liệu chăm sóc mèo mang thai y khoa", tone: "success" },
@@ -143,6 +148,7 @@ const agentSuggestionMap: Record<string, QuickSuggestion[]> = {
         { label: "Đăng nhập", prompt: "Tôi cần đăng nhập để sử dụng các chức năng cá nhân", tone: "info" },
         { label: "Đặt lịch", prompt: "Hướng dẫn đặt lịch khám thú cưng", tone: "success" },
         { label: "Dịch vụ Rexi", prompt: "Rexi có những dịch vụ thú y nào?", tone: "default" },
+        { label: "Thông tin bác sĩ", prompt: "Cho tôi biết thông tin bác sĩ của phòng khám", tone: "doctor" },
     ],
 };
 
@@ -158,6 +164,7 @@ const suggestionToneStyles: Record<NonNullable<QuickSuggestion["tone"]>, React.C
     success: { borderColor: "rgba(16, 185, 129, 0.55)", background: "rgba(16, 185, 129, 0.10)", color: "#10b981" },
     info: { borderColor: "rgba(34, 211, 238, 0.55)", background: "rgba(34, 211, 238, 0.10)", color: "#22d3ee" },
     agent: { borderColor: "rgba(244, 63, 94, 0.55)", background: "rgba(244, 63, 94, 0.10)", color: "#f43f5e" },
+    doctor: { borderColor: "rgba(168, 85, 247, 0.65)", background: "rgba(168, 85, 247, 0.14)", color: "#a855f7" },
 };
 
 interface GoiYNhanhChatbotProps {

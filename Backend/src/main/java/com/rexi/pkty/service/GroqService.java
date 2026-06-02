@@ -30,56 +30,53 @@ public class GroqService {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    private static final long CONFIG_CACHE_TTL_MS = 30_000L;
+    private volatile long apiKeysCacheUntilMs = 0L;
+    private volatile List<String> cachedApiKeys = List.of();
+    private final ConcurrentHashMap<String, CachedConfig> configCache = new ConcurrentHashMap<>();
+
+    private record CachedConfig(String value, long expiresAtMs) {}
+
     private String getModelName() {
-        try {
-            String dbModel = jdbcTemplate.queryForObject(
-                "SELECT gia_tri FROM CauHinhHeThong WHERE ten_cau_hinh = 'groq_model'", 
-                String.class);
-            if (dbModel != null && !dbModel.trim().isEmpty()) {
-                return dbModel.trim();
-            }
-        } catch (Exception e) {
-        }
-        return modelName;
+        return getCachedConfig("groq_model", modelName);
     }
 
     private String getVisionModelName() {
-        try {
-            String dbModel = jdbcTemplate.queryForObject(
-                "SELECT gia_tri FROM CauHinhHeThong WHERE ten_cau_hinh = 'groq_vision_model'", 
-                String.class);
-            if (dbModel != null && !dbModel.trim().isEmpty()) {
-                return dbModel.trim();
-            }
-        } catch (Exception e) {
-        }
-        return visionModelName;
+        return getCachedConfig("groq_vision_model", visionModelName);
     }
 
     public String getAutopilotModelName() {
-        try {
-            String dbModel = jdbcTemplate.queryForObject(
-                "SELECT gia_tri FROM CauHinhHeThong WHERE ten_cau_hinh = 'groq_autopilot_model'", 
-                String.class);
-            if (dbModel != null && !dbModel.trim().isEmpty()) {
-                return dbModel.trim();
-            }
-        } catch (Exception e) {
+        String dbModel = getCachedConfig("groq_autopilot_model", "");
+        if (dbModel != null && !dbModel.isBlank()) {
+            return dbModel;
         }
         return getModelName();
     }
 
     public String getAudioModelName() {
+        return getCachedConfig("groq_audio_model", "whisper-large-v3-turbo");
+    }
+
+    private String getCachedConfig(String configName, String fallback) {
+        long now = System.currentTimeMillis();
+        CachedConfig cached = configCache.get(configName);
+        if (cached != null && cached.expiresAtMs() > now) {
+            return cached.value();
+        }
+
+        String value = fallback;
         try {
             String dbModel = jdbcTemplate.queryForObject(
-                "SELECT gia_tri FROM CauHinhHeThong WHERE ten_cau_hinh = 'groq_audio_model'", 
-                String.class);
+                "SELECT gia_tri FROM CauHinhHeThong WHERE ten_cau_hinh = ?",
+                String.class,
+                configName);
             if (dbModel != null && !dbModel.trim().isEmpty()) {
-                return dbModel.trim();
+                value = dbModel.trim();
             }
         } catch (Exception e) {
         }
-        return "whisper-large-v3-turbo";
+        configCache.put(configName, new CachedConfig(value, now + CONFIG_CACHE_TTL_MS));
+        return value;
     }
 
     private static final Logger logger = java.util.logging.Logger.getLogger(GroqService.class.getName());
@@ -90,7 +87,7 @@ public class GroqService {
     private static final String GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
     private static final String GROQ_AUDIO_URL = "https://api.groq.com/openai/v1/audio/transcriptions";
 
-    @Value("${groq.model:llama-3.3-70b-versatile}")
+    @Value("${groq.model:llama-3.1-8b-instant}")
     private String modelName;
 
     // Model để phân tích hình ảnh
@@ -103,6 +100,11 @@ public class GroqService {
     }
 
     private List<String> getApiKeys() {
+        long now = System.currentTimeMillis();
+        if (apiKeysCacheUntilMs > now && !cachedApiKeys.isEmpty()) {
+            return cachedApiKeys;
+        }
+
         Set<String> keys = new LinkedHashSet<>();
         try {
             List<String> dbKeys = jdbcTemplate.queryForList(
@@ -115,7 +117,10 @@ public class GroqService {
             }
         } catch (Exception e) {}
         addKeys(keys, apiKey);
-        return new ArrayList<>(keys);
+        List<String> resolvedKeys = List.copyOf(keys);
+        cachedApiKeys = resolvedKeys;
+        apiKeysCacheUntilMs = now + CONFIG_CACHE_TTL_MS;
+        return resolvedKeys;
     }
 
     private void addKeys(Set<String> keys, String rawValue) {
@@ -180,6 +185,16 @@ public class GroqService {
     private String maskKey(String key) {
         if (key == null || key.length() < 10) return "****";
         return key.substring(0, 6) + "..." + key.substring(key.length() - 4);
+    }
+
+    private List<String> getTextModelCandidates(String selectedModel) {
+        LinkedHashSet<String> models = new LinkedHashSet<>();
+        if (selectedModel != null && !selectedModel.isBlank()) {
+            models.add(selectedModel.trim());
+        }
+        // 8B instant is the low-cost/high-throughput safety net for production traffic.
+        models.add("llama-3.1-8b-instant");
+        return List.copyOf(models);
     }
 
     public void prewarm() {
@@ -282,56 +297,121 @@ public class GroqService {
             }
         }
 
-        // Dùng model phù hợp: vision cho ảnh, text cho chat thường
-        Map<String, Object> requestBodyMap = Map.of(
-                "model", selectedModel,
-                "messages", messagesForApi,
-                "max_tokens", hasImage ? 1024 : 800,
-                "temperature", 0.1);
-
-        String requestBody = objectMapper.writeValueAsString(requestBodyMap);
-
         List<String> apiKeys = getAvailableApiKeys(getApiKeys());
         if (apiKeys.isEmpty()) {
             throw new RuntimeException("Không tìm thấy Groq API Key nào được cấu hình!");
         }
 
         Exception lastException = null;
+        List<String> modelCandidates = hasImage ? List.of(selectedModel) : getTextModelCandidates(selectedModel);
+        for (String candidateModel : modelCandidates) {
+            Map<String, Object> requestBodyMap = Map.of(
+                    "model", candidateModel,
+                    "messages", messagesForApi,
+                    "max_tokens", hasImage ? 1024 : 500,
+                    "temperature", 0.1);
+            String requestBody = objectMapper.writeValueAsString(requestBodyMap);
+
+            int keyStart = Math.floorMod(keyCursor.getAndIncrement(), apiKeys.size());
+            for (int offset = 0; offset < apiKeys.size(); offset++) {
+                int i = (keyStart + offset) % apiKeys.size();
+                String currentApiKey = apiKeys.get(i);
+                try {
+                    HttpRequest request = HttpRequest.newBuilder()
+                            .uri(URI.create(GROQ_API_URL))
+                            .header("Content-Type", "application/json")
+                            .header("Authorization", "Bearer " + currentApiKey)
+                            .POST(HttpRequest.BodyPublishers.ofString(requestBody, StandardCharsets.UTF_8))
+                            .timeout(Duration.ofSeconds(15))
+                            .build();
+
+                    HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+                    if (response.statusCode() != 200) {
+                        logger.warning("Groq key/model lỗi, thử dự phòng tiếp theo. model=" + candidateModel
+                                + " keyIndex=" + i + " status=" + response.statusCode());
+                        markKeyFailure(currentApiKey, response.statusCode(), "chat");
+                        lastException = new RuntimeException("Groq API Error " + response.statusCode() + ": " + response.body());
+                        continue;
+                    }
+
+                    markKeySuccess(currentApiKey);
+                    prewarm();
+                    JsonNode rootNode = objectMapper.readTree(response.body());
+                    return rootNode.path("choices").get(0).path("message").path("content").asText();
+                } catch (Exception e) {
+                    lastException = e;
+                    markKeyFailure(currentApiKey, e);
+                    logger.warning("Groq key/model không khả dụng, thử dự phòng tiếp theo. model=" + candidateModel
+                            + " keyIndex=" + i + " error=" + e.getMessage());
+                }
+            }
+        }
+
+        throw new RuntimeException("Tất cả Groq API Key đều thất bại: "
+                + (lastException != null ? lastException.getMessage() : "không rõ lỗi"));
+    }
+
+    public String parseIntentJson(String userText) throws Exception {
+        List<String> apiKeys = getAvailableApiKeys(getApiKeys());
+        if (apiKeys.isEmpty()) {
+            throw new RuntimeException("Không tìm thấy Groq API Key nào được cấu hình!");
+        }
+
+        String systemPrompt = """
+                Bạn là bộ hiểu ý định cho chatbot thú y Rexi. Không trả lời người dùng.
+                Đọc câu tiếng Việt tự nhiên, teen code, viết sai chính tả, nói tục, viết không dấu.
+                Trả về DUY NHẤT JSON hợp lệ, không markdown:
+                {
+                  "intent": "vet_advice|web_search|booking|clinic_info|smalltalk|unknown",
+                  "species": "dog|cat|pet|unknown",
+                  "body_part": "eye|skin|digestive|respiratory|general|unknown",
+                  "symptoms": ["..."],
+                  "needs_web_search": true|false,
+                  "urgency": "emergency|same_day|routine|unknown",
+                  "confidence": 0.0
+                }
+                Ưu tiên hiểu nghĩa, không phụ thuộc từ khóa. Nếu người dùng đòi sợt/search/tài liệu/nguồn thì needs_web_search=true.
+                """;
+
+        List<Map<String, Object>> messages = List.of(
+                Map.of("role", "system", "content", systemPrompt),
+                Map.of("role", "user", "content", userText == null ? "" : userText)
+        );
+        String requestBody = objectMapper.writeValueAsString(Map.of(
+                "model", getModelName(),
+                "messages", messages,
+                "max_tokens", 180,
+                "temperature", 0,
+                "response_format", Map.of("type", "json_object")
+        ));
+
+        Exception lastException = null;
         int keyStart = Math.floorMod(keyCursor.getAndIncrement(), apiKeys.size());
-        for (int offset = 0; offset < apiKeys.size(); offset++) {
-            int i = (keyStart + offset) % apiKeys.size();
-            String currentApiKey = apiKeys.get(i);
+        for (int offset = 0; offset < Math.min(apiKeys.size(), 2); offset++) {
+            String currentApiKey = apiKeys.get((keyStart + offset) % apiKeys.size());
             try {
                 HttpRequest request = HttpRequest.newBuilder()
                         .uri(URI.create(GROQ_API_URL))
                         .header("Content-Type", "application/json")
                         .header("Authorization", "Bearer " + currentApiKey)
                         .POST(HttpRequest.BodyPublishers.ofString(requestBody, StandardCharsets.UTF_8))
-                        .timeout(Duration.ofSeconds(15))
+                        .timeout(Duration.ofSeconds(4))
                         .build();
-
                 HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
                 if (response.statusCode() != 200) {
-                    logger.warning("Groq key lỗi, thử key dự phòng tiếp theo. keyIndex=" + i
-                            + " status=" + response.statusCode());
-                    markKeyFailure(currentApiKey, response.statusCode(), "chat");
-                    lastException = new RuntimeException("Groq API Error " + response.statusCode() + ": " + response.body());
+                    markKeyFailure(currentApiKey, response.statusCode(), "intent-parse");
+                    lastException = new RuntimeException("Groq intent parse error " + response.statusCode());
                     continue;
                 }
-
                 markKeySuccess(currentApiKey);
-                prewarm();
                 JsonNode rootNode = objectMapper.readTree(response.body());
                 return rootNode.path("choices").get(0).path("message").path("content").asText();
             } catch (Exception e) {
                 lastException = e;
                 markKeyFailure(currentApiKey, e);
-                logger.warning("Groq key không khả dụng, thử key dự phòng tiếp theo. keyIndex=" + i
-                        + " error=" + e.getMessage());
             }
         }
-
-        throw new RuntimeException("Tất cả Groq API Key đều thất bại: "
+        throw new RuntimeException("Intent parser không khả dụng: "
                 + (lastException != null ? lastException.getMessage() : "không rõ lỗi"));
     }
 

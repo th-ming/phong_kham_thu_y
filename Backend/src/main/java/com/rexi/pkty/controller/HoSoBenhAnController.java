@@ -203,16 +203,86 @@ public class HoSoBenhAnController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         int offset = page * size;
-        String sql = "SELECT baxn.id_ba_xn as id_xet_nghiem_benh_an, lxn.ten_xet_nghiem, " +
-                "baxn.id_benh_an as id_ho_so, baxn.ngay_chi_dinh as ngay_lay_mau, " +
+        String sql = "SELECT baxn.id_xet_nghiem_benh_an, COALESCE(lxn.ten_xet_nghiem, baxn.id_loai_xet_nghiem) as ten_xet_nghiem, " +
+                "baxn.id_ho_so, baxn.ngay_lay_mau, " +
                 "baxn.trang_thai, nv.ho_ten as ten_bac_si " +
                 "FROM BenhAn_XetNghiem baxn " +
-                "JOIN LoaiXetNghiem lxn ON baxn.id_loai_xet_nghiem = lxn.id_loai_xet_nghiem " +
-                "JOIN HoSoBenhAn hs ON baxn.id_benh_an = hs.id_ho_so_benh_an " +
-                "JOIN NhanVien nv ON hs.id_bac_si = nv.id_nhan_vien " +
-                "ORDER BY baxn.ngay_chi_dinh DESC " +
+                "LEFT JOIN LoaiXetNghiem lxn ON baxn.id_loai_xet_nghiem = CONVERT(VARCHAR(50), lxn.id_loai_xet_nghiem) " +
+                "JOIN HoSoBenhAn hs ON baxn.id_ho_so = hs.id_ho_so_benh_an " +
+                "LEFT JOIN NhanVien nv ON COALESCE(baxn.id_bac_si, hs.id_bac_si) = nv.id_nhan_vien " +
+                "ORDER BY baxn.ngay_lay_mau DESC " +
                 "OFFSET CAST(? AS INT) ROWS FETCH NEXT CAST(? AS INT) ROWS ONLY";
         return jdbcTemplate.queryForList(sql, offset, size);
+    }
+
+    @PostMapping("/xet-nghiem/manual")
+    @PreAuthorize(RexiSecurityRoles.AUTHENTICATED)
+    @Transactional
+    public org.springframework.http.ResponseEntity<?> taoXetNghiemThuCong(@RequestBody Map<String, Object> payload) {
+        try {
+            String idHoSo = String.valueOf(payload.get("id_ho_so"));
+            String tenDanhMuc = String.valueOf(payload.getOrDefault("ten_danh_muc", "Xét nghiệm thủ công"));
+            String tenXetNghiem = String.valueOf(payload.getOrDefault("ten_xet_nghiem", "Xét nghiệm tổng quát thủ công"));
+            String tenThongSo = String.valueOf(payload.getOrDefault("ten_thong_so", "WBC"));
+            String giaTri = String.valueOf(payload.getOrDefault("gia_tri_ket_qua", "7.2"));
+
+            List<Map<String, Object>> hoSo = jdbcTemplate.queryForList(
+                    "SELECT TOP 1 hs.id_bac_si, lh.id_dich_vu FROM HoSoBenhAn hs LEFT JOIN LichHen lh ON hs.id_lich_hen = lh.id_lich_hen WHERE hs.id_ho_so_benh_an = ?",
+                    idHoSo);
+            if (hoSo.isEmpty()) {
+                return org.springframework.http.ResponseEntity.status(404)
+                        .body(Map.of("message", "Không tìm thấy hồ sơ bệnh án."));
+            }
+            String idBacSi = String.valueOf(hoSo.get(0).get("id_bac_si"));
+            String idDichVu = payload.get("id_dich_vu") != null
+                    ? String.valueOf(payload.get("id_dich_vu"))
+                    : String.valueOf(hoSo.get(0).get("id_dich_vu"));
+
+            Integer idDanhMuc = jdbcTemplate.queryForObject(
+                    "INSERT INTO DanhMucXetNghiem (ten_danh_muc, mo_ta) OUTPUT INSERTED.id_danh_muc VALUES (?, ?)",
+                    Integer.class,
+                    tenDanhMuc,
+                    "Dữ liệu nhập thủ công từ web/API khi chưa tích hợp máy xét nghiệm");
+
+            Integer idLoai = jdbcTemplate.queryForObject(
+                    "INSERT INTO LoaiXetNghiem (id_danh_muc, ten_xet_nghiem, mo_ta, gia_tien) OUTPUT INSERTED.id_loai_xet_nghiem VALUES (?, ?, ?, ?)",
+                    Integer.class,
+                    idDanhMuc,
+                    tenXetNghiem,
+                    "Phiếu xét nghiệm tạo thủ công",
+                    new java.math.BigDecimal(String.valueOf(payload.getOrDefault("gia_tien", "0"))));
+
+            Integer idChiSo = jdbcTemplate.queryForObject(
+                    "INSERT INTO ChiSoXetNghiem (id_loai_xet_nghiem, ten_thong_so, don_vi) OUTPUT INSERTED.id_chi_so VALUES (?, ?, ?)",
+                    Integer.class,
+                    idLoai,
+                    tenThongSo,
+                    String.valueOf(payload.getOrDefault("don_vi", "10^9/L")));
+
+            Integer idXetNghiem = jdbcTemplate.queryForObject(
+                    "INSERT INTO BenhAn_XetNghiem (id_ho_so, id_loai_xet_nghiem, ngay_lay_mau, id_bac_si, trang_thai) OUTPUT INSERTED.id_xet_nghiem_benh_an VALUES (?, ?, GETDATE(), ?, ?)",
+                    Integer.class,
+                    idHoSo,
+                    String.valueOf(idLoai),
+                    idBacSi,
+                    String.valueOf(payload.getOrDefault("trang_thai", "HOAN_THANH")));
+
+            jdbcTemplate.update(
+                    "INSERT INTO KetQuaXetNghiem_ChiTiet (id_xet_nghiem_benh_an, id_chi_so, gia_tri_ket_qua) VALUES (?, ?, ?)",
+                    idXetNghiem,
+                    idChiSo,
+                    giaTri);
+
+            auditLogService.logAction("THÊM MỚI", "BenhAn_XetNghiem", "Tạo phiếu xét nghiệm thủ công cho hồ sơ " + idHoSo);
+            return org.springframework.http.ResponseEntity.ok(Map.of(
+                    "id_xet_nghiem_benh_an", idXetNghiem,
+                    "id_danh_muc", idDanhMuc,
+                    "id_loai_xet_nghiem", idLoai,
+                    "id_chi_so", idChiSo));
+        } catch (Exception e) {
+            return org.springframework.http.ResponseEntity.status(400)
+                    .body(Map.of("message", "Không thể tạo xét nghiệm thủ công: " + e.getMessage()));
+        }
     }
 
     private boolean hasMedicalPermission() {

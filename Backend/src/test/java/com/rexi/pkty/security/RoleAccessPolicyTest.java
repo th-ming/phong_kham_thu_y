@@ -14,6 +14,8 @@ class RoleAccessPolicyTest {
         assertFalse(RoleAccessPolicy.isInternalStaffRole("khách hàng"));
         assertFalse(RoleAccessPolicy.isInternalStaffRole("VT-5"));
         assertFalse(RoleAccessPolicy.isInternalStaffRole("guest"));
+        assertFalse(RoleAccessPolicy.isInternalStaffRole("SUPER_USER"));
+        assertFalse(RoleAccessPolicy.isInternalStaffRole("unknown_role"));
         assertFalse(RoleAccessPolicy.isInternalStaffRole(null));
     }
 
@@ -35,6 +37,14 @@ class RoleAccessPolicyTest {
         assertFalse(RoleAccessPolicy.canUseAgentTool("KHACH_HANG", "thao_tac_tai_khoan"));
         assertFalse(RoleAccessPolicy.canUseAgentTool("VT-5", "xem_hoa_don"));
         assertFalse(RoleAccessPolicy.canUseAgentTool("VT-5", "cap_nhat_benh_an"));
+    }
+
+    @Test
+    void unknownRolesCannotUseAgentTools() {
+        assertFalse(RoleAccessPolicy.canUseAgentTool("SUPER_USER", "tim_lich_trong"));
+        assertFalse(RoleAccessPolicy.canUseAgentTool("SUPER_USER", "xem_benh_an"));
+        assertFalse(RoleAccessPolicy.canUseAgentTool("unknown_role", "tim_kiem_web"));
+        assertFalse(RoleAccessPolicy.canUseAgentTool("unknown_role", "thong_ke_doanh_thu"));
     }
 
     @Test

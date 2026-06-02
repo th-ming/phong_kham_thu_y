@@ -252,6 +252,65 @@ public class SystemController {
         return ResponseEntity.ok(features);
     }
 
+    @PostMapping("/du-lieu-nen")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<?> taoDuLieuNenThieu() {
+        try {
+            Integer idChucNang = jdbcTemplate.queryForObject(
+                    "SELECT TOP 1 id_chuc_nang FROM ChucNang WHERE ma_chuc_nang = ?",
+                    Integer.class,
+                    "XET_NGHIEM");
+            return ResponseEntity.ok(Map.of("message", "Dữ liệu nền đã tồn tại.", "id_chuc_nang", idChucNang));
+        } catch (Exception ignored) {
+            // Chưa có dữ liệu nền, tạo mẫu tối thiểu để màn phân hệ/quyền có dữ liệu thật.
+        }
+
+        try {
+            jdbcTemplate.update(
+                    "INSERT INTO ChucNang (ma_chuc_nang, ten_chuc_nang, mo_ta) VALUES (?, ?, ?)",
+                    "XET_NGHIEM",
+                    "Xét nghiệm & Cận lâm sàng",
+                    "Phiếu xét nghiệm, chỉ số và kết quả cận lâm sàng");
+            Integer idChucNang = jdbcTemplate.queryForObject(
+                    "SELECT TOP 1 id_chuc_nang FROM ChucNang WHERE ma_chuc_nang = ? ORDER BY id_chuc_nang DESC",
+                    Integer.class,
+                    "XET_NGHIEM");
+            String idVaiTro = jdbcTemplate.queryForObject(
+                    "SELECT TOP 1 id_vai_tro FROM VaiTroHeThong ORDER BY id_vai_tro",
+                    String.class);
+            String idNhanVien = jdbcTemplate.queryForObject(
+                    "SELECT TOP 1 id_nhan_vien FROM NhanVien ORDER BY id_nhan_vien",
+                    String.class);
+            jdbcTemplate.update(
+                    "INSERT INTO PhanQuyen (id_vai_tro, id_chuc_nang) VALUES (?, ?)",
+                    idVaiTro,
+                    idChucNang);
+            jdbcTemplate.update(
+                    "INSERT INTO PhanCongNhanVien (id_nhan_vien, id_vai_tro, ngay_bat_dau_phan_cong) VALUES (?, ?, CAST(GETDATE() AS DATE))",
+                    idNhanVien,
+                    idVaiTro);
+
+            List<Map<String, Object>> lichHen = jdbcTemplate.queryForList(
+                    "SELECT TOP 1 lh.id_lich_hen, lh.id_dich_vu, ISNULL(dv.gia, 0) AS don_gia " +
+                            "FROM LichHen lh LEFT JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu " +
+                            "WHERE lh.id_dich_vu IS NOT NULL ORDER BY lh.ngay_tao DESC");
+            if (!lichHen.isEmpty()) {
+                Map<String, Object> item = lichHen.get(0);
+                jdbcTemplate.update(
+                        "INSERT INTO DichVuLichHen (id_lich_hen, id_dich_vu, so_luong, don_gia, ghi_chu) VALUES (?, ?, 1, ?, ?)",
+                        item.get("id_lich_hen"),
+                        item.get("id_dich_vu"),
+                        item.get("don_gia"),
+                        "Liên kết dịch vụ theo lịch hẹn hiện có");
+            }
+
+            auditLogService.logAction("THÊM MỚI", "ChucNang/PhanQuyen", "Tạo dữ liệu nền quyền/phân hệ tối thiểu");
+            return ResponseEntity.ok(Map.of("message", "Đã tạo dữ liệu nền còn thiếu.", "id_chuc_nang", idChucNang));
+        } catch (Exception e) {
+            return ResponseEntity.status(400).body(Map.of("message", "Không thể tạo dữ liệu nền: " + e.getMessage()));
+        }
+    }
+
     @PostMapping("/backup")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> backupDatabase() {
@@ -365,6 +424,45 @@ public class SystemController {
             return ResponseEntity.ok(Map.of("count", count != null ? count : 0));
         } catch (Exception e) {
             return ResponseEntity.ok(Map.of("count", 0));
+        }
+    }
+
+    @PostMapping("/newsletter")
+    public ResponseEntity<?> subscribeNewsletter(@RequestBody Map<String, String> payload) {
+        String email = payload.get("email");
+        if (email == null || email.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Vui lòng nhập email"));
+        }
+
+        email = email.trim().toLowerCase(Locale.ROOT);
+        if (!email.matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$") || email.length() > 100) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Email không hợp lệ"));
+        }
+
+        try {
+            Integer marketingExists = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM EmailMarketing WHERE email = ?",
+                Integer.class,
+                email);
+            if (marketingExists == null || marketingExists == 0) {
+                jdbcTemplate.update(
+                    "INSERT INTO EmailMarketing (email, ngay_dang_ky, trang_thai) VALUES (?, GETDATE(), 1)",
+                    email);
+            }
+
+            Integer legacyExists = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM DangKyNhanTin WHERE Email = ?",
+                Integer.class,
+                email);
+            if (legacyExists == null || legacyExists == 0) {
+                jdbcTemplate.update(
+                    "INSERT INTO DangKyNhanTin (Email, NgayDangKy) VALUES (?, GETDATE())",
+                    email);
+            }
+
+            return ResponseEntity.ok(Map.of("success", true, "message", "Đăng ký nhận tin thành công"));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("message", "Lỗi đăng ký nhận tin: " + e.getMessage()));
         }
     }
 

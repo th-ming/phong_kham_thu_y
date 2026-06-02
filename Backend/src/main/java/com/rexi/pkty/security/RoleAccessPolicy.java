@@ -1,7 +1,6 @@
 package com.rexi.pkty.security;
 
 import java.text.Normalizer;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -11,6 +10,7 @@ public final class RoleAccessPolicy {
     public static final Set<String> CUSTOMER_SAFE_AGENT_TOOLS = Set.of(
         "tim_lich_trong",
         "huy_lich_hen",
+        "them_thu_cung",
         "tim_kiem_web",
         "kiem_tra_phan_he",
         "tra_cuu_tai_lieu_y_khoa"
@@ -25,6 +25,16 @@ public final class RoleAccessPolicy {
         "vt_5"
     );
 
+    private static final Set<String> INTERNAL_ROLE_CODES = Set.of(
+        "admin",
+        "quan_ly",
+        "staff",
+        "bac_si",
+        "ke_toan",
+        "tiep_tan",
+        "y_ta"
+    );
+
     /** Vai trò nội bộ được phép theo từng tool */
     private static final Map<String, Set<String>> TOOL_ROLES = Map.ofEntries(
         Map.entry("tim_lich_hen_hom_nay", Set.of("admin", "quan_ly", "staff", "bac_si", "tiep_tan", "y_ta")),
@@ -36,6 +46,7 @@ public final class RoleAccessPolicy {
         Map.entry("tim_lich_trong", Set.of("admin", "quan_ly", "staff", "bac_si", "ke_toan", "tiep_tan", "y_ta")),
         Map.entry("dat_lich_hen", Set.of("admin", "quan_ly", "staff", "bac_si", "tiep_tan", "y_ta")),
         Map.entry("huy_lich_hen", Set.of("admin", "quan_ly", "staff", "bac_si", "tiep_tan", "y_ta")),
+        Map.entry("them_thu_cung", Set.of("admin", "quan_ly", "staff", "tiep_tan")),
         Map.entry("cap_nhat_benh_an", Set.of("bac_si", "y_ta")),
         Map.entry("xem_kho_thuoc", Set.of("admin", "quan_ly", "ke_toan", "bac_si", "y_ta", "tiep_tan")),
         Map.entry("thong_ke_doanh_thu", Set.of("admin", "quan_ly", "ke_toan")),
@@ -56,7 +67,7 @@ public final class RoleAccessPolicy {
 
     public static boolean isInternalStaffRole(String userRole) {
         String normalized = normalizeRole(userRole);
-        return !normalized.isBlank() && !CUSTOMER_ROLE_CODES.contains(normalized);
+        return INTERNAL_ROLE_CODES.contains(normalized);
     }
 
     public static boolean isCustomerRole(String userRole) {

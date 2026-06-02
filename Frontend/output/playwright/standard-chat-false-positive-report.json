@@ -1,0 +1,57 @@
+{
+  "baseUrl": "http://127.0.0.1:3001",
+  "shots": [
+    {
+      "prompt": "Bảng giá khám tổng quát cho chó bao nhiêu tiền?",
+      "path": "D:\\QLy Phòng Khám Thú Y\\Frontend\\output\\playwright\\standard-chat-false-positive-01-bang-gia.png"
+    },
+    {
+      "prompt": "Bác sĩ Huy hôm nay có lịch trực không?",
+      "path": "D:\\QLy Phòng Khám Thú Y\\Frontend\\output\\playwright\\standard-chat-false-positive-02-bac-si-huy.png"
+    },
+    {
+      "prompt": "Chọn khoa khám bệnh cho bé mèo thì nên chọn mục nào?",
+      "path": "D:\\QLy Phòng Khám Thú Y\\Frontend\\output\\playwright\\standard-chat-false-positive-03-chon-khoa.png"
+    },
+    {
+      "prompt": "Bé nhà tôi bị nôn bọt trắng, có cần đi cấp cứu không?",
+      "path": "D:\\QLy Phòng Khám Thú Y\\Frontend\\output\\playwright\\standard-chat-false-positive-04-non-bot-trang.png"
+    },
+    {
+      "prompt": "Tôi muốn xem hướng dẫn thanh toán online thì làm sao?",
+      "path": "D:\\QLy Phòng Khám Thú Y\\Frontend\\output\\playwright\\standard-chat-false-positive-05-huong-dan-thanh-toan.png"
+    }
+  ],
+  "apiResponses": [
+    {
+      "prompt": "Bảng giá khám tổng quát cho chó bao nhiêu tiền?",
+      "url": "http://localhost:3001/api/chat",
+      "status": 200,
+      "body": "{\"source\":\"fast_db\",\"reply\":\"Rexi tra bảng giá trực tiếp từ hệ thống:\\n- Khám Đa Khoa: 150,000 VND (~30 phút)\"}"
+    },
+    {
+      "prompt": "Bác sĩ Huy hôm nay có lịch trực không?",
+      "url": "http://localhost:3001/api/chat",
+      "status": 200,
+      "body": "{\"source\":\"fast_db\",\"reply\":\"Rexi tra lịch trực trực tiếp từ hệ thống:\\n- 2026-06-02: BS. BS. Phạm Quang Hùng từ 08:00:00 đến 08:30:00 (Admin phân bổ lịch trực kín tháng 06/2026)\\n- 2026-06-02: BS. BS. Lê Thị Hồng từ 08:30:00 đến 09:00:00 (Admin phân bổ lịch trực kín tháng 06/2026)\\n- 2026-06-02: BS. BS. Khánh Linh từ 09:00:00 đến 09:30:00 (Admin phân bổ lịch trực kín tháng 06/2026)\\n- 2026-06-02: BS. BS. Hoàng Nam từ 09:00:00 đến 09:30:00 (Admin phân bổ lịch trực kín tháng 06/2026)\\n- 2026-06-02: BS. BS. Thu Thủy từ 09:30:00 đến 10:00:00 (Admin phân bổ lịch trực kín tháng 06/2026)\\n- 2026-06-02: BS. Bác sĩ Trần Minh từ 09:30:00 đến 10:00:00 (Admin phân bổ lịch trực kín tháng 06/2026)\\n- 2026-06-02: BS. BS. Minh Anh từ 09:30:00 đến 10:00:00 (Admin phân bổ lịch trực kín tháng 06/2026)\\n- 2026-06-02: BS. BS. Lê Thị Hồng từ 10:30:00 đến 11:00:00 (Admin phân bổ lịch trực kín tháng 06/2026)\\n- 2026-06-02: BS. BS. Phạm Quang Hùng từ 10:30:00 đến 11:00:00 (Admin phân bổ lịch trực kín tháng 06/2026)\\n- 2026-06-02: BS. BS. Minh Anh từ 11:30:00 đến 12:00:00 (Admin phân bổ lịch trực kín tháng 06/2026)\\n- 2026-06-02: BS. BS. Khánh Linh từ 11:30:00 đến 12:00:00 (Admin phân bổ lịch trực kín tháng 06/2026)\\n- 2026-06-02: BS. BS. Hoàng Nam từ 11:30:00 đến 12:00:00 (Admin phân bổ lịch trực kín tháng 06/2026)\"}"
+    },
+    {
+      "prompt": "Chọn khoa khám bệnh cho bé mèo thì nên chọn mục nào?",
+      "url": "http://localhost:3001/api/chat",
+      "status": 200,
+      "body": "{\"source\":\"local_clinic_guidance\",\"reply\":\"Với chó/mèo nếu chưa rõ bệnh cụ thể, Sen/sếp chọn **Khám Đa Khoa** trước. Nếu bé có vấn đề rõ hơn thì chọn phân hệ phù hợp: da/tai/ngứa chọn khám da liễu, tiêm phòng chọn tiêm chủng, xét nghiệm chọn xét nghiệm, cấp cứu thì gọi hotline 0353.374.156 hoặc đưa bé tới phòng khám ngay.\"}"
+    },
+    {
+      "prompt": "Bé nhà tôi bị nôn bọt trắng, có cần đi cấp cứu không?",
+      "url": "http://localhost:3001/api/chat",
+      "status": 200,
+      "body": "{\"reply\":\"Sếp ơi, nôn bọt trắng ở thú cưng có thể là dấu hiệu của rối loạn tiêu hoá, viêm dạ dày, hoặc tắc nghẽn đường tiêu hoá – một trường hợp cần được kiểm tra kịp thời.  \\n\\n**Khuyến nghị:**  \\n- Nếu nôn kéo dài > 2‑3 lần, có kèm sốt, lờ đờ, hoặc bé không muốn ăn/uống → **đi khám ngay** (có thể cần xét nghiệm máu, siêu âm).  \\n- Trong thời gian chờ, giữ bé ở nơi yên tĩnh, cho uống nước sạch từng giọt nhỏ để tránh mất nước.  \\n\\nNếu có bất kỳ dấu hiệu bất thường nào khác (đau bụng dữ dội, tiêu chảy, khó thở), hãy gọi ngay hotline **0353.374.156** để được hướng dẫn sơ cứu và sắp xếp lịch khám khẩn cấp.  \\n\\nChúc bé mau khỏe!\",\"provider\":\"OpenRouter\"}"
+    },
+    {
+      "prompt": "Tôi muốn xem hướng dẫn thanh toán online thì làm sao?",
+      "url": "http://localhost:3001/api/chat",
+      "status": 200,
+      "body": "{\"source\":\"local_clinic_guidance\",\"reply\":\"Để xem hướng dẫn thanh toán online, Sen/sếp mở mục **Hóa đơn & Thanh toán**, chọn hóa đơn cần xem rồi làm theo hướng dẫn chuyển khoản/VNPay hiển thị trên màn hình. Nếu chỉ cần hướng dẫn thì Rexi không thay đổi trạng thái hóa đơn; mọi thao tác xác nhận/hủy/cập nhật thanh toán sẽ cần Rexi Agent kiểm tra quyền và xác nhận riêng.\"}"
+    }
+  ]
+}

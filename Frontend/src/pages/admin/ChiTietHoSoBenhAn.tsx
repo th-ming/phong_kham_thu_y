@@ -81,11 +81,34 @@ const ChiTietHoSoBenhAn: React.FC = () => {
     <div className="animate-fade-in" id="print-medical-record">
       <style>{`
         @media print {
+          @page { size: A4 portrait; margin: 12mm; }
+          html, body { background: #ffffff !important; overflow: visible !important; }
           body * { visibility: hidden; }
           #print-medical-record, #print-medical-record * { visibility: visible; }
-          #print-medical-record { position: absolute; left: 0; top: 0; width: 100%; padding: 0; margin: 0; }
-          .no-print { display: none !important; }
-          .glass-card { box-shadow: none !important; border: 1px solid #ccc !important; break-inside: avoid; }
+          #print-medical-record {
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 186mm !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: #ffffff !important;
+            color: #111827 !important;
+          }
+          #print-medical-record > div:last-child {
+            display: block !important;
+          }
+          #print-medical-record .glass-card {
+            box-shadow: none !important;
+            border: 1px solid #d1d5db !important;
+            break-inside: avoid;
+            page-break-inside: avoid;
+            margin-bottom: 12px !important;
+          }
+          .no-print, .no-print * {
+            display: none !important;
+            visibility: hidden !important;
+          }
         }
       `}</style>
       <div style={{ marginBottom: '40px', display: 'flex', alignItems: 'center', gap: '20px' }}>

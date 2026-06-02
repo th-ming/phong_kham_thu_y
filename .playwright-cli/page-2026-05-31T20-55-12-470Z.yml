@@ -1,0 +1,324 @@
+- generic [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]:
+        - img "Rexi" [ref=e7]
+        - generic [ref=e8]:
+          - heading "REXI ADMIN" [level=2] [ref=e9]
+          - paragraph [ref=e10]: HỆ THỐNG QUẢN TRỊ
+      - generic [ref=e11]:
+        - img "Admin Rexi System" [ref=e15]
+        - generic [ref=e16]:
+          - paragraph [ref=e17]: Admin Rexi System
+          - paragraph [ref=e18]: Quản trị tối cao
+      - navigation [ref=e19]:
+        - generic [ref=e20]: TỔNG QUAN
+        - link "dashboard Bảng điều khiển" [ref=e21] [cursor=pointer]:
+          - /url: /quan-ly/dashboard
+          - generic [ref=e22]: dashboard
+          - text: Bảng điều khiển
+        - link "monitoring Báo cáo & Thống kê" [ref=e23] [cursor=pointer]:
+          - /url: /quan-ly/bao-cao-thong-ke
+          - generic [ref=e24]: monitoring
+          - text: Báo cáo & Thống kê
+        - generic [ref=e25]: LỊCH TRÌNH & NHÂN SỰ
+        - link "calendar_month Quản lý lịch hẹn" [ref=e26] [cursor=pointer]:
+          - /url: /quan-ly/lich-hen
+          - generic [ref=e28]: calendar_month
+          - text: Quản lý lịch hẹn
+        - link "edit_calendar Điều hành nhân sự" [ref=e29] [cursor=pointer]:
+          - /url: /quan-ly/lich-lam-viec
+          - generic [ref=e30]: edit_calendar
+          - text: Điều hành nhân sự
+        - link "badge Nhân sự & Quyền hạn" [ref=e31] [cursor=pointer]:
+          - /url: /quan-ly/nhan-vien-phan-quyen
+          - generic [ref=e32]: badge
+          - text: Nhân sự & Quyền hạn
+        - generic [ref=e33]: KHÁCH HÀNG & DỊCH VỤ
+        - link "groups Khách hàng & Thú cưng" [ref=e34] [cursor=pointer]:
+          - /url: /quan-ly/khach-hang-thu-cung
+          - generic [ref=e35]: groups
+          - text: Khách hàng & Thú cưng
+        - link "medical_information Danh mục dịch vụ" [ref=e36] [cursor=pointer]:
+          - /url: /quan-ly/dich-vu
+          - generic [ref=e37]: medical_information
+          - text: Danh mục dịch vụ
+        - generic [ref=e38]: CHUYÊN MÔN LÂM SÀNG
+        - link "stethoscope Khám bệnh & Kê đơn" [ref=e39] [cursor=pointer]:
+          - /url: /quan-ly/kham-benh
+          - generic [ref=e40]: stethoscope
+          - text: Khám bệnh & Kê đơn
+        - link "clinical_notes Hồ sơ bệnh án" [ref=e41] [cursor=pointer]:
+          - /url: /quan-ly/ho-so-benh-an
+          - generic [ref=e42]: clinical_notes
+          - text: Hồ sơ bệnh án
+        - link "description Kê đơn & Thuốc" [ref=e43] [cursor=pointer]:
+          - /url: /quan-ly/don-thuoc
+          - generic [ref=e44]: description
+          - text: Kê đơn & Thuốc
+        - link "biotech Xét nghiệm & Cận lâm sàng" [ref=e45] [cursor=pointer]:
+          - /url: /quan-ly/xet-nghiem
+          - generic [ref=e46]: biotech
+          - text: Xét nghiệm & Cận lâm sàng
+        - generic [ref=e47]: KHO & TÀI CHÍNH
+        - link "medication Danh mục kho thuốc" [ref=e48] [cursor=pointer]:
+          - /url: /quan-ly/kho-thuoc
+          - generic [ref=e49]: medication
+          - text: Danh mục kho thuốc
+        - link "inventory_2 Nhập kho & Kiểm kê" [ref=e50] [cursor=pointer]:
+          - /url: /quan-ly/nhap-kho
+          - generic [ref=e51]: inventory_2
+          - text: Nhập kho & Kiểm kê
+        - link "receipt_long Hóa đơn & Thanh toán" [ref=e52] [cursor=pointer]:
+          - /url: /quan-ly/hoa-don
+          - generic [ref=e53]: receipt_long
+          - text: Hóa đơn & Thanh toán
+        - link "account_balance Tài chính - Kế toán" [ref=e54] [cursor=pointer]:
+          - /url: /quan-ly/ke-toan
+          - generic [ref=e55]: account_balance
+          - text: Tài chính - Kế toán
+        - generic [ref=e56]: TIỆN ÍCH & MARKETING
+        - link "campaign Chiến dịch Marketing" [ref=e57] [cursor=pointer]:
+          - /url: /quan-ly/marketing
+          - generic [ref=e58]: campaign
+          - text: Chiến dịch Marketing
+        - link "folder_open Quản lý tệp tin" [ref=e59] [cursor=pointer]:
+          - /url: /quan-ly/file-dinh-kem
+          - generic [ref=e60]: folder_open
+          - text: Quản lý tệp tin
+        - generic [ref=e61]: CẤU HÌNH
+        - link "settings Cài đặt chung" [ref=e62] [cursor=pointer]:
+          - /url: /quan-ly/cau-hinh
+          - generic [ref=e63]: settings
+          - text: Cài đặt chung
+        - link "extension Phân hệ chức năng" [ref=e64] [cursor=pointer]:
+          - /url: /quan-ly/chuc-nang
+          - generic [ref=e65]: extension
+          - text: Phân hệ chức năng
+        - link "person Hồ sơ cá nhân" [ref=e66] [cursor=pointer]:
+          - /url: /quan-ly/thong-tin-ca-nhan
+          - generic [ref=e67]: person
+          - text: Hồ sơ cá nhân
+      - generic [ref=e68]:
+        - link "home Về trang chủ" [ref=e69] [cursor=pointer]:
+          - /url: /
+          - generic [ref=e70]: home
+          - text: Về trang chủ
+        - button "Đổi giao diện" [ref=e71] [cursor=pointer]:
+          - generic [ref=e72]: dark_mode
+      - button "logout Đăng xuất" [ref=e73] [cursor=pointer]:
+        - generic [ref=e74]: logout
+        - text: Đăng xuất
+    - main [ref=e75]:
+      - generic [ref=e81]:
+        - generic [ref=e82]:
+          - generic [ref=e83]:
+            - heading "Điều phối lịch hẹn" [level=1] [ref=e84]
+            - paragraph [ref=e85]: Quản lý lộ trình khám và điều phối đội ngũ y bác sĩ.
+          - button "add_task Thêm lịch hẹn" [ref=e86] [cursor=pointer]:
+            - generic [ref=e87]: add_task
+            - text: Thêm lịch hẹn
+        - generic [ref=e88]:
+          - generic [ref=e89]:
+            - button "list TẤT CẢ" [ref=e90] [cursor=pointer]:
+              - generic [ref=e91]: list
+              - text: TẤT CẢ
+            - button "pending CHỜ XÁC NHẬN" [ref=e92] [cursor=pointer]:
+              - generic [ref=e93]: pending
+              - text: CHỜ XÁC NHẬN
+            - button "check_circle ĐÃ XÁC NHẬN" [ref=e94] [cursor=pointer]:
+              - generic [ref=e95]: check_circle
+              - text: ĐÃ XÁC NHẬN
+            - button "medical_services ĐANG KHÁM" [ref=e96] [cursor=pointer]:
+              - generic [ref=e97]: medical_services
+              - text: ĐANG KHÁM
+            - button "verified HOÀN TẤT" [ref=e98] [cursor=pointer]:
+              - generic [ref=e99]: verified
+              - text: HOÀN TẤT
+            - button "event_busy KHÔNG ĐẾN" [ref=e100] [cursor=pointer]:
+              - generic [ref=e101]: event_busy
+              - text: KHÔNG ĐẾN
+            - button "cancel ĐÃ HỦY" [ref=e102] [cursor=pointer]:
+              - generic [ref=e103]: cancel
+              - text: ĐÃ HỦY
+          - generic [ref=e104]:
+            - generic [ref=e105]: search
+            - textbox "Tìm tên bé, chủ, bác sĩ, SĐT..." [ref=e106]
+        - table [ref=e110]:
+          - rowgroup [ref=e111]:
+            - row "ID THỜI GIAN BỆNH NHÂN / CHỦ LÝ DO / GHI CHÚ BÁC SĨ PHỤ TRÁCH TRẠNG THÁI THAO TÁC" [ref=e112]:
+              - columnheader "ID" [ref=e113]
+              - columnheader "THỜI GIAN" [ref=e114]
+              - columnheader "BỆNH NHÂN / CHỦ" [ref=e115]
+              - columnheader "LÝ DO / GHI CHÚ" [ref=e116]
+              - columnheader "BÁC SĨ PHỤ TRÁCH" [ref=e117]
+              - columnheader "TRẠNG THÁI" [ref=e118]
+              - columnheader "THAO TÁC" [ref=e119]
+          - rowgroup [ref=e120]:
+            - row "#LH-F9C26CB5 11/07/2026 08:00 BossBook7322 Codex Booking Fix 1780258697322 Codex booking fixed successfully Không có ghi chú medical_information Bác sĩ Kiểm thử 1779571487375 DA_HUY visibility edit_square" [ref=e121]:
+              - cell "#LH-F9C26CB5" [ref=e122]
+              - cell "11/07/2026 08:00" [ref=e123]:
+                - generic [ref=e124]: 11/07/2026
+                - generic [ref=e125]: 08:00
+              - cell "BossBook7322 Codex Booking Fix 1780258697322" [ref=e126]:
+                - generic [ref=e127]: BossBook7322
+                - generic [ref=e128]: Codex Booking Fix 1780258697322
+              - cell "Codex booking fixed successfully Không có ghi chú" [ref=e129]:
+                - generic [ref=e130]: Codex booking fixed successfully
+                - generic [ref=e131]: Không có ghi chú
+              - cell "medical_information Bác sĩ Kiểm thử 1779571487375" [ref=e132]:
+                - generic [ref=e133]:
+                  - generic [ref=e135]: medical_information
+                  - generic [ref=e136]: Bác sĩ Kiểm thử 1779571487375
+              - cell "DA_HUY" [ref=e137]
+              - cell "visibility edit_square" [ref=e138]:
+                - generic [ref=e139]:
+                  - button "visibility" [ref=e140] [cursor=pointer]:
+                    - generic [ref=e141]: visibility
+                  - button "edit_square" [ref=e142] [cursor=pointer]:
+                    - generic [ref=e143]: edit_square
+            - row "#LH-9D75B9CB 02/06/2026 10:30 TEST Booking Pet 56704348 Trần Minh Kh&aacute;m Đa Khoa Không có ghi chú medical_information Bác sĩ Kiểm thử 1779566347881 DA_HUY visibility edit_square" [ref=e144]:
+              - cell "#LH-9D75B9CB" [ref=e145]
+              - cell "02/06/2026 10:30" [ref=e146]:
+                - generic [ref=e147]: 02/06/2026
+                - generic [ref=e148]: 10:30
+              - cell "TEST Booking Pet 56704348 Trần Minh" [ref=e149]:
+                - generic [ref=e150]: TEST Booking Pet 56704348
+                - generic [ref=e151]: Trần Minh
+              - cell "Kh&aacute;m Đa Khoa Không có ghi chú" [ref=e152]:
+                - generic [ref=e153]: Kh&aacute;m Đa Khoa
+                - generic [ref=e154]: Không có ghi chú
+              - cell "medical_information Bác sĩ Kiểm thử 1779566347881" [ref=e155]:
+                - generic [ref=e156]:
+                  - generic [ref=e158]: medical_information
+                  - generic [ref=e159]: Bác sĩ Kiểm thử 1779566347881
+              - cell "DA_HUY" [ref=e160]
+              - cell "visibility edit_square" [ref=e161]:
+                - generic [ref=e162]:
+                  - button "visibility" [ref=e163] [cursor=pointer]:
+                    - generic [ref=e164]: visibility
+                  - button "edit_square" [ref=e165] [cursor=pointer]:
+                    - generic [ref=e166]: edit_square
+            - row "#LH-1B4BC011 02/06/2026 09:30 Be Test Bao Cao Khach Bao Cao 1780254126 Minh chung bao cao - lich thu nhat Không có ghi chú medical_information Bác sĩ Trần Minh DANG_KHAM visibility edit_square" [ref=e167]:
+              - cell "#LH-1B4BC011" [ref=e168]
+              - cell "02/06/2026 09:30" [ref=e169]:
+                - generic [ref=e170]: 02/06/2026
+                - generic [ref=e171]: 09:30
+              - cell "Be Test Bao Cao Khach Bao Cao 1780254126" [ref=e172]:
+                - generic [ref=e173]: Be Test Bao Cao
+                - generic [ref=e174]: Khach Bao Cao 1780254126
+              - cell "Minh chung bao cao - lich thu nhat Không có ghi chú" [ref=e175]:
+                - generic [ref=e176]: Minh chung bao cao - lich thu nhat
+                - generic [ref=e177]: Không có ghi chú
+              - cell "medical_information Bác sĩ Trần Minh" [ref=e178]:
+                - generic [ref=e179]:
+                  - generic [ref=e181]: medical_information
+                  - generic [ref=e182]: Bác sĩ Trần Minh
+              - cell "DANG_KHAM" [ref=e183]
+              - cell "visibility edit_square" [ref=e184]:
+                - generic [ref=e185]:
+                  - button "visibility" [ref=e186] [cursor=pointer]:
+                    - generic [ref=e187]: visibility
+                  - button "edit_square" [ref=e188] [cursor=pointer]:
+                    - generic [ref=e189]: edit_square
+            - row "#LH-DCEE8818 02/06/2026 08:00 miu Trần Minh Kh&aacute;m Đa KhoaTừ 150.000&nbsp;₫ Không có ghi chú medical_information Bác sĩ Kiểm thử 1779566347881 CHO_XAC_NHAN visibility edit_square" [ref=e190]:
+              - cell "#LH-DCEE8818" [ref=e191]
+              - cell "02/06/2026 08:00" [ref=e192]:
+                - generic [ref=e193]: 02/06/2026
+                - generic [ref=e194]: 08:00
+              - cell "miu Trần Minh" [ref=e195]:
+                - generic [ref=e196]: miu
+                - generic [ref=e197]: Trần Minh
+              - cell "Kh&aacute;m Đa KhoaTừ 150.000&nbsp;₫ Không có ghi chú" [ref=e198]:
+                - generic [ref=e199]: Kh&aacute;m Đa KhoaTừ 150.000&nbsp;₫
+                - generic [ref=e200]: Không có ghi chú
+              - cell "medical_information Bác sĩ Kiểm thử 1779566347881" [ref=e201]:
+                - generic [ref=e202]:
+                  - generic [ref=e204]: medical_information
+                  - generic [ref=e205]: Bác sĩ Kiểm thử 1779566347881
+              - cell "CHO_XAC_NHAN" [ref=e206]
+              - cell "visibility edit_square" [ref=e207]:
+                - generic [ref=e208]:
+                  - button "visibility" [ref=e209] [cursor=pointer]:
+                    - generic [ref=e210]: visibility
+                  - button "edit_square" [ref=e211] [cursor=pointer]:
+                    - generic [ref=e212]: edit_square
+            - row "#LH-1C535601 31/05/2026 19:00 miu Trần Minh Kh&aacute;m Đa Khoa Không có ghi chú medical_information BS. Minh Anh HOAN_THANH visibility edit_square" [ref=e213]:
+              - cell "#LH-1C535601" [ref=e214]
+              - cell "31/05/2026 19:00" [ref=e215]:
+                - generic [ref=e216]: 31/05/2026
+                - generic [ref=e217]: 19:00
+              - cell "miu Trần Minh" [ref=e218]:
+                - generic [ref=e219]: miu
+                - generic [ref=e220]: Trần Minh
+              - cell "Kh&aacute;m Đa Khoa Không có ghi chú" [ref=e221]:
+                - generic [ref=e222]: Kh&aacute;m Đa Khoa
+                - generic [ref=e223]: Không có ghi chú
+              - cell "medical_information BS. Minh Anh" [ref=e224]:
+                - generic [ref=e225]:
+                  - generic [ref=e227]: medical_information
+                  - generic [ref=e228]: BS. Minh Anh
+              - cell "HOAN_THANH" [ref=e229]
+              - cell "visibility edit_square" [ref=e230]:
+                - generic [ref=e231]:
+                  - button "visibility" [ref=e232] [cursor=pointer]:
+                    - generic [ref=e233]: visibility
+                  - button "edit_square" [ref=e234] [cursor=pointer]:
+                    - generic [ref=e235]: edit_square
+            - row "#LH-317733C1 31/05/2026 19:00 Míc Trần Minh Kh&aacute;m Đa Khoa Không có ghi chú medical_information Bác sĩ Trần Minh HOAN_THANH visibility edit_square" [ref=e236]:
+              - cell "#LH-317733C1" [ref=e237]
+              - cell "31/05/2026 19:00" [ref=e238]:
+                - generic [ref=e239]: 31/05/2026
+                - generic [ref=e240]: 19:00
+              - cell "Míc Trần Minh" [ref=e241]:
+                - generic [ref=e242]: Míc
+                - generic [ref=e243]: Trần Minh
+              - cell "Kh&aacute;m Đa Khoa Không có ghi chú" [ref=e244]:
+                - generic [ref=e245]: Kh&aacute;m Đa Khoa
+                - generic [ref=e246]: Không có ghi chú
+              - cell "medical_information Bác sĩ Trần Minh" [ref=e247]:
+                - generic [ref=e248]:
+                  - generic [ref=e250]: medical_information
+                  - generic [ref=e251]: Bác sĩ Trần Minh
+              - cell "HOAN_THANH" [ref=e252]
+              - cell "visibility edit_square" [ref=e253]:
+                - generic [ref=e254]:
+                  - button "visibility" [ref=e255] [cursor=pointer]:
+                    - generic [ref=e256]: visibility
+                  - button "edit_square" [ref=e257] [cursor=pointer]:
+                    - generic [ref=e258]: edit_square
+            - row "#LH-PAYTEST 17/05/2026 09:00 LuLu Nguyễn Ngọc Ánh Test thanh toán Không có ghi chú medical_information BS. Phạm Quang Hùng HOAN_THANH visibility edit_square" [ref=e259]:
+              - cell "#LH-PAYTEST" [ref=e260]
+              - cell "17/05/2026 09:00" [ref=e261]:
+                - generic [ref=e262]: 17/05/2026
+                - generic [ref=e263]: 09:00
+              - cell "LuLu Nguyễn Ngọc Ánh" [ref=e264]:
+                - generic [ref=e265]: LuLu
+                - generic [ref=e266]: Nguyễn Ngọc Ánh
+              - cell "Test thanh toán Không có ghi chú" [ref=e267]:
+                - generic [ref=e268]: Test thanh toán
+                - generic [ref=e269]: Không có ghi chú
+              - cell "medical_information BS. Phạm Quang Hùng" [ref=e270]:
+                - generic [ref=e271]:
+                  - generic [ref=e273]: medical_information
+                  - generic [ref=e274]: BS. Phạm Quang Hùng
+              - cell "HOAN_THANH" [ref=e275]
+              - cell "visibility edit_square" [ref=e276]:
+                - generic [ref=e277]:
+                  - button "visibility" [ref=e278] [cursor=pointer]:
+                    - generic [ref=e279]: visibility
+                  - button "edit_square" [ref=e280] [cursor=pointer]:
+                    - generic [ref=e281]: edit_square
+    - button "pets" [ref=e79] [cursor=pointer]:
+      - generic [ref=e80]: pets
+  - generic [ref=e283]:
+    - generic [ref=e284]:
+      - heading "Tạo Lịch Hẹn Mới" [level=3] [ref=e285]
+      - button "close" [ref=e286] [cursor=pointer]:
+        - generic [ref=e287]: close
+    - generic [ref=e290]:
+      - generic [ref=e291]: TÌM KHÁCH HÀNG BẰNG SĐT
+      - generic [ref=e292]:
+        - generic: search
+        - textbox "Nhập số điện thoại khách hàng..." [active] [ref=e293]
+        - button "Tìm kiếm" [ref=e294] [cursor=pointer]

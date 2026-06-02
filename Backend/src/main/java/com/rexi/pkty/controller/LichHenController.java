@@ -159,6 +159,8 @@ public class LichHenController {
                 throw new RuntimeException("Khung giờ này đã qua rồi. Vui lòng chọn giờ khám muộn hơn!");
             }
             LocalTime newEnd = newStart.plusMinutes(thoiLuongMoi);
+            int newStartMinute = newStart.getHour() * 60 + newStart.getMinute();
+            int newEndMinute = newEnd.getHour() * 60 + newEnd.getMinute();
 
             if (lichHen.getId_bac_si() == null || lichHen.getId_bac_si().isEmpty() || lichHen.getId_bac_si().equals("0")) {
                 String findDocQuery = "SELECT TOP 1 l.id_nhan_vien FROM LichLamViecNhanVien l " +
@@ -166,12 +168,13 @@ public class LichHenController {
                         "AND NOT EXISTS (SELECT 1 FROM LichHen h " +
                         "  LEFT JOIN DichVu d ON h.id_dich_vu = d.id_dich_vu " +
                         "  WHERE h.id_bac_si = l.id_nhan_vien AND h.ngay_kham = l.ngay_lam " +
-                        "  AND h.gio_kham < ? AND DATEADD(minute, ISNULL(d.thoi_luong_phut, 30), h.gio_kham) > ? " +
+                        "  AND DATEDIFF(minute, CAST('00:00:00' AS time), CAST(h.gio_kham AS time)) < ? " +
+                        "  AND DATEDIFF(minute, CAST('00:00:00' AS time), CAST(h.gio_kham AS time)) + ISNULL(d.thoi_luong_phut, 30) > ? " +
                         "  AND h.trang_thai NOT IN (N'Đã hủy', 'DA_HUY', 'da_huy', 'TU_CHOI', N'Hết hạn')" +
                         ")";
                 try {
                     String autoDocId = jdbcTemplate.queryForObject(findDocQuery, String.class,
-                            lichHen.getNgay_kham(), newStart, newEnd, newStart);
+                            lichHen.getNgay_kham(), newStart, newEndMinute, newStartMinute);
                     lichHen.setId_bac_si(autoDocId);
                 } catch (Exception e) {
                     throw new RuntimeException(

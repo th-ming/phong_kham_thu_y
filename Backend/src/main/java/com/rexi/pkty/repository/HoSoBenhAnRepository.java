@@ -29,8 +29,8 @@ public interface HoSoBenhAnRepository extends JpaRepository<HoSoBenhAn, String> 
     );
 
     // Get ket qua XN tu BenhAn_XetNghiem
-    @Query(value = "SELECT bx.*, l.ten_xet_nghiem FROM BenhAn_XetNghiem bx " +
-                   "JOIN LoaiXetNghiem l ON bx.id_loai_xet_nghiem = l.id_loai_xet_nghiem " +
+    @Query(value = "SELECT bx.*, COALESCE(l.ten_xet_nghiem, bx.id_loai_xet_nghiem) AS ten_xet_nghiem FROM BenhAn_XetNghiem bx " +
+                   "LEFT JOIN LoaiXetNghiem l ON bx.id_loai_xet_nghiem = CONVERT(VARCHAR(50), l.id_loai_xet_nghiem) " +
                    "WHERE bx.id_ho_so = :hosoId", nativeQuery = true)
     List<Map<String, Object>> findXetNghiemByHoSo(@Param("hosoId") String hosoId);
 
@@ -54,8 +54,8 @@ public interface HoSoBenhAnRepository extends JpaRepository<HoSoBenhAn, String> 
     List<Map<String, Object>> getAllHoSoBenhAn();
 
     // Get all XN (ADMIN)
-    @Query(value = "SELECT bx.*, l.ten_xet_nghiem, nv.ho_ten as ten_bac_si FROM BenhAn_XetNghiem bx " +
-                   "JOIN LoaiXetNghiem l ON bx.id_loai_xet_nghiem = l.id_loai_xet_nghiem " +
+    @Query(value = "SELECT bx.*, COALESCE(l.ten_xet_nghiem, bx.id_loai_xet_nghiem) AS ten_xet_nghiem, nv.ho_ten as ten_bac_si FROM BenhAn_XetNghiem bx " +
+                   "LEFT JOIN LoaiXetNghiem l ON bx.id_loai_xet_nghiem = CONVERT(VARCHAR(50), l.id_loai_xet_nghiem) " +
                    "LEFT JOIN NhanVien nv ON bx.id_bac_si = nv.id_nhan_vien " +
                    "ORDER BY bx.ngay_lay_mau DESC", nativeQuery = true)
     List<Map<String, Object>> getAllXetNghiem();

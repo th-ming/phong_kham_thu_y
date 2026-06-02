@@ -180,9 +180,56 @@ const QuanLyHoaDon: React.FC = () => {
     <div className="animate-fade-in invoice-admin-page" style={{ margin: '-40px', padding: '40px', minHeight: '100vh', background: '#f8fafc', color: '#0f172a' }}>
       <style>{`
         @media print {
+          @page { size: A4 portrait; margin: 12mm; }
+          html, body { background: #ffffff !important; overflow: visible !important; }
           body * { visibility: hidden; }
+          .modal-wrapper,
+          .modal-wrapper *,
+          .modal-content,
+          .glass-card {
+            overflow: visible !important;
+            max-height: none !important;
+            animation: none !important;
+            transform: none !important;
+          }
+          .modal-wrapper {
+            position: static !important;
+            inset: auto !important;
+            display: block !important;
+            padding: 0 !important;
+            background: transparent !important;
+            backdrop-filter: none !important;
+          }
+          .modal-content { padding: 0 !important; }
+          .no-print, .no-print * {
+            display: none !important;
+            visibility: hidden !important;
+          }
           #print-section, #print-section * { visibility: visible; }
-          #print-section { position: absolute; left: 0; top: 0; width: 100%; }
+          #print-section {
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 186mm !important;
+            margin: 0 !important;
+            padding: 12mm !important;
+            background: #ffffff !important;
+            color: #111827 !important;
+            box-shadow: none !important;
+            border: 1px solid #d1d5db !important;
+            border-radius: 12px !important;
+          }
+          #print-section .table-responsive-wrapper,
+          #print-section .table-responsive-wrapper > div {
+            overflow: visible !important;
+            min-width: 0 !important;
+            width: 100% !important;
+          }
+          #print-section table {
+            width: 100% !important;
+            min-width: 0 !important;
+            border-collapse: collapse !important;
+          }
         }
         .invoice-admin-page {
           --surface: rgba(255, 255, 255, 0.94);

@@ -22,7 +22,7 @@ export const CanhBaoDangNhapChatbot: React.FC<{
                 YÊU CẦU ĐĂNG NHẬP AN TOÀN
             </div>
             <div style={{ fontSize: '0.78rem', opacity: 0.9, marginBottom: '14px', lineHeight: 1.5, fontWeight: 600 }}>
-                Dạ Sen ơi, các tác vụ tự động lập lịch khám, quản lý bệnh án thú y và tra cứu dữ liệu khách hàng yêu cầu quyền tài khoản bảo mật của Bệnh viện Thú y Rexi. Sen đăng nhập hoặc đăng ký tài khoản nhanh chỉ trong 10 giây để cùng Rexi chăm sóc bé yêu nhé!
+                Các tác vụ tự động lập lịch khám, quản lý bệnh án thú y và tra cứu dữ liệu khách hàng yêu cầu tài khoản bảo mật của Bệnh viện Thú y Rexi. Vui lòng đăng nhập hoặc đăng ký tài khoản để Rexi hỗ trợ chính xác.
             </div>
             <div className="responsive-grid-2">
                 <button data-ai-id={loginButtonId} onClick={onGoLogin} style={{

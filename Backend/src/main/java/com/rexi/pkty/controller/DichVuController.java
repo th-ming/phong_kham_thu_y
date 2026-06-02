@@ -133,13 +133,12 @@ public class DichVuController {
 
         try {
             return dichVuRepository.findById(id).map(dv -> {
-                dv.setTrang_thai(false);
-                dichVuRepository.save(dv);
-                auditLogService.logAction("XÓA (ẨN)", "DichVu", "Đã ẩn dịch vụ (Xóa mềm): " + dv.getTen_dich_vu());
-                return org.springframework.http.ResponseEntity.ok(java.util.Map.of("message", "Đã xóa (ẩn) dịch vụ thành công để bảo toàn dữ liệu lịch sử!"));
+                dichVuRepository.delete(dv);
+                auditLogService.logAction("XÓA CỨNG", "DichVu", "Đã xóa cứng dịch vụ: " + dv.getTen_dich_vu());
+                return org.springframework.http.ResponseEntity.ok(java.util.Map.of("message", "Đã xóa cứng dịch vụ thành công!"));
             }).orElse(org.springframework.http.ResponseEntity.status(404).body(java.util.Map.of("message", "Không tìm thấy dịch vụ!")));
         } catch (Exception e) {
-            return org.springframework.http.ResponseEntity.status(500).body(java.util.Map.of("message", "Lỗi khi xóa dịch vụ: " + e.getMessage()));
+            return org.springframework.http.ResponseEntity.status(409).body(java.util.Map.of("message", "Không thể xóa cứng dịch vụ vì còn dữ liệu liên kết: " + e.getMessage()));
         }
     }
 

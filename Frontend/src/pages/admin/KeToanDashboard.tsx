@@ -4,6 +4,7 @@ import { formatTienVND } from '@utils/index';
 import { toast } from '@components/Toast';
 import { Modal } from '@components/CommonUI';
 import { useAutoRefresh } from '@hooks/useAutoRefresh';
+import KpiIcon from '@components/KpiIcon';
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -309,16 +310,17 @@ const KeToanDashboard: React.FC = () => {
         title: string;
         value: React.ReactNode;
         details: React.ReactNode;
-        icon: string;
+        icon: React.ReactNode;
     }) => (
-        <div className="ketoan-kpi-card glass-card" tabIndex={0} style={{ padding: '24px', borderRadius: '24px', border: `1px solid ${accent}25`, background: `linear-gradient(135deg, ${accent}15 0%, var(--surface) 100%)` }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
-                <div>
-                    <p style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--gray-500)', margin: '0 0 8px 0' }}>{title}</p>
-                    <h3 style={{ fontSize: '2rem', fontWeight: 900, color: accent, margin: 0, textShadow: `0 2px 10px ${accent}10` }}>{value}</h3>
+        <div className="ketoan-kpi-card glass-card" tabIndex={0} style={{ padding: '32px', borderRadius: '32px', border: `1px solid ${accent}25`, background: `linear-gradient(135deg, ${accent}15 0%, var(--surface) 100%)`, minHeight: '190px' }}>
+            <div className="ketoan-kpi-badge" style={{ color: accent, borderColor: `${accent}35`, background: `${accent}12` }}>Chi tiết</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                <div style={{ width: '60px', height: '60px', borderRadius: '20px', background: `${accent}22`, color: accent, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 8px 20px ${accent}15`, fontSize: '1.55rem', fontWeight: 950 }}>
+                    {icon}
                 </div>
-                <span className="material-symbols-outlined" style={{ color: accent, fontSize: '28px' }}>{icon}</span>
             </div>
+            <p style={{ fontSize: '0.8rem', fontWeight: 900, color: 'var(--gray-500)', margin: '0 0 8px 0', textTransform: 'uppercase', letterSpacing: '1px' }}>{title}</p>
+            <h3 style={{ fontSize: '2rem', fontWeight: 950, color: accent, margin: 0, textShadow: `0 2px 10px ${accent}10` }}>{value}</h3>
             <div className="ketoan-kpi-popover">
                 {details}
             </div>
@@ -348,7 +350,7 @@ const KeToanDashboard: React.FC = () => {
                     accent="#10b981"
                     title="DOANH THU HÔM NAY"
                     value={formatTienVND(stats.todayRevenue)}
-                    icon="payments"
+                    icon={<KpiIcon name="money" />}
                     details={
                         <div>
                             <strong>Chi tiết thực thu hôm nay</strong>
@@ -364,7 +366,7 @@ const KeToanDashboard: React.FC = () => {
                     accent="#f59e0b"
                     title="CÔNG NỢ CHƯA THU"
                     value={formatTienVND(stats.totalUnpaid)}
-                    icon="account_balance_wallet"
+                    icon={<KpiIcon name="alert" />}
                     details={
                         <div>
                             <strong>Chi tiết công nợ</strong>
@@ -378,7 +380,7 @@ const KeToanDashboard: React.FC = () => {
                     accent="#3b82f6"
                     title="HÓA ĐƠN CHƯA THANH TOÁN"
                     value={<>{stats.unpaidCount} <span style={{ fontSize: '1rem', color: 'var(--gray-400)' }}>phiếu</span></>}
-                    icon="receipt_long"
+                    icon={<KpiIcon name="receipt" />}
                     details={
                         <div>
                             <strong>Danh sách cần xử lý</strong>
@@ -405,7 +407,7 @@ const KeToanDashboard: React.FC = () => {
                     <h2 style={{ fontSize: '1.2rem', margin: 0, fontWeight: 800 }}>Danh sách Hóa đơn</h2>
                     <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                         <button data-ai-id="button-ketoandashboard-bjms" onClick={handleExportExcel} className="btn btn-pill hover-lift" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '10px 16px', fontSize: '0.85rem', fontWeight: 800 }}>
-                            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>download</span>
+                            <KpiIcon name="download" size={18} />
                             Xuất Excel
                         </button>
                         <input data-ai-id="input-ketoandashboard-ao0k" aria-label="Từ ngày"
@@ -515,7 +517,7 @@ const KeToanDashboard: React.FC = () => {
                                 padding: '8px 16px', fontSize: '0.85rem'
                             }}
                         >
-                            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>chevron_left</span> Trước
+                            <KpiIcon name="chevronLeft" size={18} /> Trước
                         </button>
                         <span style={{ fontWeight: 800, color: 'var(--ink)', fontSize: '0.85rem' }}>
                             Trang {currentPage} / {totalPages}
@@ -531,7 +533,7 @@ const KeToanDashboard: React.FC = () => {
                                 padding: '8px 16px', fontSize: '0.85rem'
                             }}
                         >
-                            Sau <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>chevron_right</span>
+                            Sau <KpiIcon name="chevronRight" size={18} />
                         </button>
                     </div>
                 )}
@@ -543,10 +545,56 @@ const KeToanDashboard: React.FC = () => {
                     <div id="print-section">
                         <style>{`
                             @media print {
+                                @page { size: A4 portrait; margin: 12mm; }
+                                html, body { background: #ffffff !important; overflow: visible !important; }
                                 body * { visibility: hidden; }
+                                .modal-wrapper,
+                                .modal-wrapper *,
+                                .modal-content,
+                                .glass-card {
+                                    overflow: visible !important;
+                                    max-height: none !important;
+                                    animation: none !important;
+                                    transform: none !important;
+                                }
+                                .modal-wrapper {
+                                    position: static !important;
+                                    inset: auto !important;
+                                    display: block !important;
+                                    padding: 0 !important;
+                                    background: transparent !important;
+                                    backdrop-filter: none !important;
+                                }
+                                .modal-content { padding: 0 !important; }
                                 #print-section, #print-section * { visibility: visible; }
-                                #print-section { position: absolute; left: 0; top: 0; width: 100%; }
-                                .no-print { display: none !important; }
+                                #print-section {
+                                    position: absolute !important;
+                                    left: 0 !important;
+                                    top: 0 !important;
+                                    width: 186mm !important;
+                                    margin: 0 !important;
+                                    padding: 12mm !important;
+                                    background: #ffffff !important;
+                                    color: #111827 !important;
+                                    box-shadow: none !important;
+                                    border: 1px solid #d1d5db !important;
+                                    border-radius: 12px !important;
+                                }
+                                #print-section .table-responsive-wrapper,
+                                #print-section .table-responsive-wrapper > div {
+                                    overflow: visible !important;
+                                    min-width: 0 !important;
+                                    width: 100% !important;
+                                }
+                                #print-section table {
+                                    width: 100% !important;
+                                    min-width: 0 !important;
+                                    border-collapse: collapse !important;
+                                }
+                                .no-print, .no-print * {
+                                    display: none !important;
+                                    visibility: hidden !important;
+                                }
                             }
                         `}</style>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '24px' }}>
@@ -601,7 +649,7 @@ const KeToanDashboard: React.FC = () => {
                         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }} className="no-print">
                             <button data-ai-id="button-ketoandashboard-v1vt" className="btn btn-pill" onClick={() => setViewingHD(null)} style={{ background: 'var(--gray-100)', color: 'var(--ink)', padding: '10px 20px' }}>Đóng</button>
                             <button data-ai-id="button-ketoandashboard-8440" className="btn btn-pill" onClick={() => window.print()} style={{ background: 'var(--primary-light)', color: 'var(--primary)', padding: '10px 20px' }}>
-                                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>print</span> In hóa đơn
+                                <KpiIcon name="print" size={18} /> In hóa đơn
                             </button>
                             {viewingHD.trang_thai?.toUpperCase() === 'CHO_THANH_TOAN' && (
                                 <button data-ai-id="button-ketoandashboard-76wz" className="btn btn-primary btn-pill" onClick={() => { handleConfirmPayment(viewingHD.id_hoa_don); setViewingHD(null); }} style={{ padding: '10px 20px' }}>Xác nhận thu tiền</button>
@@ -628,11 +676,24 @@ const KeToanDashboard: React.FC = () => {
                     outline: none;
                     z-index: 120;
                 }
+                .ketoan-kpi-badge {
+                    position: absolute;
+                    top: 22px;
+                    right: 22px;
+                    display: inline-flex;
+                    align-items: center;
+                    padding: 7px 10px;
+                    border-radius: 999px;
+                    border: 1px solid;
+                    font-size: 0.72rem;
+                    font-weight: 950;
+                    box-shadow: 0 12px 26px rgba(15, 23, 42, 0.08);
+                }
                 .ketoan-kpi-popover {
                     position: absolute;
                     left: 18px;
                     right: 18px;
-                    top: calc(100% + 10px);
+                    top: 70px;
                     z-index: 90;
                     padding: 16px;
                     border-radius: 16px;

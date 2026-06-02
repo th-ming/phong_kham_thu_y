@@ -62,6 +62,7 @@ public class SecurityConfig {
             )
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/system/health", "/api/system/public-cau-hinh").permitAll()
+                .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/system/newsletter").permitAll()
                 .requestMatchers("/public/audit/**").hasRole("ADMIN")
                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html")
                     .access((authentication, context) -> {

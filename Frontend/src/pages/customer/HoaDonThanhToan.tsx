@@ -1,10 +1,12 @@
 import React, { useCallback, useMemo, useRef, useState, useEffect } from "react";
 import axiosInstance from "@services/axios";
 import { formatTienVND, getUserProfile, matchesSearchFields } from "@utils/index";
+import { customerToneCopy, isGenZBirthYear } from "@utils/customerTone";
 import { Modal } from "@components/CommonUI";
 import { useLocation } from "react-router-dom";
 import { toast } from "@components/Toast";
 import { useAutoRefresh } from "@hooks/useAutoRefresh";
+import KpiIcon from "@components/KpiIcon";
 
 const chuyenNgayISO_SangVN = (dateString: string) => {
   if (!dateString) return "—";
@@ -30,6 +32,38 @@ const chuyenNgayGioISO_SangVN = (dateString: string) => {
 const getCustomerId = (user: any) => user?.id_khach_hang ?? user?.idKhachHang ?? user?.id_tai_khoan ?? user?.idTaiKhoan ?? user?.id;
 const getInvoiceId = (hd: any) => hd?.id_hoa_don ?? hd?.idHoaDon ?? hd?.id;
 const getInvoiceStatus = (hd: any) => String(hd?.trang_thai ?? hd?.trangThai ?? "").toLowerCase();
+const isPayableInvoice = (hd: any) => {
+  const invoiceStatus = getInvoiceStatus(hd);
+  return invoiceStatus === "cho_thanh_toan" || invoiceStatus === "dang_thanh_toan";
+};
+const getInvoiceStatusLabel = (hd: any) => {
+  const invoiceStatus = getInvoiceStatus(hd);
+  if (invoiceStatus === "da_thanh_toan") return "ĐÃ TRẢ";
+  if (invoiceStatus === "dang_thanh_toan") return "ĐANG CHỜ";
+  return "CHỜ TRẢ";
+};
+const getInvoiceStatusBadgeStyle = (hd: any): React.CSSProperties => {
+  const invoiceStatus = getInvoiceStatus(hd);
+  if (invoiceStatus === "da_thanh_toan") {
+    return {
+      background: "var(--primary-light)",
+      color: "var(--primary)",
+      border: "1px solid rgba(20, 184, 166, 0.28)"
+    };
+  }
+  if (invoiceStatus === "dang_thanh_toan") {
+    return {
+      background: "linear-gradient(135deg, #fff7c2 0%, #fef3c7 100%)",
+      color: "#9a5b05",
+      border: "1px solid rgba(245, 158, 11, 0.32)"
+    };
+  }
+  return {
+    background: "#fef9c3",
+    color: "#a16207",
+    border: "1px solid rgba(245, 158, 11, 0.22)"
+  };
+};
 const getInvoiceDate = (hd: any) => hd?.ngay_lap_hoa_don ?? hd?.ngayLapHoaDon ?? hd?.createdAt;
 const getCustomerName = (hd: any) => hd?.ten_khach_hang ?? hd?.tenKhachHang ?? hd?.khachHang?.ho_ten ?? hd?.khachHang?.hoTen ?? "Khách vãng lai";
 const getPetName = (hd: any) => hd?.ten_thu_cung ?? hd?.tenThuCung ?? hd?.thuCung?.ten_thu_cung ?? hd?.thuCung?.tenThuCung ?? "";
@@ -62,6 +96,7 @@ const HoaDonThanhToan: React.FC = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [showQRModal, setShowQRModal] = useState(false);
   const [qrData, setQrData] = useState<{ url: string, info: string, amount: number } | null>(null);
+  const [printAfterDetailsLoad, setPrintAfterDetailsLoad] = useState(false);
 
   // State hỗ trợ Phân trang Server-side
   const [totalServerPages, setTotalServerPages] = useState(1);
@@ -71,6 +106,8 @@ const HoaDonThanhToan: React.FC = () => {
   // Phân trang
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 5;
+  const currentUser = getUserProfile();
+  const toneCopy = customerToneCopy[isGenZBirthYear(currentUser?.nam_sinh) ? "genz" : "mature"];
 
   // Hứng kết quả trả về từ VNPay khi redirect lại trang này
   useEffect(() => {
@@ -132,6 +169,15 @@ const HoaDonThanhToan: React.FC = () => {
 
   useAutoRefresh(fetchInvoices, { runImmediately: false });
 
+  useEffect(() => {
+    if (!printAfterDetailsLoad || !viewingHD || loadingDetails || loadingPayments) return;
+    const timeoutId = window.setTimeout(() => {
+      window.print();
+      setPrintAfterDetailsLoad(false);
+    }, 150);
+    return () => window.clearTimeout(timeoutId);
+  }, [printAfterDetailsLoad, viewingHD, loadingDetails, loadingPayments]);
+
   // Hiệu ứng Debounce cho ô tìm kiếm
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -148,7 +194,14 @@ const HoaDonThanhToan: React.FC = () => {
   const filteredList = useMemo(() => {
     if (isServerPaginated) return hoaDons;
     return hoaDons.filter(h => {
-      if (status !== "all" && getInvoiceStatus(h) !== status.toLowerCase()) return false;
+      if (status !== "all") {
+        const normalizedStatus = status.toLowerCase();
+        if (normalizedStatus === "cho_thanh_toan") {
+          if (!isPayableInvoice(h)) return false;
+        } else if (getInvoiceStatus(h) !== normalizedStatus) {
+          return false;
+        }
+      }
       if (debouncedSearch) {
         if (!matchesSearchFields(debouncedSearch, [
           getInvoiceId(h),
@@ -173,7 +226,7 @@ const HoaDonThanhToan: React.FC = () => {
     return {
       total: hoaDons.length,
       paidCount: paid.length,
-      unpaidCount: hoaDons.filter(h => (h.trang_thai || h.trangThai)?.toLowerCase() === "cho_thanh_toan").length,
+      unpaidCount: hoaDons.filter(h => isPayableInvoice(h)).length,
       totalPaid: paid.reduce((s, h) => s + getInvoiceTotal(h), 0)
     };
   }, [hoaDons]);
@@ -271,6 +324,31 @@ const HoaDonThanhToan: React.FC = () => {
 
   if (loading) return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}><div className="dot-pulse"></div></div>;
 
+  const paidInvoices = hoaDons.filter(h => getInvoiceStatus(h) === "da_thanh_toan");
+  const unpaidInvoices = hoaDons.filter(h => isPayableInvoice(h));
+  const latestUnpaid = [...unpaidInvoices].sort((a, b) => new Date(getInvoiceDate(b) || 0).getTime() - new Date(getInvoiceDate(a) || 0).getTime())[0];
+  const newestInvoice = [...hoaDons].sort((a, b) => new Date(getInvoiceDate(b) || 0).getTime() - new Date(getInvoiceDate(a) || 0).getTime())[0];
+
+  const CustomerKpiCard = ({ accent, title, value, icon, details }: {
+    accent: string;
+    title: string;
+    value: React.ReactNode;
+    icon: React.ReactNode;
+    details: React.ReactNode;
+  }) => (
+    <div className="customer-kpi-card glass-card hover-lift" tabIndex={0} style={{ padding: '32px', borderRadius: '32px', border: `1px solid ${accent}25`, background: `linear-gradient(135deg, ${accent}15 0%, var(--surface) 100%)`, minHeight: '190px' }}>
+      <div className="customer-kpi-badge" style={{ color: accent, borderColor: `${accent}35`, background: `${accent}12` }}>Chi tiết</div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+        <div style={{ width: '60px', height: '60px', borderRadius: '20px', background: `${accent}22`, color: accent, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 8px 20px ${accent}15`, fontSize: '1.55rem', fontWeight: 950 }}>
+          {icon}
+        </div>
+      </div>
+      <p style={{ fontSize: '0.8rem', fontWeight: 900, color: 'var(--gray-500)', margin: '0 0 8px 0', textTransform: 'uppercase', letterSpacing: '1px' }}>{title}</p>
+      <h3 style={{ fontSize: '1.75rem', fontWeight: 950, color: accent, margin: 0, textShadow: `0 2px 10px ${accent}18` }}>{value}</h3>
+      <div className="customer-kpi-popover">{details}</div>
+    </div>
+  );
+
   return (
     <div className="animate-fade-in">
       <style>{`
@@ -285,8 +363,69 @@ const HoaDonThanhToan: React.FC = () => {
         .hover-lift:hover { transform: translateY(-6px); box-shadow: 0 20px 40px rgba(0,0,0,0.06); }
         .item-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); border: 1px solid transparent; background: var(--surface); }
         .item-card:hover { border-color: var(--primary) !important; background: var(--surface) !important; transform: translateY(-4px) scale(1.01); box-shadow: 0 20px 40px rgba(15, 157, 138, 0.08); z-index: 10; position: relative; }
-        .stat-card-group:hover .stat-tooltip { opacity: 1; max-height: 40px; margin-top: 12px; }
-        .stat-tooltip { opacity: 0; max-height: 0; overflow: hidden; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); font-size: 0.75rem; color: var(--gray-400); line-height: 1.4; }
+        .customer-kpi-card {
+          position: relative;
+          cursor: help;
+          overflow: visible;
+          transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+        }
+        .customer-kpi-card:hover,
+        .customer-kpi-card:focus {
+          transform: translateY(-4px);
+          box-shadow: 0 18px 42px rgba(15, 23, 42, 0.12);
+          outline: none;
+          z-index: 120;
+        }
+        .customer-kpi-badge {
+          position: absolute;
+          top: 22px;
+          right: 22px;
+          display: inline-flex;
+          align-items: center;
+          padding: 7px 10px;
+          border-radius: 999px;
+          border: 1px solid;
+          font-size: 0.72rem;
+          font-weight: 950;
+          box-shadow: 0 12px 26px rgba(15, 23, 42, 0.08);
+        }
+        .customer-kpi-popover {
+          position: absolute;
+          left: 18px;
+          right: 18px;
+          top: 70px;
+          z-index: 90;
+          padding: 16px;
+          border-radius: 16px;
+          border: 1px solid rgba(20, 184, 166, 0.35);
+          background: var(--surface);
+          color: var(--ink);
+          box-shadow: 0 24px 56px rgba(15, 23, 42, 0.22);
+          opacity: 0;
+          transform: translateY(-6px);
+          pointer-events: none;
+          transition: opacity 0.18s ease, transform 0.18s ease;
+          font-size: 0.86rem;
+          line-height: 1.45;
+        }
+        .customer-kpi-popover strong {
+          display: block;
+          margin-bottom: 8px;
+          color: var(--primary);
+          font-size: 0.92rem;
+          font-weight: 950;
+        }
+        .customer-kpi-popover p {
+          margin: 6px 0;
+          color: var(--ink);
+          font-weight: 800;
+        }
+        .customer-kpi-card:hover .customer-kpi-popover,
+        .customer-kpi-card:focus .customer-kpi-popover {
+          opacity: 1;
+          transform: translateY(0);
+          pointer-events: auto;
+        }
         
         /* 🎫 THIẾT KẾ RĂNG CƯA APPLE WALLET CHO HÓA ĐƠN CHI TIẾT */
         .apple-wallet-receipt {
@@ -312,24 +451,77 @@ const HoaDonThanhToan: React.FC = () => {
         }
         
         @media print {
+          @page {
+            size: A4 portrait;
+            margin: 12mm;
+          }
+          html, body {
+            width: 210mm;
+            min-height: 297mm;
+            background: white !important;
+            overflow: visible !important;
+          }
           body * { visibility: hidden; }
+          .modal-wrapper,
+          .modal-wrapper *,
+          .modal-content,
+          .glass-card {
+            overflow: visible !important;
+            max-height: none !important;
+            animation: none !important;
+            transform: none !important;
+          }
+          .modal-wrapper {
+            position: static !important;
+            inset: auto !important;
+            display: block !important;
+            padding: 0 !important;
+            background: transparent !important;
+            backdrop-filter: none !important;
+          }
+          .modal-content {
+            padding: 0 !important;
+          }
+          .no-print,
+          .no-print * {
+            display: none !important;
+            visibility: hidden !important;
+          }
           #print-section, #print-section * { visibility: visible; }
-          #print-section { position: absolute; left: 0; top: 0; width: 100%; }
+          #print-section {
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 186mm !important;
+            min-height: auto !important;
+            padding: 12mm !important;
+            margin: 0 !important;
+            border: 1px solid #d1d5db !important;
+            border-radius: 12px !important;
+            box-shadow: none !important;
+            background: white !important;
+            color: #111827 !important;
+            break-inside: avoid;
+            page-break-inside: avoid;
+          }
+          .apple-wallet-receipt::after {
+            display: none !important;
+          }
         }
       `}</style>
       <div className="stagger-1" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', padding: '36px 48px', borderRadius: 'var(--radius-xl)', background: 'var(--secondary-gradient)', color: 'white', position: 'relative', overflow: 'hidden', boxShadow: '0 15px 30px rgba(225, 29, 72, 0.2)', flexWrap: 'wrap', gap: '20px' }}>
         <div style={{ position: 'absolute', top: '-50px', right: '10%', width: '200px', height: '200px', background: 'radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }}></div>
         <div style={{ position: 'absolute', bottom: '-50px', left: '-50px', width: '150px', height: '150px', background: 'radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }}></div>
         <div style={{ position: 'relative', zIndex: 1 }}>
-          <h1 style={{ fontSize: '2.5rem', fontWeight: 950, letterSpacing: '-1px', margin: '0 0 8px 0' }}>Hóa đơn & Thanh toán 💳</h1>
-          <p style={{ fontWeight: 600, opacity: 0.9, margin: 0, fontSize: '1.05rem' }}>Quản lý chi tiêu và lịch sử giao dịch dịch vụ thú y.</p>
+          <h1 style={{ fontSize: '2.5rem', fontWeight: 950, letterSpacing: '-1px', margin: '0 0 8px 0' }}>{toneCopy.invoiceTitle}</h1>
+          <p style={{ fontWeight: 600, opacity: 0.9, margin: 0, fontSize: '1.05rem' }}>{toneCopy.invoiceSubtitle}</p>
         </div>
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', position: 'relative', zIndex: 1 }}>
           <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
             <input data-ai-id="input-hoadonthanhtoan-z5a1"
               type="text"
               className="btn"
-              placeholder="Tìm HĐ, tên khách, thú cưng..."
+              placeholder={toneCopy.invoiceSearchPlaceholder}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               style={{ background: 'white', border: 'none', color: '#e11d48', fontWeight: 700, padding: '10px 36px 10px 16px', outline: 'none', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}
@@ -351,82 +543,82 @@ const HoaDonThanhToan: React.FC = () => {
             <option value="cho_thanh_toan">Chưa trả</option>
           </select>
           <button data-ai-id="button-hoadonthanhtoan-qe5v" className="btn btn-pill" style={{ background: '#fecdd3', color: '#be123c', fontWeight: 900, boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }} onClick={handleExportExcel}>
-            <span className="material-symbols-outlined">download</span>
+            <KpiIcon name="download" size={18} />
             Xuất báo cáo
           </button>
         </div>
       </div>
 
-      <div className="stagger-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '24px', marginBottom: '40px' }}>
-        <div className="glass-card hover-lift stat-card-group" style={{ padding: '24px', borderRadius: 'var(--radius-lg)', background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, var(--surface) 100%)', border: '1px solid rgba(59, 130, 246, 0.2)', cursor: 'default' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+      <div className="stagger-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '24px', marginBottom: '40px', position: 'relative', zIndex: 80 }}>
+        <CustomerKpiCard
+          accent="#3b82f6"
+          title="Tổng hóa đơn"
+          value={stats.total}
+          icon={<KpiIcon name="receipt" />}
+          details={
             <div>
-              <p style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-500)', marginBottom: '8px' }}>TỔNG HÓA ĐƠN</p>
-              <h3 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#3b82f6' }}>{stats.total}</h3>
+              <strong>Tổng quan hóa đơn</strong>
+              <p>{stats.total} hóa đơn đã phát sinh trong tài khoản này.</p>
+              <p>Đang hiển thị {filteredList.length} hóa đơn theo bộ lọc hiện tại.</p>
+              <p>Mới nhất: {newestInvoice ? `#HD-${getInvoiceId(newestInvoice)} - ${chuyenNgayISO_SangVN(getInvoiceDate(newestInvoice))}` : "Chưa có hóa đơn."}</p>
             </div>
-            <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(59, 130, 246, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3b82f6' }}>
-              <span className="material-symbols-outlined">receipt_long</span>
-            </div>
-          </div>
-          <div className="stat-tooltip">
-            Tổng số lượng hóa đơn đã phát sinh từ trước đến nay.
-          </div>
-        </div>
-        <div className="glass-card hover-lift stat-card-group" style={{ padding: '24px', borderRadius: 'var(--radius-lg)', background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, var(--surface) 100%)', border: '1px solid rgba(16, 185, 129, 0.2)', cursor: 'default' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          }
+        />
+        <CustomerKpiCard
+          accent="#10b981"
+          title="Đã thanh toán"
+          value={stats.paidCount}
+          icon={<KpiIcon name="check" />}
+          details={
             <div>
-              <p style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--success)', marginBottom: '8px' }}>ĐÃ THANH TOÁN</p>
-              <h3 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#10b981' }}>{stats.paidCount}</h3>
+              <strong>{toneCopy.invoicePaidTitle}</strong>
+              <p>{stats.paidCount} {toneCopy.invoicePaidText}</p>
+              <p>Tổng đã trả: {formatTienVND(stats.totalPaid)}.</p>
+              <p>Gần đây: {paidInvoices[0] ? `#HD-${getInvoiceId(paidInvoices[0])}` : "Chưa có giao dịch đã trả."}</p>
             </div>
-            <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(16, 185, 129, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981' }}>
-              <span className="material-symbols-outlined">check_circle</span>
-            </div>
-          </div>
-          <div className="stat-tooltip">
-            Số lượng hóa đơn bạn đã hoàn tất thanh toán.
-          </div>
-        </div>
-        <div className="glass-card hover-lift stat-card-group" style={{ padding: '24px', borderRadius: 'var(--radius-lg)', background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, var(--surface) 100%)', border: '1px solid rgba(239, 68, 68, 0.2)', cursor: 'default' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          }
+        />
+        <CustomerKpiCard
+          accent="#ef4444"
+          title="Đang chờ"
+          value={stats.unpaidCount}
+          icon={<KpiIcon name="alert" />}
+          details={
             <div>
-              <p style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--danger)', marginBottom: '8px' }}>ĐANG CHỜ</p>
-              <h3 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#ef4444' }}>{stats.unpaidCount}</h3>
+              <strong>{toneCopy.invoiceWaitingTitle}</strong>
+              <p>{stats.unpaidCount} {toneCopy.invoiceWaitingText}</p>
+              <p>Hóa đơn gần nhất: {latestUnpaid ? `#HD-${getInvoiceId(latestUnpaid)} - ${formatTienVND(getInvoiceTotal(latestUnpaid))}` : "Không còn hóa đơn chờ trả."}</p>
+              <p>Chọn VNPay hoặc VietQR tại từng dòng hóa đơn để thanh toán.</p>
             </div>
-            <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(239, 68, 68, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ef4444' }}>
-              <span className="material-symbols-outlined">pending_actions</span>
-            </div>
-          </div>
-          <div className="stat-tooltip">
-            Số lượng hóa đơn chưa được thanh toán (đang chờ xử lý).
-          </div>
-        </div>
-        <div className="glass-card hover-lift stat-card-group" style={{ padding: '24px', borderRadius: 'var(--radius-lg)', background: 'linear-gradient(135deg, rgba(20, 184, 166, 0.15) 0%, var(--surface) 100%)', border: '1px solid rgba(20, 184, 166, 0.3)', cursor: 'default' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          }
+        />
+        <CustomerKpiCard
+          accent="#14b8a6"
+          title="Tổng chi tiêu"
+          value={formatTienVND(stats.totalPaid)}
+          icon={<KpiIcon name="money" />}
+          details={
             <div>
-              <p style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--primary)', marginBottom: '8px' }}>TỔNG CHI TIÊU</p>
-              <h3 style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--primary)' }}>{formatTienVND(stats.totalPaid)}</h3>
+              <strong>Chi tiêu đã ghi nhận</strong>
+              <p>Tổng số tiền đã thanh toán thành công: {formatTienVND(stats.totalPaid)}.</p>
+              <p>Trung bình mỗi hóa đơn đã trả: {stats.paidCount > 0 ? formatTienVND(Math.round(stats.totalPaid / stats.paidCount)) : "0 đ"}.</p>
+              <p>Số hóa đơn chờ trả hiện tại: {stats.unpaidCount}.</p>
             </div>
-            <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(20, 184, 166, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
-              <span className="material-symbols-outlined">payments</span>
-            </div>
-          </div>
-          <div className="stat-tooltip">
-            Tổng số tiền bạn đã thanh toán thành công.
-          </div>
-        </div>
+          }
+        />
       </div>
 
       <div className="stagger-3" style={{ display: 'grid', gap: '24px' }}>
         {filteredList.length === 0 ? (
           <div className="glass-card" style={{ padding: '80px', textAlign: 'center', borderRadius: 'var(--radius-xl)' }}>
-            <span className="material-symbols-outlined" style={{ fontSize: '64px', color: 'var(--gray-200)', marginBottom: '24px' }}>receipt_long</span>
+            <div style={{ color: 'var(--gray-200)', marginBottom: '24px', display: 'inline-flex' }}><KpiIcon name="receipt" size={64} /></div>
             <p style={{ fontSize: '1.2rem', color: 'var(--gray-400)', fontWeight: 700 }}>Không tìm thấy hóa đơn nào.</p>
           </div>
         ) : currentRows.map(hd => (
           <div key={getInvoiceId(hd)} className="glass-card item-card" style={{ padding: '32px', borderRadius: 'var(--radius-xl)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
               <div style={{ width: '64px', height: '64px', background: 'var(--primary-light)', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
-                <span className="material-symbols-outlined" style={{ fontSize: '32px' }}>receipt_long</span>
+                <KpiIcon name="receipt" size={32} />
               </div>
               <div>
                 <h3 style={{ fontSize: '1.3rem', fontWeight: 900, color: 'var(--ink)', margin: 0 }}>Hóa đơn #HD-{getInvoiceId(hd)}</h3>
@@ -439,28 +631,39 @@ const HoaDonThanhToan: React.FC = () => {
                 <b style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--primary)' }}>{formatTienVND(getInvoiceTotal(hd))}</b>
               </div>
               <span style={{
-                padding: '8px 20px', borderRadius: '50px', fontSize: '0.75rem', fontWeight: 900,
-                background: getInvoiceStatus(hd) === 'da_thanh_toan' ? 'var(--primary-light)' : '#fef9c3',
-                color: getInvoiceStatus(hd) === 'da_thanh_toan' ? 'var(--primary)' : '#a16207'
+                ...getInvoiceStatusBadgeStyle(hd),
+                minWidth: '118px',
+                height: '40px',
+                padding: '0 18px',
+                borderRadius: '999px',
+                fontSize: '0.75rem',
+                fontWeight: 950,
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                textAlign: 'center',
+                whiteSpace: 'nowrap',
+                lineHeight: 1,
+                boxShadow: getInvoiceStatus(hd) === 'dang_thanh_toan' ? '0 8px 18px rgba(245, 158, 11, 0.12)' : 'none'
               }}>
-                {getInvoiceStatus(hd) === 'da_thanh_toan' ? 'ĐÃ TRẢ' : 'CHỜ TRẢ'}
+                {getInvoiceStatusLabel(hd)}
               </span>
               <div style={{ display: 'flex', gap: '8px' }}>
-                {getInvoiceStatus(hd) === 'cho_thanh_toan' && (
+                {isPayableInvoice(hd) && (
                   <>
                     <button data-ai-id="button-hoadonthanhtoan-9z33" className="btn hover-scale" style={{ padding: '12px 20px', background: '#005baa', color: 'white', fontWeight: 800, borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '6px' }} onClick={() => handlePaymentVNPay(hd)} title="Thanh toán qua VNPay">
-                      <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>account_balance_wallet</span> VNPay
+                      <KpiIcon name="wallet" size={18} /> VNPay
                     </button>
                     <button data-ai-id="button-hoadonthanhtoan-szsp" className="btn hover-scale" style={{ padding: '12px 20px', background: 'var(--success)', color: 'white', fontWeight: 800, borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '6px' }} onClick={() => handlePaymentVietQR(hd)} title="Chuyển khoản VietQR">
-                      <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>qr_code_scanner</span> VietQR
+                      <KpiIcon name="qr" size={18} /> VietQR
                     </button>
                   </>
                 )}
                 <button data-ai-id="button-hoadonthanhtoan-ik3g" className="btn" style={{ padding: '12px', background: 'var(--gray-50)', color: 'var(--ink)' }} onClick={() => handleViewDetails(hd)} title="Xem chi tiết">
-                  <span className="material-symbols-outlined">visibility</span>
+                  <KpiIcon name="eye" size={22} />
                 </button>
-                <button data-ai-id="button-hoadonthanhtoan-xuzd" className="btn" style={{ padding: '12px', background: 'var(--gray-50)', color: 'var(--ink)' }} onClick={async () => { await handleViewDetails(hd); window.print(); }} title="In hóa đơn">
-                  <span className="material-symbols-outlined">print</span>
+                <button data-ai-id="button-hoadonthanhtoan-xuzd" className="btn" style={{ padding: '12px', background: 'var(--gray-50)', color: 'var(--ink)' }} onClick={async () => { setPrintAfterDetailsLoad(true); await handleViewDetails(hd); }} title="In hóa đơn">
+                  <KpiIcon name="print" size={22} />
                 </button>
               </div>
             </div>
@@ -480,7 +683,7 @@ const HoaDonThanhToan: React.FC = () => {
                 cursor: currentPage === 1 ? 'not-allowed' : 'pointer'
               }}
             >
-              <span className="material-symbols-outlined">chevron_left</span> Trước
+              <KpiIcon name="chevronLeft" size={18} /> Trước
             </button>
             <span style={{ fontWeight: 800, color: 'var(--ink)', fontSize: '0.9rem' }}>
               Trang {currentPage} / {totalPages}
@@ -495,7 +698,7 @@ const HoaDonThanhToan: React.FC = () => {
                 cursor: currentPage === totalPages ? 'not-allowed' : 'pointer'
               }}
             >
-              Sau <span className="material-symbols-outlined">chevron_right</span>
+              Sau <KpiIcon name="chevronRight" size={18} />
             </button>
           </div>
         )}
@@ -577,7 +780,7 @@ const HoaDonThanhToan: React.FC = () => {
 
               <div style={{ marginBottom: '24px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                  <span className="material-symbols-outlined" style={{ color: 'var(--primary)', fontSize: '20px' }}>history</span>
+                  <span style={{ color: 'var(--primary)', display: 'inline-flex' }}><KpiIcon name="history" size={20} /></span>
                   <div style={{ fontSize: '0.82rem', fontWeight: 950, color: 'var(--ink)', letterSpacing: '0.5px' }}>LỊCH SỬ THANH TOÁN</div>
                 </div>
                 <div style={{ border: '1px solid var(--gray-200)', borderRadius: '16px', overflow: 'hidden', background: 'var(--background)' }}>
@@ -623,7 +826,7 @@ const HoaDonThanhToan: React.FC = () => {
               <div style={{ marginTop: '24px', display: 'flex', gap: '12px', justifyContent: 'flex-end' }} className="no-print">
                 <button data-ai-id="button-hoadonthanhtoan-12y5" className="btn btn-pill" onClick={() => setViewingHD(null)} style={{ background: 'var(--gray-100)', color: 'var(--ink)', fontWeight: 800 }}>Đóng</button>
                 <button data-ai-id="button-hoadonthanhtoan-qkgo" className="btn btn-primary btn-pill" onClick={() => window.print()} style={{ fontWeight: 900 }}>
-                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>print</span> In biên lai
+                  <KpiIcon name="print" size={18} /> In biên lai
                 </button>
               </div>
             </div>

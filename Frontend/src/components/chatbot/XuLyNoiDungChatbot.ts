@@ -121,10 +121,20 @@ const parseAssistantJsonText = (value: string): string => {
     }
 };
 
+const stripAssistantInternalText = (value: string): string => {
+    return String(value ?? "")
+        .replace(/<think>[\s\S]*?<\/think>/gi, " ")
+        .replace(/<\/?assistant>/gi, " ")
+        .replace(/^\s*ish\s*/i, " ")
+        .replace(/Okay, let me break down[\s\S]*?(?=\n\s*[À-ỹA-ZĐ])/i, " ")
+        .replace(/\n{3,}/g, "\n\n")
+        .trim();
+};
+
 export const normalizeRawAssistantReplyText = (raw: unknown, fallback = ""): string => {
     let text = typeof raw === "string" ? raw : pickTextFromJsonPayload(raw);
     if (!text.trim()) text = fallback;
-    text = text.trim();
+    text = stripAssistantInternalText(text.trim());
 
     if (/^data:/m.test(text)) {
         const dataText = text
@@ -135,19 +145,19 @@ export const normalizeRawAssistantReplyText = (raw: unknown, fallback = ""): str
             .filter(line => line && line !== "[DONE]")
             .join("\n")
             .trim();
-        if (dataText) text = dataText;
+        if (dataText) text = stripAssistantInternalText(dataText);
     }
 
     const fencedJson = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
     if (fencedJson) {
         const extracted = parseAssistantJsonText(fencedJson[1].trim());
-        if (extracted) return extracted.trim();
+        if (extracted) return stripAssistantInternalText(extracted.trim());
     }
 
     const jsonText = parseAssistantJsonText(text);
-    if (jsonText) return jsonText.trim();
+    if (jsonText) return stripAssistantInternalText(jsonText.trim());
 
-    return text;
+    return stripAssistantInternalText(text) || fallback;
 };
 
 export const stripChatControlTags = (text: string): string => {

@@ -3,7 +3,9 @@ import { useRef } from "react";
 import axiosInstance from "@services/axios";
 import { useNavigate } from "react-router-dom";
 import { Modal } from "@components/CommonUI";
+import BirthYearSelect from "@components/BirthYearSelect";
 import { getUserProfile, normalizeUserRole } from "@utils/index";
+import { customerToneCopy, isGenZBirthYear } from "@utils/customerTone";
 import { toast } from "@components/Toast";
 import { isValidPassword, PASSWORD_POLICY_MESSAGE } from "@utils/passwordPolicy";
 import { notifyUserProfileChanged } from "@hooks/useLiveUserProfile";
@@ -295,6 +297,7 @@ const ThongTinCaNhan: React.FC = () => {
   const localUser = getUserProfile();
   const profile = { ...(localUser || {}), ...(data || {}) };
   const isCustomer = !!(profile.id_khach_hang || normalizeUserRole(localUser) === "khach_hang");
+  const toneCopy = customerToneCopy[isGenZBirthYear(profile?.nam_sinh) ? "genz" : "mature"];
 
   return (
     <div className="animate-fade-in">
@@ -377,21 +380,18 @@ const ThongTinCaNhan: React.FC = () => {
               </div>
               {isCustomer && (
                 <div>
-                  <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '12px', display: 'block', textTransform: 'uppercase' }}>NĂM SINH (CÁ NHÂN HÓA TRẢI NGHIỆM)</label>
+                  <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '12px', display: 'block', textTransform: 'uppercase' }}>{toneCopy.profileBirthYearLabel}</label>
                   {isEditing ? (
-                    <input
-                      data-ai-id="input-thongtincanhan-namsinh"
-                      type="number"
-                      name="nam_sinh"
-                      min="1920"
-                      max={new Date().getFullYear()}
+                    <BirthYearSelect
+                      data-ai-id="select-thongtincanhan-namsinh"
                       value={formData.nam_sinh || ''}
-                      onChange={handleChange}
-                      style={{ width: '100%', padding: '14px 18px', borderRadius: '14px', border: '1px solid var(--gray-200)', background: 'var(--gray-50)', color: 'var(--ink)', fontWeight: 600, outline: 'none' }}
+                      onChange={(value) => setFormData({ ...formData, nam_sinh: value })}
+                      placeholder="Chọn năm sinh"
+                      style={{ width: '100%', padding: '14px 18px', borderRadius: '14px', border: '1px solid var(--gray-200)', backgroundColor: 'var(--gray-50)', color: 'var(--ink)', fontWeight: 600, outline: 'none' }}
                     />
                   ) : (
                     <div style={{ fontWeight: 700, color: 'var(--ink)' }}>
-                      {data?.nam_sinh ? `${data.nam_sinh} (${data.nam_sinh >= 1997 ? "Gen Z vui vẻ 🐱🎉" : "Trưởng thành chuẩn mực 🩺✨"})` : "Chưa cập nhật năm sinh"}
+                      {data?.nam_sinh ? `${data.nam_sinh} (${toneCopy.profileBirthYearBadge})` : "Chưa cập nhật năm sinh"}
                     </div>
                   )}
                 </div>

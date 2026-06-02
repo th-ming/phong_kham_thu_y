@@ -4,6 +4,7 @@ import SidebarKhachHang from "@components/SidebarKhachHang";
 import { ScrollToTop } from "@components/SpecialEffects";
 import { ChatBot } from "@components/ChatBot";
 import { toast } from "@components/Toast";
+import BirthYearSelect from "@components/BirthYearSelect";
 import axiosInstance from "@services/axios";
 import { getCustomerIdFromProfile, getUserProfile, normalizeUserRole } from "@utils/index";
 import { notifyUserProfileChanged } from "@hooks/useLiveUserProfile";
@@ -106,8 +107,8 @@ const CustomerLayout: React.FC = () => {
 
     const yearNum = Number(birthYear);
     const currentYear = new Date().getFullYear();
-    if (yearNum < 1920 || yearNum > currentYear) {
-      toast.error(`Năm sinh phải nằm trong khoảng từ 1920 đến ${currentYear}!`);
+    if (yearNum < 1900 || yearNum > currentYear) {
+      toast.error(`Năm sinh phải nằm trong khoảng từ 1900 đến ${currentYear}!`);
       return;
     }
 
@@ -186,29 +187,26 @@ const CustomerLayout: React.FC = () => {
         }}>
           <div style={{
             width: "100%",
-            maxWidth: "460px",
-            padding: "40px",
+            maxWidth: "760px",
+            padding: "36px",
             borderRadius: "28px",
             background: "var(--surface)",
             border: "1px solid var(--gray-200)",
             boxShadow: "0 30px 70px rgba(15, 23, 42, 0.24)",
             textAlign: "center"
           }}>
-            <div style={{
-              width: "72px",
-              height: "72px",
-              borderRadius: "22px",
-              background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-              color: "white",
-              display: "grid",
-              placeItems: "center",
-              margin: "0 auto 22px",
-              boxShadow: "0 12px 26px rgba(16, 185, 129, 0.35)",
-              animation: "pulse-soft 2s infinite ease-in-out"
-            }}>
-              {/* Sử dụng icon lấp lánh AI (auto_awesome) để thể hiện Rexi đang cá nhân hóa trải nghiệm thông minh */}
-              <span className="material-symbols-outlined" style={{ fontSize: "38px", animation: "spin-slow 6s infinite linear" }}>auto_awesome</span>
-            </div>
+            <img
+              src="/img/rexi_brand_logo.png"
+              alt="Rexi Logo"
+              style={{
+                width: "80px",
+                height: "80px",
+                borderRadius: "20px",
+                margin: "0 auto 22px",
+                boxShadow: "0 12px 26px rgba(16, 185, 129, 0.35)",
+                objectFit: "cover"
+              }}
+            />
 
             <h3 style={{ fontSize: "1.55rem", fontWeight: 900, color: "var(--ink)", margin: "0 0 12px" }}>
               Cho Rexi biết năm sinh của bạn
@@ -217,24 +215,21 @@ const CustomerLayout: React.FC = () => {
               Thông tin này giúp hệ thống phân loại độ tuổi và chọn phong cách trò chuyện phù hợp ngay từ lần đăng nhập đầu tiên.
             </p>
 
-            <form onSubmit={handleSaveBirthYear}>
-              <input
-                type="number"
-                inputMode="numeric"
-                min="1920"
-                max={new Date().getFullYear()}
-                placeholder="VD: 1998"
+            <form onSubmit={handleSaveBirthYear} style={{ marginTop: "22px" }}>
+              <BirthYearSelect
+                data-ai-id="select-customerlayout-namsinh"
+                minYear={1900}
+                placeholder="Chọn năm sinh"
                 value={birthYear}
-                onChange={(e) => setBirthYear(e.target.value)}
+                onChange={setBirthYear}
                 disabled={savingBirthYear}
-                autoFocus
                 required
                 style={{
                   width: "100%",
                   padding: "16px 18px",
                   borderRadius: "16px",
                   border: "2px solid rgba(15, 157, 138, 0.22)",
-                  background: "var(--gray-50)",
+                  backgroundColor: "var(--gray-50)",
                   color: "var(--ink)",
                   fontSize: "1.05rem",
                   fontWeight: 800,

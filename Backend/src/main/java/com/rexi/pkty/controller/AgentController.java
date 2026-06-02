@@ -39,6 +39,12 @@ public class AgentController {
     @Autowired
     private com.rexi.pkty.service.AuditLogService auditLogService;
 
+    @Autowired
+    private com.rexi.pkty.repository.NhatKyChatRepository nhatKyChatRepository;
+
+    @Autowired
+    private com.rexi.pkty.repository.TaiKhoanRepository taiKhoanRepository;
+
     private final com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
 
     // Auto get goi y cham soc active KHACH_HANG (retention & upsell)
@@ -579,6 +585,7 @@ public class AgentController {
             }
 
             auditAgentMedicalReplyIfNeeded(query, result.finalAnswer(), userRole, username, result.provider(), stepsData);
+            saveAgentChatLog(username, query, result.finalAnswer(), result.provider(), stepsData);
 
             return ResponseEntity.ok(Map.of(
                 "finalAnswer", result.finalAnswer(),
@@ -588,8 +595,43 @@ public class AgentController {
             ));
         } catch (Exception e) {
             logger.severe("[ReAct] Lỗi: " + e.getMessage());
+            saveAgentChatLog(username, query, "Lỗi ReAct Agent: " + e.getMessage(), "System", List.of());
             return ResponseEntity.internalServerError().body(Map.of("error", "Lỗi ReAct Agent: " + e.getMessage()));
         }
+    }
+
+    private void saveAgentChatLog(String username, String query, String answer, String provider, List<Map<String, Object>> steps) {
+        try {
+            String idTaiKhoan = null;
+            if (username != null && !username.isBlank()) {
+                idTaiKhoan = taiKhoanRepository.findByTenDangNhap(username)
+                        .map(com.rexi.pkty.entity.TaiKhoan::getId_tai_khoan)
+                        .orElse(null);
+            }
+
+            StringBuilder reply = new StringBuilder();
+            reply.append(answer == null ? "" : answer);
+            reply.append("\n\n[Agent provider: ").append(provider == null ? "unknown" : provider).append("]");
+            if (steps != null && !steps.isEmpty()) {
+                reply.append(" [steps: ").append(steps.size()).append("]");
+            }
+
+            com.rexi.pkty.entity.NhatKyChat log = com.rexi.pkty.entity.NhatKyChat.builder()
+                    .idTaiKhoan(idTaiKhoan)
+                    .cauHoi(compactForLog(query, 4_000))
+                    .cauTraLoi(compactForLog(reply.toString(), 4_000))
+                    .build();
+            nhatKyChatRepository.save(log);
+        } catch (Exception ex) {
+            logger.warning("[ReAct] Không thể ghi NhatKyChat: " + ex.getMessage());
+        }
+    }
+
+    private String compactForLog(String value, int maxChars) {
+        if (value == null || value.isBlank()) return "(trống)";
+        String compact = value.replaceAll("\\s+", " ").trim();
+        if (compact.length() <= maxChars) return compact;
+        return compact.substring(0, Math.max(0, maxChars - 20)) + "... [rut gon]";
     }
 
     private boolean isCurrentUserStaff() {

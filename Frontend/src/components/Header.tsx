@@ -175,23 +175,23 @@ const Header: React.FC<{ hideMenu?: boolean }> = ({ hideMenu }) => {
           {user ? (
             <Link to={getDashboardLink()} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'var(--gray-100)', padding: '10px 14px 10px 10px', borderRadius: '22px', border: '1px solid var(--gray-200)', textDecoration: 'none', color: 'var(--ink)', fontWeight: 700 }}>
               <div style={{
-                width: '46px', height: '46px', borderRadius: '50%',
+                width: '48px', height: '48px', borderRadius: '50%',
                 display: 'grid', placeItems: 'center',
-                flexShrink: 0, position: 'relative'
+                flexShrink: 0, position: 'relative', boxSizing: 'border-box'
               }}>
-                <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: '2px solid var(--primary)', boxShadow: '0 0 15px var(--primary), inset 0 0 15px var(--primary)', animation: 'pulse 2s infinite' }} />
-                <div style={{ width: '40px', height: '40px', borderRadius: '50%', overflow: 'hidden', background: 'rgba(20, 184, 166, 0.1)', display: 'grid', placeItems: 'center', color: 'var(--primary)', fontWeight: 950, position: 'relative', zIndex: 1, textShadow: '0 0 10px var(--primary)' }}>
+                <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: '2px solid rgba(255, 255, 255, 0.7)', boxShadow: '0 0 20px rgba(255, 255, 255, 0.2), inset 0 0 10px rgba(255, 255, 255, 0.1)', animation: 'pulse 2s infinite' }} />
+                <div style={{ width: '42px', height: '42px', borderRadius: '50%', overflow: 'hidden', background: 'white', display: 'grid', placeItems: 'center', color: 'var(--primary)', fontWeight: 950, position: 'relative', zIndex: 1 }}>
                   {userAvatar ? (
                     <img
                       src={userAvatar}
                       alt={userDisplayName}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                       onError={(e) => {
                         (e.target as HTMLImageElement).style.display = 'none';
                       }}
                     />
                   ) : (
-                    <span style={{ fontSize: '1.45rem', lineHeight: 1 }}>{userInitial}</span>
+                    <span style={{ fontSize: '1.35rem', lineHeight: 1 }}>{userInitial}</span>
                   )}
                 </div>
               </div>
@@ -204,7 +204,7 @@ const Header: React.FC<{ hideMenu?: boolean }> = ({ hideMenu }) => {
           )}
           <button data-ai-id="button-header-datlich" onClick={handleBookingRedirect} className="mobile-hide header-booking-cta" style={{ background: 'var(--primary-gradient)', color: 'white', padding: '10px 24px', borderRadius: '50px', textDecoration: 'none', fontWeight: 800, fontSize: '0.9rem', boxShadow: '0 10px 20px var(--primary-shadow)', border: 'none', cursor: 'pointer' }}><span>Đặt lịch hẹn</span></button>
 
-          {/* nút mở menu trên dt */}
+          {/* nút menu trên dt */}
           <button data-ai-id="button-header-x3hq"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             className="mobile-show"

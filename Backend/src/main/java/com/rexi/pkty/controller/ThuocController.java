@@ -94,27 +94,13 @@ public class ThuocController {
                     .body(java.util.Map.of("message", "Bạn không có quyền xóa thuốc khỏi hệ thống!"));
                     
         return thuocRepository.findById(id).map(t -> {
-            // Kiểm tra liên kết trong LoThuoc và DonThuocChiTiet
-            int countLoThuoc = 0;
-            int countDonThuoc = 0;
             try {
-                countLoThuoc = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM LoThuoc WHERE id_thuoc = ?", Integer.class, id);
-            } catch (Exception e) {}
-            try {
-                countDonThuoc = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM DonThuocChiTiet WHERE id_thuoc = ?", Integer.class, id);
-            } catch (Exception e) {}
-            
-            // Xoa mem 100% de bao toan history
-            t.setDa_xoa(true);
-            t.setTrang_thai(false);
-            thuocRepository.save(t);
-            
-            if (countLoThuoc > 0 || countDonThuoc > 0) {
-                auditLogService.logAction("XÓA MỀM", "Thuoc", "Đã ẩn thuốc do có dữ liệu liên kết: " + t.getTen_thuoc());
-                return org.springframework.http.ResponseEntity.ok(java.util.Map.of("message", "Thuốc đang được sử dụng trong kho hoặc đơn thuốc. Đã chuyển sang trạng thái Xóa mềm (Ngừng kinh doanh) để bảo toàn dữ liệu lịch sử!"));
-            } else {
-                auditLogService.logAction("XÓA MỀM", "Thuoc", "Đã ẩn thuốc: " + t.getTen_thuoc());
-                return org.springframework.http.ResponseEntity.ok(java.util.Map.of("message", "Đã xóa (ẩn) thuốc thành công!"));
+                thuocRepository.delete(t);
+                auditLogService.logAction("XÓA CỨNG", "Thuoc", "Đã xóa cứng thuốc: " + t.getTen_thuoc());
+                return org.springframework.http.ResponseEntity.ok(java.util.Map.of("message", "Đã xóa cứng thuốc thành công!"));
+            } catch (Exception e) {
+                return org.springframework.http.ResponseEntity.status(409)
+                        .body(java.util.Map.of("message", "Không thể xóa cứng thuốc vì còn dữ liệu liên kết: " + e.getMessage()));
             }
         }).orElse(org.springframework.http.ResponseEntity.status(404).body(java.util.Map.of("message", "Không tìm thấy thuốc!")));
     }

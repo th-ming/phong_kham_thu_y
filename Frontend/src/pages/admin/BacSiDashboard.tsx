@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import axiosInstance from "@services/axios";
 import { getUserProfile } from "@utils/index";
 import { useAutoRefresh } from "@hooks/useAutoRefresh";
+import KpiIcon from "@components/KpiIcon";
 
 const BacSiDashboard: React.FC = () => {
     const [myAppointments, setMyAppointments] = useState<any[]>([]);
@@ -77,6 +78,33 @@ const BacSiDashboard: React.FC = () => {
 
     const waitingPatients = myAppointments.filter(a => a.trang_thai?.toUpperCase() === 'DA_XAC_NHAN').length;
     const completedPatients = myAppointments.filter(a => a.trang_thai?.toUpperCase() === 'HOAN_THANH').length;
+    const inProgressPatients = myAppointments.filter(a => a.trang_thai?.toUpperCase() === 'DANG_KHAM').length;
+    const nextAppointment = [...myAppointments]
+        .filter(a => !['HOAN_THANH', 'DA_HUY', 'KHONG_DEN'].includes(String(a.trang_thai || '').toUpperCase()))
+        .sort((a, b) => String(a.gio_kham || '').localeCompare(String(b.gio_kham || '')))[0];
+
+    const ClinicalKpiCard = ({ accent, title, value, icon, details, pulse = false }: {
+        accent: string;
+        title: string;
+        value: React.ReactNode;
+        icon: React.ReactNode;
+        details: React.ReactNode;
+        pulse?: boolean;
+    }) => (
+        <div className="clinical-kpi-card glass-card hover-lift" tabIndex={0} style={{ padding: '32px', borderRadius: '32px', border: `1px solid ${accent}25`, background: `linear-gradient(135deg, ${accent}15 0%, var(--surface) 100%)`, minHeight: '190px' }}>
+            <div className="clinical-kpi-badge" style={{ color: accent, borderColor: `${accent}35`, background: `${accent}12` }}>
+                <span>Chi tiết</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                <div style={{ width: '60px', height: '60px', borderRadius: '20px', background: `${accent}22`, color: accent, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 8px 20px ${accent}15`, fontSize: '1.55rem', fontWeight: 950 }}>
+                    {icon}
+                </div>
+            </div>
+            <p style={{ fontSize: '0.8rem', fontWeight: 900, color: 'var(--gray-500)', margin: '0 0 8px 0', textTransform: 'uppercase', letterSpacing: '1px' }}>{title}</p>
+            <h3 className={pulse ? 'pulse-text' : ''} style={{ fontSize: '2rem', fontWeight: 950, color: accent, margin: 0, display: 'inline-block', transformOrigin: 'left center', textShadow: `0 2px 10px ${accent}18` }}>{value}</h3>
+            <div className="clinical-kpi-popover">{details}</div>
+        </div>
+    );
 
     if (loading) {
         return <div style={{ display: 'flex', justifyContent: 'center', padding: '100px' }}><div className="dot-pulse"></div></div>;
@@ -92,6 +120,69 @@ const BacSiDashboard: React.FC = () => {
                 }
                 .pulse-text {
                     animation: pulseWarning 1.5s infinite ease-in-out;
+                }
+                .clinical-kpi-card {
+                    position: relative;
+                    cursor: help;
+                    overflow: visible;
+                    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+                }
+                .clinical-kpi-card:hover,
+                .clinical-kpi-card:focus {
+                    transform: translateY(-4px);
+                    box-shadow: 0 18px 42px rgba(15, 23, 42, 0.12);
+                    outline: none;
+                    z-index: 120;
+                }
+                .clinical-kpi-badge {
+                    position: absolute;
+                    top: 22px;
+                    right: 22px;
+                    display: inline-flex;
+                    align-items: center;
+                    padding: 7px 10px;
+                    border-radius: 999px;
+                    border: 1px solid;
+                    font-size: 0.72rem;
+                    font-weight: 950;
+                    box-shadow: 0 12px 26px rgba(15, 23, 42, 0.08);
+                }
+                .clinical-kpi-popover {
+                    position: absolute;
+                    left: 18px;
+                    right: 18px;
+                    top: 70px;
+                    z-index: 90;
+                    padding: 16px;
+                    border-radius: 16px;
+                    border: 1px solid rgba(20, 184, 166, 0.35);
+                    background: var(--surface);
+                    color: var(--ink);
+                    box-shadow: 0 24px 56px rgba(15, 23, 42, 0.22);
+                    opacity: 0;
+                    transform: translateY(-6px);
+                    pointer-events: none;
+                    transition: opacity 0.18s ease, transform 0.18s ease;
+                    font-size: 0.86rem;
+                    line-height: 1.45;
+                }
+                .clinical-kpi-popover strong {
+                    display: block;
+                    margin-bottom: 8px;
+                    color: var(--primary);
+                    font-size: 0.92rem;
+                    font-weight: 950;
+                }
+                .clinical-kpi-popover p {
+                    margin: 6px 0;
+                    color: var(--ink);
+                    font-weight: 800;
+                }
+                .clinical-kpi-card:hover .clinical-kpi-popover,
+                .clinical-kpi-card:focus .clinical-kpi-popover {
+                    opacity: 1;
+                    transform: translateY(0);
+                    pointer-events: auto;
                 }
             `}</style>
             <div className="animate-slide-up stagger-1" style={{ marginBottom: '40px', padding: '48px', borderRadius: 'var(--radius-xl)', background: 'var(--primary-gradient)', color: 'white', position: 'relative', overflow: 'hidden', boxShadow: 'var(--shadow-2xl)' }}>
@@ -110,21 +201,51 @@ const BacSiDashboard: React.FC = () => {
             </div>
 
             {/* Các thẻ thống kê */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '24px', marginBottom: '40px' }}>
-                <div className="glass-card hover-lift" style={{ padding: '24px', borderRadius: '24px', border: '1px solid rgba(59, 130, 246, 0.25)', background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, var(--surface) 100%)' }}>
-                    <p style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--gray-500)', margin: '0 0 8px 0' }}>CA KHÁM HÔM NAY</p>
-                    <h3 style={{ fontSize: '2rem', fontWeight: 900, color: '#3b82f6', margin: 0, textShadow: '0 2px 10px rgba(59, 130, 246, 0.1)' }}>{myAppointments.length} ca</h3>
-                </div>
-                <div className="glass-card hover-lift" style={{ padding: '24px', borderRadius: '24px', border: '1px solid rgba(245, 158, 11, 0.25)', background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, var(--surface) 100%)' }}>
-                    <p style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--gray-500)', margin: '0 0 8px 0' }}>BỆNH NHÂN ĐANG CHỜ</p>
-                    <h3 className={waitingPatients > 0 ? 'pulse-text' : ''} style={{ fontSize: '2rem', fontWeight: 900, color: '#f59e0b', margin: 0, display: 'inline-block', transformOrigin: 'left center', textShadow: '0 2px 10px rgba(245, 158, 11, 0.1)' }}>
-                        {waitingPatients} bé
-                    </h3>
-                </div>
-                <div className="glass-card hover-lift" style={{ padding: '24px', borderRadius: '24px', border: '1px solid rgba(16, 185, 129, 0.25)', background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, var(--surface) 100%)' }}>
-                    <p style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--gray-500)', margin: '0 0 8px 0' }}>CA ĐÃ HOÀN THÀNH</p>
-                    <h3 style={{ fontSize: '2rem', fontWeight: 900, color: '#10b981', margin: 0, textShadow: '0 2px 10px rgba(16, 185, 129, 0.1)' }}>{completedPatients} ca</h3>
-                </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '24px', marginBottom: '40px', position: 'relative', zIndex: 80 }}>
+                <ClinicalKpiCard
+                    accent="#3b82f6"
+                    title="Ca khám hôm nay"
+                    value={`${myAppointments.length} ca`}
+                    icon={<KpiIcon name="calendar" />}
+                    details={
+                        <div>
+                            <strong>Tổng quan lịch khám</strong>
+                            <p>{waitingPatients} ca đang chờ bác sĩ tiếp nhận.</p>
+                            <p>{inProgressPatients} ca đang khám, {completedPatients} ca đã hoàn thành.</p>
+                            <p>Ca kế tiếp: {nextAppointment ? `${nextAppointment.gio_kham?.substring(0, 5) || "--:--"} - ${nextAppointment.ten_thu_cung || "chưa có tên"}` : "Không còn ca cần xử lý."}</p>
+                        </div>
+                    }
+                />
+                <ClinicalKpiCard
+                    accent="#f59e0b"
+                    title="Bệnh nhân đang chờ"
+                    value={`${waitingPatients} bé`}
+                    icon={<KpiIcon name="clock" />}
+                    pulse={waitingPatients > 0}
+                    details={
+                        <div>
+                            <strong>Danh sách cần ưu tiên</strong>
+                            {myAppointments.filter(a => String(a.trang_thai || '').toUpperCase() === 'DA_XAC_NHAN').slice(0, 4).map(app => (
+                                <p key={app.id_lich_hen}>{app.gio_kham?.substring(0, 5) || "--:--"} - {app.ten_thu_cung || "chưa có tên"} ({app.ten_khach_hang || "chưa có chủ"})</p>
+                            ))}
+                            {waitingPatients === 0 && <p>Hiện không có bệnh nhân nào đang chờ.</p>}
+                        </div>
+                    }
+                />
+                <ClinicalKpiCard
+                    accent="#10b981"
+                    title="Ca đã hoàn thành"
+                    value={`${completedPatients} ca`}
+                    icon={<KpiIcon name="check" />}
+                    details={
+                        <div>
+                            <strong>Kết quả trong ngày</strong>
+                            <p>{completedPatients}/{myAppointments.length || 0} ca đã hoàn thành hôm nay.</p>
+                            <p>7 ngày qua: {weeklyStats.reduce((sum, stat) => sum + stat.count, 0)} ca hoàn thành.</p>
+                            <p>Hồ sơ gần đây đang hiển thị: {myMedicalRecords.length} hồ sơ.</p>
+                        </div>
+                    }
+                />
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '32px', alignItems: 'start' }}>

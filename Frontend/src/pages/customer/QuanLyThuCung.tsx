@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import axiosInstance from "@services/axios";
 import { getCustomerIdFromProfile, getUserProfile, matchesSearchFields } from "@utils/index";
 import { toast } from "@components/Toast";
@@ -50,6 +50,8 @@ const QuanLyThuCung: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const formCardRef = useRef<HTMLDivElement | null>(null);
+  const firstFieldRef = useRef<HTMLInputElement | null>(null);
 
   const fetchUserData = useCallback(async () => {
     const user = getUserProfile();
@@ -113,6 +115,17 @@ const QuanLyThuCung: React.FC = () => {
     }
     setShowForm(true);
   };
+
+  useEffect(() => {
+    if (!showForm) return;
+
+    const timeoutId = window.setTimeout(() => {
+      formCardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      firstFieldRef.current?.focus({ preventScroll: true });
+    }, 80);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [showForm, editingPet?.id_thu_cung]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -368,13 +381,13 @@ const QuanLyThuCung: React.FC = () => {
       </div>
 
       {showForm && (
-        <div className="glass-card stagger-2" style={{ padding: '48px', borderRadius: 'var(--radius-xl)', marginBottom: '48px', maxWidth: '900px', border: '1.5px solid var(--primary)' }}>
+        <div ref={formCardRef} className="glass-card stagger-2" style={{ padding: '48px', borderRadius: 'var(--radius-xl)', marginBottom: '48px', maxWidth: '900px', border: '1.5px solid var(--primary)', scrollMarginTop: '24px' }}>
           <h2 style={{ fontSize: '1.8rem', fontWeight: 900, marginBottom: '32px', color: 'var(--primary)' }}>{editingPet ? 'Cập nhật thông tin' : 'Đăng ký bé mới'}</h2>
 
           <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
             <div style={{ display: 'grid', gap: '8px' }}>
               <label>TÊN BÉ <span style={{ color: '#ff4d4f' }}>*</span></label>
-              <input data-ai-id="input-quanlythucung-u5s4" required value={formData.ten_thu_cung} onChange={e => setFormData({ ...formData, ten_thu_cung: e.target.value })} placeholder="VD: Bé Lu, Miu Miu..." />
+              <input ref={firstFieldRef} data-ai-id="input-quanlythucung-u5s4" required value={formData.ten_thu_cung} onChange={e => setFormData({ ...formData, ten_thu_cung: e.target.value })} placeholder="VD: Bé Lu, Miu Miu..." />
             </div>
             <div style={{ display: 'grid', gap: '8px' }}>
               <label>LOÀI <span style={{ color: '#ff4d4f' }}>*</span></label>

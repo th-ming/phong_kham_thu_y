@@ -356,11 +356,33 @@ export type AdaptiveInstructionInput = UserRoleContextInput & {
     history?: any[];
     currentPath: string;
     hasNavigationIntent: boolean;
+    birthYear?: number | string | null;
 };
 
 export const buildAdaptiveChatInstruction = (input: AdaptiveInstructionInput) => {
     const style = inferChatStyle(input.currentText, input.history || []);
     const userRoleContext = buildCurrentUserRoleContext(input);
+    const birthYear = Number(input.birthYear || 0);
+    const isGenZCustomer = input.isCustomerAccount && birthYear >= 1997;
+    const birthYearToneGuide = input.isCustomerAccount
+        ? isGenZCustomer
+            ? [
+                "Bộ câu Gen Z: gọi người dùng là sen, thú cưng là boss/bé; có thể dùng oke/nha/nè/check nhanh ở mức vừa phải.",
+                "Mẫu chào: 'Hi sen, Rexi đây. Mình xem nhanh tình hình của boss rồi xử lý gọn nha.'",
+                "Mẫu nhắc lịch: 'Sen ơi, boss có lịch khám lúc {giờ} ngày {ngày} nha. Rexi nhắc nhẹ để mình khỏi lỡ kèo nè.'",
+                "Mẫu hóa đơn: 'Hóa đơn đã thanh toán xong rồi nha, sen có thể xem lại chi tiết trong mục lịch sử.'",
+                "Mẫu thiếu thông tin: 'Rexi cần thêm tên boss, ngày khám và khung giờ mong muốn để book chuẩn nha.'",
+                "Giới hạn Gen Z: không quá lố, không spam emoji, không đùa khi cấp cứu/y khoa/tài chính/bảo mật."
+            ].join("\n")
+            : [
+                "Bộ câu trưởng thành: gọi người dùng là anh/chị hoặc quý khách; gọi thú cưng là thú cưng/bé; giọng lịch sự, rõ ràng.",
+                "Mẫu chào: 'Dạ chào anh/chị, Rexi đã sẵn sàng hỗ trợ. Mình sẽ kiểm tra thông tin và hướng dẫn từng bước.'",
+                "Mẫu nhắc lịch: 'Anh/chị có lịch khám cho thú cưng vào {giờ} ngày {ngày}. Vui lòng đến sớm 10 phút để làm thủ tục.'",
+                "Mẫu hóa đơn: 'Hóa đơn đã được thanh toán thành công. Anh/chị có thể kiểm tra chi tiết trong lịch sử hóa đơn.'",
+                "Mẫu thiếu thông tin: 'Rexi cần thêm tên thú cưng, ngày khám và khung giờ mong muốn để hỗ trợ đặt lịch chính xác.'",
+                "Giới hạn trưởng thành: không dùng teencode, không cợt nhả, không gọi là sen."
+            ].join("\n")
+        : "";
     const likelyNeed = inferLikelyUserNeed({
         currentText: input.currentText,
         history: input.history,
@@ -381,6 +403,7 @@ export const buildAdaptiveChatInstruction = (input: AdaptiveInstructionInput) =>
         content: [
             `Định danh và vai trò hiện tại:\n${userRoleContext}`,
             `Phong cách hội thoại suy ra từ các tin gần đây: ${style.tone}. ${toneGuide[style.tone]}`,
+            birthYearToneGuide ? `Bảng đối chiếu giọng theo năm sinh:\n${birthYearToneGuide}` : "",
             `Nhu cầu người dùng có khả năng đang cần:\n${likelyNeed}`,
             style.wantsConcise ? "Người dùng có dấu hiệu muốn nhanh/gọn: ưu tiên câu ngắn, hành động trước, giải thích sau." : "Điều chỉnh độ dài theo độ phức tạp câu hỏi; tránh dài dòng.",
             "Cách diễn đạt mong muốn: nói như một trợ lý Rexi có cảm xúc vừa đủ, biết nhấn nhá bằng nhịp câu và **từ khóa quan trọng**; mở đầu có thể ấm áp 1 câu ngắn, sau đó đi vào việc.",

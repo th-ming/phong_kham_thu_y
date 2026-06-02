@@ -2,6 +2,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import ThemeToggle from './ThemeToggle'
 import { useLiveUserProfile } from '@hooks/useLiveUserProfile'
+import { isGenZBirthYear } from '@utils/customerTone'
 
 const SidebarKhachHang: React.FC = () => {
   const location = useLocation()
@@ -10,6 +11,7 @@ const SidebarKhachHang: React.FC = () => {
   const [isMobileOpen, setIsMobileOpen] = useState(false)
 
   const user = useLiveUserProfile();
+  const isGenZCustomer = isGenZBirthYear(user?.nam_sinh);
 
   const sidebarItems = [
     { label: 'Tổng quan', path: '/khach-hang/dashboard', icon: 'dashboard' },
@@ -80,7 +82,7 @@ const SidebarKhachHang: React.FC = () => {
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
               <h2 className="text-gradient" style={{ fontSize: '2.1rem', margin: 0, letterSpacing: '-1.5px', fontWeight: 950, lineHeight: 0.9, color: 'var(--primary)' }}>REXI</h2>
-              <p style={{ fontSize: '0.72rem', fontWeight: 950, color: 'var(--primary)', margin: '4px 0 0 0', letterSpacing: '2px', textTransform: 'uppercase', opacity: 0.9, whiteSpace: 'nowrap' }}>GÓC CỦA SEN</p>
+              <p style={{ fontSize: '0.72rem', fontWeight: 950, color: 'var(--primary)', margin: '4px 0 0 0', letterSpacing: '2px', textTransform: 'uppercase', opacity: 0.9, whiteSpace: 'nowrap' }}>{isGenZCustomer ? 'GÓC CỦA SEN' : 'KHU VỰC KHÁCH HÀNG'}</p>
             </div>
           </Link>
 

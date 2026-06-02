@@ -1,0 +1,660 @@
+[
+  {
+    "step": 0,
+    "canvas": 0,
+    "alpha": 0,
+    "opacity": "1",
+    "transform": "none"
+  },
+  {
+    "step": 0,
+    "canvas": 1,
+    "alpha": 0,
+    "opacity": "1",
+    "transform": "matrix(1, 0, 0, 1, 0, 0)"
+  },
+  {
+    "step": 0,
+    "canvas": 2,
+    "alpha": 0,
+    "opacity": "0",
+    "transform": "matrix(0.95, 0, 0, 0.95, 0, 0)"
+  },
+  {
+    "step": 0,
+    "canvas": 3,
+    "alpha": 0,
+    "opacity": "1",
+    "transform": "none"
+  },
+  {
+    "step": 1,
+    "canvas": 0,
+    "alpha": 0,
+    "opacity": "1",
+    "transform": "matrix(1, 0, 0, 1, 0, 0)"
+  },
+  {
+    "step": 1,
+    "canvas": 1,
+    "alpha": 0,
+    "opacity": "0",
+    "transform": "matrix(0.95, 0, 0, 0.95, 0, 0)"
+  },
+  {
+    "step": 1,
+    "canvas": 2,
+    "alpha": 192,
+    "opacity": "1",
+    "transform": "matrix(0, 1, -1, 0, 0, 0)"
+  },
+  {
+    "step": 2,
+    "canvas": 0,
+    "alpha": 29775,
+    "opacity": "1",
+    "transform": "matrix(1, 0, 0, 1, 0, 0)"
+  },
+  {
+    "step": 2,
+    "canvas": 1,
+    "alpha": 31846,
+    "opacity": "0",
+    "transform": "matrix(0.95, 0, 0, 0.95, 0, 0)"
+  },
+  {
+    "step": 2,
+    "canvas": 2,
+    "alpha": 191,
+    "opacity": "1",
+    "transform": "matrix(0, 1, -1, 0, 0, 0)"
+  },
+  {
+    "step": 3,
+    "canvas": 0,
+    "alpha": 29391,
+    "opacity": "0",
+    "transform": "matrix(0.95, 0, 0, 0.95, 0, 0)"
+  },
+  {
+    "step": 3,
+    "canvas": 1,
+    "alpha": 31714,
+    "opacity": "1",
+    "transform": "matrix(1, 0, 0, 1, 0, 0)"
+  },
+  {
+    "step": 3,
+    "canvas": 2,
+    "alpha": 193,
+    "opacity": "1",
+    "transform": "matrix(0, 1, -1, 0, 0, 0)"
+  },
+  {
+    "step": 4,
+    "canvas": 0,
+    "alpha": 29417,
+    "opacity": "0",
+    "transform": "matrix(0.95, 0, 0, 0.95, 0, 0)"
+  },
+  {
+    "step": 4,
+    "canvas": 1,
+    "alpha": 31949,
+    "opacity": "1",
+    "transform": "matrix(1, 0, 0, 1, 0, 0)"
+  },
+  {
+    "step": 4,
+    "canvas": 2,
+    "alpha": 178,
+    "opacity": "1",
+    "transform": "matrix(0, 1, -1, 0, 0, 0)"
+  },
+  {
+    "step": 5,
+    "canvas": 0,
+    "alpha": 30029,
+    "opacity": "1",
+    "transform": "matrix(1, 0, 0, 1, 0, 0)"
+  },
+  {
+    "step": 5,
+    "canvas": 1,
+    "alpha": 32118,
+    "opacity": "0",
+    "transform": "matrix(0.95, 0, 0, 0.95, 0, 0)"
+  },
+  {
+    "step": 5,
+    "canvas": 2,
+    "alpha": 155,
+    "opacity": "1",
+    "transform": "matrix(0, 1, -1, 0, 0, 0)"
+  },
+  {
+    "step": 6,
+    "canvas": 0,
+    "alpha": 29646,
+    "opacity": "1",
+    "transform": "matrix(1, 0, 0, 1, 0, 0)"
+  },
+  {
+    "step": 6,
+    "canvas": 1,
+    "alpha": 0,
+    "opacity": "0",
+    "transform": "matrix(0.95, 0, 0, 0.95, 0, 0)"
+  },
+  {
+    "step": 6,
+    "canvas": 2,
+    "alpha": 135,
+    "opacity": "1",
+    "transform": "matrix(0, 1, -1, 0, 0, 0)"
+  },
+  {
+    "step": 7,
+    "canvas": 0,
+    "alpha": 30037,
+    "opacity": "0.426319",
+    "transform": "matrix(0.971316, 0, 0, 0.971316, 0, 0)"
+  },
+  {
+    "step": 7,
+    "canvas": 1,
+    "alpha": 31855,
+    "opacity": "0.573681",
+    "transform": "matrix(0.978684, 0, 0, 0.978684, 0, 0)"
+  },
+  {
+    "step": 7,
+    "canvas": 2,
+    "alpha": 144,
+    "opacity": "1",
+    "transform": "matrix(0, 1, -1, 0, 0, 0)"
+  },
+  {
+    "step": 8,
+    "canvas": 0,
+    "alpha": 0,
+    "opacity": "0",
+    "transform": "matrix(0.95, 0, 0, 0.95, 0, 0)"
+  },
+  {
+    "step": 8,
+    "canvas": 1,
+    "alpha": 31437,
+    "opacity": "1",
+    "transform": "matrix(1, 0, 0, 1, 0, 0)"
+  },
+  {
+    "step": 8,
+    "canvas": 2,
+    "alpha": 145,
+    "opacity": "1",
+    "transform": "matrix(0, 1, -1, 0, 0, 0)"
+  },
+  {
+    "step": 9,
+    "canvas": 0,
+    "alpha": 29568,
+    "opacity": "0",
+    "transform": "matrix(0.95, 0, 0, 0.95, 0, 0)"
+  },
+  {
+    "step": 9,
+    "canvas": 1,
+    "alpha": 31945,
+    "opacity": "1",
+    "transform": "matrix(1, 0, 0, 1, 0, 0)"
+  },
+  {
+    "step": 9,
+    "canvas": 2,
+    "alpha": 135,
+    "opacity": "1",
+    "transform": "matrix(0, 1, -1, 0, 0, 0)"
+  },
+  {
+    "step": 10,
+    "canvas": 0,
+    "alpha": 29111,
+    "opacity": "1",
+    "transform": "matrix(1, 0, 0, 1, 0, 0)"
+  },
+  {
+    "step": 10,
+    "canvas": 1,
+    "alpha": 31946,
+    "opacity": "0",
+    "transform": "matrix(0.95, 0, 0, 0.95, 0, 0)"
+  },
+  {
+    "step": 10,
+    "canvas": 2,
+    "alpha": 145,
+    "opacity": "1",
+    "transform": "matrix(0, 1, -1, 0, 0, 0)"
+  },
+  {
+    "step": 11,
+    "canvas": 0,
+    "alpha": 29918,
+    "opacity": "1",
+    "transform": "matrix(1, 0, 0, 1, 0, 0)"
+  },
+  {
+    "step": 11,
+    "canvas": 1,
+    "alpha": 0,
+    "opacity": "0",
+    "transform": "matrix(0.95, 0, 0, 0.95, 0, 0)"
+  },
+  {
+    "step": 11,
+    "canvas": 2,
+    "alpha": 143,
+    "opacity": "1",
+    "transform": "matrix(0, 1, -1, 0, 0, 0)"
+  },
+  {
+    "step": 12,
+    "canvas": 0,
+    "alpha": 29831,
+    "opacity": "0.0761859",
+    "transform": "matrix(0.953809, 0, 0, 0.953809, 0, 0)"
+  },
+  {
+    "step": 12,
+    "canvas": 1,
+    "alpha": 31441,
+    "opacity": "0.923814",
+    "transform": "matrix(0.996191, 0, 0, 0.996191, 0, 0)"
+  },
+  {
+    "step": 12,
+    "canvas": 2,
+    "alpha": 148,
+    "opacity": "1",
+    "transform": "matrix(0, 1, -1, 0, 0, 0)"
+  },
+  {
+    "step": 13,
+    "canvas": 0,
+    "alpha": 29846,
+    "opacity": "0",
+    "transform": "matrix(0.95, 0, 0, 0.95, 0, 0)"
+  },
+  {
+    "step": 13,
+    "canvas": 1,
+    "alpha": 31712,
+    "opacity": "1",
+    "transform": "matrix(1, 0, 0, 1, 0, 0)"
+  },
+  {
+    "step": 13,
+    "canvas": 2,
+    "alpha": 154,
+    "opacity": "1",
+    "transform": "matrix(0, 1, -1, 0, 0, 0)"
+  },
+  {
+    "step": 14,
+    "canvas": 0,
+    "alpha": 0,
+    "opacity": "0",
+    "transform": "matrix(0.95, 0, 0, 0.95, 0, 0)"
+  },
+  {
+    "step": 14,
+    "canvas": 1,
+    "alpha": 31949,
+    "opacity": "1",
+    "transform": "matrix(1, 0, 0, 1, 0, 0)"
+  },
+  {
+    "step": 14,
+    "canvas": 2,
+    "alpha": 152,
+    "opacity": "1",
+    "transform": "matrix(0, 1, -1, 0, 0, 0)"
+  },
+  {
+    "step": 15,
+    "canvas": 0,
+    "alpha": 29775,
+    "opacity": "1",
+    "transform": "matrix(1, 0, 0, 1, 0, 0)"
+  },
+  {
+    "step": 15,
+    "canvas": 1,
+    "alpha": 31922,
+    "opacity": "0",
+    "transform": "matrix(0.95, 0, 0, 0.95, 0, 0)"
+  },
+  {
+    "step": 15,
+    "canvas": 2,
+    "alpha": 154,
+    "opacity": "1",
+    "transform": "matrix(0, 1, -1, 0, 0, 0)"
+  },
+  {
+    "step": 16,
+    "canvas": 0,
+    "alpha": 29111,
+    "opacity": "1",
+    "transform": "matrix(1, 0, 0, 1, 0, 0)"
+  },
+  {
+    "step": 16,
+    "canvas": 1,
+    "alpha": 0,
+    "opacity": "0",
+    "transform": "matrix(0.95, 0, 0, 0.95, 0, 0)"
+  },
+  {
+    "step": 16,
+    "canvas": 2,
+    "alpha": 140,
+    "opacity": "1",
+    "transform": "matrix(0, 1, -1, 0, 0, 0)"
+  },
+  {
+    "step": 17,
+    "canvas": 0,
+    "alpha": 29611,
+    "opacity": "0",
+    "transform": "matrix(0.95, 0, 0, 0.95, 0, 0)"
+  },
+  {
+    "step": 17,
+    "canvas": 1,
+    "alpha": 31853,
+    "opacity": "1",
+    "transform": "matrix(1, 0, 0, 1, 0, 0)"
+  },
+  {
+    "step": 17,
+    "canvas": 2,
+    "alpha": 130,
+    "opacity": "1",
+    "transform": "matrix(0, 1, -1, 0, 0, 0)"
+  },
+  {
+    "step": 18,
+    "canvas": 0,
+    "alpha": 30029,
+    "opacity": "0",
+    "transform": "matrix(0.95, 0, 0, 0.95, 0, 0)"
+  },
+  {
+    "step": 18,
+    "canvas": 1,
+    "alpha": 31714,
+    "opacity": "1",
+    "transform": "matrix(1, 0, 0, 1, 0, 0)"
+  },
+  {
+    "step": 18,
+    "canvas": 2,
+    "alpha": 132,
+    "opacity": "1",
+    "transform": "matrix(0, 1, -1, 0, 0, 0)"
+  },
+  {
+    "step": 19,
+    "canvas": 0,
+    "alpha": 30014,
+    "opacity": "0",
+    "transform": "matrix(0.95, 0, 0, 0.95, 0, 0)"
+  },
+  {
+    "step": 19,
+    "canvas": 1,
+    "alpha": 31947,
+    "opacity": "1",
+    "transform": "matrix(1, 0, 0, 1, 0, 0)"
+  },
+  {
+    "step": 19,
+    "canvas": 2,
+    "alpha": 138,
+    "opacity": "1",
+    "transform": "matrix(0, 1, -1, 0, 0, 0)"
+  },
+  {
+    "step": 20,
+    "canvas": 0,
+    "alpha": 0,
+    "opacity": "1",
+    "transform": "matrix(1, 0, 0, 1, 0, 0)"
+  },
+  {
+    "step": 20,
+    "canvas": 1,
+    "alpha": 31770,
+    "opacity": "0",
+    "transform": "matrix(0.95, 0, 0, 0.95, 0, 0)"
+  },
+  {
+    "step": 20,
+    "canvas": 2,
+    "alpha": 120,
+    "opacity": "1",
+    "transform": "matrix(0, 1, -1, 0, 0, 0)"
+  },
+  {
+    "step": 21,
+    "canvas": 0,
+    "alpha": 29775,
+    "opacity": "1",
+    "transform": "matrix(1, 0, 0, 1, 0, 0)"
+  },
+  {
+    "step": 21,
+    "canvas": 1,
+    "alpha": 31847,
+    "opacity": "0",
+    "transform": "matrix(0.95, 0, 0, 0.95, 0, 0)"
+  },
+  {
+    "step": 21,
+    "canvas": 2,
+    "alpha": 128,
+    "opacity": "1",
+    "transform": "matrix(0, 1, -1, 0, 0, 0)"
+  },
+  {
+    "step": 22,
+    "canvas": 0,
+    "alpha": 29568,
+    "opacity": "0",
+    "transform": "matrix(0.95, 0, 0, 0.95, 0, 0)"
+  },
+  {
+    "step": 22,
+    "canvas": 1,
+    "alpha": 31441,
+    "opacity": "1",
+    "transform": "matrix(1, 0, 0, 1, 0, 0)"
+  },
+  {
+    "step": 22,
+    "canvas": 2,
+    "alpha": 137,
+    "opacity": "1",
+    "transform": "matrix(0, 1, -1, 0, 0, 0)"
+  },
+  {
+    "step": 23,
+    "canvas": 0,
+    "alpha": 29417,
+    "opacity": "0",
+    "transform": "matrix(0.95, 0, 0, 0.95, 0, 0)"
+  },
+  {
+    "step": 23,
+    "canvas": 1,
+    "alpha": 31949,
+    "opacity": "1",
+    "transform": "matrix(1, 0, 0, 1, 0, 0)"
+  },
+  {
+    "step": 23,
+    "canvas": 2,
+    "alpha": 143,
+    "opacity": "1",
+    "transform": "matrix(0, 1, -1, 0, 0, 0)"
+  },
+  {
+    "step": 24,
+    "canvas": 0,
+    "alpha": 29617,
+    "opacity": "0.798308",
+    "transform": "matrix(0.989915, 0, 0, 0.989915, 0, 0)"
+  },
+  {
+    "step": 24,
+    "canvas": 1,
+    "alpha": 31938,
+    "opacity": "0.201691",
+    "transform": "matrix(0.960085, 0, 0, 0.960085, 0, 0)"
+  },
+  {
+    "step": 24,
+    "canvas": 2,
+    "alpha": 133,
+    "opacity": "1",
+    "transform": "matrix(0, 1, -1, 0, 0, 0)"
+  },
+  {
+    "step": 25,
+    "canvas": 0,
+    "alpha": 29646,
+    "opacity": "1",
+    "transform": "matrix(1, 0, 0, 1, 0, 0)"
+  },
+  {
+    "step": 25,
+    "canvas": 1,
+    "alpha": 32118,
+    "opacity": "0",
+    "transform": "matrix(0.95, 0, 0, 0.95, 0, 0)"
+  },
+  {
+    "step": 25,
+    "canvas": 2,
+    "alpha": 128,
+    "opacity": "1",
+    "transform": "matrix(0, 1, -1, 0, 0, 0)"
+  },
+  {
+    "step": 26,
+    "canvas": 0,
+    "alpha": 30037,
+    "opacity": "1",
+    "transform": "matrix(1, 0, 0, 1, 0, 0)"
+  },
+  {
+    "step": 26,
+    "canvas": 1,
+    "alpha": 0,
+    "opacity": "0",
+    "transform": "matrix(0.95, 0, 0, 0.95, 0, 0)"
+  },
+  {
+    "step": 26,
+    "canvas": 2,
+    "alpha": 121,
+    "opacity": "1",
+    "transform": "matrix(0, 1, -1, 0, 0, 0)"
+  },
+  {
+    "step": 27,
+    "canvas": 0,
+    "alpha": 29775,
+    "opacity": "0",
+    "transform": "matrix(0.95, 0, 0, 0.95, 0, 0)"
+  },
+  {
+    "step": 27,
+    "canvas": 1,
+    "alpha": 31437,
+    "opacity": "1",
+    "transform": "matrix(1, 0, 0, 1, 0, 0)"
+  },
+  {
+    "step": 27,
+    "canvas": 2,
+    "alpha": 128,
+    "opacity": "1",
+    "transform": "matrix(0, 1, -1, 0, 0, 0)"
+  },
+  {
+    "step": 28,
+    "canvas": 0,
+    "alpha": 29391,
+    "opacity": "0",
+    "transform": "matrix(0.95, 0, 0, 0.95, 0, 0)"
+  },
+  {
+    "step": 28,
+    "canvas": 1,
+    "alpha": 31943,
+    "opacity": "1",
+    "transform": "matrix(1, 0, 0, 1, 0, 0)"
+  },
+  {
+    "step": 28,
+    "canvas": 2,
+    "alpha": 137,
+    "opacity": "1",
+    "transform": "matrix(0, 1, -1, 0, 0, 0)"
+  },
+  {
+    "step": 29,
+    "canvas": 0,
+    "alpha": 29417,
+    "opacity": "1",
+    "transform": "matrix(1, 0, 0, 1, 0, 0)"
+  },
+  {
+    "step": 29,
+    "canvas": 1,
+    "alpha": 31945,
+    "opacity": "0",
+    "transform": "matrix(0.95, 0, 0, 0.95, 0, 0)"
+  },
+  {
+    "step": 29,
+    "canvas": 2,
+    "alpha": 143,
+    "opacity": "1",
+    "transform": "matrix(0, 1, -1, 0, 0, 0)"
+  },
+  {
+    "step": 30,
+    "canvas": 0,
+    "alpha": 29617,
+    "opacity": "1",
+    "transform": "matrix(1, 0, 0, 1, 0, 0)"
+  },
+  {
+    "step": 30,
+    "canvas": 1,
+    "alpha": 0,
+    "opacity": "0",
+    "transform": "matrix(0.95, 0, 0, 0.95, 0, 0)"
+  },
+  {
+    "step": 30,
+    "canvas": 2,
+    "alpha": 146,
+    "opacity": "1",
+    "transform": "matrix(0, 1, -1, 0, 0, 0)"
+  }
+]
