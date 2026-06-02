@@ -43,7 +43,7 @@ import {
     isUnreliableSpeechRecognitionBrowser,
     OPERA_VOICE_HINT,
 } from "@components/chatbot/TrinhDuyetGiongNoiChatbot";
-import { cleanDisplayName, getPageDisplayName, getPageDomContext, readVisibleProfileNameFromPage } from "@components/chatbot/NguCanhTrangChatbot";
+import { cleanDisplayName, getPageDisplayName, getPageDomContext, isEmailLikeIdentifier, readVisibleProfileNameFromPage, resolveChatDisplayName } from "@components/chatbot/NguCanhTrangChatbot";
 import { getChatbotSuggestions } from "@components/chatbot/GoiYNhanhChatbot";
 import {
     getSafeStandardNavigationTarget,
@@ -90,8 +90,7 @@ export const ChatBotCore: React.FC = () => {
 
     const liveUser = useLiveUserProfile();
     const user = liveUser || getUserProfile();
-    const rawName = user?.ten_khach_hang || user?.ho_ten || user?.ten_dang_nhap || "";
-    const userName = cleanDisplayName(rawName);
+    const userName = resolveChatDisplayName(user);
 
     const normalizedRoleCode = normalizeUserRole(user);
     const isAdminAccount = normalizedRoleCode === "admin";
@@ -160,16 +159,36 @@ export const ChatBotCore: React.FC = () => {
                 : `${timeGreeting} Sen **${customerDisplayName}**! 🐾 **Rexi Agent** có thể đặt lịch, tra lịch bác sĩ và tìm tài liệu thú y chuẩn xác. Sen muốn Rexi xử lý việc nào trước nha?`
     });
 
-    const replaceStaleEmailGreeting = (items: any[], freshGreeting: any) => {
+    const isChatGreetingMessage = (text: string) =>
+        /(Chào buổi|Rexi đây|Rexi sẵn sàng|Rexi Agent|Trợ lý)/i.test(text);
+
+    const replaceStaleGreeting = (items: any[], freshGreeting: any, currentName: string) => {
         if (!Array.isArray(items) || items.length === 0) return [freshGreeting];
         const first = items[0];
         const firstText = String(first?.text || "");
-        const looksLikeOldGreeting =
-            first?.type === "ai" &&
-            /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i.test(firstText) &&
-            /(Rexi|Trợ lý|Sen|Đồng nghiệp)/i.test(firstText);
+        if (first?.type !== "ai" || !isChatGreetingMessage(firstText)) return items;
 
-        return looksLikeOldGreeting ? [freshGreeting, ...items.slice(1)] : items;
+        const hasEmailInGreeting = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i.test(firstText);
+        const greetingNameMatch = firstText.match(/\*\*([^*]+)\*\*/);
+        const greetingName = greetingNameMatch?.[1]?.trim() || "";
+        const normalizedGreetingName = cleanDisplayName(greetingName).toLowerCase();
+        const normalizedCurrentName = currentName.toLowerCase();
+        const usedEmailDerivedName =
+            greetingName &&
+            (hasEmailInGreeting ||
+                (user?.email && isEmailLikeIdentifier(String(user.email || "")) &&
+                    normalizedGreetingName === cleanDisplayName(String(user.email)).toLowerCase()) ||
+                (user?.ten_dang_nhap && isEmailLikeIdentifier(String(user.ten_dang_nhap)) &&
+                    normalizedGreetingName === cleanDisplayName(String(user.ten_dang_nhap)).toLowerCase()));
+        const wrongProfileName =
+            currentName &&
+            greetingName &&
+            normalizedGreetingName !== normalizedCurrentName &&
+            (usedEmailDerivedName || normalizedGreetingName.split(" ").length < normalizedCurrentName.split(" ").length);
+
+        return hasEmailInGreeting || wrongProfileName
+            ? [freshGreeting, ...items.slice(1)]
+            : items;
     };
 
     // 2. TRẠNG THÁI GIAO DIỆN UÝ PHÁP (STATE HOOKS)
@@ -674,18 +693,20 @@ export const ChatBotCore: React.FC = () => {
 
     // Lưu trữ tin nhắn riêng cho hai Tab để ko bị lộn xộn
     const [messages, setMessages] = useState<any[]>(() => {
-        return replaceStaleEmailGreeting(
+        return replaceStaleGreeting(
             readScopedChatHistory(standardChatHistoryKey, [createStandardGreeting()]),
-            createStandardGreeting()
+            createStandardGreeting(),
+            userName
         );
     });
 
     // Streaming typewriter effect state — theo dõi tin nhắn nào đang được stream
         
     const [agentMessages, setAgentMessages] = useState<any[]>(() => {
-        return replaceStaleEmailGreeting(
+        return replaceStaleGreeting(
             readScopedChatHistory(agentChatHistoryKey, [createAgentGreeting()]),
-            createAgentGreeting()
+            createAgentGreeting(),
+            userName
         );
     });
 
@@ -737,18 +758,28 @@ export const ChatBotCore: React.FC = () => {
     const agentEndRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        setMessages(replaceStaleEmailGreeting(
+        setMessages(replaceStaleGreeting(
             readScopedChatHistory(standardChatHistoryKey, [createStandardGreeting()]),
-            createStandardGreeting()
+            createStandardGreeting(),
+            userName
         ));
-        setAgentMessages(replaceStaleEmailGreeting(
+        setAgentMessages(replaceStaleGreeting(
             readScopedChatHistory(agentChatHistoryKey, [createAgentGreeting()]),
-            createAgentGreeting()
+            createAgentGreeting(),
+            userName
         ));
         setProactiveMessage(null);
         setInput("");
         setAgentInput("");
     }, [chatSessionScope]);
+
+    useEffect(() => {
+        if (!userName) return;
+        const freshStandard = createStandardGreeting();
+        const freshAgent = createAgentGreeting();
+        setMessages(prev => replaceStaleGreeting(prev, freshStandard, userName));
+        setAgentMessages(prev => replaceStaleGreeting(prev, freshAgent, userName));
+    }, [userName, shouldUseMatureCustomerTone, isClinicStaff]);
     const recognitionRef = useRef<any>(null);
 
     // Audio Visualizer Refs
@@ -1625,7 +1656,7 @@ export const ChatBotCore: React.FC = () => {
 
         const displayName = readVisibleProfileNameFromPage()
             || userName
-            || cleanDisplayName(user?.displayName || user?.ten_khach_hang || user?.ho_ten || user?.ten_dang_nhap || user?.email || "")
+            || resolveChatDisplayName(user)
             || "Người dùng Rexi";
         const accountId = user?.id_tai_khoan || user?.idTaiKhoan || "chưa có";
         const profileId = isCustomerAccount

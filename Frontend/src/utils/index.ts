@@ -199,6 +199,15 @@ export const getUserProfile = () => {
   }
 };
 
+export const decodeHtmlEntities = (value: unknown): string => {
+  if (value === null || value === undefined) return "";
+  const text = String(value);
+  if (!text.includes('&')) return text;
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(text, 'text/html');
+  return doc.documentElement.textContent || text;
+};
+
 export const getCustomerIdFromProfile = (user: any): string | undefined => {
   const candidates = [
     user?.id_khach_hang,

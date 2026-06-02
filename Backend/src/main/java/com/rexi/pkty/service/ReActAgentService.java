@@ -408,25 +408,26 @@ public class ReActAgentService {
     }
 
     private SensitiveCommand classifySensitiveCommand(String q) {
-        if (containsAny(q,
-                "xoa", "delete", "remove", "huy lich", "huy hoa don", "huy don", "huy phieu",
-                "khoa tai khoan", "mo khoa tai khoan", "reset mat khau", "doi mat khau",
-                "sua", "cap nhat", "update", "chinh sua", "thay doi trang thai")) {
-            return new SensitiveCommand("destructive", "xóa/hủy/sửa/cập nhật", "thực hiện thao tác nhạy cảm này");
+        if (q == null) return null;
+
+        // 1. Thao tác khóa tài khoản hoặc reset mật khẩu / thông tin bảo mật quan trọng
+        boolean isLockAccount = containsAny(q, "khoa tai khoan", "khoa acc", "lock account");
+        boolean isCredentialReset = containsAny(q, "reset mat khau", "doi mat khau", "reset password", "change password");
+
+        if (isLockAccount || isCredentialReset) {
+            return new SensitiveCommand("destructive", "khóa tài khoản hoặc mật khẩu", "thực hiện thao tác nhạy cảm này");
         }
-        if (containsAny(q,
-                "thanh toan", "hoan tien", "refund", "thu tien", "chot tien", "cong no",
-                "hoa don", "bill", "invoice", "payment", "pay")) {
-            return new SensitiveCommand("financial", "hóa đơn/thanh toán", "xử lý dữ liệu hóa đơn/thanh toán");
+
+        // 2. Thao tác xóa hoặc hủy các thực thể quan trọng (lịch hẹn, hóa đơn, thú cưng, bệnh án, khách hàng...)
+        boolean hasDeleteVerb = containsAny(q, "xoa", "delete", "remove", "huy");
+        boolean hasImportantEntity = containsAny(q,
+                "lich", "hoa don", "bill", "don", "phieu", "khach", "thu cung", "pet", "boss", "benh an", "ho so", "dich vu", "thuoc", "ca kham", "tai khoan", "acc"
+        );
+
+        if (hasDeleteVerb && hasImportantEntity) {
+            return new SensitiveCommand("destructive", "xóa/hủy dữ liệu quan trọng", "thực hiện thao tác nhạy cảm này");
         }
-        if (containsAny(q,
-                "sdt khach", "so dien thoai khach", "phone khach", "email khach",
-                "info acc", "acc tui", "acc toi", "tai khoan cua", "thong tin ca nhan",
-                "ho so benh an", "benh an cua", "lich su kham", "don thuoc cua",
-                "tim thu cung", "tim boss", "be nha tui",
-                "pet nha tui", "boss cua toi", "lich cua be", "lich boss", "lich pet")) {
-            return new SensitiveCommand("personal_data", "thông tin cá nhân/hồ sơ nội bộ", "truy cập dữ liệu nội bộ này");
-        }
+
         return null;
     }
 

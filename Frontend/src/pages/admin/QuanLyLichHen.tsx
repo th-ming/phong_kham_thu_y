@@ -205,7 +205,13 @@ const QuanLyLichHen: React.FC = () => {
             </tr>
           </thead>
           <tbody>
-            {currentRows.map((l) => (
+            {currentRows.length === 0 ? (
+              <tr>
+                <td colSpan={7} style={{ padding: '32px 20px', textAlign: 'center', color: 'var(--gray-500)', fontWeight: 700 }}>
+                  Không tìm thấy lịch hẹn phù hợp. Thử đổi bộ lọc hoặc tìm kiếm từ khóa khác.
+                </td>
+              </tr>
+            ) : currentRows.map((l) => (
               <tr key={l.id_lich_hen} className="table-row" style={{ borderBottom: '1px solid var(--gray-50)', transition: 'all 0.3s ease' }}>
                 <td style={{ padding: '20px', fontWeight: 800, color: 'var(--gray-400)', borderTopLeftRadius: '16px', borderBottomLeftRadius: '16px' }}>#{l.id_lich_hen}</td>
                 <td style={{ padding: '20px' }}>
@@ -241,10 +247,10 @@ const QuanLyLichHen: React.FC = () => {
                 </td>
                 <td style={{ padding: '20px', textAlign: 'center', borderTopRightRadius: '16px', borderBottomRightRadius: '16px' }}>
                   <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
-                    <button data-ai-id="button-quanlylichhen-kp9o" className="btn" onClick={() => setViewingLichHen(l)} style={{ padding: '10px', background: 'var(--gray-50)', color: 'var(--ink)' }}>
+                    <button data-ai-id="button-quanlylichhen-kp9o" className="btn" aria-label={`Xem chi tiết lịch hẹn ${l.id_lich_hen ? `#${l.id_lich_hen}` : ''}`} title={`Xem lịch hẹn ${l.id_lich_hen ? `#${l.id_lich_hen}` : ''}`} onClick={() => setViewingLichHen(l)} style={{ padding: '10px', background: 'var(--gray-50)', color: 'var(--ink)' }}>
                       <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>visibility</span>
                     </button>
-                    <button data-ai-id="button-quanlylichhen-4icp" className="btn" onClick={() => setEditingLichHen(l)} style={{ padding: '10px', background: 'var(--primary-light)', color: 'var(--primary)' }}>
+                    <button data-ai-id="button-quanlylichhen-4icp" className="btn" aria-label={`Chỉnh sửa lịch hẹn ${l.id_lich_hen ? `#${l.id_lich_hen}` : ''}`} title={`Chỉnh sửa lịch hẹn ${l.id_lich_hen ? `#${l.id_lich_hen}` : ''}`} onClick={() => setEditingLichHen(l)} style={{ padding: '10px', background: 'var(--primary-light)', color: 'var(--primary)' }}>
                       <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>edit_square</span>
                     </button>
                   </div>

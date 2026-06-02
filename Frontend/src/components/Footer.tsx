@@ -221,11 +221,12 @@ const Footer: React.FC<{ isSimple?: boolean }> = ({ isSimple }) => {
                         title="Click để dừng video"
                         >
                             <TransparentVideo
-                                src="/img/meonhayfooter_v3.webm" 
+                                src="/img/meonhayfooter_v3.webm"
                                 loop={false}
                                 muted={false}
                                 removeBlack={true}
                                 isCat={true}
+                                variant="footer-cat"
                                 onEnded={() => setIsMemePlaying(false)}
                                 style={{ height: '100%', width: 'auto', objectFit: 'contain', cursor: 'pointer' }}
                             />

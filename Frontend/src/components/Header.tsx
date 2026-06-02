@@ -111,7 +111,7 @@ const Header: React.FC<{ hideMenu?: boolean }> = ({ hideMenu }) => {
         <span className="text-blink-red" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
           <span className="material-symbols-outlined" style={{ fontSize: '18px', color: 'var(--alert-icon-color)' }}>warning</span>
           Mùa bệnh dại đang gia tăng — Nhớ tiêm phòng trước 30/06! 
-          <a href="#" onClick={handleBookingRedirect} style={{ color: 'var(--alert-link)', fontWeight: 950, textDecoration: 'underline', marginLeft: '10px' }}>Đặt lịch ngay →</a>
+          <button type="button" onClick={handleBookingRedirect} aria-label="Đặt lịch ngay" style={{ background: 'none', border: 'none', padding: 0, color: 'var(--alert-link)', fontWeight: 950, textDecoration: 'underline', marginLeft: '10px', cursor: 'pointer' }}>Đặt lịch ngay →</button>
         </span>
       </div>
 
@@ -173,29 +173,25 @@ const Header: React.FC<{ hideMenu?: boolean }> = ({ hideMenu }) => {
           <ThemeToggle />
 
           {user ? (
-            <Link to={getDashboardLink()} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'var(--gray-100)', padding: '10px 14px 10px 10px', borderRadius: '22px', border: '1px solid var(--gray-200)', textDecoration: 'none', color: 'var(--ink)', fontWeight: 700 }}>
-              <div style={{
-                width: '48px', height: '48px', borderRadius: '50%',
-                display: 'grid', placeItems: 'center',
-                flexShrink: 0, position: 'relative', boxSizing: 'border-box'
-              }}>
-                <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: '2px solid rgba(255, 255, 255, 0.7)', boxShadow: '0 0 20px rgba(255, 255, 255, 0.2), inset 0 0 10px rgba(255, 255, 255, 0.1)', animation: 'pulse 2s infinite' }} />
-                <div style={{ width: '42px', height: '42px', borderRadius: '50%', overflow: 'hidden', background: 'white', display: 'grid', placeItems: 'center', color: 'var(--primary)', fontWeight: 950, position: 'relative', zIndex: 1 }}>
+            <Link to={getDashboardLink()} className="header-user-profile" style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'var(--gray-100)', padding: '8px 16px 8px 14px', borderRadius: '22px', border: '1px solid var(--gray-200)', textDecoration: 'none', color: 'var(--ink)', fontWeight: 700 }}>
+              <div className="header-user-avatar">
+                <div className="header-user-avatar-ring" aria-hidden="true" />
+                <div className="header-user-avatar-core">
                   {userAvatar ? (
                     <img
                       src={userAvatar}
                       alt={userDisplayName}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                      className="header-user-avatar-img"
                       onError={(e) => {
                         (e.target as HTMLImageElement).style.display = 'none';
                       }}
                     />
                   ) : (
-                    <span style={{ fontSize: '1.35rem', lineHeight: 1 }}>{userInitial}</span>
+                    <span className="header-user-avatar-initial">{userInitial}</span>
                   )}
                 </div>
               </div>
-              <span className="mobile-hide" style={{ fontSize: '0.85rem' }}>
+              <span className="mobile-hide header-user-profile-name" style={{ fontSize: '0.85rem' }}>
                 {userDisplayName}
               </span>
             </Link>
@@ -239,6 +235,83 @@ const Header: React.FC<{ hideMenu?: boolean }> = ({ hideMenu }) => {
       @keyframes textBlinkRed { 0%, 100% { color: var(--alert-text); } 50% { opacity: 0.8; } }
       .animate-blink { animation: blink 2s infinite; }
       .text-blink-red { animation: textBlinkRed 1.8s infinite ease-in-out; }
+      @keyframes headerAvatarGlow {
+        0%, 100% {
+          box-shadow: 0 0 12px rgba(15, 157, 138, 0.35), 0 0 22px rgba(34, 211, 238, 0.22), inset 0 0 10px rgba(15, 157, 138, 0.12);
+          opacity: 0.88;
+        }
+        50% {
+          box-shadow: 0 0 18px rgba(15, 157, 138, 0.55), 0 0 32px rgba(34, 211, 238, 0.42), inset 0 0 14px rgba(34, 211, 238, 0.2);
+          opacity: 1;
+        }
+      }
+      .header-user-profile {
+        align-items: center;
+      }
+      .header-user-profile-name {
+        line-height: 1.2;
+      }
+      .header-user-avatar {
+        position: relative;
+        width: 48px;
+        height: 48px;
+        flex-shrink: 0;
+        box-sizing: border-box;
+      }
+      .header-user-avatar-ring {
+        position: absolute;
+        inset: 0;
+        margin: 0;
+        border-radius: 50%;
+        border: 2px solid var(--primary);
+        animation: headerAvatarGlow 2.4s ease-in-out infinite;
+        pointer-events: none;
+        box-sizing: border-box;
+      }
+      .header-user-avatar-core {
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(15, 157, 138, 0.12);
+        color: var(--primary);
+        font-weight: 950;
+        z-index: 1;
+        border: 1.5px solid rgba(15, 157, 138, 0.35);
+        box-shadow: 0 0 14px rgba(15, 157, 138, 0.28);
+        box-sizing: border-box;
+      }
+      .header-user-avatar-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center center;
+        display: block;
+      }
+      .header-user-avatar-initial {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+        font-size: 1.35rem;
+        line-height: 1;
+        text-shadow: 0 0 10px rgba(34, 211, 238, 0.45);
+        padding-left: 0.05em;
+        box-sizing: border-box;
+      }
+      .header-user-avatar:hover .header-user-avatar-ring {
+        animation-duration: 1.6s;
+      }
+      .header-user-avatar:hover .header-user-avatar-core {
+        box-shadow: 0 0 20px rgba(15, 157, 138, 0.45), 0 0 28px rgba(34, 211, 238, 0.35);
+      }
       @keyframes headerCtaGlowBreath {
         0%, 100% {
           box-shadow: 0 10px 20px var(--primary-shadow), 0 0 10px rgba(15, 157, 138, 0.18);

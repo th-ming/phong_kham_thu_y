@@ -506,7 +506,13 @@ const QuanLyNhanVienPhanQuyen: React.FC = () => {
             </tr>
           </thead>
           <tbody>
-            {filteredNhanViens.map((b) => (
+            {filteredNhanViens.length === 0 ? (
+              <tr>
+                <td colSpan={5} style={{ padding: '32px 20px', textAlign: 'center', color: 'var(--gray-500)', fontWeight: 700 }}>
+                  Không tìm thấy nhân sự phù hợp. Hãy thử xóa bộ lọc hoặc tìm kiếm khác.
+                </td>
+              </tr>
+            ) : filteredNhanViens.map((b) => (
               <tr key={b.id_nhan_vien} className="table-row" style={{ borderBottom: '1px solid var(--gray-50)', transition: 'all 0.3s ease', opacity: b.da_xoa ? 0.72 : 1 }}>
                 <td style={{ padding: '20px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -542,18 +548,18 @@ const QuanLyNhanVienPhanQuyen: React.FC = () => {
                   {canManageStaff ? (
                     <div style={{ display: 'flex', gap: '8px' }}>
                       {b.da_xoa ? (
-                        <button data-ai-id={`button-quanlynhanvienphanquyen-restore-${b.id_nhan_vien}`} className="btn btn-pill" onClick={() => handleRestore(b.id_nhan_vien)} style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#16a34a', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 800 }}>
+                        <button data-ai-id={`button-quanlynhanvienphanquyen-restore-${b.id_nhan_vien}`} className="btn btn-pill" onClick={() => handleRestore(b.id_nhan_vien)} style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#16a34a', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 800 }} aria-label={`Phục hồi nhân viên ${b.ho_ten}`}>
                           <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>restore</span>
                           Mở lại
                         </button>
                       ) : (
                         <>
-                          <button data-ai-id="button-quanlynhanvienphanquyen-z9sz" className="btn btn-pill" onClick={() => handleOpenEdit(b)} style={{ background: 'var(--gray-50)', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 800 }}>
+                          <button data-ai-id="button-quanlynhanvienphanquyen-z9sz" className="btn btn-pill" onClick={() => handleOpenEdit(b)} style={{ background: 'var(--gray-50)', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 800 }} aria-label={`Chỉnh sửa thông tin nhân viên ${b.ho_ten}`}>
                             <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>edit</span>
                             Sửa
                           </button>
                           {currentUser?.id_nhan_vien !== b.id_nhan_vien && (
-                            <button data-ai-id="button-quanlynhanvienphanquyen-cjvx" className="btn btn-pill" onClick={() => handleDelete(b.id_nhan_vien)} style={{ background: 'var(--danger-light, rgba(239, 68, 68, 0.15))', color: 'var(--danger)', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 800 }}>
+                            <button data-ai-id="button-quanlynhanvienphanquyen-cjvx" className="btn btn-pill" onClick={() => handleDelete(b.id_nhan_vien)} style={{ background: 'var(--danger-light, rgba(239, 68, 68, 0.15))', color: 'var(--danger)', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 800 }} aria-label={`Xóa nhân viên ${b.ho_ten}`}>
                               <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>delete</span>
                               Xóa
                             </button>
@@ -610,7 +616,13 @@ const QuanLyNhanVienPhanQuyen: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredAccounts.map((account) => (
+              {filteredAccounts.length === 0 ? (
+                <tr>
+                  <td colSpan={5} style={{ padding: '32px 20px', textAlign: 'center', color: 'var(--gray-500)', fontWeight: 700 }}>
+                    Không tìm thấy tài khoản phù hợp. Hãy thử xóa bộ lọc hoặc tìm kiếm khác.
+                  </td>
+                </tr>
+              ) : filteredAccounts.map((account) => (
                 <tr key={account.id_tai_khoan} className="table-row" style={{ borderBottom: '1px solid var(--gray-50)', transition: 'all 0.3s ease' }}>
                   <td style={{ padding: '18px 20px' }}>
                     <div style={{ fontWeight: 900, color: 'var(--ink)' }}>{account.ten_dang_nhap}</div>
@@ -639,11 +651,11 @@ const QuanLyNhanVienPhanQuyen: React.FC = () => {
                   </td>
                   <td style={{ padding: '18px 20px' }}>
                     <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                      <button data-ai-id={`button-quanlynhanvienphanquyen-account-edit-${account.id_tai_khoan}`} className="btn btn-pill" onClick={() => handleOpenAccountEdit(account)} style={{ background: 'var(--gray-50)', padding: '8px 14px', fontSize: '0.8rem', fontWeight: 800 }}>
+                      <button data-ai-id={`button-quanlynhanvienphanquyen-account-edit-${account.id_tai_khoan}`} className="btn btn-pill" onClick={() => handleOpenAccountEdit(account)} aria-label={`Chỉnh sửa tài khoản ${account.ten_dang_nhap}`} style={{ background: 'var(--gray-50)', padding: '8px 14px', fontSize: '0.8rem', fontWeight: 800 }}>
                         <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>manage_accounts</span>
                         Sửa
                       </button>
-                      <button data-ai-id={`button-quanlynhanvienphanquyen-account-reset-${account.id_tai_khoan}`} className="btn btn-pill" onClick={() => handleResetPassword(account)} style={{ background: 'var(--primary-light)', color: 'var(--primary)', padding: '8px 14px', fontSize: '0.8rem', fontWeight: 800 }}>
+                      <button data-ai-id={`button-quanlynhanvienphanquyen-account-reset-${account.id_tai_khoan}`} className="btn btn-pill" onClick={() => handleResetPassword(account)} aria-label={`Đặt lại mật khẩu cho tài khoản ${account.ten_dang_nhap}`} style={{ background: 'var(--primary-light)', color: 'var(--primary)', padding: '8px 14px', fontSize: '0.8rem', fontWeight: 800 }}>
                         <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>key</span>
                         Reset MK
                       </button>
@@ -651,13 +663,6 @@ const QuanLyNhanVienPhanQuyen: React.FC = () => {
                   </td>
                 </tr>
               ))}
-              {filteredAccounts.length === 0 && (
-                <tr>
-                  <td colSpan={5} style={{ padding: '28px 20px', textAlign: 'center', color: 'var(--gray-400)', fontWeight: 800 }}>
-                    Không tìm thấy tài khoản phù hợp.
-                  </td>
-                </tr>
-              )}
             </tbody>
           </table>
 </div></div>

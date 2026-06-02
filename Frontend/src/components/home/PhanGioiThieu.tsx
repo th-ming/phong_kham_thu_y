@@ -13,6 +13,21 @@ type BannerTextStyle = {
     fontSize: string;
 };
 
+const getBannerPetFilter = (isDark: boolean): string => isDark
+    ? 'brightness(1.02) contrast(1.05) drop-shadow(0 10px 18px rgba(0, 0, 0, 0.26))'
+    : 'contrast(1.04) drop-shadow(0 12px 20px rgba(0, 0, 0, 0.11))';
+
+const BANNER_PET_SWAP_DURATION = '10s';
+
+const bannerPetVideoStyle: React.CSSProperties = {
+    width: '168%',
+    height: '168%',
+    objectFit: 'contain',
+    position: 'relative',
+    bottom: '-5%',
+    objectPosition: 'center',
+};
+
 const bannerTextStyles: Record<string, BannerTextStyle> = {
     "Hello bạn! 🐶": { top: "-2.7%", left: "39%", fontSize: "clamp(2.35rem, 3.45vw, 3.8rem)" },
     "Gâu gâu! Xin chào!": { top: "-2.5%", left: "39%", fontSize: "clamp(2.2rem, 3.18vw, 3.52rem)" },
@@ -205,24 +220,69 @@ const PhanGioiThieu: React.FC = () => {
                         transition: all 0.3s ease;
                         cursor: default;
                     }
-                    @keyframes crossFade {
-                        0%, 52% { opacity: 1; filter: blur(0); transform: scale(1); }
-                        62%, 90% { opacity: 0; filter: blur(10px); transform: scale(0.95); }
-                        100% { opacity: 1; filter: blur(0); transform: scale(1); }
+                    .banner-pet-stage {
+                        position: relative;
+                        width: 100%;
+                        height: 100%;
+                        overflow: visible;
+                        isolation: isolate;
                     }
-                    @keyframes crossFadeReverse {
-                        0%, 38% { opacity: 0; filter: blur(10px); transform: scale(0.95); }
-                        50%, 100% { opacity: 1; filter: blur(0); transform: scale(1); }
+                    /* 10s = 1 vòng video @ playbackRate 0.6 — 0% và 100% khớp nhau, không khựng loop */
+                    @keyframes bannerPetDog {
+                        0%, 41% { opacity: 1; }
+                        49%, 91% { opacity: 0; }
+                        100% { opacity: 1; }
                     }
-                    @keyframes bannerTextCrossFade {
-                        0%, 45% { opacity: 1; filter: blur(0); transform: translateX(-50%) scale(1); }
-                        50%, 95% { opacity: 0; filter: blur(10px); transform: translateX(-50%) scale(0.95); }
-                        100% { opacity: 1; filter: blur(0); transform: translateX(-50%) scale(1); }
+                    @keyframes bannerPetCat {
+                        0%, 41% { opacity: 0; }
+                        49%, 91% { opacity: 1; }
+                        100% { opacity: 0; }
                     }
-                    @keyframes bannerTextCrossFadeReverse {
-                        0%, 45% { opacity: 0; filter: blur(10px); transform: translateX(-50%) scale(0.95); }
-                        50%, 95% { opacity: 1; filter: blur(0); transform: translateX(-50%) scale(1); }
-                        100% { opacity: 0; filter: blur(10px); transform: translateX(-50%) scale(0.95); }
+                    @keyframes bannerPetTextDog {
+                        0%, 41% { opacity: 1; transform: translateX(-50%); }
+                        49%, 91% { opacity: 0; transform: translateX(-50%); }
+                        100% { opacity: 1; transform: translateX(-50%); }
+                    }
+                    @keyframes bannerPetTextCat {
+                        0%, 41% { opacity: 0; transform: translateX(-50%); }
+                        49%, 91% { opacity: 1; transform: translateX(-50%); }
+                        100% { opacity: 0; transform: translateX(-50%); }
+                    }
+                    .banner-pet-layer {
+                        position: absolute;
+                        inset: 0;
+                        display: flex;
+                        align-items: flex-end;
+                        justify-content: center;
+                        pointer-events: none;
+                        will-change: opacity;
+                        backface-visibility: hidden;
+                        -webkit-backface-visibility: hidden;
+                    }
+                    .banner-pet-layer--dog {
+                        z-index: 2;
+                        animation: bannerPetDog ${BANNER_PET_SWAP_DURATION} cubic-bezier(0.42, 0, 0.58, 1) infinite;
+                    }
+                    .banner-pet-layer--cat {
+                        z-index: 1;
+                        animation: bannerPetCat ${BANNER_PET_SWAP_DURATION} cubic-bezier(0.42, 0, 0.58, 1) infinite;
+                    }
+                    .banner-sync-text-slot {
+                        position: absolute;
+                        top: var(--banner-text-top);
+                        left: var(--banner-text-left);
+                        z-index: 8;
+                        pointer-events: none;
+                        white-space: nowrap;
+                        will-change: opacity;
+                        backface-visibility: hidden;
+                        -webkit-backface-visibility: hidden;
+                    }
+                    .banner-sync-text-slot--dog {
+                        animation: bannerPetTextDog ${BANNER_PET_SWAP_DURATION} cubic-bezier(0.42, 0, 0.58, 1) infinite;
+                    }
+                    .banner-sync-text-slot--cat {
+                        animation: bannerPetTextCat ${BANNER_PET_SWAP_DURATION} cubic-bezier(0.42, 0, 0.58, 1) infinite;
                     }
                     @keyframes floatSlow {
                         0% { transform: translateY(0) rotate(0deg); opacity: 0.15; }
@@ -464,58 +524,48 @@ const PhanGioiThieu: React.FC = () => {
                             </div>
 
                              {/* Khu vực trình diễn chó mèo động */}
-                            <div style={{ position: "relative", width: "100%", height: "100%", overflow: "visible" }}>
-                                <div className="banner-sync-text" style={{ ...getBannerTextStyle(dogBannerText), animation: 'bannerTextCrossFade 10s infinite' }}>
+                            <div className="banner-pet-stage">
+                                <div
+                                    className="banner-sync-text-slot banner-sync-text-slot--dog banner-sync-text"
+                                    style={getBannerTextStyle(dogBannerText)}
+                                >
                                     {dogBannerText}
                                 </div>
-                                <div className="banner-sync-text" style={{ ...getBannerTextStyle(catBannerText), animation: 'bannerTextCrossFadeReverse 10s infinite' }}>
+                                <div
+                                    className="banner-sync-text-slot banner-sync-text-slot--cat banner-sync-text"
+                                    style={getBannerTextStyle(catBannerText)}
+                                >
                                     {catBannerText}
                                 </div>
 
-                                {/* VIDEO CHÓ VẪY TAY CHÀO */}
-                                <div style={{
-                                    position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
-                                    zIndex: 3, animation: 'crossFade 10s infinite'
-                                }}>
+                                <div className="banner-pet-layer banner-pet-layer--dog">
                                     <TransparentVideo 
                                         src="/img/video_cho_chao.webm" 
                                         playbackRate={0.6} 
                                         isDark={isDark} 
                                         isCat={false}
                                         variant="banner-dog"
+                                        className="banner-pet-video"
                                         onVideoTime={handleDogVideoTime}
                                         style={{
-                                            width: '170%', height: '170%', objectFit: 'contain',
-                                            position: 'absolute', bottom: '-7%', left: '50%', transform: 'translateX(-50%)',
-                                            objectPosition: 'center',
-                                            imageRendering: 'auto',
-                                            filter: isDark 
-                                                ? 'brightness(1.06) contrast(1.03) saturate(1.03) drop-shadow(0 14px 24px rgba(0, 0, 0, 0.34)) drop-shadow(0 0 6px rgba(34, 211, 238, 0.10))'
-                                                : 'contrast(1.05) saturate(1.05) drop-shadow(0 15px 30px rgba(0, 0, 0, 0.16)) drop-shadow(0 0 6px rgba(34, 211, 238, 0.12))'
+                                            ...bannerPetVideoStyle,
+                                            filter: getBannerPetFilter(isDark)
                                         }} 
                                     />
                                 </div>
 
-                                {/* VIDEO MÈO VẪY TAY CHÀO */}
-                                <div style={{
-                                    position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
-                                    zIndex: 2, animation: 'crossFadeReverse 10s infinite'
-                                }}>
+                                <div className="banner-pet-layer banner-pet-layer--cat">
                                     <TransparentVideo 
                                         src="/img/video_meo_chao.webm" 
                                         playbackRate={0.6} 
                                         isDark={isDark} 
                                         isCat={true}
                                         variant="banner-cat"
+                                        className="banner-pet-video"
                                         onVideoTime={handleCatVideoTime}
                                         style={{
-                                            width: '170%', height: '170%', objectFit: 'contain',
-                                            position: 'absolute', bottom: '-3%', left: '50%', transform: 'translateX(-50%)',
-                                            objectPosition: 'center',
-                                            imageRendering: 'auto',
-                                            filter: isDark 
-                                                ? 'brightness(1.06) contrast(1.03) saturate(1.03) drop-shadow(0 14px 24px rgba(0, 0, 0, 0.34)) drop-shadow(0 0 6px rgba(34, 211, 238, 0.10))'
-                                                : 'contrast(1.05) saturate(1.05) drop-shadow(0 15px 30px rgba(0, 0, 0, 0.16)) drop-shadow(0 0 6px rgba(34, 211, 238, 0.12))'
+                                            ...bannerPetVideoStyle,
+                                            filter: getBannerPetFilter(isDark)
                                         }} 
                                     />
                                 </div>

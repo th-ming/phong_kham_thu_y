@@ -59,6 +59,7 @@ const ChiTietDichVu: React.FC = () => {
     const lower = name.toLowerCase();
     if (lower.includes("khám")) return { icon: "stethoscope", img: "/img/kham_da_khoa.png" };
     if (lower.includes("tiêm") || lower.includes("vắc")) return { icon: "vaccines", img: "/img/tiem_chung.png" };
+    if (lower.includes("giun")) return { icon: "medication", img: "/img/tay_giun.png" };
     if (lower.includes("x-quang") || lower.includes("siêu âm")) return { icon: "biotech", img: "/img/chan_doan_hinh_anh.png" };
     if (lower.includes("phẫu thuật") || lower.includes("mổ")) return { icon: "surgical", img: "/img/phau_thuat.png" };
     if (lower.includes("nội trú") || lower.includes("lưu trú")) return { icon: "hotel", img: "/img/noi_tru.png" };

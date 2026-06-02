@@ -481,6 +481,171 @@ const MemeCatCore: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
   );
 };
 
+type TransparentVideoVariant = 'banner-dog' | 'banner-cat' | 'footer-cat' | 'generic';
+
+type BannerCopyRegion = { minX: number; maxX: number; minY: number; maxY: number };
+
+const BANNER_COPY_REGION: BannerCopyRegion = { minX: 0.08, maxX: 0.99, minY: 0.00, maxY: 0.52 };
+
+const isBannerDarkFrame = (data: Uint8ClampedArray): boolean => {
+  let sampled = 0;
+  let darkSamples = 0;
+  for (let i = 0; i < data.length; i += 64) {
+    const r = data[i], g = data[i + 1], b = data[i + 2];
+    const brightness = (r + g + b) / 3;
+    const greenScore = g - Math.max(r, b);
+    sampled++;
+    if (brightness < 24 && greenScore < 18) darkSamples++;
+  }
+  return sampled > 0 && darkSamples / sampled > 0.82;
+};
+
+const removeEmbeddedBannerText = (
+  data: Uint8ClampedArray,
+  width: number,
+  height: number,
+  region: BannerCopyRegion
+) => {
+  for (let i = 0; i < data.length; i += 4) {
+    const pixelIndex = i / 4;
+    const x = pixelIndex % width;
+    const y = Math.floor(pixelIndex / width);
+    const r = data[i], g = data[i + 1], b = data[i + 2];
+    const greenScore = g - Math.max(r, b);
+    const brightness = (r + g + b) / 3;
+    const isInDeepCopyBand = y <= height * 0.38;
+    const isDarkTextOrIcon = greenScore < 32
+      && (brightness < 110 || (isInDeepCopyBand && brightness < 210));
+    const isInTextRegion = x >= width * region.minX
+      && x <= width * region.maxX
+      && y >= height * region.minY
+      && y <= height * region.maxY;
+
+    if (isDarkTextOrIcon && isInTextRegion) {
+      data[i + 3] = 0;
+    }
+  }
+};
+
+type BannerPetTune = {
+  brightProtectFrom: number;
+  brightSpillGreenMax: number;
+  minDiff: number;
+  hardCutFrom: number;
+};
+
+const BANNER_DOG_TUNE: BannerPetTune = {
+  brightProtectFrom: 138,
+  brightSpillGreenMax: 22,
+  minDiff: 3.0,
+  hardCutFrom: 11,
+};
+
+const BANNER_CAT_TUNE: BannerPetTune = {
+  brightProtectFrom: 118,
+  brightSpillGreenMax: 24,
+  minDiff: 3.0,
+  hardCutFrom: 11,
+};
+
+/** Banner chó/mèo — key sắc, không feather (tránh nhòe). */
+const processBannerPetPixels = (data: Uint8ClampedArray, tune: BannerPetTune) => {
+  const { brightProtectFrom, brightSpillGreenMax, minDiff, hardCutFrom } = tune;
+  const edgeSpan = 7;
+
+  for (let i = 0; i < data.length; i += 4) {
+    if (data[i + 3] === 0) continue;
+
+    const r = data[i], g = data[i + 1], b = data[i + 2];
+    const greenScore = g - Math.max(r, b);
+    const brightness = (r + g + b) / 3;
+    const maxNonGreen = Math.max(r, b);
+
+    if (greenScore >= hardCutFrom) {
+      data[i + 3] = 0;
+      continue;
+    }
+
+    if (brightness > brightProtectFrom) {
+      if (greenScore > 0 && greenScore <= brightSpillGreenMax) {
+        data[i + 1] = maxNonGreen;
+      }
+      if (greenScore <= minDiff) {
+        data[i + 3] = 255;
+      }
+      continue;
+    }
+
+    if (greenScore > minDiff) {
+      const alpha = 1 - Math.min((greenScore - minDiff) / edgeSpan, 1);
+      data[i + 3] = Math.round(alpha * 255);
+      if (alpha < 1) {
+        data[i + 1] = Math.round(g * alpha + maxNonGreen * (1 - alpha));
+      }
+    }
+  }
+};
+
+const getBannerCanvasSize = (video: HTMLVideoElement) => {
+  const dpr = window.devicePixelRatio || 1;
+  const renderScale = Math.min(Math.max(dpr, 1.25), 2);
+  return {
+    width: Math.round(video.videoWidth * renderScale),
+    height: Math.round(video.videoHeight * renderScale),
+    renderScale,
+  };
+};
+
+/** Footer mèo — giữ nguyên logic cũ. */
+const processFooterCatPixels = (data: Uint8ClampedArray) => {
+  const minDiff = 3.0;
+  const maxDiff = 16.0;
+
+  for (let i = 0; i < data.length; i += 4) {
+    const r = data[i], g = data[i + 1], b = data[i + 2];
+    const greenScore = g - Math.max(r, b);
+    const brightness = (r + g + b) / 3;
+
+    if (greenScore > minDiff) {
+      const alpha = 1 - Math.min((greenScore - minDiff) / (maxDiff - minDiff), 1);
+      if (alpha < 1) {
+        data[i + 1] = Math.round(g * alpha + Math.max(r, b) * (1 - alpha));
+      }
+      data[i + 3] = Math.min(data[i + 3], Math.round(alpha * 255));
+    }
+
+    if (r < 20 && g < 20 && b < 20) {
+      data[i + 3] = 0;
+    } else if (greenScore > -3.5 && brightness >= 35 && brightness < 70) {
+      const catEdgeAlpha = Math.min(Math.max((brightness - 12) / 58, 0), 1);
+      data[i + 3] = Math.round(data[i + 3] * catEdgeAlpha);
+    }
+  }
+};
+
+/** Trang 404 / fallback — key đơn giản, tách khỏi banner. */
+const processGenericPixels = (data: Uint8ClampedArray) => {
+  const minDiff = 2.5;
+  const maxDiff = 15.0;
+
+  for (let i = 0; i < data.length; i += 4) {
+    const r = data[i], g = data[i + 1], b = data[i + 2];
+    const greenScore = g - Math.max(r, b);
+    const brightness = (r + g + b) / 3;
+
+    if (greenScore > minDiff) {
+      const alpha = 1 - Math.min((greenScore - minDiff) / (maxDiff - minDiff), 1);
+      if (alpha < 1) {
+        data[i + 1] = Math.round(g * alpha + Math.max(r, b) * (1 - alpha));
+      }
+      data[i + 3] = Math.min(data[i + 3], Math.round(alpha * 255));
+    } else if (greenScore > -3 && brightness >= 35 && brightness < 52) {
+      const edgeAlpha = Math.min(Math.max((brightness - 15) / 37, 0), 1);
+      data[i + 3] = Math.round(data[i + 3] * edgeAlpha);
+    }
+  }
+};
+
 export const TransparentVideo: React.FC<{ 
   src: string, 
   style?: React.CSSProperties, 
@@ -492,7 +657,7 @@ export const TransparentVideo: React.FC<{
   onEnded?: () => void, 
   removeBlack?: boolean,
   isCat?: boolean,
-  variant?: 'banner-dog' | 'banner-cat' | 'footer-cat',
+  variant?: TransparentVideoVariant,
   onVideoTime?: (currentTime: number, duration: number) => void
 }> = ({ src, style, className, playbackRate = 1, isDark = false, loop = true, muted = true, onEnded, removeBlack = false, isCat = false, variant, onVideoTime }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -525,160 +690,56 @@ export const TransparentVideo: React.FC<{
           onVideoTime(video.currentTime, video.duration || 0);
         }
 
-        const effectiveVariant = variant ?? (isCat ? 'footer-cat' : 'banner-dog');
-        const isExplicitBannerVideo = variant === 'banner-dog' || variant === 'banner-cat';
-        const isBannerCat = effectiveVariant === 'banner-cat';
-        const isFooterCat = effectiveVariant === 'footer-cat';
-        const isDog = effectiveVariant === 'banner-dog';
-        const isBannerVideo = isExplicitBannerVideo;
+        const effectiveVariant: TransparentVideoVariant = variant ?? (isCat ? 'footer-cat' : 'generic');
+        const isBannerVideo = effectiveVariant === 'banner-dog' || effectiveVariant === 'banner-cat';
 
-        const dpr = window.devicePixelRatio || 1;
-        const scale = isBannerVideo
-          ? Math.min(Math.max(dpr, 1.25), 1.5)
-          : Math.min(Math.max(dpr, 1.2), 1.3);
+        let canvasWidth: number;
+        let canvasHeight: number;
+        let bannerRenderScale = 1;
 
-        const baseWidth = Math.min(video.videoWidth, isBannerVideo ? 1280 : 1024);
-        const baseHeight = (video.videoHeight / video.videoWidth) * baseWidth;
+        if (isBannerVideo) {
+          const bannerSize = getBannerCanvasSize(video);
+          canvasWidth = bannerSize.width;
+          canvasHeight = bannerSize.height;
+          bannerRenderScale = bannerSize.renderScale;
+        } else {
+          const dpr = window.devicePixelRatio || 1;
+          const scale = Math.min(Math.max(dpr, 1.2), 1.3);
+          const baseWidth = Math.min(video.videoWidth, 1024);
+          canvasWidth = Math.round(baseWidth * scale);
+          canvasHeight = Math.round((video.videoHeight / video.videoWidth) * baseWidth * scale);
+        }
 
-        canvas.width = Math.round(baseWidth * scale);
-        canvas.height = Math.round(baseHeight * scale);
+        canvas.width = canvasWidth;
+        canvas.height = canvasHeight;
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingEnabled = bannerRenderScale !== 1;
         ctx.imageSmoothingQuality = 'high';
         
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        
-
 
         const frame = ctx.getImageData(0, 0, canvas.width, canvas.height);
         const data = frame.data;
-        const embeddedCopyRegion = isBannerVideo && isDog
-          ? { minX: 0.08, maxX: 0.99, minY: 0.00, maxY: 0.52 }
-          : isBannerVideo && isBannerCat
-            ? { minX: 0.08, maxX: 0.99, minY: 0.00, maxY: 0.52 }
-            : null;
+        const width = canvas.width;
+        const height = canvas.height;
 
-        if (isBannerVideo) {
-          let sampled = 0;
-          let darkSamples = 0;
-          for (let i = 0; i < data.length; i += 64) {
-            const r = data[i], g = data[i + 1], b = data[i + 2];
-            const brightness = (r + g + b) / 3;
-            const greenScore = g - Math.max(r, b);
-            sampled++;
-            if (brightness < 24 && greenScore < 18) darkSamples++;
-          }
-
-          if (sampled > 0 && darkSamples / sampled > 0.82) {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            animationFrameId = requestAnimationFrame(processFrame);
-            return;
-          }
+        if (isBannerVideo && isBannerDarkFrame(data)) {
+          ctx.clearRect(0, 0, width, height);
+          animationFrameId = requestAnimationFrame(processFrame);
+          return;
         }
 
-        // Cấu hình chroma key tối ưu theo từng nơi dùng để không làm ảnh hưởng mèo footer.
-        const minDiff = isDog ? 1.5 : 3.0;
-        const maxDiff = isDog ? 14.0 : 16.0;
-
-        for (let i = 0; i < data.length; i += 4) {
-          const r = data[i], g = data[i + 1], b = data[i + 2];
-          const pixelIndex = i / 4;
-          const x = pixelIndex % canvas.width;
-          const y = Math.floor(pixelIndex / canvas.width);
-          const greenScore = g - Math.max(r, b);
-          const brightness = (r + g + b) / 3;
-
-          // Chỉ xóa chữ chào cũ trong dải đầu video banner; không quét xuống thân mèo/chó.
-          const isInDeepCopyBand = embeddedCopyRegion !== null
-            && y <= canvas.height * 0.38;
-          const isDarkTextOrIcon = greenScore < 32
-            && (brightness < 110 || (isInDeepCopyBand && brightness < 210));
-          const isInTextRegion = embeddedCopyRegion !== null
-            && x >= canvas.width * embeddedCopyRegion.minX
-            && x <= canvas.width * embeddedCopyRegion.maxX
-            && y >= canvas.height * embeddedCopyRegion.minY
-            && y <= canvas.height * embeddedCopyRegion.maxY;
-          
-          if (isDarkTextOrIcon && isInTextRegion) {
-            data[i + 3] = 0;
-            continue;
-          }
-
-          // TÍNH TOÁN LIÊN QUAN ĐẾN ĐỘ ÁM XANH LÁ
-          if (greenScore > minDiff) {
-            const alpha = 1 - Math.min((greenScore - minDiff) / (maxDiff - minDiff), 1);
-            
-            // Chỉ khử viền ám xanh lá (color spill)
-            if (alpha < 1) {
-              data[i + 1] = Math.round(data[i + 1] * alpha + Math.max(r, b) * (1 - alpha));
-            }
-            
-            // Áp dụng alpha cho rìa phông xanh
-            data[i + 3] = Math.min(data[i + 3], Math.round(alpha * 255));
-          }
-
-          // KHỬ RĂNG CƯA ĐEN/XÁM BIÊN (ANTI-ALIASING AN TOÀN)
-          // Chỉ lọc các pixel thực sự sát viền phông xanh (greenScore nằm trong dải cận biên từ -3 đến minDiff)
-          // Tuyệt đối không đụng vào mắt/mũi/miệng nằm sâu trong cơ thể (nơi có greenScore cực kỳ âm, ví dụ < -4)
-          // Tuyệt đối không chạm vào các pixel đen tuyền có độ sáng cực thấp (brightness < 35) của mắt
-          // Chỉ footer mới dùng black keying để tránh ảnh hưởng video mèo chào ở banner.
-          if (isFooterCat && r < 20 && g < 20 && b < 20) {
-            data[i + 3] = 0;
-          } else if (greenScore > -3.5 && brightness >= 35) {
-            if (isBannerCat || isFooterCat) {
-              const catBrightnessLimit = isFooterCat ? 70 : 64;
-              const catAlphaRange = isFooterCat ? 58 : 52;
-              if (brightness < catBrightnessLimit) {
-                const catEdgeAlpha = Math.min(Math.max((brightness - 12) / catAlphaRange, 0), 1);
-                data[i + 3] = Math.round(data[i + 3] * catEdgeAlpha);
-              }
-            } else {
-              if (brightness < 58) {
-                const dogEdgeAlpha = Math.min(Math.max((brightness - 15) / 43, 0), 1);
-                data[i + 3] = Math.round(data[i + 3] * dogEdgeAlpha);
-              }
-            }
-          }
-        }
-
-        if (isBannerVideo) {
-          const width = canvas.width;
-          const height = canvas.height;
-          const alphaMap = new Uint8ClampedArray(width * height);
-
-          for (let i = 0; i < data.length; i += 4) {
-            alphaMap[i / 4] = data[i + 3];
-          }
-
-          for (let y = 1; y < height - 1; y++) {
-            for (let x = 1; x < width - 1; x++) {
-              const pixelIndex = y * width + x;
-              const offset = pixelIndex * 4;
-              const alpha = alphaMap[pixelIndex];
-
-              if (alpha === 0) continue;
-
-              const neighborAlpha =
-                alphaMap[pixelIndex - width - 1] + alphaMap[pixelIndex - width] + alphaMap[pixelIndex - width + 1] +
-                alphaMap[pixelIndex - 1] + alphaMap[pixelIndex + 1] +
-                alphaMap[pixelIndex + width - 1] + alphaMap[pixelIndex + width] + alphaMap[pixelIndex + width + 1];
-              const averageAlpha = neighborAlpha / 8;
-              const hasTransparentNeighbor = neighborAlpha < 255 * 8;
-
-              if (alpha < 245 || hasTransparentNeighbor) {
-                data[offset + 3] = Math.round(alpha * 0.72 + averageAlpha * 0.28);
-
-                const r = data[offset];
-                const g = data[offset + 1];
-                const b = data[offset + 2];
-                const maxNonGreen = Math.max(r, b);
-                if (g > maxNonGreen + 8) {
-                  data[offset + 1] = Math.round(maxNonGreen + 8);
-                }
-              }
-            }
-          }
+        if (effectiveVariant === 'banner-dog') {
+          removeEmbeddedBannerText(data, width, height, BANNER_COPY_REGION);
+          processBannerPetPixels(data, BANNER_DOG_TUNE);
+        } else if (effectiveVariant === 'banner-cat') {
+          removeEmbeddedBannerText(data, width, height, BANNER_COPY_REGION);
+          processBannerPetPixels(data, BANNER_CAT_TUNE);
+        } else if (effectiveVariant === 'footer-cat') {
+          processFooterCatPixels(data);
+        } else {
+          processGenericPixels(data);
         }
 
         ctx.putImageData(frame, 0, 0);

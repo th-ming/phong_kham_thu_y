@@ -518,31 +518,32 @@ const HoaDonThanhToan: React.FC = () => {
         </div>
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', position: 'relative', zIndex: 1 }}>
           <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+            <span className="material-symbols-outlined" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', zIndex: 2, color: '#475569', fontSize: '20px', pointerEvents: 'none' }}>search</span>
             <input data-ai-id="input-hoadonthanhtoan-z5a1"
               type="text"
               className="btn"
               placeholder={toneCopy.invoiceSearchPlaceholder}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              style={{ background: 'white', border: 'none', color: '#e11d48', fontWeight: 700, padding: '10px 36px 10px 16px', outline: 'none', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}
+              style={{ background: 'rgba(255,255,255,0.92)', border: '1px solid rgba(15, 23, 42, 0.08)', color: '#0f172a', fontWeight: 700, padding: '12px 40px 12px 46px', outline: 'none', borderRadius: '999px', boxShadow: '0 10px 24px rgba(15, 23, 42, 0.08)' }}
             />
             {searchTerm && (
               <span
                 className="material-symbols-outlined"
                 onClick={() => setSearchTerm("")}
-                style={{ position: 'absolute', right: '10px', cursor: 'pointer', color: 'var(--gray-400)', fontSize: '18px' }}
+                style={{ position: 'absolute', right: '12px', cursor: 'pointer', color: '#64748b', fontSize: '18px' }}
                 title="Xóa tìm kiếm"
               >
                 close
               </span>
             )}
           </div>
-          <select data-ai-id="select-hoadonthanhtoan-uf4y" className="btn" style={{ background: 'white', border: 'none', color: '#e11d48', fontWeight: 800, boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }} value={status} onChange={e => setStatus(e.target.value)}>
+          <select data-ai-id="select-hoadonthanhtoan-uf4y" className="btn" style={{ background: 'rgba(255,255,255,0.92)', border: '1px solid rgba(15, 23, 42, 0.08)', color: '#0f172a', fontWeight: 800, borderRadius: '999px', boxShadow: '0 10px 24px rgba(15, 23, 42, 0.08)' }} value={status} onChange={e => setStatus(e.target.value)}>
             <option value="all">Tất cả</option>
             <option value="da_thanh_toan">Đã trả</option>
             <option value="cho_thanh_toan">Chưa trả</option>
           </select>
-          <button data-ai-id="button-hoadonthanhtoan-qe5v" className="btn btn-pill" style={{ background: '#fecdd3', color: '#be123c', fontWeight: 900, boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }} onClick={handleExportExcel}>
+          <button data-ai-id="button-hoadonthanhtoan-qe5v" className="btn btn-pill" style={{ background: 'rgba(254, 205, 211, 0.85)', color: '#be123c', fontWeight: 900, boxShadow: '0 10px 24px rgba(15, 23, 42, 0.08)' }} onClick={handleExportExcel}>
             <KpiIcon name="download" size={18} />
             Xuất báo cáo
           </button>
