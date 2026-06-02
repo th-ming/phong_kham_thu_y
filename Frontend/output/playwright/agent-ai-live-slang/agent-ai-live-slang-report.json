@@ -1,0 +1,50 @@
+{
+  "baseUrl": "http://127.0.0.1:3001",
+  "generatedAt": "2026-06-01T22:32:48.360Z",
+  "total": 29,
+  "results": [
+    {
+      "index": 13,
+      "input": "miu nhà tui bỏ ăn từ sáng h phải làm j",
+      "api": {
+        "status": 200,
+        "url": "http://localhost:3001/api/agent/react",
+        "grew": true,
+        "path": "http://localhost:3001/quan-ly/dashboard"
+      },
+      "error": null,
+      "screenshot": "D:\\QLy Phòng Khám Thú Y\\Frontend\\output\\playwright\\agent-ai-live-slang\\agent-ai-live-13.png",
+      "chatTail": "Rexi Agent\nvolume_off\nrestart_alt\nclose\nchat\nTrợ lý Rexi\nsmart_toy\nRexi Agent\nhealth_and_safety\nTư vấn an toàn\nKhông thay thế bác sĩ; không tự dùng thuốc kê đơn hoặc kháng sinh.\n\nChào buổi sáng Đồng nghiệp Quản trị Admin Rexi System! 🐾 Rexi Agent đã sẵn sàng xử lý tác vụ. Bạn nói việc cần làm: tra cứu khách hàng, lập lịch khám, xem bệnh án, kiểm tra thuốc hay điều phối nhanh.\n\nmiu nhà tui bỏ ăn từ sáng h phải làm j\n\nhealth_and_safety\nTư vấn an toàn\nKhông thay thế bác sĩ; không tự dùng thuốc kê đơn hoặc kháng sinh.\npsychology\nQUÁ TRÌNH SUY NGHĨ CỦA REXI (1 bước)\nexpand_more\n\nBé nôn/bỏ ăn cần theo dõi sát. Cho nước sạch, không ép ăn hay tự dùng thuốc; nếu lặp lại, lừ đừ hoặc quá 12-24 giờ thì nên đưa đi khám.\n\nTrả lời bởi System\nMở báo cáo thống kê\nTra khách hàng\nLịch hẹn hôm nay\nKho thuốc tồn\nDoanh thu hôm nay\nPhân quyền\nDịch vụ\nMarketing\nmic_none\nsend"
+    },
+    {
+      "index": 14,
+      "input": "boss t ói 2 lần r có cần qua khám hong",
+      "api": {
+        "status": 200,
+        "url": "http://localhost:3001/api/agent/react",
+        "grew": true,
+        "path": "http://localhost:3001/quan-ly/dashboard"
+      },
+      "error": null,
+      "screenshot": "D:\\QLy Phòng Khám Thú Y\\Frontend\\output\\playwright\\agent-ai-live-slang\\agent-ai-live-14.png",
+      "chatTail": "Rexi Agent\nvolume_off\nrestart_alt\nclose\nchat\nTrợ lý Rexi\nsmart_toy\nRexi Agent\nhealth_and_safety\nTư vấn an toàn\nKhông thay thế bác sĩ; không tự dùng thuốc kê đơn hoặc kháng sinh.\n\nChào buổi sáng Đồng nghiệp Quản trị Admin Rexi System! 🐾 Rexi Agent đã sẵn sàng xử lý tác vụ. Bạn nói việc cần làm: tra cứu khách hàng, lập lịch khám, xem bệnh án, kiểm tra thuốc hay điều phối nhanh.\n\nmiu nhà tui bỏ ăn từ sáng h phải làm j\n\nhealth_and_safety\nTư vấn an toàn\nKhông thay thế bác sĩ; không tự dùng thuốc kê đơn hoặc kháng sinh.\npsychology\nQUÁ TRÌNH SUY NGHĨ CỦA REXI (1 bước)\nexpand_more\n\nBé nôn/bỏ ăn cần theo dõi sát. Cho nước sạch, không ép ăn hay tự dùng thuốc; nếu lặp lại, lừ đừ hoặc quá 12-24 giờ thì nên đưa đi khám.\n\nTrả lời bởi System\n\nboss t ói 2 lần r có cần qua khám hong\n\nhealth_and_safety\nTư vấn an toàn\nKhông thay thế bác sĩ; không tự dùng thuốc kê đơn hoặc kháng sinh.\npsychology\nQUÁ TRÌNH SUY NGHĨ CỦA REXI (1 bước)\nexpand_more\n\nBé nôn/bỏ ăn cần theo dõi sát. Cho nước sạch, không ép ăn hay tự dùng thuốc; nếu lặp lại, lừ đừ hoặc quá 12-24 giờ thì nên đưa đi khám.\n\nTrả lời bởi System\nMở báo cáo thống kê\nTra khách hàng\nLịch hẹn hôm nay\nKho thuốc tồn\nDoanh thu hôm nay\nPhân quyền\nDịch vụ\nMarketing\nmic_none\nsend"
+    }
+  ],
+  "apiResponses": [
+    {
+      "url": "http://localhost:3001/api/chat/prewarm",
+      "status": 200,
+      "body": "{\"mode\":\"background\",\"ok\":true,\"provider\":\"groq\"}"
+    },
+    {
+      "url": "http://localhost:3001/api/agent/react",
+      "status": 200,
+      "body": "{\"provider\":\"System\",\"steps\":[{\"type\":\"FINAL\",\"content\":\"Bé nôn/bỏ ăn cần theo dõi sát. Cho nước sạch, không ép ăn hay tự dùng thuốc; nếu lặp lại, lừ đừ hoặc quá 12-24 giờ thì nên đưa đi khám.\"}],\"finalAnswer\":\"Bé nôn/bỏ ăn cần theo dõi sát. Cho nước sạch, không ép ăn hay tự dùng thuốc; nếu lặp lại, lừ đừ hoặc quá 12-24 giờ thì nên đưa đi khám.\",\"totalSteps\":1}"
+    },
+    {
+      "url": "http://localhost:3001/api/agent/react",
+      "status": 200,
+      "body": "{\"provider\":\"System\",\"steps\":[{\"type\":\"FINAL\",\"content\":\"Bé nôn/bỏ ăn cần theo dõi sát. Cho nước sạch, không ép ăn hay tự dùng thuốc; nếu lặp lại, lừ đừ hoặc quá 12-24 giờ thì nên đưa đi khám.\"}],\"finalAnswer\":\"Bé nôn/bỏ ăn cần theo dõi sát. Cho nước sạch, không ép ăn hay tự dùng thuốc; nếu lặp lại, lừ đừ hoặc quá 12-24 giờ thì nên đưa đi khám.\",\"totalSteps\":1}"
+    }
+  ]
+}

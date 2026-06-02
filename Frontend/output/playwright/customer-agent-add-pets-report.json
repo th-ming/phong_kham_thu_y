@@ -1,0 +1,42 @@
+{
+  "message": "thêm 2 thú cưng cho tui: con Bông là mèo Anh lông ngắn cái màu trắng 3.2kg sinh 2024-03-10, con Holi là chó Corgi đực màu vàng trắng 8.4kg sinh 2023-11-05. Tự điền và lưu giúp t.",
+  "responseStatus": 200,
+  "shots": {
+    "before": "D:/QLy Phòng Khám Thú Y/Frontend/output/playwright/customer-agent-add-pets-00-before.png",
+    "opened": "D:/QLy Phòng Khám Thú Y/Frontend/output/playwright/customer-agent-add-pets-01-agent-open.png",
+    "afterAgent": "D:/QLy Phòng Khám Thú Y/Frontend/output/playwright/customer-agent-add-pets-02-after-agent.png",
+    "afterPage": "D:/QLy Phòng Khám Thú Y/Frontend/output/playwright/customer-agent-add-pets-03-after-page.png"
+  },
+  "api": [
+    {
+      "url": "http://localhost:3001/api/thu-cung/khach/KH-00CD9818?page=0&size=999",
+      "method": "GET",
+      "status": 200,
+      "body": "{\"totalPages\":1,\"content\":[{\"trong_luong\":0.00,\"id_khach_hang\":\"KH-00CD9818\",\"url_anh\":null,\"loai\":\"mèo\",\"ngay_tao\":\"2026-05-30T13:53:13.200+00:00\",\"gioi_tinh\":\"Cái\",\"ngay_cap_nhat\":null,\"hinh_anh\":null,\"da_xoa\":false,\"ngay_sinh\":null,\"ghi_chu\":null,\"giong\":\"\",\"id_thu_cung\":\"TC-271B975F\",\"ten_thu_cung\":\"miu\",\"mau_sac\":\"\",\"lich_kham_cuoi\":\"2026-06-02\"},{\"gioi_tinh\":\"Đực\",\"lich_kham_cuoi\":null,\"giong\":\"Poodle\",\"id_khach_hang\":\"KH-00CD9818\",\"ngay_tao\":\"2026-05-31T19:46:15.087+00:00\",\"url_anh\":null,\"ngay_cap_nhat\":null,\"ten_thu_cung\":\"TEST Booking Pet 56704348\",\"trong_luong\":5.30,\"hinh_anh\":null,\"da_xoa\":false,\"loai\":\"Chó\",\"ngay_sinh\":null,\"id_thu_cung\":\"TC-3C286EE2\",\"ghi_chu\":null,\"mau_sac\":\"Nâu\"},{\"gioi_tinh\":\"Đực\",\"lich_kham_cuoi\":null,\"giong\":\"Poodle\",\"id_khach_hang\":\"KH-00CD9818\",\"ten_thu_cung\":\"TEST Booking Pet 56144826\",\"url_anh\":null,\"ngay_tao\":\"2026-05-31T19:36:17.587+00:00\",\"ngay_cap_nhat\":null,\"trong_luong\":5.30,\"hinh_anh\":null,\"id_thu_cung\":\"TC-5909DB82\",\"da_xoa\":false,\"loai\":\"Chó\",\"ngay_sinh\":null,\"ghi_chu\":null,\"mau_sac\":\"Nâu\"},{\"trong_luong\":3.20,\"lich_kham_cuoi\":null,\"id_khach_hang\":\"KH-00CD9818\",\"ghi_chu\":\"Thêm bởi Rexi Agent theo yêu cầu khách hàng.\",\"id_thu_cung\":\"TC-826C7B69\",\"url_anh\":null,\"loai\":\"Mèo\",\"gioi_tinh\":\"Cái\",\"ten_thu_cung\":\"Bông\",\"ngay_cap_nhat\":null,\"giong\":\"Anh lông ngắn\",\"ngay_sinh\":\"2024-03-10\",\"mau_sac\":\"Trắng\",\"ngay_tao\":\"2026-06-01T16:37:21.320+00:00\",\"hinh_anh\":null,\"da_xoa\":false},{\"gioi_tinh\":\"Đực\",\"lich_kham_cuoi\":null,\"id_khach_hang\":\""
+    },
+    {
+      "url": "http://localhost:3001/api/chat/prewarm",
+      "method": "POST",
+      "status": 200,
+      "body": "{\"provider\":\"groq\",\"ok\":true,\"mode\":\"background\"}"
+    },
+    {
+      "url": "http://localhost:3001/api/agent/react",
+      "method": "POST",
+      "status": 200,
+      "body": "{\"steps\":[{\"type\":\"TOOL\",\"content\":\"Gọi tool them_thu_cung cho Bông\",\"tool\":\"them_thu_cung\",\"params\":{\"trong_luong\":\"3.2\",\"ten_thu_cung\":\"Bông\",\"ngay_sinh\":\"2024-03-10\",\"gioi_tinh\":\"Cái\",\"ghi_chu\":\"Thêm bởi Rexi Agent theo yêu cầu khách hàng.\",\"loai\":\"Mèo\",\"giong\":\"Anh lông ngắn\",\"mau_sac\":\"Trắng\"},\"observation\":\"Đã có thú cưng Bông trong tài khoản này. ID: TC-826C7B69.\"},{\"type\":\"TOOL\",\"content\":\"Gọi tool them_thu_cung cho Holi\",\"tool\":\"them_thu_cung\",\"params\":{\"trong_luong\":\"8.4\",\"ten_thu_cung\":\"Holi\",\"ngay_sinh\":\"2023-11-05\",\"gioi_tinh\":\"Đực\",\"ghi_chu\":\"Thêm bởi Rexi Agent theo yêu cầu khách hàng.\",\"loai\":\"Chó\",\"giong\":\"Corgi\",\"mau_sac\":\"Vàng trắng\"},\"observation\":\"Đã có thú cưng Holi trong tài khoản này. ID: TC-9C8C5ACC.\"},{\"type\":\"FINAL\",\"content\":\"Đã có thú cưng Bông trong tài khoản này. ID: TC-826C7B69. Đã có thú cưng Holi trong tài khoản này. ID: TC-9C8C5ACC. Mở lại danh sách thú cưng để kiểm tra. [NAVIGATE:/khach-hang/quan-ly-thu-cung]\"}],\"provider\":\"System\",\"totalSteps\":3,\"finalAnswer\":\"Đã có thú cưng Bông trong tài khoản này. ID: TC-826C7B69. Đã có thú cưng Holi trong tài khoản này. ID: TC-9C8C5ACC. Mở lại danh sách thú cưng để kiểm tra. [NAVIGATE:/khach-hang/quan-ly-thu-cung]\"}"
+    },
+    {
+      "url": "http://localhost:3001/api/thu-cung/khach/KH-00CD9818?page=0&size=999",
+      "method": "GET",
+      "status": 200,
+      "body": "{\"totalPages\":1,\"content\":[{\"trong_luong\":0.00,\"id_khach_hang\":\"KH-00CD9818\",\"url_anh\":null,\"loai\":\"mèo\",\"ngay_tao\":\"2026-05-30T13:53:13.200+00:00\",\"gioi_tinh\":\"Cái\",\"ngay_cap_nhat\":null,\"hinh_anh\":null,\"da_xoa\":false,\"ngay_sinh\":null,\"ghi_chu\":null,\"giong\":\"\",\"id_thu_cung\":\"TC-271B975F\",\"ten_thu_cung\":\"miu\",\"mau_sac\":\"\",\"lich_kham_cuoi\":\"2026-06-02\"},{\"gioi_tinh\":\"Đực\",\"lich_kham_cuoi\":null,\"giong\":\"Poodle\",\"id_khach_hang\":\"KH-00CD9818\",\"ngay_tao\":\"2026-05-31T19:46:15.087+00:00\",\"url_anh\":null,\"ngay_cap_nhat\":null,\"ten_thu_cung\":\"TEST Booking Pet 56704348\",\"trong_luong\":5.30,\"hinh_anh\":null,\"da_xoa\":false,\"loai\":\"Chó\",\"ngay_sinh\":null,\"id_thu_cung\":\"TC-3C286EE2\",\"ghi_chu\":null,\"mau_sac\":\"Nâu\"},{\"gioi_tinh\":\"Đực\",\"lich_kham_cuoi\":null,\"giong\":\"Poodle\",\"id_khach_hang\":\"KH-00CD9818\",\"ten_thu_cung\":\"TEST Booking Pet 56144826\",\"url_anh\":null,\"ngay_tao\":\"2026-05-31T19:36:17.587+00:00\",\"ngay_cap_nhat\":null,\"trong_luong\":5.30,\"hinh_anh\":null,\"id_thu_cung\":\"TC-5909DB82\",\"da_xoa\":false,\"loai\":\"Chó\",\"ngay_sinh\":null,\"ghi_chu\":null,\"mau_sac\":\"Nâu\"},{\"trong_luong\":3.20,\"lich_kham_cuoi\":null,\"id_khach_hang\":\"KH-00CD9818\",\"ghi_chu\":\"Thêm bởi Rexi Agent theo yêu cầu khách hàng.\",\"id_thu_cung\":\"TC-826C7B69\",\"url_anh\":null,\"loai\":\"Mèo\",\"gioi_tinh\":\"Cái\",\"ten_thu_cung\":\"Bông\",\"ngay_cap_nhat\":null,\"giong\":\"Anh lông ngắn\",\"ngay_sinh\":\"2024-03-10\",\"mau_sac\":\"Trắng\",\"ngay_tao\":\"2026-06-01T16:37:21.320+00:00\",\"hinh_anh\":null,\"da_xoa\":false},{\"gioi_tinh\":\"Đực\",\"lich_kham_cuoi\":null,\"id_khach_hang\":\""
+    },
+    {
+      "url": "http://localhost:3001/api/thu-cung/khach/KH-00CD9818?page=0&size=999",
+      "method": "GET",
+      "status": 200,
+      "body": "{\"totalPages\":1,\"content\":[{\"trong_luong\":0.00,\"id_khach_hang\":\"KH-00CD9818\",\"url_anh\":null,\"loai\":\"mèo\",\"ngay_tao\":\"2026-05-30T13:53:13.200+00:00\",\"gioi_tinh\":\"Cái\",\"ngay_cap_nhat\":null,\"hinh_anh\":null,\"da_xoa\":false,\"ngay_sinh\":null,\"ghi_chu\":null,\"giong\":\"\",\"id_thu_cung\":\"TC-271B975F\",\"ten_thu_cung\":\"miu\",\"mau_sac\":\"\",\"lich_kham_cuoi\":\"2026-06-02\"},{\"gioi_tinh\":\"Đực\",\"lich_kham_cuoi\":null,\"giong\":\"Poodle\",\"id_khach_hang\":\"KH-00CD9818\",\"ngay_tao\":\"2026-05-31T19:46:15.087+00:00\",\"url_anh\":null,\"ngay_cap_nhat\":null,\"ten_thu_cung\":\"TEST Booking Pet 56704348\",\"trong_luong\":5.30,\"hinh_anh\":null,\"da_xoa\":false,\"loai\":\"Chó\",\"ngay_sinh\":null,\"id_thu_cung\":\"TC-3C286EE2\",\"ghi_chu\":null,\"mau_sac\":\"Nâu\"},{\"gioi_tinh\":\"Đực\",\"lich_kham_cuoi\":null,\"giong\":\"Poodle\",\"id_khach_hang\":\"KH-00CD9818\",\"ten_thu_cung\":\"TEST Booking Pet 56144826\",\"url_anh\":null,\"ngay_tao\":\"2026-05-31T19:36:17.587+00:00\",\"ngay_cap_nhat\":null,\"trong_luong\":5.30,\"hinh_anh\":null,\"id_thu_cung\":\"TC-5909DB82\",\"da_xoa\":false,\"loai\":\"Chó\",\"ngay_sinh\":null,\"ghi_chu\":null,\"mau_sac\":\"Nâu\"},{\"trong_luong\":3.20,\"lich_kham_cuoi\":null,\"id_khach_hang\":\"KH-00CD9818\",\"ghi_chu\":\"Thêm bởi Rexi Agent theo yêu cầu khách hàng.\",\"id_thu_cung\":\"TC-826C7B69\",\"url_anh\":null,\"loai\":\"Mèo\",\"gioi_tinh\":\"Cái\",\"ten_thu_cung\":\"Bông\",\"ngay_cap_nhat\":null,\"giong\":\"Anh lông ngắn\",\"ngay_sinh\":\"2024-03-10\",\"mau_sac\":\"Trắng\",\"ngay_tao\":\"2026-06-01T16:37:21.320+00:00\",\"hinh_anh\":null,\"da_xoa\":false},{\"gioi_tinh\":\"Đực\",\"lich_kham_cuoi\":null,\"id_khach_hang\":\""
+    }
+  ]
+}

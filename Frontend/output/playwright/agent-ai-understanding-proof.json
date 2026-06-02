@@ -1,0 +1,40 @@
+{
+  "generatedAt": "2026-06-01T16:09:37.484Z",
+  "proofType": "static-regression",
+  "note": "Live API proof requires backend on http://127.0.0.1:8081. This script proves the code path now sends weird/slang input to AI reasoning instead of hardcoded format matching.",
+  "sampleInput": "ú cha rựa ơi chóa nhà tôi nó nhảy với miu là t",
+  "extractedIntent": "ú cha rựa ơi chóa nhà tôi nó nhảy với miu là t",
+  "passed": true,
+  "checks": [
+    {
+      "name": "Frontend sends AI-understanding rule to /api/agent/react",
+      "pass": true,
+      "detail": "Không để câu lạ chết vì không khớp format."
+    },
+    {
+      "name": "Frontend prompt explicitly covers slang/typos/open vocabulary",
+      "pass": true,
+      "detail": "Có rule mở cho AI, không phải regex giới hạn."
+    },
+    {
+      "name": "Backend prompt forces natural-language AI reasoning",
+      "pass": true,
+      "detail": "Backend system prompt bắt AI suy luận ngôn ngữ tự nhiên."
+    },
+    {
+      "name": "Backend extracts original user intent from frontend page context",
+      "pass": true,
+      "detail": "Extracted: ú cha rựa ơi chóa nhà tôi nó nhảy với miu là t"
+    },
+    {
+      "name": "Regression test covers frontend page-context extraction",
+      "pass": true,
+      "detail": "Có test regression cho lỗi backend ăn nhầm DOM/context."
+    },
+    {
+      "name": "Hardcoded vague add-two answer removed",
+      "pass": true,
+      "detail": "Câu mơ hồ không bị fast-rule khóa cứng, sẽ đi qua AI."
+    }
+  ]
+}

@@ -1,10 +1,11 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { RevealSection, LottiePlayer, Typewriter, TransparentVideo } from "@components/SpecialEffects";
 import { useCountUp } from "@hooks/useCountUp";
 import { useTheme } from "../../contexts/ThemeContextV2";
 import { getUserProfile, normalizeUserRole } from "@utils/index";
 import { toast } from "@components/Toast";
+import { useLiveUserProfile } from "@hooks/useLiveUserProfile";
 
 type BannerTextStyle = {
     top: string;
@@ -13,13 +14,13 @@ type BannerTextStyle = {
 };
 
 const bannerTextStyles: Record<string, BannerTextStyle> = {
-    "Hello bạn! 🐶": { top: "-2.7%", left: "39%", fontSize: "clamp(2.2rem, 3.2vw, 3.5rem)" },
-    "Gâu gâu! Xin chào!": { top: "-2.5%", left: "39%", fontSize: "clamp(2.05rem, 2.95vw, 3.25rem)" },
-    "Chào mừng đến Rexi!": { top: "-2.3%", left: "39%", fontSize: "clamp(1.9rem, 2.62vw, 3rem)" },
-    "Rất vui được gặp bạn!": { top: "-2.3%", left: "39%", fontSize: "clamp(1.95rem, 2.78vw, 3.1rem)" },
-    "Meow meow~ 😽": { top: "-2.7%", left: "39%", fontSize: "clamp(2.15rem, 3.1vw, 3.4rem)" },
-    "Xin chào con sen!": { top: "-2.4%", left: "39%", fontSize: "clamp(2rem, 2.9vw, 3.2rem)" },
-    "Meow! Rexi Vet xin chào!": { top: "-2.1%", left: "39%", fontSize: "clamp(1.78rem, 2.48vw, 2.82rem)" }
+    "Hello bạn! 🐶": { top: "-2.7%", left: "39%", fontSize: "clamp(2.35rem, 3.45vw, 3.8rem)" },
+    "Gâu gâu! Xin chào!": { top: "-2.5%", left: "39%", fontSize: "clamp(2.2rem, 3.18vw, 3.52rem)" },
+    "Chào mừng đến với Rexi! ✨": { top: "-2.3%", left: "39%", fontSize: "clamp(1.95rem, 2.72vw, 3.12rem)" },
+    "Rất vui được gặp bạn! 💓": { top: "-2.3%", left: "39%", fontSize: "clamp(2rem, 2.86vw, 3.2rem)" },
+    "Meow meow~ 😽": { top: "-2.7%", left: "39%", fontSize: "clamp(2.3rem, 3.35vw, 3.68rem)" },
+    "Xin chào con sen! 🐾": { top: "-2.4%", left: "39%", fontSize: "clamp(2.05rem, 2.98vw, 3.3rem)" },
+    "Meow! Rexi Vet xin chào!": { top: "-2.1%", left: "39%", fontSize: "clamp(1.92rem, 2.68vw, 3.05rem)" }
 };
 
 const getBannerTextStyle = (text: string): React.CSSProperties => {
@@ -40,32 +41,50 @@ const PhanGioiThieu: React.FC = () => {
     const heroRef = useRef<HTMLDivElement>(null);
     const [dogBannerText, setDogBannerText] = useState("Hello bạn! 🐶");
     const [catBannerText, setCatBannerText] = useState("Meow meow~ 😽");
+    const liveUser = useLiveUserProfile();
+    const profileUser = liveUser || getUserProfile();
+    const profileBirthYear = Number(profileUser?.nam_sinh || 0);
+    const isCustomer = normalizeUserRole(profileUser) === "khach_hang";
+    const isGenZCustomer = isCustomer && profileBirthYear >= 1997;
+    const isMatureCustomer = isCustomer && profileBirthYear >= 1900 && profileBirthYear < 1997;
 
-    const getDogBannerText = (currentTime: number, duration: number) => {
-        const phase = duration > 0 ? currentTime / duration : (currentTime % 6) / 6;
-        if (phase < 0.20) return "Hello bạn! 🐶";
-        if (phase < 0.44) return "Gâu gâu! Xin chào!";
-        if (phase < 0.76) return "Chào mừng đến Rexi!";
-        return "Rất vui được gặp bạn!";
-    };
+    const dogTextSet = useMemo(() => isGenZCustomer
+        ? ["Hi sen! 🐶", "Gâu gâu boss khỏe chứ?", "Rexi chào sen nè! ✨", "Vui gặp sen ghê! 💓"]
+        : isMatureCustomer
+            ? ["Rexi kính chào anh/chị! 🐶", "Chúc thú cưng luôn khỏe mạnh", "Chào mừng anh/chị đến Rexi! ✨", "Rất hân hạnh được hỗ trợ! 💓"]
+            : ["Hello bạn! 🐶", "Gâu gâu! Xin chào!", "Chào mừng đến với Rexi! ✨", "Rất vui được gặp bạn! 💓"], [isGenZCustomer, isMatureCustomer]);
 
-    const getCatBannerText = (currentTime: number, duration: number) => {
+    const catTextSet = useMemo(() => isGenZCustomer
+        ? ["Meow sen ơi~ 😽", "Xin chào con sen! 🐾", "Boss cần Rexi là có liền!", "Meow sen ơi~ 😽"]
+        : isMatureCustomer
+            ? ["Rexi mèo kính chào! 😽", "Chào anh/chị và thú cưng! 🐾", "Rexi Vet sẵn sàng hỗ trợ!", "Rexi mèo kính chào! 😽"]
+            : ["Meow meow~ 😽", "Xin chào bạn! 🐾", "Meow! Rexi Vet xin chào!", "Meow meow~ 😽"], [isGenZCustomer, isMatureCustomer]);
+
+    const getDogBannerText = useCallback((currentTime: number, duration: number) => {
         const phase = duration > 0 ? currentTime / duration : (currentTime % 6) / 6;
-        if (phase < 0.34) return "Meow meow~ 😽";
-        if (phase < 0.59) return "Xin chào con sen!";
-        if (phase < 0.92) return "Meow! Rexi Vet xin chào!";
-        return "Meow meow~ 😽";
-    };
+        if (phase < 0.20) return dogTextSet[0];
+        if (phase < 0.44) return dogTextSet[1];
+        if (phase < 0.76) return dogTextSet[2];
+        return dogTextSet[3];
+    }, [dogTextSet]);
+
+    const getCatBannerText = useCallback((currentTime: number, duration: number) => {
+        const phase = duration > 0 ? currentTime / duration : (currentTime % 6) / 6;
+        if (phase < 0.34) return catTextSet[0];
+        if (phase < 0.59) return catTextSet[1];
+        if (phase < 0.92) return catTextSet[2];
+        return catTextSet[3];
+    }, [catTextSet]);
 
     const handleDogVideoTime = useCallback((currentTime: number, duration: number) => {
         const nextText = getDogBannerText(currentTime, duration);
         setDogBannerText((current) => current === nextText ? current : nextText);
-    }, []);
+    }, [getDogBannerText]);
 
     const handleCatVideoTime = useCallback((currentTime: number, duration: number) => {
         const nextText = getCatBannerText(currentTime, duration);
         setCatBannerText((current) => current === nextText ? current : nextText);
-    }, []);
+    }, [getCatBannerText]);
 
     const handleBookingClick = (e: React.MouseEvent) => {
         e.preventDefault();
@@ -79,6 +98,11 @@ const PhanGioiThieu: React.FC = () => {
         }
         navigate('/khach-hang/dat-lich-hen');
     };
+
+    useEffect(() => {
+        setDogBannerText(dogTextSet[0]);
+        setCatBannerText(catTextSet[0]);
+    }, [dogTextSet, catTextSet]);
 
     useEffect(() => {
         document.documentElement.style.setProperty('--mouse-x', '50%');
@@ -182,14 +206,13 @@ const PhanGioiThieu: React.FC = () => {
                         cursor: default;
                     }
                     @keyframes crossFade {
-                        0%, 45% { opacity: 1; filter: blur(0); transform: scale(1); }
-                        50%, 95% { opacity: 0; filter: blur(10px); transform: scale(0.95); }
+                        0%, 52% { opacity: 1; filter: blur(0); transform: scale(1); }
+                        62%, 90% { opacity: 0; filter: blur(10px); transform: scale(0.95); }
                         100% { opacity: 1; filter: blur(0); transform: scale(1); }
                     }
                     @keyframes crossFadeReverse {
-                        0%, 45% { opacity: 0; filter: blur(10px); transform: scale(0.95); }
-                        50%, 95% { opacity: 1; filter: blur(0); transform: scale(1); }
-                        100% { opacity: 0; filter: blur(10px); transform: scale(0.95); }
+                        0%, 38% { opacity: 0; filter: blur(10px); transform: scale(0.95); }
+                        50%, 100% { opacity: 1; filter: blur(0); transform: scale(1); }
                     }
                     @keyframes bannerTextCrossFade {
                         0%, 45% { opacity: 1; filter: blur(0); transform: translateX(-50%) scale(1); }
@@ -467,7 +490,7 @@ const PhanGioiThieu: React.FC = () => {
                                             objectPosition: 'center',
                                             imageRendering: 'auto',
                                             filter: isDark 
-                                                ? 'contrast(1.08) saturate(1.08) drop-shadow(0 18px 36px rgba(0, 0, 0, 0.55)) drop-shadow(0 4px 14px rgba(45, 212, 191, 0.24)) drop-shadow(0 0 8px rgba(34, 211, 238, 0.18))' 
+                                                ? 'brightness(1.06) contrast(1.03) saturate(1.03) drop-shadow(0 14px 24px rgba(0, 0, 0, 0.34)) drop-shadow(0 0 6px rgba(34, 211, 238, 0.10))'
                                                 : 'contrast(1.05) saturate(1.05) drop-shadow(0 15px 30px rgba(0, 0, 0, 0.16)) drop-shadow(0 0 6px rgba(34, 211, 238, 0.12))'
                                         }} 
                                     />
@@ -491,7 +514,7 @@ const PhanGioiThieu: React.FC = () => {
                                             objectPosition: 'center',
                                             imageRendering: 'auto',
                                             filter: isDark 
-                                                ? 'contrast(1.08) saturate(1.08) drop-shadow(0 18px 36px rgba(0, 0, 0, 0.55)) drop-shadow(0 4px 14px rgba(45, 212, 191, 0.24)) drop-shadow(0 0 8px rgba(34, 211, 238, 0.18))' 
+                                                ? 'brightness(1.06) contrast(1.03) saturate(1.03) drop-shadow(0 14px 24px rgba(0, 0, 0, 0.34)) drop-shadow(0 0 6px rgba(34, 211, 238, 0.10))'
                                                 : 'contrast(1.05) saturate(1.05) drop-shadow(0 15px 30px rgba(0, 0, 0, 0.16)) drop-shadow(0 0 6px rgba(34, 211, 238, 0.12))'
                                         }} 
                                     />

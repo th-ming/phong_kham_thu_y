@@ -68,6 +68,9 @@ public class AiToolService {
         appendToolIfAllowed(sb, userRole, "huy_lich_hen",
             "Hủy lịch hẹn. Khách hàng chỉ được hủy lịch của chính mình; nội bộ có thể hủy hộ sau khi xác định đúng lịch.",
             "{\"id_lich_hen\":\"...\",\"tu_khoa_khach\":\"tên/SĐT nếu chưa có mã lịch\",\"thoi_gian\":\"hom_nay|chieu_nay|ngay_mai\"}");
+        appendToolIfAllowed(sb, userRole, "them_thu_cung",
+            "Thêm thú cưng mới. Khách hàng chỉ được thêm cho chính tài khoản đang đăng nhập.",
+            "{\"ten_thu_cung\":\"...\",\"loai\":\"Chó|Mèo|...\",\"giong\":\"...\",\"gioi_tinh\":\"Đực|Cái|Không xác định\",\"mau_sac\":\"...\",\"trong_luong\":\"3.2\",\"ngay_sinh\":\"YYYY-MM-DD\",\"ghi_chu\":\"...\",\"id_khach_hang\":\"chỉ nội bộ mới truyền\"}");
         appendToolIfAllowed(sb, userRole, "cap_nhat_benh_an",
             "Cập nhật thông tin bệnh án chuyên môn. Chỉ bác sĩ/y tá/quản trị lâm sàng được dùng.",
             "{\"id_ho_so_benh_an\":\"...\",\"trieu_chung\":\"...\",\"chan_doan\":\"...\",\"phac_do_dieu_tri\":\"...\",\"huong_dan_cham_soc\":\"...\"}");
@@ -130,15 +133,19 @@ public class AiToolService {
                Mô tả: Hủy lịch hẹn của chính khách hàng đang đăng nhập. Không được hủy lịch của khách khác.
                Params: {"id_lich_hen": "mã lịch nếu có", "thoi_gian": "hom_nay|chieu_nay|ngay_mai nếu chưa có mã"}
 
-            3. tim_kiem_web
+            3. them_thu_cung
+               Mô tả: Thêm thú cưng cho chính khách hàng đang đăng nhập. Không được truyền ID khách hàng khác.
+               Params: {"ten_thu_cung":"...","loai":"Chó|Mèo|...","giong":"...","gioi_tinh":"Đực|Cái|Không xác định","mau_sac":"...","trong_luong":"3.2","ngay_sinh":"YYYY-MM-DD","ghi_chu":"..."}
+
+            4. tim_kiem_web
                Mô tả: Tìm kiếm thông tin y khoa, tin tức thú y mới nhất trên internet.
                Params: {"query": "nội dung cần tìm"}
 
-            4. kiem_tra_phan_he
+            5. kiem_tra_phan_he
                Mô tả: Xem danh sách phân hệ, route và quyền truy cập chính trong hệ thống.
                Params: {} (không cần tham số)
 
-            5. tra_cuu_tai_lieu_y_khoa
+            6. tra_cuu_tai_lieu_y_khoa
                Mô tả: Tra cứu tài liệu VNUA/giáo trình thú y đã được Rexi nạp. Khách hàng chỉ được nhận giải thích an toàn, không nhận liều dùng hay chỉ định thuốc kê đơn.
                Params: {"tu_khoa": "..."}
 
@@ -175,6 +182,7 @@ public class AiToolService {
                 // Gọi qua proxy self để @Transactional hoạt động (Spring AOP proxy pattern)
                 case "dat_lich_hen"          -> self.toolDatLichHen(params);
                 case "huy_lich_hen"          -> toolHuyLichHen(params, userRole, username);
+                case "them_thu_cung"         -> toolThemThuCung(params, userRole, username);
                 case "cap_nhat_benh_an"      -> toolCapNhatBenhAn(params);
                 case "xem_kho_thuoc"         -> toolXemKhoThuoc((String) params.getOrDefault("tu_khoa", ""));
                 case "thong_ke_doanh_thu"    -> toolThongKeDoanhThu((String) params.getOrDefault("khoang_thoi_gian", "hom_nay"));
@@ -441,33 +449,51 @@ public class AiToolService {
             if (doctorExists == null || doctorExists == 0) return "Lỗi đặt lịch: không tìm thấy bác sĩ hợp lệ.";
             if (serviceExists == null || serviceExists == 0) return "Lỗi đặt lịch: không tìm thấy dịch vụ hợp lệ.";
 
-            // Check duplicate: cùng bác sĩ + cùng giờ
+            Integer thoiLuongMoi = jdbcTemplate.queryForObject(
+                "SELECT thoi_luong_phut FROM DichVu WHERE id_dich_vu = ?",
+                Integer.class, idDichVu);
+            if (thoiLuongMoi == null || thoiLuongMoi <= 0) thoiLuongMoi = 30;
+            LocalTime gioKetThuc = gioKham.plusMinutes(thoiLuongMoi);
+            int gioKhamMinute = gioKham.getHour() * 60 + gioKham.getMinute();
+            int gioKetThucMinute = gioKetThuc.getHour() * 60 + gioKetThuc.getMinute();
+
+            // Check duplicate: cùng bác sĩ + khoảng thời gian bị chồng lấn
             Integer duplicateDoctorSlot = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM LichHen WHERE ngay_kham = ? AND gio_kham = ? AND id_bac_si = ? AND trang_thai != 'DA_HUY'",
-                Integer.class, java.sql.Date.valueOf(ngayKham), java.sql.Time.valueOf(gioKham), idBacSi);
+                "SELECT COUNT(*) FROM LichHen lh LEFT JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu " +
+                "WHERE lh.ngay_kham = ? AND lh.id_bac_si = ? " +
+                "AND DATEDIFF(minute, CAST('00:00:00' AS time), CAST(lh.gio_kham AS time)) < ? " +
+                "AND DATEDIFF(minute, CAST('00:00:00' AS time), CAST(lh.gio_kham AS time)) + ISNULL(dv.thoi_luong_phut, 30) > ? " +
+                "AND (lh.trang_thai IS NULL OR lh.trang_thai NOT IN (N'Đã hủy', 'DA_HUY', 'da_huy', 'TU_CHOI', N'Hết hạn'))",
+                Integer.class, java.sql.Date.valueOf(ngayKham), idBacSi,
+                gioKetThucMinute, gioKhamMinute);
             if (duplicateDoctorSlot != null && duplicateDoctorSlot > 0) {
-                return "Lỗi đặt lịch: khung giờ này đã có lịch với bác sĩ đã chọn. Hãy chọn giờ khác.";
+                return "Lỗi đặt lịch: khung giờ này bị trùng thời gian với lịch khám khác của bác sĩ đã chọn. Hãy chọn giờ khác.";
             }
 
-            // NEW: Check duplicate: cùng thú cưng + cùng giờ (chống đặt trùng lịch cho 1 thú cưng)
+            // Check duplicate: cùng thú cưng + khoảng thời gian bị chồng lấn
             Integer duplicatePetSlot = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM LichHen WHERE ngay_kham = ? AND gio_kham = ? AND id_thu_cung = ? AND trang_thai != 'DA_HUY'",
-                Integer.class, java.sql.Date.valueOf(ngayKham), java.sql.Time.valueOf(gioKham), idThuCung);
+                "SELECT COUNT(*) FROM LichHen lh LEFT JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu " +
+                "WHERE lh.ngay_kham = ? AND lh.id_thu_cung = ? " +
+                "AND DATEDIFF(minute, CAST('00:00:00' AS time), CAST(lh.gio_kham AS time)) < ? " +
+                "AND DATEDIFF(minute, CAST('00:00:00' AS time), CAST(lh.gio_kham AS time)) + ISNULL(dv.thoi_luong_phut, 30) > ? " +
+                "AND (lh.trang_thai IS NULL OR lh.trang_thai NOT IN (N'Đã hủy', 'DA_HUY', 'da_huy', 'TU_CHOI', N'Hết hạn'))",
+                Integer.class, java.sql.Date.valueOf(ngayKham), idThuCung,
+                gioKetThucMinute, gioKhamMinute);
             if (duplicatePetSlot != null && duplicatePetSlot > 0) {
-                return "Lỗi đặt lịch: thú cưng này đã có lịch hẹn trùng giờ. Vui lòng chọn giờ khác cho bé.";
+                return "Lỗi đặt lịch: thú cưng này đã có lịch hẹn trùng khoảng thời gian. Vui lòng chọn giờ khác cho bé.";
             }
 
             String newId = "LH-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-            String ghiChu = Objects.toString(p.getOrDefault("ghi_chu", ""), "").trim();
-            if (ghiChu.isBlank()) ghiChu = "Đặt lịch qua Rexi AI Agent";
+            String lyDo = Objects.toString(p.getOrDefault("ghi_chu", ""), "").trim();
+            if (lyDo.isBlank()) lyDo = "Đặt lịch qua Rexi AI Agent";
 
-            String sql = "INSERT INTO LichHen (id_lich_hen, id_khach_hang, id_thu_cung, id_bac_si, id_dich_vu, ngay_kham, gio_kham, ghi_chu, trang_thai) " +
+            String sql = "INSERT INTO LichHen (id_lich_hen, id_khach_hang, id_thu_cung, id_bac_si, id_dich_vu, ngay_kham, gio_kham, ly_do, trang_thai) " +
                          "VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'CHO_XAC_NHAN')";
             jdbcTemplate.update(sql,
                 newId,
                 idKhachHang, idThuCung, idBacSi,
                 idDichVu, java.sql.Date.valueOf(ngayKham), gioKham.toString(),
-                ghiChu);
+                lyDo);
             return "✅ Đặt lịch thành công! Mã lịch hẹn: " + newId + " vào " + ngayKham + " lúc " + gioKham;
         } catch (Exception e) {
             return "Lỗi đặt lịch: " + e.getMessage();
@@ -1096,6 +1122,93 @@ public class AiToolService {
         return value != null ? value.toString() : null;
     }
 
+    private String toolThemThuCung(Map<String, Object> p, String userRole, String username) {
+        String ten = Objects.toString(p.get("ten_thu_cung"), "").trim();
+        if (ten.isBlank()) {
+            return "Lỗi: Thiếu tên thú cưng cần thêm.";
+        }
+
+        String role = RoleAccessPolicy.normalizeRole(userRole);
+        String customerId = Objects.toString(p.get("id_khach_hang"), "").trim();
+        if (RoleAccessPolicy.isCustomerRole(role) || role.isBlank()) {
+            customerId = resolveCustomerId(null, username);
+            if (customerId == null || customerId.isBlank()) {
+                return "Lỗi: Không xác định được tài khoản khách hàng đang đăng nhập.";
+            }
+        } else if (customerId.isBlank()) {
+            customerId = resolveCustomerId(null, username);
+        }
+
+        if (customerId == null || customerId.isBlank()) {
+            return "Lỗi: Thiếu ID khách hàng để thêm thú cưng.";
+        }
+
+        Integer ownerExists = jdbcTemplate.queryForObject(
+            "SELECT COUNT(*) FROM KhachHang WHERE id_khach_hang = ? AND (da_xoa = 0 OR da_xoa IS NULL)",
+            Integer.class,
+            customerId
+        );
+        if (ownerExists == null || ownerExists == 0) {
+            return "Lỗi: Không tìm thấy khách hàng " + customerId + ".";
+        }
+
+        var existing = jdbcTemplate.queryForList(
+            "SELECT TOP 1 id_thu_cung FROM ThuCung WHERE id_khach_hang = ? AND ten_thu_cung = ? AND (da_xoa = 0 OR da_xoa IS NULL)",
+            customerId,
+            ten
+        );
+        if (!existing.isEmpty()) {
+            return "Đã có thú cưng " + ten + " trong tài khoản này. ID: " + existing.get(0).get("id_thu_cung") + ".";
+        }
+
+        String id = "TC-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        String loai = Objects.toString(p.getOrDefault("loai", "Chưa xác định"), "Chưa xác định").trim();
+        String giong = Objects.toString(p.getOrDefault("giong", ""), "").trim();
+        String gioiTinh = Objects.toString(p.getOrDefault("gioi_tinh", "Không xác định"), "Không xác định").trim();
+        String mauSac = Objects.toString(p.getOrDefault("mau_sac", ""), "").trim();
+        String ghiChu = Objects.toString(p.getOrDefault("ghi_chu", "Thêm bởi Rexi Agent"), "Thêm bởi Rexi Agent").trim();
+        Double trongLuong = parseDoubleOrNull(p.get("trong_luong"));
+        LocalDate ngaySinh = parseDateOrNull(p.get("ngay_sinh"));
+
+        jdbcTemplate.update(
+            "INSERT INTO ThuCung (id_thu_cung, id_khach_hang, ten_thu_cung, loai, giong, ngay_sinh, gioi_tinh, mau_sac, trong_luong, ghi_chu, da_xoa, ngay_tao) " +
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, GETDATE())",
+            id,
+            customerId,
+            ten,
+            loai,
+            giong,
+            ngaySinh,
+            gioiTinh,
+            mauSac,
+            trongLuong,
+            ghiChu
+        );
+        return "Đã thêm thú cưng " + ten + " cho tài khoản " + customerId + ". ID: " + id + ".";
+    }
+
+    private Double parseDoubleOrNull(Object value) {
+        if (value == null) return null;
+        String raw = Objects.toString(value, "").replace(",", ".").trim();
+        if (raw.isBlank()) return null;
+        try {
+            return Double.parseDouble(raw);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private LocalDate parseDateOrNull(Object value) {
+        if (value == null) return null;
+        String raw = Objects.toString(value, "").trim();
+        if (raw.isBlank()) return null;
+        try {
+            return LocalDate.parse(raw);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     private String toolTraCuuTaiLieuYKhoa(String tuKhoa, String userRole) {
         StringBuilder sb = new StringBuilder();
         try {
@@ -1134,7 +1247,7 @@ public class AiToolService {
                         StringBuilder trimmed = new StringBuilder();
                         int kept = 0;
                         for (String line : lines) {
-                            if (line.startsWith("📚") || line.startsWith("- Môn") || line.startsWith("  - File") || line.startsWith("  - Đường dẫn") || line.startsWith("  - Từ khóa")) {
+                            if (line.startsWith("📚") || line.startsWith("- Môn") || line.startsWith("  - File") || line.startsWith("  - Link mở PDF") || line.startsWith("  - Link ngoài") || line.startsWith("  - Đường dẫn") || line.startsWith("  - Từ khóa")) {
                                 trimmed.append(line).append("\n");
                                 kept++;
                             }
@@ -1199,10 +1312,22 @@ public class AiToolService {
         sb.append("- Môn [").append(subject).append("]:\n");
         for (String rawLine : block.split("\\R")) {
             String line = rawLine.trim();
-            if (line.startsWith("- File:") || line.startsWith("- Đường dẫn") || line.startsWith("- Từ khóa")) {
+            if (line.startsWith("- File:") || line.startsWith("- Đường dẫn") || line.startsWith("- Link ngoài") || line.startsWith("- Từ khóa")) {
                 sb.append("  ").append(line).append("\n");
+                if (line.startsWith("- File:")) {
+                    String fileName = line.substring("- File:".length()).trim();
+                    sb.append("  - Link mở PDF: ").append(toVnuaPublicPdfUrl(fileName)).append("\n");
+                }
             }
         }
         return true;
+    }
+
+    private String toVnuaPublicPdfUrl(String fileName) {
+        if (fileName == null || fileName.isBlank()) {
+            return "/vnua-docs/";
+        }
+        return "/vnua-docs/" + java.net.URLEncoder.encode(fileName, java.nio.charset.StandardCharsets.UTF_8)
+                .replace("+", "%20");
     }
 }

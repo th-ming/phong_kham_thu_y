@@ -15,9 +15,9 @@ export const matchesNormalizedIntent = (text: string, phrases: string[]) => {
 
 export const hasExplicitAgentActionIntent = (text: string) => {
     const actionWords = [
-        "mo trang", "vao trang", "chuyen sang", "dieu huong", "truy cap", "di toi",
+        "mo", "mo trang", "vao trang", "chuyen sang", "dieu huong", "truy cap", "di toi",
         "qua trang", "nhay qua", "tele qua", "bay qua", "dan toi", "dan den",
-        "xem danh sach", "loc danh sach", "tim khach", "tim thu cung", "tra cuu", "kiem tra form",
+        "xem", "xem danh sach", "loc danh sach", "tim khach", "tim thu cung", "tra cuu", "kiem tra form",
         "check", "check giup", "co khong", "thong ke", "tao moi", "them moi", "sua thong tin", "xoa", "dat lich", "book lich", "lap lich",
         "xuat file", "in hoa don", "gui email", "dien form", "tu dong",
         "bam", "nhan", "click", "tap", "an vao", "cuon", "keo xuong", "keo len",
@@ -27,7 +27,7 @@ export const hasExplicitAgentActionIntent = (text: string) => {
 
 export const hasExplicitNavigationIntent = (text: string) => {
     const navigationPhrases = [
-        "mo trang", "mo phan he", "mo muc", "vao trang", "vao phan he", "chuyen sang",
+        "mo", "mo trang", "mo phan he", "mo muc", "vao trang", "vao phan he", "chuyen sang",
         "dieu huong", "truy cap", "di toi", "dua toi", "dua den", "nhay sang",
         "sang trang", "toi trang", "den trang", "qua trang", "nhay qua", "tele qua",
         "bay qua", "dan toi", "dan den", "vo trang", "vào trang",

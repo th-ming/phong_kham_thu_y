@@ -1,0 +1,26 @@
+{
+  "baseUrl": "http://127.0.0.1:3001",
+  "shots": [
+    "D:\\QLy Phòng Khám Thú Y\\Frontend\\output\\playwright\\admin-agent-sensitive-00-agent-tab.png",
+    "D:\\QLy Phòng Khám Thú Y\\Frontend\\output\\playwright\\admin-agent-sensitive-01-xoa-lich.png",
+    "D:\\QLy Phòng Khám Thú Y\\Frontend\\output\\playwright\\admin-agent-sensitive-02-huy-hoa-don.png",
+    "D:\\QLy Phòng Khám Thú Y\\Frontend\\output\\playwright\\admin-agent-sensitive-03-check-bill.png"
+  ],
+  "apiResponses": [
+    {
+      "url": "http://localhost:3001/api/chat/prewarm",
+      "status": 200,
+      "body": "{\"provider\":\"groq\",\"ok\":true,\"mode\":\"background\"}"
+    },
+    {
+      "url": "http://localhost:3001/api/agent/react",
+      "status": 200,
+      "body": "{\"steps\":[{\"type\":\"SENSITIVE_CONFIRMATION_REQUIRED\",\"content\":\"Phát hiện lệnh hoặc dữ liệu nhạy cảm, dừng trước khi gọi tool/DB/AI.\",\"params\":{\"label\":\"xóa/hủy/sửa/cập nhật\",\"category\":\"destructive\"},\"observation\":\"CẢNH BÁO LỆNH NHẠY CẢM: Tôi phát hiện yêu cầu có thể thay đổi hoặc hủy dữ liệu hệ thống (xóa/hủy/sửa/cập nhật). Rexi Agent chưa thực hiện thao tác nào. Vui lòng xác nhận rõ bằng câu: \\\"Tôi xác nhận thực hiện thao tác nhạy cảm này\\\" và cung cấp đủ mã/tên/SĐT liên quan để tránh thao tác nhầm.\"},{\"type\":\"FINAL\",\"content\":\"CẢNH BÁO LỆNH NHẠY CẢM: Tôi phát hiện yêu cầu có thể thay đổi hoặc hủy dữ liệu hệ thống (xóa/hủy/sửa/cập nhật). Rexi Agent chưa thực hiện thao tác nào. Vui lòng xác nhận rõ bằng câu: \\\"Tôi xác nhận thực hiện thao tác nhạy cảm này\\\" và cung cấp đủ mã/tên/SĐT liên quan để tránh thao tác nhầm.\"}],\"provider\":\"SensitiveGate\",\"totalSteps\":2,\"finalAnswer\":\"CẢNH BÁO LỆNH NHẠY CẢM: Tôi phát hiện yêu cầu có thể thay đổi hoặc hủy dữ liệu hệ thống (xóa/hủy/sửa/cập nhật). Rexi Agent chưa thực hiện thao tác nào. Vui lòng xác nhận rõ bằng câu: \\\"Tôi xác nhận thực hiện thao tác nhạy cảm này\\\" và cung cấp đủ mã/tên/SĐT liên quan để tránh thao tác nhầm.\"}"
+    },
+    {
+      "url": "http://localhost:3001/api/agent/react",
+      "status": 200,
+      "body": "{\"steps\":[{\"type\":\"SENSITIVE_CONFIRMATION_REQUIRED\",\"content\":\"Phát hiện lệnh hoặc dữ liệu nhạy cảm, dừng trước khi gọi tool/DB/AI.\",\"params\":{\"label\":\"hóa đơn/thanh toán\",\"category\":\"financial\"},\"observation\":\"CẢNH BÁO DỮ LIỆU NHẠY CẢM: Yêu cầu liên quan hóa đơn/thanh toán/bill (hóa đơn/thanh toán). Rexi Agent chưa truy xuất hay thay đổi dữ liệu. Vui lòng xác nhận quyền xử lý và cung cấp mã hóa đơn, tên khách hoặc SĐT cụ thể.\"},{\"type\":\"FINAL\",\"content\":\"CẢNH BÁO DỮ LIỆU NHẠY CẢM: Yêu cầu liên quan hóa đơn/thanh toán/bill (hóa đơn/thanh toán). Rexi Agent chưa truy xuất hay thay đổi dữ liệu. Vui lòng xác nhận quyền xử lý và cung cấp mã hóa đơn, tên khách hoặc SĐT cụ thể.\"}],\"provider\":\"SensitiveGate\",\"totalSteps\":2,\"finalAnswer\":\"CẢNH BÁO DỮ LIỆU NHẠY CẢM: Yêu cầu liên quan hóa đơn/thanh toán/bill (hóa đơn/thanh toán). Rexi Agent chưa truy xuất hay thay đổi dữ liệu. Vui lòng xác nhận quyền xử lý và cung cấp mã hóa đơn, tên khách hoặc SĐT cụ thể.\"}"
+    }
+  ]
+}

@@ -22,6 +22,7 @@ export const AGENT_TOOL_ROLES: Record<string, UserRoleCode[]> = {
   xem_hoa_don: ROLE_GROUPS.invoice,
   thao_tac_tai_khoan: ROLE_GROUPS.staffAccountManage,
   tim_tai_khoan_bi_khoa: ROLE_GROUPS.staffAccountManage,
+  tra_cuu_tai_lieu_y_khoa: [...ROLE_GROUPS.allInternal, "khach_hang"],
 };
 
 export const CUSTOMER_SAFE_AGENT_TOOLS = new Set([

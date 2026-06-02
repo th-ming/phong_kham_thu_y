@@ -2,6 +2,7 @@ import React, { useCallback, useMemo, useState, useEffect, useRef } from "react"
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import axiosInstance from "@services/axios";
 import { formatTienVND, getCustomerIdFromProfile, getUserProfile, normalizeUserRole } from "@utils/index";
+import { customerToneCopy, isGenZBirthYear } from "@utils/customerTone";
 import { toast } from "@components/Toast";
 import { useAutoRefresh } from "@hooks/useAutoRefresh";
 
@@ -33,6 +34,8 @@ const DatLichHen: React.FC = () => {
   const userRole = normalizeUserRole(user);
   const isCustomerUser = userRole === "khach_hang";
   const idKhachHang = getCustomerIdFromProfile(user);
+  const isGenZCustomer = isGenZBirthYear(user?.nam_sinh);
+  const toneCopy = customerToneCopy[isGenZCustomer ? "genz" : "mature"];
 
   const currentStep = useMemo(() => {
     if (!idThuCung) return 1;
@@ -73,7 +76,7 @@ const DatLichHen: React.FC = () => {
         setIdThuCung(String(pets[0].id_thu_cung));
       }
       setAutopilotStep(2);
-      setAutopilotMsg("🤖 [1/5] Thú cưng: Đã chọn em bé nhà Sen!");
+      setAutopilotMsg(isGenZCustomer ? "🤖 [1/5] Thú cưng: Đã chọn em bé nhà Sen!" : "🤖 [1/5] Thú cưng: Đã chọn hồ sơ thú cưng phù hợp.");
 
       // Bước 2: Tự động chọn dịch vụ sau 1.2 giây
       setTimeout(() => {
@@ -142,7 +145,7 @@ const DatLichHen: React.FC = () => {
             } else if (checkSlotsCount > 15) {
               // Timeout sau 3 giây nếu ko lấy được slot
               clearInterval(checkSlotsInterval);
-              toast.error("Không thể tải giờ rảnh tự động. Sen vui lòng chọn giờ thủ công nhé!");
+      toast.error(isGenZCustomer ? "Không thể tải giờ rảnh tự động. Sen vui lòng chọn giờ thủ công nhé!" : "Không thể tải giờ rảnh tự động. Anh/chị vui lòng chọn giờ thủ công.");
               setIsAutopilotRunning(false);
             }
           }, 200);
@@ -437,8 +440,8 @@ const DatLichHen: React.FC = () => {
       <div className="stagger-1" style={{ display: 'block', width: '100%', margin: '10px 0 40px 0', padding: '48px', borderRadius: '32px', background: 'var(--secondary-gradient)', color: 'white', position: 'relative', overflow: 'hidden', boxShadow: 'var(--shadow-xl)', zIndex: 1 }}>
         <div style={{ position: 'absolute', top: '-10%', right: '-5%', width: '300px', height: '300px', background: 'radial-gradient(circle, var(--primary-light) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }}></div>
         <div style={{ position: 'absolute', bottom: '-20%', left: '-10%', width: '250px', height: '250px', background: 'radial-gradient(circle, var(--primary-light) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none', opacity: 0.5 }}></div>
-        <h1 style={{ fontSize: '3rem', fontWeight: 950, letterSpacing: '-2px', position: 'relative', zIndex: 1, margin: '0 0 12px 0', textShadow: '0 2px 10px rgba(0,0,0,0.2)' }}>Đặt lịch khám 📅</h1>
-        <p style={{ fontWeight: 600, color: 'rgba(255,255,255,0.7)', position: 'relative', zIndex: 1, margin: 0, fontSize: '1.1rem', maxWidth: '600px' }}>Mang đến dịch vụ chăm sóc y tế chuẩn quốc tế cho người bạn nhỏ của bạn ngay tại Rexi.</p>
+        <h1 style={{ fontSize: '3rem', fontWeight: 950, letterSpacing: '-2px', position: 'relative', zIndex: 1, margin: '0 0 12px 0', textShadow: '0 2px 10px rgba(0,0,0,0.2)' }}>{toneCopy.bookingTitle}</h1>
+        <p style={{ fontWeight: 600, color: 'rgba(255,255,255,0.7)', position: 'relative', zIndex: 1, margin: 0, fontSize: '1.1rem', maxWidth: '600px' }}>{toneCopy.bookingSubtitle}</p>
       </div>
 
       <div className="stagger-2 responsive-grid-booking">
@@ -483,12 +486,12 @@ const DatLichHen: React.FC = () => {
             <label style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gray-400)', letterSpacing: '1px' }}>1. CHỌN THÚ CƯNG <span style={{ color: '#ff4d4f' }}>*</span></label>
             {pets.length === 0 ? (
               <div style={{ padding: '24px', background: 'rgba(245, 158, 11, 0.05)', borderRadius: '20px', border: '1px dashed var(--accent)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: '1rem', fontWeight: 700 }}>Bạn chưa có hồ sơ thú cưng nào.</span>
-                <Link to="/khach-hang/quan-ly-thu-cung" className="btn btn-primary btn-pill" style={{ padding: '10px 24px', textDecoration: 'none', fontSize: '0.9rem' }}>+ Thêm bé ngay</Link>
+                <span style={{ fontSize: '1rem', fontWeight: 700 }}>{isGenZCustomer ? "Sen chưa có hồ sơ boss nào." : "Anh/chị chưa có hồ sơ thú cưng nào."}</span>
+                <Link to="/khach-hang/quan-ly-thu-cung" className="btn btn-primary btn-pill" style={{ padding: '10px 24px', textDecoration: 'none', fontSize: '0.9rem' }}>{isGenZCustomer ? "+ Thêm boss ngay" : "+ Thêm thú cưng"}</Link>
               </div>
             ) : (
               <select data-ai-id="select-datlichhen-688p" required value={idThuCung} onChange={e => setIdThuCung(e.target.value)}>
-                <option value="">-- Danh sách bé nhà mình --</option>
+                <option value="">{isGenZCustomer ? "-- Danh sách boss nhà Sen --" : "-- Danh sách thú cưng --"}</option>
                 {pets.map(p => <option key={p.id_thu_cung} value={p.id_thu_cung}>{p.ten_thu_cung} ({p.loai})</option>)}
               </select>
             )}
@@ -592,7 +595,7 @@ const DatLichHen: React.FC = () => {
 
           <div style={{ display: 'grid', gap: '12px' }}>
             <label style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gray-400)' }}>5. TRIỆU CHỨNG / GHI CHÚ</label>
-            <textarea data-ai-id="textarea-datlichhen-note" className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left', minHeight: '100px', padding: '16px', lineHeight: '1.6', borderRadius: '16px', border: '1px solid var(--gray-200)', outline: 'none' }} placeholder="Mô tả tình trạng bé hoặc các yêu cầu đặc biệt..." value={note} onChange={e => setNote(e.target.value)} />
+            <textarea data-ai-id="textarea-datlichhen-note" className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left', minHeight: '100px', padding: '16px', lineHeight: '1.6', borderRadius: '16px', border: '1px solid var(--gray-200)', outline: 'none' }} placeholder={toneCopy.bookingNotePlaceholder} value={note} onChange={e => setNote(e.target.value)} />
           </div>
 
           <button data-ai-id="button-datlichhen-66iq" type="submit" className="btn btn-primary btn-pill" disabled={loading} onClick={notifyCurrentBookingDraftIssue} style={{ padding: '16px', fontSize: '1.1rem' }}>

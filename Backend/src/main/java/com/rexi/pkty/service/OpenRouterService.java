@@ -18,6 +18,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
@@ -26,30 +27,41 @@ public class OpenRouterService {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    private static final long CONFIG_CACHE_TTL_MS = 30_000L;
+    private volatile long apiKeysCacheUntilMs = 0L;
+    private volatile List<String> cachedApiKeys = List.of();
+    private final ConcurrentHashMap<String, CachedConfig> configCache = new ConcurrentHashMap<>();
+
+    private record CachedConfig(String value, long expiresAtMs) {}
+
     private String getModelName() {
-        try {
-            String dbModel = jdbcTemplate.queryForObject(
-                "SELECT gia_tri FROM CauHinhHeThong WHERE ten_cau_hinh = 'openrouter_model'", 
-                String.class);
-            if (dbModel != null && !dbModel.trim().isEmpty()) {
-                return dbModel.trim();
-            }
-        } catch (Exception e) {
-        }
-        return modelName;
+        return getCachedConfig("openrouter_model", modelName);
     }
 
     public String getMedicalModelName() {
+        return getCachedConfig("openrouter_medical_model", getModelName());
+    }
+
+    private String getCachedConfig(String configName, String fallback) {
+        long now = System.currentTimeMillis();
+        CachedConfig cached = configCache.get(configName);
+        if (cached != null && cached.expiresAtMs() > now) {
+            return cached.value();
+        }
+
+        String value = fallback;
         try {
             String dbModel = jdbcTemplate.queryForObject(
-                "SELECT gia_tri FROM CauHinhHeThong WHERE ten_cau_hinh = 'openrouter_medical_model'", 
-                String.class);
+                "SELECT gia_tri FROM CauHinhHeThong WHERE ten_cau_hinh = ?",
+                String.class,
+                configName);
             if (dbModel != null && !dbModel.trim().isEmpty()) {
-                return dbModel.trim();
+                value = dbModel.trim();
             }
         } catch (Exception e) {
         }
-        return getModelName();
+        configCache.put(configName, new CachedConfig(value, now + CONFIG_CACHE_TTL_MS));
+        return value;
     }
 
     private String getApiKey() {
@@ -58,6 +70,11 @@ public class OpenRouterService {
     }
 
     private List<String> getApiKeys() {
+        long now = System.currentTimeMillis();
+        if (apiKeysCacheUntilMs > now && !cachedApiKeys.isEmpty()) {
+            return cachedApiKeys;
+        }
+
         Set<String> keys = new LinkedHashSet<>();
         try {
             List<String> dbKeys = jdbcTemplate.queryForList(
@@ -70,7 +87,10 @@ public class OpenRouterService {
             }
         } catch (Exception e) {}
         addKeys(keys, apiKey);
-        return new ArrayList<>(keys);
+        List<String> resolvedKeys = List.copyOf(keys);
+        cachedApiKeys = resolvedKeys;
+        apiKeysCacheUntilMs = now + CONFIG_CACHE_TTL_MS;
+        return resolvedKeys;
     }
 
     private void addKeys(Set<String> keys, String rawValue) {

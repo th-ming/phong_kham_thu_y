@@ -88,8 +88,8 @@ export const getPageDisplayName = (pathname: string): string => {
     if (pathname === "/khach-hang/dat-lich-hen") return "Đặt lịch hẹn khám";
     if (pathname === "/khach-hang/lich-su-lich-hen") return "Lịch sử lịch hẹn";
     if (pathname === "/khach-hang/ho-so-benh-an") return "Hồ sơ bệnh án thú cưng";
-    if (pathname === "/khach-hang/hoa-don-thanh-toan") return "Hóa đơn & thanh toán của bé";
-    if (pathname === "/khach-hang/thong-tin-ca-nhan") return "Thông tin cá nhân Sen";
+    if (pathname === "/khach-hang/hoa-don-thanh-toan") return "Hóa đơn & thanh toán";
+    if (pathname === "/khach-hang/thong-tin-ca-nhan") return "Thông tin cá nhân";
 
     if (pathname === "/quan-ly/dashboard") return "Bảng điều khiển Quản lý nội bộ";
     if (pathname === "/quan-ly/khach-hang-thu-cung") return "Quản lý Khách hàng & Thú cưng";

@@ -22,8 +22,9 @@ if %errorlevel% neq 0 (
     echo [✓] Cập nhật thành công! Mã nguồn hiện đã là mới nhất.
 )
 echo.
+
 echo --------------------------------------------------------------------
-echo [*] Bước 2: Chọn chế độ khởi động (Tự động chọn [1] sau 5 giây)
+echo [*] Bước 2: Chế độ khởi động (mặc định tự chạy FE+BE nếu không chỉ định)
 echo --------------------------------------------------------------------
 echo   [1] Khởi động cả FE và BE (Chế độ Tiết kiệm RAM - Khuyên dùng)
 echo   [2] Khởi động cả FE và BE (Chế độ Dev đầy đủ - Tự động load khi sửa code)
@@ -31,9 +32,22 @@ echo   [3] Chỉ khởi động Frontend (Chế độ Tiết kiệm RAM)
 echo   [4] Chỉ khởi động Backend (Chế độ Tiết kiệm RAM)
 echo.
 
+:: Hỗ trợ chế độ tương tác khi gọi với tham số /i hoặc -i hoặc interactive
+if /I "%~1"=="/i" goto INTERACTIVE
+if /I "%~1"=="-i" goto INTERACTIVE
+if /I "%~1"=="interactive" goto INTERACTIVE
+
+:: Mặc định: nếu không có tham số, tự động chọn 1 (khởi chạy FE+BE)
+echo [*] Không phát hiện tham số tương tác — tự động khởi chạy FE + BE.
+set opt=1
+goto AFTER_CHOICE
+
+:INTERACTIVE
 :: Sử dụng lệnh choice với thời gian chờ 5 giây, mặc định chọn 1
 choice /c 1234 /t 5 /d 1 /m "Vui lòng nhập lựa chọn của sếp (1-4): "
 set opt=%errorlevel%
+
+:AFTER_CHOICE
 
 cls
 echo ====================================================================

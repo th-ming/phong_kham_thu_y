@@ -16,12 +16,17 @@ export const LottiePlayer: React.FC<{ url: string, style?: React.CSSProperties }
       return;
     }
     fetch(url)
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
       .then(data => {
         lottieCache[url] = data;
         if (isMounted) setAnimationData(data);
       })
-      .catch(err => console.error("Lỗi tải Lottie:", err));
+      .catch(() => {
+        if (isMounted) setAnimationData(null);
+      });
     return () => { isMounted = false; };
   }, [url]);
 
@@ -79,34 +84,34 @@ const MemeCatCore: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
 
     const baseMessages = isGenZ 
       ? [
-          "Meow~ 🐾", 
-          "Rexi số 1 meow! ✨", 
-          "Nhớ đặt lịch khám nha!", 
-          "Đang chạy bộ nè meow... 🙀", 
-          "Pate đâu rồi sen? 🐟",
-          "Sen ơi, trẫm đói! Đưa pate đây! 😾",
-          "Chạy sút quần để trốn đi tắm nè meow! 🏃‍♂️💨",
-          "Bác sĩ dặn rồi, ngày chỉ ăn 3 cữ súp thưởng thôi! 🩺",
-          "Thấy trẫm chạy lẹ không? Tránh đường cho bổn cung! 🐾",
-          "Trầm cảm vì sen nghèo không có tiền mua bàn cào móng... 😿",
-          "Ủa đang ở đâu đây? Lạc đường mất tiêu rồi meow~ 🧭",
-          "Cấp cứu! Bụng đói cồn cào! Gọi 0353.374.156 lẹ! 🚑",
-          "Bế trẫm đi Rexi khám lẹ, dạo này rụng lông quá! 🙀"
+          "Hi sen, Rexi mèo đang tuần tra nè! 🐾",
+          "Boss khỏe là Rexi vui liền á! ✨",
+          "Nhớ đặt lịch khám cho boss nha!",
+          "Đang chạy KPI chăm boss nè meow... 🙀",
+          "Pate đâu rồi sen? Boss hỏi nhẹ đó! 🐟",
+          "Sen ơi, boss đói rồi, check bữa ăn chưa? 😾",
+          "Chạy nhanh để kịp lịch khám cho boss! 🏃‍♂️💨",
+          "Bác sĩ dặn rồi, súp thưởng cũng phải đúng cữ nha! 🩺",
+          "Thấy Rexi chạy lẹ không? Đặt lịch cũng lẹ vậy á! 🐾",
+          "Boss cần bàn cào móng mới chưa sen? 😿",
+          "Lạc đường hả sen? Rexi dẫn tới đúng trang nè! 🧭",
+          "Cấp cứu là nghiêm túc nha: gọi 0353.374.156 liền! 🚑",
+          "Boss rụng lông nhiều thì mình đặt lịch khám nha! 🙀"
         ]
       : [
-          "Meow~ 🐾", 
-          "Chào mừng bạn đến với Rexi! ✨", 
-          "Đừng quên đặt lịch khám sức khỏe định kỳ cho bé nhé!", 
-          "Chúc bé cưng của bạn luôn vui khỏe mỗi ngày! ❤️", 
-          "Hôm nay bé cưng đã được ăn súp thưởng chưa nhỉ? 🐟",
-          "Cần bất kỳ hỗ trợ nào về thú y, tôi luôn sẵn sàng hỗ trợ! 🩺",
-          "Tôi đang chạy thể dục nâng cao sức khỏe đây meow~ 🏃‍♂️💨",
-          "Rexi luôn đồng hành cùng sức khỏe thú cưng của bạn! 🐾",
-          "Yêu thương và chăm sóc chu đáo như thành viên gia đình! 🥰",
-          "Đặt lịch online cực kỳ nhanh chóng và tiện lợi luôn ạ! 📅",
-          "Cần tư vấn khẩn cấp? Đã có bác sĩ AI Rexi túc trực 24/7! 🩺",
-          "Hotline hỗ trợ nhanh: 0353.374.156! 🚑",
-          "Chăm sóc tận tâm - Nâng niu từng bé thú cưng! 🐱🐶"
+          "Rexi kính chào anh/chị! 🐾",
+          "Rexi luôn sẵn sàng hỗ trợ chăm sóc thú cưng. ✨",
+          "Anh/chị đừng quên lịch khám định kỳ cho thú cưng.",
+          "Kính chúc anh/chị và các bé luôn khỏe mạnh. ❤️",
+          "Hôm nay thú cưng của anh/chị ăn uống ổn định chứ ạ? 🐟",
+          "Cần hỗ trợ thú y, Rexi luôn sẵn sàng. 🩺",
+          "Rexi đang kiểm tra hệ thống hỗ trợ anh/chị. 🏃‍♂️💨",
+          "Rexi đồng hành cùng sức khỏe thú cưng của gia đình. 🐾",
+          "Chăm sóc chu đáo như một thành viên thân yêu. 🥰",
+          "Đặt lịch online nhanh chóng và thuận tiện. 📅",
+          "Cần tư vấn khẩn cấp, vui lòng liên hệ Rexi ngay. 🩺",
+          "Hotline hỗ trợ nhanh: 0353.374.156. 🚑",
+          "Chăm sóc tận tâm, nâng niu từng bé thú cưng. 🐱🐶"
         ];
 
     const interval = setInterval(() => {

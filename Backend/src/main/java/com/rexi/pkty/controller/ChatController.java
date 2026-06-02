@@ -28,6 +28,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Locale;
 
 @RestController
@@ -98,6 +99,21 @@ public class ChatController {
             String tone,
             String allowedActions,
             String forbiddenActions
+    ) {}
+    @FunctionalInterface
+    private interface AiProviderCall {
+        String call() throws Exception;
+    }
+    private record ProviderAttempt(String name, AiProviderCall call) {}
+    private record ProviderResult(String reply, String provider) {}
+    private record SemanticIntent(
+            String intent,
+            String species,
+            String bodyPart,
+            List<String> symptoms,
+            boolean needsWebSearch,
+            String urgency,
+            double confidence
     ) {}
 
     // Wrapper mới an toàn hơn Headers
@@ -207,13 +223,17 @@ public class ChatController {
             // Lay cu phap chat cuoi
             ChatMessage lastMsg = history.get(history.size() - 1);
             String userQuery = lastMsg.getContent() != null ? lastMsg.getContent() : "";
-            String normalizedUserQuery = normalizeVietnamese(userQuery.toLowerCase());
+            String normalizedUserQuery = normalizeNoisyVietnameseForIntent(userQuery);
+            SemanticIntent semanticIntent = tryParseSemanticIntent(userQuery, normalizedUserQuery);
             String realtimeContext = buildRealtimeContext();
             boolean hasVideo = lastMsg.getVideos() != null && !lastMsg.getVideos().isEmpty();
             boolean hasImage = lastMsg.getImages() != null && !lastMsg.getImages().isEmpty();
             boolean hasMedia = hasVideo || hasImage;
 
-            EmergencyTriage emergencyTriage = classifyEmergencyTriage(normalizedUserQuery);
+            boolean webSearchIntent = isWebSearchQuery(userQuery) || (semanticIntent != null && semanticIntent.needsWebSearch());
+            EmergencyTriage emergencyTriage = webSearchIntent
+                    ? new EmergencyTriage(false, 0, "none", "web-search-intent")
+                    : classifyEmergencyTriage(normalizedUserQuery);
             if (emergencyTriage.emergency()) {
                 return Map.of(
                         "reply", buildEmergencyReply(normalizedUserQuery, emergencyTriage),
@@ -240,6 +260,11 @@ public class ChatController {
                 return Map.of("reply", localDocumentReply, "source", "local_document");
             }
 
+            String localClinicReply = tryLocalClinicGuidanceReply(normalizedUserQuery);
+            if (!hasMedia && localClinicReply != null) {
+                return Map.of("reply", localClinicReply, "source", "local_clinic_guidance");
+            }
+
             // Max 1000 ky tu de tranh spam tin sieu dai
             if (userQuery.length() > 1000) {
                 return Map.of("reply",
@@ -250,8 +275,14 @@ public class ChatController {
             if (!hasMedia && localVetReply != null) {
                 return Map.of("reply", localVetReply, "source", "local_vet");
             }
+            String semanticVetReply = trySemanticVeterinaryReply(semanticIntent);
+            if (!hasMedia && semanticVetReply != null && !webSearchIntent) {
+                return Map.of("reply", semanticVetReply, "source", "semantic_vet");
+            }
 
-            ChatRequestPlan requestPlan = planChatRequest(normalizedUserQuery, userQuery, hasMedia);
+            ChatRequestPlan requestPlan = (!hasMedia && webSearchIntent)
+                    ? new ChatRequestPlan(ChatRoute.WEB_AI, false, true, false, true, "web+semantic")
+                    : planChatRequest(normalizedUserQuery, userQuery, hasMedia);
 
             if (requestPlan.route() == ChatRoute.QUICK_LOCAL) {
                 return Map.of("reply", buildQuickLocalReply(normalizedUserQuery));
@@ -285,6 +316,10 @@ public class ChatController {
             if (webSearchRequested) {
                 webResults = searchWebDuckDuckGo(userQuery);
                 webSearchContext = buildWebSearchContext(userQuery, webResults);
+                String deterministicWebReply = buildDeterministicVeterinaryWebAnswer(normalizedUserQuery, webResults);
+                if (deterministicWebReply != null) {
+                    return Map.of("reply", deterministicWebReply, "webResults", webResults, "provider", "DuckDuckGo+Rexi");
+                }
             }
 
             // Get payload currentPath va domContext tu HTTP body
@@ -407,8 +442,25 @@ public class ChatController {
                         + domContextBlock;
             } else {
                 String phongCachText = chatbotIsGenZ
-                    ? "4. PHONG CÁCH: Bạn đang trò chuyện với một Sen thế hệ Gen Z (sinh năm " + namSinh + "). Hãy trò chuyện cực kỳ hóm hỉnh, năng động, nhây nhây vui tươi, thỉnh thoảng trêu chọc đùa giỡn nhẹ nhàng. Hãy chêm các từ teencode phổ biến của giới trẻ một cách tự nhiên (như: 'khum', 'iu', 'z', 'hông', 'sen', 'boss', 'dạ', 'oke'). Tuy nhiên, nếu họ hỏi về cấp cứu y tế hoặc tình huống khẩn cấp, bạn phải ngay lập tức chuyển sang chế độ nghiêm túc và ân cần 100% để hướng dẫn.\n"
-                    : "4. PHONG CÁCH: Bạn đang trò chuyện với khách hàng lớn tuổi/trưởng thành (sinh năm " + (namSinh != null ? namSinh : "trước 1997") + "). Hãy trò chuyện cực kỳ kính trọng, lịch sự, ân cần, ngôn từ nghiêm túc, chuẩn mực. TUYỆT ĐỐI KHÔNG dùng teencode, không cợt nhả, và TUYỆT ĐỐI KHÔNG được gọi họ là 'Sen' (họ sẽ thấy khó chịu), hãy gọi họ là 'Quý khách' hoặc xưng hô lịch thiệp 'Dạ thưa anh/chị'.\n";
+                    ? "4. PHONG CÁCH GEN Z (sinh năm " + namSinh + "):\n"
+                        + "   - Xưng hô ưu tiên: sen, boss, bé, mình/Rexi. Có thể dùng 'oke', 'nha', 'nè', 'check nhanh', nhưng chỉ dùng tự nhiên, không nhồi teencode.\n"
+                        + "   - Câu mẫu khi chào: 'Hi sen, Rexi đây. Mình xem nhanh tình hình của boss rồi xử lý gọn nha.'\n"
+                        + "   - Câu mẫu nhắc lịch: 'Sen ơi, boss có lịch khám lúc {giờ} ngày {ngày} nha. Rexi nhắc nhẹ để mình khỏi lỡ kèo nè.'\n"
+                        + "   - Câu mẫu hóa đơn: 'Hóa đơn đã thanh toán xong rồi nha, sen có thể xem lại chi tiết trong mục lịch sử.'\n"
+                        + "   - Câu mẫu đặt lịch: 'Oke sen, Rexi giữ slot này cho boss nhé. Mình xác nhận lại ngày, giờ và dịch vụ trước khi chốt.'\n"
+                        + "   - Câu mẫu thiếu thông tin: 'Rexi cần thêm tên boss, ngày khám và khung giờ mong muốn để book chuẩn nha.'\n"
+                        + "   - Câu mẫu lỗi thao tác: 'Rexi chưa bấm được nút đó lúc này. Sen thử mở đúng trang rồi mình làm tiếp nha.'\n"
+                        + "   - Giới hạn: không quá lố, không spam emoji, không bắt chước chửi tục. Khi y khoa nghiêm trọng/cấp cứu/tài chính/bảo mật, bỏ giọng nhây và nói rõ việc cần làm ngay.\n"
+                    : "4. PHONG CÁCH TRƯỞNG THÀNH / CÒN LẠI (sinh năm " + (namSinh != null ? namSinh : "trước 1997") + "):\n"
+                        + "   - Xưng hô ưu tiên: anh/chị, quý khách, thú cưng, Rexi. Dùng ngôn từ rõ ràng, lịch sự, chuẩn mực.\n"
+                        + "   - Tuyệt đối không dùng teencode, không cợt nhả, không gọi họ là 'sen' nếu không phải Gen Z.\n"
+                        + "   - Câu mẫu khi chào: 'Dạ chào anh/chị, Rexi đã sẵn sàng hỗ trợ. Mình sẽ kiểm tra thông tin và hướng dẫn từng bước.'\n"
+                        + "   - Câu mẫu nhắc lịch: 'Anh/chị có lịch khám cho thú cưng vào {giờ} ngày {ngày}. Vui lòng đến sớm 10 phút để làm thủ tục.'\n"
+                        + "   - Câu mẫu hóa đơn: 'Hóa đơn đã được thanh toán thành công. Anh/chị có thể kiểm tra chi tiết trong lịch sử hóa đơn.'\n"
+                        + "   - Câu mẫu đặt lịch: 'Dạ, Rexi sẽ hỗ trợ đặt lịch. Anh/chị vui lòng xác nhận lại ngày, giờ và dịch vụ trước khi hoàn tất.'\n"
+                        + "   - Câu mẫu thiếu thông tin: 'Rexi cần thêm tên thú cưng, ngày khám và khung giờ mong muốn để hỗ trợ đặt lịch chính xác.'\n"
+                        + "   - Câu mẫu lỗi thao tác: 'Hiện Rexi chưa thực hiện được thao tác này. Anh/chị vui lòng mở đúng trang chức năng để tiếp tục.'\n"
+                        + "   - Khi y khoa nghiêm trọng/cấp cứu/tài chính/bảo mật, giữ giọng nghiêm túc, ưu tiên an toàn và hành động cụ thể.\n";
 
                 systemPrompt = personaBlock
                         + "BẠN LÀ BÁC SĨ THÚ Y REXI - CHUYÊN GIA TOÀN NĂNG TRONG LĨNH VỰC CHĂM SÓC THÚ CƯNG.\n"
@@ -486,71 +538,54 @@ ChatMessage systemMsg = new ChatMessage();
 
             String reply;
             String providerUsed = "Unknown";
-            // LLM Router logic: Gemini (media), Deepseek (medical), Groq (FAQ/Autopilot)
+            ProviderResult providerResult;
+            final List<ChatMessage> providerHistory = history;
+            // LLM Router logic: Gemini (media), OpenRouter (medical fallback), Groq fast path.
             if (hasMedia) {
                 // 🎥/🖼️ THẾ MẠNH CỦA GEMINI: Đa phương tiện (Video, Hình ảnh)
                 logger.info("[AI ROUTER] Định tuyến câu hỏi Media sang: Gemini");
-                try {
-                    reply = geminiService.chat(history);
-                    providerUsed = "Gemini";
-                } catch (Exception geminiEx) {
-                    if (hasVideo) {
+                if (hasVideo) {
+                    try {
+                        reply = geminiService.chat(history);
+                        providerUsed = "Gemini";
+                    } catch (Exception geminiEx) {
                         logger.warning("[AI ROUTER] Gemini lỗi khi phân tích video; không fallback sang model text-only để tránh bịa kết quả video: " + geminiEx.getMessage());
                         reply = buildVideoAnalysisFallbackReply(isTimeoutError.test(geminiEx));
                         providerUsed = "System Fallback";
-                    } else {
-                        logger.warning("[AI ROUTER] Gemini lỗi khi phân tích ảnh, chuyển dự phòng sang Groq Vision...");
-                        reply = groqService.chat(history);
-                        providerUsed = "Groq Vision";
                     }
+                } else {
+                    providerResult = tryProviderChain(
+                            new ProviderAttempt("Gemini", () -> geminiService.chat(providerHistory)),
+                            new ProviderAttempt("Groq Vision", () -> groqService.chat(providerHistory)),
+                            new ProviderAttempt("OpenRouter", () -> openRouterService.chat(providerHistory, false))
+                    );
+                    reply = providerResult.reply();
+                    providerUsed = providerResult.provider();
                 }
             } else if (isMedicalQuery) {
                 // Gemini phản hồi y tế ngắn ổn định hơn; OpenRouter giữ vai trò dự phòng chuyên sâu.
                 logger.info("[AI ROUTER] Định tuyến câu hỏi Tư vấn Y tế sang: Gemini");
-                try {
-                    reply = geminiService.chat(history);
-                    providerUsed = "Gemini";
-                } catch (Exception geminiEx) {
-                    if (isTimeoutError.test(geminiEx)) {
-                        logger.warning("[AI ROUTER] Gemini timeout, chuyển nhanh sang Groq để tránh treo chat...");
-                        reply = groqService.chat(history);
-                        providerUsed = "Groq";
-                    } else {
-                        logger.warning("[AI ROUTER] Gemini lỗi, chuyển hướng dự phòng sang: OpenRouter...");
-                        try {
-                            reply = openRouterService.chat(history, true);
-                            providerUsed = "OpenRouter";
-                        } catch (Exception openRouterEx) {
-                            logger.warning("[AI ROUTER] OpenRouter lỗi, chuyển hướng dự phòng cuối cùng sang: Groq...");
-                            reply = groqService.chat(history);
-                            providerUsed = "Groq";
-                        }
-                    }
-                }
+                providerResult = tryProviderChain(
+                        new ProviderAttempt("Gemini", () -> geminiService.chat(providerHistory)),
+                        new ProviderAttempt("OpenRouter", () -> openRouterService.chat(providerHistory, true)),
+                        new ProviderAttempt("Groq", () -> groqService.chat(providerHistory))
+                );
+                reply = providerResult.reply();
+                providerUsed = providerResult.provider();
             } else {
                 // 💬 THẾ MẠNH CỦA GROQ (LLAMA 3.3): Chat FAQ, Lịch khám, Autopilot siêu tốc
                 logger.info("[AI ROUTER] Định tuyến câu hỏi Chat/Autopilot thông thường sang: Groq");
-                try {
-                    reply = groqService.chat(history);
-                    providerUsed = "Groq";
-                } catch (Exception groqException) {
-                    if (isTimeoutError.test(groqException)) {
-                        // Groq là model nhanh nhất mà còn timeout thì mạng hoặc server đang có vấn đề nặng. Báo lỗi ngay lập tức.
-                        throw new RuntimeException("Groq timeout", groqException);
-                    }
-                    logger.warning("[AI ROUTER] Groq lỗi, chuyển hướng dự phòng sang: Gemini...");
-                    try {
-                        reply = geminiService.chat(history);
-                        providerUsed = "Gemini";
-                    } catch (Exception geminiException) {
-                        logger.warning("[AI ROUTER] Gemini lỗi, chuyển hướng dự phòng cuối cùng sang: OpenRouter (DeepSeek V4)...");
-                        reply = openRouterService.chat(history, false);
-                        providerUsed = "OpenRouter";
-                    }
-                }
+                providerResult = tryProviderChain(
+                        new ProviderAttempt("Groq", () -> groqService.chat(providerHistory)),
+                        new ProviderAttempt("Gemini", () -> geminiService.chat(providerHistory)),
+                        new ProviderAttempt("OpenRouter", () -> openRouterService.chat(providerHistory, false))
+                );
+                reply = providerResult.reply();
+                providerUsed = providerResult.provider();
             }
 
             reply = sanitizeChatReply(reply);
+            reply = enforceVeterinaryAnswerQuality(userQuery, normalizedUserQuery, reply, requestPlan.route(), webResults);
             auditMedicalAiReplyIfNeeded(userQuery, reply, userRoleName, providerUsed, requestPlan.route().name());
 
             // HtmlEscape tranh XSS injection
@@ -626,6 +661,22 @@ ChatMessage systemMsg = new ChatMessage();
             return "model_not_supported";
         }
         return "ai_provider_unavailable";
+    }
+
+    private ProviderResult tryProviderChain(ProviderAttempt... attempts) throws Exception {
+        Exception lastException = null;
+        for (ProviderAttempt attempt : attempts) {
+            try {
+                String reply = attempt.call().call();
+                logger.info("[AI ROUTER] Provider phản hồi thành công: " + attempt.name());
+                return new ProviderResult(reply, attempt.name());
+            } catch (Exception ex) {
+                lastException = ex;
+                String errorCode = classifyAiRuntimeError(ex);
+                logger.warning("[AI ROUTER] " + attempt.name() + " lỗi (" + errorCode + "), thử provider tiếp theo: " + ex.getMessage());
+            }
+        }
+        throw lastException != null ? lastException : new RuntimeException("Không có AI provider khả dụng.");
     }
 
     private String buildRoleAwareAiErrorReply(String errorCode) {
@@ -742,7 +793,9 @@ ChatMessage systemMsg = new ChatMessage();
     private List<Map<String, String>> searchWebDuckDuckGo(String query) {
         List<Map<String, String>> results = new java.util.ArrayList<>();
         try {
-            String encodedQuery = java.net.URLEncoder.encode(query, "UTF-8");
+            String searchQuery = buildDuckDuckGoSearchQuery(query);
+            String normalizedOriginalQuery = normalizeNoisyVietnameseForIntent(query);
+            String encodedQuery = java.net.URLEncoder.encode(searchQuery, "UTF-8");
             String urlStr = "https://html.duckduckgo.com/html/";
             String postData = "q=" + encodedQuery;
 
@@ -795,12 +848,24 @@ ChatMessage systemMsg = new ChatMessage();
                 snippets.add(snippetText);
             }
 
-            for (int i = 0; i < urls.size() && i < 5; i++) {
+            for (int i = 0; i < urls.size(); i++) {
                 Map<String, String> item = new java.util.HashMap<>();
                 item.put("url", cleanDuckDuckGoUrl(urls.get(i)));
                 item.put("title", stripHtmlEntities(titles.get(i)));
                 item.put("snippet", i < snippets.size() ? stripHtmlEntities(snippets.get(i)) : "");
-                results.add(item);
+                int relevance = scoreDuckDuckGoResult(normalizedOriginalQuery, item);
+                if (relevance >= 2) {
+                    item.put("_score", String.valueOf(relevance));
+                    results.add(item);
+                }
+            }
+            results.sort(Comparator.comparingInt((Map<String, String> item) ->
+                    Integer.parseInt(item.getOrDefault("_score", "0"))).reversed());
+            if (results.size() > 5) {
+                results = new java.util.ArrayList<>(results.subList(0, 5));
+            }
+            for (Map<String, String> item : results) {
+                item.remove("_score");
             }
         } catch (Exception e) {
             logger.severe("Lỗi khi tìm kiếm DuckDuckGo: " + e.getMessage());
@@ -808,8 +873,62 @@ ChatMessage systemMsg = new ChatMessage();
         return results;
     }
 
+    private String buildDuckDuckGoSearchQuery(String query) {
+        String cleaned = normalizeNoisyVietnameseForIntent(query)
+                .replaceAll("\\b(oi|doi|oi doi|oi zoi|oi gioi|ui|uay|nhe|nha|nao|xem nao|cho toi|giup toi|ho toi|voi|di|di nao)\\b", " ")
+                .replaceAll("\\b(tra cuu|tim kiem|tim|search|seach|serch|sot|gg|google|duckduckgo|tren mang|len mang|mang|web|nguon tham khao|link nguon|tai lieu|tom tat|ngan gon|dua link|co nguon khong|nguon)\\b", " ")
+                .replaceAll("[^a-z0-9\\s]", " ")
+                .replaceAll("\\s+", " ")
+                .trim();
+        if (cleaned.matches(".*\\bda\\s+cho\\b.*") && !cleaned.contains("benh da") && !cleaned.contains("viem da")) {
+            cleaned = cleaned.replaceAll("\\bda\\s+cho\\b", "benh da cho viem da cho");
+        }
+        if (cleaned.isBlank()) {
+            cleaned = "benh thu y cho meo";
+        }
+        boolean petContext = containsAny(cleaned, "meo", "cho", "cun", "thu cung", "pet", "boss");
+        boolean vetContext = containsAny(cleaned, "thu y", "benh", "trieu chung", "dieu tri", "phac do", "viem", "parvo", "bach cau", "nam da");
+        if (!petContext) {
+            cleaned = cleaned + " cho meo";
+        }
+        if (!vetContext || !cleaned.contains("thu y")) {
+            cleaned = cleaned + " thu y";
+        }
+        return cleaned.trim();
+    }
+
+    private int scoreDuckDuckGoResult(String normalizedQuery, Map<String, String> item) {
+        String title = normalizeVietnamese(item.getOrDefault("title", "")).toLowerCase(Locale.ROOT);
+        String snippet = normalizeVietnamese(item.getOrDefault("snippet", "")).toLowerCase(Locale.ROOT);
+        String url = normalizeVietnamese(item.getOrDefault("url", "")).toLowerCase(Locale.ROOT);
+        String haystack = title + " " + snippet + " " + url;
+        int score = 0;
+
+        if (containsAny(haystack, "thu y", "vet", "veterinary", "pet", "cho", "meo", "cun")) score += 3;
+        if (containsAny(normalizedQuery, "meo", "bach cau", "nam da") && containsAny(haystack, "meo", "cat", "feline")) score += 3;
+        if (containsAny(normalizedQuery, "cho", "cun", "parvo") && containsAny(haystack, "cho", "dog", "canine", "parvo")) score += 3;
+        if (containsAny(normalizedQuery, "da cho", "za cho", "benh da cho", "viem da cho") && containsAny(haystack, "da", "viem da", "da lieu", "nam da", "demodex", "ghe", "ky sinh", "dermat")) score += 4;
+        if (containsAny(normalizedQuery, "nam da", "viem da") && containsAny(haystack, "nam", "viem da", "da lieu", "dermat", "ringworm")) score += 3;
+        if (containsAny(normalizedQuery, "bach cau") && containsAny(haystack, "bach cau", "panleukopenia", "fpv")) score += 3;
+        if (containsAny(normalizedQuery, "parvo") && containsAny(haystack, "parvo", "parvovirus")) score += 3;
+
+        String[] queryTokens = normalizedQuery.replaceAll("[^a-z0-9\\s]", " ").split("\\s+");
+        for (String token : queryTokens) {
+            if (token.length() >= 4 && haystack.contains(token)) {
+                score++;
+            }
+        }
+        if (containsAny(normalizedQuery, "meo") && containsAny(haystack, "o nguoi", "tren nguoi", "nguoi bi", "da nguoi")) {
+            score -= 4;
+        }
+        if (containsAny(haystack, "bhyt", "bao hiem y te", "vneid", "luat", "thue", "ngan hang", "bat dong san", "thoi tiet", "youtube", "tiktok", "google dich", "tro choi")) {
+            score -= 5;
+        }
+        return score;
+    }
+
     private boolean isWebSearchQuery(String query) {
-        String normalized = normalizeVietnamese(query == null ? "" : query).toLowerCase(Locale.ROOT);
+        String normalized = normalizeNoisyVietnameseForIntent(query);
         return normalized.contains("google")
                 || normalized.contains("len mang")
                 || normalized.contains("tra cuu mang")
@@ -926,6 +1045,23 @@ ChatMessage systemMsg = new ChatMessage();
         return "Mình hiểu là bạn đang phản ánh hệ thống/chatbot phản hồi chậm. Trước mắt bạn thử tải lại trang, kiểm tra mạng và đóng bớt tab nặng. Nếu vẫn chậm, Admin nên kiểm tra 3 điểm: backend `/api/system/health`, log lỗi provider AI, và thời gian phản hồi của `/api/chat` hoặc `/api/agent/react`. Rexi sẽ không đoán dữ liệu; nếu backend/AI nghẽn thì nên báo rõ thay vì trả lời lung tung.";
     }
 
+    private String tryLocalClinicGuidanceReply(String normalizedQuery) {
+        if (normalizedQuery == null || normalizedQuery.isBlank()) return null;
+        String q = normalizedQuery.trim();
+
+        if (containsAny(q, "chon khoa", "nen chon khoa", "chon muc nao", "chon dich vu nao", "khoa kham")
+                && containsAny(q, "meo", "cho", "cun", "thu cung", "boss", "be")) {
+            return "Với chó/mèo nếu chưa rõ bệnh cụ thể, Sen/sếp chọn **Khám Đa Khoa** trước. Nếu bé có vấn đề rõ hơn thì chọn phân hệ phù hợp: da/tai/ngứa chọn khám da liễu, tiêm phòng chọn tiêm chủng, xét nghiệm chọn xét nghiệm, cấp cứu thì gọi hotline 0353.374.156 hoặc đưa bé tới phòng khám ngay.";
+        }
+
+        if (containsAny(q, "huong dan thanh toan", "thanh toan online", "cach thanh toan", "thanh toan nhu the nao")
+                && !containsAny(q, "cap nhat", "xac nhan", "huy", "xoa", "doi trang thai", "da thanh toan")) {
+            return "Để xem hướng dẫn thanh toán online, Sen/sếp mở mục **Hóa đơn & Thanh toán**, chọn hóa đơn cần xem rồi làm theo hướng dẫn chuyển khoản/VNPay hiển thị trên màn hình. Nếu chỉ cần hướng dẫn thì Rexi không thay đổi trạng thái hóa đơn; mọi thao tác xác nhận/hủy/cập nhật thanh toán sẽ cần Rexi Agent kiểm tra quyền và xác nhận riêng.";
+        }
+
+        return null;
+    }
+
     private String tryLocalDocumentQuestionReply(String userQuery) {
         if (userQuery == null || userQuery.length() <= 1000) return null;
         String normalized = normalizeVietnamese(userQuery.toLowerCase());
@@ -959,6 +1095,18 @@ ChatMessage systemMsg = new ChatMessage();
             return "Dạ hiện tại Rexi tập trung hỗ trợ thú cưng phổ biến như chó, mèo và một số thú nhỏ. Với cá rồng/chim cảnh, phòng khám chưa có dịch vụ chuyên sâu cố định nên Rexi không muốn tư vấn quá tay. Nếu bé có dấu hiệu nguy cấp, Sen nên liên hệ cơ sở thú y chuyên cá/chim cảnh gần nhất hoặc gọi Rexi để được hướng dẫn kênh phù hợp.";
         }
 
+        if (isPrescriptionRequest(q)) {
+            return "Rexi không thể kê đơn, chỉ định kháng sinh hoặc đưa liều dùng cho thú cưng qua chat. Với viêm da/nhiễm trùng, bác sĩ cần khám da, cân nặng, tuổi, loài và có thể cần soi da/xét nghiệm trước khi chọn thuốc. Việc an toàn nên làm ngay: giữ vùng da sạch và khô, tránh để bé gãi/liếm, không tự dùng thuốc người hoặc kháng sinh còn thừa, và đặt lịch khám da liễu nếu có mủ, lan rộng, hôi, sốt, bỏ ăn hoặc ngứa nhiều.";
+        }
+
+        if (isVomitingFoamCatQuery(q)) {
+            return "Mèo nôn ra bọt trắng có thể do kích ứng dạ dày, nuốt lông, ăn quá nhanh, ký sinh trùng, viêm dạ dày-ruột hoặc bệnh nặng hơn nếu đi kèm lừ đừ/sốt/tiêu chảy. Trước mắt cho bé nghỉ ăn 2-4 giờ nếu vẫn tỉnh táo, luôn để nước sạch, không tự cho uống thuốc người. Cần đi khám sớm nếu nôn lặp lại nhiều lần, không uống được nước, bỏ ăn trên 24 giờ, tiêu chảy/ra máu, bụng đau, lừ đừ, mèo con hoặc nghi nuốt dị vật/chất độc.";
+        }
+
+        if (isPetEyeProblemQuery(q)) {
+            return "Rexi hiểu là mắt của mèo đang có dấu hiệu bất thường kiểu đốm/lốm đốm, nhìn lạ hoặc có vẻ khó chịu. Với mắt thì không nên chờ lâu vì có thể liên quan viêm kết mạc, loét giác mạc, dị vật, chấn thương, nhiễm trùng hoặc tăng nhãn áp. Trước mắt không nhỏ thuốc người, không tự dùng kháng sinh/corticoid, không dụi/rửa mạnh; nếu có ghèn nhiều, đỏ, nheo mắt, chảy nước mắt, đục/trắng xanh, sưng, đau, bé dụi mắt hoặc nhìn kém thì nên đi khám thú y trong ngày để soi mắt và nhuộm fluorescein kiểm tra loét giác mạc.";
+        }
+
         if (containsAny(q, "meo") && containsAny(q, "moi de", "vua de", "de con", "meo con", "meo me")) {
             return "Với mèo mẹ mới đẻ, Sen ưu tiên 4 việc: giữ ổ ấm, khô và yên tĩnh; cho mèo mẹ ăn khẩu phần giàu năng lượng/đạm và luôn có nước sạch; theo dõi mèo con bú đều, không bị lạnh, không kêu yếu kéo dài; không tắm hoặc bế mèo con quá nhiều trong vài ngày đầu. Nếu mèo mẹ bỏ ăn, sốt, chảy dịch hôi, bỏ con hoặc mèo con lạnh/yếu không bú thì nên đưa tới bác sĩ thú y sớm.";
         }
@@ -973,10 +1121,68 @@ ChatMessage systemMsg = new ChatMessage();
             return "Rexi hiểu theo ngôn ngữ thú y là mèo có dấu hiệu **bỏ ăn kèm nghi sốt**. Mèo bỏ ăn quá 24 giờ đã đáng lo, nhất là nếu người nóng, lừ đừ, trốn, thở nhanh hoặc nôn. Sen nên đo nhiệt độ hậu môn nếu có nhiệt kế thú y; mèo thường khoảng 38-39.2°C, cao hơn nên đi khám. Trước mắt giữ bé ở nơi mát, có nước sạch, không tự cho uống thuốc hạ sốt của người vì có thể gây ngộ độc. Nên đặt lịch khám sớm để bác sĩ kiểm tra nguyên nhân nhiễm trùng/đau/stress.";
         }
 
-        if (containsAny(q, "ngua tai", "gay tai", "lac dau", "hoi tai", "poodle", "da lieu")) {
+        if (containsAny(q, "ngua tai", "gay tai", "lac dau", "hoi tai", "poodle")) {
             return "Dấu hiệu ngứa tai/lắc đầu ở Poodle thường liên quan viêm tai ngoài, nấm/vi khuẩn, ve tai hoặc dị ứng da. Không nên tự nhỏ thuốc khi chưa soi tai vì nếu màng nhĩ tổn thương có thể nguy hiểm. Sen nên đặt lịch khám da liễu/tai để bác sĩ soi tai, vệ sinh đúng cách và kê thuốc phù hợp.";
         }
 
+        return null;
+    }
+
+    private SemanticIntent tryParseSemanticIntent(String rawQuery, String normalizedQuery) {
+        if (!shouldUseSemanticIntentParser(rawQuery, normalizedQuery)) {
+            return null;
+        }
+        try {
+            String json = groqService.parseIntentJson(rawQuery);
+            JsonNode node = new ObjectMapper().readTree(json);
+            return new SemanticIntent(
+                    node.path("intent").asText("unknown"),
+                    node.path("species").asText("unknown"),
+                    node.path("body_part").asText("unknown"),
+                    readStringArray(node.path("symptoms")),
+                    node.path("needs_web_search").asBoolean(false),
+                    node.path("urgency").asText("unknown"),
+                    node.path("confidence").asDouble(0.0)
+            );
+        } catch (Exception ex) {
+            logger.warning("Semantic intent parser fallback: " + ex.getMessage());
+            return null;
+        }
+    }
+
+    private boolean shouldUseSemanticIntentParser(String rawQuery, String normalizedQuery) {
+        if (rawQuery == null || rawQuery.isBlank()) return false;
+        String q = normalizedQuery == null ? "" : normalizedQuery;
+        if (isQuickLocalQuery(q) || isDbLocalQuery(q) || isAutopilotQuery(q)) return false;
+        boolean obvious = isWebSearchQuery(rawQuery) || isMedicalQuery(q) || isClinicInfoQuery(q);
+        boolean petContext = containsAny(q, "meo", "cho", "cun", "boss", "pet", "thu cung", "be nha");
+        boolean noisy = rawQuery.length() >= 12 && !obvious;
+        return petContext && noisy;
+    }
+
+    private List<String> readStringArray(JsonNode node) {
+        List<String> values = new ArrayList<>();
+        if (node != null && node.isArray()) {
+            for (JsonNode item : node) {
+                if (item.isTextual() && !item.asText().isBlank()) {
+                    values.add(item.asText());
+                }
+            }
+        }
+        return values;
+    }
+
+    private String trySemanticVeterinaryReply(SemanticIntent intent) {
+        if (intent == null || intent.confidence() < 0.55) return null;
+        if (!"vet_advice".equals(intent.intent())) return null;
+        if ("eye".equals(intent.bodyPart())) {
+            String species = switch (intent.species()) {
+                case "cat" -> "mèo";
+                case "dog" -> "chó";
+                default -> "thú cưng";
+            };
+            return "Rexi hiểu là " + species + " đang có dấu hiệu bất thường ở mắt. Với mắt thì nên xử lý thận trọng vì có thể liên quan viêm kết mạc, loét giác mạc, dị vật, chấn thương, nhiễm trùng hoặc tăng nhãn áp. Trước mắt không nhỏ thuốc người, không tự dùng kháng sinh/corticoid, không dụi/rửa mạnh; giữ bé tránh gãi mắt. Nếu mắt đỏ, đục, có đốm/lốm đốm, ghèn nhiều, chảy nước mắt, nheo mắt, sưng, đau hoặc nhìn kém thì nên đi khám thú y trong ngày để soi mắt và kiểm tra loét giác mạc.";
+        }
         return null;
     }
 
@@ -1054,7 +1260,8 @@ ChatMessage systemMsg = new ChatMessage();
         String[] medicalPhrases = {
                 "trieu chung", "trieu chuong", "tieu chay", "tieu chai", "dieu tri", "chan doan",
                 "toa thuoc", "ke don", "suc khoe", "bac si", "bac sy", "cap cuu", "tai nan",
-                "chong mat", "co giat", "kho tho", "di ngoai", "bo an", "lo loet", "viem da"
+                "chong mat", "co giat", "kho tho", "di ngoai", "bo an", "lo loet", "viem da",
+                "do mat", "gien mat", "ghem mat", "chay nuoc mat", "duc mat", "lo dom dom mat"
         };
         for (String kw : medicalPhrases) {
             if (containsNormalizedTokenOrPhrase(normalizedQuery, kw)) return true;
@@ -1097,6 +1304,130 @@ ChatMessage systemMsg = new ChatMessage();
         } catch (Exception ex) {
             logger.warning("Không thể ghi audit y khoa AI: " + ex.getMessage());
         }
+    }
+
+    private String enforceVeterinaryAnswerQuality(
+            String rawQuery,
+            String normalizedQuery,
+            String reply,
+            ChatRoute route,
+            List<Map<String, String>> webResults
+    ) {
+        String safeReply = reply == null ? "" : reply.trim();
+        String q = normalizedQuery == null ? normalizeVietnamese(rawQuery == null ? "" : rawQuery).toLowerCase(Locale.ROOT) : normalizedQuery;
+        String normalizedReply = normalizeVietnamese(safeReply).toLowerCase(Locale.ROOT);
+
+        if (isPrescriptionRequest(q)) {
+            return "Rexi không thể kê đơn, chỉ định kháng sinh hoặc đưa liều dùng cho thú cưng qua chat. Với viêm da/nhiễm trùng, bác sĩ cần khám da, cân nặng, tuổi, loài và có thể cần soi da/xét nghiệm trước khi chọn thuốc. Việc an toàn nên làm ngay: giữ vùng da sạch và khô, tránh để bé gãi/liếm, không tự dùng thuốc người hoặc kháng sinh còn thừa, và đặt lịch khám da liễu nếu có mủ, lan rộng, hôi, sốt, bỏ ăn hoặc ngứa nhiều.";
+        }
+
+        if (isVomitingFoamCatQuery(q) && isClearlyOffTopic(q, normalizedReply)) {
+            return "Mèo nôn ra bọt trắng có thể do kích ứng dạ dày, nuốt lông, ăn quá nhanh, ký sinh trùng, viêm dạ dày-ruột hoặc bệnh nặng hơn nếu đi kèm lừ đừ/sốt/tiêu chảy. Trước mắt cho bé nghỉ ăn 2-4 giờ nếu vẫn tỉnh táo, luôn để nước sạch, không tự cho uống thuốc người. Cần đi khám sớm nếu nôn lặp lại nhiều lần, không uống được nước, bỏ ăn trên 24 giờ, tiêu chảy/ra máu, bụng đau, lừ đừ, mèo con hoặc nghi nuốt dị vật/chất độc.";
+        }
+
+        if (route == ChatRoute.WEB_AI) {
+            if (isEducationalEmergencyQuestion(q) && normalizedReply.startsWith("[emergency]")) {
+                safeReply = safeReply.replaceFirst("(?i)^\\[EMERGENCY\\]\\s*", "");
+            }
+            if (webResults == null || webResults.isEmpty()) {
+                return "Rexi chưa lấy được nguồn web phù hợp từ DuckDuckGo cho câu hỏi này, nên không coi phần trả lời là thông tin đã kiểm chứng bằng nguồn ngoài. Bạn có thể hỏi lại với tên bệnh/loài cụ thể hơn, ví dụ: \"giảm bạch cầu ở mèo FPV\" hoặc \"parvo ở chó dấu hiệu cấp cứu\".";
+            }
+            String deterministicWebAnswer = buildDeterministicVeterinaryWebAnswer(q, webResults);
+            if (deterministicWebAnswer != null) {
+                return deterministicWebAnswer;
+            }
+            if (!mentionsAnyResultUrl(safeReply, webResults)) {
+                StringBuilder sb = new StringBuilder(safeReply);
+                sb.append("\n\nNguồn DuckDuckGo Rexi đã đối chiếu:\n");
+                for (Map<String, String> item : webResults) {
+                    sb.append("- [")
+                            .append(item.getOrDefault("title", "Nguồn tham khảo").replace("[", "").replace("]", ""))
+                            .append("](")
+                            .append(item.getOrDefault("url", ""))
+                            .append(")\n");
+                }
+                return sb.toString().trim();
+            }
+        }
+
+        return safeReply;
+    }
+
+    private String buildDeterministicVeterinaryWebAnswer(String normalizedQuery, List<Map<String, String>> webResults) {
+        String topic;
+        String summary;
+        if (containsAny(normalizedQuery, "parvo")) {
+            topic = "Parvo ở chó";
+            summary = "Parvo ở chó là bệnh truyền nhiễm nguy hiểm, tiến triển nhanh, thường gây nôn, tiêu chảy nặng, phân hôi hoặc có máu, bỏ ăn, sốt hoặc hạ thân nhiệt, lừ đừ và mất nước. Cần đưa đi cấp cứu thú y ngay nếu chó con/chó chưa tiêm đủ vaccine có nôn liên tục, tiêu chảy máu, kiệt sức, không uống được nước, bụng đau, nằm bẹp hoặc dấu hiệu mất nước. Không tự dùng kháng sinh/thuốc cầm tiêu chảy của người; ưu tiên cách ly, giữ ấm vừa phải và đưa tới cơ sở thú y để test nhanh, truyền dịch và điều trị hỗ trợ.";
+        } else if (containsAny(normalizedQuery, "bach cau", "fpv", "panleukopenia")) {
+            topic = "Giảm bạch cầu ở mèo";
+            summary = "Giảm bạch cầu ở mèo thường được nhắc tới như FPV/feline panleukopenia, một bệnh virus nguy hiểm làm mèo suy sụp nhanh, nôn, tiêu chảy, bỏ ăn, sốt hoặc hạ thân nhiệt, mất nước và giảm miễn dịch. Đây không phải bệnh nên tự xử lý tại nhà. Nếu mèo con, mèo chưa tiêm phòng, lừ đừ, nôn/tiêu chảy, bỏ ăn hoặc nghi tiếp xúc mèo bệnh thì nên đi khám sớm để test và điều trị hỗ trợ.";
+        } else if (containsAny(normalizedQuery, "da cho", "za cho", "benh da cho", "viem da cho")) {
+            topic = "Bệnh da ở chó";
+            summary = "Bệnh da ở chó có thể do nấm, ghẻ/ve Demodex-Sarcoptes, dị ứng, vi khuẩn, ký sinh trùng ngoài da hoặc rối loạn nội tiết. Dấu hiệu cần chú ý gồm ngứa nhiều, rụng lông từng mảng, da đỏ, vảy gàu, mùi hôi, mụn mủ, chảy dịch hoặc bé liếm/gãi liên tục. Việc nên làm là tắm/vệ sinh theo hướng dẫn thú y, hạn chế gãi/liếm bằng vòng chống liếm nếu cần, giặt ổ nằm và đưa chó đi khám da liễu để soi da/cạo da/xét nghiệm nấm khi tổn thương lan rộng, có mủ, hôi, đau hoặc kéo dài. Không tự dùng thuốc người, corticoid hay kháng sinh khi chưa khám.";
+        } else if (containsAny(normalizedQuery, "nam da", "viem da", "da lieu")) {
+            topic = "Nấm/viêm da ở mèo";
+            summary = "Nấm da ở mèo thường liên quan dermatophyte như Microsporum canis, có thể gây rụng lông từng mảng, da đỏ, vảy gàu, ngứa và có khả năng lây sang người hoặc thú khác. Nên cách ly tương đối, vệ sinh chăn ổ/dụng cụ, rửa tay sau tiếp xúc và đưa mèo đi khám để soi da/đèn Wood/nuôi cấy khi cần. Không tự bôi thuốc người hoặc dùng kháng sinh nếu chưa có bác sĩ thú y chỉ định.";
+        } else {
+            return null;
+        }
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("Dạ, Rexi đã tra DuckDuckGo và lọc nguồn đúng chủ đề **").append(topic).append("**.\n\n");
+        sb.append(summary).append("\n\n");
+        sb.append("Nguồn tham khảo:\n");
+        for (Map<String, String> item : webResults) {
+            sb.append("- [")
+                    .append(item.getOrDefault("title", "Nguồn tham khảo").replace("[", "").replace("]", ""))
+                    .append("](")
+                    .append(item.getOrDefault("url", ""))
+                    .append(")\n");
+        }
+        return sb.toString().trim();
+    }
+
+    private boolean isPrescriptionRequest(String normalizedQuery) {
+        return containsAny(normalizedQuery, "ke don", "toa thuoc", "lieu dung", "dung khang sinh", "khang sinh", "uống bao nhieu", "uong bao nhieu", "cho uong may vien");
+    }
+
+    private boolean isVomitingFoamCatQuery(String normalizedQuery) {
+        return containsAny(normalizedQuery, "meo")
+                && (containsAny(normalizedQuery, "non bot trang", "non ra bot trang", "oi bot trang")
+                || containsNormalizedTokenOrPhrase(normalizedQuery, "non")
+                || containsNormalizedTokenOrPhrase(normalizedQuery, "oi"));
+    }
+
+    private boolean isPetEyeProblemQuery(String normalizedQuery) {
+        if (normalizedQuery == null || normalizedQuery.isBlank()) return false;
+        boolean petContext = containsAny(normalizedQuery, "meo", "cho", "cun", "thu cung", "boss", "be nha", "pet");
+        boolean eyeContext = containsNormalizedTokenOrPhrase(normalizedQuery, "mat")
+                || containsAny(normalizedQuery, "con mat", "mắt", "eye", "giac mac", "dong tu");
+        boolean abnormalEye = containsAny(normalizedQuery,
+                "dom dom", "lo dom", "lo dom dom", "lom dom", "lo mom", "lo lo", "loang",
+                "do mat", "mat do", "duc mat", "mat duc", "mo mat", "mat mo",
+                "gien", "ghem", "ghet mat", "chay nuoc mat", "nheo mat", "sung mat",
+                "dau mat", "liem mat", "dui mat", "loet", "di vat", "nhin kem",
+                "la la", "bat thuong", "khac thuong");
+        return petContext && eyeContext && abnormalEye;
+    }
+
+    private boolean isClearlyOffTopic(String normalizedQuery, String normalizedReply) {
+        boolean petQuestion = containsAny(normalizedQuery, "meo", "cho", "cun", "thu cung", "pet");
+        if (!petQuestion) return false;
+        boolean replyMentionsPet = containsAny(normalizedReply, "meo", "cho", "cun", "thu cung", "thu y", "boss", "be ");
+        boolean weirdFashionOrHumanTopic = containsAny(normalizedReply, "trang phai lam", "benh vien hoac trung tam y te", "nguoi benh", "bao hiem y te", "bhyt");
+        return weirdFashionOrHumanTopic || !replyMentionsPet;
+    }
+
+    private boolean mentionsAnyResultUrl(String reply, List<Map<String, String>> webResults) {
+        if (reply == null || webResults == null) return false;
+        for (Map<String, String> item : webResults) {
+            String url = item.getOrDefault("url", "");
+            if (!url.isBlank() && reply.contains(url)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private String compactForAudit(String value) {
@@ -1276,10 +1607,20 @@ ChatMessage systemMsg = new ChatMessage();
                 "lich hen hom nay", "hoa don chua thanh toan", "kho thuoc", "ton kho",
                 "khach hang nao", "co khach hang", "co hoa don", "co lich hen",
                 "check profile", "check lich", "check hoa don", "check bill", "bill cua toi",
-                "boss cua toi", "be nha toi", "pet nha toi", "acc cua toi", "info cua toi"
+                "xem bill", "bill cua be", "bill be", "invoice cua toi", "invoice be",
+                "acc cua toi", "acc toi", "acc tui", "info cua toi", "info toi", "info tui",
+                "sdt khach", "sdt cua khach", "so dt khach", "phone khach",
+                "lich be nha", "lich cua be", "lich boss", "lich pet", "lich cua tui"
         };
         for (String kw : keywords) {
             if (q.contains(kw)) return true;
+        }
+        boolean petOwnerPhrase = containsAny(q, "be nha toi", "be nha tui", "boss nha toi", "boss nha tui", "pet nha toi", "pet nha tui");
+        boolean internalDataContext = containsAny(q,
+                "lich", "hoa don", "bill", "invoice", "benh an", "don thuoc", "ho so",
+                "profile", "thong tin", "sdt", "so dien thoai", "email", "tai khoan", "acc");
+        if (petOwnerPhrase && internalDataContext) {
+            return true;
         }
         return false;
     }
@@ -1479,15 +1820,81 @@ ChatMessage systemMsg = new ChatMessage();
                 .replaceAll("[đ]", "d");
     }
 
+    private String normalizeNoisyVietnameseForIntent(String input) {
+        String normalized = normalizeVietnamese(input == null ? "" : input)
+                .toLowerCase(Locale.ROOT)
+                .replaceAll("[^a-z0-9\\s]", " ")
+                .replaceAll("\\s+", " ")
+                .trim();
+        if (normalized.isBlank()) return "";
+
+        normalized = normalized
+                .replaceAll("\\b(search|seach|serch|sreach|sot|zot|shot|sech)\\b", "search")
+                .replaceAll("\\b(gg|gugol|gu g[o0]l|google)\\b", "google")
+                .replaceAll("\\b(za|daa|dza|zda)\\b", "da")
+                .replaceAll("\\b(ch0|choo|choe|cgo)\\b", "cho")
+                .replaceAll("\\b(me0|meoo|meu|miu)\\b", "meo")
+                .replaceAll("\\b(tlieu|tl|tai lieu|tailieu|tai lieu)\\b", "tai lieu")
+                .replaceAll("\\b(phacdo|phac doo)\\b", "phac do");
+
+        return normalized.trim().replaceAll("\\s+", " ");
+    }
+
+    private String correctNoisyIntentToken(String token) {
+        if (token == null || token.length() < 2) return token;
+        String[] canonical = {
+                "search", "google", "tim", "tra", "cuu", "tai", "lieu", "nguon",
+                "tham", "khao", "benh", "trieu", "chung", "dieu", "tri", "phac", "do",
+                "thu", "y", "cho", "meo", "cun", "da", "viem", "nam", "ghe",
+                "parvo", "bach", "cau", "fpv", "thuoc", "khang", "sinh",
+                "mat", "dom", "do", "duc", "gien", "ghem", "lo", "lom"
+        };
+        for (String candidate : canonical) {
+            int maxDistance = candidate.length() <= 3 ? 1 : 2;
+            if (Math.abs(candidate.length() - token.length()) <= maxDistance
+                    && levenshteinDistance(token, candidate, maxDistance) <= maxDistance) {
+                return candidate;
+            }
+        }
+        return token;
+    }
+
+    private int levenshteinDistance(String a, String b, int cutoff) {
+        if (a == null || b == null) return cutoff + 1;
+        if (Math.abs(a.length() - b.length()) > cutoff) return cutoff + 1;
+        int[] prev = new int[b.length() + 1];
+        int[] curr = new int[b.length() + 1];
+        for (int j = 0; j <= b.length(); j++) prev[j] = j;
+        for (int i = 1; i <= a.length(); i++) {
+            curr[0] = i;
+            int rowMin = curr[0];
+            for (int j = 1; j <= b.length(); j++) {
+                int cost = a.charAt(i - 1) == b.charAt(j - 1) ? 0 : 1;
+                curr[j] = Math.min(Math.min(curr[j - 1] + 1, prev[j] + 1), prev[j - 1] + cost);
+                rowMin = Math.min(rowMin, curr[j]);
+            }
+            if (rowMin > cutoff) return cutoff + 1;
+            int[] tmp = prev;
+            prev = curr;
+            curr = tmp;
+        }
+        return prev[b.length()];
+    }
+
     private EmergencyTriage classifyEmergencyTriage(String normalizedQuery) {
         String q = normalizedQuery == null ? "" : normalizedQuery.trim();
         if (q.isBlank()) return new EmergencyTriage(false, 0, "none", "empty");
+        if (isEducationalEmergencyQuestion(q)) {
+            return new EmergencyTriage(false, 0, "none", "educational-question");
+        }
 
         int score = 0;
         String category = "general";
         List<String> reasons = new ArrayList<>();
 
-        if (containsAny(q, "cap cuu", "khan cap", "sos", "emergency", "cuu toi", "cuu voi", "giup voi", "chet mat", "sap chet")) {
+        if (containsAny(q, "sos", "emergency", "cuu toi", "cuu voi", "giup voi", "chet mat", "sap chet")
+                || (containsNormalizedTokenOrPhrase(q, "cap cuu") && containsAny(q, "dang", "can gap", "ngay bay gio", "nhanh len"))
+                || (containsNormalizedTokenOrPhrase(q, "khan cap") && containsAny(q, "dang", "can gap", "ngay bay gio", "nhanh len"))) {
             score += 5;
             reasons.add("explicit-distress");
         }
@@ -1496,7 +1903,8 @@ ChatMessage systemMsg = new ChatMessage();
             category = "airway";
             reasons.add("airway-breathing");
         }
-        if (containsAny(q, "hoc", "mac xuong", "di vat", "nghen", "nghet", "nuot phai")) {
+        if (containsNormalizedTokenOrPhrase(q, "hoc")
+                || containsAny(q, "mac xuong", "di vat", "nghen", "nghet", "nuot phai")) {
             score += 5;
             category = "airway";
             reasons.add("choking-risk");
@@ -1530,8 +1938,20 @@ ChatMessage systemMsg = new ChatMessage();
             reasons.add("urgent-help-seeking");
         }
 
-        boolean emergency = score >= 5 || (score >= 4 && q.length() <= 80);
+        boolean emergency = score >= 7 || (score >= 5 && containsAny(q, "dang", "ngay bay gio", "nhanh len", "cuu", "khong tho", "tim tai", "bat tinh", "co giat", "chay mau", "ngo doc"));
         return new EmergencyTriage(emergency, score, category, reasons.isEmpty() ? "none" : String.join(",", reasons));
+    }
+
+    private boolean isEducationalEmergencyQuestion(String normalizedQuery) {
+        if (normalizedQuery == null) return false;
+        return containsAny(normalizedQuery,
+                "dau hieu nao can di cap cuu",
+                "khi nao can di cap cuu",
+                "truong hop nao can cap cuu",
+                "can di cap cuu khong",
+                "co can cap cuu khong")
+                || (containsAny(normalizedQuery, "tim tai lieu", "tra cuu", "gg", "duckduckgo", "nguon tham khao")
+                && containsAny(normalizedQuery, "cap cuu", "khan cap"));
     }
 
     private boolean containsAny(String value, String... terms) {

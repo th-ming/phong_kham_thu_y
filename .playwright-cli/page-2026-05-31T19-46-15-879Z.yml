@@ -1,0 +1,187 @@
+- generic [ref=e71]:
+  - generic [ref=e72]:
+    - generic [ref=e73]:
+      - img "Rexi" [ref=e75]
+      - generic [ref=e76]:
+        - heading "REXI ADMIN" [level=2] [ref=e77]
+        - paragraph [ref=e78]: HỆ THỐNG QUẢN TRỊ
+    - generic [ref=e79]:
+      - img "Admin Rexi System" [ref=e83]
+      - generic [ref=e84]:
+        - paragraph [ref=e85]: Admin Rexi System
+        - paragraph [ref=e86]: Quản trị tối cao
+    - navigation [ref=e87]:
+      - generic [ref=e88]: TỔNG QUAN
+      - link "dashboard Bảng điều khiển" [ref=e89] [cursor=pointer]:
+        - /url: /quan-ly/dashboard
+        - generic [ref=e91]: dashboard
+        - text: Bảng điều khiển
+      - link "monitoring Báo cáo & Thống kê" [ref=e92] [cursor=pointer]:
+        - /url: /quan-ly/bao-cao-thong-ke
+        - generic [ref=e93]: monitoring
+        - text: Báo cáo & Thống kê
+      - generic [ref=e94]: LỊCH TRÌNH & NHÂN SỰ
+      - link "calendar_month Quản lý lịch hẹn" [ref=e95] [cursor=pointer]:
+        - /url: /quan-ly/lich-hen
+        - generic [ref=e96]: calendar_month
+        - text: Quản lý lịch hẹn
+      - link "edit_calendar Điều hành nhân sự" [ref=e97] [cursor=pointer]:
+        - /url: /quan-ly/lich-lam-viec
+        - generic [ref=e98]: edit_calendar
+        - text: Điều hành nhân sự
+      - link "badge Nhân sự & Quyền hạn" [ref=e99] [cursor=pointer]:
+        - /url: /quan-ly/nhan-vien-phan-quyen
+        - generic [ref=e100]: badge
+        - text: Nhân sự & Quyền hạn
+      - generic [ref=e101]: KHÁCH HÀNG & DỊCH VỤ
+      - link "groups Khách hàng & Thú cưng" [ref=e102] [cursor=pointer]:
+        - /url: /quan-ly/khach-hang-thu-cung
+        - generic [ref=e103]: groups
+        - text: Khách hàng & Thú cưng
+      - link "medical_information Danh mục dịch vụ" [ref=e104] [cursor=pointer]:
+        - /url: /quan-ly/dich-vu
+        - generic [ref=e105]: medical_information
+        - text: Danh mục dịch vụ
+      - generic [ref=e106]: CHUYÊN MÔN LÂM SÀNG
+      - link "stethoscope Khám bệnh & Kê đơn" [ref=e107] [cursor=pointer]:
+        - /url: /quan-ly/kham-benh
+        - generic [ref=e108]: stethoscope
+        - text: Khám bệnh & Kê đơn
+      - link "clinical_notes Hồ sơ bệnh án" [ref=e109] [cursor=pointer]:
+        - /url: /quan-ly/ho-so-benh-an
+        - generic [ref=e110]: clinical_notes
+        - text: Hồ sơ bệnh án
+      - link "description Kê đơn & Thuốc" [ref=e111] [cursor=pointer]:
+        - /url: /quan-ly/don-thuoc
+        - generic [ref=e112]: description
+        - text: Kê đơn & Thuốc
+      - link "biotech Xét nghiệm & Cận lâm sàng" [ref=e113] [cursor=pointer]:
+        - /url: /quan-ly/xet-nghiem
+        - generic [ref=e114]: biotech
+        - text: Xét nghiệm & Cận lâm sàng
+      - generic [ref=e115]: KHO & TÀI CHÍNH
+      - link "medication Danh mục kho thuốc" [ref=e116] [cursor=pointer]:
+        - /url: /quan-ly/kho-thuoc
+        - generic [ref=e117]: medication
+        - text: Danh mục kho thuốc
+      - link "inventory_2 Nhập kho & Kiểm kê" [ref=e118] [cursor=pointer]:
+        - /url: /quan-ly/nhap-kho
+        - generic [ref=e119]: inventory_2
+        - text: Nhập kho & Kiểm kê
+      - link "receipt_long Hóa đơn & Thanh toán" [ref=e120] [cursor=pointer]:
+        - /url: /quan-ly/hoa-don
+        - generic [ref=e121]: receipt_long
+        - text: Hóa đơn & Thanh toán
+      - link "account_balance Tài chính - Kế toán" [ref=e122] [cursor=pointer]:
+        - /url: /quan-ly/ke-toan
+        - generic [ref=e123]: account_balance
+        - text: Tài chính - Kế toán
+      - generic [ref=e124]: TIỆN ÍCH & MARKETING
+      - link "campaign Chiến dịch Marketing" [ref=e125] [cursor=pointer]:
+        - /url: /quan-ly/marketing
+        - generic [ref=e126]: campaign
+        - text: Chiến dịch Marketing
+      - link "folder_open Quản lý tệp tin" [ref=e127] [cursor=pointer]:
+        - /url: /quan-ly/file-dinh-kem
+        - generic [ref=e128]: folder_open
+        - text: Quản lý tệp tin
+      - generic [ref=e129]: CẤU HÌNH
+      - link "settings Cài đặt chung" [ref=e130] [cursor=pointer]:
+        - /url: /quan-ly/cau-hinh
+        - generic [ref=e131]: settings
+        - text: Cài đặt chung
+      - link "extension Phân hệ chức năng" [ref=e132] [cursor=pointer]:
+        - /url: /quan-ly/chuc-nang
+        - generic [ref=e133]: extension
+        - text: Phân hệ chức năng
+      - link "person Hồ sơ cá nhân" [ref=e134] [cursor=pointer]:
+        - /url: /quan-ly/thong-tin-ca-nhan
+        - generic [ref=e135]: person
+        - text: Hồ sơ cá nhân
+    - generic [ref=e136]:
+      - link "home Về trang chủ" [ref=e137] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e138]: home
+        - text: Về trang chủ
+      - button "Đổi giao diện" [ref=e139] [cursor=pointer]:
+        - generic [ref=e140]: dark_mode
+    - button "logout Đăng xuất" [ref=e141] [cursor=pointer]:
+      - generic [ref=e142]: logout
+      - text: Đăng xuất
+  - main [ref=e143]:
+    - generic [ref=e242]:
+      - generic [ref=e243]:
+        - generic [ref=e244]:
+          - heading "Quản lý Kho thuốc" [level=1] [ref=e245]
+          - paragraph [ref=e246]: Theo dõi tồn kho, hạn sử dụng và phân phối dược phẩm.
+        - generic [ref=e247]:
+          - generic [ref=e248]:
+            - generic [ref=e249]: search
+            - textbox "Tìm tên thuốc, thành phần..." [ref=e250]
+          - link "add_box Nhập thuốc mới" [ref=e251] [cursor=pointer]:
+            - /url: /quan-ly/nhap-kho
+            - generic [ref=e252]: add_box
+            - text: Nhập thuốc mới
+          - button "add Thêm thuốc" [ref=e253] [cursor=pointer]:
+            - generic [ref=e254]: add
+            - text: Thêm thuốc
+      - generic [ref=e255]:
+        - generic [ref=e256]:
+          - heading "Danh mục thuốc" [level=2] [ref=e257]
+          - table [ref=e261]:
+            - rowgroup [ref=e262]:
+              - row "TÊN THUỐC DẠNG GIÁ BÁN" [ref=e263]:
+                - columnheader "TÊN THUỐC" [ref=e264]
+                - columnheader "DẠNG" [ref=e265]
+                - columnheader "GIÁ BÁN" [ref=e266]
+            - rowgroup [ref=e300]:
+              - row "AmoxicillinTestUI Dược chất 125.000 đ" [ref=e301]:
+                - cell "AmoxicillinTestUI Dược chất" [ref=e302]:
+                  - generic [ref=e303]: AmoxicillinTestUI
+                  - generic [ref=e304]: Dược chất
+                - cell [ref=e305]
+                - cell "125.000 đ" [ref=e307]
+        - heading "Lô thuốc & Hạn dùng" [level=2] [ref=e268]
+  - button "close" [ref=e308] [cursor=pointer]:
+    - generic [ref=e240]: close
+  - generic [ref=e310]:
+    - generic [ref=e311]:
+      - generic [ref=e314]: Rexi Agent
+      - generic [ref=e315]:
+        - generic "Bật đọc thành tiếng" [ref=e316] [cursor=pointer]: volume_off
+        - generic "Làm mới cuộc hội thoại" [ref=e317] [cursor=pointer]: restart_alt
+        - generic [ref=e318] [cursor=pointer]: close
+    - generic [ref=e319]:
+      - button "chat Trợ lý Rexi" [ref=e321] [cursor=pointer]:
+        - generic [ref=e322]: chat
+        - text: Trợ lý Rexi
+      - button "smart_toy Rexi Agent" [active] [ref=e323] [cursor=pointer]:
+        - generic [ref=e324]: smart_toy
+        - text: Rexi Agent
+    - generic [ref=e327]:
+      - generic [ref=e354]:
+        - generic [ref=e355]: health_and_safety
+        - generic [ref=e356]: Tư vấn an toàn
+        - generic [ref=e357]: Không thay thế bác sĩ; không tự dùng thuốc kê đơn hoặc kháng sinh.
+      - paragraph [ref=e358]:
+        - text: Chào cú đêm
+        - strong [ref=e359]: Đồng nghiệp Quản trị Admin Rexi System
+        - text: "! 🐾"
+        - strong [ref=e360]: Rexi Agent
+        - text: "đã sẵn sàng xử lý tác vụ. Bạn nói việc cần làm: tra cứu khách hàng, lập lịch khám, xem bệnh án, kiểm tra thuốc hay điều phối nhanh."
+    - generic "Gợi ý nhanh agent" [ref=e361]:
+      - generic [ref=e335]:
+        - button "Mở báo cáo thống kê" [ref=e362] [cursor=pointer]
+        - button "Tra khách hàng" [ref=e363] [cursor=pointer]
+        - button "Lịch hẹn hôm nay" [ref=e364] [cursor=pointer]
+        - button "Kho thuốc tồn" [ref=e365] [cursor=pointer]
+        - button "Doanh thu hôm nay" [ref=e366] [cursor=pointer]
+        - button "Phân quyền" [ref=e367] [cursor=pointer]
+        - button "Dịch vụ" [ref=e368] [cursor=pointer]
+        - button "Marketing" [ref=e369] [cursor=pointer]
+    - generic [ref=e345]:
+      - button "mic_none" [ref=e348] [cursor=pointer]:
+        - generic [ref=e349]: mic_none
+      - textbox "Lệnh tác vụ cho Agent (e.g. đặt lịch, tra cứu mạng)..." [ref=e370]
+      - button "send" [ref=e352] [cursor=pointer]:
+        - generic [ref=e353]: send

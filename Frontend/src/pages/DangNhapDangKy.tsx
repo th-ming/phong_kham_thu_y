@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axiosInstance from "@services/axios";
+import BirthYearSelect from "@components/BirthYearSelect";
 import { normalizeUserRole } from "@utils/index";
 import { isValidPassword, PASSWORD_POLICY_MESSAGE } from "@utils/passwordPolicy";
 
@@ -616,16 +617,20 @@ const DangNhapDangKy: React.FC = () => {
                       </div>
                       <div className="input-group">
                         <span className="material-symbols-outlined" style={{ color: '#0d9488', opacity: 0.7, fontSize: '18px' }}>cake</span>
-                        <input
-                          data-ai-id="input-dangnhapdangky-namsinh"
-                          type="number"
-                          inputMode="numeric"
-                          min="1900"
-                          max={new Date().getFullYear()}
-                          placeholder="Năm sinh"
+                        <BirthYearSelect
+                          data-ai-id="select-dangnhapdangky-namsinh"
+                          placeholder="Chọn năm sinh"
                           value={birthYear}
-                          onChange={e => setBirthYear(e.target.value.replace(/[^0-9]/g, "").slice(0, 4))}
+                          onChange={setBirthYear}
                           required
+                          style={{
+                            border: 'none',
+                            backgroundColor: 'transparent',
+                            color: 'var(--ink)',
+                            fontWeight: 600,
+                            outline: 'none',
+                            padding: '14px 44px 14px 0'
+                          }}
                         />
                       </div>
                       <button data-ai-id="button-dangnhapdangky-next" onClick={handleNextStep} className="btn-auth" style={{ width: '100%', background: '#0d9488', color: 'white', border: 'none', borderRadius: '50px', padding: '16px', fontWeight: 800, cursor: 'pointer', marginTop: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>

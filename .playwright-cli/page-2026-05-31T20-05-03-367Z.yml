@@ -1,0 +1,163 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]:
+        - img "Rexi" [ref=e7]
+        - generic [ref=e8]:
+          - heading "REXI ADMIN" [level=2] [ref=e9]
+          - paragraph [ref=e10]: HỆ THỐNG QUẢN TRỊ
+      - generic [ref=e11]:
+        - img "Admin Rexi System" [ref=e15]
+        - generic [ref=e16]:
+          - paragraph [ref=e17]: Admin Rexi System
+          - paragraph [ref=e18]: Quản trị tối cao
+      - navigation [ref=e19]:
+        - generic [ref=e20]: TỔNG QUAN
+        - link "dashboard Bảng điều khiển" [ref=e21] [cursor=pointer]:
+          - /url: /quan-ly/dashboard
+          - generic [ref=e22]: dashboard
+          - text: Bảng điều khiển
+        - link "monitoring Báo cáo & Thống kê" [ref=e23] [cursor=pointer]:
+          - /url: /quan-ly/bao-cao-thong-ke
+          - generic [ref=e24]: monitoring
+          - text: Báo cáo & Thống kê
+        - generic [ref=e25]: LỊCH TRÌNH & NHÂN SỰ
+        - link "calendar_month Quản lý lịch hẹn" [ref=e26] [cursor=pointer]:
+          - /url: /quan-ly/lich-hen
+          - generic [ref=e27]: calendar_month
+          - text: Quản lý lịch hẹn
+        - link "edit_calendar Điều hành nhân sự" [ref=e28] [cursor=pointer]:
+          - /url: /quan-ly/lich-lam-viec
+          - generic [ref=e29]: edit_calendar
+          - text: Điều hành nhân sự
+        - link "badge Nhân sự & Quyền hạn" [ref=e30] [cursor=pointer]:
+          - /url: /quan-ly/nhan-vien-phan-quyen
+          - generic [ref=e31]: badge
+          - text: Nhân sự & Quyền hạn
+        - generic [ref=e32]: KHÁCH HÀNG & DỊCH VỤ
+        - link "groups Khách hàng & Thú cưng" [ref=e33] [cursor=pointer]:
+          - /url: /quan-ly/khach-hang-thu-cung
+          - generic [ref=e34]: groups
+          - text: Khách hàng & Thú cưng
+        - link "medical_information Danh mục dịch vụ" [ref=e35] [cursor=pointer]:
+          - /url: /quan-ly/dich-vu
+          - generic [ref=e36]: medical_information
+          - text: Danh mục dịch vụ
+        - generic [ref=e37]: CHUYÊN MÔN LÂM SÀNG
+        - link "stethoscope Khám bệnh & Kê đơn" [ref=e38] [cursor=pointer]:
+          - /url: /quan-ly/kham-benh
+          - generic [ref=e39]: stethoscope
+          - text: Khám bệnh & Kê đơn
+        - link "clinical_notes Hồ sơ bệnh án" [ref=e40] [cursor=pointer]:
+          - /url: /quan-ly/ho-so-benh-an
+          - generic [ref=e41]: clinical_notes
+          - text: Hồ sơ bệnh án
+        - link "description Kê đơn & Thuốc" [ref=e42] [cursor=pointer]:
+          - /url: /quan-ly/don-thuoc
+          - generic [ref=e43]: description
+          - text: Kê đơn & Thuốc
+        - link "biotech Xét nghiệm & Cận lâm sàng" [ref=e44] [cursor=pointer]:
+          - /url: /quan-ly/xet-nghiem
+          - generic [ref=e45]: biotech
+          - text: Xét nghiệm & Cận lâm sàng
+        - generic [ref=e46]: KHO & TÀI CHÍNH
+        - link "medication Danh mục kho thuốc" [ref=e47] [cursor=pointer]:
+          - /url: /quan-ly/kho-thuoc
+          - generic [ref=e48]: medication
+          - text: Danh mục kho thuốc
+        - link "inventory_2 Nhập kho & Kiểm kê" [ref=e49] [cursor=pointer]:
+          - /url: /quan-ly/nhap-kho
+          - generic [ref=e51]: inventory_2
+          - text: Nhập kho & Kiểm kê
+        - link "receipt_long Hóa đơn & Thanh toán" [ref=e52] [cursor=pointer]:
+          - /url: /quan-ly/hoa-don
+          - generic [ref=e53]: receipt_long
+          - text: Hóa đơn & Thanh toán
+        - link "account_balance Tài chính - Kế toán" [ref=e54] [cursor=pointer]:
+          - /url: /quan-ly/ke-toan
+          - generic [ref=e55]: account_balance
+          - text: Tài chính - Kế toán
+        - generic [ref=e56]: TIỆN ÍCH & MARKETING
+        - link "campaign Chiến dịch Marketing" [ref=e57] [cursor=pointer]:
+          - /url: /quan-ly/marketing
+          - generic [ref=e58]: campaign
+          - text: Chiến dịch Marketing
+        - link "folder_open Quản lý tệp tin" [ref=e59] [cursor=pointer]:
+          - /url: /quan-ly/file-dinh-kem
+          - generic [ref=e60]: folder_open
+          - text: Quản lý tệp tin
+        - generic [ref=e61]: CẤU HÌNH
+        - link "settings Cài đặt chung" [ref=e62] [cursor=pointer]:
+          - /url: /quan-ly/cau-hinh
+          - generic [ref=e63]: settings
+          - text: Cài đặt chung
+        - link "extension Phân hệ chức năng" [ref=e64] [cursor=pointer]:
+          - /url: /quan-ly/chuc-nang
+          - generic [ref=e65]: extension
+          - text: Phân hệ chức năng
+        - link "person Hồ sơ cá nhân" [ref=e66] [cursor=pointer]:
+          - /url: /quan-ly/thong-tin-ca-nhan
+          - generic [ref=e67]: person
+          - text: Hồ sơ cá nhân
+      - generic [ref=e68]:
+        - link "home Về trang chủ" [ref=e69] [cursor=pointer]:
+          - /url: /
+          - generic [ref=e70]: home
+          - text: Về trang chủ
+        - button "Đổi giao diện" [ref=e71] [cursor=pointer]:
+          - generic [ref=e72]: dark_mode
+      - button "logout Đăng xuất" [ref=e73] [cursor=pointer]:
+        - generic [ref=e74]: logout
+        - text: Đăng xuất
+    - main [ref=e75]:
+      - generic [ref=e81]:
+        - generic [ref=e82]:
+          - generic [ref=e104]:
+            - heading "Quản lý Nhập kho" [level=1] [ref=e105]
+            - paragraph [ref=e106]: Theo dõi lịch sử nhập hàng và quản lý lô thuốc.
+          - generic [ref=e107]:
+            - generic [ref=e108]:
+              - generic [ref=e109]: search
+              - textbox "Tìm số lô, tên thuốc..." [ref=e110]
+            - button "add_business Tạo phiếu nhập mới" [ref=e111] [cursor=pointer]:
+              - generic [ref=e112]: add_business
+              - text: Tạo phiếu nhập mới
+        - table [ref=e116]:
+          - rowgroup [ref=e117]:
+            - row "LÔ HÀNG SỐ LÔ NGÀY NHẬP HẠN DÙNG SỐ LƯỢNG GIÁ NHẬP" [ref=e118]:
+              - columnheader "LÔ HÀNG" [ref=e119]
+              - columnheader "SỐ LÔ" [ref=e120]
+              - columnheader "NGÀY NHẬP" [ref=e121]
+              - columnheader "HẠN DÙNG" [ref=e122]
+              - columnheader "SỐ LƯỢNG" [ref=e123]
+              - columnheader "GIÁ NHẬP" [ref=e124]
+          - rowgroup
+    - button "pets" [ref=e79] [cursor=pointer]:
+      - generic [ref=e80]: pets
+  - generic [ref=e126]:
+    - generic [ref=e127]:
+      - heading "Tạo phiếu nhập kho mới" [level=3] [ref=e128]
+      - button "close" [ref=e129] [cursor=pointer]:
+        - generic [ref=e130]: close
+    - generic [ref=e132]:
+      - generic [ref=e133]:
+        - generic [ref=e134]: CHỌN THUỐC / VẬT TƯ
+        - combobox [ref=e135]:
+          - option "-- Chọn thuốc trong danh mục --" [selected]
+      - generic [ref=e136]:
+        - generic [ref=e137]:
+          - generic [ref=e138]: SỐ LÔ
+          - 'textbox "Ví Gụ: LOT2024-001" [ref=e139]'
+        - generic [ref=e140]:
+          - generic [ref=e141]: HẠN SỬ DỤNG
+          - textbox [ref=e142]
+      - generic [ref=e143]:
+        - generic [ref=e144]:
+          - generic [ref=e145]: SỐ LƯỢNG NHẬP
+          - spinbutton [ref=e146]: "0"
+        - generic [ref=e147]:
+          - generic [ref=e148]: GIÁ NHẬP (VNĐ/ĐƠN VỊ)
+          - spinbutton [ref=e149]: "0"
+      - generic [ref=e150]:
+        - button "Hủy bỏ" [ref=e151] [cursor=pointer]
+        - button "Xác nhận nhập kho" [ref=e152] [cursor=pointer]

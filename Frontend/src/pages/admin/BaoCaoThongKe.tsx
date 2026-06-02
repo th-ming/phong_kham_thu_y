@@ -3,6 +3,8 @@ import axiosInstance from "@services/axios";
 import { toast } from "@components/Toast";
 import { Modal } from "@components/CommonUI";
 import { useAutoRefresh } from "@hooks/useAutoRefresh";
+import KpiIcon from "@components/KpiIcon";
+import { getUserProfile, normalizeUserRole } from "@utils/index";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -49,9 +51,15 @@ const BaoCaoThongKe: React.FC = () => {
   const [selectedPetType, setSelectedPetType] = useState<string | null>(null);
   const [petDetails, setPetDetails] = useState<any[]>([]);
   const [loadingDetails, setLoadingDetails] = useState(false);
+  const currentRole = useMemo(() => normalizeUserRole(getUserProfile() || {}), []);
+  const canReadMedicalRecords = currentRole !== "ke_toan";
 
   const fetchData = async () => {
       try {
+        const medicalRecordsRequest = canReadMedicalRecords
+          ? axiosInstance.get("/api/ho-so-benh-an", { params: { page: 0, size: 999 } })
+          : Promise.resolve({ data: [] });
+
         const [
           revRes,
           docRes,
@@ -71,7 +79,7 @@ const BaoCaoThongKe: React.FC = () => {
           axiosInstance.get("/api/bao-cao/tong-quan-tai-chinh"),
           axiosInstance.get("/api/bac-si"),
           axiosInstance.get("/api/dich-vu"),
-          axiosInstance.get("/api/ho-so-benh-an", { params: { page: 0, size: 999 } })
+          medicalRecordsRequest
         ]);
 
         const extractArray = (data: any): any[] => {
@@ -406,46 +414,89 @@ const BaoCaoThongKe: React.FC = () => {
     <div className="animate-fade-in" id="print-report">
       <style>{`
         @media print {
+          @page { size: A4 portrait; margin: 12mm; }
+          html, body { background: #ffffff !important; overflow: visible !important; }
           body * { visibility: hidden; }
           #print-report, #print-report * { visibility: visible; }
-          #print-report { position: absolute; left: 0; top: 0; width: 100%; }
-          .no-print { display: none !important; }
-          .glass-card { box-shadow: none !important; border: 1px solid #e2e8f0 !important; break-inside: avoid; }
+          #print-report {
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 186mm !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: #ffffff !important;
+            color: #111827 !important;
+          }
+          #print-report .glass-card {
+            box-shadow: none !important;
+            border: 1px solid #e2e8f0 !important;
+            break-inside: avoid;
+            page-break-inside: avoid;
+            margin-bottom: 14px !important;
+          }
+          .no-print, .no-print * {
+            display: none !important;
+            visibility: hidden !important;
+          }
         }
         .hover-lift { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: default; }
         .hover-lift:hover { transform: translateY(-6px); box-shadow: 0 20px 40px rgba(15, 157, 138, 0.08) !important; }
         .report-kpi-card {
           position: relative;
-          min-height: 150px;
-          overflow: hidden;
+          min-height: 190px;
+          overflow: visible;
           cursor: pointer;
+          border-left: none !important;
         }
         .report-kpi-card::after {
-          content: "";
-          position: absolute;
-          inset: auto 18px 14px 18px;
-          height: 1px;
-          background: linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.55), transparent);
-          opacity: 0;
-          transition: opacity 0.25s ease;
+          display: none !important;
+          content: none !important;
         }
-        .report-kpi-card:hover::after { opacity: 1; }
+        .report-kpi-card::before {
+          content: "Chi tiết";
+          position: absolute;
+          inset: auto;
+          top: 22px;
+          right: 22px;
+          display: inline-flex;
+          align-items: center;
+          padding: 7px 10px;
+          border-radius: 999px;
+          border: 1px solid rgba(20, 184, 166, 0.28);
+          background: rgba(20, 184, 166, 0.1);
+          color: var(--primary);
+          font-size: 0.72rem;
+          font-weight: 950;
+          box-shadow: 0 12px 26px rgba(15, 23, 42, 0.08);
+          -webkit-mask: none;
+          mask: none;
+          pointer-events: none;
+        }
         .kpi-hover-detail {
-          margin-top: auto;
-          padding-top: 12px;
+          position: absolute;
+          left: 18px;
+          right: 18px;
+          top: 70px;
+          z-index: 90;
+          padding: 16px;
+          border-radius: 16px;
+          border: 1px solid rgba(20, 184, 166, 0.35);
+          background: var(--surface);
+          box-shadow: 0 24px 56px rgba(15, 23, 42, 0.22);
           opacity: 0;
-          transform: translateY(8px);
-          max-height: 0;
-          transition: opacity 0.25s ease, transform 0.25s ease, max-height 0.25s ease;
-          color: var(--gray-400);
-          font-size: 0.78rem;
+          transform: translateY(-6px);
+          pointer-events: none;
+          transition: opacity 0.18s ease, transform 0.18s ease;
+          color: var(--ink);
+          font-size: 0.86rem;
           font-weight: 800;
           line-height: 1.45;
         }
         .report-kpi-card:hover .kpi-hover-detail {
           opacity: 1;
           transform: translateY(0);
-          max-height: 90px;
+          pointer-events: auto;
         }
         .kpi-hover-detail b {
           color: var(--ink);
@@ -486,20 +537,20 @@ const BaoCaoThongKe: React.FC = () => {
         </div>
         <div style={{ display: 'flex', gap: '12px' }} className="no-print">
           <button data-ai-id="button-baocaothongke-31pb" className="btn btn-pill" onClick={() => window.print()} style={{ background: 'var(--primary-light)', color: 'var(--primary)' }}>
-            <span className="material-symbols-outlined">print</span> In Báo Cáo
+            <KpiIcon name="print" size={18} /> In Báo Cáo
           </button>
           <button data-ai-id="button-baocaothongke-wnuj" className="btn btn-primary btn-pill" onClick={handleExportExcel}>
-            <span className="material-symbols-outlined">download</span> Xuất Excel
+            <KpiIcon name="download" size={18} /> Xuất Excel
           </button>
         </div>
       </div>
 
       {/* HÀNG THẺ KPI KÍNH MỜ CAO CẤP */}
       <div className="stagger-1 no-print" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '24px', marginBottom: '40px' }}>
-        <div className="glass-card hover-lift report-kpi-card" onClick={() => setSelectedKpi("revenue")} title="Bấm để xem chi tiết doanh thu" style={{ padding: '24px', borderRadius: '24px', borderLeft: '4px solid var(--primary)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="glass-card hover-lift report-kpi-card" onClick={() => setSelectedKpi("revenue")} title="Bấm để xem chi tiết doanh thu" style={{ padding: '32px', borderRadius: '32px', border: '1px solid rgba(20, 184, 166, 0.25)', background: 'linear-gradient(135deg, rgba(20, 184, 166, 0.15) 0%, var(--surface) 100%)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div style={{ width: '60px', height: '60px', borderRadius: '20px', background: 'rgba(20, 184, 166, 0.18)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 20px rgba(20, 184, 166, 0.12)', fontSize: '1.55rem', fontWeight: 950, marginBottom: '16px' }}><KpiIcon name="money" /></div>
+          <div>
             <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gray-500)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>TỔNG DOANH THU</span>
-            <span className="material-symbols-outlined" style={{ color: 'var(--primary)', fontSize: '24px' }}>payments</span>
           </div>
           <h3 style={{ fontSize: '1.8rem', fontWeight: 950, color: 'var(--ink)', margin: 0 }}>{totalRevenue.toLocaleString('vi-VN')} đ</h3>
           <div className="kpi-hover-detail">
@@ -507,10 +558,10 @@ const BaoCaoThongKe: React.FC = () => {
           </div>
         </div>
 
-        <div className="glass-card hover-lift report-kpi-card" onClick={() => setSelectedKpi("cases")} title="Bấm để xem chi tiết ca điều trị" style={{ padding: '24px', borderRadius: '24px', borderLeft: '4px solid #3b82f6', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="glass-card hover-lift report-kpi-card" onClick={() => setSelectedKpi("cases")} title="Bấm để xem chi tiết ca điều trị" style={{ padding: '32px', borderRadius: '32px', border: '1px solid rgba(59, 130, 246, 0.25)', background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, var(--surface) 100%)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div style={{ width: '60px', height: '60px', borderRadius: '20px', background: 'rgba(59, 130, 246, 0.18)', color: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 20px rgba(59, 130, 246, 0.12)', fontSize: '1.55rem', fontWeight: 950, marginBottom: '16px' }}><KpiIcon name="medical" /></div>
+          <div>
             <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gray-500)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>TỔNG CA ĐIỀU TRỊ</span>
-            <span className="material-symbols-outlined" style={{ color: '#3b82f6', fontSize: '24px' }}>medical_services</span>
           </div>
           <h3 style={{ fontSize: '1.8rem', fontWeight: 950, color: 'var(--ink)', margin: 0 }}>{totalApps} ca</h3>
           <div className="kpi-hover-detail">
@@ -518,10 +569,10 @@ const BaoCaoThongKe: React.FC = () => {
           </div>
         </div>
 
-        <div className="glass-card hover-lift report-kpi-card" onClick={() => setSelectedKpi("doctor")} title="Bấm để xem hồ sơ bác sĩ" style={{ padding: '24px', borderRadius: '24px', borderLeft: '4px solid #f59e0b', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="glass-card hover-lift report-kpi-card" onClick={() => setSelectedKpi("doctor")} title="Bấm để xem hồ sơ bác sĩ" style={{ padding: '32px', borderRadius: '32px', border: '1px solid rgba(245, 158, 11, 0.25)', background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, var(--surface) 100%)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div style={{ width: '60px', height: '60px', borderRadius: '20px', background: 'rgba(245, 158, 11, 0.18)', color: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 20px rgba(245, 158, 11, 0.12)', fontSize: '1.55rem', fontWeight: 950, marginBottom: '16px' }}><KpiIcon name="star" /></div>
+          <div>
             <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gray-500)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>BÁC SĨ TÍCH CỰC</span>
-            <span className="material-symbols-outlined" style={{ color: '#f59e0b', fontSize: '24px' }}>workspace_premium</span>
           </div>
           <h3 style={{ fontSize: '1.3rem', fontWeight: 900, color: 'var(--ink)', margin: 0, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
             {topDoctor ? (topDoctor.TenBacSi || topDoctor.ten_bac_si) : 'Chưa có'}
@@ -534,10 +585,10 @@ const BaoCaoThongKe: React.FC = () => {
           </div>
         </div>
 
-        <div className="glass-card hover-lift report-kpi-card" onClick={() => setSelectedKpi("service")} title="Bấm để xem chi tiết dịch vụ" style={{ padding: '24px', borderRadius: '24px', borderLeft: '4px solid #ec4899', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="glass-card hover-lift report-kpi-card" onClick={() => setSelectedKpi("service")} title="Bấm để xem chi tiết dịch vụ" style={{ padding: '32px', borderRadius: '32px', border: '1px solid rgba(236, 72, 153, 0.25)', background: 'linear-gradient(135deg, rgba(236, 72, 153, 0.15) 0%, var(--surface) 100%)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div style={{ width: '60px', height: '60px', borderRadius: '20px', background: 'rgba(236, 72, 153, 0.18)', color: '#ec4899', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 20px rgba(236, 72, 153, 0.12)', fontSize: '1.55rem', fontWeight: 950, marginBottom: '16px' }}><KpiIcon name="service" /></div>
+          <div>
             <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gray-500)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>DỊCH VỤ HÀNG ĐẦU</span>
-            <span className="material-symbols-outlined" style={{ color: '#ec4899', fontSize: '24px' }}>local_activity</span>
           </div>
           <h3 style={{ fontSize: '1.3rem', fontWeight: 900, color: 'var(--ink)', margin: 0, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
             {topService ? (topService.TenDichVu || topService.ten_dich_vu) : 'Chưa có'}

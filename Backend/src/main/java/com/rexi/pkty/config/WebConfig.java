@@ -18,8 +18,11 @@ public class WebConfig implements WebMvcConfigurer {
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         Path uploadDir = Paths.get("uploads");
         String uploadPath = uploadDir.toFile().getAbsolutePath();
+        Path vnuaDocDir = Paths.get("src/main/resources/knowledge/vnua_docs");
+        String vnuaDocPath = vnuaDocDir.toFile().getAbsolutePath();
 
         registry.addResourceHandler("/uploads/**").addResourceLocations("file:" + uploadPath + "/");
+        registry.addResourceHandler("/vnua-docs/**").addResourceLocations("file:" + vnuaDocPath + "/");
     }
 
     @Override

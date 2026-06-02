@@ -2,6 +2,7 @@ import React, { useCallback, useMemo, useRef, useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom";
 import axiosInstance from "@services/axios";
 import { getUserProfile } from "@utils/index";
+import { customerToneCopy, isGenZBirthYear } from "@utils/customerTone";
 import { toast } from "@components/Toast";
 import { useAutoRefresh } from "@hooks/useAutoRefresh";
 import { Skeleton } from "@components/CommonUI";
@@ -159,6 +160,8 @@ const LichSuLichHen: React.FC = () => {
   const [isServerPaginated, setIsServerPaginated] = useState(false);
   const hasLoadedRef = useRef(false);
   const ITEMS_PER_PAGE = 5;
+  const currentUser = getUserProfile();
+  const toneCopy = customerToneCopy[isGenZBirthYear(currentUser?.nam_sinh) ? "genz" : "mature"];
 
   const fetchLichHen = useCallback(async () => {
     const user = getUserProfile();
@@ -438,13 +441,13 @@ const LichSuLichHen: React.FC = () => {
             }}>
               <span className="material-symbols-outlined" style={{ fontSize: '80px', color: 'var(--primary)', filter: 'drop-shadow(0 0 15px var(--primary))' }}>calendar_month</span>
             </div>
-            <h3 style={{ fontSize: '2.2rem', fontWeight: 950, color: 'var(--ink)', marginBottom: '16px', letterSpacing: '-1px' }}>Chưa có lịch khám nào</h3>
+            <h3 style={{ fontSize: '2.2rem', fontWeight: 950, color: 'var(--ink)', marginBottom: '16px', letterSpacing: '-1px' }}>{toneCopy.appointmentEmptyTitle}</h3>
             <p style={{ fontSize: '1.15rem', color: 'var(--gray-400)', fontWeight: 600, maxWidth: '450px', margin: '0 auto 32px', lineHeight: 1.6 }}>
-              Dường như các bé nhà mình đang rất khỏe mạnh! <br/> Đừng quên đặt lịch khám định kỳ để bảo vệ sức khỏe cho bé nhé.
+              {toneCopy.appointmentEmptyText}
             </p>
             <button data-ai-id="button-lichsulichhen-book-empty" className="btn btn-primary btn-pill" onClick={() => navigate('/khach-hang/dat-lich-hen')} style={{ padding: '16px 48px', fontSize: '1rem' }}>
               <span className="material-symbols-outlined">add_circle</span>
-              Đặt lịch hẹn ngay
+              {toneCopy.appointmentButton}
             </button>
           </div>
         ) : currentRows.map((item) => (

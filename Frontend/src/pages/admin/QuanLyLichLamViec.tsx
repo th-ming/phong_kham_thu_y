@@ -471,14 +471,37 @@ const QuanLyLichLamViec: React.FC = () => {
         <div style={{ background: 'var(--background)', minHeight: '100vh' }}>
             <style>{`
                 @media print {
+                    @page { size: A4 landscape; margin: 8mm; }
+                    html, body { background: #ffffff !important; overflow: visible !important; }
                     body * { visibility: hidden; }
                     #print-section, #print-section * { visibility: visible; }
-                    #print-section { position: absolute; left: 0; top: 0; width: 100%; padding: 0; margin: 0; }
-                    .no-print { display: none !important; }
+                    #print-section {
+                        position: absolute !important;
+                        left: 0 !important;
+                        top: 0 !important;
+                        width: 281mm !important;
+                        padding: 0 !important;
+                        margin: 0 !important;
+                        background: #ffffff !important;
+                        color: #111827 !important;
+                        box-shadow: none !important;
+                    }
+                    .no-print, .no-print * {
+                        display: none !important;
+                        visibility: hidden !important;
+                    }
                     .print-only { display: block !important; }
-                    // Mở rộng chiều cao để in được hết
-                    .print-scroll-area { height: auto !important; overflow: visible !important; }
-                    .glass-card { box-shadow: none !important; border: 1px solid #ccc !important; }
+                    .print-scroll-area {
+                        height: auto !important;
+                        overflow: visible !important;
+                        max-height: none !important;
+                    }
+                    #print-section .glass-card {
+                        box-shadow: none !important;
+                        border: 1px solid #ccc !important;
+                        break-inside: avoid;
+                        page-break-inside: avoid;
+                    }
                 }
                 .schedule-scroll-wrap {
                     width: 100%;

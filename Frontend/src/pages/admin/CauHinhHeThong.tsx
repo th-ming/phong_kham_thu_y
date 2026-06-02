@@ -28,7 +28,7 @@ const ACTIONS = [
 ];
 
 const AI_PROVIDERS = [
-    { id: 'groq', name: 'Groq', keyField: 'groq_api_key', modelField: 'groq_model', color: '#10b981' },
+    { id: 'groq', name: 'Groq', keyField: 'groq_api_key', modelField: 'groq_model', color: '#10b981', fallbackKeyFields: ['groq_api_key_2', 'groq_api_key_3'] },
     { id: 'gemini', name: 'Gemini', keyField: 'gemini_api_key', modelField: 'gemini_model', color: '#f59e0b' },
     { id: 'openrouter', name: 'OpenRouter', keyField: 'openrouter_api_key', modelField: 'openrouter_model', color: '#22d3ee' }
 ];
@@ -183,7 +183,9 @@ const CauHinhHeThong: React.FC = () => {
         try {
             const res = await axiosInstance.post('/api/system/ai-provider/test', {
                 provider: provider.id,
-                apiKey: configs[provider.keyField] || '',
+                apiKey: provider.id === 'groq'
+                    ? [configs.groq_api_key, configs.groq_api_key_2, configs.groq_api_key_3].find((key: string) => key && key.trim()) || ''
+                    : configs[provider.keyField] || '',
                 model: configs[provider.modelField] || ''
             });
             setAiTestResults(prev => ({ ...prev, [providerId]: res.data }));
@@ -680,16 +682,24 @@ const CauHinhHeThong: React.FC = () => {
                                         Groq
                                     </h3>
                                     <div>
-                                        <label style={{ display: 'block', marginBottom: '6px', fontWeight: 700, color: 'var(--gray-600)', fontSize: '0.85rem' }}>API Key</label>
+                                        <label style={{ display: 'block', marginBottom: '6px', fontWeight: 700, color: 'var(--gray-600)', fontSize: '0.85rem' }}>API Key chính</label>
                                         <input data-ai-id="input-cauhinhhethong-groq-api-key" type="password" className="form-input" value={configs.groq_api_key || ''} onChange={e => setConfigs({...configs, groq_api_key: e.target.value})} placeholder="gsk_..." />
                                     </div>
                                     <div>
+                                        <label style={{ display: 'block', marginBottom: '6px', fontWeight: 700, color: 'var(--gray-600)', fontSize: '0.85rem' }}>API Key dự phòng 2</label>
+                                        <input data-ai-id="input-cauhinhhethong-groq-api-key-2" type="password" className="form-input" value={configs.groq_api_key_2 || ''} onChange={e => setConfigs({...configs, groq_api_key_2: e.target.value})} placeholder="gsk_... (backend tự xoay khi key chính lỗi/quota)" />
+                                    </div>
+                                    <div>
+                                        <label style={{ display: 'block', marginBottom: '6px', fontWeight: 700, color: 'var(--gray-600)', fontSize: '0.85rem' }}>API Key dự phòng 3</label>
+                                        <input data-ai-id="input-cauhinhhethong-groq-api-key-3" type="password" className="form-input" value={configs.groq_api_key_3 || ''} onChange={e => setConfigs({...configs, groq_api_key_3: e.target.value})} placeholder="gsk_... (tuỳ chọn)" />
+                                    </div>
+                                    <div>
                                         <label style={{ display: 'block', marginBottom: '6px', fontWeight: 700, color: 'var(--gray-600)', fontSize: '0.85rem' }}>Model Chat & FAQ</label>
-                                        <input data-ai-id="input-cauhinhhethong-groq-model" type="text" className="form-input" value={configs.groq_model || ''} onChange={e => setConfigs({...configs, groq_model: e.target.value})} placeholder="llama-3.3-70b-versatile" />
+                                        <input data-ai-id="input-cauhinhhethong-groq-model" type="text" className="form-input" value={configs.groq_model || ''} onChange={e => setConfigs({...configs, groq_model: e.target.value})} placeholder="llama-3.1-8b-instant" />
                                     </div>
                                     <div>
                                         <label style={{ display: 'block', marginBottom: '6px', fontWeight: 700, color: 'var(--gray-600)', fontSize: '0.85rem' }}>Model Autopilot (Tự động hóa)</label>
-                                        <input data-ai-id="input-cauhinhhethong-groq-autopilot-model" type="text" className="form-input" value={configs.groq_autopilot_model || ''} onChange={e => setConfigs({...configs, groq_autopilot_model: e.target.value})} placeholder="llama-3.3-70b-versatile" />
+                                        <input data-ai-id="input-cauhinhhethong-groq-autopilot-model" type="text" className="form-input" value={configs.groq_autopilot_model || ''} onChange={e => setConfigs({...configs, groq_autopilot_model: e.target.value})} placeholder="llama-3.1-8b-instant" />
                                     </div>
                                     <div>
                                         <label style={{ display: 'block', marginBottom: '6px', fontWeight: 700, color: 'var(--gray-600)', fontSize: '0.85rem' }}>Model Audio (Dịch Whisper)</label>

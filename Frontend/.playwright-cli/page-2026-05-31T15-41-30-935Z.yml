@@ -1,0 +1,110 @@
+- generic [ref=e2]:
+  - banner [ref=e3]:
+    - generic [ref=e5]:
+      - generic [ref=e6]:
+        - generic [ref=e7]: support_agent
+        - generic [ref=e8]:
+          - text: "Đường dây cấp cứu 24/7:"
+          - link "0353.374.156" [ref=e9] [cursor=pointer]:
+            - /url: tel:***REMOVED***-VIETQR_ACCOUNT_NO
+      - generic [ref=e10]:
+        - generic [ref=e11]: schedule
+        - generic [ref=e12]: Phục vụ không nghỉ lễ
+    - generic [ref=e15]:
+      - generic [ref=e16]: warning
+      - text: Mùa bệnh dại đang gia tăng — Nhớ tiêm phòng trước 30/06!
+      - link "Đặt lịch ngay →" [ref=e17] [cursor=pointer]:
+        - /url: "#"
+    - navigation [ref=e18]:
+      - link "Rexi Rexi Phòng Khám Thú Y" [ref=e19] [cursor=pointer]:
+        - /url: /
+        - img "Rexi" [ref=e21]
+        - generic [ref=e22]:
+          - generic [ref=e23]: Rexi
+          - generic [ref=e24]: Phòng Khám Thú Y
+      - generic [ref=e25]:
+        - button "medical_services Dịch vụ" [ref=e26] [cursor=pointer]:
+          - generic [ref=e27]: medical_services
+          - text: Dịch vụ
+        - button "payments Bảng giá" [ref=e28] [cursor=pointer]:
+          - generic [ref=e29]: payments
+          - text: Bảng giá
+        - button "stethoscope Bác sĩ" [ref=e30] [cursor=pointer]:
+          - generic [ref=e31]: stethoscope
+          - text: Bác sĩ
+        - button "location_on Liên hệ" [ref=e32] [cursor=pointer]:
+          - generic [ref=e33]: location_on
+          - text: Liên hệ
+      - generic [ref=e34]:
+        - button "Đổi giao diện" [ref=e35] [cursor=pointer]:
+          - generic [ref=e36]: dark_mode
+        - link "Đăng nhập" [ref=e37] [cursor=pointer]:
+          - /url: /dang-nhap
+        - button "Đặt lịch hẹn" [ref=e38] [cursor=pointer]
+  - main [ref=e39]
+  - contentinfo [ref=e42]:
+    - generic [ref=e43]:
+      - img "🐕" [ref=e45]
+      - img "🐈" [ref=e47]
+      - img "🐇" [ref=e49]
+      - img "🐹" [ref=e51]
+    - generic [ref=e53] [cursor=pointer]: Click đi sen, trẫm múa nè! 🐾
+    - img "Click để xem video" [ref=e56] [cursor=pointer]
+    - generic [ref=e57]:
+      - generic [ref=e58]:
+        - generic [ref=e59]:
+          - link "Rexi Rexi Vet HỆ THỐNG THÚ Y CAO CẤP" [ref=e60] [cursor=pointer]:
+            - /url: /
+            - img "Rexi" [ref=e62]
+            - generic [ref=e63]:
+              - text: Rexi Vet
+              - generic [ref=e64]: HỆ THỐNG THÚ Y CAO CẤP
+          - paragraph [ref=e65]: Đăng ký nhận tin để không bỏ lỡ các kiến thức chăm sóc thú cưng bổ ích và chương trình ưu đãi độc quyền từ Rexi.
+          - generic [ref=e66]:
+            - textbox "Email của bạn..." [ref=e67]
+            - button "ĐĂNG KÝ" [ref=e68] [cursor=pointer]
+        - generic [ref=e69]:
+          - heading "DỊCH VỤ" [level=4] [ref=e70]
+          - generic [ref=e71]:
+            - link "Khám Đa Khoa" [ref=e72] [cursor=pointer]:
+              - /url: /dich-vu/kham-da-khoa
+            - link "Tiêm Chủng" [ref=e73] [cursor=pointer]:
+              - /url: /dich-vu/tiem-chung
+            - link "Chẩn đoán hình ảnh" [ref=e74] [cursor=pointer]:
+              - /url: /dich-vu/chan-doan-hinh-anh
+            - link "Phẫu thuật" [ref=e75] [cursor=pointer]:
+              - /url: /dich-vu/phau-thuat
+            - link "Xét nghiệm máu & Sinh hóa" [ref=e76] [cursor=pointer]:
+              - /url: /dich-vu/xet-nghiem-mau-va-sinh-hoa
+            - link "Spa & Grooming" [ref=e77] [cursor=pointer]:
+              - /url: /dich-vu/spa-va-grooming
+        - generic [ref=e78]:
+          - heading "LIÊN HỆ" [level=4] [ref=e79]
+          - generic [ref=e80]:
+            - generic [ref=e81]:
+              - generic [ref=e82]: location_on
+              - generic [ref=e83]: Số 68, Ngõ 10, Ngô Xuân Quảng, Trâu Quỳ, Gia Lâm, Hà Nội
+            - generic [ref=e84]:
+              - generic [ref=e85]: call
+              - generic [ref=e86]: "***REMOVED***-VIETQR_ACCOUNT_NO"
+            - generic [ref=e87]:
+              - generic [ref=e88]: mail
+              - generic [ref=e89]: rexivetsys@gmail.com
+            - generic [ref=e90]:
+              - link "Facebook" [ref=e91] [cursor=pointer]:
+                - /url: https://www.facebook.com/share/1Dv1fqqejf/
+                - img [ref=e92]
+              - link "TikTok" [ref=e94] [cursor=pointer]:
+                - /url: https://www.tiktok.com/@rixi404
+                - img [ref=e95]
+              - link "Zalo" [ref=e97] [cursor=pointer]:
+                - /url: https://zalo.me/***REMOVED***-VIETQR_ACCOUNT_NO
+                - img "Zalo" [ref=e98]
+      - paragraph [ref=e100]: © 2026 REXI VETERINARY SYSTEM. All rights reserved.
+      - generic [ref=e101]: "🐾 Mẹo nhỏ: Click vào khoảng trống bất kỳ để thả thức ăn cho thú cưng!"
+  - generic [ref=e102]:
+    - text: Sen ơi, có câu hỏi gì về sức khỏe, tiêm phòng hay ăn uống của bé không nè? 🐾
+    - button "Ẩn bong bóng gợi ý chatbot" [ref=e104] [cursor=pointer]:
+      - generic [ref=e105]: close
+  - button "pets" [ref=e106] [cursor=pointer]:
+    - generic [ref=e107]: pets

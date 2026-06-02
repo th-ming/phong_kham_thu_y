@@ -60,7 +60,15 @@ export const ModalTaoLichHenAdmin: React.FC<ModalProps> = ({ isOpen, onClose, on
     // Tải danh sách dịch vụ khi mở modal
     useEffect(() => {
         if (isOpen) {
-            axiosInstance.get('/api/dich-vu').then(res => setServices(res.data));
+            axiosInstance.get('/api/dich-vu').then(res => {
+                const data = Array.isArray(res.data) ? res.data : (Array.isArray(res.data?.content) ? res.data.content : []);
+                setServices(data.filter((service: any) => {
+                    const deleted = service.da_xoa === true || service.da_xoa === 1;
+                    const inactive = String(service.trang_thai || service.status || '').toLowerCase().includes('ngung')
+                        || String(service.trang_thai || service.status || '').toLowerCase().includes('inactive');
+                    return !deleted && !inactive;
+                }));
+            });
         } else {
             resetState();
         }
@@ -133,7 +141,8 @@ export const ModalTaoLichHenAdmin: React.FC<ModalProps> = ({ isOpen, onClose, on
         setIsLoading(true);
         try {
             const res = await axiosInstance.get(`/api/thu-cung/khach/${customer.id_khach_hang}`);
-            setCustomerPets(res.data || []);
+            const pets = Array.isArray(res.data) ? res.data : (Array.isArray(res.data?.content) ? res.data.content : []);
+            setCustomerPets(pets.filter((pet: any) => !pet.da_xoa));
             setStep(2);
         } catch (err) {
             setError('Không thể tải danh sách thú cưng của khách hàng này.');

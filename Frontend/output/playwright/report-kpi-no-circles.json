@@ -1,0 +1,120 @@
+{
+  "url": "http://localhost:3001/quan-ly/bao-cao-thong-ke",
+  "screenshot": "D:\\QLy Phòng Khám Thú Y\\Frontend\\output\\playwright\\report-kpi-no-circles.png",
+  "kpiState": [
+    {
+      "index": 1,
+      "text": "TỔNG DOANH THU315.000 đSo với ngày trước: Phát sinh mới (+165.000 đ). Bấm để xem ngày hiện tại và ngày trước đó.",
+      "beforeContent": "\"Chi tiết\"",
+      "beforeInset": "22px 22px 186.906px 280.906px",
+      "beforeLeft": "280.906px",
+      "beforeBottom": "186.906px",
+      "beforeMask": "none",
+      "beforeWebkitMask": "none",
+      "beforeWidth": "43.5938px",
+      "beforeHeight": "18.4219px"
+    },
+    {
+      "index": 2,
+      "text": "TỔNG CA ĐIỀU TRỊ11 caSo với ngày trước: Không đổi 0.0% (+0 ca). Bấm để xem phân bổ theo bác sĩ.",
+      "beforeContent": "\"Chi tiết\"",
+      "beforeInset": "22px 22px 186.906px 280.906px",
+      "beforeLeft": "280.906px",
+      "beforeBottom": "186.906px",
+      "beforeMask": "none",
+      "beforeWebkitMask": "none",
+      "beforeWidth": "43.5938px",
+      "beforeHeight": "18.4219px"
+    },
+    {
+      "index": 3,
+      "text": "BÁC SĨ TÍCH CỰCBác sĩ Kiểm thử 17795663478816 ca hoàn thànhThông tin: 0966347881 • doctor_1779566347881@rexi.com",
+      "beforeContent": "\"Chi tiết\"",
+      "beforeInset": "22px 22px 186.906px 280.906px",
+      "beforeLeft": "280.906px",
+      "beforeBottom": "186.906px",
+      "beforeMask": "none",
+      "beforeWebkitMask": "none",
+      "beforeWidth": "43.5938px",
+      "beforeHeight": "18.4219px"
+    },
+    {
+      "index": 4,
+      "text": "DỊCH VỤ HÀNG ĐẦUKhám Đa Khoa0.2 Tr VNĐThông tin: 150.000 đ • 30 phút",
+      "beforeContent": "\"Chi tiết\"",
+      "beforeInset": "22px 22px 186.906px 280.906px",
+      "beforeLeft": "280.906px",
+      "beforeBottom": "186.906px",
+      "beforeMask": "none",
+      "beforeWebkitMask": "none",
+      "beforeWidth": "43.5938px",
+      "beforeHeight": "18.4219px"
+    }
+  ],
+  "logs": [
+    {
+      "type": "debug",
+      "text": "[vite] connecting..."
+    },
+    {
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold"
+    },
+    {
+      "type": "warning",
+      "text": "⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition."
+    },
+    {
+      "type": "warning",
+      "text": "⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath."
+    },
+    {
+      "type": "debug",
+      "text": "[vite] connected."
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 403 ()"
+    },
+    {
+      "type": "error",
+      "text": "[GSI_LOGGER]: The given origin is not allowed for the given client ID."
+    },
+    {
+      "type": "warning",
+      "text": "WebSocket connection to 'ws://localhost:3001/ws/096/iuu0gmtt/websocket' failed: WebSocket is closed before the connection is established."
+    },
+    {
+      "type": "log",
+      "text": "Đã kết nối WebSocket thành công"
+    },
+    {
+      "type": "debug",
+      "text": "[vite] connecting..."
+    },
+    {
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold"
+    },
+    {
+      "type": "warning",
+      "text": "⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition."
+    },
+    {
+      "type": "warning",
+      "text": "⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath."
+    },
+    {
+      "type": "debug",
+      "text": "[vite] connected."
+    },
+    {
+      "type": "warning",
+      "text": "WebSocket connection to 'ws://localhost:3001/ws/243/wchmld1y/websocket' failed: WebSocket is closed before the connection is established."
+    },
+    {
+      "type": "log",
+      "text": "Đã kết nối WebSocket thành công"
+    }
+  ]
+}

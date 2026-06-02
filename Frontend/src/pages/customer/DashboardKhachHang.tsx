@@ -3,7 +3,9 @@ import React, { useState, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axiosInstance from "@services/axios";
 import { Modal, Skeleton } from "@components/CommonUI";
+import BirthYearSelect from "@components/BirthYearSelect";
 import { getUserProfile } from "@utils/index";
+import { customerToneCopy, isGenZBirthYear } from "@utils/customerTone";
 import { useAutoRefresh } from "@hooks/useAutoRefresh";
 import { toast } from "@components/Toast";
 import { useLiveUserProfile } from "@hooks/useLiveUserProfile";
@@ -106,7 +108,7 @@ const DashboardKhachHang: React.FC = () => {
   const randomTip = useMemo(() => PET_CARE_TIPS[Math.floor(Math.random() * PET_CARE_TIPS.length)], []);
 
   const user = liveUser || getUserProfile();
-  const userName = user?.display_name || user?.displayName || user?.ho_ten || user?.hoTen || user?.fullName || user?.ten_khach_hang || user?.ten_dang_nhap || user?.username || "Sen";
+  const userName = user?.display_name || user?.displayName || user?.ho_ten || user?.hoTen || user?.fullName || user?.ten_khach_hang || user?.ten_dang_nhap || user?.username || "Khách hàng";
   const userAvatar = user?.hinh_anh || user?.avatar || "";
   const userInitial = String(userName).replace(/^\d+\.\s*/, '').trim().charAt(0).toUpperCase() || "S";
 
@@ -120,11 +122,8 @@ const DashboardKhachHang: React.FC = () => {
   // Bẫy nghiệp vụ phân loại KHACH_HANG: Cắt mốc từ 1997 trở đi gán cứng là GENZ.
   // Quyết định này giúp đổi banner động dới chatbot Rexi nhây nhây siêu bựa.
   // Ông nào sau này bảo trì muốn đổi mốc 1997 sang mốc khác thì đổi ở đây dới đồng bộ DB nha.
-  const isGenZ = useMemo(() => {
-    if (!user) return false;
-    const userNamSinh = user.nam_sinh;
-    return userNamSinh !== undefined && userNamSinh !== null && Number(userNamSinh) >= 1997;
-  }, [user]);
+  const isGenZ = useMemo(() => isGenZBirthYear(user?.nam_sinh), [user]);
+  const toneCopy = customerToneCopy[isGenZ ? "genz" : "mature"];
 
   const fetchDashboardData = React.useCallback(async () => {
     if (!user) {
@@ -605,12 +604,10 @@ const DashboardKhachHang: React.FC = () => {
           </div>
           <div>
             <h1 className="header-title" style={{ fontSize: '3.5rem', fontWeight: 950, letterSpacing: '-2px', margin: '0 0 8px 0', textShadow: '0 4px 15px rgba(0,0,0,0.2)', color: 'white' }}>
-              {isGenZ ? `Hế lô Sen ${userName} nha! 🦖👋` : `Kính chào Quý khách ${userName}! 👋`}
+              {toneCopy.dashboardTitle(userName)}
             </h1>
             <p style={{ fontWeight: 700, color: 'rgba(255,255,255,0.95)', margin: 0, fontSize: '1.2rem', textShadow: '0 1px 4px rgba(0,0,0,0.1)' }}>
-              {isGenZ 
-                ? "Hôm nay boss cưng thế nào òi? Cùng xem lịch khám dới chi tiêu dới Rexi nhen! 🐾💖"
-                : "Chào mừng Quý khách quay trở lại. Kính chúc Quý khách và các bé cưng một ngày tràn đầy sức khỏe và bình an! 🏥✨"}
+              {toneCopy.dashboardSubtitle}
             </p>
             {lastUpdated && (
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', fontWeight: 800, background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)', padding: '6px 14px', borderRadius: '999px', marginTop: '14px', border: '1px solid rgba(255,255,255,0.2)', position: 'relative', zIndex: 1, boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
@@ -659,7 +656,7 @@ const DashboardKhachHang: React.FC = () => {
       <div className="stagger-2" style={{ marginBottom: '40px' }}>
         <h3 style={{ fontSize: '1.25rem', fontWeight: 950, color: 'var(--ink)', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px', letterSpacing: '-0.5px' }}>
           <span className="material-symbols-outlined" style={{ color: 'var(--primary)' }}>photo_library</span>
-          Boss cưng của mình ({pets.length})
+          {toneCopy.petSectionTitle} ({pets.length})
         </h3>
         {pets.length === 0 ? (
           <div style={{ padding: '32px', background: 'var(--gray-50)', borderRadius: '24px', border: '1px dashed var(--gray-200)', textAlign: 'center' }}>
@@ -893,8 +890,8 @@ const DashboardKhachHang: React.FC = () => {
           )}
 
           <div className="glass-card" style={{
-            width: '90%', maxWidth: '500px',
-            padding: '48px 40px',
+            width: '90%', maxWidth: '760px',
+            padding: '42px 36px',
             borderRadius: '40px',
             background: 'var(--surface)',
             border: '2.5px solid var(--primary)',
@@ -916,21 +913,20 @@ const DashboardKhachHang: React.FC = () => {
             </div>
 
             <h2 style={{ fontSize: '1.8rem', fontWeight: 950, color: 'var(--ink)', margin: '0 0 12px 0', letterSpacing: '-1px' }}>
-              Chào mừng Sen ghé thăm! 🐾
+              Chào mừng bạn ghé thăm! 🐾
             </h2>
             <p style={{ fontSize: '0.98rem', color: 'var(--gray-500)', fontWeight: 650, margin: '0 0 32px 0', lineHeight: 1.6 }}>
-              Sen cho Rexi biết năm sinh của Sen nha! Rexi muốn chọn đúng phong cách trò chuyện phù hợp dới Sen nhất đó meow~ 🐱
+              Cho Rexi biết năm sinh để hệ thống chọn phong cách trò chuyện phù hợp với từng khách hàng.
             </p>
 
-            <form onSubmit={handleSaveAge} style={{ display: 'grid', gap: '24px' }}>
+            <form onSubmit={handleSaveAge} style={{ display: 'grid', gap: '24px', marginTop: '24px' }}>
               <div style={{ position: 'relative' }}>
-                <input
-                  data-ai-id="input-dashboardkhachhang-namsinh"
-                  type="number"
-                  placeholder="Nhập năm sinh của bạn (Ví dụ: 1999)"
+                <BirthYearSelect
+                  data-ai-id="select-dashboardkhachhang-namsinh"
+                  placeholder="Chọn năm sinh"
                   value={inputNamSinh}
-                  onChange={(e) => {
-                    setInputNamSinh(e.target.value);
+                  onChange={(value) => {
+                    setInputNamSinh(value);
                     setAgeError("");
                   }}
                   disabled={savingAge}
@@ -939,7 +935,7 @@ const DashboardKhachHang: React.FC = () => {
                     padding: '16px 20px',
                     borderRadius: '20px',
                     border: '2px solid var(--gray-200)',
-                    background: 'var(--background)',
+                    backgroundColor: 'var(--background)',
                     color: 'var(--ink)',
                     fontSize: '1rem',
                     fontWeight: 800,

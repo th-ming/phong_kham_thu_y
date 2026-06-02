@@ -170,7 +170,7 @@ public class FinanceController {
                     +
                     "FROM HoaDon hd " +
                     "JOIN HoSoBenhAn hs ON hd.id_lich_hen = hs.id_lich_hen " +
-                    "JOIN DonThuoc dt ON hs.id_ho_so_benh_an = dt.id_benh_an " +
+                    "JOIN DonThuoc dt ON hs.id_ho_so_benh_an = dt.id_ho_so_benh_an " +
                     "JOIN DonThuocChiTiet dtct ON dt.id_don_thuoc = dtct.id_don_thuoc " +
                     "JOIN Thuoc t ON dtct.id_thuoc = t.id_thuoc " +
                     "WHERE hd.id_hoa_don = ?";
@@ -295,6 +295,9 @@ public class FinanceController {
             String hanSuDung = (String) payload.get("han_su_dung");
             Integer soLuongNhap = Integer.parseInt(payload.get("so_luong_nhap").toString());
             java.math.BigDecimal giaNhap = new java.math.BigDecimal(payload.get("gia_nhap").toString());
+            String idNcc = payload.get("id_ncc") != null && !String.valueOf(payload.get("id_ncc")).isBlank()
+                    ? String.valueOf(payload.get("id_ncc"))
+                    : "NCC-MAC-DINH";
 
             // Chặn hack qty âm rút kho trái phép
             if (soLuongNhap <= 0) {
@@ -302,11 +305,39 @@ public class FinanceController {
                         .body(Map.of("message", "Cảnh báo bảo mật: Số lượng nhập kho phải lớn hơn 0!"));
             }
 
+            String idLo = "LO-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+
+            Integer nccCount = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM NhaCungCap WHERE id_ncc = ?",
+                    Integer.class,
+                    idNcc);
+            if (nccCount == null || nccCount == 0) {
+                jdbcTemplate.update(
+                        "INSERT INTO NhaCungCap (id_ncc, ten_ncc, ghi_chu, ngay_tao) VALUES (?, N'Nhà cung cấp mặc định', N'Tự tạo khi nhập kho từ giao diện chưa chọn nhà cung cấp', GETDATE())",
+                        idNcc);
+            }
+
             // Thêm lô thuốc mới
-            String sqlInsertLo = "INSERT INTO LoThuoc (id_thuoc, so_lo, ngay_nhap, han_su_dung, so_luong_nhap, so_luong_ton, gia_nhap) "
+            String sqlInsertLo = "INSERT INTO LoThuoc (id_lo, id_thuoc, so_lo, ngay_nhap, han_su_dung, so_luong_nhap, so_luong_ton, gia_nhap, id_ncc) "
                     +
-                    "VALUES (?, ?, ?, ?, ?, ?, ?)";
-            jdbcTemplate.update(sqlInsertLo, idThuoc, soLo, ngayNhap, hanSuDung, soLuongNhap, soLuongNhap, giaNhap);
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            jdbcTemplate.update(sqlInsertLo, idLo, idThuoc, soLo, ngayNhap, hanSuDung, soLuongNhap, soLuongNhap, giaNhap, idNcc);
+
+            org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
+                    .getContext().getAuthentication();
+            String idNhanVien = "NV-HE-THONG";
+            if (auth != null && auth.getName() != null && !"anonymousUser".equals(auth.getName())) {
+                com.rexi.pkty.entity.TaiKhoan tk = taiKhoanRepository.findByTenDangNhap(auth.getName()).orElse(null);
+                if (tk != null && tk.getId_nhan_vien() != null && !tk.getId_nhan_vien().isBlank()) {
+                    idNhanVien = tk.getId_nhan_vien();
+                }
+            }
+
+            String idGiaoDich = "GDK-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+            jdbcTemplate.update(
+                    "INSERT INTO GiaoDichKho (id_giao_dich, id_thuoc, id_lo, loai_giao_dich, so_luong, gia_tri, ngay_giao_dich, id_nhan_vien, ghi_chu) VALUES (?, ?, ?, N'NHAP_KHO', ?, ?, GETDATE(), ?, ?)",
+                    idGiaoDich, idThuoc, idLo, soLuongNhap, giaNhap.multiply(java.math.BigDecimal.valueOf(soLuongNhap)),
+                    idNhanVien, "Nhập kho từ giao diện quản lý");
 
             return ResponseEntity.ok(Map.of("message", "Nhập kho thành công!"));
         } catch (Exception e) {

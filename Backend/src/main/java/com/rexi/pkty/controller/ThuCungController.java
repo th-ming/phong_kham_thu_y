@@ -28,6 +28,9 @@ public class ThuCungController {
     private com.rexi.pkty.service.AuditLogService auditLogService;
 
     @Autowired
+    private com.rexi.pkty.repository.TiemChungRepository tiemChungRepository;
+
+    @Autowired
     private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
 
     @GetMapping
@@ -206,6 +209,37 @@ public class ThuCungController {
             return ResponseEntity.status(500).body(Map.of("message", "Lỗi thêm thú cưng: " + e.getMessage()));
         }
     }
+
+    @PostMapping("/{id}/tiem-chung")
+    @PreAuthorize(RexiSecurityRoles.AUTHENTICATED)
+    public ResponseEntity<?> addTiemChung(@PathVariable String id, @RequestBody Map<String, Object> payload) {
+        try {
+            if (!thuCungRepository.existsById(id)) {
+                return ResponseEntity.status(404).body(Map.of("message", "Không tìm thấy thú cưng."));
+            }
+            com.rexi.pkty.entity.TiemChung tiemChung = new com.rexi.pkty.entity.TiemChung();
+            Long nextId = jdbcTemplate.queryForObject("SELECT ISNULL(MAX(id_tiem_chung), 0) + 1 FROM TiemChung", Long.class);
+            tiemChung.setId_tiem_chung(nextId);
+            tiemChung.setId_thu_cung(id);
+            tiemChung.setTen_vaccine(String.valueOf(payload.getOrDefault("ten_vaccine", "Vaccine test")));
+            tiemChung.setLoai_vaccine(String.valueOf(payload.getOrDefault("loai_vaccine", "Tiêm chủng định kỳ")));
+            tiemChung.setNgay_tiem(java.time.LocalDate.parse(String.valueOf(payload.getOrDefault("ngay_tiem", java.time.LocalDate.now().toString()))));
+            Object ngayTiemLai = payload.get("ngay_tiem_lai");
+            if (ngayTiemLai != null && !String.valueOf(ngayTiemLai).isBlank()) {
+                tiemChung.setNgay_tiem_lai(java.time.LocalDate.parse(String.valueOf(ngayTiemLai)));
+            }
+            Object idBacSi = payload.get("id_bac_si");
+            if (idBacSi != null && !String.valueOf(idBacSi).isBlank()) {
+                tiemChung.setId_bac_si(String.valueOf(idBacSi));
+            }
+            tiemChung.setGhi_chu(String.valueOf(payload.getOrDefault("ghi_chu", "")));
+            com.rexi.pkty.entity.TiemChung saved = tiemChungRepository.save(tiemChung);
+            auditLogService.logAction("THÊM MỚI", "TiemChung", "Thêm lịch sử tiêm chủng cho thú cưng " + id);
+            return ResponseEntity.ok(saved);
+        } catch (Exception e) {
+            return ResponseEntity.status(400).body(Map.of("message", "Không thể tạo bản ghi tiêm chủng: " + e.getMessage()));
+        }
+    }
  
     @DeleteMapping({ "/{id}", "/delete/{id}" })
     public ResponseEntity<Object> deleteThuCung(@PathVariable String id) {
@@ -229,15 +263,6 @@ public class ThuCungController {
                     }
                 }
  
-                // Xoa mem neu da co history transaction
-                if (hasBusinessData(id)) {
-                    tc.setDa_xoa(true);
-                    tc.setNgay_cap_nhat(java.time.LocalDateTime.now());
-                    thuCungRepository.save(tc);
-                    auditLogService.logAction("XÓA MỀM", "ThuCung", "An thu cung: " + tc.getTen_thu_cung());
-                    return ResponseEntity.ok(Map.of("message", "Da an thu cung"));
-                }
-
                 thuCungRepository.delete(tc);
                 auditLogService.logAction("XÓA CỨNG", "ThuCung", "Xoa cung thu cung: " + tc.getTen_thu_cung());
                 return ResponseEntity.ok(Map.of("message", "Da xoa cung thu cung"));
@@ -245,7 +270,7 @@ public class ThuCungController {
                 return ResponseEntity.status(404).body(Map.of("message", "Không tìm thấy thú cưng này!"));
             }
         } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of("message", "Lỗi khi xóa thú cưng: " + e.getMessage()));
+            return ResponseEntity.status(409).body(Map.of("message", "Không thể xóa cứng thú cưng vì còn dữ liệu liên kết: " + e.getMessage()));
         }
     }
 

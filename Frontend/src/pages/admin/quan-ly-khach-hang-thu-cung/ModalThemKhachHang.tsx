@@ -1,5 +1,6 @@
 ﻿import React from "react";
 import { Modal } from "@components/CommonUI";
+import BirthYearSelect from "@components/BirthYearSelect";
 
 // Khai báo kiểu Props rõ ràng, an toàn để tránh lỗi TypeScript lúc build dự án.
 interface ModalThemKhachHangProps {
@@ -82,16 +83,13 @@ export const ModalThemKhachHang: React.FC<ModalThemKhachHangProps> = ({
             <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)' }}>
               NĂM SINH (TÙY CHỌN)
             </label>
-            <input 
-              data-ai-id="input-quanlykhachhangthucung-namsinh" 
-              type="number" 
-              min="1920" 
-              max={new Date().getFullYear()} 
-              className="btn" 
-              style={{ background: 'var(--gray-50)', textAlign: 'left', cursor: 'text' }} 
-              value={khFormData.nam_sinh} 
-              onChange={e => setKhFormData({ ...khFormData, nam_sinh: e.target.value })} 
-              placeholder="VD: 1998 (Phân loại GenZ vs Mature)" 
+            <BirthYearSelect
+              data-ai-id="select-quanlykhachhangthucung-namsinh"
+              className="btn"
+              style={{ backgroundColor: 'var(--gray-50)', textAlign: 'left', cursor: 'pointer' }}
+              value={khFormData.nam_sinh}
+              onChange={value => setKhFormData({ ...khFormData, nam_sinh: value })}
+              placeholder="Chọn năm sinh (tùy chọn)"
             />
           </div>
 

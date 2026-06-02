@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { generateSlug } from "@utils/index";
 import axiosInstance from "@services/axios";
 import { TransparentVideo } from './SpecialEffects';
+import { useLiveUserProfile } from '@hooks/useLiveUserProfile';
+import { isGenZBirthYear } from '@utils/customerTone';
 
 // =========================================================================
 // HỆ THỐNG THÚ CƯNG ẢO CAO CẤP (PREMIUM VIRTUAL PETS)
@@ -147,6 +149,10 @@ const VirtualPets: React.FC<{ containerRef: React.RefObject<HTMLElement> }> = ({
 // * * FOOTER COMPONENT * Footer chính của toàn bộ hệ thống
 const Footer: React.FC<{ isSimple?: boolean }> = ({ isSimple }) => {
     const footerRef = useRef<HTMLElement>(null);
+    const liveUser = useLiveUserProfile();
+    const footerBubbleText = isGenZBirthYear(liveUser?.nam_sinh)
+        ? "Click đi sen, trẫm múa nè! 🐾"
+        : "Nhấn để Rexi chào anh/chị. 🐾";
     const [services, setServices] = useState<any[]>([]);
     const [isMemePlaying, setIsMemePlaying] = useState(false);
 
@@ -187,7 +193,7 @@ const Footer: React.FC<{ isSimple?: boolean }> = ({ isSimple }) => {
                     cursor: 'pointer'
                     }} onClick={() => setIsMemePlaying(true)}>
                     <div className="footer-chat-bubble">
-                        Click đi sen, trẫm múa nè! 🐾
+                        {footerBubbleText}
                     </div>
                 </div>
             )}
