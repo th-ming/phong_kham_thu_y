@@ -17,7 +17,7 @@ const PhanBacSi: React.FC = () => {
 
     return (
         <RevealSection>
-            <section id="doctors" style={{ padding: "110px 0", background: "var(--background)", position: 'relative', overflow: 'hidden' }}>
+            <section id="doctors" className="home-doctors-section" style={{ padding: "110px 0", background: "var(--background)", position: 'relative', overflow: 'hidden' }}>
                 <style>{`
                     .doc-card-small { 
                         transition: all 0.4s ease; 
@@ -122,14 +122,187 @@ const PhanBacSi: React.FC = () => {
                         .doc-grid { grid-template-columns: repeat(3, 1fr) !important; }
                     }
                     @media (max-width: 700px) {
-                        .doc-grid { grid-template-columns: 1fr !important; }
+                        .home-doctors-section {
+                            padding: 64px 0 !important;
+                            background:
+                                linear-gradient(180deg, var(--background) 0%, color-mix(in srgb, var(--primary-light) 34%, var(--background)) 100%) !important;
+                        }
+                        .home-doctors-section .container {
+                            padding-left: 18px !important;
+                            padding-right: 18px !important;
+                        }
+                        .home-doctors-heading {
+                            margin-bottom: 22px !important;
+                        }
+                        .home-doctors-heading h2 {
+                            max-width: 310px;
+                            font-size: 2rem !important;
+                            line-height: 1.15 !important;
+                            letter-spacing: 0 !important;
+                            margin-bottom: 10px !important;
+                        }
+                        .home-doctors-subtitle {
+                            display: block !important;
+                            max-width: 310px;
+                            margin: 0;
+                            color: var(--gray-500);
+                            font-size: 0.86rem;
+                            line-height: 1.48;
+                            font-weight: 650;
+                        }
+                        .doctors-layout {
+                            display: block !important;
+                        }
+                        .doc-featured {
+                            width: 100% !important;
+                            max-width: 100% !important;
+                            display: grid !important;
+                            grid-template-columns: 112px 1fr;
+                            align-items: center;
+                            gap: 14px;
+                            padding: 14px !important;
+                            border-radius: 24px !important;
+                            background:
+                                linear-gradient(135deg, var(--surface), color-mix(in srgb, var(--surface) 72%, var(--primary-light))) !important;
+                            box-shadow: 0 18px 42px rgba(15, 23, 42, 0.08) !important;
+                            margin-bottom: 18px;
+                            overflow: visible !important;
+                        }
+                        .doc-featured-image {
+                            width: 112px !important;
+                            height: 136px !important;
+                            border-radius: 22px !important;
+                            overflow: hidden !important;
+                            background: var(--primary-light) !important;
+                            box-shadow: 0 14px 28px rgba(15, 157, 138, 0.15);
+                        }
+                        .doc-featured-image .doc-featured-img {
+                            height: 100% !important;
+                            object-position: top center !important;
+                        }
+                        .doc-featured-image > div[style*="position: absolute"][style*="top: 20px"] {
+                            display: none !important;
+                        }
+                        .doc-featured-image > div[style*="linear-gradient"] {
+                            height: 46px !important;
+                        }
+                        .doc-featured-body {
+                            padding: 0 !important;
+                            min-width: 0;
+                        }
+                        .doc-featured-body h3 {
+                            font-size: 1.18rem !important;
+                            line-height: 1.18 !important;
+                            margin-bottom: 5px !important;
+                            letter-spacing: 0 !important;
+                        }
+                        .doc-featured-body p:first-of-type {
+                            display: inline-flex;
+                            max-width: 100%;
+                            padding: 5px 9px;
+                            border-radius: 999px;
+                            background: var(--primary-light);
+                            color: var(--primary) !important;
+                            font-size: 0.68rem !important;
+                            line-height: 1.2 !important;
+                            margin-bottom: 9px !important;
+                            white-space: nowrap;
+                            overflow: hidden;
+                            text-overflow: ellipsis;
+                        }
+                        .doc-featured-body p {
+                            display: -webkit-box;
+                            font-size: 0.74rem !important;
+                            line-height: 1.42 !important;
+                            margin-bottom: 10px !important;
+                            -webkit-line-clamp: 3;
+                            -webkit-box-orient: vertical;
+                            overflow: hidden;
+                        }
+                        .doc-featured-body > div {
+                            padding-top: 9px !important;
+                            font-size: 0.72rem !important;
+                            border-top-style: solid !important;
+                        }
+                        .doc-grid {
+                            display: flex !important;
+                            gap: 12px !important;
+                            overflow-x: auto;
+                            overflow-y: hidden;
+                            padding: 2px 2px 12px;
+                            margin-left: -2px;
+                            margin-right: -18px;
+                            scroll-snap-type: x mandatory;
+                            -webkit-overflow-scrolling: touch;
+                            scrollbar-width: none;
+                        }
+                        .doc-grid::-webkit-scrollbar {
+                            display: none;
+                        }
+                        .doc-card-small {
+                            flex: 0 0 162px;
+                            scroll-snap-align: start;
+                            border-radius: 20px !important;
+                            overflow: hidden !important;
+                            background: var(--surface) !important;
+                            box-shadow: 0 14px 30px rgba(15, 23, 42, 0.07) !important;
+                        }
+                        .doc-card-image {
+                            height: 118px !important;
+                            background: var(--primary-light) !important;
+                        }
+                        .doc-card-body {
+                            padding: 11px 12px 12px !important;
+                        }
+                        .doc-card-body h4 {
+                            font-size: 0.83rem !important;
+                            line-height: 1.22 !important;
+                            margin-bottom: 4px !important;
+                        }
+                        .doc-card-body p {
+                            font-size: 0.68rem !important;
+                            line-height: 1.35 !important;
+                            min-height: 28px;
+                            margin-bottom: 8px !important;
+                        }
+                        .doc-card-exp {
+                            font-size: 0.66rem !important;
+                            padding-top: 8px !important;
+                        }
+                        .doctor-all-card {
+                            flex: 0 0 172px;
+                            min-height: auto;
+                            padding: 16px 14px !important;
+                            border-radius: 20px !important;
+                            gap: 10px !important;
+                            scroll-snap-align: start;
+                        }
+                        .doctor-all-icon {
+                            width: 44px !important;
+                            height: 44px !important;
+                            border-radius: 14px !important;
+                        }
+                        .doctor-all-icon span {
+                            font-size: 23px !important;
+                        }
+                        .doctor-all-card div[style*="font-weight: 900"] {
+                            font-size: 0.86rem !important;
+                        }
+                        .doctor-all-card div[style*="color: #b45309"] {
+                            font-size: 0.7rem !important;
+                        }
+                        .doctor-all-link {
+                            padding: 9px 14px !important;
+                            font-size: 0.74rem !important;
+                        }
                     }
                 `}</style>
 
                 {/* tiêu đề bs */}
                 <div className="container">
-                    <div style={{ marginBottom: '56px' }}>
+                    <div className="home-doctors-heading" style={{ marginBottom: '56px' }}>
                         <h2 style={{ fontSize: "clamp(2rem, 4vw, 3rem)", fontWeight: 950, color: "var(--ink)", letterSpacing: '-1px' }}>Chuyên Gia <span style={{ color: "var(--primary)" }}>Tận Tâm</span></h2>
+                        <p className="home-doctors-subtitle">Đội ngũ bác sĩ Rexi theo sát từng ca khám, từ tư vấn ban đầu đến chăm sóc sau điều trị.</p>
                     </div>
 
                     {/* bố cục bs */}
@@ -137,7 +310,7 @@ const PhanBacSi: React.FC = () => {
 
                         {/* cột bs nổi bật */}
                         <div className="doc-featured" style={{ flex: '0 0 auto', width: '38%', borderRadius: '32px', overflow: 'hidden', background: 'var(--surface)', border: '1px solid var(--gray-300)', boxShadow: 'var(--shadow-xl)', display: 'flex', flexDirection: 'column', cursor: 'default' }}>
-                            <div style={{ height: '400px', position: 'relative', overflow: 'hidden', background: isDark ? 'linear-gradient(180deg, #0f172a 0%, #1e293b 100%)' : 'linear-gradient(180deg, #f0fdfa 0%, #ccfbf1 100%)' }}>
+                            <div className="doc-featured-image" style={{ height: '400px', position: 'relative', overflow: 'hidden', background: isDark ? 'linear-gradient(180deg, #0f172a 0%, #1e293b 100%)' : 'linear-gradient(180deg, #f0fdfa 0%, #ccfbf1 100%)' }}>
 
                                 <img src={MOCK_DOCTORS[0].hinh_anh} alt={MOCK_DOCTORS[0].ho_ten} className="doc-featured-img" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center' }} />
                                 {/* nhãn bs */}
@@ -149,7 +322,7 @@ const PhanBacSi: React.FC = () => {
                                 <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '120px', background: isDark ? 'linear-gradient(to top, var(--surface) 0%, transparent 100%)' : 'linear-gradient(to top, rgba(255,255,255,1) 0%, transparent 100%)' }} />
                             </div>
 
-                            <div style={{ padding: '28px 32px 32px' }}>
+                            <div className="doc-featured-body" style={{ padding: '28px 32px 32px' }}>
                                 <h3 style={{ fontSize: '1.6rem', fontWeight: 950, color: 'var(--ink)', marginBottom: '6px' }}>{MOCK_DOCTORS[0].ho_ten}</h3>
                                 <p style={{ color: 'var(--primary)', fontWeight: 800, fontSize: '0.9rem', marginBottom: '16px' }}>{MOCK_DOCTORS[0].chuyen_mon}</p>
                                 <p style={{ color: 'var(--gray-500)', fontSize: '0.9rem', lineHeight: 1.7, fontWeight: 500, marginBottom: '20px' }}>{MOCK_DOCTORS[0].mo_ta}</p>
@@ -164,14 +337,14 @@ const PhanBacSi: React.FC = () => {
                         <div className="doc-grid" style={{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '20px', alignContent: 'start' }}>
                             {MOCK_DOCTORS.slice(1).map((d, i) => (
                                 <div key={i} className="doc-card-small glass-card" style={{ borderRadius: '24px', overflow: 'hidden', background: 'var(--surface)', display: 'flex', flexDirection: 'column' }}>
-                                    <div style={{ height: '200px', position: 'relative', overflow: 'hidden', background: isDark ? 'linear-gradient(180deg, #0f172a 0%, #1e293b 100%)' : 'linear-gradient(180deg, #f0fdfa 0%, #ccfbf1 100%)' }}>
+                                    <div className="doc-card-image" style={{ height: '200px', position: 'relative', overflow: 'hidden', background: isDark ? 'linear-gradient(180deg, #0f172a 0%, #1e293b 100%)' : 'linear-gradient(180deg, #f0fdfa 0%, #ccfbf1 100%)' }}>
                                         <img src={d.hinh_anh} alt={d.ho_ten} className="doctor-img" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center' }} />
                                         <div style={{ position: 'absolute', inset: 0, background: isDark ? 'linear-gradient(to top, var(--surface) 0%, transparent 50%)' : 'linear-gradient(to top, rgba(255,255,255,0.8) 0%, transparent 50%)' }} />
                                     </div>
-                                    <div style={{ padding: '16px 18px' }}>
+                                    <div className="doc-card-body" style={{ padding: '16px 18px' }}>
                                         <h4 style={{ fontSize: '1rem', fontWeight: 950, marginBottom: '4px', color: 'var(--ink)' }}>{d.ho_ten}</h4>
                                         <p style={{ color: 'var(--primary)', fontWeight: 800, fontSize: '0.78rem', marginBottom: '10px' }}>{d.chuyen_mon}</p>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--gray-400)', fontSize: '0.75rem', fontWeight: 700, paddingTop: '10px', borderTop: '1px dashed var(--gray-200)' }}>
+                                        <div className="doc-card-exp" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--gray-400)', fontSize: '0.75rem', fontWeight: 700, paddingTop: '10px', borderTop: '1px dashed var(--gray-200)' }}>
                                             <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>history</span>
                                             {d.exp}
                                         </div>

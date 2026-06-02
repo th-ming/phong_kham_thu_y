@@ -13,7 +13,7 @@ const PhanHoiDap: React.FC = () => {
 
     return (
         <RevealSection>
-            <section style={{ padding: "110px 0", background: "var(--background)", position: 'relative', overflow: 'hidden' }}>
+            <section className="home-faq-section" style={{ padding: "110px 0", background: "var(--background)", position: 'relative', overflow: 'hidden' }}>
                 <div style={{ position: 'absolute', top: '-80px', right: '-80px', width: '400px', height: '400px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(15,157,138,0.05) 0%, transparent 70%)', pointerEvents: 'none' }} />
 
                 <style>{`
@@ -94,14 +94,134 @@ const PhanHoiDap: React.FC = () => {
                         from { opacity: 0; transform: translateY(-8px); }
                         to { opacity: 1; transform: translateY(0); }
                     }
+                    @media (max-width: 700px) {
+                        .home-faq-section {
+                            padding: 68px 0 !important;
+                        }
+                        .faq-layout {
+                            display: block !important;
+                        }
+                        .faq-side {
+                            position: static !important;
+                            width: 100% !important;
+                            margin-bottom: 20px;
+                        }
+                        .faq-side .section-label {
+                            margin-bottom: 12px !important;
+                        }
+                        .faq-side h2 {
+                            max-width: 300px;
+                            font-size: 2rem !important;
+                            line-height: 1.12 !important;
+                            margin-bottom: 10px !important;
+                            letter-spacing: 0 !important;
+                        }
+                        .faq-side > p {
+                            max-width: 330px;
+                            font-size: 0.86rem !important;
+                            line-height: 1.48 !important;
+                            margin-bottom: 16px !important;
+                        }
+                        .faq-contact-card {
+                            display: grid;
+                            grid-template-columns: 42px 1fr auto;
+                            align-items: center;
+                            column-gap: 11px;
+                            padding: 13px !important;
+                            border-radius: 18px !important;
+                            box-shadow: var(--shadow-sm) !important;
+                        }
+                        .faq-contact-icon {
+                            width: 42px !important;
+                            height: 42px !important;
+                            margin-bottom: 0 !important;
+                            border-radius: 13px !important;
+                        }
+                        .faq-contact-card > div:nth-child(2) {
+                            margin-bottom: 0 !important;
+                            font-size: 0.84rem !important;
+                        }
+                        .faq-contact-card > div:nth-child(3) {
+                            display: none;
+                        }
+                        .faq-call-link {
+                            width: 40px;
+                            height: 40px;
+                            padding: 0 !important;
+                            border-radius: 13px !important;
+                            display: grid !important;
+                            place-items: center;
+                        }
+                        .faq-call-link span:last-child {
+                            display: none;
+                        }
+                        .faq-call-link .call-icon {
+                            font-size: 19px !important;
+                        }
+                        .faq-list {
+                            min-width: 0 !important;
+                            gap: 10px !important;
+                        }
+                        .faq-item {
+                            border: 1px solid var(--gray-200) !important;
+                            border-radius: 18px;
+                            background: var(--surface);
+                            box-shadow: var(--shadow-sm);
+                            overflow: hidden;
+                            transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
+                        }
+                        .faq-item:has(button:active),
+                        .faq-item:hover {
+                            transform: translateY(-2px);
+                            border-color: var(--primary) !important;
+                            box-shadow: var(--shadow-md);
+                        }
+                        .faq-toggle-btn {
+                            padding: 15px 13px !important;
+                            align-items: center !important;
+                            gap: 10px !important;
+                        }
+                        .faq-toggle-btn > div:first-child {
+                            gap: 11px !important;
+                            align-items: center !important;
+                            min-width: 0;
+                        }
+                        .faq-number {
+                            width: 34px;
+                            height: 34px;
+                            display: grid;
+                            place-items: center;
+                            border-radius: 12px;
+                            background: var(--primary-light);
+                            color: var(--primary) !important;
+                            font-size: 0.9rem !important;
+                            font-family: Inter, system-ui, sans-serif !important;
+                        }
+                        .faq-toggle-btn > div:first-child > span:last-child {
+                            font-size: 0.84rem !important;
+                            line-height: 1.36 !important;
+                            padding-top: 0 !important;
+                            min-width: 0;
+                        }
+                        .faq-toggle-btn > div:last-child {
+                            width: 30px !important;
+                            height: 30px !important;
+                            margin-top: 0 !important;
+                        }
+                        .faq-item > div {
+                            padding: 0 13px 16px 58px !important;
+                            font-size: 0.8rem !important;
+                            line-height: 1.62 !important;
+                        }
+                    }
                 `}</style>
 
                 <div className="container">
                     {/* Two-column layout: Header left + FAQ list right */}
-                    <div style={{ display: 'flex', gap: '80px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                    <div className="faq-layout" style={{ display: 'flex', gap: '80px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
 
                         {/* LEFT: Sticky header */}
-                        <div style={{ flex: '0 0 auto', width: '300px', position: 'sticky', top: '120px' }}>
+                        <div className="faq-side" style={{ flex: '0 0 auto', width: '300px', position: 'sticky', top: '120px' }}>
                             <div className="section-label" style={{ marginBottom: '20px' }}>? Hỏi Đáp</div>
                             <h2 style={{ fontSize: 'clamp(1.8rem, 3vw, 2.6rem)', fontWeight: 950, color: 'var(--ink)', lineHeight: 1.2, letterSpacing: '-1px', marginBottom: '20px' }}>
                                 Câu Hỏi <span style={{ color: 'var(--primary)' }}>Thường Gặp</span>
@@ -124,7 +244,7 @@ const PhanHoiDap: React.FC = () => {
                         </div>
 
                         {/* RIGHT: FAQ accordion - single column, full width */}
-                        <div style={{ flex: 1, minWidth: '280px', display: 'flex', flexDirection: 'column', gap: '0' }}>
+                        <div className="faq-list" style={{ flex: 1, minWidth: '280px', display: 'flex', flexDirection: 'column', gap: '0' }}>
                             {faqs.map((faq, i) => (
                                 <div key={i} className="faq-item" style={{ borderBottom: '1px solid var(--gray-200)' }}>
                                     <button data-ai-id="button-phanhoidap-67qz"

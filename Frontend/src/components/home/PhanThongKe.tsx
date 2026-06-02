@@ -51,7 +51,7 @@ const PhanThongKe: React.FC = () => {
     }, [started]);
 
     return (
-        <section ref={ref} className="premium-fluid-gradient" style={{
+        <section ref={ref} className="premium-fluid-gradient home-stats-section" style={{
             padding: "100px 0",
             position: "relative",
             overflow: "hidden"
@@ -92,10 +92,131 @@ const PhanThongKe: React.FC = () => {
                 .stat-icon-box { transition: transform 0.4s ease; }
                 .stat-card:hover .stat-icon-box { transform: scale(1.1) rotate(-5deg); }
                 @media (max-width: 768px) {
-                    .stats-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 16px !important; }
-                }
-                @media (max-width: 460px) {
-                    .stats-grid { grid-template-columns: 1fr !important; }
+                    .home-stats-section {
+                        padding: 64px 0 !important;
+                    }
+                    .home-stats-section .container {
+                        padding: 0 18px;
+                    }
+                    .home-stats-panel {
+                        max-width: 430px;
+                        margin: 0 auto;
+                        padding: 0;
+                        border-radius: 0;
+                        background: transparent;
+                        border: 0;
+                        backdrop-filter: none;
+                        -webkit-backdrop-filter: none;
+                        box-shadow: none;
+                    }
+                    .stats-header {
+                        position: relative;
+                        margin-bottom: 22px !important;
+                        padding: 20px 18px 18px;
+                        text-align: left !important;
+                        border-radius: 28px;
+                        background:
+                            linear-gradient(135deg, rgba(255,255,255,0.22), rgba(255,255,255,0.08));
+                        border: 1px solid rgba(255,255,255,0.2);
+                        box-shadow:
+                            0 24px 60px rgba(15, 23, 42, 0.16),
+                            inset 0 1px 0 rgba(255,255,255,0.16);
+                        overflow: hidden;
+                        backdrop-filter: blur(12px);
+                        -webkit-backdrop-filter: blur(12px);
+                    }
+                    .stats-header::before {
+                        content: "10+";
+                        position: absolute;
+                        right: 14px;
+                        top: 6px;
+                        color: rgba(236,254,255,0.14);
+                        font-family: 'Be Vietnam Pro', sans-serif;
+                        font-size: 5.6rem;
+                        line-height: 1;
+                        font-weight: 950;
+                        pointer-events: none;
+                    }
+                    .stats-header .section-label {
+                        display: inline-flex !important;
+                        margin-bottom: 14px !important;
+                        padding: 7px 12px !important;
+                        border-radius: 999px !important;
+                        background: rgba(255,255,255,0.14) !important;
+                        border-color: rgba(255,255,255,0.2) !important;
+                        font-size: 0.66rem !important;
+                        letter-spacing: 0.6px !important;
+                    }
+                    .stats-header h2 {
+                        font-family: 'Be Vietnam Pro', sans-serif;
+                        max-width: 230px;
+                        font-size: 1.78rem !important;
+                        line-height: 1.12 !important;
+                        letter-spacing: 0 !important;
+                        margin-bottom: 10px !important;
+                        color: white !important;
+                    }
+                    .stats-header h2 span {
+                        color: #ccfbf1 !important;
+                    }
+                    .stats-header p {
+                        max-width: 260px;
+                        margin: 0;
+                        font-size: 0.86rem !important;
+                        line-height: 1.45 !important;
+                        color: rgba(255,255,255,0.78) !important;
+                    }
+                    .stats-grid {
+                        display: grid !important;
+                        grid-template-columns: 1fr !important;
+                        gap: 9px !important;
+                    }
+                    .stat-card {
+                        min-height: 76px;
+                        display: grid;
+                        grid-template-columns: 46px 92px 1fr;
+                        align-items: center;
+                        gap: 12px;
+                        text-align: left !important;
+                        border-radius: 18px !important;
+                        padding: 12px 14px !important;
+                        background: rgba(255, 255, 255, 0.1) !important;
+                        border: 1px solid rgba(255,255,255,0.15) !important;
+                        box-shadow: inset 0 1px 0 rgba(255,255,255,0.1);
+                    }
+                    .stat-icon-box {
+                        width: 44px !important;
+                        height: 44px !important;
+                        border-radius: 14px !important;
+                        margin: 0 !important;
+                        background: rgba(236,254,255,0.96) !important;
+                        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.14) !important;
+                    }
+                    .stat-icon-box span {
+                        font-size: 25px !important;
+                        color: var(--primary) !important;
+                    }
+                    .stat-number {
+                        font-family: 'Be Vietnam Pro', sans-serif !important;
+                        font-size: 1.62rem !important;
+                        font-weight: 950 !important;
+                        color: #ccfbf1 !important;
+                        margin-bottom: 0 !important;
+                        white-space: nowrap;
+                    }
+                    .stat-number span {
+                        color: #ccfbf1 !important;
+                    }
+                    .stat-label {
+                        display: none;
+                    }
+                    .stat-sublabel {
+                        max-width: none;
+                        margin: 0;
+                        font-size: 0.73rem !important;
+                        line-height: 1.34 !important;
+                        color: rgba(255,255,255,0.86) !important;
+                    }
                 }
             `}</style>
 
@@ -104,8 +225,9 @@ const PhanThongKe: React.FC = () => {
             <div style={{ position: 'absolute', bottom: '-80px', left: '-80px', width: '350px', height: '350px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 65%)', pointerEvents: 'none' }} />
 
             <div className="container">
+                <div className="home-stats-panel">
                 {/* Header */}
-                <div style={{ textAlign: 'center', marginBottom: '56px' }}>
+                <div className="stats-header" style={{ textAlign: 'center', marginBottom: '56px' }}>
                     <div className="section-label" style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', color: 'white', marginBottom: '20px' }}>📊 Con số ấn tượng</div>
                     <h2 style={{ fontSize: 'clamp(1.8rem, 3.5vw, 2.8rem)', fontWeight: 950, color: 'white', letterSpacing: '-1px', marginBottom: '12px' }}>
                         Hơn <span style={{ color: '#ccfbf1' }}>10 Năm</span> Đồng Hành
@@ -122,14 +244,15 @@ const PhanThongKe: React.FC = () => {
                                 <span className="material-symbols-outlined" style={{ fontSize: '30px', color: s.color }}>{s.icon}</span>
                             </div>
                             {/* Number */}
-                            <div style={{ fontSize: 'clamp(2.2rem, 3.5vw, 3rem)', fontWeight: 950, color: 'white', lineHeight: 1, marginBottom: '8px', fontFamily: "'Lora', serif" }}>
+                            <div className="stat-number" style={{ fontSize: 'clamp(2.2rem, 3.5vw, 3rem)', fontWeight: 950, color: 'white', lineHeight: 1, marginBottom: '8px', fontFamily: "'Lora', serif" }}>
                                 {counts[i].toLocaleString()}<span style={{ color: '#ccfbf1' }}>{s.suffix}</span>
                             </div>
                             {/* Label */}
-                            <div style={{ fontWeight: 900, color: 'white', fontSize: '1rem', marginBottom: '8px' }}>{s.label}</div>
-                            <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.8rem', fontWeight: 500, lineHeight: 1.5 }}>{s.sublabel}</div>
+                            <div className="stat-label" style={{ fontWeight: 900, color: 'white', fontSize: '1rem', marginBottom: '8px' }}>{s.label}</div>
+                            <div className="stat-sublabel" style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.8rem', fontWeight: 500, lineHeight: 1.5 }}>{s.sublabel}</div>
                         </div>
                     ))}
+                </div>
                 </div>
             </div>
         </section>

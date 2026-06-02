@@ -113,7 +113,7 @@ const VirtualPets: React.FC<{ containerRef: React.RefObject<HTMLElement> }> = ({
     }, [containerRef]);
 
     return (
-        <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'auto', zIndex: 0 }}>
+        <div className="footer-virtual-pets" style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'auto', zIndex: 0 }}>
             <style>{`
                 @keyframes foodDrop {
                     0% { transform: scale(0) rotate(-45deg); opacity: 0; }
@@ -181,7 +181,7 @@ const Footer: React.FC<{ isSimple?: boolean }> = ({ isSimple }) => {
 
             {/* LỚP BONG BÓNG CHAT (TỰ NHIÊN & SINH ĐỘNG HƠN) */}
             {!isSimple && !isMemePlaying && (
-                <div style={{
+                <div className="footer-cat-bubble-wrap" style={{
                     position: 'absolute',
                     bottom: '273px', // Đặt vừa khít trên đỉnh đầu ảnh tĩnh 130px
                     left: '50%',
@@ -200,7 +200,7 @@ const Footer: React.FC<{ isSimple?: boolean }> = ({ isSimple }) => {
 
             {/* LỚP CHỨA ẢNH/VIDEO */}
             {!isSimple && (
-                <div style={{
+                <div className="footer-cat-media" style={{
                     position: 'absolute',
                     bottom: '143px', 
                     left: '50%',
@@ -257,8 +257,8 @@ const Footer: React.FC<{ isSimple?: boolean }> = ({ isSimple }) => {
 
             <div className="container" style={{ position: 'relative', zIndex: 1 }}>
                 {!isSimple && (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '60px', marginBottom: '80px' }}>
-                        <div style={{ gridColumn: 'span 2' }}>
+                    <div className="footer-main-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '60px', marginBottom: '80px' }}>
+                        <div className="footer-brand-block" style={{ gridColumn: 'span 2' }}>
                             <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '14px', textDecoration: 'none', marginBottom: '28px' }}>
                                 <div style={{ width: '56px', height: '56px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                     <img src="/img/avtpkty.png" alt="Rexi" style={{ width: '100%', height: '100%', objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
@@ -272,14 +272,16 @@ const Footer: React.FC<{ isSimple?: boolean }> = ({ isSimple }) => {
                                 Đăng ký nhận tin để không bỏ lỡ các kiến thức chăm sóc thú cưng bổ ích và chương trình ưu đãi độc quyền từ Rexi.
                             </p>
                             {/* Newsletter Input */}
-                            <div style={{ position: 'relative', maxWidth: '420px', marginBottom: '32px' }}>
+                            <div className="footer-newsletter" style={{ position: 'relative', maxWidth: '420px', marginBottom: '32px' }}>
                                 <input data-ai-id="input-footer-xw4d"
+                                    className="footer-newsletter-input"
                                     type="email"
                                     placeholder="Email của bạn..."
                                     id="newsletter-email"
                                     style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', padding: '16px 24px', borderRadius: '50px', color: 'white', outline: 'none' }}
                                 />
                                 <button data-ai-id="button-footer-onwp"
+                                    className="footer-newsletter-button"
                                     onClick={async () => {
                                         const email = (document.getElementById('newsletter-email') as HTMLInputElement).value;
                                         if (!email || !email.includes('@')) {
@@ -311,7 +313,7 @@ const Footer: React.FC<{ isSimple?: boolean }> = ({ isSimple }) => {
                         <div>
                             <h4 style={{ color: 'white', fontWeight: 800, marginBottom: '32px', letterSpacing: '1px', fontSize: '0.9rem' }}>DỊCH VỤ</h4>
                             {/* BUG FIX & UX: Tăng khoảng cách gap lên 12px để tránh con sen bấm trượt trên di động */}
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            <div className="footer-service-list" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                                 {displayServices.map((name, index) => (
                                     <Link key={index} to={`/dich-vu/${generateSlug(name)}`} className="footer-link">
                                         {name}
@@ -321,7 +323,7 @@ const Footer: React.FC<{ isSimple?: boolean }> = ({ isSimple }) => {
                         </div>
                         <div>
                             <h4 style={{ color: 'white', fontWeight: 800, marginBottom: '32px', letterSpacing: '1px', fontSize: '0.9rem' }}>LIÊN HỆ</h4>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                            <div className="footer-contact-list" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                                 <div style={{ display: 'flex', gap: '12px' }}>
                                     <span className="material-symbols-outlined" style={{ color: '#0f9d8a', fontSize: '20px' }}>location_on</span>
                                     <span style={{ fontSize: '0.95rem' }}>Số 68, Ngõ 10, Ngô Xuân Quảng, Trâu Quỳ, Gia Lâm, Hà Nội</span>
@@ -350,11 +352,11 @@ const Footer: React.FC<{ isSimple?: boolean }> = ({ isSimple }) => {
                     </div>
                 )}
                 
-                <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
+                <div className="footer-bottom-row" style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
                     <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>© 2026 REXI VETERINARY SYSTEM. All rights reserved.</p>
                 </div>
                 {!isSimple && (
-                    <div style={{ textAlign: 'center', marginTop: '16px', fontSize: '0.8rem', color: 'rgba(255,255,255,0.2)', fontWeight: 800 }}>
+                    <div className="footer-feed-tip" style={{ textAlign: 'center', marginTop: '16px', fontSize: '0.8rem', color: 'rgba(255,255,255,0.2)', fontWeight: 800 }}>
                         🐾 Mẹo nhỏ: Click vào khoảng trống bất kỳ để thả thức ăn cho thú cưng!
                     </div>
                 )}
@@ -382,6 +384,124 @@ const Footer: React.FC<{ isSimple?: boolean }> = ({ isSimple }) => {
                 .social-circle-zalo { display: flex; align-items: center; justify-content: center; border-radius: 50%; background: rgba(0, 104, 255, 0.1); width: 44px; height: 44px; transition: all 0.3s; border: 1px solid rgba(0, 104, 255, 0.2); }
                 .social-circle-zalo:hover { background: rgba(0, 104, 255, 0.2); border-color: #0068FF; transform: translateY(-3px); box-shadow: 0 0 15px rgba(0, 104, 255, 0.5); }
                 .social-circle-zalo:hover img { transform: scale(1.1); }
+
+                @media (max-width: 700px) {
+                    .premium-footer {
+                        padding: 56px 0 28px !important;
+                        cursor: default !important;
+                    }
+
+                    .premium-footer .container {
+                        padding-left: 18px !important;
+                        padding-right: 18px !important;
+                    }
+
+                    .footer-virtual-pets,
+                    .footer-cat-bubble-wrap,
+                    .footer-cat-media {
+                        display: none !important;
+                    }
+
+                    .footer-main-grid {
+                        grid-template-columns: 1fr !important;
+                        gap: 28px !important;
+                        margin-bottom: 32px !important;
+                    }
+
+                    .footer-brand-block {
+                        grid-column: auto !important;
+                    }
+
+                    .footer-brand-block > a {
+                        margin-bottom: 18px !important;
+                    }
+
+                    .footer-brand-block img {
+                        width: 44px !important;
+                        height: 44px !important;
+                    }
+
+                    .footer-brand-block .logo-rexi {
+                        font-size: 1.7rem !important;
+                        letter-spacing: 0 !important;
+                    }
+
+                    .footer-brand-block .logo-sub {
+                        font-size: 0.68rem !important;
+                    }
+
+                    .footer-brand-block p {
+                        font-size: 0.86rem !important;
+                        line-height: 1.6 !important;
+                        margin-bottom: 18px !important;
+                    }
+
+                    .footer-newsletter {
+                        max-width: none !important;
+                        display: grid !important;
+                        gap: 8px !important;
+                        margin-bottom: 20px !important;
+                    }
+
+                    .footer-newsletter-input {
+                        padding: 14px 16px !important;
+                        border-radius: 16px !important;
+                    }
+
+                    .footer-newsletter-button {
+                        position: static !important;
+                        width: 100% !important;
+                        min-height: 44px !important;
+                        border-radius: 16px !important;
+                    }
+
+                    .footer-service-list {
+                        display: grid !important;
+                        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+                        gap: 6px 12px !important;
+                    }
+
+                    .footer-link {
+                        min-height: 38px !important;
+                        padding: 6px 0 !important;
+                        font-size: 0.82rem !important;
+                    }
+
+                    .footer-contact-list {
+                        gap: 12px !important;
+                    }
+
+                    .footer-contact-list > div {
+                        gap: 10px !important;
+                    }
+
+                    .footer-contact-list span:not(.material-symbols-outlined) {
+                        font-size: 0.84rem !important;
+                        line-height: 1.55 !important;
+                    }
+
+                    .social-circle-fb,
+                    .social-circle-tiktok,
+                    .social-circle-zalo {
+                        width: 40px !important;
+                        height: 40px !important;
+                    }
+
+                    .footer-bottom-row {
+                        padding-top: 24px !important;
+                        justify-content: center !important;
+                        text-align: center !important;
+                    }
+
+                    .footer-bottom-row p {
+                        font-size: 0.74rem !important;
+                        line-height: 1.5 !important;
+                    }
+
+                    .footer-feed-tip {
+                        display: none !important;
+                    }
+                }
             `}</style>
         </footer>
     );

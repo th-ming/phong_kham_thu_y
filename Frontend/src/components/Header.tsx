@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import ThemeToggle from "./ThemeToggle";
 import { normalizeUserRole } from "../utils/index";
 import { toast } from "@components/Toast";
-import { useLiveUserProfile } from "@hooks/useLiveUserProfile";
+import { notifyUserProfileChanged, useLiveUserProfile } from "@hooks/useLiveUserProfile";
 
 const Header: React.FC<{ hideMenu?: boolean }> = ({ hideMenu }) => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -42,6 +42,19 @@ const Header: React.FC<{ hideMenu?: boolean }> = ({ hideMenu }) => {
   const getDashboardLink = () => {
     if (!user) return "/dang-nhap";
     return normalizeUserRole(user) === "khach_hang" ? "/khach-hang/dashboard" : "/quan-ly/dashboard";
+  };
+
+  const getProfileLink = () => {
+    if (!user) return "/dang-nhap";
+    return normalizeUserRole(user) === "khach_hang" ? "/khach-hang/thong-tin-ca-nhan" : "/quan-ly/thong-tin-ca-nhan";
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    notifyUserProfileChanged(null);
+    setIsMenuOpen(false);
+    navigate("/dang-nhap");
   };
 
   const isHomePage = location.pathname === "/";
@@ -173,28 +186,50 @@ const Header: React.FC<{ hideMenu?: boolean }> = ({ hideMenu }) => {
           <ThemeToggle />
 
           {user ? (
-            <Link to={getDashboardLink()} className="header-user-profile" style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'var(--gray-100)', padding: '8px 16px 8px 14px', borderRadius: '22px', border: '1px solid var(--gray-200)', textDecoration: 'none', color: 'var(--ink)', fontWeight: 700 }}>
-              <div className="header-user-avatar">
-                <div className="header-user-avatar-ring" aria-hidden="true" />
-                <div className="header-user-avatar-core">
-                  {userAvatar ? (
-                    <img
-                      src={userAvatar}
-                      alt={userDisplayName}
-                      className="header-user-avatar-img"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = 'none';
-                      }}
-                    />
-                  ) : (
-                    <span className="header-user-avatar-initial">{userInitial}</span>
-                  )}
+            <div className="header-user-menu">
+              <Link to={getDashboardLink()} className="header-user-profile" style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'var(--gray-100)', padding: '8px 16px 8px 14px', borderRadius: '22px', border: '1px solid var(--gray-200)', textDecoration: 'none', color: 'var(--ink)', fontWeight: 700 }}>
+                <div className="header-user-avatar">
+                  <div className="header-user-avatar-ring" aria-hidden="true" />
+                  <div className="header-user-avatar-core">
+                    {userAvatar ? (
+                      <img
+                        src={userAvatar}
+                        alt={userDisplayName}
+                        className="header-user-avatar-img"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
+                    ) : (
+                      <span className="header-user-avatar-initial">{userInitial}</span>
+                    )}
+                  </div>
                 </div>
+                <span className="mobile-hide header-user-profile-name" style={{ fontSize: '0.85rem' }}>
+                  {userDisplayName}
+                </span>
+                <span className="material-symbols-outlined header-user-menu-arrow" aria-hidden="true">expand_more</span>
+              </Link>
+              <div className="header-user-dropdown" aria-label="Tùy chọn tài khoản">
+                <Link
+                  data-ai-id="link-header-profile"
+                  to={getProfileLink()}
+                  className="header-user-dropdown-action"
+                >
+                  <span className="material-symbols-outlined">person</span>
+                  Hồ sơ cá nhân
+                </Link>
+                <button
+                  data-ai-id="button-header-logout"
+                  type="button"
+                  onClick={handleLogout}
+                  className="header-user-dropdown-action header-user-logout"
+                >
+                  <span className="material-symbols-outlined">logout</span>
+                  Đăng xuất
+                </button>
               </div>
-              <span className="mobile-hide header-user-profile-name" style={{ fontSize: '0.85rem' }}>
-                {userDisplayName}
-              </span>
-            </Link>
+            </div>
           ) : (
             <Link to="/dang-nhap" style={{ textDecoration: 'none', color: 'var(--ink)', fontWeight: 700, border: '1px solid var(--gray-200)', padding: '8px 20px', borderRadius: '50px' }}>Đăng nhập</Link>
           )}
@@ -248,6 +283,95 @@ const Header: React.FC<{ hideMenu?: boolean }> = ({ hideMenu }) => {
       .header-user-profile {
         align-items: center;
       }
+      .header-user-menu-arrow {
+        color: var(--gray-500);
+        font-size: 20px;
+        margin-left: -4px;
+        transition: transform 0.18s ease, color 0.18s ease;
+      }
+      .header-user-menu:hover .header-user-menu-arrow,
+      .header-user-menu:focus-within .header-user-menu-arrow {
+        color: var(--primary);
+        transform: rotate(180deg);
+      }
+      .header-user-menu {
+        position: relative;
+        display: flex;
+        align-items: center;
+      }
+      .header-user-dropdown {
+        position: absolute;
+        top: calc(100% + 10px);
+        right: 0;
+        min-width: 168px;
+        padding: 8px;
+        border-radius: 16px;
+        background: var(--surface);
+        border: 1px solid var(--gray-200);
+        box-shadow: var(--shadow-xl);
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-6px);
+        pointer-events: none;
+        transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s ease;
+        z-index: 30;
+      }
+      .header-user-dropdown::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: -12px;
+        height: 12px;
+      }
+      .header-user-menu:hover .header-user-dropdown,
+      .header-user-menu:focus-within .header-user-dropdown {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+        pointer-events: auto;
+      }
+      .header-user-dropdown-action {
+        width: 100%;
+        min-height: 42px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        border-radius: 12px;
+        border: 1px solid transparent;
+        background: transparent;
+        color: var(--ink);
+        font-weight: 900;
+        font-size: 0.88rem;
+        cursor: pointer;
+        text-decoration: none;
+        box-sizing: border-box;
+        transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+      }
+      .header-user-dropdown-action:hover,
+      .header-user-dropdown-action:focus-visible {
+        background: rgba(15, 157, 138, 0.08);
+        color: var(--primary);
+        border-color: rgba(15, 157, 138, 0.16);
+        outline: none;
+      }
+      .header-user-logout {
+        margin-top: 4px;
+        color: #ef4444;
+        background: rgba(239, 68, 68, 0.08);
+        border-color: rgba(239, 68, 68, 0.18);
+      }
+      .header-user-logout:hover,
+      .header-user-logout:focus-visible {
+        background: #ef4444;
+        color: white;
+        border-color: #ef4444;
+        outline: none;
+      }
+      .header-user-dropdown-action .material-symbols-outlined {
+        font-size: 20px;
+      }
       .header-user-profile-name {
         line-height: 1.2;
       }
@@ -295,16 +419,19 @@ const Header: React.FC<{ hideMenu?: boolean }> = ({ hideMenu }) => {
         display: block;
       }
       .header-user-avatar-initial {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 100%;
-        height: 100%;
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        display: block;
+        width: auto;
+        height: auto;
         font-size: 1.35rem;
         line-height: 1;
         text-shadow: 0 0 10px rgba(34, 211, 238, 0.45);
-        padding-left: 0.05em;
+        padding: 0;
         box-sizing: border-box;
+        font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        transform: translate(-50%, -53%);
       }
       .header-user-avatar:hover .header-user-avatar-ring {
         animation-duration: 1.6s;
@@ -388,6 +515,139 @@ const Header: React.FC<{ hideMenu?: boolean }> = ({ hideMenu }) => {
         }
         @media (max-width: 991px) { .mobile-hide { display: none !important; } }
         @media (min-width: 992px) { .mobile-show { display: none !important; } }
+        @media (max-width: 768px) {
+          header > div:first-child {
+            padding: 8px 0 !important;
+            font-size: 0.85rem !important;
+          }
+          header > div:first-child .container {
+            gap: 8px !important;
+            padding-left: 12px !important;
+            padding-right: 12px !important;
+          }
+          header > div:nth-child(2) {
+            padding: 9px 10px !important;
+            font-size: 0.78rem !important;
+            line-height: 1.25 !important;
+          }
+          header > div:nth-child(2) .text-blink-red {
+            gap: 6px !important;
+            flex-wrap: nowrap !important;
+            justify-content: flex-start !important;
+            text-align: left !important;
+          }
+          header > div:nth-child(2) button {
+            margin-left: 4px !important;
+            white-space: nowrap !important;
+          }
+          nav.container {
+            height: 72px !important;
+            padding-left: 18px !important;
+            padding-right: 18px !important;
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            gap: 12px !important;
+          }
+          nav.container > a {
+            justify-self: auto !important;
+            min-width: 0 !important;
+            flex: 0 1 auto !important;
+          }
+          nav.container > .header-action-group {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: flex-end !important;
+            gap: 12px !important;
+            flex: 0 0 auto !important;
+          }
+          .logo-icon {
+            width: 34px !important;
+            height: 34px !important;
+            border-radius: 9px !important;
+          }
+          .logo-rexi {
+            font-size: 1.45rem !important;
+          }
+          .logo-sub {
+            font-size: 0.58rem !important;
+            letter-spacing: 0.8px !important;
+          }
+          .header-action-group {
+            gap: 12px !important;
+          }
+          .header-action-group > button.mobile-show {
+            order: 3 !important;
+            justify-self: auto !important;
+          }
+          .header-action-group > a,
+          .header-action-group > .header-user-menu {
+            order: 2 !important;
+            justify-self: auto !important;
+          }
+          .header-action-group > button:not(.mobile-show) {
+            order: 1 !important;
+            justify-self: auto !important;
+            transform: none !important;
+          }
+          .header-user-profile {
+            padding: 4px !important;
+            border-radius: 999px !important;
+          }
+          .header-user-dropdown {
+            right: -4px !important;
+            min-width: 154px !important;
+          }
+          .header-action-group > a[href="/dang-nhap"] {
+            display: grid !important;
+            place-items: center !important;
+            width: 42px !important;
+            height: 42px !important;
+            padding: 0 !important;
+            border-radius: 12px !important;
+            font-size: 0 !important;
+            position: relative !important;
+            background: var(--gray-100) !important;
+            border: 1px solid var(--gray-200) !important;
+          }
+          .header-action-group > a[href="/dang-nhap"]::before {
+            content: "person" !important;
+            font-family: "Material Symbols Outlined" !important;
+            font-size: 24px !important;
+            line-height: 1 !important;
+            color: var(--primary) !important;
+          }
+          .header-user-avatar {
+            width: 42px !important;
+            height: 42px !important;
+          }
+          .header-user-avatar-core {
+            top: 3px !important;
+            left: 3px !important;
+            width: 36px !important;
+            height: 36px !important;
+            display: grid !important;
+            place-items: center !important;
+          }
+          .header-user-avatar-initial {
+            position: static !important;
+            left: auto !important;
+            top: auto !important;
+            width: auto !important;
+            height: auto !important;
+            display: block !important;
+            font-size: 1.2rem !important;
+            line-height: 1 !important;
+            padding: 0 !important;
+            transform: translateX(1px) !important;
+            text-align: center !important;
+          }
+          .mobile-show {
+            width: 42px !important;
+            height: 42px !important;
+            border-radius: 12px !important;
+          }
+        }
         // Tối ưu chống vỡ layout, lệch nút trên màn hình dt cực nhỏ (dưới 380px)
         @media (max-width: 380px) {
           .header-action-group { gap: 8px !important; }
