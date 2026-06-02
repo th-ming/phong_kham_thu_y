@@ -408,6 +408,136 @@ const PhanGioiThieu: React.FC = () => {
                         border-color: rgba(45, 212, 191, 0.5) !important;
                         box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5) !important;
                     }
+                    
+                    /* TỐI ƯU GIAO DIỆN DI ĐỘNG PREMIUM (MOBILE RESPONSIVE REDESIGN) */
+                    @media screen and (max-width: 768px) {
+                        .hero-layout-grid {
+                            display: flex !important;
+                            flex-direction: column !important;
+                            align-items: flex-start !important;
+                            text-align: left !important;
+                            gap: 20px !important;
+                        }
+                        .hero-layout-grid .hero-content {
+                            order: 2 !important;
+                            width: 100% !important;
+                        }
+                        .hero-layout-grid .hero-image-container {
+                            order: 1 !important;
+                            width: 100% !important;
+                            height: 220px !important;
+                            margin-bottom: 5px !important;
+                        }
+                        .hero-title {
+                            font-size: 1.95rem !important;
+                            line-height: 1.2 !important;
+                            margin-bottom: 12px !important;
+                            letter-spacing: -0.8px !important;
+                        }
+                        .mission-text {
+                            font-size: 0.95rem !important;
+                            line-height: 1.6 !important;
+                            margin-bottom: 24px !important;
+                            padding-left: 14px !important;
+                        }
+                        .hero-cta-grid {
+                            justify-content: flex-start !important;
+                            width: 100% !important;
+                            gap: 10px !important;
+                            margin-top: 16px !important;
+                        }
+                        .hero-cta-grid a {
+                            flex: 1 !important;
+                            text-align: center !important;
+                            padding: 12px 14px !important;
+                            font-size: 0.82rem !important;
+                            border-radius: 12px !important;
+                            min-width: unset !important;
+                        }
+                        .hero-stat-pill-container {
+                            justify-content: flex-start !important;
+                            width: 100% !important;
+                            gap: 8px !important;
+                            margin-top: 20px !important;
+                        }
+                        .hero-stat-pill {
+                            padding: 8px 10px !important;
+                            border-radius: 12px !important;
+                            flex: 1 !important;
+                            min-width: 90px !important;
+                            gap: 8px !important;
+                        }
+                        .hero-stat-pill div div:first-child {
+                            font-size: 0.52rem !important;
+                        }
+                        .hero-stat-pill div div:last-child {
+                            font-size: 0.78rem !important;
+                        }
+                        .hero-stat-pill span {
+                            font-size: 16px !important;
+                        }
+                        .hero-stat-pill div:first-child {
+                            width: 28px !important;
+                            height: 28px !important;
+                            border-radius: 8px !important;
+                        }
+                        
+                        /* Khung video/ảnh động bo tròn sang trọng trên mobile */
+                        .banner-pet-stage {
+                            background: rgba(255, 255, 255, 0.04) !important;
+                            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+                            border-radius: 20px !important;
+                            height: 220px !important;
+                            overflow: hidden !important;
+                            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08) !important;
+                        }
+                        [data-theme='dark'] .banner-pet-stage {
+                            background: rgba(15, 23, 42, 0.4) !important;
+                            border-color: rgba(34, 211, 238, 0.15) !important;
+                        }
+                        .banner-pet-video {
+                            width: 130% !important;
+                            height: 130% !important;
+                            bottom: -15% !important;
+                        }
+                        .banner-sync-text {
+                            top: 8px !important;
+                            font-size: 1.15rem !important;
+                        }
+                        
+                        /* Badge cấp cứu lơ lửng trên mobile */
+                        .floating-glass-card {
+                            position: absolute !important;
+                            bottom: 12px !important;
+                            left: 12px !important;
+                            margin: 0 !important;
+                            padding: 8px 12px !important;
+                            border-radius: 14px !important;
+                            z-index: 12 !important;
+                            backdrop-filter: blur(8px) !important;
+                            -webkit-backdrop-filter: blur(8px) !important;
+                        }
+                        .floating-glass-card .glow-text-title {
+                            font-size: 0.85rem !important;
+                        }
+                        .floating-glass-card .glow-text-sub {
+                            font-size: 0.68rem !important;
+                            opacity: 0.8 !important;
+                        }
+                        .floating-glass-card div:first-child {
+                            width: 28px !important;
+                            height: 28px !important;
+                            border-radius: 8px !important;
+                        }
+                        .floating-glass-card span {
+                            font-size: 16px !important;
+                        }
+                        .section-label {
+                            margin-bottom: 16px !important;
+                            font-size: 0.68rem !important;
+                            padding: 4px 10px !important;
+                        }
+                    }
                 `}</style>
 
                 {/* nền banner */}
