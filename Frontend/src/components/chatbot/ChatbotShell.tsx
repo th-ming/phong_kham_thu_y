@@ -157,7 +157,9 @@ export const ChatbotShell: React.FC<ChatbotShellProps> = (props) => {
                             borderRadius: isMobile ? '28px' : '24px', overflow: 'hidden', display: 'flex', flexDirection: 'column',
                             border: activeTab === 'agent' ? '2.5px solid rgba(244, 63, 94, 0.35)' : '2.5px solid rgba(16, 185, 129, 0.35)',
                             boxShadow: activeTab === 'agent' ? '0 20px 50px rgba(244, 63, 94, 0.2)' : '0 20px 50px rgba(16, 185, 129, 0.2)',
-                            transition: 'all 0.4s ease'
+                            transition: 'all 0.4s ease',
+                            minWidth: 0,
+                            minHeight: 0
                         }}
                     >
                         {/* Drag Upload Overlay */}
@@ -185,17 +187,20 @@ export const ChatbotShell: React.FC<ChatbotShellProps> = (props) => {
                         {activeTab === 'standard' ? (
                             // ==================== TAB 1: STANDARD CHATBOT ====================
                             <>
-                                <div style={{ flex: 1, padding: '20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--background)' }}>
+                                <div className="chat-message-scroll" style={{ flex: 1, minHeight: 0, minWidth: 0, padding: '20px', overflowY: 'auto', overflowX: 'hidden', display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--background)' }}>
                                     {messages.map((msg: any, idx: number) => (
                                         <div key={idx} 
                                              className={msg.type === "user" ? "chat-message-user" : "chat-message-ai"}
-                                             style={{ display: 'flex', flexDirection: 'column', alignSelf: msg.type === "user" ? "flex-end" : "flex-start", maxWidth: '85%' }}>
+                                             style={{ display: 'flex', flexDirection: 'column', alignSelf: msg.type === "user" ? "flex-end" : "flex-start", maxWidth: '85%', minWidth: 0 }}>
                                             <div 
                                                 style={{
                                                     padding: '12px 16px', borderRadius: msg.type === "user" ? '20px 20px 4px 20px' : '20px 20px 20px 4px',
                                                     background: msg.type === "user" ? (isDark ? 'rgba(16, 185, 129, 0.2)' : '#e6f4ea') : 'var(--surface)',
                                                     color: 'var(--ink)', boxShadow: 'var(--shadow-sm)',
                                                     border: msg.type === "user" ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid var(--gray-200)',
+                                                    minWidth: 0,
+                                                    maxWidth: '100%',
+                                                    overflowWrap: 'anywhere'
                                                 }}
                                             >
                                                 {msg.images && msg.images.map((img: string, i: number) => (
@@ -243,6 +248,32 @@ export const ChatbotShell: React.FC<ChatbotShellProps> = (props) => {
                                                     </button>
                                                 )}
 
+                                                    {msg.suggestedNavigation && (
+                                                        <button
+                                                            data-ai-id="button-chatbot-suggested-nav"
+                                                            onClick={() => navigate(msg.suggestedNavigation.path)}
+                                                            style={{
+                                                                marginTop: '12px',
+                                                                width: '100%',
+                                                                border: '1px solid rgba(16, 185, 129, 0.35)',
+                                                                background: isDark ? 'rgba(16,185,129,0.08)' : '#e6f4ea',
+                                                                color: isDark ? '#10b981' : '#059669',
+                                                                borderRadius: '14px',
+                                                                padding: '10px 12px',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center',
+                                                                gap: '8px',
+                                                                fontWeight: 900,
+                                                                cursor: 'pointer',
+                                                                boxShadow: 'var(--shadow-sm)'
+                                                            }}
+                                                        >
+                                                            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>open_in_new</span>
+                                                            {msg.suggestedNavigation.label || 'Mở trang được đề xuất'}
+                                                        </button>
+                                                    )}
+
                                                 {msg.type === "ai" && msg.provider && isClinicStaff && (
                                                     <div style={{
                                                         fontSize: '0.65rem',
@@ -256,12 +287,38 @@ export const ChatbotShell: React.FC<ChatbotShellProps> = (props) => {
                                                     </div>
                                                 )}
 
+                                                {msg.suggestedNavigation && (
+                                                    <button
+                                                        data-ai-id="button-chatbot-suggested-nav"
+                                                        onClick={() => navigate(msg.suggestedNavigation.path)}
+                                                        style={{
+                                                            marginTop: '12px',
+                                                            width: '100%',
+                                                            border: '1px solid rgba(244, 63, 94, 0.35)',
+                                                            background: isDark ? 'rgba(244,63,94,0.08)' : '#fff1f2',
+                                                            color: isDark ? '#fb7185' : '#be123c',
+                                                            borderRadius: '14px',
+                                                            padding: '10px 12px',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            gap: '8px',
+                                                            fontWeight: 900,
+                                                            cursor: 'pointer',
+                                                            boxShadow: 'var(--shadow-sm)'
+                                                        }}
+                                                    >
+                                                        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>open_in_new</span>
+                                                        {msg.suggestedNavigation.label || 'Mở trang được đề xuất'}
+                                                    </button>
+                                                )}
+
                                                 <CanhBaoDangNhapChatbot
                                                     isVisible={msg.isLoginPrompt}
                                                     isDark={isDark}
                                                     loginButtonId="button-chatbot-jos2"
                                                     registerButtonId="button-chatbot-8gxv"
-                                                    onGoLogin={() => { setIsOpen(false); navigate("/dang-nhap"); }}
+                                                    onGoLogin={() => navigate("/dang-nhap")}
                                                 />
                                             </div>
                                             
@@ -269,8 +326,8 @@ export const ChatbotShell: React.FC<ChatbotShellProps> = (props) => {
                                             {msg.type === "ai" && msg.isEmergency && (
                                                 <BangCapCuuChatbot
                                                     isClinicSide={isClinicStaff}
-                                                    onOpenReception={() => { setIsOpen(false); navigate("/quan-ly/lich-hen"); }}
-                                                    onOpenDoctorSchedule={() => { setIsOpen(false); navigate("/quan-ly/lich-lam-viec"); }}
+                                                    onOpenReception={() => navigate("/quan-ly/lich-hen")}
+                                                    onOpenDoctorSchedule={() => navigate("/quan-ly/lich-lam-viec")}
                                                     onShareLocation={handleShareCurrentLocation}
                                                 />
                                             )}
@@ -292,17 +349,20 @@ export const ChatbotShell: React.FC<ChatbotShellProps> = (props) => {
                         ) : (
                             // ==================== TAB 2: REXI AGENT V2 ====================
                             <>
-                                <div style={{ flex: 1, padding: '20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--background)' }}>
+                                <div className="chat-message-scroll" style={{ flex: 1, minHeight: 0, minWidth: 0, padding: '20px', overflowY: 'auto', overflowX: 'hidden', display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--background)' }}>
                                     {agentMessages.map((msg: any, idx: number) => (
                                         <div key={idx} 
                                              className={msg.type === "user" ? "chat-message-user" : "chat-message-ai"}
-                                             style={{ display: 'flex', flexDirection: 'column', alignSelf: msg.type === "user" ? "flex-end" : "flex-start", maxWidth: '85%' }}>
+                                             style={{ display: 'flex', flexDirection: 'column', alignSelf: msg.type === "user" ? "flex-end" : "flex-start", maxWidth: '85%', minWidth: 0 }}>
                                             <div 
                                                 style={{
                                                     padding: '12px 16px', borderRadius: msg.type === "user" ? '20px 20px 4px 20px' : '20px 20px 20px 4px',
                                                     background: msg.type === "user" ? (isDark ? 'rgba(244, 63, 94, 0.2)' : '#ffe4e6') : 'var(--surface)',
                                                     color: 'var(--ink)', boxShadow: 'var(--shadow-sm)',
-                                                    border: msg.type === "user" ? '1px solid rgba(244, 63, 94, 0.3)' : '1px solid var(--gray-200)'
+                                                    border: msg.type === "user" ? '1px solid rgba(244, 63, 94, 0.3)' : '1px solid var(--gray-200)',
+                                                    minWidth: 0,
+                                                    maxWidth: '100%',
+                                                    overflowWrap: 'anywhere'
                                                 }}
                                             >
                                                 <HuyHieuLamSangChatbot msg={msg} isClinicalUser={isClinicalUser} isDark={isDark} />
@@ -428,7 +488,7 @@ export const ChatbotShell: React.FC<ChatbotShellProps> = (props) => {
                                                             <div>🩺 **Dịch vụ:** {msg.receipt.service}</div>
                                                             <div>👨‍⚕️ **Bác sĩ phụ trách:** {msg.receipt.doctorName}</div>
                                                         </div>
-                                                        <button data-ai-id="button-chatbot-bohj" onClick={() => { setIsOpen(false); navigate("/ho-so-benh-an"); }} style={{
+                                                        <button data-ai-id="button-chatbot-bohj" onClick={() => navigate("/khach-hang/lich-su-lich-hen")} style={{
                                                             marginTop: '12px', width: '100%', background: 'white', color: '#059669', border: 'none',
                                                             borderRadius: '10px', padding: '8px 0', fontWeight: 900, fontSize: '0.78rem', cursor: 'pointer'
                                                         }}>
@@ -443,7 +503,7 @@ export const ChatbotShell: React.FC<ChatbotShellProps> = (props) => {
                                                     accentColor="#f43f5e"
                                                     loginButtonId="button-chatbot-fbml"
                                                     registerButtonId="button-chatbot-cy8o"
-                                                    onGoLogin={() => { setIsOpen(false); navigate("/dang-nhap"); }}
+                                                    onGoLogin={() => navigate("/dang-nhap")}
                                                 />
                                             </div>
 
@@ -451,8 +511,8 @@ export const ChatbotShell: React.FC<ChatbotShellProps> = (props) => {
                                             {msg.type === "ai" && msg.isEmergency && (
                                                 <BangCapCuuChatbot
                                                     isClinicSide={isClinicStaff}
-                                                    onOpenReception={() => { setIsOpen(false); navigate("/quan-ly/lich-hen"); }}
-                                                    onOpenDoctorSchedule={() => { setIsOpen(false); navigate("/quan-ly/lich-lam-viec"); }}
+                                                    onOpenReception={() => navigate("/quan-ly/lich-hen")}
+                                                    onOpenDoctorSchedule={() => navigate("/quan-ly/lich-lam-viec")}
                                                     onShareLocation={handleShareCurrentLocation}
                                                 />
                                             )}
@@ -504,7 +564,9 @@ export const ChatbotShell: React.FC<ChatbotShellProps> = (props) => {
                         {/* 5. Ô NHẬP TIN NHẮN TẬP TRUNG (CONSOLIDATED INPUT DYNAMIC STYLING) */}
                         <div style={{
                             padding: isMobile ? '12px 14px max(12px, env(safe-area-inset-bottom, 0px))' : '16px 20px',
-                            background: 'var(--surface)', borderTop: '1px solid var(--gray-200)', display: 'flex', alignItems: 'flex-end', gap: isMobile ? '8px' : '12px'
+                            background: 'var(--surface)', borderTop: '1px solid var(--gray-200)', display: 'flex', alignItems: 'flex-end', gap: isMobile ? '8px' : '12px',
+                            flex: '0 0 auto',
+                            minWidth: 0
                         }}>
                             {/* Nút File Đính kèm (Chỉ cho Tab 1) */}
                             {activeTab === 'standard' && (
@@ -531,7 +593,7 @@ export const ChatbotShell: React.FC<ChatbotShellProps> = (props) => {
                             )}
 
                             {/* Ô Nhập Dữ Liệu Tự Động Co Giãn */}
-                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <div style={{ flex: '1 1 auto', minWidth: 0, display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                 <textarea
                                     ref={textInputRef}
                                     value={activeTab === 'standard' ? input : agentInput}

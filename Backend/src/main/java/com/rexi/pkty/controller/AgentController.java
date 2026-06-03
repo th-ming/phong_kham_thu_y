@@ -571,24 +571,26 @@ public class AgentController {
         try {
             logger.info("[ReAct] Yêu cầu từ [" + username + "]: " + query);
             com.rexi.pkty.service.ReActAgentService.ReActResult result = reactAgentService.run(query, username, userRole);
+            boolean adminDebugAllowed = RoleAccessPolicy.normalizeRole(userRole).equals("admin");
+            String finalAnswer = adminDebugAllowed ? result.finalAnswer() : stripNonAdminTechnicalIds(result.finalAnswer());
 
             // Parse steps sang format FE
             List<Map<String, Object>> stepsData = new java.util.ArrayList<>();
             for (var step : result.steps()) {
                 Map<String, Object> s = new java.util.LinkedHashMap<>();
                 s.put("type", step.type());
-                s.put("content", step.content());
+                s.put("content", adminDebugAllowed ? step.content() : stripNonAdminTechnicalIds(step.content()));
                 if (step.toolName() != null) s.put("tool", step.toolName());
-                if (step.toolParams() != null) s.put("params", step.toolParams());
-                if (step.observation() != null) s.put("observation", step.observation());
+                if (adminDebugAllowed && step.toolParams() != null) s.put("params", step.toolParams());
+                if (step.observation() != null) s.put("observation", adminDebugAllowed ? step.observation() : stripNonAdminTechnicalIds(step.observation()));
                 stepsData.add(s);
             }
 
-            auditAgentMedicalReplyIfNeeded(query, result.finalAnswer(), userRole, username, result.provider(), stepsData);
-            saveAgentChatLog(username, query, result.finalAnswer(), result.provider(), stepsData);
+            auditAgentMedicalReplyIfNeeded(query, finalAnswer, userRole, username, result.provider(), stepsData);
+            saveAgentChatLog(username, query, finalAnswer, result.provider(), stepsData);
 
             return ResponseEntity.ok(Map.of(
-                "finalAnswer", result.finalAnswer(),
+                "finalAnswer", finalAnswer,
                 "steps", stepsData,
                 "totalSteps", stepsData.size(),
                 "provider", result.provider()
@@ -598,6 +600,24 @@ public class AgentController {
             saveAgentChatLog(username, query, "Lỗi ReAct Agent: " + e.getMessage(), "System", List.of());
             return ResponseEntity.internalServerError().body(Map.of("error", "Lỗi ReAct Agent: " + e.getMessage()));
         }
+    }
+
+    private String stripNonAdminTechnicalIds(String value) {
+        if (value == null || value.isBlank()) return value;
+        String cleaned = value
+            .replaceAll("(?i)\\s*\\(?\\s*data-ai-id\\s*:\\s*\"[^\"]+\"\\s*\\)?", "")
+            .replaceAll("(?i)\\s*\\(?\\s*data-ai-id\\s*:\\s*'[^']+'\\s*\\)?", "")
+            .replaceAll("(?i)\\s*\\(?\\s*data-ai-id\\s*:\\s*[^\\s\\)\\]]+\\s*\\)?", "")
+            .replaceAll("(?i)\\[(CLICK|FILL|SELECT|TOGGLE|DELETE|SCROLL):[^\\]]+\\]", "")
+            .replaceAll("(?i)\\[(button|input|select|textarea|auto|element)\\]", "")
+            .replaceAll("(?i)\\b(?:button|input|select|textarea|auto)-[a-z0-9_-]+\\b", "")
+            .replaceAll("(?i)\\bdata-ai-id\\b", "")
+            .replaceAll("\\(\\s*\\)", "")
+            .replaceAll("\\s+([,.;:!?])", "$1")
+            .replaceAll("[ \\t]{2,}", " ")
+            .replaceAll("\\n{3,}", "\n\n")
+            .trim();
+        return cleaned.isBlank() ? "Tôi chưa đủ dữ liệu để trả lời trực tiếp. Bạn gửi thêm tên thú cưng hoặc mã lịch hẹn để Rexi kiểm tra đúng thông tin." : cleaned;
     }
 
     private void saveAgentChatLog(String username, String query, String answer, String provider, List<Map<String, Object>> steps) {

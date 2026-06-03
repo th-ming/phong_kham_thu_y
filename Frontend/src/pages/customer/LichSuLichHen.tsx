@@ -52,9 +52,9 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({ item, thuCungs, onCan
   const statusCode = getAppointmentStatus(item);
 
   return (
-    <div className="glass-card item-card" style={{ padding: '24px 32px', borderRadius: 'var(--radius-xl)', overflow: 'hidden' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+    <div className="glass-card item-card customer-appointment-history-card" style={{ padding: '24px 32px', borderRadius: 'var(--radius-xl)', overflow: 'hidden' }}>
+      <div className="customer-appointment-history-main" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="customer-appointment-history-title" style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
           <div style={{ width: '56px', height: '56px', background: 'var(--primary-light)', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
             <span className="material-symbols-outlined" style={{ fontSize: '28px' }}>event_available</span>
           </div>
@@ -66,13 +66,13 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({ item, thuCungs, onCan
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '32px' }}>
-          <div style={{ textAlign: 'right' }}>
+        <div className="customer-appointment-history-meta" style={{ display: 'flex', alignItems: 'center', gap: '32px' }}>
+          <div className="customer-appointment-history-time" style={{ textAlign: 'right' }}>
             <b style={{ fontSize: '1.1rem', fontWeight: 900, color: 'var(--ink)' }}>{chuyenNgayISO_SangVN(item.ngay_kham ?? item.ngayKham)}</b>
             <div style={{ fontSize: '0.85rem', color: 'var(--primary)', fontWeight: 800 }}>{(item.gio_kham ?? item.gioKham)?.substring(0, 5)}</div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div className="customer-appointment-history-actions" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <span style={{
               minWidth: '110px', textAlign: 'center', padding: '6px 16px', borderRadius: '50px', fontSize: '0.7rem', fontWeight: 900,
               background: statusCode === 'DA_HUY' ? 'var(--danger-light, rgba(239, 68, 68, 0.15))' : (statusCode === 'DA_XAC_NHAN' ? 'var(--primary-light)' : 'var(--gray-50)'),
@@ -100,7 +100,7 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({ item, thuCungs, onCan
 
       {showDetails && (
         <div className="animate-fade-in" style={{ marginTop: '20px', paddingTop: '20px', borderTop: '1px solid var(--gray-100)', display: 'grid', gap: '16px' }}>
-          <div style={{ display: 'flex', gap: '24px' }}>
+          <div className="customer-appointment-detail-grid" style={{ display: 'flex', gap: '24px' }}>
             <div style={{ flex: 1 }}>
               <p style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '4px' }}>BÁC SĨ PHỤ TRÁCH</p>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700 }}>
@@ -117,7 +117,7 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({ item, thuCungs, onCan
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+          <div className="customer-appointment-detail-actions" style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
             {/* NÚT HỦY LỊCH - Chỉ hiện khi đang CHỜ XÁC NHẬN hoặc ĐÃ XÁC NHẬN */}
             {(['CHO_XAC_NHAN', 'DA_XAC_NHAN'].includes(statusCode)) && (
               <button
@@ -313,7 +313,7 @@ const LichSuLichHen: React.FC = () => {
   }
 
   return (
-    <div className="animate-fade-in">
+    <div className="animate-fade-in customer-history-page">
       <style>{`
         @keyframes slideUpFade {
           from { opacity: 0; transform: translateY(30px); }
@@ -335,9 +335,84 @@ const LichSuLichHen: React.FC = () => {
         .item-card:hover { border-color: var(--primary) !important; transform: translateY(-6px) scale(1.005); box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15); z-index: 10; }
         .filter-select { transition: all 0.3s; border: 1px solid rgba(255,255,255,0.2) !important; }
         .filter-select:hover { background: rgba(255,255,255,0.2) !important; border-color: rgba(255,255,255,0.4) !important; }
+        @media (max-width: 768px) {
+          .customer-history-page {
+            display: grid;
+            gap: 18px;
+            padding-bottom: 92px;
+          }
+          .customer-history-hero {
+            display: grid !important;
+            gap: 18px !important;
+            margin-bottom: 0 !important;
+            padding: 24px !important;
+            border-radius: 28px !important;
+          }
+          .customer-history-hero h1 {
+            font-size: 1.75rem !important;
+            line-height: 1.08 !important;
+            letter-spacing: 0 !important;
+          }
+          .customer-history-hero p {
+            font-size: 0.9rem !important;
+            line-height: 1.5 !important;
+          }
+          .customer-history-filters {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px !important;
+          }
+          .customer-history-filters > div,
+          .customer-history-filters select {
+            width: 100%;
+            min-width: 0 !important;
+          }
+          .customer-history-list {
+            gap: 14px !important;
+          }
+          .customer-appointment-history-card {
+            padding: 18px !important;
+            border-radius: 24px !important;
+          }
+          .customer-appointment-history-main {
+            display: grid !important;
+            gap: 14px !important;
+          }
+          .customer-appointment-history-title {
+            gap: 12px !important;
+            align-items: flex-start !important;
+          }
+          .customer-appointment-history-title > div:first-child {
+            width: 46px !important;
+            height: 46px !important;
+            border-radius: 15px !important;
+          }
+          .customer-appointment-history-title h3 {
+            font-size: 1rem !important;
+            line-height: 1.25 !important;
+          }
+          .customer-appointment-history-meta {
+            justify-content: space-between !important;
+            gap: 10px !important;
+            padding: 12px;
+            border-radius: 18px;
+            background: var(--background);
+          }
+          .customer-appointment-history-time {
+            text-align: left !important;
+          }
+          .customer-appointment-history-actions {
+            gap: 8px !important;
+          }
+          .customer-appointment-detail-grid,
+          .customer-appointment-detail-actions {
+            display: grid !important;
+            grid-template-columns: 1fr !important;
+          }
+        }
       `}</style>
 
-      <div className="stagger-1" style={{ 
+      <div className="stagger-1 customer-history-hero" style={{ 
         display: 'flex', 
         justifyContent: 'space-between', 
         alignItems: 'center', 
@@ -361,7 +436,7 @@ const LichSuLichHen: React.FC = () => {
           <p style={{ fontWeight: 700, color: 'rgba(255,255,255,0.9)', margin: 0, fontSize: '1.2rem', textShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>Theo dõi lộ trình chăm sóc và nhật ký y tế của các bé cưng.</p>
         </div>
 
-        <div style={{ display: 'flex', gap: '16px', position: 'relative', zIndex: 1, flexWrap: 'wrap' }}>
+        <div className="customer-history-filters" style={{ display: 'flex', gap: '16px', position: 'relative', zIndex: 1, flexWrap: 'wrap' }}>
           <div style={{ position: 'relative' }}>
             <span className="material-symbols-outlined" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', fontSize: '20px', color: 'rgba(255,255,255,0.6)', pointerEvents: 'none' }}>pets</span>
             <select data-ai-id="select-lichsulichhen-filter-pet" aria-label="Lọc theo thú cưng" className="filter-select" value={petId} onChange={e => setPetId(e.target.value)} style={{ minWidth: '220px', borderRadius: '18px', padding: '14px 20px 14px 48px', background: 'rgba(255,255,255,0.1)', color: 'white', fontWeight: 800, outline: 'none', cursor: 'pointer', backdropFilter: 'blur(12px)', fontSize: '0.9rem' }}>
@@ -386,7 +461,7 @@ const LichSuLichHen: React.FC = () => {
         </div>
       </div>
 
-      <div className="stagger-2" style={{ display: 'grid', gap: '28px' }}>
+      <div className="stagger-2 customer-history-list" style={{ display: 'grid', gap: '28px' }}>
         {serverError ? (
           <div className="glass-card" style={{ 
             padding: '80px 40px', 

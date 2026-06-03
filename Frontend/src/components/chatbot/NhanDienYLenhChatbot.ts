@@ -13,26 +13,51 @@ export const matchesNormalizedIntent = (text: string, phrases: string[]) => {
     });
 };
 
-export const hasExplicitAgentActionIntent = (text: string) => {
-    const actionWords = [
-        "mo", "mo trang", "vao trang", "chuyen sang", "dieu huong", "truy cap", "di toi",
-        "qua trang", "nhay qua", "tele qua", "bay qua", "dan toi", "dan den",
-        "xem", "xem danh sach", "loc danh sach", "tim khach", "tim thu cung", "tra cuu", "kiem tra form",
-        "check", "check giup", "co khong", "thong ke", "tao moi", "them moi", "sua thong tin", "xoa", "dat lich", "book lich", "lap lich",
-        "xuat file", "in hoa don", "gui email", "dien form", "tu dong",
-        "bam", "nhan", "click", "tap", "an vao", "cuon", "keo xuong", "keo len",
+const matchesPhraseIntent = (text: string, phrases: string[]) => matchesNormalizedIntent(text, phrases);
+
+const hasUiActionTarget = (text: string) => {
+    const normalized = normalizeSearchText(text);
+    const targets = [
+        "trang", "phan he", "muc", "danh sach", "hoa don", "ho so", "thu cung", "form",
+        "nut", "button", "bang gia", "tai khoan", "lich", "khach hang", "ho so benh", "instr"
     ];
-    return matchesNormalizedIntent(text, actionWords);
+    return targets.some(target => normalized.includes(target));
+};
+
+export const hasExplicitAgentActionIntent = (text: string) => {
+    const actionPhrases = [
+        "dat lich", "book lich", "lap lich", "tao lich", "huy lich", "doi lich",
+        "tim khach", "tim thu cung", "tra cuu", "kiem tra form", "xem hoa don", "xem danh sach",
+        "xem thu cung", "xem ho so", "quan ly thu cung", "sua thong tin",
+        "xoa thong tin", "them moi", "tao moi", "xuat file", "in hoa don", "gui email", "dien form"
+    ];
+
+    const uiActionVerbs = ["bam", "nhan", "click", "tap", "an vao", "cuon", "keo xuong", "keo len"];
+    return matchesPhraseIntent(text, actionPhrases)
+        || (matchesPhraseIntent(text, uiActionVerbs) && hasUiActionTarget(text));
 };
 
 export const hasExplicitNavigationIntent = (text: string) => {
+    const normalized = normalizeSearchText(text);
+
+    // Phân biệt "hỏi data" (có/không/bao nhiêu/dang) vs "mở trang" (mở/vào/chuyển)
+    // VD: "kiểm tra xem bác sĩ minh đang có lịch khám nào không" → DATA QUERY, KHÔNG phải navigation
+    // VD: "mở trang lịch hẹn cho tôi" → NAVIGATION
+    const isDataQueryPattern = /\b(co|dang|khong|bao nhieu|nhu the nao|nao|la gi|la sao|tai sao|vi sao|dang co|dang kiem|dang xem|dang hoi|dang tim|co lich|co khach|co hoa don|co benh|co thuoc)\b/.test(normalized);
+    const hasExplicitNavVerb = /\b(mo|vao|chuyen|di toi|dua toi|dua den|dan toi|nhay|tele|bay|vo trang)\b/.test(normalized);
+    if (isDataQueryPattern && !hasExplicitNavVerb) return false;
+
     const navigationPhrases = [
-        "mo", "mo trang", "mo phan he", "mo muc", "vao trang", "vao phan he", "chuyen sang",
-        "dieu huong", "truy cap", "di toi", "dua toi", "dua den", "nhay sang",
-        "sang trang", "toi trang", "den trang", "qua trang", "nhay qua", "tele qua",
-        "bay qua", "dan toi", "dan den", "vo trang", "vào trang",
+        "mo trang", "mo phan he", "mo muc", "vao trang", "vao phan he", "chuyen sang",
+        "chuyen trang", "chuyen toi trang", "chuyen den trang",
+        "dieu huong", "truy cap", "open page", "go to", "goto",
+        "navigate", "visit"
     ];
-    return matchesNormalizedIntent(text, navigationPhrases);
+    const genericNavigationVerbs = ["di toi", "dua toi", "dua den", "dan toi", "dan den", "nhay sang", "sang trang", "toi trang", "den trang", "qua trang", "nhay qua", "tele qua", "bay qua", "vo trang"];
+
+    return matchesPhraseIntent(text, navigationPhrases)
+        || (hasExplicitNavVerb && hasUiActionTarget(text))
+        || (matchesPhraseIntent(text, genericNavigationVerbs) && hasUiActionTarget(text));
 };
 
 export const resolveRelativeDateValue = (text: string) => {
@@ -61,7 +86,7 @@ export const resolveRelativeDateValue = (text: string) => {
 };
 
 export const getSafeStandardNavigationTarget = (text: string): { path: string; label: string } | null => {
-    if (!hasExplicitNavigationIntent(text)) return null;
+    if (!hasExplicitNavigationIntent(text) || isConceptualQuestion(text)) return null;
     const normalized = normalizeSearchText(text);
     const safeRoutes = [
         { keywords: ["hoa don", "thanh toan", "bien lai", "bill", "pay"], path: "/khach-hang/hoa-don-thanh-toan", label: "Hóa đơn & thanh toán" },

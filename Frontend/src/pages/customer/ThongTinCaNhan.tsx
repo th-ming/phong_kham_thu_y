@@ -314,8 +314,148 @@ const ThongTinCaNhan: React.FC = () => {
   const toneCopy = customerToneCopy[isGenZBirthYear(profile?.nam_sinh) ? "genz" : "mature"];
 
   return (
-    <div className="animate-fade-in">
-      <div className="stagger-1" style={{ 
+    <div className="animate-fade-in customer-profile-page">
+      <style>{`
+        @media (max-width: 768px) {
+          .customer-profile-page {
+            display: grid;
+            gap: 18px;
+            padding-bottom: 92px;
+          }
+          .customer-profile-hero {
+            margin-bottom: 0 !important;
+            padding: 24px !important;
+            border-radius: 28px !important;
+            min-height: 0 !important;
+          }
+          .customer-profile-hero h1 {
+            display: block !important;
+            font-size: 1.78rem !important;
+            line-height: 1.1 !important;
+            letter-spacing: 0 !important;
+            margin-bottom: 12px !important;
+          }
+          .customer-profile-hero h1 span {
+            font-size: 1.8rem !important;
+            vertical-align: middle;
+          }
+          .customer-profile-hero p {
+            font-size: 0.92rem !important;
+            line-height: 1.55 !important;
+          }
+          .customer-profile-layout {
+            display: flex !important;
+            flex-direction: column;
+            grid-template-columns: 1fr !important;
+            gap: 18px !important;
+          }
+          .customer-profile-main-stack,
+          .customer-profile-side-stack {
+            gap: 16px !important;
+            display: contents !important;
+          }
+          .customer-profile-avatar-card {
+            order: 1 !important;
+          }
+          .customer-profile-card {
+            order: 2 !important;
+          }
+          .customer-profile-security-card {
+            order: 3 !important;
+          }
+          .customer-profile-side-stack > .glass-card:not(.customer-profile-avatar-card) {
+            order: 4 !important;
+          }
+          .customer-profile-side-stack > div:not(.glass-card) {
+            order: 5 !important;
+          }
+          .customer-profile-card,
+          .customer-profile-security-card,
+          .customer-profile-avatar-card,
+          .customer-profile-notify-card {
+            padding: 20px !important;
+            border-radius: 24px !important;
+          }
+          .customer-profile-card-header {
+            display: grid !important;
+            grid-template-columns: 1fr;
+            gap: 14px !important;
+            align-items: start !important;
+            margin-bottom: 22px !important;
+          }
+          .customer-profile-card-header h3 {
+            font-size: 1.2rem !important;
+            line-height: 1.25 !important;
+          }
+          .customer-profile-edit-actions {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px !important;
+          }
+          .customer-profile-card-header .btn,
+          .customer-profile-edit-actions .btn,
+          .customer-profile-security-card .btn {
+            width: 100%;
+            justify-content: center;
+            min-height: 44px;
+          }
+          .customer-profile-fields {
+            grid-template-columns: 1fr !important;
+            gap: 16px !important;
+          }
+          .customer-profile-fields > div {
+            grid-column: auto !important;
+            min-width: 0;
+          }
+          .customer-profile-fields input,
+          .customer-profile-fields textarea,
+          .customer-profile-fields select {
+            font-size: 16px !important;
+          }
+          .customer-profile-fields div[style*="font-size: 1.4rem"] {
+            font-size: 1.1rem !important;
+            line-height: 1.35 !important;
+            overflow-wrap: anywhere;
+          }
+          .customer-profile-avatar-card {
+            display: grid !important;
+            grid-template-columns: auto 1fr;
+            align-items: center;
+            justify-items: start !important;
+            gap: 14px !important;
+            text-align: left !important;
+            padding: 16px 18px !important;
+            border-color: rgba(34, 211, 238, 0.35) !important;
+          }
+          .customer-profile-avatar-card button[aria-label="Đổi avatar"] {
+            width: 72px !important;
+            height: 72px !important;
+          }
+          .customer-profile-avatar-card button[aria-label="Đổi avatar"] > div:last-child {
+            width: 66px !important;
+            height: 66px !important;
+          }
+          .customer-profile-avatar-card button[aria-label="Đổi avatar"] span {
+            font-size: 1.85rem !important;
+          }
+          .customer-profile-avatar-card > div:last-child h3 {
+            font-size: 1.05rem !important;
+            line-height: 1.25 !important;
+          }
+          .customer-profile-avatar-card > div:last-child p {
+            margin-top: 4px !important;
+            font-size: 0.68rem !important;
+          }
+          .customer-profile-notify-card label {
+            gap: 12px;
+          }
+          .customer-profile-danger {
+            padding: 18px !important;
+            border-radius: 20px !important;
+          }
+        }
+      `}</style>
+      <div className="stagger-1 customer-profile-hero" style={{ 
         marginBottom: '40px', 
         padding: '60px 48px', 
         borderRadius: 'var(--radius-xl)', 
@@ -357,10 +497,10 @@ const ThongTinCaNhan: React.FC = () => {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '2.4fr 1fr', gap: '32px' }}>
-        <div style={{ display: 'grid', gap: '32px' }}>
-          <div className="glass-card" style={{ padding: '40px', borderRadius: 'var(--radius-xl)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
+      <div className="customer-profile-layout" style={{ display: 'grid', gridTemplateColumns: '2.4fr 1fr', gap: '32px' }}>
+        <div className="customer-profile-main-stack" style={{ display: 'grid', gap: '32px' }}>
+          <div className="glass-card customer-profile-card" style={{ padding: '40px', borderRadius: 'var(--radius-xl)' }}>
+            <div className="customer-profile-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
               <h3 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--ink)', margin: 0 }}>Thông tin cơ bản</h3>
               {!isEditing ? (
                 <button data-ai-id="button-thongtincanhan-ixxz" className="btn btn-primary btn-pill" onClick={() => setIsEditing(true)}>
@@ -368,14 +508,14 @@ const ThongTinCaNhan: React.FC = () => {
                   Chỉnh sửa
                 </button>
               ) : (
-                <div style={{ display: 'flex', gap: '12px' }}>
+                <div className="customer-profile-edit-actions" style={{ display: 'flex', gap: '12px' }}>
                   <button data-ai-id="button-thongtincanhan-7lpc" className="btn btn-pill" style={{ background: 'var(--gray-100)', color: 'var(--ink)' }} onClick={() => setIsEditing(false)}>Hủy</button>
                   <button data-ai-id="button-thongtincanhan-0z5q" className="btn btn-primary btn-pill" onClick={handleSave}>Lưu thay đổi</button>
                 </div>
               )}
             </div>
 
-            <div className="responsive-grid-2">
+            <div className="responsive-grid-2 customer-profile-fields">
               <div style={{ gridColumn: '1 / -1' }}>
                 <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '12px', display: 'block', textTransform: 'uppercase' }}>HỌ VÀ TÊN <span style={{ color: '#ff4d4f' }}>*</span></label>
                 {isEditing ? (
@@ -421,7 +561,7 @@ const ThongTinCaNhan: React.FC = () => {
             </div>
           </div>
 
-          <div className="glass-card" style={{ padding: '48px', borderRadius: 'var(--radius-xl)', border: '1.5px solid var(--primary)' }}>
+          <div className="glass-card customer-profile-security-card" style={{ padding: '48px', borderRadius: 'var(--radius-xl)', border: '1.5px solid var(--primary)' }}>
             <h3 style={{ fontSize: '1.8rem', fontWeight: 900, color: 'var(--primary)', marginBottom: '16px' }}>Bảo mật & Quyền riêng tư</h3>
             <p style={{ color: 'var(--gray-400)', fontWeight: 600, marginBottom: '32px', fontSize: '1rem' }}>Chúng tôi khuyên bạn nên cập nhật mật khẩu 6 tháng một lần để bảo vệ tài khoản.</p>
             <button data-ai-id="button-thongtincanhan-hydh" className="btn btn-outline btn-pill" onClick={() => setShowPasswordModal(true)} style={{ padding: '14px 40px' }}>
@@ -431,8 +571,8 @@ const ThongTinCaNhan: React.FC = () => {
           </div>
         </div>
 
-        <div style={{ display: 'grid', gap: '32px', height: 'fit-content' }}>
-          <div className="glass-card" style={{ padding: '34px 28px', textAlign: 'center', borderRadius: 'var(--radius-xl)', display: 'grid', justifyItems: 'center', gap: '18px' }}>
+        <div className="customer-profile-side-stack" style={{ display: 'grid', gap: '32px', height: 'fit-content' }}>
+          <div className="glass-card customer-profile-avatar-card" style={{ padding: '34px 28px', textAlign: 'center', borderRadius: 'var(--radius-xl)', display: 'grid', justifyItems: 'center', gap: '18px' }}>
             <input
               data-ai-id="input-thongtincanhan-avatar"
               ref={avatarInputRef}

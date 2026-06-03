@@ -142,7 +142,7 @@ const HoSoBenhAn: React.FC = () => {
   if (loading) return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}><div className="dot-pulse"></div></div>;
 
   return (
-    <div className="animate-fade-in">
+    <div className="animate-fade-in customer-medical-page">
       <style>{`
         @keyframes slideUpFade {
           from { opacity: 0; transform: translateY(30px); }
@@ -152,15 +152,82 @@ const HoSoBenhAn: React.FC = () => {
         .stagger-2 { animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both; }
         .item-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); border: 1px solid transparent; background: var(--surface); }
         .item-card:hover { border-color: var(--primary) !important; background: var(--surface) !important; transform: translateY(-4px); box-shadow: 0 20px 40px rgba(15, 157, 138, 0.08); z-index: 10; position: relative; }
+        @media (max-width: 768px) {
+          .customer-medical-page {
+            display: grid;
+            gap: 18px;
+            padding-bottom: 92px;
+          }
+          .customer-medical-hero {
+            display: grid !important;
+            gap: 18px !important;
+            align-items: start !important;
+            margin-bottom: 0 !important;
+            padding: 24px !important;
+            border-radius: 28px !important;
+          }
+          .customer-medical-hero h1 {
+            font-size: 1.75rem !important;
+            line-height: 1.08 !important;
+            letter-spacing: 0 !important;
+          }
+          .customer-medical-hero p {
+            font-size: 0.9rem !important;
+            line-height: 1.5 !important;
+          }
+          .customer-medical-filters {
+            display: grid !important;
+            grid-template-columns: 1fr;
+            gap: 10px !important;
+          }
+          .customer-medical-filters > div,
+          .customer-medical-filters input,
+          .customer-medical-filters select {
+            width: 100% !important;
+          }
+          .customer-medical-list {
+            gap: 14px !important;
+          }
+          .customer-medical-card {
+            padding: 18px !important;
+            border-radius: 24px !important;
+          }
+          .customer-medical-card-header {
+            display: grid !important;
+            gap: 14px !important;
+            align-items: start !important;
+            margin-bottom: 18px !important;
+          }
+          .customer-medical-card-title {
+            gap: 12px !important;
+            align-items: flex-start !important;
+          }
+          .customer-medical-card-title > div:first-child {
+            width: 48px !important;
+            height: 48px !important;
+            border-radius: 16px !important;
+          }
+          .customer-medical-card h3 {
+            font-size: 1.12rem !important;
+          }
+          .customer-medical-info-grid {
+            grid-template-columns: 1fr !important;
+            gap: 12px !important;
+          }
+          .customer-medical-info-grid > div {
+            padding: 16px !important;
+            border-radius: 18px !important;
+          }
+        }
       `}</style>
-      <div className="stagger-1" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', padding: '36px 48px', borderRadius: 'var(--radius-xl)', background: 'var(--secondary-gradient)', color: 'white', position: 'relative', overflow: 'hidden', boxShadow: '0 15px 30px rgba(37, 99, 235, 0.2)', flexWrap: 'wrap', gap: '20px' }}>
+      <div className="stagger-1 customer-medical-hero" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', padding: '36px 48px', borderRadius: 'var(--radius-xl)', background: 'var(--secondary-gradient)', color: 'white', position: 'relative', overflow: 'hidden', boxShadow: '0 15px 30px rgba(37, 99, 235, 0.2)', flexWrap: 'wrap', gap: '20px' }}>
         <div style={{ position: 'absolute', top: '-50px', left: '-50px', width: '200px', height: '200px', background: 'radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }}></div>
         <div style={{ position: 'absolute', bottom: '-80px', right: '20%', width: '150px', height: '150px', background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }}></div>
         <div style={{ position: 'relative', zIndex: 1 }}>
           <h1 style={{ fontSize: '2.5rem', fontWeight: 950, letterSpacing: '-1px', margin: '0 0 8px 0' }}>Hồ sơ y tế 🩺</h1>
           <p style={{ fontWeight: 600, opacity: 0.9, margin: 0, fontSize: '1.05rem' }}>Minh bạch toàn bộ quá trình điều trị và sức khỏe của bé.</p>
         </div>
-        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', position: 'relative', zIndex: 1 }}>
+        <div className="customer-medical-filters" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', position: 'relative', zIndex: 1 }}>
           <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
             <span className="material-symbols-outlined" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', zIndex: 2, color: '#475569', fontSize: '20px', pointerEvents: 'none' }}>search</span>
             <input data-ai-id="input-hosobenhan-1g80"
@@ -196,16 +263,16 @@ const HoSoBenhAn: React.FC = () => {
         </div>
       </div>
 
-      <div className="stagger-2" style={{ display: 'grid', gap: '32px' }}>
+      <div className="stagger-2 customer-medical-list" style={{ display: 'grid', gap: '32px' }}>
         {rows.length === 0 ? (
           <div className="glass-card" style={{ padding: '80px', textAlign: 'center', borderRadius: 'var(--radius-xl)' }}>
             <span className="material-symbols-outlined" style={{ fontSize: '64px', color: 'var(--gray-200)', marginBottom: '24px' }}>folder_off</span>
             <p style={{ fontSize: '1.2rem', color: 'var(--gray-400)', fontWeight: 700 }}>Chưa có bản ghi y tế nào cho thú cưng này.</p>
           </div>
         ) : currentRows.map((h) => (
-          <div key={getMedicalRecordId(h)} className="glass-card item-card" style={{ padding: '40px', borderRadius: 'var(--radius-xl)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+          <div key={getMedicalRecordId(h)} className="glass-card item-card customer-medical-card" style={{ padding: '40px', borderRadius: 'var(--radius-xl)' }}>
+            <div className="customer-medical-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+              <div className="customer-medical-card-title" style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
                 <div style={{ width: '64px', height: '64px', background: 'var(--primary-light)', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
                   <span className="material-symbols-outlined" style={{ fontSize: '32px' }}>pets</span>
                 </div>
@@ -226,7 +293,7 @@ const HoSoBenhAn: React.FC = () => {
               </span>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '24px' }}>
+            <div className="customer-medical-info-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '24px' }}>
               <div style={{ background: 'var(--gray-50)', padding: '24px', borderRadius: '24px' }}>
                 <p style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '8px' }}>BÁC SĨ CHỈ ĐỊNH</p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>

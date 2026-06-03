@@ -60,6 +60,7 @@ const MemeCatCore: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
   const [showCanvas, setShowCanvas] = useState(false);
   const [pos, setPos] = useState({ x: -200, y: -200, rotation: 0, size: isMobile ? 80 : 150 });
   const [message, setMessage] = useState("");
+  const [isBubbleDismissed, setIsBubbleDismissed] = useState(false);
   const videoUrl = "/img/video_meo_chay.webm";
   const mousePosRef = useRef({ x: -1000, y: -1000 });
   const [isVisible, setIsVisible] = useState(true);
@@ -115,13 +116,13 @@ const MemeCatCore: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
         ];
 
     const interval = setInterval(() => {
-      if (!isVisible) return;
+      if (!isVisible || (isMobile && isBubbleDismissed)) return;
       const randomMsg = baseMessages[Math.floor(Math.random() * baseMessages.length)];
       setMessage(randomMsg);
       setTimeout(() => setMessage(""), 3500);
     }, 15000);
     return () => clearInterval(interval);
-  }, [isVisible, liveUser?.nam_sinh]);
+  }, [isVisible, isMobile, isBubbleDismissed, liveUser?.nam_sinh]);
 
   useEffect(() => {
     let sprintTimeout: number;
@@ -283,7 +284,7 @@ const MemeCatCore: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
         style={{ display: 'none' }}
         onError={() => setActive(false)}
       />
-      {message && (
+      {message && !(isMobile && isBubbleDismissed) && (
         <div className="cat-bubble-animate" style={{
           position: 'fixed', zIndex: 999999,
           top: bubbleTop,
@@ -313,6 +314,20 @@ const MemeCatCore: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
           lineHeight: '1.25',
           transform: 'translateZ(0)'
         }}>
+          {isMobile && (
+            <button
+              type="button"
+              className="cat-bubble-close"
+              aria-label="Đóng bong bóng chat mèo chuối"
+              onClick={(event) => {
+                event.stopPropagation();
+                setIsBubbleDismissed(true);
+                setMessage("");
+              }}
+            >
+              x
+            </button>
+          )}
           <span className="material-symbols-outlined" style={{ fontSize: isMobile ? '14px' : '18px', opacity: 0.7 }}>pets</span>
           {message}
           {bubbleBelowCat ? (
@@ -350,6 +365,35 @@ const MemeCatCore: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
             background: rgba(15, 23, 42, 0.85) !important;
             color: #22d3ee !important;
             animation: darkBubblePulse 1.8s infinite ease-in-out !important;
+          }
+          .cat-bubble-close {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            width: 15px;
+            height: 15px;
+            border: 1px solid rgba(15, 157, 138, 0.18);
+            border-radius: 999px;
+            background: var(--surface);
+            color: var(--primary);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            font-size: 9px;
+            font-weight: 950;
+            line-height: 1;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(15, 23, 42, 0.12);
+            -webkit-tap-highlight-color: transparent;
+          }
+          .cat-bubble-close:active {
+            transform: scale(0.94);
+          }
+          [data-theme='dark'] .cat-bubble-close {
+            background: rgba(15, 23, 42, 0.96);
+            border-color: rgba(34, 211, 238, 0.36);
+            color: #22d3ee;
           }
           @keyframes bananaAuraPulse {
             0%, 100% { filter: none; }

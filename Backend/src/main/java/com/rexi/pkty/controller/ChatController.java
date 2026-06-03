@@ -1048,14 +1048,17 @@ ChatMessage systemMsg = new ChatMessage();
     private String tryLocalClinicGuidanceReply(String normalizedQuery) {
         if (normalizedQuery == null || normalizedQuery.isBlank()) return null;
         String q = normalizedQuery.trim();
+        boolean isShortQuery = isShortSimpleQuery(q);
 
         if (containsAny(q, "chon khoa", "nen chon khoa", "chon muc nao", "chon dich vu nao", "khoa kham")
-                && containsAny(q, "meo", "cho", "cun", "thu cung", "boss", "be")) {
+                && containsAny(q, "meo", "cho", "cun", "thu cung", "boss", "be")
+                && isShortQuery) {
             return "Với chó/mèo nếu chưa rõ bệnh cụ thể, Sen/sếp chọn **Khám Đa Khoa** trước. Nếu bé có vấn đề rõ hơn thì chọn phân hệ phù hợp: da/tai/ngứa chọn khám da liễu, tiêm phòng chọn tiêm chủng, xét nghiệm chọn xét nghiệm, cấp cứu thì gọi hotline 0353.374.156 hoặc đưa bé tới phòng khám ngay.";
         }
 
         if (containsAny(q, "huong dan thanh toan", "thanh toan online", "cach thanh toan", "thanh toan nhu the nao")
-                && !containsAny(q, "cap nhat", "xac nhan", "huy", "xoa", "doi trang thai", "da thanh toan")) {
+                && !containsAny(q, "cap nhat", "xac nhan", "huy", "xoa", "doi trang thai", "da thanh toan")
+                && isShortQuery) {
             return "Để xem hướng dẫn thanh toán online, Sen/sếp mở mục **Hóa đơn & Thanh toán**, chọn hóa đơn cần xem rồi làm theo hướng dẫn chuyển khoản/VNPay hiển thị trên màn hình. Nếu chỉ cần hướng dẫn thì Rexi không thay đổi trạng thái hóa đơn; mọi thao tác xác nhận/hủy/cập nhật thanh toán sẽ cần Rexi Agent kiểm tra quyền và xác nhận riêng.";
         }
 
@@ -1089,9 +1092,11 @@ ChatMessage systemMsg = new ChatMessage();
     private String tryLocalVeterinaryReply(String normalizedQuery, String rawQuery) {
         if (normalizedQuery == null || normalizedQuery.isBlank()) return null;
         String q = normalizedQuery.trim();
+        boolean isShortQuery = isShortSimpleQuery(rawQuery);
 
         if (containsAny(q, "ca rong", "chim canh", "chim", "ca canh", "bo sat", "ran canh")
-                && containsAny(q, "ban", "kham", "dich vu", "ho tro", "web minh", "phong kham")) {
+                && containsAny(q, "ban", "kham", "dich vu", "ho tro", "web minh", "phong kham")
+                && isShortQuery) {
             return "Dạ hiện tại Rexi tập trung hỗ trợ thú cưng phổ biến như chó, mèo và một số thú nhỏ. Với cá rồng/chim cảnh, phòng khám chưa có dịch vụ chuyên sâu cố định nên Rexi không muốn tư vấn quá tay. Nếu bé có dấu hiệu nguy cấp, Sen nên liên hệ cơ sở thú y chuyên cá/chim cảnh gần nhất hoặc gọi Rexi để được hướng dẫn kênh phù hợp.";
         }
 
@@ -1103,25 +1108,27 @@ ChatMessage systemMsg = new ChatMessage();
             return "Mèo nôn ra bọt trắng có thể do kích ứng dạ dày, nuốt lông, ăn quá nhanh, ký sinh trùng, viêm dạ dày-ruột hoặc bệnh nặng hơn nếu đi kèm lừ đừ/sốt/tiêu chảy. Trước mắt cho bé nghỉ ăn 2-4 giờ nếu vẫn tỉnh táo, luôn để nước sạch, không tự cho uống thuốc người. Cần đi khám sớm nếu nôn lặp lại nhiều lần, không uống được nước, bỏ ăn trên 24 giờ, tiêu chảy/ra máu, bụng đau, lừ đừ, mèo con hoặc nghi nuốt dị vật/chất độc.";
         }
 
-        if (isPetEyeProblemQuery(q)) {
+        if (isPetEyeProblemQuery(q) && isShortQuery) {
             return "Rexi hiểu là mắt của mèo đang có dấu hiệu bất thường kiểu đốm/lốm đốm, nhìn lạ hoặc có vẻ khó chịu. Với mắt thì không nên chờ lâu vì có thể liên quan viêm kết mạc, loét giác mạc, dị vật, chấn thương, nhiễm trùng hoặc tăng nhãn áp. Trước mắt không nhỏ thuốc người, không tự dùng kháng sinh/corticoid, không dụi/rửa mạnh; nếu có ghèn nhiều, đỏ, nheo mắt, chảy nước mắt, đục/trắng xanh, sưng, đau, bé dụi mắt hoặc nhìn kém thì nên đi khám thú y trong ngày để soi mắt và nhuộm fluorescein kiểm tra loét giác mạc.";
         }
 
-        if (containsAny(q, "meo") && containsAny(q, "moi de", "vua de", "de con", "meo con", "meo me")) {
+        if (containsAny(q, "meo") && containsAny(q, "moi de", "vua de", "de con", "meo con", "meo me") && isShortQuery) {
             return "Với mèo mẹ mới đẻ, Sen ưu tiên 4 việc: giữ ổ ấm, khô và yên tĩnh; cho mèo mẹ ăn khẩu phần giàu năng lượng/đạm và luôn có nước sạch; theo dõi mèo con bú đều, không bị lạnh, không kêu yếu kéo dài; không tắm hoặc bế mèo con quá nhiều trong vài ngày đầu. Nếu mèo mẹ bỏ ăn, sốt, chảy dịch hôi, bỏ con hoặc mèo con lạnh/yếu không bú thì nên đưa tới bác sĩ thú y sớm.";
         }
 
         if (containsAny(q, "di ngoai ra nuoc", "di ngoai", "tieu chay", "phan long")
-                && containsAny(q, "mui hoi", "hoi lam", "ra nuoc", "cun", "cho")) {
+                && containsAny(q, "mui hoi", "hoi lam", "ra nuoc", "cun", "cho")
+                && isShortQuery) {
             return "Rexi hiểu là cún đang có dấu hiệu **tiêu chảy nước, mùi hôi**. Đây có thể là rối loạn tiêu hóa, nhiễm khuẩn/ký sinh trùng, và ở chó con hoặc chó chưa tiêm đủ vaccine cần đặc biệt cảnh giác **Parvovirus**. Việc cần làm ngay: cho bé uống nước từng ít một, không tự dùng thuốc cầm tiêu chảy của người, theo dõi nôn/sốt/lừ đừ/phân máu. Nếu bé còn nhỏ, bỏ ăn, nôn, lừ đừ hoặc tiêu chảy liên tục thì nên mang tới phòng khám trong ngày để test và truyền dịch nếu cần.";
         }
 
         if (containsAny(q, "bo an", "khong an", "an it")
-                && containsAny(q, "nguoi nong", "nong lam", "sot", "meo")) {
+                && containsAny(q, "nguoi nong", "nong lam", "sot", "meo")
+                && isShortQuery) {
             return "Rexi hiểu theo ngôn ngữ thú y là mèo có dấu hiệu **bỏ ăn kèm nghi sốt**. Mèo bỏ ăn quá 24 giờ đã đáng lo, nhất là nếu người nóng, lừ đừ, trốn, thở nhanh hoặc nôn. Sen nên đo nhiệt độ hậu môn nếu có nhiệt kế thú y; mèo thường khoảng 38-39.2°C, cao hơn nên đi khám. Trước mắt giữ bé ở nơi mát, có nước sạch, không tự cho uống thuốc hạ sốt của người vì có thể gây ngộ độc. Nên đặt lịch khám sớm để bác sĩ kiểm tra nguyên nhân nhiễm trùng/đau/stress.";
         }
 
-        if (containsAny(q, "ngua tai", "gay tai", "lac dau", "hoi tai", "poodle")) {
+        if (containsAny(q, "ngua tai", "gay tai", "lac dau", "hoi tai", "poodle") && isShortQuery) {
             return "Dấu hiệu ngứa tai/lắc đầu ở Poodle thường liên quan viêm tai ngoài, nấm/vi khuẩn, ve tai hoặc dị ứng da. Không nên tự nhỏ thuốc khi chưa soi tai vì nếu màng nhĩ tổn thương có thể nguy hiểm. Sen nên đặt lịch khám da liễu/tai để bác sĩ soi tai, vệ sinh đúng cách và kê thuốc phù hợp.";
         }
 
@@ -1173,7 +1180,7 @@ ChatMessage systemMsg = new ChatMessage();
     }
 
     private String trySemanticVeterinaryReply(SemanticIntent intent) {
-        if (intent == null || intent.confidence() < 0.55) return null;
+        if (intent == null || intent.confidence() < 0.70) return null;
         if (!"vet_advice".equals(intent.intent())) return null;
         if ("eye".equals(intent.bodyPart())) {
             String species = switch (intent.species()) {
@@ -1225,19 +1232,19 @@ ChatMessage systemMsg = new ChatMessage();
 
     private boolean isAutopilotQuery(String normalizedQuery) {
         if (normalizedQuery == null || normalizedQuery.isBlank()) return false;
-        String[] actionKeywords = {
-                "mo trang", "dua toi den", "chuyen sang", "di toi", "vao trang",
-                "qua trang", "nhay qua", "tele qua", "bay qua", "dan toi", "dan den",
+        String q = normalizedQuery;
+
+        if (containsAny(q,
+                "mo trang", "dua toi den", "di toi", "vao trang",
+                "qua trang", "nhay qua", "tele qua", "bay qua",
+                "dan toi", "dan den", "di den", "chuyen den", "chuyen sang",
                 "dat lich", "book lich", "lap lich", "tao lich", "huy lich", "doi lich",
-                "them", "sua", "xoa", "dien", "fill", "chon", "bam", "click", "tap", "an vao",
-                "tim khach", "tim ho so", "tra cuu khach", "quet du lieu", "check giup", "check ho"
-        };
-        for (String kw : actionKeywords) {
-            if (normalizedQuery.contains(kw)) {
-                return true;
-            }
+                "tim khach", "tim ho so", "tra cuu khach", "tra cuu", "quet du lieu", "check giup", "check ho")) {
+            return true;
         }
-        return false;
+
+        return containsAny(q, "them", "sua", "xoa", "dien", "fill", "chon", "bam", "click", "tap", "an vao")
+                && containsAny(q, "trang", "muc", "menu", "tab", "nut", "button", "form", "bang", "danh sach", "truong", "o nhap");
     }
 
     private boolean isClinicInfoQuery(String normalizedQuery) {
@@ -1266,14 +1273,31 @@ ChatMessage systemMsg = new ChatMessage();
         for (String kw : medicalPhrases) {
             if (containsNormalizedTokenOrPhrase(normalizedQuery, kw)) return true;
         }
-        String[] medicalTokens = {
-                "benh", "thuoc", "thuooc", "sot", "soot", "non", "kham", "bnh", "bsi",
-                "oi", "ia", "ngua", "ho", "dau"
-        };
-        for (String kw : medicalTokens) {
+
+        String[] coreMedicalTokens = {"benh", "kham", "bnh", "bsi"};
+        for (String kw : coreMedicalTokens) {
             if (containsNormalizedTokenOrPhrase(normalizedQuery, kw)) return true;
         }
+
+        if (containsNormalizedTokenOrPhrase(normalizedQuery, "thuoc") || containsNormalizedTokenOrPhrase(normalizedQuery, "thuooc")) {
+            return containsAny(normalizedQuery, "lieu", "khang sinh", "phac do", "dieu tri", "toa thuoc", "ke don", "benh", "benh cho", "benh meo", "kham", "sot", "non", "ho", "ngua", "dau");
+        }
+
+        if (!hasPetOrClinicContext(normalizedQuery)) return false;
+
+        String[] symptomTokens = {"sot", "soot", "non", "ngua", "ho", "dau", "tieu chay", "di ngoai", "bo an", "sung", "met", "chet", "vac", "biet", "loet", "viem"};
+        for (String kw : symptomTokens) {
+            if (containsNormalizedTokenOrPhrase(normalizedQuery, kw)) return true;
+        }
+
         return false;
+    }
+
+    private boolean hasPetOrClinicContext(String normalizedQuery) {
+        if (normalizedQuery == null || normalizedQuery.isBlank()) return false;
+        return containsAny(normalizedQuery,
+                "meo", "cho", "cun", "thu cung", "boss", "be nha", "pet",
+                "thu y", "phong kham", "bac si", "bsi", "benh vien" );
     }
 
     private boolean containsNormalizedTokenOrPhrase(String normalizedQuery, String keyword) {
@@ -1387,7 +1411,18 @@ ChatMessage systemMsg = new ChatMessage();
     }
 
     private boolean isPrescriptionRequest(String normalizedQuery) {
-        return containsAny(normalizedQuery, "ke don", "toa thuoc", "lieu dung", "dung khang sinh", "khang sinh", "uống bao nhieu", "uong bao nhieu", "cho uong may vien");
+        if (normalizedQuery == null || normalizedQuery.isBlank()) return false;
+        return containsAny(normalizedQuery, "ke don", "toa thuoc", "lieu dung", "uong bao nhieu", "uong bao nhieu", "cho uong may vien")
+                || ((containsAny(normalizedQuery, "dung khang sinh", "khang sinh")
+                || containsAny(normalizedQuery, "thuoc nguoi", "thuoc nguoi thay"))
+                && containsAny(normalizedQuery, "bao nhieu", "may vien", "lieu", "uong", "cho uong", "duoc su dung", "sai cach"));
+    }
+
+    private boolean isShortSimpleQuery(String rawQuery) {
+        if (rawQuery == null || rawQuery.isBlank()) return false;
+        String trimmed = rawQuery.trim();
+        if (trimmed.length() > 140) return false;
+        return trimmed.split("\\s+").length <= 24;
     }
 
     private boolean isVomitingFoamCatQuery(String normalizedQuery) {
@@ -1955,8 +1990,11 @@ ChatMessage systemMsg = new ChatMessage();
     }
 
     private boolean containsAny(String value, String... terms) {
+        if (value == null) return false;
+        String padded = " " + value.replaceAll("[^a-z0-9\\s]", " ").replaceAll("\\s+", " ").trim() + " ";
         for (String term : terms) {
-            if (value.contains(term)) return true;
+            String normalizedTerm = term == null ? "" : term.replaceAll("[^a-z0-9\\s]", " ").replaceAll("\\s+", " ").trim();
+            if (!normalizedTerm.isBlank() && padded.contains(" " + normalizedTerm + " ")) return true;
         }
         return false;
     }

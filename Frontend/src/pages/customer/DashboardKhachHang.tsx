@@ -437,7 +437,7 @@ const DashboardKhachHang: React.FC = () => {
   }
 
   return (
-    <div className="animate-fade-in">
+    <div className="animate-fade-in customer-dashboard-page">
       <style>{`
         @keyframes slideUpFade {
           from { opacity: 0; transform: translateY(30px); }
@@ -588,12 +588,282 @@ const DashboardKhachHang: React.FC = () => {
           transform: scale(1.1) rotate(6deg);
           box-shadow: 0 6px 20px rgba(15, 157, 138, 0.35);
         }
+
+        @media (max-width: 768px) {
+          .customer-dashboard-page {
+            display: grid;
+            gap: 22px;
+            padding-bottom: 92px;
+          }
+
+          .customer-dashboard-hero {
+            margin-bottom: 0 !important;
+            padding: 22px !important;
+            border-radius: 28px !important;
+          }
+
+          .customer-dashboard-hero::after {
+            content: "";
+            position: absolute;
+            inset: auto 18px 18px 18px;
+            height: 4px;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.28);
+          }
+
+          .customer-dashboard-hero-content {
+            align-items: flex-start !important;
+            gap: 14px !important;
+          }
+
+          .customer-dashboard-avatar {
+            width: 58px !important;
+            height: 58px !important;
+          }
+
+          .customer-dashboard-avatar > div {
+            width: 50px !important;
+            height: 50px !important;
+            font-size: 1.25rem !important;
+          }
+
+          .customer-dashboard-hero .header-title {
+            font-size: 1.72rem !important;
+            line-height: 1.08 !important;
+            letter-spacing: 0 !important;
+          }
+
+          .customer-dashboard-hero p {
+            font-size: 0.9rem !important;
+            line-height: 1.5 !important;
+          }
+
+          .customer-dashboard-updated {
+            max-width: 100%;
+            font-size: 0.72rem !important;
+            white-space: normal;
+            align-items: flex-start !important;
+          }
+
+          .customer-kpi-grid {
+            display: flex !important;
+            gap: 12px !important;
+            overflow-x: auto;
+            padding: 2px 2px 10px !important;
+            margin-bottom: 0 !important;
+            scroll-snap-type: x mandatory;
+            scrollbar-width: none;
+          }
+
+          .customer-kpi-grid::-webkit-scrollbar {
+            display: none;
+          }
+
+          .customer-kpi-grid .kpi-card {
+            min-width: 188px !important;
+            min-height: 176px !important;
+            padding: 16px !important;
+            border-radius: 22px !important;
+            scroll-snap-align: start;
+            justify-content: flex-start !important;
+            gap: 8px;
+            overflow: hidden !important;
+          }
+
+          .customer-kpi-grid .kpi-card h3 {
+            font-size: 1.36rem !important;
+            line-height: 1.15 !important;
+            word-break: break-word;
+            margin-top: 0 !important;
+          }
+
+          .customer-kpi-grid .kpi-card p {
+            font-size: 0.68rem !important;
+            margin: 0 !important;
+          }
+
+          .customer-kpi-grid .kpi-card > div:nth-of-type(2) {
+            order: 1;
+            margin: 2px 0 10px !important;
+          }
+
+          .customer-kpi-grid .kpi-card > div:nth-of-type(2) > div {
+            width: 44px !important;
+            height: 44px !important;
+            border-radius: 15px !important;
+          }
+
+          .customer-kpi-grid .kpi-card > div:nth-of-type(2) span {
+            font-size: 22px !important;
+          }
+
+          .customer-kpi-grid .kpi-trend-badge {
+            top: 12px !important;
+            right: 12px !important;
+            max-width: calc(100% - 74px);
+            padding: 6px 8px !important;
+            font-size: 0.64rem !important;
+            line-height: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+
+          .customer-kpi-grid .kpi-trend-badge .material-symbols-outlined {
+            width: 14px;
+            min-width: 14px;
+            overflow: hidden;
+            font-size: 14px !important;
+            line-height: 1;
+          }
+
+          .customer-kpi-grid .kpi-trend-popover {
+            order: 4;
+            position: static !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            padding: 0 !important;
+            margin-top: 2px;
+            border: 0 !important;
+            background: transparent !important;
+            box-shadow: none !important;
+            opacity: 1 !important;
+            transform: none !important;
+            pointer-events: none !important;
+          }
+
+          .customer-kpi-grid .kpi-popover-title {
+            display: none;
+          }
+
+          .customer-kpi-grid .kpi-popover-value {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            color: var(--gray-500);
+            font-size: 0.72rem;
+            font-weight: 750;
+            line-height: 1.35;
+          }
+
+          .customer-kpi-grid .kpi-card > p {
+            order: 2;
+          }
+
+          .customer-kpi-grid .kpi-card > h3 {
+            order: 3;
+          }
+
+          .customer-pets-section {
+            margin-bottom: 0 !important;
+            padding: 18px 0 2px;
+            border-top: 1px solid var(--gray-150);
+            border-bottom: 1px solid var(--gray-150);
+          }
+
+          .customer-pets-section > h3 {
+            font-size: 1rem !important;
+            margin-bottom: 12px !important;
+          }
+
+          .pet-instagram-slider {
+            gap: 12px !important;
+            padding: 4px 2px 16px !important;
+          }
+
+          .pet-insta-card {
+            min-width: 132px !important;
+            width: 132px !important;
+            padding: 14px 12px !important;
+            border-radius: 20px !important;
+          }
+
+          .customer-dashboard-lower-grid {
+            grid-template-columns: 1fr !important;
+            gap: 18px !important;
+          }
+
+          .customer-appointments-panel {
+            padding: 20px !important;
+            border-radius: 24px !important;
+            margin-inline: -2px;
+          }
+
+          .customer-appointments-header {
+            align-items: flex-start !important;
+            gap: 12px !important;
+            margin-bottom: 18px !important;
+          }
+
+          .customer-appointments-header .btn {
+            padding: 8px 12px !important;
+            white-space: nowrap;
+          }
+
+          .appointment-card {
+            display: grid !important;
+            grid-template-columns: 1fr auto;
+            gap: 12px !important;
+            align-items: start !important;
+            padding: 16px !important;
+            border-radius: 18px !important;
+          }
+
+          .appointment-card:hover,
+          .appointment-card:active {
+            transform: translateY(-3px) !important;
+          }
+
+          .customer-side-stack {
+            gap: 16px !important;
+          }
+
+          .customer-quick-card {
+            padding: 18px !important;
+            border-radius: 24px !important;
+          }
+
+          .customer-quick-grid {
+            display: flex !important;
+            overflow-x: auto;
+            gap: 10px !important;
+            padding-bottom: 8px;
+            scrollbar-width: none;
+          }
+
+          .customer-quick-grid::-webkit-scrollbar {
+            display: none;
+          }
+
+          .customer-quick-action {
+            min-width: 116px;
+            padding: 14px 10px !important;
+            border-radius: 18px !important;
+          }
+
+          .customer-care-tip {
+            padding: 22px !important;
+            border-radius: 26px !important;
+          }
+
+          .customer-care-tip p {
+            min-height: auto !important;
+            font-size: 0.92rem !important;
+          }
+
+          .customer-support-card {
+            padding: 16px !important;
+            border-radius: 22px !important;
+            align-items: flex-start !important;
+          }
+        }
       `}</style>
-      <div className="stagger-1" style={{ marginBottom: '40px', padding: '48px', borderRadius: 'var(--radius-xl)', background: 'var(--secondary-gradient)', color: 'white', position: 'relative', overflow: 'hidden', boxShadow: '0 15px 35px rgba(13, 148, 136, 0.2)' }}>
+      <div className="stagger-1 customer-dashboard-hero" style={{ marginBottom: '40px', padding: '48px', borderRadius: 'var(--radius-xl)', background: 'var(--secondary-gradient)', color: 'white', position: 'relative', overflow: 'hidden', boxShadow: '0 15px 35px rgba(13, 148, 136, 0.2)' }}>
         <div style={{ position: 'absolute', top: '-10%', right: '-5%', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }}></div>
         <div style={{ position: 'absolute', bottom: '-20%', left: '0%', width: '250px', height: '250px', background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none', opacity: 0.5 }}></div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '24px', position: 'relative', zIndex: 1 }}>
-          <div style={{ width: '88px', height: '88px', borderRadius: '50%', background: 'var(--primary-gradient)', display: 'grid', placeItems: 'center', boxShadow: '0 14px 32px rgba(0,0,0,0.18), 0 0 22px var(--primary-shadow)', flexShrink: 0 }}>
+        <div className="customer-dashboard-hero-content" style={{ display: 'flex', alignItems: 'center', gap: '24px', position: 'relative', zIndex: 1 }}>
+          <div className="customer-dashboard-avatar" style={{ width: '88px', height: '88px', borderRadius: '50%', background: 'var(--primary-gradient)', display: 'grid', placeItems: 'center', boxShadow: '0 14px 32px rgba(0,0,0,0.18), 0 0 22px var(--primary-shadow)', flexShrink: 0 }}>
             <div style={{ width: '78px', height: '78px', borderRadius: '50%', overflow: 'hidden', border: '3px solid rgba(255,255,255,0.72)', background: 'var(--primary)', display: 'grid', placeItems: 'center', color: 'white', fontWeight: 950, fontSize: '2rem' }}>
               {userAvatar ? (
                 <img src={userAvatar} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -610,7 +880,7 @@ const DashboardKhachHang: React.FC = () => {
               {toneCopy.dashboardSubtitle}
             </p>
             {lastUpdated && (
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', fontWeight: 800, background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)', padding: '6px 14px', borderRadius: '999px', marginTop: '14px', border: '1px solid rgba(255,255,255,0.2)', position: 'relative', zIndex: 1, boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
+              <div className="customer-dashboard-updated" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', fontWeight: 800, background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)', padding: '6px 14px', borderRadius: '999px', marginTop: '14px', border: '1px solid rgba(255,255,255,0.2)', position: 'relative', zIndex: 1, boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
                 <span className="material-symbols-outlined" style={{ fontSize: '15px', color: '#5eead4', animation: 'spin 3s infinite linear' }}>sync</span>
                 <span>Dữ liệu thời gian thực cập nhật lúc: {lastUpdated}</span>
               </div>
@@ -619,7 +889,7 @@ const DashboardKhachHang: React.FC = () => {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '32px', marginBottom: '40px' }}>
+      <div className="customer-kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '32px', marginBottom: '40px' }}>
         {stats.map((item, i) => (
           <div key={i} className="glass-card hover-lift kpi-card" style={{ padding: '32px', borderRadius: '32px', border: `1px solid ${item.color}25`, background: `linear-gradient(135deg, ${item.color}15 0%, var(--surface) 100%)`, minHeight: '190px' }}>
             {item.trendData && (
@@ -653,7 +923,7 @@ const DashboardKhachHang: React.FC = () => {
       </div>
 
       {/* 📸 BỘ SƯU TẬP THẺ THÚ CƯNG ĐẸP NHƯ INSTAGRAM WADHAH ALOUI STYLE */}
-      <div className="stagger-2" style={{ marginBottom: '40px' }}>
+      <div className="stagger-2 customer-pets-section" style={{ marginBottom: '40px' }}>
         <h3 style={{ fontSize: '1.25rem', fontWeight: 950, color: 'var(--ink)', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px', letterSpacing: '-0.5px' }}>
           <span className="material-symbols-outlined" style={{ color: 'var(--primary)' }}>photo_library</span>
           {toneCopy.petSectionTitle} ({pets.length})
@@ -734,9 +1004,9 @@ const DashboardKhachHang: React.FC = () => {
         )}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '32px' }} className="stagger-3">
-        <div className="glass-card hover-lift" style={{ padding: '32px', borderRadius: 'var(--radius-xl)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '32px' }} className="stagger-3 customer-dashboard-lower-grid">
+        <div className="glass-card hover-lift customer-appointments-panel" style={{ padding: '32px', borderRadius: 'var(--radius-xl)' }}>
+          <div className="customer-appointments-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
             <h3 style={{ fontSize: '1.25rem', fontWeight: 950, color: 'var(--ink)', letterSpacing: '-0.5px', margin: 0 }}>Lịch hẹn sắp tới</h3>
             <Link to="/khach-hang/dat-lich-hen" className="btn btn-primary btn-pill" style={{ padding: '8px 24px', fontSize: '0.85rem' }}>
               <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>add</span>
@@ -772,11 +1042,11 @@ const DashboardKhachHang: React.FC = () => {
           )}
         </div>
 
-        <div style={{ display: 'grid', gap: '32px' }}>
+        <div className="customer-side-stack" style={{ display: 'grid', gap: '32px' }}>
           {/* ⚡ BẢNG PHÍM TẮT TIỆN ÍCH NHANH GLASSMORPHISM */}
-          <div className="glass-card hover-lift" style={{ padding: '32px', borderRadius: '32px', border: '1px solid var(--gray-100)' }}>
+          <div className="glass-card hover-lift customer-quick-card" style={{ padding: '32px', borderRadius: '32px', border: '1px solid var(--gray-100)' }}>
             <h3 style={{ fontSize: '1.15rem', fontWeight: 950, color: 'var(--ink)', marginBottom: '20px', letterSpacing: '-0.5px' }}>Thao tác nhanh</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <div className="customer-quick-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
               {[
                 { label: 'Đặt lịch hẹn', icon: 'calendar_month', path: '/khach-hang/dat-lich-hen', color: 'var(--primary)' },
                 { label: 'Hồ sơ bệnh án', icon: 'folder_shared', path: '/khach-hang/ho-so-benh-an', color: '#3b82f6' },
@@ -800,7 +1070,7 @@ const DashboardKhachHang: React.FC = () => {
                     textAlign: 'center',
                     transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
                   }}
-                  className="hover-scale"
+                  className="hover-scale customer-quick-action"
                 >
                   <div style={{ width: '42px', height: '42px', borderRadius: '14px', background: `${action.color}12`, color: action.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <span className="material-symbols-outlined" style={{ fontSize: '22px' }}>{action.icon}</span>
@@ -811,7 +1081,7 @@ const DashboardKhachHang: React.FC = () => {
             </div>
           </div>
 
-          <div className="glass-card hover-lift" style={{ padding: '40px 32px', borderRadius: '40px', background: 'var(--primary-gradient)', color: 'white', position: 'relative', overflow: 'hidden', boxShadow: '0 20px 40px var(--primary-shadow)', border: 'none' }}>
+          <div className="glass-card hover-lift customer-care-tip" style={{ padding: '40px 32px', borderRadius: '40px', background: 'var(--primary-gradient)', color: 'white', position: 'relative', overflow: 'hidden', boxShadow: '0 20px 40px var(--primary-shadow)', border: 'none' }}>
             <div style={{ position: 'absolute', top: '-10%', right: '-10%', width: '200px', height: '200px', background: 'radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }}></div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px' }}>
               <span className="material-symbols-outlined" style={{ fontSize: '32px' }}>lightbulb</span>
@@ -821,7 +1091,7 @@ const DashboardKhachHang: React.FC = () => {
             <button data-ai-id="button-dashboardkhachhang-tppw" className="btn btn-pill" onClick={() => setIsTipsModalOpen(true)} style={{ background: 'rgba(255,255,255,0.15)', color: 'white', marginTop: '24px', width: '100%', border: '1.5px solid rgba(255,255,255,0.3)', fontWeight: 800, backdropFilter: 'blur(10px)' }}>Xem tất cả mẹo</button>
           </div>
 
-          <a href="tel:***REMOVED***-VIETQR_ACCOUNT_NO" className="glass-card hover-lift" style={{ padding: '24px 32px', borderRadius: 'var(--radius-xl)', display: 'flex', alignItems: 'center', gap: '20px', textDecoration: 'none', cursor: 'pointer' }}>
+          <a href="tel:***REMOVED***-VIETQR_ACCOUNT_NO" className="glass-card hover-lift customer-support-card" style={{ padding: '24px 32px', borderRadius: 'var(--radius-xl)', display: 'flex', alignItems: 'center', gap: '20px', textDecoration: 'none', cursor: 'pointer' }}>
             <div style={{ width: '56px', height: '56px', background: 'var(--primary-light)', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
               <span className="material-symbols-outlined" style={{ fontSize: '32px' }}>support_agent</span>
             </div>

@@ -53,7 +53,7 @@ public class AiToolService {
             TOOLS ĐƯỢC PHÉP VỚI VAI TRÒ HIỆN TẠI:
             """);
         appendToolIfAllowed(sb, userRole, "tim_lich_hen_hom_nay",
-            "Lấy danh sách lịch hẹn khám. Truyền params 'pham_vi'='all' để lấy toàn bộ lịch sử lịch khám từ trước tới nay, mặc định chỉ lấy hôm nay.", "{\"pham_vi\": \"hom_nay|all\"}");
+            "Lấy danh sách lịch hẹn khám. Có thể lọc theo tên bác sĩ bằng 'tu_khoa_bac_si'. Truyền 'pham_vi'='all' để lấy toàn bộ lịch sử, mặc định chỉ hôm nay.", "{\"pham_vi\": \"hom_nay|all\", \"tu_khoa_bac_si\": \"Minh\"}");
         appendToolIfAllowed(sb, userRole, "tim_khach_hang",
             "Tìm khách hàng theo tên, SĐT hoặc Email. Điền 'mới' hoặc để trống để tìm khách hàng đăng ký hôm nay.", "{\"tu_khoa\": \"...\"}");
         appendToolIfAllowed(sb, userRole, "tim_thu_cung",
@@ -80,6 +80,9 @@ public class AiToolService {
         appendToolIfAllowed(sb, userRole, "xem_kho_thuoc", khoThuocDesc, "{\"tu_khoa\": \"\"}");
         appendToolIfAllowed(sb, userRole, "thong_ke_doanh_thu",
             "Thống kê doanh thu.", "{\"khoang_thoi_gian\": \"hom_nay|tuan_nay|thang_nay\"}");
+        appendToolIfAllowed(sb, userRole, "thong_ke_ca_kham_bac_si",
+            "Thống kê số ca khám/lịch hẹn theo bác sĩ. Dùng cho câu hỏi bác sĩ nào nhiều ca nhất, ít ca nhất, tải/bận nhất.",
+            "{\"khoang_thoi_gian\": \"hom_nay|tuan_nay|thang_nay|all\", \"sap_xep\": \"nhieu_nhat|it_nhat\"}");
         appendToolIfAllowed(sb, userRole, "tim_kiem_web",
             "Tìm thông tin y khoa trên web.", "{\"query\": \"...\"}");
         appendToolIfAllowed(sb, userRole, "gui_email_don_le",
@@ -137,15 +140,19 @@ public class AiToolService {
                Mô tả: Thêm thú cưng cho chính khách hàng đang đăng nhập. Không được truyền ID khách hàng khác.
                Params: {"ten_thu_cung":"...","loai":"Chó|Mèo|...","giong":"...","gioi_tinh":"Đực|Cái|Không xác định","mau_sac":"...","trong_luong":"3.2","ngay_sinh":"YYYY-MM-DD","ghi_chu":"..."}
 
-            4. tim_kiem_web
+            4. danh_sach_thu_cung_cua_toi
+               Mô tả: Xem danh sách thú cưng của chính khách hàng đang đăng nhập. Không nhận id_khach_hang từ người dùng.
+               Params: {}
+
+            5. tim_kiem_web
                Mô tả: Tìm kiếm thông tin y khoa, tin tức thú y mới nhất trên internet.
                Params: {"query": "nội dung cần tìm"}
 
-            5. kiem_tra_phan_he
+            6. kiem_tra_phan_he
                Mô tả: Xem danh sách phân hệ, route và quyền truy cập chính trong hệ thống.
                Params: {} (không cần tham số)
 
-            6. tra_cuu_tai_lieu_y_khoa
+            7. tra_cuu_tai_lieu_y_khoa
                Mô tả: Tra cứu tài liệu VNUA/giáo trình thú y đã được Rexi nạp. Khách hàng chỉ được nhận giải thích an toàn, không nhận liều dùng hay chỉ định thuốc kê đơn.
                Params: {"tu_khoa": "..."}
 
@@ -183,9 +190,11 @@ public class AiToolService {
                 case "dat_lich_hen"          -> self.toolDatLichHen(params);
                 case "huy_lich_hen"          -> toolHuyLichHen(params, userRole, username);
                 case "them_thu_cung"         -> toolThemThuCung(params, userRole, username);
+                case "danh_sach_thu_cung_cua_toi" -> toolDanhSachThuCungCuaToi(username);
                 case "cap_nhat_benh_an"      -> toolCapNhatBenhAn(params);
                 case "xem_kho_thuoc"         -> toolXemKhoThuoc((String) params.getOrDefault("tu_khoa", ""));
                 case "thong_ke_doanh_thu"    -> toolThongKeDoanhThu((String) params.getOrDefault("khoang_thoi_gian", "hom_nay"));
+                case "thong_ke_ca_kham_bac_si" -> toolThongKeCaKhamBacSi(params);
                 case "tim_kiem_web"          -> toolTimKiemWeb((String) params.getOrDefault("query", ""));
                 case "gui_email_don_le"      -> toolGuiEmailDonLe(params);
                 case "kiem_tra_cau_hinh_ai"  -> toolKiemTraCauHinhAi();
@@ -211,22 +220,41 @@ public class AiToolService {
     private String toolTimLichHenHomNay(Map<String, Object> params) {
         String phamVi = params != null ? Objects.toString(params.getOrDefault("pham_vi", "hom_nay"), "hom_nay").trim().toLowerCase() : "hom_nay";
         boolean isAll = phamVi.equals("all") || phamVi.equals("lich_su") || phamVi.equals("toan_bo");
+        String doctorKeyword = params != null ? Objects.toString(params.getOrDefault("tu_khoa_bac_si", ""), "").trim() : "";
         java.time.LocalDate today = java.time.LocalDate.now();
 
-        String sql = "SELECT lh.id_lich_hen, kh.ten_khach_hang, kh.sdt, tc.ten_thu_cung, " +
-                     "dv.ten_dich_vu, nv.ho_ten AS ten_bac_si, lh.ngay_kham, lh.gio_kham, lh.trang_thai " +
-                     "FROM LichHen lh " +
-                     "JOIN KhachHang kh ON lh.id_khach_hang = kh.id_khach_hang " +
-                     "LEFT JOIN ThuCung tc ON lh.id_thu_cung = tc.id_thu_cung " +
-                     "LEFT JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu " +
-                     "LEFT JOIN NhanVien nv ON lh.id_bac_si = nv.id_nhan_vien " +
-                     "WHERE lh.ngay_kham = ? " +
-                     "ORDER BY lh.gio_kham";
-        var rows = jdbcTemplate.queryForList(sql, java.sql.Date.valueOf(today));
-        if (rows.isEmpty()) return "Hôm nay không có lịch hẹn nào.";
-        StringBuilder sb = new StringBuilder("Lịch hẹn hôm nay (" + rows.size() + " ca):\n");
+        StringBuilder sql = new StringBuilder(
+            "SELECT TOP 20 lh.id_lich_hen, kh.ten_khach_hang, kh.sdt, tc.ten_thu_cung, " +
+            "dv.ten_dich_vu, nv.ho_ten AS ten_bac_si, lh.ngay_kham, lh.gio_kham, lh.trang_thai " +
+            "FROM LichHen lh " +
+            "JOIN KhachHang kh ON lh.id_khach_hang = kh.id_khach_hang " +
+            "LEFT JOIN ThuCung tc ON lh.id_thu_cung = tc.id_thu_cung " +
+            "LEFT JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu " +
+            "LEFT JOIN NhanVien nv ON lh.id_bac_si = nv.id_nhan_vien " +
+            "WHERE 1=1 "
+        );
+        List<Object> queryParams = new ArrayList<>();
+        if (!isAll) {
+            sql.append("AND lh.ngay_kham = ? ");
+            queryParams.add(java.sql.Date.valueOf(today));
+        }
+        if (!doctorKeyword.isBlank()) {
+            sql.append("AND LOWER(nv.ho_ten) LIKE LOWER(?) ");
+            queryParams.add("%" + doctorKeyword + "%");
+        }
+        sql.append(isAll ? "ORDER BY lh.ngay_kham DESC, lh.gio_kham DESC" : "ORDER BY lh.gio_kham");
+
+        var rows = jdbcTemplate.queryForList(sql.toString(), queryParams.toArray());
+        if (rows.isEmpty()) {
+            String scope = isAll ? "trong hệ thống" : "hôm nay";
+            String doctorText = doctorKeyword.isBlank() ? "" : " của bác sĩ khớp '" + doctorKeyword + "'";
+            return "Không tìm thấy lịch hẹn khám" + doctorText + " " + scope + ".";
+        }
+        String scopeTitle = isAll ? "Lịch hẹn tìm thấy" : "Lịch hẹn hôm nay";
+        if (!doctorKeyword.isBlank()) scopeTitle += " của bác sĩ khớp '" + doctorKeyword + "'";
+        StringBuilder sb = new StringBuilder(scopeTitle + " (" + rows.size() + " ca):\n");
         for (var r : rows) {
-            sb.append("- ").append(r.get("gio_kham")).append(" | ")
+            sb.append("- ").append(r.get("ngay_kham")).append(" ").append(r.get("gio_kham")).append(" | ")
               .append(r.get("ten_khach_hang")).append(" | Bé: ").append(r.get("ten_thu_cung"))
               .append(" | Dịch vụ: ").append(r.get("ten_dich_vu"))
               .append(" | BS: ").append(r.get("ten_bac_si"))
@@ -371,6 +399,50 @@ public class AiToolService {
             count++;
         }
         return sb.toString();
+    }
+
+    private String toolDanhSachThuCungCuaToi(String username) {
+        String customerId = resolveCustomerId(null, username);
+        if (customerId == null || customerId.isBlank()) {
+            return "Không xác định được tài khoản khách hàng đang đăng nhập.";
+        }
+
+        var rows = jdbcTemplate.queryForList(
+            "SELECT id_thu_cung, ten_thu_cung, loai, giong, gioi_tinh, mau_sac, trong_luong, ngay_sinh, ghi_chu " +
+            "FROM ThuCung WHERE id_khach_hang = ? AND (da_xoa = 0 OR da_xoa IS NULL) " +
+            "ORDER BY ten_thu_cung ASC",
+            customerId
+        );
+
+        if (rows.isEmpty()) {
+            return "Tài khoản của bạn hiện chưa có thú cưng nào trong hệ thống.";
+        }
+
+        StringBuilder sb = new StringBuilder("Thú cưng của bạn hiện có " + rows.size() + " bé:\n");
+        for (var row : rows) {
+            sb.append("- ").append(row.get("ten_thu_cung"))
+                .append(" | Loài: ").append(valueOrUnknown(row.get("loai")))
+                .append(" | Giống: ").append(valueOrUnknown(row.get("giong")));
+            Object gioiTinh = row.get("gioi_tinh");
+            if (gioiTinh != null && !gioiTinh.toString().isBlank()) {
+                sb.append(" | Giới tính: ").append(gioiTinh);
+            }
+            Object trongLuong = row.get("trong_luong");
+            if (trongLuong != null) {
+                sb.append(" | Cân nặng: ").append(trongLuong).append(" kg");
+            }
+            Object ngaySinh = row.get("ngay_sinh");
+            if (ngaySinh != null) {
+                sb.append(" | Ngày sinh: ").append(ngaySinh);
+            }
+            sb.append("\n");
+        }
+        return sb.toString();
+    }
+
+    private String valueOrUnknown(Object value) {
+        String text = value == null ? "" : value.toString().trim();
+        return text.isBlank() ? "Chưa cập nhật" : text;
     }
 
     private String toolXemBenhAn(String idThuCung) {
@@ -713,6 +785,71 @@ public class AiToolService {
         } catch (Exception e) {
             return "Lỗi thống kê: " + e.getMessage();
         }
+    }
+
+    private String toolThongKeCaKhamBacSi(Map<String, Object> params) {
+        String khoang = params != null ? Objects.toString(params.getOrDefault("khoang_thoi_gian", "all"), "all").trim().toLowerCase() : "all";
+        String sapXep = params != null ? Objects.toString(params.getOrDefault("sap_xep", "nhieu_nhat"), "nhieu_nhat").trim().toLowerCase() : "nhieu_nhat";
+        boolean ascending = sapXep.equals("it_nhat") || sapXep.equals("it_ca") || sapXep.equals("thap_nhat");
+
+        LocalDate today = LocalDate.now(VN_ZONE);
+        StringBuilder sql = new StringBuilder(
+            "SELECT TOP 10 COALESCE(nv.ho_ten, N'Chưa gán bác sĩ') AS ten_bac_si, " +
+            "COUNT(*) AS tong_ca, " +
+            "SUM(CASE WHEN lh.trang_thai = 'DA_HUY' OR lh.trang_thai = N'Đã hủy' THEN 1 ELSE 0 END) AS so_ca_huy, " +
+            "SUM(CASE WHEN lh.trang_thai IS NULL OR (lh.trang_thai <> 'DA_HUY' AND lh.trang_thai <> N'Đã hủy') THEN 1 ELSE 0 END) AS so_ca_hieu_luc " +
+            "FROM LichHen lh " +
+            "LEFT JOIN NhanVien nv ON lh.id_bac_si = nv.id_nhan_vien " +
+            "WHERE lh.id_bac_si IS NOT NULL "
+        );
+        List<Object> queryParams = new ArrayList<>();
+
+        switch (khoang) {
+            case "hom_nay", "today" -> {
+                sql.append("AND lh.ngay_kham = ? ");
+                queryParams.add(java.sql.Date.valueOf(today));
+                khoang = "hom_nay";
+            }
+            case "tuan_nay" -> {
+                LocalDate start = today.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
+                LocalDate end = start.plusWeeks(1);
+                sql.append("AND lh.ngay_kham >= ? AND lh.ngay_kham < ? ");
+                queryParams.add(java.sql.Date.valueOf(start));
+                queryParams.add(java.sql.Date.valueOf(end));
+            }
+            case "thang_nay" -> {
+                LocalDate start = java.time.YearMonth.from(today).atDay(1);
+                LocalDate end = start.plusMonths(1);
+                sql.append("AND lh.ngay_kham >= ? AND lh.ngay_kham < ? ");
+                queryParams.add(java.sql.Date.valueOf(start));
+                queryParams.add(java.sql.Date.valueOf(end));
+            }
+            default -> khoang = "all";
+        }
+
+        sql.append("GROUP BY COALESCE(nv.ho_ten, N'Chưa gán bác sĩ') ");
+        sql.append("ORDER BY so_ca_hieu_luc ").append(ascending ? "ASC" : "DESC")
+            .append(", tong_ca ").append(ascending ? "ASC" : "DESC")
+            .append(", ten_bac_si ASC");
+
+        var rows = jdbcTemplate.queryForList(sql.toString(), queryParams.toArray());
+        if (rows.isEmpty()) {
+            return "Chưa có dữ liệu ca khám theo bác sĩ cho phạm vi " + khoang.replace("_", " ") + ".";
+        }
+
+        String title = ascending ? "Bác sĩ có ít ca khám nhất" : "Bác sĩ có nhiều ca khám nhất";
+        StringBuilder sb = new StringBuilder(title + " (" + khoang.replace("_", " ") + "):\n");
+        for (var row : rows) {
+            sb.append("- ").append(row.get("ten_bac_si"))
+                .append(": ").append(row.get("so_ca_hieu_luc")).append(" ca hiệu lực")
+                .append(" / ").append(row.get("tong_ca")).append(" tổng ca");
+            Object canceled = row.get("so_ca_huy");
+            if (canceled != null) {
+                sb.append(" | Hủy: ").append(canceled);
+            }
+            sb.append("\n");
+        }
+        return sb.toString();
     }
 
     private String toolTimKiemWeb(String query) {

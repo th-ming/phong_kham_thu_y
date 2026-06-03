@@ -17,10 +17,10 @@ const sharedClinicalSuggestions: QuickSuggestion[] = [
 
 const standardSuggestionMap: Record<string, QuickSuggestion[]> = {
     customer: [
-        { label: "Đặt lịch khám", prompt: "Tôi muốn đặt lịch khám sức khỏe cho thú cưng", tone: "success" },
-        { label: "Thông tin bác sĩ", prompt: "Cho tôi biết thông tin bác sĩ phụ trách khám cho thú cưng", tone: "doctor" },
-        { label: "Hồ sơ bé", prompt: "Tôi muốn xem và hiểu hồ sơ y tế của thú cưng", tone: "info" },
-        { label: "Hóa đơn của tôi", prompt: "Tôi muốn kiểm tra các hóa đơn và trạng thái thanh toán", tone: "warning" },
+        { label: "Cần đi khám không?", prompt: "Những dấu hiệu nào ở thú cưng cần đưa đi khám ngay?", tone: "warning" },
+        { label: "Chăm sóc mèo mang thai", prompt: "Cách chăm sóc mèo mang thai an toàn tại nhà?", tone: "success" },
+        { label: "Sau khi khám", prompt: "Sau khi thú cưng vừa khám xong cần theo dõi gì?", tone: "info" },
+        { label: "Ăn uống theo tuổi", prompt: "Tư vấn khẩu phần ăn phù hợp cho chó mèo theo tuổi và cân nặng", tone: "default" },
         ...sharedClinicalSuggestions,
     ],
     admin: [
@@ -84,14 +84,14 @@ const standardSuggestionMap: Record<string, QuickSuggestion[]> = {
     ],
 };
 
-const agentSuggestionMap: Record<string, QuickSuggestion[]> = {
+const agentSuggestionMap: Record<string, QuickSuggestion[]> = { 
     customer: [
-        { label: "Tự điền lịch khám", prompt: "Tự động điền lịch khám cho thú cưng của tôi vào khung giờ phù hợp", tone: "agent" },
-        { label: "Thông tin bác sĩ", prompt: "Cho tôi biết thông tin bác sĩ phụ trách khám cho thú cưng", tone: "info" },
-        { label: "Tìm hóa đơn", prompt: "Mở trang hóa đơn và tìm hóa đơn chưa thanh toán của tôi", tone: "warning" },
+        { label: "Mở đặt lịch", prompt: "Mở trang đặt lịch khám cho thú cưng của tôi", tone: "agent" },
+        { label: "Mở lịch đã đặt", prompt: "Mở trang lịch sử lịch hẹn của tôi", tone: "info" },
+        { label: "Mở hóa đơn", prompt: "Mở trang hóa đơn và thanh toán của tôi", tone: "warning" },
         { label: "Mở hồ sơ y tế", prompt: "Mở hồ sơ y tế thú cưng của tôi", tone: "info" },
         { label: "Tìm tài liệu mèo mang thai", prompt: "Lên mạng tìm tài liệu chăm sóc mèo mang thai y khoa", tone: "success" },
-        { label: "Sơ cứu hóc xương", prompt: "Tìm tài liệu về cách sơ cứu hóc xương ở mèo", tone: "danger" },
+        { label: "Mở thông tin bác sĩ", prompt: "Mở trang đội ngũ bác sĩ của phòng khám", tone: "doctor" },
     ],
     admin: [
         { label: "Mở báo cáo thống kê", prompt: "Mở trang báo cáo thống kê và tóm tắt KPI quan trọng", tone: "agent" },

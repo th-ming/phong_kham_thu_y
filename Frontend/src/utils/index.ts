@@ -114,16 +114,20 @@ export const normalizeUserRole = (user: any): UserRoleCode => {
   ].filter(Boolean).join(" "));
   const compactSource = source.replace(/\s+/g, "");
   const rawCompactSource = rawSource.replace(/[\s_-]+/g, "");
+  const hasCustomerAccount = Boolean(user?.id_khach_hang);
+  const hasStaffAccount = Boolean(user?.id_nhan_vien || user?.id_nhanvien || user?.employeeId);
 
-  if (!source) return "guest";
+  if (!source) return hasStaffAccount ? "staff" : hasCustomerAccount ? "khach_hang" : "guest";
   if (compactSource.includes("vt1") || rawCompactSource.includes("vtadmin") || source.includes("admin") || source.includes("quan tri")) return "admin";
   if (compactSource.includes("vt6") || rawCompactSource.includes("vtql") || source.includes("quan ly") || source.includes("manager")) return "quan_ly";
   if (compactSource.includes("vt2") || rawCompactSource.includes("vtbs") || source.includes("bac si") || source.includes("doctor")) return "bac_si";
   if (compactSource.includes("vt4") || rawCompactSource.includes("vtkt") || source.includes("ke toan") || source.includes("accountant")) return "ke_toan";
   if (compactSource.includes("vt7") || rawCompactSource.includes("vttt") || source.includes("tiep tan") || source.includes("le tan") || source.includes("reception")) return "tiep_tan";
   if (compactSource.includes("vt8") || rawCompactSource.includes("vtyt") || source.includes("y ta") || source.includes("dieu duong") || source.includes("nurse")) return "y_ta";
-  if (compactSource.includes("vt5") || source.includes("khach hang") || source.includes("customer") || user?.id_khach_hang) return "khach_hang";
   if (compactSource.includes("vt3") || source.includes("nhan vien") || source.includes("staff")) return "staff";
+
+  if (hasStaffAccount) return "staff";
+  if (compactSource.includes("vt5") || source.includes("khach hang") || source.includes("customer") || hasCustomerAccount) return "khach_hang";
 
   return user?.id_nhan_vien ? "staff" : "guest";
 };

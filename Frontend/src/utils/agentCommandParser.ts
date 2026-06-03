@@ -16,11 +16,11 @@ export const isSensitiveAction = (text: string): boolean => {
  */
 export const isAffirmationCommand = (text: string): boolean => {
     const normalized = normalizeSearchText(text).trim();
-    return /^(ok|oke|okay|dong y|xac nhan|chot|lam di|duoc|yes|y|tiep tuc|toi dong y)$/.test(normalized);
+    return /^(?:um|uh|o|a)?\s*(ok|oke|okay|dong y|xac nhan|chot|lam di|duoc|yes|y|tiep tuc|toi dong y)$/.test(normalized);
 };
 
 /**
- * Kiểm tra xem câu lệnh có phải là lệnh hủy bỏ hành động hiện tại không
+ * Kiểm tra câu lệnh có phải là lệnh hủy bỏ hành động hiện tại ko
  */
 export const isCancelCommand = (text: string): boolean => {
     const normalized = normalizeSearchText(text).trim();
