@@ -11,6 +11,7 @@ public final class RoleAccessPolicy {
         "tim_lich_trong",
         "huy_lich_hen",
         "them_thu_cung",
+        "danh_sach_thu_cung_cua_toi",
         "tim_kiem_web",
         "kiem_tra_phan_he",
         "tra_cuu_tai_lieu_y_khoa"
@@ -50,6 +51,7 @@ public final class RoleAccessPolicy {
         Map.entry("cap_nhat_benh_an", Set.of("bac_si", "y_ta")),
         Map.entry("xem_kho_thuoc", Set.of("admin", "quan_ly", "ke_toan", "bac_si", "y_ta", "tiep_tan")),
         Map.entry("thong_ke_doanh_thu", Set.of("admin", "quan_ly", "ke_toan")),
+        Map.entry("thong_ke_ca_kham_bac_si", Set.of("admin", "quan_ly", "staff", "bac_si", "tiep_tan", "y_ta")),
         Map.entry("tim_kiem_web", Set.of("admin", "quan_ly", "staff", "bac_si", "ke_toan", "tiep_tan", "y_ta")),
         Map.entry("gui_email_don_le", Set.of("admin", "quan_ly")),
         Map.entry("kiem_tra_cau_hinh_ai", Set.of("admin")),
@@ -124,6 +126,8 @@ public final class RoleAccessPolicy {
                 "Tính năng này chỉ dành cho Admin hệ thống. Liên hệ IT nếu cần được cấp quyền.";
             case "thong_ke_doanh_thu" ->
                 "Báo cáo doanh thu chỉ dành cho Admin, Quản lý và Kế toán.";
+            case "thong_ke_ca_kham_bac_si" ->
+                "Thống kê ca khám theo bác sĩ chỉ dành cho nhân sự vận hành và chuyên môn nội bộ.";
             case "thao_tac_tai_khoan", "tim_tai_khoan_bi_khoa" ->
                 "Thao tác tài khoản chỉ dành cho Admin và Quản lý.";
             case "gui_email_don_le" ->

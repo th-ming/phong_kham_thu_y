@@ -347,7 +347,7 @@ const DatLichHen: React.FC = () => {
   };
 
   return (
-    <div className="animate-fade-in">
+    <div className="animate-fade-in customer-booking-page">
       <style>{`
         @keyframes slideUpFade {
           from { opacity: 0; transform: translateY(30px); }
@@ -436,18 +436,134 @@ const DatLichHen: React.FC = () => {
             max-height: 462px;
           }
         }
+        @media (max-width: 768px) {
+          .customer-booking-page {
+            display: grid;
+            gap: 20px;
+            padding-bottom: 92px;
+          }
+
+          .customer-booking-hero {
+            margin: 0 !important;
+            padding: 24px !important;
+            border-radius: 28px !important;
+          }
+
+          .customer-booking-hero h1 {
+            font-size: 1.75rem !important;
+            line-height: 1.08 !important;
+            letter-spacing: 0 !important;
+          }
+
+          .customer-booking-hero p {
+            font-size: 0.9rem !important;
+            line-height: 1.55 !important;
+          }
+
+          .customer-booking-grid {
+            grid-template-columns: 1fr !important;
+            gap: 18px !important;
+          }
+
+          .customer-booking-form {
+            padding: 18px !important;
+            border-radius: 26px !important;
+            gap: 22px !important;
+          }
+
+          .customer-booking-progress {
+            overflow-x: auto;
+            justify-content: flex-start !important;
+            gap: 10px !important;
+            padding: 12px !important;
+            margin-bottom: 0 !important;
+            scrollbar-width: none;
+          }
+
+          .customer-booking-progress::-webkit-scrollbar {
+            display: none;
+          }
+
+          .customer-booking-progress > div {
+            min-width: max-content;
+          }
+
+          .customer-booking-progress > div:nth-child(even) {
+            display: none !important;
+          }
+
+          .customer-pet-missing {
+            display: grid !important;
+            gap: 12px !important;
+            align-items: stretch !important;
+          }
+
+          .booking-service-scroll {
+            max-height: 310px !important;
+            padding: 2px 10px 40px 2px !important;
+            margin-right: 0 !important;
+          }
+
+          .booking-service-list {
+            gap: 10px !important;
+          }
+
+          .booking-service-list .service-card-select {
+            min-height: 84px !important;
+            border-radius: 18px !important;
+            padding: 14px !important;
+          }
+
+          .customer-booking-date-doctor {
+            grid-template-columns: 1fr !important;
+          }
+
+          .customer-booking-slots {
+            display: grid !important;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 9px !important;
+          }
+
+          .customer-booking-slots button {
+            padding: 11px 8px !important;
+            border-radius: 13px !important;
+            font-size: 0.82rem !important;
+          }
+
+          .customer-booking-submit {
+            position: static !important;
+            width: 100%;
+            margin-top: 2px;
+            box-shadow: 0 12px 24px var(--primary-shadow);
+          }
+
+          .summary-panel {
+            position: static !important;
+            margin-top: 10px;
+          }
+
+          .customer-booking-summary-card {
+            padding: 20px !important;
+            border-radius: 26px !important;
+            margin-bottom: 34px;
+          }
+
+          .customer-booking-form textarea {
+            min-height: 132px !important;
+          }
+        }
       `}</style>
-      <div className="stagger-1" style={{ display: 'block', width: '100%', margin: '10px 0 40px 0', padding: '48px', borderRadius: '32px', background: 'var(--secondary-gradient)', color: 'white', position: 'relative', overflow: 'hidden', boxShadow: 'var(--shadow-xl)', zIndex: 1 }}>
+      <div className="stagger-1 customer-booking-hero" style={{ display: 'block', width: '100%', margin: '10px 0 40px 0', padding: '48px', borderRadius: '32px', background: 'var(--secondary-gradient)', color: 'white', position: 'relative', overflow: 'hidden', boxShadow: 'var(--shadow-xl)', zIndex: 1 }}>
         <div style={{ position: 'absolute', top: '-10%', right: '-5%', width: '300px', height: '300px', background: 'radial-gradient(circle, var(--primary-light) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }}></div>
         <div style={{ position: 'absolute', bottom: '-20%', left: '-10%', width: '250px', height: '250px', background: 'radial-gradient(circle, var(--primary-light) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none', opacity: 0.5 }}></div>
         <h1 style={{ fontSize: '3rem', fontWeight: 950, letterSpacing: '-2px', position: 'relative', zIndex: 1, margin: '0 0 12px 0', textShadow: '0 2px 10px rgba(0,0,0,0.2)' }}>{toneCopy.bookingTitle}</h1>
         <p style={{ fontWeight: 600, color: 'rgba(255,255,255,0.7)', position: 'relative', zIndex: 1, margin: 0, fontSize: '1.1rem', maxWidth: '600px' }}>{toneCopy.bookingSubtitle}</p>
       </div>
 
-      <div className="stagger-2 responsive-grid-booking">
-        <form className="glass-card" style={{ padding: '40px', borderRadius: 'var(--radius-xl)', display: 'grid', gap: '32px' }} onSubmit={handleBooking}>
+      <div className="stagger-2 responsive-grid-booking customer-booking-grid">
+        <form className="glass-card customer-booking-form" style={{ padding: '40px', borderRadius: 'var(--radius-xl)', display: 'grid', gap: '32px' }} onSubmit={handleBooking}>
           {/* 🚀 Thanh Tiến Trình (Progress Steps Bar) chuẩn Wadhah Aloui */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', background: 'rgba(34, 211, 238, 0.04)', padding: '20px 24px', borderRadius: '24px', border: '1px solid rgba(34, 211, 238, 0.08)' }}>
+          <div className="customer-booking-progress" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', background: 'rgba(34, 211, 238, 0.04)', padding: '20px 24px', borderRadius: '24px', border: '1px solid rgba(34, 211, 238, 0.08)' }}>
             {[
               { step: 1, label: 'Bé yêu', icon: 'pets' },
               { step: 2, label: 'Dịch vụ', icon: 'medical_services' },
@@ -485,7 +601,7 @@ const DatLichHen: React.FC = () => {
           <div style={{ display: 'grid', gap: '12px' }}>
             <label style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gray-400)', letterSpacing: '1px' }}>1. CHỌN THÚ CƯNG <span style={{ color: '#ff4d4f' }}>*</span></label>
             {pets.length === 0 ? (
-              <div style={{ padding: '24px', background: 'rgba(245, 158, 11, 0.05)', borderRadius: '20px', border: '1px dashed var(--accent)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div className="customer-pet-missing" style={{ padding: '24px', background: 'rgba(245, 158, 11, 0.05)', borderRadius: '20px', border: '1px dashed var(--accent)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <span style={{ fontSize: '1rem', fontWeight: 700 }}>{isGenZCustomer ? "Sen chưa có hồ sơ boss nào." : "Anh/chị chưa có hồ sơ thú cưng nào."}</span>
                 <Link to="/khach-hang/quan-ly-thu-cung" className="btn btn-primary btn-pill" style={{ padding: '10px 24px', textDecoration: 'none', fontSize: '0.9rem' }}>{isGenZCustomer ? "+ Thêm boss ngay" : "+ Thêm thú cưng"}</Link>
               </div>
@@ -530,7 +646,7 @@ const DatLichHen: React.FC = () => {
 
           <div style={{ display: 'grid', gap: '12px' }}>
             <label>3. CHỌN NGÀY KHÁM & BÁC SĨ</label>
-            <div style={{ display: 'grid', gridTemplateColumns: '190px 1fr', gap: '16px', maxWidth: '640px', alignItems: 'center' }}>
+            <div className="customer-booking-date-doctor" style={{ display: 'grid', gridTemplateColumns: '190px 1fr', gap: '16px', maxWidth: '640px', alignItems: 'center' }}>
               <input 
                 data-ai-id="input-datlichhen-mc0h" 
                 required 
@@ -557,12 +673,12 @@ const DatLichHen: React.FC = () => {
             <label style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gray-400)', letterSpacing: '1px' }}>4. CHỌN KHUNG GIỜ <span style={{ color: '#ff4d4f' }}>*</span></label>
             {!date || !idDichVu ? (
               <div style={{ padding: '24px', background: 'var(--gray-50)', borderRadius: '20px', border: '1px dashed var(--gray-200)', color: 'var(--gray-400)', textAlign: 'center', fontWeight: 600 }}>
-                Vui lòng chọn Dịch vụ and Ngày để xem giờ rảnh.
+                Vui lòng chọn Dịch vụ và Ngày để xem giờ rảnh.
               </div>
             ) : loadingSlots ? (
               <div style={{ display: 'flex', justifyContent: 'center', padding: '20px' }}><div className="dot-pulse"></div></div>
             ) : availableSlots.length > 0 ? (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
+              <div className="customer-booking-slots" style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
                 {availableSlots.map(t => {
                   return (
                     <button data-ai-id="button-datlichhen-rvj4"
@@ -598,7 +714,7 @@ const DatLichHen: React.FC = () => {
             <textarea data-ai-id="textarea-datlichhen-note" className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left', minHeight: '100px', padding: '16px', lineHeight: '1.6', borderRadius: '16px', border: '1px solid var(--gray-200)', outline: 'none' }} placeholder={toneCopy.bookingNotePlaceholder} value={note} onChange={e => setNote(e.target.value)} />
           </div>
 
-          <button data-ai-id="button-datlichhen-66iq" type="submit" className="btn btn-primary btn-pill" disabled={loading} onClick={notifyCurrentBookingDraftIssue} style={{ padding: '16px', fontSize: '1.1rem' }}>
+          <button data-ai-id="button-datlichhen-66iq" type="submit" className="btn btn-primary btn-pill customer-booking-submit" disabled={loading} onClick={notifyCurrentBookingDraftIssue} style={{ padding: '16px', fontSize: '1.1rem' }}>
             {loading ? (
               <>
                 <span className="material-symbols-outlined icon-spin">autorenew</span>
@@ -609,7 +725,7 @@ const DatLichHen: React.FC = () => {
         </form>
 
         <div className="summary-panel" style={{ position: 'sticky', top: '40px' }}>
-          <div className="glass-card" style={{ padding: '40px', borderRadius: '40px', boxShadow: 'var(--shadow-2xl)', border: '1px solid rgba(255,255,255,0.1)', position: 'relative', overflow: 'hidden' }}>
+          <div className="glass-card customer-booking-summary-card" style={{ padding: '40px', borderRadius: '40px', boxShadow: 'var(--shadow-2xl)', border: '1px solid rgba(255,255,255,0.1)', position: 'relative', overflow: 'hidden' }}>
             <div style={{ position: 'absolute', top: 0, right: 0, width: '150px', height: '150px', background: 'radial-gradient(circle, rgba(15, 157, 138, 0.1) 0%, transparent 70%)', zIndex: 0 }}></div>
 
             <div style={{ position: 'relative', zIndex: 1 }}>

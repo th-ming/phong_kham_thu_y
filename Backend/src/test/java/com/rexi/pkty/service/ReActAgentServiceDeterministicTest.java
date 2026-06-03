@@ -48,6 +48,83 @@ class ReActAgentServiceDeterministicTest {
     }
 
     @Test
+    void doctorAppointmentLookupDoesNotFallIntoMedicalAdvice() {
+        var result = service.run("tìm cho tôi lịch khám của bác sĩ minh", "admin", "ADMIN");
+
+        assertFalse(result.finalAnswer().contains("biểu hiện bất thường"));
+        assertFalse(result.finalAnswer().contains("Theo dõi nhịp thở"));
+        assertTrue(result.finalAnswer().contains("truy vấn cơ sở dữ liệu lịch hẹn"));
+    }
+
+    @Test
+    void doctorWorkloadStatsDoesNotTreatRankingPhraseAsDoctorName() {
+        var result = service.run("bác sĩ nào đang có nhiều ca khám nhất", "admin", "ADMIN");
+
+        assertFalse(result.finalAnswer().contains("khớp 'nhieu ca nhat'"));
+        assertFalse(result.finalAnswer().contains("Không tìm thấy lịch hẹn khám"));
+        assertTrue(result.finalAnswer().contains("thống kê ca khám theo bác sĩ"));
+    }
+
+    @Test
+    void customerDoctorInfoQuestionAsksForPetOrAppointmentIdentifier() {
+        var result = service.run("Cho tôi biết thông tin bác sĩ phụ trách khám cho thú cưng", "customer", "KHACH_HANG");
+
+        assertFalse(result.finalAnswer().contains("data-ai-id"));
+        assertFalse(result.finalAnswer().contains("button-"));
+        assertTrue(result.finalAnswer().contains("tên thú cưng") || result.finalAnswer().contains("mã lịch hẹn"));
+    }
+
+    @Test
+    void customerMedicalRecordNavigationReturnsCustomerRoute() {
+        var result = service.run("Mở hồ sơ y tế thú cưng của tôi", "customer", "KHACH_HANG");
+
+        assertTrue(result.finalAnswer().contains("[NAVIGATE:/khach-hang/ho-so-benh-an]"));
+    }
+
+    @Test
+    void customerWebResearchUsesToolPathInsteadOfPrintingToolCall() {
+        var result = service.run("Lên mạng tìm tài liệu chăm sóc mèo mang thai y khoa", "customer", "KHACH_HANG");
+
+        assertFalse(result.finalAnswer().contains("Tool:"));
+        assertFalse(result.finalAnswer().contains("Params:"));
+        assertTrue(result.finalAnswer().contains("tìm kiếm web") || result.finalAnswer().contains("tool hệ thống"));
+    }
+
+    @Test
+    void customerOwnPetListQueryUsesOwnPetsDatabaseTool() {
+        var result = service.run("tôi đang có những thú cưng nào", "customer", "KHACH_HANG");
+
+        assertFalse(result.finalAnswer().contains("Bạn có muốn xem"));
+        assertFalse(result.finalAnswer().contains("mở trang"));
+        assertTrue(result.finalAnswer().contains("truy vấn cơ sở dữ liệu thú cưng"));
+    }
+
+    @Test
+    void navigationToCustomerPageIsNotSensitiveDeleteCommand() {
+        var result = service.run("chuyển trang khách hàng", "admin", "ADMIN");
+
+        assertFalse(result.finalAnswer().contains("CẢNH BÁO LỆNH NHẠY CẢM"));
+        assertFalse(result.finalAnswer().contains("xóa/hủy dữ liệu quan trọng"));
+        assertTrue(result.finalAnswer().contains("[NAVIGATE:/quan-ly/khach-hang-thu-cung]"));
+    }
+
+    @Test
+    void substringInsideNormalWordsDoesNotTriggerSensitiveDeleteCommand() {
+        var result = service.run("xem thông tin khách hàng tên Huyền", "admin", "ADMIN");
+
+        assertFalse(result.finalAnswer().contains("CẢNH BÁO LỆNH NHẠY CẢM"));
+        assertFalse(result.finalAnswer().contains("xóa/hủy dữ liệu quan trọng"));
+    }
+
+    @Test
+    void realCancelAppointmentStillTriggersSensitiveGate() {
+        var result = service.run("hủy lịch hẹn LH-123 giúp tôi", "admin", "ADMIN");
+
+        assertTrue(result.finalAnswer().contains("CẢNH BÁO LỆNH NHẠY CẢM"));
+        assertTrue(result.finalAnswer().contains("xóa/hủy dữ liệu quan trọng"));
+    }
+
+    @Test
     void emergencyPetSymptomGetsUrgentAdvice() {
         var result = service.run("bé cún bị run run xong nằm im, cứu t", "admin", "ADMIN");
 

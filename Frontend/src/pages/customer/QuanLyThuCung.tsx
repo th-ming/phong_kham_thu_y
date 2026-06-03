@@ -349,7 +349,7 @@ const QuanLyThuCung: React.FC = () => {
   }
 
   return (
-    <div className="animate-fade-in">
+    <div className="animate-fade-in customer-pets-page">
       <style>{`
         @keyframes slideUpFade {
           from { opacity: 0; transform: translateY(30px); }
@@ -364,8 +364,175 @@ const QuanLyThuCung: React.FC = () => {
           background: var(--ink) !important;
           box-shadow: 0 6px 14px rgba(15, 157, 138, 0.5) !important;
         }
+        @media (max-width: 768px) {
+          .customer-pets-page {
+            display: grid;
+            gap: 18px;
+            padding-bottom: 92px;
+          }
+
+          .customer-pets-hero {
+            display: grid !important;
+            gap: 18px !important;
+            align-items: start !important;
+            margin-bottom: 0 !important;
+            padding: 24px !important;
+            border-radius: 28px !important;
+          }
+
+          .customer-pets-hero h1 {
+            font-size: 1.75rem !important;
+            line-height: 1.08 !important;
+            letter-spacing: 0 !important;
+          }
+
+          .customer-pets-hero p {
+            font-size: 0.9rem !important;
+            line-height: 1.5 !important;
+          }
+
+          .customer-pets-hero .btn {
+            width: 100%;
+            justify-content: center;
+          }
+
+          .customer-pet-form-card {
+            padding: 20px !important;
+            border-radius: 26px !important;
+            margin-bottom: 0 !important;
+          }
+
+          .customer-pet-form-card h2 {
+            font-size: 1.35rem !important;
+            margin-bottom: 20px !important;
+          }
+
+          .customer-pet-form {
+            grid-template-columns: 1fr !important;
+            gap: 16px !important;
+          }
+
+          .customer-pet-form-actions {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px !important;
+            margin-top: 8px !important;
+          }
+
+          .customer-pet-form-actions .btn {
+            padding-inline: 12px !important;
+          }
+
+          .customer-pet-search {
+            max-width: none !important;
+            margin-bottom: 0 !important;
+          }
+
+          .customer-pet-grid {
+            grid-template-columns: 1fr !important;
+            gap: 14px !important;
+          }
+
+          .customer-pet-card {
+            padding: 16px !important;
+            border-radius: 24px !important;
+            gap: 14px !important;
+            border-color: rgba(34, 211, 238, 0.28) !important;
+          }
+
+          .customer-pet-card h3 {
+            font-size: 1.08rem !important;
+            line-height: 1.22 !important;
+          }
+
+          .customer-pet-card-head {
+            display: grid !important;
+            grid-template-columns: 68px 1fr;
+            gap: 14px !important;
+            align-items: center !important;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--gray-150);
+          }
+
+          .customer-pet-avatar {
+            width: 68px !important;
+            height: 68px !important;
+          }
+
+          .customer-pet-avatar > div:first-child {
+            border-radius: 20px !important;
+          }
+
+          .customer-pet-avatar .camera-upload-btn {
+            width: 26px !important;
+            height: 26px !important;
+            right: -5px !important;
+            bottom: -5px !important;
+          }
+
+          .customer-pet-title-block {
+            min-width: 0;
+          }
+
+          .customer-pet-type-badge {
+            width: fit-content;
+          }
+
+          .customer-pet-card .responsive-grid-2 {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 8px !important;
+            padding: 10px;
+            border-radius: 18px;
+            background: var(--background);
+          }
+
+          .customer-pet-card .responsive-grid-2 > div {
+            padding: 10px 11px;
+            border-radius: 14px;
+            background: var(--surface);
+            border: 1px solid var(--gray-150);
+          }
+
+          .customer-pet-card .responsive-grid-2 p:first-child {
+            font-size: 0.64rem !important;
+            margin-bottom: 3px !important;
+          }
+
+          .customer-pet-card .responsive-grid-2 p:last-child,
+          .customer-pet-card .responsive-grid-2 span {
+            font-size: 0.82rem !important;
+            line-height: 1.3 !important;
+          }
+
+          .customer-pet-fact-wide {
+            grid-column: 1 / -1;
+          }
+
+          .customer-pet-extra-row {
+            display: none !important;
+          }
+
+          .customer-pet-actions {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px !important;
+            margin-top: 2px !important;
+            padding-top: 12px;
+            border-top: 1px solid var(--gray-150);
+          }
+
+          .customer-pet-actions .btn {
+            min-height: 44px;
+            justify-content: center;
+            border-radius: 16px !important;
+          }
+
+          .customer-pet-actions .btn-delete {
+            gap: 6px;
+          }
+        }
       `}</style>
-      <div className="stagger-1" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', padding: '48px', borderRadius: 'var(--radius-xl)', background: 'var(--secondary-gradient)', color: 'white', position: 'relative', overflow: 'hidden', boxShadow: 'var(--shadow-2xl)' }}>
+      <div className="stagger-1 customer-pets-hero" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', padding: '48px', borderRadius: 'var(--radius-xl)', background: 'var(--secondary-gradient)', color: 'white', position: 'relative', overflow: 'hidden', boxShadow: 'var(--shadow-2xl)' }}>
         <div style={{ position: 'absolute', top: '-10%', left: '-5%', width: '300px', height: '300px', background: 'radial-gradient(circle, var(--primary-light) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }}></div>
         <div style={{ position: 'absolute', bottom: '-20%', right: '0%', width: '250px', height: '250px', background: 'radial-gradient(circle, var(--primary-light) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none', opacity: 0.5 }}></div>
         <div style={{ position: 'relative', zIndex: 1 }}>
@@ -381,10 +548,10 @@ const QuanLyThuCung: React.FC = () => {
       </div>
 
       {showForm && (
-        <div ref={formCardRef} className="glass-card stagger-2" style={{ padding: '48px', borderRadius: 'var(--radius-xl)', marginBottom: '48px', maxWidth: '900px', border: '1.5px solid var(--primary)', scrollMarginTop: '24px' }}>
+        <div ref={formCardRef} className="glass-card stagger-2 customer-pet-form-card" style={{ padding: '48px', borderRadius: 'var(--radius-xl)', marginBottom: '48px', maxWidth: '900px', border: '1.5px solid var(--primary)', scrollMarginTop: '24px' }}>
           <h2 style={{ fontSize: '1.8rem', fontWeight: 900, marginBottom: '32px', color: 'var(--primary)' }}>{editingPet ? 'Cập nhật thông tin' : 'Đăng ký bé mới'}</h2>
 
-          <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+          <form className="customer-pet-form" onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
             <div style={{ display: 'grid', gap: '8px' }}>
               <label>TÊN BÉ <span style={{ color: '#ff4d4f' }}>*</span></label>
               <input ref={firstFieldRef} data-ai-id="input-quanlythucung-u5s4" required value={formData.ten_thu_cung} onChange={e => setFormData({ ...formData, ten_thu_cung: e.target.value })} placeholder="VD: Bé Lu, Miu Miu..." />
@@ -417,7 +584,7 @@ const QuanLyThuCung: React.FC = () => {
               <label>MÀU SẮC</label>
               <input data-ai-id="input-quanlythucung-cvx3" value={formData.mau_sac} onChange={e => setFormData({ ...formData, mau_sac: e.target.value })} />
             </div>
-            <div style={{ gridColumn: '1 / -1', display: 'flex', gap: '16px', marginTop: '24px' }}>
+            <div className="customer-pet-form-actions" style={{ gridColumn: '1 / -1', display: 'flex', gap: '16px', marginTop: '24px' }}>
               <button data-ai-id="button-quanlythucung-gfz2" type="submit" className="btn btn-primary btn-pill" style={{ padding: '14px 60px' }} disabled={isSaving}>
                 {isSaving ? 'Đang lưu...' : 'Lưu thông tin'}
               </button>
@@ -428,7 +595,7 @@ const QuanLyThuCung: React.FC = () => {
       )}
 
       {/* THANH TÌM KIẾM THÚ CƯNG */}
-      <div className="stagger-2" style={{ marginBottom: '32px', maxWidth: '400px' }}>
+      <div className="stagger-2 customer-pet-search" style={{ marginBottom: '32px', maxWidth: '400px' }}>
         <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
           <span className="material-symbols-outlined" style={{ position: 'absolute', left: '16px', color: 'var(--gray-400)', pointerEvents: 'none' }}>search</span>
           <input data-ai-id="input-quanlythucung-search"
@@ -461,11 +628,11 @@ const QuanLyThuCung: React.FC = () => {
           <p style={{ color: 'var(--gray-500)', fontWeight: 700, margin: 0 }}>Không tìm thấy bé cưng nào phù hợp! 😿</p>
         </div>
       ) : (
-        <div className="stagger-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' }}>
+        <div className="stagger-2 customer-pet-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' }}>
           {filteredPets.map(pet => (
-            <div key={pet.id_thu_cung} className="glass-card" style={{ padding: '32px', borderRadius: 'var(--radius-xl)', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-              <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
-                <div style={{ position: 'relative', width: '80px', height: '80px', flexShrink: 0 }}>
+            <div key={pet.id_thu_cung} className="glass-card customer-pet-card" style={{ padding: '32px', borderRadius: 'var(--radius-xl)', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              <div className="customer-pet-card-head" style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+                <div className="customer-pet-avatar" style={{ position: 'relative', width: '80px', height: '80px', flexShrink: 0 }}>
                   <div style={{ 
                     width: '100%', 
                     height: '100%', 
@@ -532,10 +699,10 @@ const QuanLyThuCung: React.FC = () => {
                     onChange={(e) => handleUploadImage(pet, e)} 
                   />
                 </div>
-                <div>
+                <div className="customer-pet-title-block">
                   <h3 style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--ink)', margin: 0 }}>{pet.ten_thu_cung}</h3>
                   <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
-                    <span style={{ fontSize: '0.7rem', fontWeight: 800, background: 'var(--gray-50)', color: 'var(--gray-500)', padding: '4px 10px', borderRadius: '8px' }}>{pet.loai?.toUpperCase()}</span>
+                    <span className="customer-pet-type-badge" style={{ fontSize: '0.7rem', fontWeight: 800, background: 'var(--gray-50)', color: 'var(--gray-500)', padding: '4px 10px', borderRadius: '8px' }}>{pet.loai?.toUpperCase()}</span>
                   </div>
                 </div>
               </div>
@@ -557,10 +724,16 @@ const QuanLyThuCung: React.FC = () => {
                   <p style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '4px' }}>CÂN NẶNG</p>
                   <p style={{ fontWeight: 800, margin: 0, color: 'var(--ink)' }}>{pet.trong_luong || '—'} kg</p>
                 </div>
+                {pet.ngay_sinh && (
+                  <div className="customer-pet-fact-wide">
+                    <p style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '4px' }}>NGÀY SINH</p>
+                    <p style={{ fontWeight: 800, margin: 0, color: 'var(--ink)' }}>{chuyenNgayISO_SangVN(pet.ngay_sinh)} ({tinhTuoi(pet.ngay_sinh)})</p>
+                  </div>
+                )}
               </div>
 
               {pet.ngay_sinh && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', opacity: 0.7 }}>
+                <div className="customer-pet-extra-row" style={{ display: 'flex', alignItems: 'center', gap: '12px', opacity: 0.7 }}>
                   <span className="material-symbols-outlined" style={{ color: 'var(--primary)', fontSize: '20px' }}>cake</span>
                   <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>Ngày sinh: {chuyenNgayISO_SangVN(pet.ngay_sinh)} ({tinhTuoi(pet.ngay_sinh)})</span>
                 </div>
@@ -573,7 +746,7 @@ const QuanLyThuCung: React.FC = () => {
                 </div>
               )}
 
-              <div style={{ display: 'flex', gap: '12px', marginTop: 'auto' }}>
+              <div className="customer-pet-actions" style={{ display: 'flex', gap: '12px', marginTop: 'auto' }}>
                 <button data-ai-id="button-quanlythucung-7v0f" className="btn btn-pill btn-action" style={{ flex: 1, background: 'var(--primary-light)', color: 'var(--primary)' }} onClick={() => handleOpenForm(pet)} disabled={!!deletingId}>Sửa</button>
                 <button data-ai-id="button-quanlythucung-zykg" 
                   className="btn btn-pill btn-action btn-delete" 
@@ -591,7 +764,10 @@ const QuanLyThuCung: React.FC = () => {
                   {deletingId === pet.id_thu_cung ? (
                     <div className="spinner-small" style={{ width: '20px', height: '20px', border: '2px solid var(--gray-300)', borderTopColor: 'var(--danger)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }}></div>
                   ) : (
-                    <span className="material-symbols-outlined">delete</span>
+                    <>
+                      <span className="material-symbols-outlined">delete</span>
+                      <span>Xóa</span>
+                    </>
                   )}
                 </button>
               </div>

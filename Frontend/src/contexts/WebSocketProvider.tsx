@@ -100,6 +100,18 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         client.onStompError = (frame) => {
             console.error('Broker reported error: ' + frame.headers['message']);
             console.error('Additional details: ' + frame.body);
+            toast.error('Rexi realtime gặp lỗi kết nối. Một số cảnh báo hoặc cập nhật realtime có thể không hiển thị.');
+        };
+
+        client.onWebSocketClose = () => {
+            setConnected(false);
+            toast.error('Kết nối WebSocket đã đóng. Vui lòng kiểm tra backend hoặc tải lại trang.');
+        };
+
+        client.onWebSocketError = (event) => {
+            console.error('WebSocket error:', event);
+            setConnected(false);
+            toast.error('Lỗi WebSocket: không thể kết nối realtime.');
         };
 
         client.activate();

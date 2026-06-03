@@ -22,6 +22,7 @@ const SidebarKhachHang: React.FC = () => {
     { label: 'Hóa đơn', path: '/khach-hang/hoa-don-thanh-toan', icon: 'receipt' },
     { label: 'Cá nhân', path: '/khach-hang/thong-tin-ca-nhan', icon: 'person' },
   ];
+  const mobileNavItems = [sidebarItems[0], sidebarItems[1], sidebarItems[2], sidebarItems[3], sidebarItems[6]];
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -47,19 +48,21 @@ const SidebarKhachHang: React.FC = () => {
   return (
     <>
       {/* Nút Hamburger nổi trên mobile */}
-      <button data-ai-id="button-sidebarkhachhang-u7rt"
-        className="mobile-show sidebar-fab"
-        onClick={() => setIsMobileOpen(!isMobileOpen)}
-        style={{
-          position: 'fixed', bottom: '24px', left: '24px', zIndex: 1001,
-          background: 'var(--primary)', color: 'white', border: 'none',
-          width: '56px', height: '56px', borderRadius: '50%',
-          boxShadow: '0 4px 15px rgba(15, 157, 138, 0.4)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
-        }}
-      >
-        <span className="material-symbols-outlined" style={{ fontSize: '28px' }}>{isMobileOpen ? 'close' : 'menu'}</span>
-      </button>
+      {!isMobileOpen && (
+        <button data-ai-id="button-sidebarkhachhang-u7rt"
+          className="mobile-show sidebar-fab customer-menu-fab"
+          onClick={() => setIsMobileOpen(true)}
+          style={{
+            position: 'fixed', bottom: '24px', left: '24px', zIndex: 1001,
+            background: 'var(--primary)', color: 'white', border: 'none',
+            width: '56px', height: '56px', borderRadius: '50%',
+            boxShadow: '0 4px 15px rgba(15, 157, 138, 0.4)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
+          }}
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: '28px' }}>menu</span>
+        </button>
+      )}
 
       {/* Lớp phủ mờ khi mở menu trên mobile */}
       {isMobileOpen && (
@@ -70,11 +73,22 @@ const SidebarKhachHang: React.FC = () => {
         />
       )}
 
-      <aside className={`sidebar ${isMobileOpen ? 'active' : ''}`} style={{
+      <aside className={`sidebar customer-sidebar ${isMobileOpen ? 'active' : ''}`} style={{
         width: '280px', background: 'var(--glass)', backdropFilter: 'var(--glass-blur)',
         borderRight: '1.5px solid var(--glass-border)',
         display: 'flex', flexDirection: 'column', height: '100vh', position: 'sticky', top: 0, zIndex: 1000
       }}>
+        {isMobileOpen && (
+          <button
+            data-ai-id="button-sidebarkhachhang-close-panel"
+            className="mobile-show customer-sidebar-close"
+            onClick={() => setIsMobileOpen(false)}
+            aria-label="Đóng menu khách hàng"
+            title="Đóng menu"
+          >
+            <span className="material-symbols-outlined">close</span>
+          </button>
+        )}
         <div style={{ padding: '40px 24px', borderBottom: '1.5px solid var(--glass-border)' }}>
           <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '24px', textDecoration: 'none', padding: '0 10px' }}>
             <div style={{ width: '48px', height: '48px', borderRadius: '16px', overflow: 'hidden', background: 'var(--primary-gradient)', border: '2.5px solid rgba(255,255,255,0.2)', boxShadow: '0 0 30px var(--primary-shadow)' }}>
@@ -163,6 +177,23 @@ const SidebarKhachHang: React.FC = () => {
           </button>
         </div>
       </aside>
+
+      <nav className="customer-mobile-tabbar" aria-label="Điều hướng khách hàng nhanh">
+        {mobileNavItems.map((item) => {
+          const isActive = location.pathname.startsWith(item.path);
+          return (
+            <Link
+              key={item.path}
+              to={item.path}
+              onClick={() => setIsMobileOpen(false)}
+              className={`customer-mobile-tab ${isActive ? 'active' : ''}`}
+            >
+              <span className="material-symbols-outlined">{item.icon}</span>
+              <span>{item.label}</span>
+            </Link>
+          );
+        })}
+      </nav>
     </>
   )
 }

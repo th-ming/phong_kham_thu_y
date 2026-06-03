@@ -350,7 +350,7 @@ const HoaDonThanhToan: React.FC = () => {
   );
 
   return (
-    <div className="animate-fade-in">
+    <div className="animate-fade-in customer-invoice-page">
       <style>{`
         @keyframes slideUpFade {
           from { opacity: 0; transform: translateY(30px); }
@@ -449,6 +449,101 @@ const HoaDonThanhToan: React.FC = () => {
           background-size: 16px 32px;
           background-position: 0 -16px;
         }
+        @media (max-width: 768px) {
+          .customer-invoice-page {
+            display: grid;
+            gap: 18px;
+            padding-bottom: 92px;
+          }
+          .customer-invoice-hero {
+            display: grid !important;
+            gap: 18px !important;
+            align-items: start !important;
+            margin-bottom: 0 !important;
+            padding: 24px !important;
+            border-radius: 28px !important;
+          }
+          .customer-invoice-hero h1 {
+            font-size: 1.75rem !important;
+            line-height: 1.08 !important;
+            letter-spacing: 0 !important;
+          }
+          .customer-invoice-hero p {
+            font-size: 0.9rem !important;
+            line-height: 1.5 !important;
+          }
+          .customer-invoice-filters {
+            display: grid !important;
+            grid-template-columns: 1fr;
+            gap: 10px !important;
+          }
+          .customer-invoice-filters > div,
+          .customer-invoice-filters input,
+          .customer-invoice-filters select,
+          .customer-invoice-filters button {
+            width: 100% !important;
+          }
+          .customer-invoice-kpis {
+            display: flex !important;
+            gap: 12px !important;
+            overflow-x: auto;
+            padding: 2px 2px 10px !important;
+            margin-bottom: 0 !important;
+            scroll-snap-type: x mandatory;
+            scrollbar-width: none;
+          }
+          .customer-invoice-kpis::-webkit-scrollbar {
+            display: none;
+          }
+          .customer-invoice-kpis .customer-kpi-card {
+            min-width: 188px !important;
+            min-height: 148px !important;
+            padding: 18px !important;
+            border-radius: 22px !important;
+            scroll-snap-align: start;
+          }
+          .customer-invoice-list {
+            gap: 14px !important;
+          }
+          .customer-invoice-row {
+            display: grid !important;
+            gap: 16px !important;
+            align-items: start !important;
+            padding: 18px !important;
+            border-radius: 24px !important;
+          }
+          .customer-invoice-row-main {
+            gap: 12px !important;
+            align-items: flex-start !important;
+          }
+          .customer-invoice-row-main > div:first-child {
+            width: 48px !important;
+            height: 48px !important;
+            border-radius: 16px !important;
+          }
+          .customer-invoice-row h3 {
+            font-size: 1.08rem !important;
+          }
+          .customer-invoice-row-meta {
+            display: grid !important;
+            grid-template-columns: 1fr;
+            gap: 12px !important;
+            text-align: left !important;
+          }
+          .customer-invoice-row-actions {
+            display: grid !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px !important;
+          }
+          .customer-invoice-row-actions .btn {
+            justify-content: center;
+            min-height: 42px;
+          }
+          .apple-wallet-receipt {
+            padding: 22px 18px 42px !important;
+            border-radius: 24px !important;
+          }
+        }
         
         @media print {
           @page {
@@ -509,14 +604,14 @@ const HoaDonThanhToan: React.FC = () => {
           }
         }
       `}</style>
-      <div className="stagger-1" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', padding: '36px 48px', borderRadius: 'var(--radius-xl)', background: 'var(--secondary-gradient)', color: 'white', position: 'relative', overflow: 'hidden', boxShadow: '0 15px 30px rgba(225, 29, 72, 0.2)', flexWrap: 'wrap', gap: '20px' }}>
+      <div className="stagger-1 customer-invoice-hero" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', padding: '36px 48px', borderRadius: 'var(--radius-xl)', background: 'var(--secondary-gradient)', color: 'white', position: 'relative', overflow: 'hidden', boxShadow: '0 15px 30px rgba(225, 29, 72, 0.2)', flexWrap: 'wrap', gap: '20px' }}>
         <div style={{ position: 'absolute', top: '-50px', right: '10%', width: '200px', height: '200px', background: 'radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }}></div>
         <div style={{ position: 'absolute', bottom: '-50px', left: '-50px', width: '150px', height: '150px', background: 'radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }}></div>
         <div style={{ position: 'relative', zIndex: 1 }}>
           <h1 style={{ fontSize: '2.5rem', fontWeight: 950, letterSpacing: '-1px', margin: '0 0 8px 0' }}>{toneCopy.invoiceTitle}</h1>
           <p style={{ fontWeight: 600, opacity: 0.9, margin: 0, fontSize: '1.05rem' }}>{toneCopy.invoiceSubtitle}</p>
         </div>
-        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', position: 'relative', zIndex: 1 }}>
+        <div className="customer-invoice-filters" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', position: 'relative', zIndex: 1 }}>
           <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
             <span className="material-symbols-outlined" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', zIndex: 2, color: '#475569', fontSize: '20px', pointerEvents: 'none' }}>search</span>
             <input data-ai-id="input-hoadonthanhtoan-z5a1"
@@ -550,7 +645,7 @@ const HoaDonThanhToan: React.FC = () => {
         </div>
       </div>
 
-      <div className="stagger-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '24px', marginBottom: '40px', position: 'relative', zIndex: 80 }}>
+      <div className="stagger-2 customer-invoice-kpis" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '24px', marginBottom: '40px', position: 'relative', zIndex: 80 }}>
         <CustomerKpiCard
           accent="#3b82f6"
           title="Tổng hóa đơn"
@@ -609,15 +704,15 @@ const HoaDonThanhToan: React.FC = () => {
         />
       </div>
 
-      <div className="stagger-3" style={{ display: 'grid', gap: '24px' }}>
+      <div className="stagger-3 customer-invoice-list" style={{ display: 'grid', gap: '24px' }}>
         {filteredList.length === 0 ? (
           <div className="glass-card" style={{ padding: '80px', textAlign: 'center', borderRadius: 'var(--radius-xl)' }}>
             <div style={{ color: 'var(--gray-200)', marginBottom: '24px', display: 'inline-flex' }}><KpiIcon name="receipt" size={64} /></div>
             <p style={{ fontSize: '1.2rem', color: 'var(--gray-400)', fontWeight: 700 }}>Không tìm thấy hóa đơn nào.</p>
           </div>
         ) : currentRows.map(hd => (
-          <div key={getInvoiceId(hd)} className="glass-card item-card" style={{ padding: '32px', borderRadius: 'var(--radius-xl)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+          <div key={getInvoiceId(hd)} className="glass-card item-card customer-invoice-row" style={{ padding: '32px', borderRadius: 'var(--radius-xl)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div className="customer-invoice-row-main" style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
               <div style={{ width: '64px', height: '64px', background: 'var(--primary-light)', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
                 <KpiIcon name="receipt" size={32} />
               </div>
@@ -626,7 +721,7 @@ const HoaDonThanhToan: React.FC = () => {
                 <p style={{ color: 'var(--gray-400)', fontWeight: 700, margin: '4px 0', fontSize: '0.85rem' }}>{chuyenNgayISO_SangVN(getInvoiceDate(hd))} {getPetName(hd) ? `· ${getPetName(hd)}` : ''}</p>
               </div>
             </div>
-            <div style={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: '40px' }}>
+            <div className="customer-invoice-row-meta" style={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: '40px' }}>
               <div>
                 <p style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '4px' }}>TỔNG TIỀN</p>
                 <b style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--primary)' }}>{formatTienVND(getInvoiceTotal(hd))}</b>
@@ -649,7 +744,7 @@ const HoaDonThanhToan: React.FC = () => {
               }}>
                 {getInvoiceStatusLabel(hd)}
               </span>
-              <div style={{ display: 'flex', gap: '8px' }}>
+              <div className="customer-invoice-row-actions" style={{ display: 'flex', gap: '8px' }}>
                 {isPayableInvoice(hd) && (
                   <>
                     <button data-ai-id="button-hoadonthanhtoan-9z33" className="btn hover-scale" style={{ padding: '12px 20px', background: '#005baa', color: 'white', fontWeight: 800, borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '6px' }} onClick={() => handlePaymentVNPay(hd)} title="Thanh toán qua VNPay">

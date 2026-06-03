@@ -140,6 +140,17 @@ public class ReActAgentService {
                                 }
                             }
                         }
+                        if (params.isEmpty() && node.has("params") && node.get("params").isObject()) {
+                            Iterator<Map.Entry<String, JsonNode>> fields = node.get("params").fields();
+                            while (fields.hasNext()) {
+                                Map.Entry<String, JsonNode> entry = fields.next();
+                                if (entry.getValue().isValueNode()) {
+                                    params.put(entry.getKey(), entry.getValue().asText());
+                                } else {
+                                    params.put(entry.getKey(), entry.getValue().toString());
+                                }
+                            }
+                        }
 
                         if (isPetMedicalSymptomQuery(normalizedQuery)
                                 && Set.of("tim_thu_cung", "xem_benh_an", "tim_khach_hang").contains(toolName)) {
@@ -226,6 +237,50 @@ public class ReActAgentService {
             return finalResult(steps, "Rexi đây. Tôi giúp được: mở lịch hẹn, tra khách hàng, xem hóa đơn, kiểm kho, xem bệnh án hoặc điều phối tác vụ theo màn hình.");
         }
 
+        if (!isStaff) {
+            ReActResult customerQuickIntent = handleCustomerDeterministicIntent(q, userRole, username, steps);
+            if (customerQuickIntent != null) {
+                return customerQuickIntent;
+            }
+        }
+
+        if (!isStaff && isCustomerDoctorInfoQuery(q)) {
+            return finalResult(steps, "Bạn gửi giúp tôi tên thú cưng hoặc mã lịch hẹn để Rexi kiểm tra đúng bác sĩ phụ trách.");
+        }
+
+        if (isDoctorWorkloadStatsQuery(q)) {
+            if (!RoleAccessPolicy.canUseAgentTool(userRole, "thong_ke_ca_kham_bac_si")) {
+                return finalResult(steps, RoleAccessPolicy.permissionDeniedMessage("thong_ke_ca_kham_bac_si", userRole));
+            }
+            if (toolService == null) {
+                return finalResult(steps, "Rexi cần truy vấn cơ sở dữ liệu thống kê ca khám theo bác sĩ, nhưng tool hệ thống chưa sẵn sàng.");
+            }
+            Map<String, Object> params = new HashMap<>();
+            params.put("khoang_thoi_gian", extractStatsRange(q));
+            params.put("sap_xep", containsAny(q, "it ca", "it nhat", "thap nhat") ? "it_nhat" : "nhieu_nhat");
+            String observation = toolService.executeTool("thong_ke_ca_kham_bac_si", params, userRole, username);
+            steps.add(new ReActStep("TOOL", "Thống kê ca khám theo bác sĩ từ cơ sở dữ liệu", "thong_ke_ca_kham_bac_si", params, observation));
+            return finalResult(steps, observation);
+        }
+
+        if (isAppointmentDataLookupQuery(q)) {
+            if (!RoleAccessPolicy.canUseAgentTool(userRole, "tim_lich_hen_hom_nay")) {
+                return finalResult(steps, RoleAccessPolicy.permissionDeniedMessage("tim_lich_hen_hom_nay", userRole));
+            }
+            if (toolService == null) {
+                return finalResult(steps, "Rexi cần truy vấn cơ sở dữ liệu lịch hẹn, nhưng tool hệ thống chưa sẵn sàng.");
+            }
+            Map<String, Object> params = new HashMap<>();
+            params.put("pham_vi", containsAny(q, "hom nay", "today") ? "hom_nay" : "all");
+            String doctorKeyword = extractDoctorKeyword(q);
+            if (doctorKeyword != null && !doctorKeyword.isBlank()) {
+                params.put("tu_khoa_bac_si", doctorKeyword);
+            }
+            String observation = toolService.executeTool("tim_lich_hen_hom_nay", params, userRole, username);
+            steps.add(new ReActStep("TOOL", "Tra cứu lịch khám từ cơ sở dữ liệu", "tim_lich_hen_hom_nay", params, observation));
+            return finalResult(steps, observation);
+        }
+
         if (isPetMedicalSymptomQuery(q)) {
             return finalResult(steps, buildSafePetMedicalAdvice(q));
         }
@@ -293,11 +348,81 @@ public class ReActAgentService {
         return null;
     }
 
+    private ReActResult handleCustomerDeterministicIntent(String q, String userRole, String username, List<ReActStep> steps) {
+        if (isCustomerOwnPetListQuery(q)) {
+            if (!RoleAccessPolicy.canUseAgentTool(userRole, "danh_sach_thu_cung_cua_toi")) {
+                return finalResult(steps, RoleAccessPolicy.permissionDeniedMessage("danh_sach_thu_cung_cua_toi", userRole));
+            }
+            if (toolService == null) {
+                return finalResult(steps, "Rexi cần truy vấn cơ sở dữ liệu thú cưng của bạn, nhưng tool hệ thống chưa sẵn sàng.");
+            }
+            Map<String, Object> params = new HashMap<>();
+            String observation = toolService.executeTool("danh_sach_thu_cung_cua_toi", params, userRole, username);
+            steps.add(new ReActStep("TOOL", "Tra cứu danh sách thú cưng của khách hàng đang đăng nhập", "danh_sach_thu_cung_cua_toi", params, observation));
+            return finalResult(steps, observation);
+        }
+
+        if (isCustomerWebSearchQuery(q)) {
+            if (!RoleAccessPolicy.canUseAgentTool(userRole, "tim_kiem_web")) {
+                return finalResult(steps, RoleAccessPolicy.permissionDeniedMessage("tim_kiem_web", userRole));
+            }
+            if (toolService == null) {
+                return finalResult(steps, "Rexi cần dùng công cụ tìm kiếm web, nhưng tool hệ thống chưa sẵn sàng.");
+            }
+            String query = q.replaceAll("\\b(len mang|tim tren mang|tim web|tim google|google|tra cuu web|tra cuu|tim tai lieu|tai lieu)\\b", " ")
+                    .replaceAll("\\s+", " ")
+                    .trim();
+            if (query.isBlank()) query = q;
+            Map<String, Object> params = new HashMap<>();
+            params.put("query", query);
+            String observation = toolService.executeTool("tim_kiem_web", params, userRole, username);
+            steps.add(new ReActStep("TOOL", "Tìm tài liệu web theo yêu cầu khách hàng", "tim_kiem_web", params, observation));
+            return finalResult(steps, observation);
+        }
+
+        if (!isCustomerNavigationQuery(q)) return null;
+        String route = resolveCustomerRoute(q);
+        if (route == null) return null;
+        return finalResult(steps, "Mở trang phù hợp cho bạn. [NAVIGATE:" + route + "]");
+    }
+
+    private boolean isCustomerOwnPetListQuery(String q) {
+        if (q == null || q.isBlank()) return false;
+        boolean hasPetContext = containsAny(q, "thu cung", "boss", "pet", "be cung", "cho", "meo", "cun", "miu");
+        boolean ownContext = containsAny(q, "cua toi", "toi co", "dang co", "nha toi", "nha tui", "cua minh", "cua toi co", "nhung con nao", "nhung be nao");
+        boolean asksList = containsAny(q, "nhung", "danh sach", "liet ke", "co nhung", "co may", "con nao", "be nao", "nhung con nao", "nhung be nao");
+        boolean createIntent = containsAny(q, "them", "tao", "dang ky", "dat lich", "xoa", "huy");
+        return hasPetContext && ownContext && asksList && !createIntent;
+    }
+
+    private boolean isCustomerWebSearchQuery(String q) {
+        return containsAny(q, "len mang", "tim tren mang", "tim web", "tim google", "google", "tra cuu web", "tim tai lieu", "tai lieu y khoa")
+                || (containsAny(q, "tai lieu") && containsAny(q, "y khoa", "thu y", "cham soc", "mang thai", "benh"));
+    }
+
+    private boolean isCustomerNavigationQuery(String q) {
+        return containsAny(q, "mo", "mo trang", "vao", "vao trang", "chuyen", "chuyen trang", "di toi", "toi trang", "den trang", "qua trang");
+    }
+
+    private String resolveCustomerRoute(String q) {
+        if (containsAny(q, "ho so y te", "ho so te", "ho so benh an", "benh an")) return "/khach-hang/ho-so-benh-an";
+        if (containsAny(q, "hoa don", "thanh toan", "bill")) return "/khach-hang/hoa-don-thanh-toan";
+        if (containsAny(q, "dat lich", "lich kham", "lich hen", "dat kham")) return "/khach-hang/dat-lich-hen";
+        if (containsAny(q, "lich su", "lich da dat")) return "/khach-hang/lich-su-lich-hen";
+        if (containsAny(q, "thu cung", "boss", "pet", "be cung")) return "/khach-hang/quan-ly-thu-cung";
+        if (containsAny(q, "ca nhan", "tai khoan", "profile", "thong tin cua toi")) return "/khach-hang/thong-tin-ca-nhan";
+        if (containsAny(q, "bac si", "doi ngu")) return "/bac-si";
+        if (containsAny(q, "bang gia", "gia dich vu")) return "/bang-gia";
+        if (containsAny(q, "lien he", "hotline", "dia chi")) return "/lien-he";
+        if (containsAny(q, "tong quan", "dashboard", "trang chu")) return "/khach-hang/dashboard";
+        return null;
+    }
+
     private String normalizeSlangCommand(String value) {
         if (value == null || value.isBlank()) return "";
         String q = " " + value + " ";
         q = q.replaceAll("\\b(e|ey|eh|yo|doi oi|troi oi|y|i)\\b", " ");
-        q = q.replaceAll("\\b(t|tui|toi|mk|m|minh)\\b", " toi ");
+        q = q.replaceAll("\\b(t|tui|toi|mk|m)\\b", " toi ");
         q = q.replaceAll("\\b(dum|gium|giup cai|help)\\b", " giup ");
         q = q.replaceAll("\\b(nay|ni|nì|ne|nek|nhe|nha|coi|cai)\\b", " ");
         q = q.replaceAll("\\b(z|v|dz|zay|vay)\\b", " vay ");
@@ -311,6 +436,7 @@ public class ReActAgentService {
 
     private boolean isPetMedicalSymptomQuery(String q) {
         if (q == null || q.isBlank()) return false;
+        if (isAppointmentDataLookupQuery(q)) return false;
         boolean hasPet = containsAny(q, "cho", "meo", "cun", "miu", "boss", "be", "pet", "poodle", "corgi");
         boolean hasSymptom = containsAny(q,
                 "oi", "non", "bo an", "khong an", "an it", "gai", "ngua", "run", "nam im", "met",
@@ -319,6 +445,57 @@ public class ReActAgentService {
         boolean asksAdvice = containsAny(q, "lam sao", "lam gi", "co sao", "on ap", "can qua kham", "hong", "khong", "cuu")
                 || !containsAny(q, "tim ho so", "tra ho so", "ma benh an", "id");
         return hasPet && hasSymptom && asksAdvice;
+    }
+
+    private boolean isAppointmentDataLookupQuery(String q) {
+        if (q == null || q.isBlank()) return false;
+        if (isDoctorWorkloadStatsQuery(q)) return false;
+        boolean hasLookupVerb = containsAny(q,
+                "tim", "tra", "tra cuu", "kiem tra", "xem", "liet ke", "danh sach", "co lich", "dang co", "hom nay co");
+        boolean hasAppointmentContext = containsAny(q,
+                "lich kham", "lich hen", "ca kham", "lich cua bac si", "lich bac si");
+        boolean hasDoctorContext = containsAny(q, "bac si", "bsi", "bs ");
+        boolean hasCreateIntent = containsAny(q, "dat lich", "book lich", "lap lich", "tao lich");
+        boolean hasNavigationIntent = containsAny(q, "mo trang", "vao trang", "chuyen sang", "di toi", "dua toi", "qua trang");
+        return !hasCreateIntent && !hasNavigationIntent && hasLookupVerb && hasAppointmentContext && hasDoctorContext;
+    }
+
+    private boolean isDoctorWorkloadStatsQuery(String q) {
+        if (q == null || q.isBlank()) return false;
+        boolean hasDoctorContext = containsAny(q, "bac si", "bsi", "bs");
+        boolean hasWorkloadContext = containsAny(q,
+                "nhieu ca", "nhieu ca nhat", "it ca", "it ca nhat", "so ca", "ca kham", "lich kham", "lich hen",
+                "tai nhat", "ban nhat", "ban ron", "workload");
+        boolean hasRankingOrStats = containsAny(q,
+                "nhieu nhat", "it nhat", "top", "xep hang", "thong ke", "bao cao", "dem", "dang co nhieu", "cao nhat", "thap nhat");
+        return hasDoctorContext && hasWorkloadContext && hasRankingOrStats;
+    }
+
+    private boolean isCustomerDoctorInfoQuery(String q) {
+        if (q == null || q.isBlank()) return false;
+        boolean hasDoctor = containsAny(q, "bac si", "bsi", "bs");
+        boolean asksInfo = containsAny(q, "thong tin", "cho toi biet", "ai phu trach", "phu trach", "kham cho", "lich kham");
+        boolean hasPetContext = containsAny(q, "thu cung", "boss", "be", "pet", "cho", "meo", "cun", "miu");
+        boolean isBookingCreate = containsAny(q, "dat lich", "tao lich", "book lich", "lap lich");
+        return hasDoctor && asksInfo && hasPetContext && !isBookingCreate;
+    }
+
+    private String extractStatsRange(String q) {
+        if (containsAny(q, "hom nay", "today")) return "hom_nay";
+        if (containsAny(q, "tuan nay", "week")) return "tuan_nay";
+        if (containsAny(q, "thang nay", "month")) return "thang_nay";
+        return "all";
+    }
+
+    private String extractDoctorKeyword(String q) {
+        if (q == null || q.isBlank()) return null;
+        String cleaned = q.replaceAll("[^a-z0-9\\s]", " ").replaceAll("\\s+", " ").trim();
+        String name = extractFirstGroup(cleaned, "(?:bac si|bsi|bs)\\s+([a-z0-9\\s]{2,40})");
+        if (name == null || name.isBlank()) return null;
+        name = name.replaceAll("\\b(lich|kham|hen|hom nay|ngay mai|dang co|co|khong|nao|cho toi|cua|tim|tra|xem)\\b", " ")
+                .replaceAll("\\s+", " ")
+                .trim();
+        return name.isBlank() ? null : name;
     }
 
     private String buildSafePetMedicalAdvice(String q) {
@@ -366,8 +543,8 @@ public class ReActAgentService {
         if (q.matches("^(ok|oke|okay|k|dong y|xac nhan|chot|chot di|lam di|mo di|duoc|yes|y|yep|yeap|sure|confirm|ung|di|lam luon|mo luon|chot luon|approved|go)$")) {
             return true;
         }
-        return (q.contains("chot") || q.contains("xac nhan") || q.contains("dong y")
-                || q.contains("lam di") || q.contains("mo di") || q.contains("di thoi"))
+        return (containsAny(q, "chot", "xac nhan", "dong y")
+                || containsAny(q, "lam di", "mo di", "di thoi"))
                 && q.length() <= 35;
     }
 
@@ -401,25 +578,35 @@ public class ReActAgentService {
 
     private boolean containsAny(String value, String... terms) {
         if (value == null) return false;
+        String padded = " " + value.replaceAll("[^a-z0-9\\s]", " ").replaceAll("\\s+", " ").trim() + " ";
         for (String term : terms) {
-            if (value.contains(term)) return true;
+            String normalizedTerm = term == null ? "" : term.replaceAll("[^a-z0-9\\s]", " ").replaceAll("\\s+", " ").trim();
+            if (!normalizedTerm.isBlank() && padded.contains(" " + normalizedTerm + " ")) return true;
         }
         return false;
+    }
+
+    private boolean containsAnyTokenOrPhrase(String value, String... terms) {
+        return containsAny(value, terms);
     }
 
     private SensitiveCommand classifySensitiveCommand(String q) {
         if (q == null) return null;
 
+        if (containsAnyTokenOrPhrase(q, "chuyen trang", "mo trang", "vao trang", "qua trang", "di toi trang", "dua toi trang")) {
+            return null;
+        }
+
         // 1. Thao tác khóa tài khoản hoặc reset mật khẩu / thông tin bảo mật quan trọng
-        boolean isLockAccount = containsAny(q, "khoa tai khoan", "khoa acc", "lock account");
-        boolean isCredentialReset = containsAny(q, "reset mat khau", "doi mat khau", "reset password", "change password");
+        boolean isLockAccount = containsAnyTokenOrPhrase(q, "khoa tai khoan", "khoa acc", "lock account");
+        boolean isCredentialReset = containsAnyTokenOrPhrase(q, "reset mat khau", "doi mat khau", "reset password", "change password");
 
         if (isLockAccount || isCredentialReset) {
             return new SensitiveCommand("destructive", "khóa tài khoản hoặc mật khẩu", "thực hiện thao tác nhạy cảm này");
         }
 
         // 2. Thao tác xóa hoặc hủy các thực thể quan trọng (lịch hẹn, hóa đơn, thú cưng, bệnh án, khách hàng...)
-        boolean hasDeleteVerb = containsAny(q, "xoa", "delete", "remove", "huy");
+        boolean hasDeleteVerb = containsAnyTokenOrPhrase(q, "xoa", "delete", "remove", "huy", "huy bo", "cancel");
         boolean hasImportantEntity = containsAny(q,
                 "lich", "hoa don", "bill", "don", "phieu", "khach", "thu cung", "pet", "boss", "benh an", "ho so", "dich vu", "thuoc", "ca kham", "tai khoan", "acc"
         );

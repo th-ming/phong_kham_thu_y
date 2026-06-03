@@ -103,11 +103,17 @@ export const StyleChatbot: React.FC = () => (
         .chat-suggestion-shell {
             position: relative;
             z-index: 3;
+            flex: 0 0 auto;
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
+            box-sizing: border-box;
             overflow-x: auto;
             overflow-y: hidden;
             padding: 10px 14px;
             background: var(--surface);
             border-top: 1px solid var(--gray-200);
+            overscroll-behavior-x: contain;
             scrollbar-width: thin;
             scrollbar-color: rgba(34, 211, 238, 0.45) transparent;
         }
@@ -124,6 +130,7 @@ export const StyleChatbot: React.FC = () => (
         .chat-suggestion-track {
             display: flex;
             width: max-content;
+            max-width: none;
             min-width: 100%;
             gap: 8px;
         }
@@ -138,6 +145,9 @@ export const StyleChatbot: React.FC = () => (
             font-size: 0.75rem;
             font-weight: 850;
             cursor: pointer;
+            max-width: min(220px, 70vw);
+            overflow: hidden;
+            text-overflow: ellipsis;
             transition: transform 0.18s ease, filter 0.18s ease, box-shadow 0.18s ease;
         }
         .chat-suggestion-chip:hover {
@@ -152,26 +162,83 @@ export const StyleChatbot: React.FC = () => (
         [data-theme='dark'] .chat-suggestion-chip:hover {
             box-shadow: 0 8px 18px rgba(0, 0, 0, 0.28);
         }
+        #chatWindow,
+        #chatWindow * {
+            box-sizing: border-box;
+        }
+        #chatWindow {
+            max-width: calc(100vw - 20px);
+            contain: layout paint;
+        }
+        .chat-message-scroll {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(34, 211, 238, 0.45) transparent;
+        }
+        .chat-message-scroll::-webkit-scrollbar {
+            width: 7px;
+        }
+        .chat-message-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .chat-message-scroll::-webkit-scrollbar-thumb {
+            background: rgba(34, 211, 238, 0.4);
+            border-radius: 999px;
+        }
+        .chat-message-ai,
+        .chat-message-user {
+            min-width: 0;
+            max-width: min(85%, 100%);
+        }
+        .chat-message-ai > div,
+        .chat-message-user > div {
+            min-width: 0;
+            max-width: 100%;
+            overflow-wrap: anywhere;
+        }
+        .table-responsive-wrapper {
+            max-width: 100%;
+            overflow-x: auto;
+        }
 
         @media (max-width: 768px) {
             #chatCallout { display: none !important; }
             #chatBtn {
                 right: 16px !important;
-                bottom: max(16px, env(safe-area-inset-bottom, 16px)) !important;
+                bottom: max(108px, env(safe-area-inset-bottom, 0px) + 104px) !important;
                 width: 56px !important;
                 height: 56px !important;
             }
             #chatWindow {
                 right: max(10px, env(safe-area-inset-right, 0px)) !important;
-                bottom: max(82px, env(safe-area-inset-bottom, 0px) + 76px) !important;
+                bottom: max(104px, env(safe-area-inset-bottom, 0px) + 100px) !important;
                 width: calc(100vw - 20px) !important;
-                height: min(650px, calc(var(--rexi-viewport-height, 100dvh) - max(180px, env(safe-area-inset-bottom, 0px) + 172px))) !important;
-                max-height: min(650px, calc(var(--rexi-viewport-height, 100dvh) - max(180px, env(safe-area-inset-bottom, 0px) + 172px))) !important;
+                height: min(650px, calc(var(--rexi-viewport-height, 100dvh) - max(204px, env(safe-area-inset-bottom, 0px) + 196px))) !important;
+                max-height: min(650px, calc(var(--rexi-viewport-height, 100dvh) - max(204px, env(safe-area-inset-bottom, 0px) + 196px))) !important;
                 border-radius: 24px !important;
                 padding-bottom: env(safe-area-inset-bottom, 0px);
             }
             #chatWindow textarea {
                 font-size: 16px !important;
+            }
+            .chat-message-scroll {
+                padding: 14px !important;
+                gap: 12px !important;
+            }
+            .chat-message-ai,
+            .chat-message-user {
+                max-width: 92% !important;
+            }
+            .chat-suggestion-shell {
+                padding: 8px 12px;
+                scrollbar-width: none;
+            }
+            .chat-suggestion-shell::-webkit-scrollbar {
+                display: none;
+            }
+            .chat-suggestion-chip {
+                max-width: 180px;
+                padding: 7px 10px;
+                font-size: 0.72rem;
             }
         }
         @keyframes chatSoftWave {
