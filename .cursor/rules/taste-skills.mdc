@@ -1,0 +1,36 @@
+---
+description: Bắt buộc AI phải đọc và áp dụng chính xác SKILL tương ứng trước khi thực hiện bất kỳ hành động code/cấu hình nào
+alwaysApply: true
+---
+
+# ⚠️ NGUYÊN TẮC BẮT BUỘC: ĐỌC SKILLS TRƯỚC KHI LÀM (SKILL-FIRST PROTOCOL)
+
+Nghiêm cấm AI nhảy vào viết code hoặc cấu hình ngay lập tức khi nhận yêu cầu. Quy trình làm việc bắt buộc phải tuân thủ nghiêm ngặt 3 bước sau:
+
+## 🔄 QUY TRÌNH 3 BƯỚC BẮT BUỘC (MỌI TÁC VỤ)
+
+1.  **BƯỚC 1: TRA CỨU SKILLS**
+    *   AI phải duyệt qua danh sách các kỹ năng đang có sẵn tại thư mục `.agents/skills/`.
+2.  **BƯỚC 2: ĐỌC CHI TIẾT (MANDATORY VIEW)**
+    *   Sử dụng công cụ `view_file` để đọc nội dung file `SKILL.md` của kỹ năng liên quan **trước khi viết bất kỳ dòng code nào**.
+3.  **BƯỚC 3: THI HÀNH NGHIÊM NGẶT**
+    *   Viết code và giải pháp dựa trên đúng chỉ dẫn kỹ thuật, tiêu chuẩn chất lượng và cấu trúc mẫu từ skill đã đọc.
+
+---
+
+## 🧭 BẢN ĐỒ TRA CỨU TẤT CẢ SKILLS TRONG DỰ ÁN
+
+| Loại tác vụ cần làm | Thư mục Skill tương ứng | File hướng dẫn cần đọc |
+| :--- | :--- | :--- |
+| **Tạo mới / Sửa giao diện Web (CSS, React, Tailwind, Bento...)** | `.agents/skills/design-taste-frontend` | [SKILL.md](file:///d:/QLy%20Ph%C3%B2ng%20Kh%C3%A1m%20Th%C3%BA%20Y/.agents/skills/design-taste-frontend/SKILL.md) |
+| **Căn chỉnh phong cách thiết kế cao cấp (Spacing, Shadow, Corners...)** | `.agents/skills/high-end-visual-design` | [SKILL.md](file:///d:/QLy%20Ph%C3%B2ng%20Kh%C3%A1m%20Th%C3%BA%20Y/.agents/skills/high-end-visual-design/SKILL.md) |
+| **Nâng cấp, sửa đổi hoặc cải tiến giao diện cũ có sẵn** | `.agents/skills/redesign-existing-projects` | [SKILL.md](file:///d:/QLy%20Ph%C3%B2ng%20Kh%C3%A1m%20Th%C3%BA%20Y/.agents/skills/redesign-existing-projects/SKILL.md) |
+| **Làm giao diện phong cách tối giản (Minimalist, Swiss Clean)** | `.agents/skills/minimalist-ui` | [SKILL.md](file:///d:/QLy%20Ph%C3%B2ng%20Kh%C3%A1m%20Th%C3%BA%20Y/.agents/skills/minimalist-ui/SKILL.md) |
+| **Làm giao diện phong cách thô công nghiệp (Brutalist, Monospace)** | `.agents/skills/industrial-brutalist-ui` | [SKILL.md](file:///d:/QLy%20Ph%C3%B2ng%20Kh%C3%A1m%20Th%C3%BA%20Y/.agents/skills/industrial-brutalist-ui/SKILL.md) |
+| **Tạo hiệu ứng cuộn trang, GSAP, Stack, Marquee, Physics** | `.agents/skills/gpt-taste` | [SKILL.md](file:///d:/QLy%20Ph%C3%B2ng%20Kh%C3%A1m%20Th%C3%BA%20Y/.agents/skills/gpt-taste/SKILL.md) |
+| **Thiết kế Concept ảnh Web / Mobile / Logo / Brand Kit** | `.agents/skills/imagegen-frontend-web`<br>`.agents/skills/imagegen-frontend-mobile`<br>`.agents/skills/brandkit` | Đọc `SKILL.md` trong từng thư mục tương ứng |
+| **Lập trình theo thiết kế hình ảnh mẫu (Image to Code)** | `.agents/skills/image-to-code` | [SKILL.md](file:///d:/QLy%20Ph%C3%B2ng%20Kh%C3%A1m%20Th%C3%BA%20Y/.agents/skills/image-to-code/SKILL.md) |
+| **Viết code dài, tránh viết tắt, tránh placeholder** | `.agents/skills/full-output-enforcement` | [SKILL.md](file:///d:/QLy%20Ph%C3%B2ng%20Kh%C3%A1m%20Th%C3%BA%20Y/.agents/skills/full-output-enforcement/SKILL.md) |
+| **Tích hợp các tài liệu hướng dẫn thiết kế động** | `.agents/skills/stitch-design-taste` | [SKILL.md](file:///d:/QLy%20Ph%C3%B2ng%20Kh%C3%A1m%20Th%C3%BA%20Y/.agents/skills/stitch-design-taste/SKILL.md) |
+
+*Nếu tác vụ không thuộc danh sách trên, AI vẫn phải kiểm tra xem có tài liệu chỉ dẫn nào khác trong dự án (như `AGENTS.md` hay `REXI_ELITE_ENGINEERING_PLAYBOOK.md`) để làm cơ sở thực hiện.*
