@@ -3,6 +3,7 @@ package com.rexi.pkty.service;
 import com.rexi.pkty.entity.TaiKhoan;
 import com.rexi.pkty.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
@@ -77,6 +78,8 @@ public class AiMemoryService {
     private NhanVienRepository nhanVienRepository;
     @Autowired
     private LichLamViecNhanVienRepository lichLamViecNhanVienRepository;
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     public String getCurrentCustomerId() {
         try {
@@ -311,31 +314,34 @@ public class AiMemoryService {
 
     private String getScheduleContext() {
         try {
-            StringBuilder sb = new StringBuilder("\n[LỊCH TRỰC CỦA BÁC SĨ (7 NGÀY TỚI)]\n");
-            var schedules = lichLamViecNhanVienRepository.findAll();
-            var doctors = nhanVienRepository.findAllBacSi();
-            
+            StringBuilder sb = new StringBuilder("\n[LỊCH TRỰC CỦA BÁC SĨ (7 NGÀY TỚI - TÓM TẮT)]\n");
             LocalDate today = LocalDate.now(VN_ZONE);
             LocalDate nextWeek = today.plusDays(7);
-            boolean hasSchedule = false;
             
-            for (var s : schedules) {
-                if (s.getNgay_lam() != null && !s.getNgay_lam().isBefore(today) && s.getNgay_lam().isBefore(nextWeek)) {
-                    String tenBacSi = doctors.stream()
-                        .filter(d -> d.getId_nhan_vien().equals(s.getId_nhan_vien()))
-                        .map(d -> d.getHo_ten())
-                        .findFirst()
-                        .orElse("Bác sĩ ẩn danh");
-                        
-                    sb.append("- Ngày ").append(s.getNgay_lam())
-                      .append(": BS ").append(tenBacSi)
-                      .append(" trực từ ").append(s.getGio_bat_dau())
-                      .append(" đến ").append(s.getGio_ket_thuc())
-                      .append(" (").append(s.getGhi_chu() != null ? s.getGhi_chu() : "Không có ghi chú").append(")\n");
-                    hasSchedule = true;
-                }
+            // Query giới hạn tối đa 15 lịch trực sắp tới
+            List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+                "SELECT TOP 15 l.ngay_lam, l.gio_bat_dau, l.gio_ket_thuc, l.ghi_chu, nv.ho_ten " +
+                "FROM LichLamViecNhanVien l " +
+                "JOIN NhanVien nv ON l.id_nhan_vien = nv.id_nhan_vien " +
+                "WHERE l.ngay_lam >= ? AND l.ngay_lam < ? " +
+                "ORDER BY l.ngay_lam ASC, l.gio_bat_dau ASC",
+                java.sql.Date.valueOf(today),
+                java.sql.Date.valueOf(nextWeek)
+            );
+            
+            if (rows.isEmpty()) {
+                return "\n[KHÔNG CÓ LỊCH TRỰC NÀO TRONG 7 NGÀY TỚI]\n";
             }
-            return hasSchedule ? sb.toString() : "\n[KHÔNG CÓ LỊCH TRỰC NÀO TRONG 7 NGÀY TỚI]\n";
+            
+            for (Map<String, Object> r : rows) {
+                Object note = r.get("ghi_chu");
+                sb.append("- Ngày ").append(r.get("ngay_lam"))
+                  .append(": BS ").append(r.get("ho_ten"))
+                  .append(" trực từ ").append(r.get("gio_bat_dau"))
+                  .append(" đến ").append(r.get("gio_ket_thuc"))
+                  .append(" (").append(note != null ? note : "Không có ghi chú").append(")\n");
+            }
+            return sb.toString();
         } catch (Exception e) {
             return "";
         }
@@ -343,11 +349,15 @@ public class AiMemoryService {
 
     private String getServicesContext() {
         try {
-            StringBuilder sb = new StringBuilder("\n[DỊCH VỤ TẠI PHÒNG KHÁM]\n");
+            StringBuilder sb = new StringBuilder("\n[DỊCH VỤ TIÊU BIỂU TẠI PHÒNG KHÁM (TÓM TẮT)]\n");
             var services = dichVuRepository.findAll();
+            int count = 0;
             for (var s : services) {
+                if (count >= 15) break; // Giới hạn tối đa 15 dịch vụ tiêu biểu
                 sb.append("- ").append(s.getTen_dich_vu()).append(": ").append(s.getGia()).append(" VNĐ\n");
+                count++;
             }
+            sb.append("- ... và nhiều dịch vụ thú y chuyên khoa khác.\n");
             return sb.toString();
         } catch (Exception e) {
             return "";
@@ -356,10 +366,17 @@ public class AiMemoryService {
 
     private String getDoctorsContext() {
         try {
-            StringBuilder sb = new StringBuilder("\n[BÁC SĨ TẠI PHÒNG KHÁM]\n");
+            StringBuilder sb = new StringBuilder("\n[BÁC SĨ NỔI BẬT TẠI PHÒNG KHÁM]\n");
             var doctors = nhanVienRepository.findAllBacSi();
+            int count = 0;
             for (var d : doctors) {
-                sb.append("- BS. ").append(d.getHo_ten()).append(" (").append(d.getGioi_thieu()).append(")\n");
+                if (count >= 8) break; // Giới hạn tối đa 8 bác sĩ nổi bật
+                String intro = d.getGioi_thieu();
+                if (intro != null && intro.length() > 100) {
+                    intro = intro.substring(0, 97) + "...";
+                }
+                sb.append("- BS. ").append(d.getHo_ten()).append(" (").append(intro != null ? intro : "Chuyên gia Thú y").append(")\n");
+                count++;
             }
             return sb.toString();
         } catch (Exception e) {
@@ -373,8 +390,10 @@ public class AiMemoryService {
             var records = hoSoBenhAnRepository.findByCustomerId(customerId);
             if (records.isEmpty()) return "\n[KHÁCH HÀNG CHƯA CÓ LỊCH SỬ BỆNH ÁN]\n";
             
-            StringBuilder sb = new StringBuilder("\n[LỊCH SỬ BỆNH ÁN CỦA BOSS]\n");
+            StringBuilder sb = new StringBuilder("\n[LỊCH SỬ BỆNH ÁN CỦA BOSS (5 CA GẦN NHẤT)]\n");
+            int count = 0;
             for (var rec : records) {
+                if (count >= 5) break; // Giới hạn tối đa 5 bệnh án gần nhất
                 sb.append("- Ngày khám: ").append(rec.get("ngay_kham"))
                   .append(", Thú cưng: ").append(rec.get("ten_thu_cung"))
                   .append(", Triệu chứng: ").append(rec.get("trieu_chung"))
@@ -382,6 +401,7 @@ public class AiMemoryService {
                   .append(", Phác đồ điều trị: ").append(rec.get("phac_do_dieu_tri"))
                   .append(", Hướng dẫn chăm sóc: ").append(rec.get("huong_dan_cham_soc"))
                   .append(", Bác sĩ: ").append(rec.get("ten_bac_si")).append("\n");
+                count++;
             }
             return sb.toString();
         } catch (Exception e) {
@@ -404,7 +424,9 @@ public class AiMemoryService {
                 String petName = (String) pet.get("ten_thu_cung");
                 
                 var shots = tiemChungRepository.findByIdThuCung(petId);
+                int count = 0;
                 for (var shot : shots) {
+                    if (count >= 8) break; // Giới hạn tối đa 8 mũi tiêm mỗi thú cưng
                     sb.append("- Pet: ").append(petName)
                       .append(", Vaccine: ").append(shot.getTen_vaccine())
                       .append(", Loại: ").append(shot.getLoai_vaccine())
@@ -412,6 +434,7 @@ public class AiMemoryService {
                       .append(", Ngày nhắc lại: ").append(shot.getNgay_tiem_lai())
                       .append(", Ghi chú: ").append(shot.getGhi_chu()).append("\n");
                     hasData = true;
+                    count++;
                 }
             }
             return hasData ? sb.toString() : "\n[KHÁCH HÀNG CHƯA CÓ LỊCH SỬ TIÊM CHỦNG VACCINE]\n";

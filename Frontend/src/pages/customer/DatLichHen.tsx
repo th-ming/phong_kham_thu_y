@@ -552,10 +552,26 @@ const DatLichHen: React.FC = () => {
             min-height: 132px !important;
           }
         }
+        
+        .customer-booking-hero {
+          --hero-bg-start: #2563eb;
+          --hero-bg-mid: #1d4ed8;
+          --hero-bg-end: #0ea5e9;
+          --hero-shadow-color: rgba(37, 99, 235, 0.22);
+          --hero-glow: rgba(14, 165, 233, 0.3);
+        }
+        
+        [data-theme='dark'] .customer-booking-hero {
+          --hero-bg-start: #1e3a8a;
+          --hero-bg-mid: #172554;
+          --hero-bg-end: #0f172a;
+          --hero-shadow-color: rgba(30, 58, 138, 0.2);
+          --hero-glow: rgba(56, 189, 248, 0.15);
+        }
       `}</style>
-      <div className="stagger-1 customer-booking-hero" style={{ display: 'block', width: '100%', margin: '10px 0 40px 0', padding: '48px', borderRadius: '32px', background: 'var(--secondary-gradient)', color: 'white', position: 'relative', overflow: 'hidden', boxShadow: 'var(--shadow-xl)', zIndex: 1 }}>
-        <div style={{ position: 'absolute', top: '-10%', right: '-5%', width: '300px', height: '300px', background: 'radial-gradient(circle, var(--primary-light) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }}></div>
-        <div style={{ position: 'absolute', bottom: '-20%', left: '-10%', width: '250px', height: '250px', background: 'radial-gradient(circle, var(--primary-light) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none', opacity: 0.5 }}></div>
+      <div className="stagger-1 customer-booking-hero" style={{ display: 'block', width: '100%', margin: '10px 0 40px 0', padding: '48px', borderRadius: '32px', background: 'linear-gradient(135deg, var(--hero-bg-start) 0%, var(--hero-bg-mid) 50%, var(--hero-bg-end) 100%)', color: 'white', position: 'relative', overflow: 'hidden', boxShadow: '0 20px 40px var(--hero-shadow-color)', zIndex: 1 }}>
+        <div style={{ position: 'absolute', top: '-10%', right: '-5%', width: '300px', height: '300px', background: 'radial-gradient(circle, var(--hero-glow) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }}></div>
+        <div style={{ position: 'absolute', bottom: '-20%', left: '-10%', width: '250px', height: '250px', background: 'radial-gradient(circle, var(--hero-glow) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none', opacity: 0.5 }}></div>
         <h1 style={{ fontSize: '3rem', fontWeight: 950, letterSpacing: '-2px', position: 'relative', zIndex: 1, margin: '0 0 12px 0', textShadow: '0 2px 10px rgba(0,0,0,0.2)' }}>{toneCopy.bookingTitle}</h1>
         <p style={{ fontWeight: 600, color: 'rgba(255,255,255,0.7)', position: 'relative', zIndex: 1, margin: 0, fontSize: '1.1rem', maxWidth: '600px' }}>{toneCopy.bookingSubtitle}</p>
       </div>

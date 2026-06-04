@@ -11,6 +11,7 @@ import com.rexi.pkty.service.OpenRouterService;
 import com.rexi.pkty.service.AiMemoryService;
 import com.rexi.pkty.service.AuditLogService;
 import com.rexi.pkty.service.ReActAgentService;
+import com.rexi.pkty.service.AgentResponseCache;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.*;
@@ -62,6 +63,9 @@ public class ChatController {
 
     @Autowired
     private ReActAgentService reactAgentService;
+
+    @Autowired
+    private AgentResponseCache agentResponseCache;
 
     // Rate Limit RAM logic
     private static class RateLimit {
@@ -511,6 +515,24 @@ ChatMessage systemMsg = new ChatMessage();
             String userQueryStr = latest.getContent() != null ? latest.getContent() : "";
             String normalizedQuery = normalizeVietnamese(userQueryStr.toLowerCase());
 
+            String userRole = (auth != null) ? auth.getAuthorities().stream()
+                    .findFirst()
+                    .map(g -> g.getAuthority().replace("ROLE_", ""))
+                    .orElse("") : "";
+
+            // —— CACHE LOOKUP (trước LLM routing) ——
+            try {
+                if (agentResponseCache.isCacheableIntent(normalizedQuery)) {
+                    String cached = agentResponseCache.get(normalizedQuery, userRole);
+                    if (cached != null) {
+                        logger.info("[ChatController] Cache HIT — trả về ngay.");
+                        return Map.of("reply", cached, "provider", "Cache");
+                    }
+                }
+            } catch (Exception cacheEx) {
+                logger.warning("[ChatController] Cache lookup lỗi (ignored): " + cacheEx.getMessage());
+            }
+
             // Check tu khoa y te
             boolean isMedicalQuery = isMedicalQuery(normalizedQuery);
 
@@ -587,6 +609,15 @@ ChatMessage systemMsg = new ChatMessage();
             reply = sanitizeChatReply(reply);
             reply = enforceVeterinaryAnswerQuality(userQuery, normalizedUserQuery, reply, requestPlan.route(), webResults);
             auditMedicalAiReplyIfNeeded(userQuery, reply, userRoleName, providerUsed, requestPlan.route().name());
+
+            // —— CACHE PUT (Lưu kết quả chất lượng cao đã qua post-processing) ——
+            try {
+                if (agentResponseCache.isCacheableIntent(normalizedQuery)) {
+                    agentResponseCache.put(normalizedQuery, userRole, reply);
+                }
+            } catch (Exception cacheEx) {
+                logger.warning("[ChatController] Cache put lỗi (ignored): " + cacheEx.getMessage());
+            }
 
             // HtmlEscape tranh XSS injection
             String safeUserQuery = org.springframework.web.util.HtmlUtils.htmlEscape(userQuery);
@@ -668,6 +699,15 @@ ChatMessage systemMsg = new ChatMessage();
         for (ProviderAttempt attempt : attempts) {
             try {
                 String reply = attempt.call().call();
+                if (reply == null || reply.trim().isEmpty() || 
+                    (reply.contains("Sen, hôm nay thật tuyệt vời")) ||
+                    (reply.contains("đảm bảo bạn được gặp") || reply.contains("cảm ơn chúng tôi đã đảm bảo")) ||
+                    (reply.contains("đồng thời tuân thủ quy định") || reply.contains("chúng tôi hiểu việc bạn đang ở đây")) ||
+                    (reply.contains("Chúc bạn có thời gian an toàn") || reply.contains("Cứ tiếp tục chuyển đổi thành")) ||
+                    (reply.contains("hóa đơn đã được xác nhận") && reply.contains("Thẻ ngân hàng sẽ thực hiện")) ||
+                    (reply.contains("balancing both") || reply.contains("popcorn cravings") || reply.contains("You've got this"))) {
+                    throw new RuntimeException("Phản hồi chứa mẫu lỗi hallucination dịch máy hoặc rỗng.");
+                }
                 logger.info("[AI ROUTER] Provider phản hồi thành công: " + attempt.name());
                 return new ProviderResult(reply, attempt.name());
             } catch (Exception ex) {
@@ -735,6 +775,10 @@ ChatMessage systemMsg = new ChatMessage();
             return "";
         }
         String cleaned = reply.trim();
+        if (cleaned.contains("Sen, hôm nay thật tuyệt vời") && cleaned.contains("cảm ơn chúng tôi đã đảm bảo")) {
+            logger.warning("[Sanitizer] Phát hiện mẫu lỗi dịch thô hallucination của OpenRouter.");
+            return "";
+        }
 
         Pattern fencePattern = Pattern.compile("(?s)```(?:json)?\\s*([\\[{][\\s\\S]*?[\\]}])\\s*```", Pattern.CASE_INSENSITIVE);
         Matcher fenceMatcher = fencePattern.matcher(cleaned);
@@ -1427,9 +1471,7 @@ ChatMessage systemMsg = new ChatMessage();
 
     private boolean isVomitingFoamCatQuery(String normalizedQuery) {
         return containsAny(normalizedQuery, "meo")
-                && (containsAny(normalizedQuery, "non bot trang", "non ra bot trang", "oi bot trang")
-                || containsNormalizedTokenOrPhrase(normalizedQuery, "non")
-                || containsNormalizedTokenOrPhrase(normalizedQuery, "oi"));
+                && containsAny(normalizedQuery, "non bot trang", "non ra bot trang", "oi bot trang");
     }
 
     private boolean isPetEyeProblemQuery(String normalizedQuery) {

@@ -858,10 +858,26 @@ const DashboardKhachHang: React.FC = () => {
             align-items: flex-start !important;
           }
         }
+        
+        .customer-dashboard-hero {
+          --hero-bg-start: #0d9488;
+          --hero-bg-mid: #0f766e;
+          --hero-bg-end: #10b981;
+          --hero-shadow-color: rgba(13, 148, 136, 0.2);
+          --hero-glow: rgba(255, 255, 255, 0.15);
+        }
+        
+        [data-theme='dark'] .customer-dashboard-hero {
+          --hero-bg-start: #064e3b;
+          --hero-bg-mid: #022c22;
+          --hero-bg-end: #0f172a;
+          --hero-shadow-color: rgba(6, 78, 59, 0.35);
+          --hero-glow: rgba(16, 185, 129, 0.1);
+        }
       `}</style>
-      <div className="stagger-1 customer-dashboard-hero" style={{ marginBottom: '40px', padding: '48px', borderRadius: 'var(--radius-xl)', background: 'var(--secondary-gradient)', color: 'white', position: 'relative', overflow: 'hidden', boxShadow: '0 15px 35px rgba(13, 148, 136, 0.2)' }}>
-        <div style={{ position: 'absolute', top: '-10%', right: '-5%', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }}></div>
-        <div style={{ position: 'absolute', bottom: '-20%', left: '0%', width: '250px', height: '250px', background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none', opacity: 0.5 }}></div>
+      <div className="stagger-1 customer-dashboard-hero" style={{ marginBottom: '40px', padding: '48px', borderRadius: 'var(--radius-xl)', background: 'linear-gradient(135deg, var(--hero-bg-start) 0%, var(--hero-bg-mid) 50%, var(--hero-bg-end) 100%)', color: 'white', position: 'relative', overflow: 'hidden', boxShadow: '0 15px 35px var(--hero-shadow-color)' }}>
+        <div style={{ position: 'absolute', top: '-10%', right: '-5%', width: '300px', height: '300px', background: 'radial-gradient(circle, var(--hero-glow) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }}></div>
+        <div style={{ position: 'absolute', bottom: '-20%', left: '0%', width: '250px', height: '250px', background: 'radial-gradient(circle, var(--hero-glow) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none', opacity: 0.5 }}></div>
         <div className="customer-dashboard-hero-content" style={{ display: 'flex', alignItems: 'center', gap: '24px', position: 'relative', zIndex: 1 }}>
           <div className="customer-dashboard-avatar" style={{ width: '88px', height: '88px', borderRadius: '50%', background: 'var(--primary-gradient)', display: 'grid', placeItems: 'center', boxShadow: '0 14px 32px rgba(0,0,0,0.18), 0 0 22px var(--primary-shadow)', flexShrink: 0 }}>
             <div style={{ width: '78px', height: '78px', borderRadius: '50%', overflow: 'hidden', border: '3px solid rgba(255,255,255,0.72)', background: 'var(--primary)', display: 'grid', placeItems: 'center', color: 'white', fontWeight: 950, fontSize: '2rem' }}>

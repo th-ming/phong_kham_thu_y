@@ -410,6 +410,22 @@ const LichSuLichHen: React.FC = () => {
             grid-template-columns: 1fr !important;
           }
         }
+        
+        .customer-history-hero {
+          --hero-bg-start: #4f46e5;
+          --hero-bg-mid: #6366f1;
+          --hero-bg-end: #8b5cf6;
+          --hero-shadow-color: rgba(79, 70, 229, 0.22);
+          --hero-glow: rgba(139, 92, 246, 0.3);
+        }
+        
+        [data-theme='dark'] .customer-history-hero {
+          --hero-bg-start: #312e81;
+          --hero-bg-mid: #1e1b4b;
+          --hero-bg-end: #0f172a;
+          --hero-shadow-color: rgba(49, 46, 129, 0.25);
+          --hero-glow: rgba(165, 180, 252, 0.15);
+        }
       `}</style>
 
       <div className="stagger-1 customer-history-hero" style={{ 
@@ -419,17 +435,17 @@ const LichSuLichHen: React.FC = () => {
         marginBottom: '40px', 
         padding: '56px 48px', 
         borderRadius: 'var(--radius-xl)', 
-        background: 'var(--secondary-gradient)', 
+        background: 'linear-gradient(135deg, var(--hero-bg-start) 0%, var(--hero-bg-mid) 50%, var(--hero-bg-end) 100%)', 
         color: 'white', 
         position: 'relative', 
         overflow: 'hidden', 
-        boxShadow: '0 20px 45px rgba(15, 118, 110, 0.25)', 
+        boxShadow: '0 20px 45px var(--hero-shadow-color)', 
         flexWrap: 'wrap', 
         gap: '24px',
         border: '1px solid rgba(255, 255, 255, 0.1)'
       }}>
-        <div style={{ position: 'absolute', top: '-15%', right: '-5%', width: '400px', height: '400px', background: 'radial-gradient(circle, rgba(45, 212, 191, 0.25) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none', filter: 'blur(40px)' }}></div>
-        <div style={{ position: 'absolute', bottom: '-25%', left: '-5%', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(20, 184, 166, 0.15) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none', filter: 'blur(30px)' }}></div>
+        <div style={{ position: 'absolute', top: '-15%', right: '-5%', width: '400px', height: '400px', background: 'radial-gradient(circle, var(--hero-glow) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none', filter: 'blur(40px)' }}></div>
+        <div style={{ position: 'absolute', bottom: '-25%', left: '-5%', width: '300px', height: '300px', background: 'radial-gradient(circle, var(--hero-glow) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none', filter: 'blur(30px)' }}></div>
         
         <div style={{ position: 'relative', zIndex: 1 }}>
           <h1 className="header-title" style={{ fontSize: '3.6rem', fontWeight: 950, letterSpacing: '-2.5px', margin: '0 0 12px 0', textShadow: '0 4px 15px rgba(0,0,0,0.2)' }}>Lịch sử thăm khám <span style={{ filter: 'drop-shadow(0 4px 10px rgba(0,0,0,0.3))' }}>🏥</span></h1>
