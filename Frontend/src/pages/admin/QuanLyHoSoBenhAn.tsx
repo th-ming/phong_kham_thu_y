@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import axiosInstance from "@services/axios";
 import { matchesSearchFields } from "@utils/index";
@@ -24,7 +24,8 @@ const QuanLyHoSoBenhAn: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
 
-  const fetchData = () => {
+  // useCallback để tránh tạo function mới mỗi render → ngăn useEffect vòng lặp vô tận
+  const fetchData = useCallback(() => {
     if (hoSos.length === 0) setLoading(true);
     axiosInstance.get("/api/ho-so-benh-an", {
       params: { page: currentPage - 1, size: ITEMS_PER_PAGE, search: searchHoSo.trim() || undefined }
@@ -44,11 +45,13 @@ const QuanLyHoSoBenhAn: React.FC = () => {
         console.error("Lỗi lấy danh sách hồ sơ:", err);
         setLoading(false);
       });
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage, searchHoSo]);
 
   useEffect(() => {
     fetchData();
-  }, [currentPage, searchHoSo]);
+  }, [fetchData]);
+
 
   useAutoRefresh(fetchData, { runImmediately: false });
 

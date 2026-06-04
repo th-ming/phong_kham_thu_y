@@ -4,7 +4,7 @@ import { VitePWA } from "vite-plugin-pwa";
 import path from "path";
 
 export default defineConfig({
-  plugins: [react(),     VitePWA({
+  plugins: [react(), VitePWA({
       registerType: 'autoUpdate',
       devOptions: {
         enabled: false
@@ -69,21 +69,55 @@ export default defineConfig({
   build: {
     outDir: "dist",
     sourcemap: false,
+    // Dùng esbuild (mặc định Vite) – nhanh hơn terser, đủ tốt cho production
+    minify: 'esbuild',
+    // Target ES2020: bỏ polyfill thừa, giảm output size
+    target: 'es2020',
+    // Nén CSS cùng với JS
+    cssMinify: true,
     rollupOptions: {
       output: {
         manualChunks(id) {
           if (id.includes("node_modules")) {
-            if (id.includes("react") || id.includes("react-dom") || id.includes("react-router-dom")) {
+            // Core React – chunk nhỏ, tải trước
+            if (id.includes("react-dom") || id.includes("react-router-dom")) {
               return "react-core-vendor";
             }
-            if (id.includes("axios") || id.includes("chart.js") || id.includes("recharts")) {
-              return "charts-and-network-vendor";
+            if (id.includes("/react/")) {
+              return "react-core-vendor";
             }
+            // Chart.js riêng – ~200KB, lazy load theo trang
+            if (id.includes("chart.js") || id.includes("react-chartjs-2")) {
+              return "chartjs-vendor";
+            }
+            // Recharts riêng – ~300KB, lazy load theo trang
+            if (id.includes("recharts") || id.includes("d3-")) {
+              return "recharts-vendor";
+            }
+            // PDF tools – rất nặng, chỉ dùng khi in hóa đơn
+            if (id.includes("jspdf") || id.includes("html2canvas")) {
+              return "pdf-vendor";
+            }
+            // Lottie – animation library khá nặng
+            if (id.includes("lottie-react") || id.includes("lottie-web")) {
+              return "lottie-vendor";
+            }
+            // WebSocket/STOMP
+            if (id.includes("stompjs") || id.includes("sockjs")) {
+              return "websocket-vendor";
+            }
+            // Axios và các utils nhỏ
+            if (id.includes("axios") || id.includes("dompurify")) {
+              return "network-vendor";
+            }
+            // Tất cả node_modules khác
             return "vendor-modules";
           }
         }
       }
     },
-    chunkSizeWarningLimit: 800
+    // Hạ từ 800 → 500 để phát hiện chunk nặng sớm hơn
+    chunkSizeWarningLimit: 500
   },
 });
+

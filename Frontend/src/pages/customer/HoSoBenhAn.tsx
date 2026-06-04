@@ -150,8 +150,34 @@ const HoSoBenhAn: React.FC = () => {
         }
         .stagger-1 { animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both; }
         .stagger-2 { animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both; }
-        .item-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); border: 1px solid transparent; background: var(--surface); }
-        .item-card:hover { border-color: var(--primary) !important; background: var(--surface) !important; transform: translateY(-4px); box-shadow: 0 20px 40px rgba(15, 157, 138, 0.08); z-index: 10; position: relative; }
+        .item-card {
+          transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
+          border-radius: 24px !important;
+          backdrop-filter: blur(16px);
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.02), 0 1px 8px rgba(0, 0, 0, 0.01) !important;
+          border: 1.5px solid var(--gray-150) !important;
+          background: var(--surface);
+        }
+        .item-card:hover {
+          transform: translateY(-6px) !important;
+          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.06), 0 1px 12px rgba(0, 0, 0, 0.02) !important;
+        }
+        .item-card.cat-theme {
+          background: linear-gradient(135deg, var(--surface) 0%, rgba(244, 63, 94, 0.06) 100%);
+          border-color: rgba(244, 63, 94, 0.16) !important;
+        }
+        .item-card.cat-theme:hover {
+          border-color: rgba(244, 63, 94, 0.5) !important;
+          box-shadow: 0 20px 40px rgba(244, 63, 94, 0.08), 0 1px 12px rgba(0, 0, 0, 0.02) !important;
+        }
+        .item-card.dog-theme {
+          background: linear-gradient(135deg, var(--surface) 0%, rgba(16, 185, 129, 0.06) 100%);
+          border-color: rgba(16, 185, 129, 0.16) !important;
+        }
+        .item-card.dog-theme:hover {
+          border-color: rgba(16, 185, 129, 0.5) !important;
+          box-shadow: 0 20px 40px rgba(16, 185, 129, 0.08), 0 1px 12px rgba(0, 0, 0, 0.02) !important;
+        }
         @media (max-width: 768px) {
           .customer-medical-page {
             display: grid;
@@ -269,15 +295,31 @@ const HoSoBenhAn: React.FC = () => {
             <span className="material-symbols-outlined" style={{ fontSize: '64px', color: 'var(--gray-200)', marginBottom: '24px' }}>folder_off</span>
             <p style={{ fontSize: '1.2rem', color: 'var(--gray-400)', fontWeight: 700 }}>Chưa có bản ghi y tế nào cho thú cưng này.</p>
           </div>
-        ) : currentRows.map((h) => (
-          <div key={getMedicalRecordId(h)} className="glass-card item-card customer-medical-card" style={{ padding: '40px', borderRadius: 'var(--radius-xl)' }}>
-            <div className="customer-medical-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-              <div className="customer-medical-card-title" style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-                <div style={{ width: '64px', height: '64px', background: 'var(--primary-light)', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
-                  <span className="material-symbols-outlined" style={{ fontSize: '32px' }}>pets</span>
-                </div>
-                <div>
-                  <h3 style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--ink)', margin: 0 }}>{getPetName(h)}</h3>
+        ) : currentRows.map((h) => {
+          const pet = thuCungs.find(p => String(getPetId(p)) === String(h.id_thu_cung ?? h.idThuCung) || getPetName(p) === getPetName(h));
+          const loai = pet?.loai;
+          const isCat = (loai || "").toLowerCase().match(/(mèo|meo|cat)/);
+          const isDog = (loai || "").toLowerCase().match(/(chó|cho|dog)/);
+          const themeClass = isCat ? "cat-theme" : isDog ? "dog-theme" : "";
+          return (
+            <div key={getMedicalRecordId(h)} className={`glass-card item-card customer-medical-card ${themeClass}`} style={{ padding: '40px' }}>
+              <div className="customer-medical-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+                <div className="customer-medical-card-title" style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+                  <div style={{
+                    width: '64px',
+                    height: '64px',
+                    background: isCat ? 'rgba(244, 63, 94, 0.15)' : isDog ? 'rgba(16, 185, 129, 0.15)' : 'var(--primary-light)',
+                    borderRadius: '20px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: isCat ? '#e11d48' : isDog ? '#059669' : 'var(--primary)',
+                    fontSize: '2rem'
+                  }}>
+                    {isCat ? '🐱' : isDog ? '🐶' : '🐾'}
+                  </div>
+                  <div>
+                    <h3 style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--ink)', margin: 0 }}>{getPetName(h)}</h3>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '4px', color: 'var(--gray-400)', fontWeight: 700, fontSize: '0.85rem' }}>
                     <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>event</span>
                     {chuyenNgayISO_SangVN(h.ngay_kham ?? h.ngayKham)}
@@ -327,7 +369,8 @@ const HoSoBenhAn: React.FC = () => {
               </div>
             </div>
           </div>
-        ))}
+          );
+        })}
 
         {/* BỘ NÚT ĐIỀU HƯỚNG PHÂN TRANG */}
         {totalPages > 1 && (

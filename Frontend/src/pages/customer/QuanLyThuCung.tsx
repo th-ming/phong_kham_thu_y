@@ -321,28 +321,25 @@ const QuanLyThuCung: React.FC = () => {
           <Skeleton width="180px" height="48px" borderRadius="50px" />
         </div>
 
-        {/* Khung xương Card Thú cưng */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' }}>
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="glass-card" style={{ padding: '32px', borderRadius: 'var(--radius-xl)', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-              <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
-                <Skeleton width="80px" height="80px" borderRadius="24px" />
-                <div>
-                  <Skeleton width="150px" height="28px" borderRadius="8px" style={{ marginBottom: '12px' }} />
-                  <Skeleton width="80px" height="20px" borderRadius="8px" />
-                </div>
-              </div>
-              <div className="responsive-grid-2">
-                <Skeleton width="100%" height="40px" borderRadius="8px" />
-                <Skeleton width="100%" height="40px" borderRadius="8px" />
-                <Skeleton width="100%" height="40px" borderRadius="8px" />
-                <Skeleton width="100%" height="40px" borderRadius="8px" />
-              </div>
-              <div style={{ display: 'flex', gap: '12px', marginTop: 'auto' }}>
-                <Skeleton width="100%" height="48px" borderRadius="50px" />
-              </div>
-            </div>
-          ))}
+        {/* Custom Cute Pet Loader */}
+        <div className="glass-card" style={{ padding: '80px 20px', borderRadius: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '24px' }}>
+          <svg width="120" height="120" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="50" cy="50" r="30" fill="var(--primary-light)" style={{ animation: 'pulse-soft 2s infinite ease-in-out' }} />
+            <polygon points="25,30 35,10 45,26" fill="var(--primary)" />
+            <polygon points="75,30 65,10 55,26" fill="var(--primary)" />
+            <circle cx="42" cy="45" r="3.5" fill="var(--ink)" />
+            <circle cx="58" cy="45" r="3.5" fill="var(--ink)" />
+            <polygon points="50,52 47,49 53,49" fill="#ff4d4f" />
+            <line x1="32" y1="52" x2="20" y2="50" stroke="var(--ink)" strokeWidth="1.5" />
+            <line x1="32" y1="55" x2="18" y2="56" stroke="var(--ink)" strokeWidth="1.5" />
+            <line x1="68" y1="52" x2="80" y2="50" stroke="var(--ink)" strokeWidth="1.5" />
+            <line x1="68" y1="55" x2="82" y2="56" stroke="var(--ink)" strokeWidth="1.5" />
+            <path d="M 50 80 Q 75 90 70 65" stroke="var(--primary)" strokeWidth="5" strokeLinecap="round" fill="none"
+              style={{ transformOrigin: '50px 80px', animation: 'tailWag 1.2s ease-in-out infinite alternate' }} />
+          </svg>
+          <div style={{ fontWeight: 900, color: 'var(--primary)', fontSize: '1.25rem', letterSpacing: '-0.5px', animation: 'blink 1.5s infinite' }}>
+            Đang tải danh sách thú cưng... 🐾
+          </div>
         </div>
       </div>
     );
@@ -355,6 +352,10 @@ const QuanLyThuCung: React.FC = () => {
           from { opacity: 0; transform: translateY(30px); }
           to { opacity: 1; transform: translateY(0); }
         }
+        @keyframes tailWag {
+          0% { transform: rotate(-18deg); }
+          100% { transform: rotate(18deg); }
+        }
         .stagger-1 { animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both; }
         .btn-action { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important; font-weight: 800; }
         .btn-action:hover:not(:disabled) { transform: translateY(-3px) scale(1.02); box-shadow: 0 10px 20px rgba(13, 148, 136, 0.2); filter: brightness(1.05); }
@@ -363,6 +364,25 @@ const QuanLyThuCung: React.FC = () => {
           transform: scale(1.18) rotate(-8deg) !important;
           background: var(--ink) !important;
           box-shadow: 0 6px 14px rgba(15, 157, 138, 0.5) !important;
+        }
+        .customer-pet-card {
+          transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
+          border-radius: 24px !important;
+          backdrop-filter: blur(16px);
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.02), 0 1px 8px rgba(0, 0, 0, 0.01) !important;
+          border: 1.5px solid var(--gray-150) !important;
+        }
+        .customer-pet-card:hover {
+          transform: translateY(-6px) !important;
+          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.06), 0 1px 12px rgba(0, 0, 0, 0.02) !important;
+        }
+        .customer-pet-card.cat-theme:hover {
+          border-color: rgba(244, 63, 94, 0.5) !important;
+          box-shadow: 0 20px 40px rgba(244, 63, 94, 0.08), 0 1px 12px rgba(0, 0, 0, 0.02) !important;
+        }
+        .customer-pet-card.dog-theme:hover {
+          border-color: rgba(16, 185, 129, 0.5) !important;
+          box-shadow: 0 20px 40px rgba(16, 185, 129, 0.08), 0 1px 12px rgba(0, 0, 0, 0.02) !important;
         }
         @media (max-width: 768px) {
           .customer-pets-page {
@@ -645,83 +665,94 @@ const QuanLyThuCung: React.FC = () => {
         </div>
       ) : (
         <div className="stagger-2 customer-pet-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' }}>
-          {filteredPets.map(pet => (
-            <div key={pet.id_thu_cung} className="glass-card customer-pet-card" style={{ padding: '32px', borderRadius: 'var(--radius-xl)', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-              <div className="customer-pet-card-head" style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
-                <div className="customer-pet-avatar" style={{ position: 'relative', width: '80px', height: '80px', flexShrink: 0 }}>
-                  <div style={{ 
-                    width: '100%', 
-                    height: '100%', 
-                    background: 'var(--primary-light)', 
-                    borderRadius: '24px', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center', 
-                    color: 'var(--primary)',
-                    overflow: 'hidden',
-                    border: '2px solid var(--gray-100)'
-                  }}>
-                    {pet.hinh_anh ? (
-                      <img
-                        src={pet.hinh_anh}
-                        alt={pet.ten_thu_cung}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none';
-                          const fallback = e.currentTarget.nextElementSibling as HTMLElement | null;
-                          if (fallback) fallback.style.display = 'inline';
-                        }}
-                      />
-                    ) : (
-                      null
-                    )}
-                    <span style={{ fontSize: '2rem', display: pet.hinh_anh ? 'none' : 'inline' }}>
-                      {layBieuTuongThuCung(pet.loai)}
-                    </span>
-                  </div>
-                  
-                  {/* Icon máy ảnh đổi avatar nhanh */}
-                  <label 
-                    htmlFor={`upload-avatar-${pet.id_thu_cung}`} 
-                    style={{ 
-                      position: 'absolute', 
-                      bottom: '-4px', 
-                      right: '-4px', 
-                      width: '28px', 
-                      height: '28px', 
-                      borderRadius: '50%', 
-                      background: 'var(--primary)', 
-                      color: 'white', 
+          {filteredPets.map(pet => {
+            const isCat = (pet.loai || "").toLowerCase().match(/(mèo|meo|cat)/);
+            const isDog = (pet.loai || "").toLowerCase().match(/(chó|cho|dog)/);
+            const themeClass = isCat ? "cat-theme" : isDog ? "dog-theme" : "";
+            return (
+              <div key={pet.id_thu_cung} className={`glass-card customer-pet-card ${themeClass}`} style={{ padding: '32px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                <div className="customer-pet-card-head" style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+                  <div className="customer-pet-avatar" style={{ position: 'relative', width: '80px', height: '80px', flexShrink: 0 }}>
+                    <div style={{ 
+                      width: '100%', 
+                      height: '100%', 
+                      background: isCat ? 'rgba(244, 63, 94, 0.1)' : isDog ? 'rgba(16, 185, 129, 0.1)' : 'var(--primary-light)', 
+                      borderRadius: '24px', 
                       display: 'flex', 
                       alignItems: 'center', 
                       justifyContent: 'center', 
-                      cursor: 'pointer',
-                      boxShadow: '0 4px 10px rgba(15, 157, 138, 0.4)',
-                      border: '2px solid var(--surface)',
-                      transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-                      zIndex: 2
-                    }}
-                    className="camera-upload-btn"
-                    title="Đổi ảnh đại diện"
-                  >
-                    <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>photo_camera</span>
-                  </label>
-                  <input 
-                    data-ai-id={`input-quanlythucung-avatar-${pet.id_thu_cung}`}
-                    type="file" 
-                    id={`upload-avatar-${pet.id_thu_cung}`} 
-                    accept="image/*" 
-                    style={{ display: 'none' }} 
-                    onChange={(e) => handleUploadImage(pet, e)} 
-                  />
-                </div>
-                <div className="customer-pet-title-block">
-                  <h3 style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--ink)', margin: 0 }}>{pet.ten_thu_cung}</h3>
-                  <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
-                    <span className="customer-pet-type-badge" style={{ fontSize: '0.7rem', fontWeight: 800, background: 'var(--gray-50)', color: 'var(--gray-500)', padding: '4px 10px', borderRadius: '8px' }}>{pet.loai?.toUpperCase()}</span>
+                      color: isCat ? '#e11d48' : isDog ? '#059669' : 'var(--primary)',
+                      overflow: 'hidden',
+                      border: isCat ? '2px solid rgba(244, 63, 94, 0.2)' : isDog ? '2px solid rgba(16, 185, 129, 0.2)' : '2px solid var(--gray-100)'
+                    }}>
+                      {pet.hinh_anh ? (
+                        <img
+                          src={pet.hinh_anh}
+                          alt={pet.ten_thu_cung}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            const fallback = e.currentTarget.nextElementSibling as HTMLElement | null;
+                            if (fallback) fallback.style.display = 'inline';
+                          }}
+                        />
+                      ) : (
+                        null
+                      )}
+                      <span style={{ fontSize: '2rem', display: pet.hinh_anh ? 'none' : 'inline' }}>
+                        {layBieuTuongThuCung(pet.loai)}
+                      </span>
+                    </div>
+                    
+                    {/* Icon máy ảnh đổi avatar nhanh */}
+                    <label 
+                      htmlFor={`upload-avatar-${pet.id_thu_cung}`} 
+                      style={{ 
+                        position: 'absolute', 
+                        bottom: '-4px', 
+                        right: '-4px', 
+                        width: '28px', 
+                        height: '28px', 
+                        borderRadius: '50%', 
+                        background: isCat ? '#e11d48' : isDog ? '#059669' : 'var(--primary)', 
+                        color: 'white', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center', 
+                        cursor: 'pointer',
+                        boxShadow: isCat ? '0 4px 10px rgba(244, 63, 94, 0.4)' : isDog ? '0 4px 10px rgba(16, 185, 129, 0.4)' : '0 4px 10px rgba(15, 157, 138, 0.4)',
+                        border: '2px solid var(--surface)',
+                        transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                        zIndex: 2
+                      }}
+                      className="camera-upload-btn"
+                      title="Đổi ảnh đại diện"
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>photo_camera</span>
+                    </label>
+                    <input 
+                      data-ai-id={`input-quanlythucung-avatar-${pet.id_thu_cung}`}
+                      type="file" 
+                      id={`upload-avatar-${pet.id_thu_cung}`} 
+                      accept="image/*" 
+                      style={{ display: 'none' }} 
+                      onChange={(e) => handleUploadImage(pet, e)} 
+                    />
+                  </div>
+                  <div className="customer-pet-title-block">
+                    <h3 style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--ink)', margin: 0 }}>{pet.ten_thu_cung}</h3>
+                    <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                      <span className="customer-pet-type-badge" style={{
+                        fontSize: '0.7rem',
+                        fontWeight: 900,
+                        background: isCat ? 'rgba(244, 63, 94, 0.15)' : isDog ? 'rgba(16, 185, 129, 0.15)' : 'var(--gray-50)',
+                        color: isCat ? '#e11d48' : isDog ? '#059669' : 'var(--gray-500)',
+                        padding: '4px 10px',
+                        borderRadius: '8px'
+                      }}>{pet.loai?.toUpperCase()}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
 
               <div className="responsive-grid-2">
                 <div>
@@ -788,7 +819,8 @@ const QuanLyThuCung: React.FC = () => {
                 </button>
               </div>
             </div>
-          ))}
+          );
+        })}
         </div>
       )}
     </div>

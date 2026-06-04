@@ -310,5 +310,9 @@ export const StyleChatbot: React.FC = () => (
         #chatBtn:hover::after {
             animation-duration: 2.4s;
         }
+        @keyframes waveGrow {
+            0% { transform: scaleY(0.35); }
+            100% { transform: scaleY(1.35); }
+        }
     `}</style>
 );

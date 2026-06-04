@@ -89,97 +89,7 @@ const HoaDonThanhToan: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [viewingHD, setViewingHD] = useState<any>(null);
   const [chiTietHD, setChiTietHD] = useState<any[]>([]);
-import React, { useCallback, useMemo, useRef, useState, useEffect } from "react";
-import axiosInstance from "@services/axios";
-import { formatTienVND, getUserProfile, matchesSearchFields } from "@utils/index";
-import { customerToneCopy, isGenZBirthYear } from "@utils/customerTone";
-import { Modal } from "@components/CommonUI";
-import { useLocation } from "react-router-dom";
-import { toast } from "@components/Toast";
-import { useAutoRefresh } from "@hooks/useAutoRefresh";
-import KpiIcon from "@components/KpiIcon";
 
-const chuyenNgayISO_SangVN = (dateString: string) => {
-  if (!dateString) return "—";
-  // Fix lệch múi giờ để giao diện hiển thị đúng giờ của Việt Nam
-  const parts = dateString.split('T')[0].split('-');
-  if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
-  return dateString;
-};
-
-const chuyenNgayGioISO_SangVN = (dateString: string) => {
-  if (!dateString) return "—";
-  const date = new Date(dateString);
-  if (Number.isNaN(date.getTime())) return chuyenNgayISO_SangVN(dateString);
-  return date.toLocaleString('vi-VN', {
-    hour: '2-digit',
-    minute: '2-digit',
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric'
-  });
-};
-
-const getCustomerId = (user: any) => user?.id_khach_hang ?? user?.idKhachHang ?? user?.id_tai_khoan ?? user?.idTaiKhoan ?? user?.id;
-const getInvoiceId = (hd: any) => hd?.id_hoa_don ?? hd?.idHoaDon ?? hd?.id;
-const getInvoiceStatus = (hd: any) => String(hd?.trang_thai ?? hd?.trangThai ?? "").toLowerCase();
-const isPayableInvoice = (hd: any) => {
-  const invoiceStatus = getInvoiceStatus(hd);
-  return invoiceStatus === "cho_thanh_toan" || invoiceStatus === "dang_thanh_toan";
-};
-const getInvoiceStatusLabel = (hd: any) => {
-  const invoiceStatus = getInvoiceStatus(hd);
-  if (invoiceStatus === "da_thanh_toan") return "ĐÃ TRẢ";
-  if (invoiceStatus === "dang_thanh_toan") return "ĐANG CHỜ";
-  return "CHỜ TRẢ";
-};
-const getInvoiceStatusBadgeStyle = (hd: any): React.CSSProperties => {
-  const invoiceStatus = getInvoiceStatus(hd);
-  if (invoiceStatus === "da_thanh_toan") {
-    return {
-      background: "var(--primary-light)",
-      color: "var(--primary)",
-      border: "1px solid rgba(20, 184, 166, 0.28)"
-    };
-  }
-  if (invoiceStatus === "dang_thanh_toan") {
-    return {
-      background: "linear-gradient(135deg, #fff7c2 0%, #fef3c7 100%)",
-      color: "#9a5b05",
-      border: "1px solid rgba(245, 158, 11, 0.32)"
-    };
-  }
-  return {
-    background: "#fef9c3",
-    color: "#a16207",
-    border: "1px solid rgba(245, 158, 11, 0.22)"
-  };
-};
-const getInvoiceDate = (hd: any) => hd?.ngay_lap_hoa_don ?? hd?.ngayLapHoaDon ?? hd?.createdAt;
-const getCustomerName = (hd: any) => hd?.ten_khach_hang ?? hd?.tenKhachHang ?? hd?.khachHang?.ho_ten ?? hd?.khachHang?.hoTen ?? "Khách vãng lai";
-const getPetName = (hd: any) => hd?.ten_thu_cung ?? hd?.tenThuCung ?? hd?.thuCung?.ten_thu_cung ?? hd?.thuCung?.tenThuCung ?? "";
-const getInvoiceTotal = (hd: any) => Number(hd?.tong_tien_cuoi ?? hd?.tongTienCuoi ?? hd?.tong_tien ?? hd?.tongTien ?? hd?.thanh_tien ?? hd?.thanhTien ?? 0);
-const getInvoiceBaseTotal = (hd: any) => Number(hd?.tong_tien_ban_dau ?? hd?.tongTienBanDau ?? getInvoiceTotal(hd));
-const getInvoiceDiscount = (hd: any) => Number(hd?.tong_giam_gia ?? hd?.tongGiamGia ?? 0);
-const getPaymentDate = (payment: any) => payment?.ngay_tra_tien ?? payment?.ngayTraTien ?? payment?.createdAt;
-const getPaymentMethod = (payment: any) => {
-  const method = String(payment?.phuong_thuc ?? payment?.phuongThuc ?? "").toLowerCase();
-  if (method.includes("vnpay")) return "VNPay";
-  if (method.includes("vietqr")) return "VietQR";
-  if (method.includes("tien_mat") || method.includes("tiền mặt")) return "Tiền mặt";
-  return payment?.phuong_thuc ?? payment?.phuongThuc ?? "Khác";
-};
-const getPaymentAmount = (payment: any) => Number(payment?.so_tien ?? payment?.soTien ?? 0);
-const getPaymentNote = (payment: any) => payment?.ghi_chu ?? payment?.ghiChu ?? payment?.ma_giao_dich_ngan_hang ?? payment?.maGiaoDichNganHang ?? "—";
-
-const HoaDonThanhToan: React.FC = () => {
-  const [status, setStatus] = useState("all");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [hoaDons, setHoaDons] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [viewingHD, setViewingHD] = useState<any>(null);
-  const [chiTietHD, setChiTietHD] = useState<any[]>([]);
   const [lichSuThanhToan, setLichSuThanhToan] = useState<any[]>([]);
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [loadingPayments, setLoadingPayments] = useState(false);
@@ -471,8 +381,21 @@ const HoaDonThanhToan: React.FC = () => {
         .stagger-3 { animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both; }
         .hover-lift { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: default; }
         .hover-lift:hover { transform: translateY(-6px); box-shadow: 0 20px 40px rgba(0,0,0,0.06); }
-        .item-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); border: 1px solid transparent; background: var(--surface); }
-        .item-card:hover { border-color: var(--primary) !important; background: var(--surface) !important; transform: translateY(-4px) scale(1.01); box-shadow: 0 20px 40px rgba(15, 157, 138, 0.08); z-index: 10; position: relative; }
+        .item-card {
+          transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
+          border-radius: 24px !important;
+          backdrop-filter: blur(16px);
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.02), 0 1px 8px rgba(0, 0, 0, 0.01) !important;
+          border: 1.5px solid var(--gray-150) !important;
+          background: var(--surface);
+        }
+        .item-card:hover {
+          transform: translateY(-6px) !important;
+          border-color: var(--primary) !important;
+          box-shadow: 0 20px 40px rgba(15, 157, 138, 0.12), 0 1px 12px rgba(0, 0, 0, 0.02) !important;
+          z-index: 10;
+          position: relative;
+        }
         .customer-kpi-card {
           position: relative;
           cursor: help;
@@ -854,13 +777,38 @@ const HoaDonThanhToan: React.FC = () => {
               }}>
                 {getInvoiceStatusLabel(hd)}
               </span>
-              <div className="customer-invoice-row-actions" style={{ display: 'flex', gap: '8px' }}>
-                  <KpiIcon name="eye" size={22} />
-                </button>
-                <button data-ai-id="button-hoadonthanhtoan-xuzd" className="btn" style={{ padding: '12px', background: 'var(--gray-50)', color: 'var(--ink)' }} onClick={async () => { setPrintAfterDetailsLoad(true); await handleViewDetails(hd); }} title="In hóa đơn">
-                  <KpiIcon name="print" size={22} />
-                </button>
-              </div>
+              <div className="customer-invoice-row-actions" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  {isPayableInvoice(hd) && (
+                    <>
+                      <button
+                        data-ai-id="button-hoadonthanhtoan-vnpay"
+                        className="btn btn-pill"
+                        style={{ padding: '8px 16px', background: 'linear-gradient(135deg, #005baa 0%, #008cd6 100%)', color: 'white', fontWeight: 700, fontSize: '0.85rem' }}
+                        onClick={() => handlePaymentVNPay(hd)}
+                        disabled={!!processingPaymentId}
+                        title="Thanh toán qua VNPay"
+                      >
+                        Thanh toán VNPay
+                      </button>
+                      <button
+                        data-ai-id="button-hoadonthanhtoan-vietqr"
+                        className="btn btn-pill"
+                        style={{ padding: '8px 16px', background: 'linear-gradient(135deg, #ea580c 0%, #f97316 100%)', color: 'white', fontWeight: 700, fontSize: '0.85rem' }}
+                        onClick={() => handlePaymentVietQR(hd)}
+                        disabled={!!processingPaymentId}
+                        title="Quét VietQR"
+                      >
+                        Quét VietQR
+                      </button>
+                    </>
+                  )}
+                  <button data-ai-id="button-hoadonthanhtoan-kq3r" className="btn" style={{ padding: '12px', background: 'var(--primary-light)', color: 'var(--primary)' }} onClick={() => handleViewDetails(hd)} title="Xem chi tiết">
+                    <KpiIcon name="eye" size={22} />
+                  </button>
+                  <button data-ai-id="button-hoadonthanhtoan-xuzd" className="btn" style={{ padding: '12px', background: 'var(--gray-50)', color: 'var(--ink)' }} onClick={async () => { setPrintAfterDetailsLoad(true); await handleViewDetails(hd); }} title="In hóa đơn">
+                    <KpiIcon name="print" size={22} />
+                  </button>
+                </div>
             </div>
           </div>
         ))}

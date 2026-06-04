@@ -53,21 +53,6 @@ public class ReActAgentService {
         String normalizedQuery = normalizeVietnamese(originalUserIntent.trim().toLowerCase());
         boolean isStaff = isStaffRole(userRole);
 
-        // —— CACHE LOOKUP (trước tất cả xử lý) ——
-        // Chỉ cache intent tĩnh, mọi lỗi cache đều được bỏ qua (fallback bình thường)
-        try {
-            if (agentResponseCache.isCacheableIntent(normalizedQuery)) {
-                String cached = agentResponseCache.get(normalizedQuery, userRole);
-                if (cached != null) {
-                    logger.info("[ReAct] Cache HIT — trả về ngay, bỏ qua vòng lặp ReAct.");
-                    steps.add(new ReActStep("CACHE_HIT", cached, null, null, null));
-                    return new ReActResult(cached, steps, "Cache");
-                }
-            }
-        } catch (Exception cacheEx) {
-            logger.warning("[ReAct] Cache lookup lỗi (ignored): " + cacheEx.getMessage());
-        }
-
         ReActResult sensitiveGateResult = handleSensitiveCommandGate(normalizedQuery, steps);
         if (sensitiveGateResult != null) {
             return sensitiveGateResult;
@@ -85,12 +70,26 @@ public class ReActAgentService {
             return pendingConfirmationResult;
         }
 
+        // Cache chỉ áp dụng sau các gate nhạy cảm/xác nhận để không có đường tắt bỏ qua an toàn.
+        try {
+            if (agentResponseCache != null && agentResponseCache.isCacheableIntent(normalizedQuery)) {
+                String cached = agentResponseCache.get(normalizedQuery, userRole);
+                if (cached != null) {
+                    logger.info("[ReAct] Cache HIT — trả về ngay, bỏ qua vòng lặp ReAct.");
+                    steps.add(new ReActStep("CACHE_HIT", cached, null, null, null));
+                    return new ReActResult(cached, steps, "Cache");
+                }
+            }
+        } catch (Exception cacheEx) {
+            logger.warning("[ReAct] Cache lookup lỗi (ignored): " + cacheEx.getMessage());
+        }
+
         // Greeting thuan tuy - chi xu ly instant, moi cau hoi thuc te de LLM tu phan tich.
         ReActResult deterministicIntent = handleDeterministicIntent(normalizedQuery, isStaff, userRole, username, steps);
         if (deterministicIntent != null) {
             // Lưu kết quả vào cache nếu là intent tĩnh có thể cache
             try {
-                if (agentResponseCache.isCacheableIntent(normalizedQuery)) {
+                if (agentResponseCache != null && agentResponseCache.isCacheableIntent(normalizedQuery)) {
                     agentResponseCache.put(normalizedQuery, userRole, deterministicIntent.finalAnswer());
                 }
             } catch (Exception cacheEx) {

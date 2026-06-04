@@ -839,6 +839,8 @@ export const ChatBotCore: React.FC = () => {
     const lastMicWeakAudioAtRef = useRef(0);
     const voiceNoSpeechPromptKeyRef = useRef<string | null>(null);
     const recognitionRunningRef = useRef(false);
+    // Đếm số lần liên tiếp gặp lỗi no-speech mà không có âm thanh → auto-shutdown sau ngưỡng
+    const consecutiveNoSpeechRef = useRef(0);
     const loadingRef = useRef(false);
     const agentLoadingRef = useRef(false);
     const activeStandardChatTurnsRef = useRef(0);
@@ -2362,6 +2364,31 @@ export const ChatBotCore: React.FC = () => {
         };
     }, [voiceLiveText, stopVoiceSession]);
 
+    // [CẢI TIẾN 3] Phím Space / Escape barge-in: ngắt lời AI và bật lại mic ngay lập tức
+    useEffect(() => {
+        const handleBargeIn = (e: KeyboardEvent) => {
+            // Chỉ kích hoạt khi chatbot đang mở VÀ AI đang phát âm thanh TTS
+            if (!isOpen || !isAiSpeakingRef.current) return;
+            // Không kích hoạt nếu người dùng đang gõ trong input/textarea
+            const tag = (e.target as HTMLElement)?.tagName;
+            if (tag === "INPUT" || tag === "TEXTAREA") return;
+            if (e.code === "Space" || e.code === "Escape") {
+                e.preventDefault();
+                // Dừng TTS ngay lập tức
+                window.speechSynthesis.cancel();
+                isAiSpeakingRef.current = false;
+                // Bật lại mic nếu phiên voice đang hoạt động
+                if (voiceSessionActiveRef.current && recognitionRef.current) {
+                    setTimeout(() => startRecognitionSafe("barge-in-keypress"), 200);
+                }
+                setVoiceStatus("Đang nghe...");
+                toast.info("Đã ngắt lời AI — nói lệnh tiếp theo.", { duration: 1500 });
+            }
+        };
+        window.addEventListener("keydown", handleBargeIn);
+        return () => window.removeEventListener("keydown", handleBargeIn);
+    }, [isOpen]);
+
     const toggleListening = async () => {
         if (isListening) {
             stopVoiceSession("Đã tắt mic.");
@@ -2424,6 +2451,7 @@ export const ChatBotCore: React.FC = () => {
                 recognitionRef.current.onresult = (event: any) => {
                     resetMicIdleTimeout(); // Có tiếng động là reset timer
                     lastMicAudioAtRef.current = Date.now();
+                    consecutiveNoSpeechRef.current = 0; // Reset đếm im lặng khi có transcript thật
                     if (isAiSpeakingRef.current) return; // Bỏ qua âm thanh khi AI đang nói để tránh echo
 
                     let interimText = "";
@@ -2467,11 +2495,12 @@ export const ChatBotCore: React.FC = () => {
                     }
                     if (errorCode === "network") {
                         setVoiceStatus("Nhận diện giọng nói bị lỗi mạng.");
-                        const text = "Nhận diện giọng nói đang lỗi mạng. Bạn thử lại trên Chrome hoặc Edge có kết nối mạng ổn định nhé.";
+                        // [CẢI TIẾN 2] Phát cảnh báo bằng giọng nói luôn, không chỉ hiện text
+                        const text = "Em bị mất kết nối mạng, không nghe được giọng nói nữa. Bác sĩ vui lòng kiểm tra mạng rồi bấm mic lại nhé!";
                         reportVoiceIssueToAdmin("SPEECH_NETWORK", text, "HIGH", "SpeechRecognition.onerror");
-                        toast.error(text);
-                        notifyVoiceMessage(text, true);
-                        stopVoiceSession("Voice bị lỗi mạng.");
+                        toast.error("Lỗi mạng: Em không nghe được giọng nói. Vui lòng kiểm tra kết nối.");
+                        stopVoiceSession("Lỗi mạng — mic đã tắt.");
+                        notifyVoiceMessage(text, true); // shouldSpeak = true → đọc to bằng loa
                         return;
                     }
                     if (errorCode === "no-speech") {
@@ -2486,6 +2515,22 @@ export const ChatBotCore: React.FC = () => {
                             "SpeechRecognition.onerror"
                         );
                         if (voiceSessionActiveRef.current) {
+                            // [CẢI TIẾN 1] Đếm no-speech liên tiếp. Reset nếu vừa có âm thanh thật.
+                            if (!heardAudioRecently) {
+                                consecutiveNoSpeechRef.current += 1;
+                            } else {
+                                consecutiveNoSpeechRef.current = 0;
+                            }
+                            // Sau 4 lần im lặng liên tiếp (~30–40 giây) → tự tắt mic để bảo vệ RAM/pin
+                            const MAX_SILENT_RETRIES = 4;
+                            if (consecutiveNoSpeechRef.current >= MAX_SILENT_RETRIES) {
+                                consecutiveNoSpeechRef.current = 0;
+                                const shutdownMsg = "Em tạm tắt mic để tiết kiệm pin vì không nghe thấy giọng nói. Khi cần bác sĩ bấm mic lại nhé!";
+                                stopVoiceSession("Mic tự tắt sau quá trình im lặng.");
+                                notifyVoiceMessage(shutdownMsg, true);
+                                toast.info("Mic đã tự tắt sau một thời gian im lặng.");
+                                return;
+                            }
                             window.setTimeout(() => startRecognitionSafe("SpeechRecognition.no-speech"), 500);
                         }
                         return;

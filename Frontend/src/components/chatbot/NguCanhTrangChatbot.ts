@@ -55,7 +55,13 @@ const isVisibleElement = (el: Element) => {
 
 export const readVisibleProfileNameFromPage = (): string => {
     try {
-        const nameLabels = ["ho va ten", "ho ten", "ten khach hang", "ten nhan vien", "ten cua ban", "full name"];
+        // Cải tiến 3: Mở rộng nhãn nhận diện đa dạng hơn (chủ nuôi, bác sĩ, nhân viên, ...)
+        const nameLabels = [
+            "ho va ten", "ho ten", "ten khach hang", "ten nhan vien", "ten cua ban",
+            "full name", "your name", "chu nuoi", "bac si", "ten bac si",
+            "ten nguoi dung", "ten tai khoan", "display name", "nickname",
+            "ten dang nhap", "ho va ten chu nuoi", "ten nhan su"
+        ];
         const controls = Array.from(document.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>("input, textarea"));
 
         for (const control of controls) {
@@ -201,10 +207,43 @@ export const getPageDomContext = (): string => {
             }
         });
 
+        // Cải tiến 1: Phát hiện Modal/Overlay đang mở — quét các phần tử bên trong trước
+        const MODAL_SELECTORS = [
+            "[role='dialog']",
+            "[role='alertdialog']",
+            ".modal",
+            "[class*='modal']",
+            "[class*='dialog']",
+            "[class*='overlay']",
+            "[class*='popup']",
+            "[class*='drawer']",
+        ].join(", ");
+        const openModal = Array.from(document.querySelectorAll<HTMLElement>(MODAL_SELECTORS)).find(el => {
+            const style = window.getComputedStyle(el);
+            return style.display !== "none" && style.visibility !== "hidden" && style.opacity !== "0";
+        });
+        if (openModal) {
+            const modalTitle = openModal.querySelector("h1, h2, h3, [class*='title'], [class*='header']")?.textContent?.trim().replace(/\s+/g, " ");
+            if (modalTitle) pushMetric(`Modal đang mở: "${modalTitle}"`);
+        }
+
+        // Cải tiến 1 + 2: Ưu tiên thu thập phần tử tương tác từ Modal trước, sau đó mới phần tử trang chính
         let autoIdCounter = 1;
-        const interactiveElements = document.querySelectorAll("button, input, select, textarea, [role='button'], [data-ai-id]");
-        interactiveElements.forEach((el, idx) => {
-            if (idx > 35) return;
+        const modalElements = openModal
+            ? Array.from(openModal.querySelectorAll<Element>("button, input, select, textarea, [role='button'], [data-ai-id]"))
+            : [];
+        const pageElements = Array.from(document.querySelectorAll<Element>("button, input, select, textarea, [role='button'], [data-ai-id]"))
+            .filter(el => !openModal || !openModal.contains(el));
+
+        // Modal elements chiếm 20 slot đầu, page elements chiếm 15 slot còn lại (tổng 35)
+        const modalSlots = Math.min(modalElements.length, 20);
+        const pageSlots = Math.min(pageElements.length, 35 - modalSlots);
+        const allElements = [
+            ...modalElements.slice(0, modalSlots),
+            ...pageElements.slice(0, pageSlots),
+        ];
+
+        allElements.forEach((el) => {
             let aiId = el.getAttribute("data-ai-id");
             if (!aiId) {
                 aiId = el.id || el.getAttribute("name") || `auto-ai-id-${autoIdCounter++}`;
@@ -219,9 +258,18 @@ export const getPageDomContext = (): string => {
             } else if (tagName === "input" || tagName === "textarea") {
                 const placeholder = el.getAttribute("placeholder") || "";
                 const name = el.getAttribute("name") || "";
-                const type = el.getAttribute("type") || "";
-                const val = (el as HTMLInputElement | HTMLTextAreaElement).value || "";
-                label = `[Loại: ${type || tagName}] ${placeholder ? `Gợi ý: ${placeholder}` : `Tên: ${name}`}${val ? ` (Giá trị thực: "${val}")` : ""}`;
+                const type = el.getAttribute("type") || "text";
+                const inputEl = el as HTMLInputElement | HTMLTextAreaElement;
+
+                // Cải tiến 2: Bắt trạng thái checked của Checkbox và Radio
+                if (type === "checkbox" || type === "radio") {
+                    const checked = (inputEl as HTMLInputElement).checked;
+                    const checkLabel = placeholder || name || el.getAttribute("aria-label") || el.id || name;
+                    label = `[Loại: ${type}] ${checkLabel ? `"${checkLabel}"` : ""} [Trạng thái: ${checked ? "✅ Đã chọn" : "☐ Chưa chọn"}]`;
+                } else {
+                    const val = inputEl.value || "";
+                    label = `[Loại: ${type}] ${placeholder ? `Gợi ý: ${placeholder}` : `Tên: ${name}`}${val ? ` (Giá trị thực: "${val}")` : ""}`;
+                }
             } else if (tagName === "select") {
                 const options: string[] = [];
                 el.querySelectorAll("option").forEach(opt => {
@@ -238,7 +286,8 @@ export const getPageDomContext = (): string => {
             }
 
             if (label.length > 100) label = label.substring(0, 100) + "...";
-            pushMetric(`Element [${tagName}] "${label}" (data-ai-id: "${aiId}")`);
+            const scope = openModal && openModal.contains(el) ? "[MODAL] " : "";
+            pushMetric(`${scope}Element [${tagName}] "${label}" (data-ai-id: "${aiId}")`);
         });
 
         const uniqueMetrics = Array.from(new Set(metrics)).filter(m => m.trim().length > 0);
