@@ -128,4 +128,15 @@ public class SchedulingService {
             logger.severe("Lỗi khi chốt công nợ cuối ngày: " + e.getMessage());
         }
     }
+
+    // Tự động quét và tạo thông báo nhắc lịch tiêm chủng vào 8h00 sáng mỗi ngày
+    @Scheduled(cron = "0 0 8 * * *", zone = "Asia/Ho_Chi_Minh")
+    public void autoCreateVaccinationNotifications() {
+        try {
+            jdbcTemplate.execute("CALL sp_TaoThongBaoTiemChung()");
+            logger.info("NHẮC NHỞ TIÊM CHỦNG: Đã thực thi thủ tục sp_TaoThongBaoTiemChung() thành công.");
+        } catch (Exception e) {
+            logger.severe("NHẮC NHỞ TIÊM CHỦNG: Lỗi khi chạy tự động nhắc lịch tiêm phòng: " + e.getMessage());
+        }
+    }
 }

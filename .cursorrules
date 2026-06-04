@@ -1,0 +1,30 @@
+# ⚠️ STRICT PROTOCOL: READ SKILLS BEFORE EXECUTION (SKILL-FIRST RULE)
+
+All AI agents working on this codebase MUST strictly follow the "Skill-First Protocol." Do not generate any code, make layout modifications, write configurations, or run scripts without first reading the corresponding instruction manual.
+
+## 🔄 Mandatory 3-Step Workflow
+
+1. **DISCOVER**: Identify which skill(s) inside the `.agents/skills/` directory are relevant to the requested task.
+2. **READ (Prerequisite)**: Execute the `view_file` tool on the relevant `SKILL.md` file BEFORE writing any code.
+3. **APPLY**: Write and execute all changes strictly conforming to the design standards, animations, templates, and constraints defined in those skills.
+
+---
+
+## 🧭 Project Skills Reference Index
+
+| Task Domain | Target Skill Path | Link to Instruction Manual |
+| :--- | :--- | :--- |
+| **New Web UI, Layout, Bento, Grid, Tailwind v4** | `.agents/skills/design-taste-frontend` | [SKILL.md](file:///d:/QLy%20Ph%C3%B2ng%20Kh%C3%A1m%20Th%C3%BA%20Y/.agents/skills/design-taste-frontend/SKILL.md) |
+| **Luxury Spacing, Border Radius & Color Rules** | `.agents/skills/high-end-visual-design` | [SKILL.md](file:///d:/QLy%20Ph%C3%B2ng%20Kh%C3%A1m%20Th%C3%BA%20Y/.agents/skills/high-end-visual-design/SKILL.md) |
+| **Improving/Redesigning Existing UI Pages** | `.agents/skills/redesign-existing-projects` | [SKILL.md](file:///d:/QLy%20Ph%C3%B2ng%20Kh%C3%A1m%20Th%C3%BA%20Y/.agents/skills/redesign-existing-projects/SKILL.md) |
+| **Minimalist Swiss / Flat Bento Style** | `.agents/skills/minimalist-ui` | [SKILL.md](file:///d:/QLy%20Ph%C3%B2ng%20Kh%C3%A1m%20Th%C3%BA%20Y/.agents/skills/minimalist-ui/SKILL.md) |
+| **Industrial / Monospace / Raw Terminal Style** | `.agents/skills/industrial-brutalist-ui` | [SKILL.md](file:///d:/QLy%20Ph%C3%B2ng%20Kh%C3%A1m%20Th%C3%BA%20Y/.agents/skills/industrial-brutalist-ui/SKILL.md) |
+| **GSAP ScrollTrigger, Stacking Cards, Physics** | `.agents/skills/gpt-taste` | [SKILL.md](file:///d:/QLy%20Ph%C3%B2ng%20Kh%C3%A1m%20Th%C3%BA%20Y/.agents/skills/gpt-taste/SKILL.md) |
+| **Web & Mobile Screen Concept Mockup Gen** | `.agents/skills/imagegen-frontend-web`<br>`.agents/skills/imagegen-frontend-mobile` | Read `SKILL.md` inside directories |
+| **Brand Identity, Logo & Typographic Deck Design** | `.agents/skills/brandkit` | [SKILL.md](file:///d:/QLy%20Ph%C3%B2ng%20Kh%C3%A1m%20Th%C3%BA%20Y/.agents/skills/brandkit/SKILL.md) |
+| **Converting Images or Mockups to Working Code** | `.agents/skills/image-to-code` | [SKILL.md](file:///d:/QLy%20Ph%C3%B2ng%20Kh%C3%A1m%20Th%C3%BA%20Y/.agents/skills/image-to-code/SKILL.md) |
+| **Preventing Code Truncation & Forcing Full Output** | `.agents/skills/full-output-enforcement` | [SKILL.md](file:///d:/QLy%20Ph%C3%B2ng%20Kh%C3%A1m%20Th%C3%BA%20Y/.agents/skills/full-output-enforcement/SKILL.md) |
+| **Design Document System Synchronization** | `.agents/skills/stitch-design-taste` | [SKILL.md](file:///d:/QLy%20Ph%C3%B2ng%20Kh%C3%A1m%20Th%C3%BA%20Y/.agents/skills/stitch-design-taste/SKILL.md) |
+
+---
+*Failure to read the relevant skill files prior to starting the coding process is a direct protocol violation.*

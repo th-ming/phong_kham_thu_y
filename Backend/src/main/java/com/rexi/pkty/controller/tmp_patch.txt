@@ -1,0 +1,3 @@
+        if (q.contains("chet") || q.contains("qua doi") || q.contains("mat roi") || q.contains("mat r")) {
+            return "Rexi xin chia buồn sâu sắc cùng gia đình trước sự mất mát này. Sự ra đi của một người bạn nhỏ luôn để lại khoảng trống rất lớn. Mong mọi người sớm vượt qua nỗi buồn này; nếu cần hỗ trợ thủ tục hỏa táng/an táng cho bé, vui lòng liên hệ hotline 0353.374.156 để phòng khám hỗ trợ chu đáo nhất.";
+        }
