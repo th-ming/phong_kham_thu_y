@@ -16,6 +16,13 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const [connected, setConnected] = useState(false);
 
     useEffect(() => {
+        // ⚡ Tối ưu: chỉ khởi tạo WS khi user đã đăng nhập
+        // Tránh tốn tài nguyên kết nối WS trên trang public (trang chủ, đăng nhập, bảng giá...)
+        const token = localStorage.getItem('token');
+        if (!token) {
+            return;
+        }
+
         // Khởi tạo STOMP client
         const client = new Client({
             webSocketFactory: () => new SockJS('/ws'),
@@ -105,13 +112,15 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
         client.onWebSocketClose = () => {
             setConnected(false);
-            toast.error('Kết nối WebSocket đã đóng. Vui lòng kiểm tra backend hoặc tải lại trang.');
+            // ⚡ Tối ưu UX: chỉ log, không toast – STOMP tự động reconnect sau 5s
+            // Người dùng sẽ không bị spam lỗi khi mạng chập chờn
+            console.warn('WebSocket đóng kết nối. STOMP sẽ tự động thử kết nối lại...');
         };
 
         client.onWebSocketError = (event) => {
             console.error('WebSocket error:', event);
             setConnected(false);
-            toast.error('Lỗi WebSocket: không thể kết nối realtime.');
+            // ⚡ Tối ưu UX: chỉ log, không toast – tránh spam cho user
         };
 
         client.activate();

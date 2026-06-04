@@ -650,29 +650,47 @@ export const ChatbotShell: React.FC<ChatbotShellProps> = (props) => {
                                 )}
                                 {isListening && (
                                     <div style={{
-                                        minHeight: '18px',
-                                        padding: '0 6px',
-                                        fontSize: '0.72rem',
-                                        fontWeight: 800,
-                                        lineHeight: 1.35,
-                                        color: voiceLiveText ? 'var(--primary)' : 'var(--gray-400)',
                                         display: 'flex',
                                         alignItems: 'center',
-                                        gap: '8px',
-                                        whiteSpace: 'nowrap',
-                                        overflow: 'hidden',
-                                        textOverflow: 'ellipsis'
+                                        gap: '12px',
+                                        marginTop: '4px',
+                                        padding: '6px 12px',
+                                        background: isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.02)',
+                                        borderRadius: '16px',
+                                        border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(0, 0, 0, 0.06)',
+                                        boxShadow: isDark ? 'inset 0 1px 2px rgba(255,255,255,0.03)' : 'inset 0 1px 2px rgba(0,0,0,0.03)',
+                                        animation: 'pulse-soft 2s infinite ease-in-out'
                                     }}>
-                                        <span style={{ color: voiceMode === 'hold' ? '#f59e0b' : voiceMode === 'fast' ? '#22c55e' : '#ef4444', flexShrink: 0 }}>
-                                            {voiceMode === 'fast' ? 'FAST' : voiceMode === 'hold' ? 'WAIT' : 'LIVE'}
-                                        </span>
-                                        <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                            {voiceLiveText
-                                                ? `Đã nghe: ${voiceLiveText}`
-                                                : voiceStatus || (isUnreliableSpeechRecognitionBrowser()
-                                                    ? 'Opera không ra chữ - mở Chrome hoặc Edge'
-                                                    : 'Đang chờ giọng nói...')}
-                                        </span>
+                                        {/* Premium Glowing Soundwave Visualizer */}
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '3.5px', height: '16px', padding: '0 4px', flexShrink: 0 }}>
+                                            <div style={{ width: '3px', height: '8px', background: activeTab === 'agent' ? '#f43f5e' : '#10b981', borderRadius: '3px', transformOrigin: 'center', animation: 'waveGrow 1.0s ease-in-out infinite alternate', boxShadow: activeTab === 'agent' ? '0 0 6px rgba(244,63,94,0.4)' : '0 0 6px rgba(16,185,129,0.4)' }}></div>
+                                            <div style={{ width: '3px', height: '14px', background: activeTab === 'agent' ? '#f43f5e' : '#10b981', borderRadius: '3px', transformOrigin: 'center', animation: 'waveGrow 0.7s ease-in-out infinite alternate', animationDelay: '0.15s', boxShadow: activeTab === 'agent' ? '0 0 6px rgba(244,63,94,0.4)' : '0 0 6px rgba(16,185,129,0.4)' }}></div>
+                                            <div style={{ width: '3px', height: '10px', background: activeTab === 'agent' ? '#f43f5e' : '#10b981', borderRadius: '3px', transformOrigin: 'center', animation: 'waveGrow 0.85s ease-in-out infinite alternate', animationDelay: '0.3s', boxShadow: activeTab === 'agent' ? '0 0 6px rgba(244,63,94,0.4)' : '0 0 6px rgba(16,185,129,0.4)' }}></div>
+                                            <div style={{ width: '3px', height: '15px', background: activeTab === 'agent' ? '#f43f5e' : '#10b981', borderRadius: '3px', transformOrigin: 'center', animation: 'waveGrow 0.6s ease-in-out infinite alternate', animationDelay: '0.1s', boxShadow: activeTab === 'agent' ? '0 0 6px rgba(244,63,94,0.4)' : '0 0 6px rgba(16,185,129,0.4)' }}></div>
+                                            <div style={{ width: '3px', height: '6px', background: activeTab === 'agent' ? '#f43f5e' : '#10b981', borderRadius: '3px', transformOrigin: 'center', animation: 'waveGrow 1.2s ease-in-out infinite alternate', animationDelay: '0.2s', boxShadow: activeTab === 'agent' ? '0 0 6px rgba(244,63,94,0.4)' : '0 0 6px rgba(16,185,129,0.4)' }}></div>
+                                        </div>
+                                        
+                                        <div style={{
+                                            flex: 1,
+                                            fontSize: '0.75rem',
+                                            fontWeight: 850,
+                                            lineHeight: 1.35,
+                                            color: voiceLiveText ? (activeTab === 'agent' ? '#f43f5e' : 'var(--primary)') : 'var(--gray-400)',
+                                            whiteSpace: 'nowrap',
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis'
+                                        }}>
+                                            <span style={{ color: voiceMode === 'hold' ? '#f59e0b' : voiceMode === 'fast' ? '#22c55e' : '#ef4444', flexShrink: 0, marginRight: '8px' }}>
+                                                {voiceMode === 'fast' ? 'FAST' : voiceMode === 'hold' ? 'WAIT' : 'LIVE'}
+                                            </span>
+                                            <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                {voiceLiveText
+                                                    ? `Đã nghe: ${voiceLiveText}`
+                                                    : voiceStatus || (isUnreliableSpeechRecognitionBrowser()
+                                                        ? 'Opera không ra chữ - mở Chrome hoặc Edge'
+                                                        : 'Đang chờ giọng nói...')}
+                                            </span>
+                                        </div>
                                     </div>
                                 )}
                             </div>

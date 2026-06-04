@@ -361,7 +361,7 @@ export const ModalTaoLichHenAdmin: React.FC<ModalProps> = ({ isOpen, onClose, on
                         </div>
 
                         <div style={{ marginTop: '32px', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-                            <button data-ai-id="button-modaltaolichhenadmin-z187" type="button" onClick={onClose} className="btn btn-pill" style={{ background: 'var(--gray-100)', color: 'var(--ink)' }}>Hủy bỏ</button>
+                            <button data-ai-id="button-modaltaolichhenadmin-z187" type="button" onClick={onClose} className="btn btn-pill" style={{ background: 'var(--gray-100)', color: 'var(--ink)' }} disabled={isLoading}>Hủy bỏ</button>
                             <button data-ai-id="button-modaltaolichhenadmin-q0a4" type="submit" className="btn btn-primary btn-pill" disabled={isLoading}>
                                 {isLoading ? 'Đang xử lý...' : 'Xác nhận Tạo lịch'}
                             </button>
