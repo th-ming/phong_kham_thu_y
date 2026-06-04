@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useRef } from "react";
 import axiosInstance from "@services/axios";
 import { useNavigate } from "react-router-dom";
@@ -83,6 +83,7 @@ const ThongTinCaNhan: React.FC = () => {
             // Khúc này cực kỳ quan trọng để gửi email chúc mừng sinh nhật boss hoặc sms nhắc lịch khám nha.
             setEmailNoti(profileData.nhan_email ?? true);
             setSmsNoti(profileData.nhan_sms ?? true);
+            setAvatarPreview(profileData.hinh_anh || profileData.avatar || "");
             setLoading(false);
           })
           .catch(err => {
@@ -124,6 +125,7 @@ const ThongTinCaNhan: React.FC = () => {
         };
         setData(profileData);
         setFormData(profileData);
+        setAvatarPreview(profileData.hinh_anh || profileData.avatar || "");
         setEmailNoti(profileData.nhan_email ?? true);
         setSmsNoti(profileData.nhan_sms ?? true);
       }).catch(err => {
@@ -454,16 +456,30 @@ const ThongTinCaNhan: React.FC = () => {
             border-radius: 20px !important;
           }
         }
+        
+        .customer-profile-hero {
+          --hero-bg-start: #db2777;
+          --hero-bg-mid: #c026d3;
+          --hero-bg-end: #7c3aed;
+          --hero-shadow-color: rgba(219, 39, 119, 0.22);
+        }
+        
+        [data-theme='dark'] .customer-profile-hero {
+          --hero-bg-start: #881337;
+          --hero-bg-mid: #4c0519;
+          --hero-bg-end: #0f172a;
+          --hero-shadow-color: rgba(136, 19, 55, 0.25);
+        }
       `}</style>
       <div className="stagger-1 customer-profile-hero" style={{ 
         marginBottom: '40px', 
         padding: '60px 48px', 
         borderRadius: 'var(--radius-xl)', 
-        background: 'linear-gradient(135deg, #6366f1 0%, #0d9488 50%, #ec4899 100%)', 
+        background: 'linear-gradient(135deg, var(--hero-bg-start) 0%, var(--hero-bg-mid) 50%, var(--hero-bg-end) 100%)', 
         color: 'white', 
         position: 'relative', 
         overflow: 'hidden', 
-        boxShadow: '0 20px 50px rgba(168, 85, 247, 0.25)',
+        boxShadow: '0 20px 50px var(--hero-shadow-color)',
         border: '1px solid rgba(255, 255, 255, 0.2)'
       }}>
         {/* Decorative elements */}

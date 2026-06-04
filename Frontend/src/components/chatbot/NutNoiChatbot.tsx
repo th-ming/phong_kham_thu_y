@@ -4,15 +4,21 @@ export const NutNoiChatbot: React.FC<{
     isOpen: boolean;
     isMobile: boolean;
     activeTab: 'standard' | 'agent';
+    isCustomerRoute: boolean;
     onToggle: () => void;
-}> = ({ isOpen, isMobile, activeTab, onToggle }) => (
+}> = ({ isOpen, isMobile, activeTab, isCustomerRoute, onToggle }) => (
     <button
         data-ai-id="button-chatbot-yhoj"
         id="chatBtn"
         className={isOpen ? 'is-open' : undefined}
         onClick={onToggle}
         style={{
-            position: 'fixed', bottom: isMobile ? '24px' : '30px', right: isMobile ? '24px' : '30px', zIndex: 1101,
+            position: 'fixed', 
+            bottom: isMobile 
+                ? (isCustomerRoute ? '108px' : '24px') 
+                : '30px', 
+            right: isMobile ? '24px' : '30px', 
+            zIndex: 1101,
             background: activeTab === 'agent' ? 'linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)' : 'var(--chat-gradient)',
             color: 'white', border: '1.5px solid rgba(255, 255, 255, 0.1)',
             width: isMobile ? '56px' : '64px', height: isMobile ? '56px' : '64px', borderRadius: '50%', cursor: 'pointer',

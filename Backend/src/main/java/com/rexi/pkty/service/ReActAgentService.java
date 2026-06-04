@@ -32,6 +32,7 @@ public class ReActAgentService {
     @Autowired private AiToolService toolService;
     @Autowired private AiMemoryService memoryService;
     @Autowired private JdbcTemplate jdbcTemplate;
+    @Autowired private AgentResponseCache agentResponseCache;
 
     private final ObjectMapper mapper = new ObjectMapper();
 
@@ -51,6 +52,21 @@ public class ReActAgentService {
         String originalUserIntent = extractOriginalUserIntent(userQuery);
         String normalizedQuery = normalizeVietnamese(originalUserIntent.trim().toLowerCase());
         boolean isStaff = isStaffRole(userRole);
+
+        // —— CACHE LOOKUP (trước tất cả xử lý) ——
+        // Chỉ cache intent tĩnh, mọi lỗi cache đều được bỏ qua (fallback bình thường)
+        try {
+            if (agentResponseCache.isCacheableIntent(normalizedQuery)) {
+                String cached = agentResponseCache.get(normalizedQuery, userRole);
+                if (cached != null) {
+                    logger.info("[ReAct] Cache HIT — trả về ngay, bỏ qua vòng lặp ReAct.");
+                    steps.add(new ReActStep("CACHE_HIT", cached, null, null, null));
+                    return new ReActResult(cached, steps, "Cache");
+                }
+            }
+        } catch (Exception cacheEx) {
+            logger.warning("[ReAct] Cache lookup lỗi (ignored): " + cacheEx.getMessage());
+        }
 
         ReActResult sensitiveGateResult = handleSensitiveCommandGate(normalizedQuery, steps);
         if (sensitiveGateResult != null) {
@@ -72,6 +88,14 @@ public class ReActAgentService {
         // Greeting thuan tuy - chi xu ly instant, moi cau hoi thuc te de LLM tu phan tich.
         ReActResult deterministicIntent = handleDeterministicIntent(normalizedQuery, isStaff, userRole, username, steps);
         if (deterministicIntent != null) {
+            // Lưu kết quả vào cache nếu là intent tĩnh có thể cache
+            try {
+                if (agentResponseCache.isCacheableIntent(normalizedQuery)) {
+                    agentResponseCache.put(normalizedQuery, userRole, deterministicIntent.finalAnswer());
+                }
+            } catch (Exception cacheEx) {
+                logger.warning("[ReAct] Cache put lỗi (ignored): " + cacheEx.getMessage());
+            }
             return deterministicIntent;
         }
 

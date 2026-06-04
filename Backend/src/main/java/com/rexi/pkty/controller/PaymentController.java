@@ -86,13 +86,23 @@ public class PaymentController {
     }
 
     private ResponseEntity<?> lockInvoiceForVnPay(String idHoaDon) {
+        // CHỈ cho phép chuyển từ CHO_THANH_TOAN -> DANG_THANH_TOAN.
+        // Nếu đã là DANG_THANH_TOAN (do request trước lock rồi), sẽ trả về 409 ngay lập tức
+        // => Chặn triệt để spam click / double submit khi mạng lag
         int locked = jdbcTemplate.update(
                 "UPDATE HoaDon SET trang_thai = 'DANG_THANH_TOAN' " +
-                        "WHERE id_hoa_don = ? AND trang_thai IN ('CHO_THANH_TOAN', 'DANG_THANH_TOAN')",
+                        "WHERE id_hoa_don = ? AND trang_thai = 'CHO_THANH_TOAN'",
                 idHoaDon);
         if (locked == 0) {
+            // Kiểm tra hóa đơn đang ở trạng thái gì để trả về thông báo phù hợp
+            List<String> statusList = jdbcTemplate.queryForList(
+                    "SELECT trang_thai FROM HoaDon WHERE id_hoa_don = ?", String.class, idHoaDon);
+            if (!statusList.isEmpty() && "DANG_THANH_TOAN".equalsIgnoreCase(statusList.get(0))) {
+                return ResponseEntity.status(409)
+                        .body(Map.of("message", "Hóa đơn đang trong quá trình thanh toán. Vui lòng không bấm nhiều lần.", "code", "ALREADY_PROCESSING"));
+            }
             return ResponseEntity.status(409)
-                    .body(Map.of("message", "Hóa đơn không còn ở trạng thái có thể thanh toán."));
+                    .body(Map.of("message", "Hóa đơn không còn ở trạng thái có thể thanh toán.", "code", "NOT_PAYABLE"));
         }
         return null;
     }
@@ -346,6 +356,7 @@ public class PaymentController {
 
     // Webhook VietQR tự động gạch nợ (PayOS / SePay / Casso)
     @PostMapping("/vietqr/webhook")
+    @org.springframework.transaction.annotation.Transactional // Bọc transaction để tránh ghi trùng khi ngân hàng gọi webhook đồng thời
     public ResponseEntity<?> vietqrWebhook(
             @RequestBody Map<String, Object> payload,
             @RequestHeader(value = "X-Webhook-Secret", required = false) String receivedSecret) {

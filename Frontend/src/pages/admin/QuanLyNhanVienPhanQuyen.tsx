@@ -5,6 +5,7 @@ import { toast } from "@components/Toast";
 import { getUserProfile, matchesSearchFields, normalizeSearchText, normalizeUserRole } from "@utils/index";
 import { isValidPassword, PASSWORD_POLICY_MESSAGE } from "@utils/passwordPolicy";
 import { useAutoRefresh } from "@hooks/useAutoRefresh";
+import useVirtualScroll from "@hooks/useVirtualScroll";
 
 const QuanLyNhanVienPhanQuyen: React.FC = () => {
   const [nhanViens, setNhanViens] = useState<any[]>([]);
@@ -492,91 +493,15 @@ const QuanLyNhanVienPhanQuyen: React.FC = () => {
         </form>
       </Modal>
 
-      <div className="glass-card stagger-2" style={{ borderRadius: '32px', overflow: 'hidden', border: '1px solid var(--gray-100)' }}>
-        <div className="table-responsive-wrapper">
-<div style={{ minWidth: '800px' }}>
-<table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ background: 'var(--gray-50)', textAlign: 'left' }}>
-              <th style={{ padding: '24px 20px', fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800 }}>NHÂN VIÊN</th>
-              <th style={{ padding: '24px 20px', fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800 }}>LIÊN HỆ</th>
-              <th style={{ padding: '24px 20px', fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800 }}>TRẠNG THÁI</th>
-              <th style={{ padding: '24px 20px', fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800 }}>THÂM NIÊN</th>
-              <th style={{ padding: '24px 20px', fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800 }}>HÀNH ĐỘNG</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredNhanViens.length === 0 ? (
-              <tr>
-                <td colSpan={5} style={{ padding: '32px 20px', textAlign: 'center', color: 'var(--gray-500)', fontWeight: 700 }}>
-                  Không tìm thấy nhân sự phù hợp. Hãy thử xóa bộ lọc hoặc tìm kiếm khác.
-                </td>
-              </tr>
-            ) : filteredNhanViens.map((b) => (
-              <tr key={b.id_nhan_vien} className="table-row" style={{ borderBottom: '1px solid var(--gray-50)', transition: 'all 0.3s ease', opacity: b.da_xoa ? 0.72 : 1 }}>
-                <td style={{ padding: '20px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                    <div style={{ width: '48px', height: '48px', position: 'relative' }}>
-                      <img src={b.hinh_anh || "/img/avtpkty.png"} style={{ width: '100%', height: '100%', borderRadius: '14px', objectFit: 'cover' }} alt={b.ho_ten} />
-                      {!b.da_xoa && b.trang_thai === 'Đang làm việc' && <div style={{ position: 'absolute', bottom: '-2px', right: '-2px', width: '14px', height: '14px', background: '#22c55e', border: '3px solid white', borderRadius: '50%' }}></div>}
-                    </div>
-                    <div>
-                      <div style={{ fontWeight: 800, color: b.da_xoa ? 'var(--gray-400)' : 'var(--ink)', fontSize: '1rem', textDecoration: b.da_xoa ? 'line-through' : 'none' }}>{b.ho_ten}</div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 900, textTransform: 'uppercase' }}>{b.chuyen_mon || 'Nhân viên'}</div>
-                    </div>
-                  </div>
-                </td>
-                <td style={{ padding: '20px' }}>
-                  <div style={{ fontWeight: 700, color: 'var(--ink)', fontSize: '0.9rem' }}>{b.so_dien_thoai || "—"}</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--gray-400)', fontWeight: 600 }}>{b.email}</div>
-                </td>
-                <td style={{ padding: '20px' }}>
-                  <span style={{
-                    padding: '8px 16px', borderRadius: '50px', fontSize: '0.7rem', fontWeight: 900,
-                    background: !b.da_xoa && b.trang_thai === 'Đang làm việc' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                    color: !b.da_xoa && b.trang_thai === 'Đang làm việc' ? '#16a34a' : '#dc2626',
-                    border: !b.da_xoa && b.trang_thai === 'Đang làm việc' ? '1px solid rgba(34, 197, 94, 0.2)' : '1px solid rgba(239, 68, 68, 0.2)'
-                  }}>
-                    {b.da_xoa ? 'ĐÃ XÓA MỀM' : (b.trang_thai?.toUpperCase() || 'KHÔNG XÁC ĐỊNH')}
-                  </span>
-                </td>
-                <td style={{ padding: '20px' }}>
-                  <div style={{ fontWeight: 800, color: 'var(--ink)', fontSize: '0.9rem' }}>{tinhKinhNghiem(b.ngay_vao_lam)}</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--gray-400)', fontWeight: 600 }}>{b.ngay_vao_lam || "N/A"}</div>
-                </td>
-                <td style={{ padding: '20px' }}>
-                  {canManageStaff ? (
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      {b.da_xoa ? (
-                        <button data-ai-id={`button-quanlynhanvienphanquyen-restore-${b.id_nhan_vien}`} className="btn btn-pill" onClick={() => handleRestore(b.id_nhan_vien)} style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#16a34a', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 800 }} aria-label={`Phục hồi nhân viên ${b.ho_ten}`}>
-                          <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>restore</span>
-                          Mở lại
-                        </button>
-                      ) : (
-                        <>
-                          <button data-ai-id="button-quanlynhanvienphanquyen-z9sz" className="btn btn-pill" onClick={() => handleOpenEdit(b)} style={{ background: 'var(--gray-50)', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 800 }} aria-label={`Chỉnh sửa thông tin nhân viên ${b.ho_ten}`}>
-                            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>edit</span>
-                            Sửa
-                          </button>
-                          {currentUser?.id_nhan_vien !== b.id_nhan_vien && (
-                            <button data-ai-id="button-quanlynhanvienphanquyen-cjvx" className="btn btn-pill" onClick={() => handleDelete(b.id_nhan_vien)} style={{ background: 'var(--danger-light, rgba(239, 68, 68, 0.15))', color: 'var(--danger)', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 800 }} aria-label={`Xóa nhân viên ${b.ho_ten}`}>
-                              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>delete</span>
-                              Xóa
-                            </button>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  ) : (
-                    <span style={{ fontSize: '0.75rem', fontWeight: 900, color: 'var(--gray-400)' }}>CHỈ TẠO MỚI</span>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-</div></div>
-      </div>
+      <NhanVienVirtualTable
+        filteredNhanViens={filteredNhanViens}
+        canManageStaff={canManageStaff}
+        currentUser={currentUser}
+        tinhKinhNghiem={tinhKinhNghiem}
+        handleOpenEdit={handleOpenEdit}
+        handleDelete={handleDelete}
+        handleRestore={handleRestore}
+      />
 
       {isAdmin && (
         <div className="glass-card" style={{ borderRadius: '32px', overflow: 'hidden', border: '1px solid var(--gray-100)', marginTop: '28px' }}>
@@ -603,11 +528,184 @@ const QuanLyNhanVienPhanQuyen: React.FC = () => {
               </button>
             </div>
           </div>
-          <div className="table-responsive-wrapper">
-<div style={{ minWidth: '800px' }}>
-<table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ background: 'var(--gray-50)', textAlign: 'left' }}>
+          <AccountVirtualTable
+            filteredAccounts={filteredAccounts}
+            handleOpenAccountEdit={handleOpenAccountEdit}
+            handleResetPassword={handleResetPassword}
+          />
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ——— Virtual Table Components ———
+
+const NV_ROW_HEIGHT = 80;
+const NV_CONTAINER_HEIGHT = 520;
+
+const NhanVienVirtualTable: React.FC<{
+  filteredNhanViens: any[];
+  canManageStaff: boolean;
+  currentUser: any;
+  tinhKinhNghiem: (d: string) => string;
+  handleOpenEdit: (b: any) => void;
+  handleDelete: (id: number) => void;
+  handleRestore: (id: number) => void;
+}> = ({ filteredNhanViens, canManageStaff, currentUser, tinhKinhNghiem, handleOpenEdit, handleDelete, handleRestore }) => {
+  const { visibleItems, containerRef, onScrollHandler, visibleRange, shouldVirtualize } = useVirtualScroll({
+    items: filteredNhanViens,
+    itemHeight: NV_ROW_HEIGHT,
+    containerHeight: NV_CONTAINER_HEIGHT,
+    visibleCount: 7,
+    threshold: 3,
+  });
+
+  return (
+    <div className="glass-card stagger-2" style={{ borderRadius: '32px', overflow: 'hidden', border: '1px solid var(--gray-100)' }}>
+      {filteredNhanViens.length > 0 && (
+        <div style={{ padding: '10px 20px 4px 20px', display: 'flex', justifyContent: 'flex-end' }}>
+          <span style={{ fontSize: '0.75rem', color: 'var(--gray-400)', fontWeight: 700 }}>
+            {filteredNhanViens.length} nhân sự
+            {shouldVirtualize && ' — cuộn ảo đang hoạt động ⚡'}
+          </span>
+        </div>
+      )}
+      <div className="table-responsive-wrapper">
+        <div style={{ minWidth: '800px' }}>
+          <div
+            ref={containerRef}
+            onScroll={onScrollHandler}
+            style={shouldVirtualize ? { height: `${NV_CONTAINER_HEIGHT}px`, overflowY: 'auto', overflowX: 'hidden' } : {}}
+          >
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead style={{ position: shouldVirtualize ? 'sticky' : undefined, top: shouldVirtualize ? 0 : undefined, zIndex: shouldVirtualize ? 2 : undefined, background: 'var(--gray-50)' }}>
+                <tr style={{ textAlign: 'left' }}>
+                  <th style={{ padding: '20px', fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800 }}>NHÂN VIÊN</th>
+                  <th style={{ padding: '20px', fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800 }}>LIÊN HỆ</th>
+                  <th style={{ padding: '20px', fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800 }}>TRẠNG THÁI</th>
+                  <th style={{ padding: '20px', fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800 }}>THÂM NIÊN</th>
+                  <th style={{ padding: '20px', fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800 }}>HÀNH ĐỘNG</th>
+                </tr>
+              </thead>
+              <tbody>
+                {shouldVirtualize && visibleRange.start > 0 && (
+                  <tr style={{ height: `${visibleRange.start * NV_ROW_HEIGHT}px` }} aria-hidden="true"><td colSpan={5} /></tr>
+                )}
+                {filteredNhanViens.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} style={{ padding: '32px 20px', textAlign: 'center', color: 'var(--gray-500)', fontWeight: 700 }}>
+                      Không tìm thấy nhân sự phù hợp. Hãy thử xóa bộ lọc hoặc tìm kiếm khác.
+                    </td>
+                  </tr>
+                ) : (shouldVirtualize ? visibleItems : filteredNhanViens).map((b) => (
+                  <tr key={b.id_nhan_vien} className="table-row" style={{ borderBottom: '1px solid var(--gray-50)', transition: 'all 0.3s ease', opacity: b.da_xoa ? 0.72 : 1, height: `${NV_ROW_HEIGHT}px` }}>
+                    <td style={{ padding: '16px 20px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        <div style={{ width: '48px', height: '48px', position: 'relative', flexShrink: 0 }}>
+                          <img src={b.hinh_anh || "/img/avtpkty.png"} style={{ width: '100%', height: '100%', borderRadius: '14px', objectFit: 'cover' }} alt={b.ho_ten} />
+                          {!b.da_xoa && b.trang_thai === 'Đang làm việc' && <div style={{ position: 'absolute', bottom: '-2px', right: '-2px', width: '14px', height: '14px', background: '#22c55e', border: '3px solid white', borderRadius: '50%' }}></div>}
+                        </div>
+                        <div>
+                          <div style={{ fontWeight: 800, color: b.da_xoa ? 'var(--gray-400)' : 'var(--ink)', fontSize: '1rem', textDecoration: b.da_xoa ? 'line-through' : 'none' }}>{b.ho_ten}</div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 900, textTransform: 'uppercase' }}>{b.chuyen_mon || 'Nhân viên'}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td style={{ padding: '16px 20px' }}>
+                      <div style={{ fontWeight: 700, color: 'var(--ink)', fontSize: '0.9rem' }}>{b.so_dien_thoai || "—"}</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--gray-400)', fontWeight: 600 }}>{b.email}</div>
+                    </td>
+                    <td style={{ padding: '16px 20px' }}>
+                      <span style={{
+                        padding: '8px 16px', borderRadius: '50px', fontSize: '0.7rem', fontWeight: 900,
+                        background: !b.da_xoa && b.trang_thai === 'Đang làm việc' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                        color: !b.da_xoa && b.trang_thai === 'Đang làm việc' ? '#16a34a' : '#dc2626',
+                        border: !b.da_xoa && b.trang_thai === 'Đang làm việc' ? '1px solid rgba(34, 197, 94, 0.2)' : '1px solid rgba(239, 68, 68, 0.2)'
+                      }}>
+                        {b.da_xoa ? 'ĐÃ XÓA MỀM' : (b.trang_thai?.toUpperCase() || 'KHÔNG XÁC ĐỊNH')}
+                      </span>
+                    </td>
+                    <td style={{ padding: '16px 20px' }}>
+                      <div style={{ fontWeight: 800, color: 'var(--ink)', fontSize: '0.9rem' }}>{tinhKinhNghiem(b.ngay_vao_lam)}</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--gray-400)', fontWeight: 600 }}>{b.ngay_vao_lam || "N/A"}</div>
+                    </td>
+                    <td style={{ padding: '16px 20px' }}>
+                      {canManageStaff ? (
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          {b.da_xoa ? (
+                            <button data-ai-id={`button-quanlynhanvienphanquyen-restore-${b.id_nhan_vien}`} className="btn btn-pill" onClick={() => handleRestore(b.id_nhan_vien)} style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#16a34a', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 800 }} aria-label={`Phục hồi nhân viên ${b.ho_ten}`}>
+                              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>restore</span>
+                              Mở lại
+                            </button>
+                          ) : (
+                            <>
+                              <button data-ai-id="button-quanlynhanvienphanquyen-z9sz" className="btn btn-pill" onClick={() => handleOpenEdit(b)} style={{ background: 'var(--gray-50)', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 800 }} aria-label={`Chỉnh sửa thông tin nhân viên ${b.ho_ten}`}>
+                                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>edit</span>
+                                Sửa
+                              </button>
+                              {currentUser?.id_nhan_vien !== b.id_nhan_vien && (
+                                <button data-ai-id="button-quanlynhanvienphanquyen-cjvx" className="btn btn-pill" onClick={() => handleDelete(b.id_nhan_vien)} style={{ background: 'var(--danger-light, rgba(239, 68, 68, 0.15))', color: 'var(--danger)', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 800 }} aria-label={`Xóa nhân viên ${b.ho_ten}`}>
+                                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>delete</span>
+                                  Xóa
+                                </button>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      ) : (
+                        <span style={{ fontSize: '0.75rem', fontWeight: 900, color: 'var(--gray-400)' }}>CHỈ TẠO MỚI</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+                {shouldVirtualize && visibleRange.end < filteredNhanViens.length && (
+                  <tr style={{ height: `${(filteredNhanViens.length - visibleRange.end) * NV_ROW_HEIGHT}px` }} aria-hidden="true"><td colSpan={5} /></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ACC_ROW_HEIGHT = 72;
+const ACC_CONTAINER_HEIGHT = 480;
+
+const AccountVirtualTable: React.FC<{
+  filteredAccounts: any[];
+  handleOpenAccountEdit: (account: any) => void;
+  handleResetPassword: (account: any) => void;
+}> = ({ filteredAccounts, handleOpenAccountEdit, handleResetPassword }) => {
+  const { visibleItems, containerRef, onScrollHandler, visibleRange, shouldVirtualize } = useVirtualScroll({
+    items: filteredAccounts,
+    itemHeight: ACC_ROW_HEIGHT,
+    containerHeight: ACC_CONTAINER_HEIGHT,
+    visibleCount: 7,
+    threshold: 3,
+  });
+
+  return (
+    <div className="table-responsive-wrapper">
+      <div style={{ minWidth: '800px' }}>
+        {filteredAccounts.length > 0 && (
+          <div style={{ padding: '8px 20px 4px 20px', display: 'flex', justifyContent: 'flex-end' }}>
+            <span style={{ fontSize: '0.75rem', color: 'var(--gray-400)', fontWeight: 700 }}>
+              {filteredAccounts.length} tài khoản
+              {shouldVirtualize && ' — cuộn ảo đang hoạt động ⚡'}
+            </span>
+          </div>
+        )}
+        <div
+          ref={containerRef}
+          onScroll={onScrollHandler}
+          style={shouldVirtualize ? { height: `${ACC_CONTAINER_HEIGHT}px`, overflowY: 'auto', overflowX: 'hidden' } : {}}
+        >
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead style={{ position: shouldVirtualize ? 'sticky' : undefined, top: shouldVirtualize ? 0 : undefined, zIndex: shouldVirtualize ? 2 : undefined, background: 'var(--gray-50)' }}>
+              <tr style={{ textAlign: 'left' }}>
                 <th style={{ padding: '18px 20px', fontSize: '0.75rem', color: 'var(--gray-400)', fontWeight: 800 }}>TÀI KHOẢN</th>
                 <th style={{ padding: '18px 20px', fontSize: '0.75rem', color: 'var(--gray-400)', fontWeight: 800 }}>NHÂN VIÊN</th>
                 <th style={{ padding: '18px 20px', fontSize: '0.75rem', color: 'var(--gray-400)', fontWeight: 800 }}>VAI TRÒ</th>
@@ -616,19 +714,22 @@ const QuanLyNhanVienPhanQuyen: React.FC = () => {
               </tr>
             </thead>
             <tbody>
+              {shouldVirtualize && visibleRange.start > 0 && (
+                <tr style={{ height: `${visibleRange.start * ACC_ROW_HEIGHT}px` }} aria-hidden="true"><td colSpan={5} /></tr>
+              )}
               {filteredAccounts.length === 0 ? (
                 <tr>
                   <td colSpan={5} style={{ padding: '32px 20px', textAlign: 'center', color: 'var(--gray-500)', fontWeight: 700 }}>
                     Không tìm thấy tài khoản phù hợp. Hãy thử xóa bộ lọc hoặc tìm kiếm khác.
                   </td>
                 </tr>
-              ) : filteredAccounts.map((account) => (
-                <tr key={account.id_tai_khoan} className="table-row" style={{ borderBottom: '1px solid var(--gray-50)', transition: 'all 0.3s ease' }}>
-                  <td style={{ padding: '18px 20px' }}>
+              ) : (shouldVirtualize ? visibleItems : filteredAccounts).map((account) => (
+                <tr key={account.id_tai_khoan} className="table-row" style={{ borderBottom: '1px solid var(--gray-50)', transition: 'all 0.3s ease', height: `${ACC_ROW_HEIGHT}px` }}>
+                  <td style={{ padding: '14px 20px' }}>
                     <div style={{ fontWeight: 900, color: 'var(--ink)' }}>{account.ten_dang_nhap}</div>
                     <div style={{ fontSize: '0.75rem', color: account.trang_thai === 'inactive' ? 'var(--danger)' : 'var(--gray-400)', fontWeight: 800 }}>{account.trang_thai || 'active'}</div>
                   </td>
-                  <td style={{ padding: '18px 20px' }}>
+                  <td style={{ padding: '14px 20px' }}>
                     <div style={{ display: 'grid', gap: '4px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                         <span style={{ fontWeight: 900, color: 'var(--ink)' }}>{account.nhan_vien?.ho_ten || 'Chưa liên kết tên'}</span>
@@ -643,13 +744,13 @@ const QuanLyNhanVienPhanQuyen: React.FC = () => {
                       </div>
                     </div>
                   </td>
-                  <td style={{ padding: '18px 20px', fontWeight: 900, color: 'var(--primary)' }}>{account.id_vai_tro}</td>
-                  <td style={{ padding: '18px 20px' }}>
+                  <td style={{ padding: '14px 20px', fontWeight: 900, color: 'var(--primary)' }}>{account.id_vai_tro}</td>
+                  <td style={{ padding: '14px 20px' }}>
                     <code style={{ padding: '6px 10px', borderRadius: '10px', background: 'var(--gray-50)', color: account.mat_khau_hien_thi ? 'var(--ink)' : 'var(--gray-400)', fontWeight: 800 }}>
                       {account.mat_khau_hien_thi || 'Không hiển thị'}
                     </code>
                   </td>
-                  <td style={{ padding: '18px 20px' }}>
+                  <td style={{ padding: '14px 20px' }}>
                     <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                       <button data-ai-id={`button-quanlynhanvienphanquyen-account-edit-${account.id_tai_khoan}`} className="btn btn-pill" onClick={() => handleOpenAccountEdit(account)} aria-label={`Chỉnh sửa tài khoản ${account.ten_dang_nhap}`} style={{ background: 'var(--gray-50)', padding: '8px 14px', fontSize: '0.8rem', fontWeight: 800 }}>
                         <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>manage_accounts</span>
@@ -663,11 +764,13 @@ const QuanLyNhanVienPhanQuyen: React.FC = () => {
                   </td>
                 </tr>
               ))}
+              {shouldVirtualize && visibleRange.end < filteredAccounts.length && (
+                <tr style={{ height: `${(filteredAccounts.length - visibleRange.end) * ACC_ROW_HEIGHT}px` }} aria-hidden="true"><td colSpan={5} /></tr>
+              )}
             </tbody>
           </table>
-</div></div>
         </div>
-      )}
+      </div>
     </div>
   );
 };

@@ -36,7 +36,7 @@ export const ChatbotShell: React.FC<ChatbotShellProps> = (props) => {
         isVoiceEnabled, lastAgentQuery, lastQuery, loading, messages, proactiveMessage, removeSelectedFile,
         selectedFiles, setActiveTab, setAgentInput, setInput, setIsOpen, setIsVoiceEnabled, setProactiveMessage, setZoomedImage, showCallout,
         shouldUseMatureCustomerTone, standardElapsedTime, standardEndRef, standardSuggestions, textInputRef,
-        toggleListening, voiceLiveText, voiceMode, voiceStatus, waveBar1Ref, waveBar2Ref, waveBar3Ref, zoomedImage
+        toggleListening, voiceLiveText, voiceMode, voiceStatus, waveBar1Ref, waveBar2Ref, waveBar3Ref, zoomedImage, isCustomerRoute
     } = props;
 
     return (
@@ -136,6 +136,7 @@ export const ChatbotShell: React.FC<ChatbotShellProps> = (props) => {
                 isOpen={isOpen}
                 isMobile={isMobile}
                 activeTab={activeTab}
+                isCustomerRoute={isCustomerRoute}
                 onToggle={() => setIsOpen(!isOpen)}
             />
 
@@ -150,7 +151,11 @@ export const ChatbotShell: React.FC<ChatbotShellProps> = (props) => {
                         onDragLeave={handleDragLeave}
                         onDrop={handleDrop}
                         style={{
-                            position: 'fixed', bottom: isMobile ? '90px' : '110px', right: isMobile ? '16px' : '30px',
+                            position: 'fixed', 
+                            bottom: isMobile 
+                                ? (isCustomerRoute ? '164px' : '80px') 
+                                : '110px', 
+                            right: isMobile ? '16px' : '30px',
                             width: isMobile ? 'calc(100vw - 32px)' : 'min(450px, calc(100vw - 60px))',
                             height: isMobile ? 'min(650px, calc(100vh - 110px))' : '600px',
                             zIndex: 1101,

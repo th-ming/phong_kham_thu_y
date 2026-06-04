@@ -304,11 +304,9 @@ public class GeminiService {
                 HttpRequest request = HttpRequest.newBuilder()
                         .uri(URI.create(apiUrl))
                         .header("Content-Type", "application/json")
-                        // Nén header Accept-Encoding để tăng tốc nhận response
-                        .header("Accept-Encoding", "gzip, deflate")
                         .POST(HttpRequest.BodyPublishers.ofString(requestBody, StandardCharsets.UTF_8))
-                        // Video cần timeout cao hơn (60s) vì payload nặng hơn text
-                        .timeout(Duration.ofSeconds(hasVideo ? 60 : 15))
+                        // Video cần timeout cao hơn (60s) vì payload nặng hơn text; câu hỏi thường rút ngắn còn 5s để failover nhanh
+                        .timeout(Duration.ofSeconds(hasVideo ? 60 : 5))
                         .build();
 
                 try {

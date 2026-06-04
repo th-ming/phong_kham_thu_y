@@ -531,10 +531,26 @@ const QuanLyThuCung: React.FC = () => {
             gap: 6px;
           }
         }
+        
+        .customer-pets-hero {
+          --hero-bg-start: #f59e0b;
+          --hero-bg-mid: #f97316;
+          --hero-bg-end: #f43f5e;
+          --hero-shadow-color: rgba(245, 158, 11, 0.22);
+          --hero-glow: rgba(244, 63, 94, 0.25);
+        }
+        
+        [data-theme='dark'] .customer-pets-hero {
+          --hero-bg-start: #78350f;
+          --hero-bg-mid: #431407;
+          --hero-bg-end: #0f172a;
+          --hero-shadow-color: rgba(120, 53, 15, 0.2);
+          --hero-glow: rgba(251, 146, 60, 0.15);
+        }
       `}</style>
-      <div className="stagger-1 customer-pets-hero" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', padding: '48px', borderRadius: 'var(--radius-xl)', background: 'var(--secondary-gradient)', color: 'white', position: 'relative', overflow: 'hidden', boxShadow: 'var(--shadow-2xl)' }}>
-        <div style={{ position: 'absolute', top: '-10%', left: '-5%', width: '300px', height: '300px', background: 'radial-gradient(circle, var(--primary-light) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }}></div>
-        <div style={{ position: 'absolute', bottom: '-20%', right: '0%', width: '250px', height: '250px', background: 'radial-gradient(circle, var(--primary-light) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none', opacity: 0.5 }}></div>
+      <div className="stagger-1 customer-pets-hero" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', padding: '48px', borderRadius: 'var(--radius-xl)', background: 'linear-gradient(135deg, var(--hero-bg-start) 0%, var(--hero-bg-mid) 50%, var(--hero-bg-end) 100%)', color: 'white', position: 'relative', overflow: 'hidden', boxShadow: '0 20px 40px var(--hero-shadow-color)' }}>
+        <div style={{ position: 'absolute', top: '-10%', left: '-5%', width: '300px', height: '300px', background: 'radial-gradient(circle, var(--hero-glow) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }}></div>
+        <div style={{ position: 'absolute', bottom: '-20%', right: '0%', width: '250px', height: '250px', background: 'radial-gradient(circle, var(--hero-glow) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none', opacity: 0.5 }}></div>
         <div style={{ position: 'relative', zIndex: 1 }}>
           <h1 style={{ fontSize: '3rem', fontWeight: 950, letterSpacing: '-2px', margin: '0 0 12px 0', textShadow: '0 2px 10px rgba(0,0,0,0.2)' }}>Thú cưng của tôi 🐾</h1>
           <p style={{ fontWeight: 600, color: 'rgba(255,255,255,0.7)', margin: 0, fontSize: '1.1rem' }}>Nơi lưu giữ hành trình trưởng thành và chăm sóc sức khỏe cho bé yêu.</p>

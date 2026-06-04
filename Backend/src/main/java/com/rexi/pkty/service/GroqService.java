@@ -138,9 +138,10 @@ public class GroqService {
     private volatile long lastPrewarmAtMs = 0L;
     private final ConcurrentHashMap<String, Long> keyCooldownUntilMs = new ConcurrentHashMap<>();
 
-    // Sử dụng chung 1 HttpClient cho toàn bộ service để tận dụng Connection Pooling
+    // HTTP/2 cho phép multiplexing: nhiều request dùng chung 1 TCP connection → giảm ~100-200ms overhead
     private final HttpClient client = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(20))
+            .version(HttpClient.Version.HTTP_2)
             .build();
 
     private List<String> getAvailableApiKeys(List<String> apiKeys) {

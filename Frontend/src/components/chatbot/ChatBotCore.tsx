@@ -4885,6 +4885,7 @@ export const ChatBotCore: React.FC = () => {
             setProactiveMessage={setProactiveMessage}
             setZoomedImage={setZoomedImage}
             isCustomerAccount={isCustomerAccount}
+            isCustomerRoute={isCustomerRoute}
             showCallout={showCallout}
             loading={loading}
             shouldUseMatureCustomerTone={shouldUseMatureCustomerTone}

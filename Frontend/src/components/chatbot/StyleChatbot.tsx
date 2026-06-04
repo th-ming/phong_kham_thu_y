@@ -204,13 +204,11 @@ export const StyleChatbot: React.FC = () => (
             #chatCallout { display: none !important; }
             #chatBtn {
                 right: 16px !important;
-                bottom: max(108px, env(safe-area-inset-bottom, 0px) + 104px) !important;
                 width: 56px !important;
                 height: 56px !important;
             }
             #chatWindow {
                 right: max(10px, env(safe-area-inset-right, 0px)) !important;
-                bottom: max(104px, env(safe-area-inset-bottom, 0px) + 100px) !important;
                 width: calc(100vw - 20px) !important;
                 height: min(650px, calc(var(--rexi-viewport-height, 100dvh) - max(204px, env(safe-area-inset-bottom, 0px) + 196px))) !important;
                 max-height: min(650px, calc(var(--rexi-viewport-height, 100dvh) - max(204px, env(safe-area-inset-bottom, 0px) + 196px))) !important;
