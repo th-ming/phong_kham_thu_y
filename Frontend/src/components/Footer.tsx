@@ -151,22 +151,34 @@ const Footer: React.FC<{ isSimple?: boolean }> = ({ isSimple }) => {
     const footerRef = useRef<HTMLElement>(null);
     const liveUser = useLiveUserProfile();
     const footerBubbleText = isGenZBirthYear(liveUser?.nam_sinh)
-        ? "Click đi sen, trẫm múa nè! 🐾"
-        : "Nhấn để Rexi chào anh/chị. 🐾";
+        ? "Click để xem mèo nhảy nè! 🐾"
+        : "Nhấn để xem mèo nhảy! 🐾";
     const [services, setServices] = useState<any[]>([]);
     const [isMemePlaying, setIsMemePlaying] = useState(false);
+
+    const fallbackServices = ["Khám Đa Khoa", "Tiêm Chủng", "Chẩn đoán hình ảnh", "Phẫu thuật", "Xét nghiệm máu & Sinh hóa", "Spa & Grooming"];
+
+    const normalizeServicePayload = (payload: any): any[] => {
+        if (Array.isArray(payload)) return payload;
+        if (Array.isArray(payload?.data)) return payload.data;
+        if (Array.isArray(payload?.content)) return payload.content;
+        if (Array.isArray(payload?.items)) return payload.items;
+        return [];
+    };
 
     useEffect(() => {
         if (!isSimple) {
             axiosInstance.get('/api/dich-vu/active')
-                .then(res => setServices(res.data.slice(0, 6)))
+                .then(res => setServices(normalizeServicePayload(res.data).slice(0, 6)))
                 .catch(err => console.error("Lỗi lấy dịch vụ footer:", err));
         }
     }, [isSimple]);
 
-    const displayServices = services.length > 0
-        ? services.map(s => s.ten_dich_vu)
-        : ["Khám Đa Khoa", "Tiêm Chủng", "Chẩn đoán hình ảnh", "Phẫu thuật", "Xét nghiệm máu & Sinh hóa", "Spa & Grooming"];
+    const safeServices = Array.isArray(services) ? services : [];
+    const displayServices = safeServices.length > 0
+        ? safeServices.map(s => s?.ten_dich_vu || s?.tenDichVu).filter(Boolean)
+        : fallbackServices;
+    const safeDisplayServices = displayServices.length > 0 ? displayServices : fallbackServices;
 
     return (
         <footer ref={footerRef} className="premium-footer" style={{
@@ -289,16 +301,10 @@ const Footer: React.FC<{ isSimple?: boolean }> = ({ isSimple }) => {
                                             return;
                                         }
                                         try {
-                                            const response = await fetch('/api/system/newsletter', {
-                                                method: 'POST',
-                                                headers: { 'Content-Type': 'application/json' },
-                                                body: JSON.stringify({ email })
-                                            });
-                                            if (response.ok) {
+                                            await axiosInstance.post('/api/system/newsletter', { email });
+                                            {
                                                 alert('Đăng ký nhận tin thành công! Cảm ơn bạn đã tin tưởng Rexi 🐾');
                                                 (document.getElementById('newsletter-email') as HTMLInputElement).value = '';
-                                            } else {
-                                                alert('Có lỗi xảy ra, xin vui lòng thử lại sau nhé ạ!');
                                             }
                                         } catch (e) {
                                             alert('Không kết nối được tới máy chủ, vui lòng thử lại sau nhé ạ!');
@@ -314,7 +320,7 @@ const Footer: React.FC<{ isSimple?: boolean }> = ({ isSimple }) => {
                             <h4 style={{ color: 'white', fontWeight: 800, marginBottom: '32px', letterSpacing: '1px', fontSize: '0.9rem' }}>DỊCH VỤ</h4>
                             {/* BUG FIX & UX: Tăng khoảng cách gap lên 12px để tránh con sen bấm trượt trên di động */}
                             <div className="footer-service-list" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                {displayServices.map((name, index) => (
+                                {safeDisplayServices.map((name, index) => (
                                     <Link key={index} to={`/dich-vu/${generateSlug(name)}`} className="footer-link">
                                         {name}
                                     </Link>
