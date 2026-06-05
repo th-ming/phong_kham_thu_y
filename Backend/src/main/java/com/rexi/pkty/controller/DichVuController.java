@@ -93,8 +93,13 @@ public class DichVuController {
             dv.setTrang_thai(true);
         }
         DichVu saved = dichVuRepository.save(dv);
-        jdbcTemplate.update("UPDATE DichVu SET ngay_tao = COALESCE(ngay_tao, GETDATE()) WHERE id_dich_vu = ?",
-                saved.getId_dich_vu());
+        if (isPostgres()) {
+            jdbcTemplate.update("UPDATE public.\"DichVu\" SET \"ngay_tao\" = COALESCE(\"ngay_tao\", CURRENT_TIMESTAMP) WHERE \"id_dich_vu\" = ?",
+                    saved.getId_dich_vu());
+        } else {
+            jdbcTemplate.update("UPDATE DichVu SET ngay_tao = COALESCE(ngay_tao, GETDATE()) WHERE id_dich_vu = ?",
+                    saved.getId_dich_vu());
+        }
         // GHI LOG
         auditLogService.logAction("THÊM MỚI", "DichVu",
                 "Thêm dịch vụ: " + saved.getTen_dich_vu() + " - Giá: " + saved.getGia());
@@ -171,17 +176,34 @@ public class DichVuController {
 
     private List<Map<String, Object>> fetchActiveServiceRows() {
         boolean hasCreatedAt = hasColumn("DichVu", "ngay_tao");
-        String createdAtSelect = hasCreatedAt ? "dv.ngay_tao" : "CAST(NULL AS DATETIME) AS ngay_tao";
+        boolean postgres = isPostgres();
+        String createdAtSelect = hasCreatedAt
+                ? column("dv", "ngay_tao", postgres)
+                : postgres ? "CAST(NULL AS TIMESTAMP) AS \"ngay_tao\"" : "CAST(NULL AS DATETIME) AS ngay_tao";
+        String createdAtGroup = hasCreatedAt
+                ? column("dv", "ngay_tao", postgres)
+                : postgres ? "CAST(NULL AS TIMESTAMP)" : "CAST(NULL AS DATETIME)";
+        String tableDichVu = table("DichVu", postgres);
+        String tableLichHen = table("LichHen", postgres);
         String sql = """
-                SELECT dv.id_dich_vu, dv.ten_dich_vu, dv.mo_ta, dv.gia, dv.thoi_luong_phut,
-                       dv.trang_thai, %s, COUNT(lh.id_lich_hen) AS so_lan_dat
-                FROM DichVu dv
-                LEFT JOIN LichHen lh ON lh.id_dich_vu = dv.id_dich_vu
-                    AND (lh.trang_thai IS NULL OR lh.trang_thai NOT IN (N'Đã hủy', 'DA_HUY', 'da_huy', 'TU_CHOI', N'Hết hạn'))
-                WHERE dv.trang_thai = 1
-                  AND (dv.da_xoa = 0 OR dv.da_xoa IS NULL)
-                GROUP BY dv.id_dich_vu, dv.ten_dich_vu, dv.mo_ta, dv.gia, dv.thoi_luong_phut, dv.trang_thai, %s
-                """.formatted(createdAtSelect, hasCreatedAt ? "dv.ngay_tao" : "CAST(NULL AS DATETIME)");
+                SELECT %s AS id_dich_vu, %s AS ten_dich_vu, %s AS mo_ta, %s AS gia, %s AS thoi_luong_phut,
+                       %s AS trang_thai, %s, COUNT(%s) AS so_lan_dat
+                FROM %s dv
+                LEFT JOIN %s lh ON %s = %s
+                    AND (%s IS NULL OR %s NOT IN ('Đã hủy', 'DA_HUY', 'da_huy', 'TU_CHOI', 'Hết hạn'))
+                WHERE %s = %s
+                  AND (%s = %s OR %s IS NULL)
+                GROUP BY %s, %s, %s, %s, %s, %s, %s
+                """.formatted(
+                column("dv", "id_dich_vu", postgres), column("dv", "ten_dich_vu", postgres), column("dv", "mo_ta", postgres),
+                column("dv", "gia", postgres), column("dv", "thoi_luong_phut", postgres), column("dv", "trang_thai", postgres),
+                createdAtSelect, column("lh", "id_lich_hen", postgres), tableDichVu, tableLichHen,
+                column("lh", "id_dich_vu", postgres), column("dv", "id_dich_vu", postgres),
+                column("lh", "trang_thai", postgres), column("lh", "trang_thai", postgres),
+                column("dv", "trang_thai", postgres), trueLiteral(postgres),
+                column("dv", "da_xoa", postgres), falseLiteral(postgres), column("dv", "da_xoa", postgres),
+                column("dv", "id_dich_vu", postgres), column("dv", "ten_dich_vu", postgres), column("dv", "mo_ta", postgres),
+                column("dv", "gia", postgres), column("dv", "thoi_luong_phut", postgres), column("dv", "trang_thai", postgres), createdAtGroup);
         return jdbcTemplate.queryForList(sql);
     }
 
@@ -205,6 +227,32 @@ public class DichVuController {
                 WHERE TABLE_NAME = ? AND COLUMN_NAME = ?
                 """, Integer.class, tableName, columnName);
         return count != null && count > 0;
+    }
+
+    private boolean isPostgres() {
+        try {
+            try (java.sql.Connection connection = jdbcTemplate.getDataSource().getConnection()) {
+                return "PostgreSQL".equalsIgnoreCase(connection.getMetaData().getDatabaseProductName());
+            }
+        } catch (Exception ignored) {
+            return false;
+        }
+    }
+
+    private String table(String name, boolean postgres) {
+        return postgres ? "public.\"" + name + "\"" : name;
+    }
+
+    private String column(String alias, String name, boolean postgres) {
+        return postgres ? alias + ".\"" + name + "\"" : alias + "." + name;
+    }
+
+    private String trueLiteral(boolean postgres) {
+        return postgres ? "true" : "1";
+    }
+
+    private String falseLiteral(boolean postgres) {
+        return postgres ? "false" : "0";
     }
 
     private long usageCount(Map<String, Object> service) {

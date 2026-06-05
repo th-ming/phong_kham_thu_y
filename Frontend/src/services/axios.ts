@@ -6,7 +6,7 @@ import { reportAxiosError } from './clientErrorReporter';
 // - Fallback sang Bearer header nếu cookie chưa có (backward-compatible)
 // - Xử lý tự động refresh token khi hết hạn
 
-const API_BASE_URL = ''; // Dùng Proxy trong vite.config.ts để xử lý chuyển tiếp tới localhost:8081
+const API_BASE_URL = (import.meta as any).env.VITE_API_URL || ''; // Dev dùng proxy Vite, production dùng backend URL từ Vercel env
 
 const axiosInstance: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
@@ -28,10 +28,13 @@ axiosInstance.interceptors.request.use(
 
     const requestUrl = config.url || '';
     const isChatRequest = requestUrl.includes('/api/chat') || requestUrl.includes('/api/agent');
+    const isHumanAuthRequest = requestUrl.includes('/api/auth/') ||
+      requestUrl.includes('/api/system/send-otp') ||
+      requestUrl.includes('/api/system/verify-otp');
 
     // Đính kèm tag hành động AI nếu có. Không gắn vào chat thường
-    // vì tag Autopilot cũ có thể làm backend chặn /api/chat với 403.
-    if (isChatRequest) {
+    // và auth/OTP vì tag Autopilot cũ có thể làm backend phân loại nhầm thao tác người dùng.
+    if (isChatRequest || isHumanAuthRequest) {
         (window as any).__AI_ACTION_TAG__ = undefined;
         const headers = config.headers as any;
         if (typeof headers?.delete === 'function') {
