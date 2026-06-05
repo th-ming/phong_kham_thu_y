@@ -176,6 +176,7 @@ public class DichVuController {
 
     private List<Map<String, Object>> fetchActiveServiceRows() {
         boolean hasCreatedAt = hasColumn("DichVu", "ngay_tao");
+        boolean hasDeletedFlag = hasColumn("DichVu", "da_xoa");
         boolean postgres = isPostgres();
         String createdAtSelect = hasCreatedAt
                 ? column("dv", "ngay_tao", postgres)
@@ -183,6 +184,12 @@ public class DichVuController {
         String createdAtGroup = hasCreatedAt
                 ? column("dv", "ngay_tao", postgres)
                 : postgres ? "CAST(NULL AS TIMESTAMP)" : "CAST(NULL AS DATETIME)";
+        String deletedCondition = hasDeletedFlag
+                ? "(%s = %s OR %s IS NULL)".formatted(
+                        column("dv", "da_xoa", postgres),
+                        falseLiteral(postgres),
+                        column("dv", "da_xoa", postgres))
+                : "1 = 1";
         String tableDichVu = table("DichVu", postgres);
         String tableLichHen = table("LichHen", postgres);
         String sql = """
@@ -192,7 +199,7 @@ public class DichVuController {
                 LEFT JOIN %s lh ON %s = %s
                     AND (%s IS NULL OR %s NOT IN ('Đã hủy', 'DA_HUY', 'da_huy', 'TU_CHOI', 'Hết hạn'))
                 WHERE %s = %s
-                  AND (%s = %s OR %s IS NULL)
+                  AND %s
                 GROUP BY %s, %s, %s, %s, %s, %s, %s
                 """.formatted(
                 column("dv", "id_dich_vu", postgres), column("dv", "ten_dich_vu", postgres), column("dv", "mo_ta", postgres),
@@ -201,7 +208,7 @@ public class DichVuController {
                 column("lh", "id_dich_vu", postgres), column("dv", "id_dich_vu", postgres),
                 column("lh", "trang_thai", postgres), column("lh", "trang_thai", postgres),
                 column("dv", "trang_thai", postgres), trueLiteral(postgres),
-                column("dv", "da_xoa", postgres), falseLiteral(postgres), column("dv", "da_xoa", postgres),
+                deletedCondition,
                 column("dv", "id_dich_vu", postgres), column("dv", "ten_dich_vu", postgres), column("dv", "mo_ta", postgres),
                 column("dv", "gia", postgres), column("dv", "thoi_luong_phut", postgres), column("dv", "trang_thai", postgres), createdAtGroup);
         return jdbcTemplate.queryForList(sql);
