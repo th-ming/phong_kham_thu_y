@@ -114,7 +114,7 @@ public class LichHenController {
             }
 
             Integer petOwnerCount = jdbcTemplate.queryForObject(
-                    "SELECT COUNT(*) FROM ThuCung WHERE id_thu_cung = ? AND id_khach_hang = ? AND ISNULL(da_xoa, 0) = 0",
+                    "SELECT COUNT(*) FROM ThuCung WHERE id_thu_cung = ? AND id_khach_hang = ? AND COALESCE(da_xoa, 0) = 0",
                     Integer.class, lichHen.getId_thu_cung(), lichHen.getId_khach_hang());
             if (petOwnerCount == null || petOwnerCount == 0) {
                 throw new RuntimeException("Thú cưng đã chọn không thuộc hồ sơ khách hàng này hoặc đã bị xóa!");
@@ -163,15 +163,15 @@ public class LichHenController {
             int newEndMinute = newEnd.getHour() * 60 + newEnd.getMinute();
 
             if (lichHen.getId_bac_si() == null || lichHen.getId_bac_si().isEmpty() || lichHen.getId_bac_si().equals("0")) {
-                String findDocQuery = "SELECT TOP 1 l.id_nhan_vien FROM LichLamViecNhanVien l " +
+                String findDocQuery = "SELECT l.id_nhan_vien FROM LichLamViecNhanVien l " +
                         "WHERE l.ngay_lam = ? AND l.gio_bat_dau = CAST(? AS time) " +
                         "AND NOT EXISTS (SELECT 1 FROM LichHen h " +
                         "  LEFT JOIN DichVu d ON h.id_dich_vu = d.id_dich_vu " +
                         "  WHERE h.id_bac_si = l.id_nhan_vien AND h.ngay_kham = l.ngay_lam " +
-                        "  AND DATEDIFF(minute, CAST('00:00:00' AS time), CAST(h.gio_kham AS time)) < ? " +
-                        "  AND DATEDIFF(minute, CAST('00:00:00' AS time), CAST(h.gio_kham AS time)) + ISNULL(d.thoi_luong_phut, 30) > ? " +
+                        "  AND (EXTRACT(HOUR FROM h.gio_kham::time) * 60 + EXTRACT(MINUTE FROM h.gio_kham::time))::int < ? " +
+                        "  AND (EXTRACT(HOUR FROM h.gio_kham::time) * 60 + EXTRACT(MINUTE FROM h.gio_kham::time))::int + COALESCE(d.thoi_luong_phut, 30) > ? " +
                         "  AND h.trang_thai NOT IN (N'Đã hủy', 'DA_HUY', 'da_huy', 'TU_CHOI', N'Hết hạn')" +
-                        ")";
+                        ") LIMIT 1";
                 try {
                     String autoDocId = jdbcTemplate.queryForObject(findDocQuery, String.class,
                             lichHen.getNgay_kham(), newStart, newEndMinute, newStartMinute);
@@ -362,7 +362,7 @@ public class LichHenController {
                 String generatedPass = "Rexi@" + UUID.randomUUID().toString().substring(0, 8);
 
                 jdbcTemplate.update(
-                        "INSERT INTO TaiKhoan (id_tai_khoan, ten_dang_nhap, mat_khau, mat_khau_hash, id_vai_tro, trang_thai, ngay_tao) VALUES (?, ?, ?, ?, 'VT-5', N'Hoạt động', GETDATE())",
+                        "INSERT INTO TaiKhoan (id_tai_khoan, ten_dang_nhap, mat_khau, mat_khau_hash, id_vai_tro, trang_thai, ngay_tao) VALUES (?, ?, ?, ?, 'VT-5', N'Hoạt động', CURRENT_TIMESTAMP)",
                         idTaiKhoan, (email != null && !email.isEmpty() ? email : sdt + "@rexi.vn"), "[ENCRYPTED]", passwordEncoder.encode(generatedPass));
 
                 if (email != null && !email.isEmpty()) {
@@ -371,7 +371,7 @@ public class LichHenController {
 
                 idKhachHang = "KH-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
                 jdbcTemplate.update(
-                        "INSERT INTO KhachHang (id_khach_hang, ten_khach_hang, sdt, email, ngay_tao, da_xoa) VALUES (?, ?, ?, ?, GETDATE(), 0)",
+                        "INSERT INTO KhachHang (id_khach_hang, ten_khach_hang, sdt, email, ngay_tao, da_xoa) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, 0)",
                         idKhachHang, kh.get("ten_khach_hang"), sdt, (email != null && !email.isEmpty() ? email : sdt + "@rexi.vn"));
             } else {
                 idKhachHang = existingKh.get(0).get("id_khach_hang").toString();
@@ -488,7 +488,7 @@ public class LichHenController {
                         "LEFT JOIN ThuCung tc ON lh.id_thu_cung = tc.id_thu_cung " +
                         "LEFT JOIN NhanVien nv ON lh.id_bac_si = nv.id_nhan_vien " +
                         "LEFT JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu " +
-                        "WHERE CAST(lh.ngay_kham AS DATE) = CAST(GETDATE() AS DATE) " +
+                        "WHERE CAST(lh.ngay_kham AS DATE) = CURRENT_DATE " +
                         "ORDER BY lh.gio_kham ASC"));
     }
 

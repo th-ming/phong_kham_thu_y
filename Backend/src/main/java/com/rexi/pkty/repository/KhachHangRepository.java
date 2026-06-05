@@ -27,7 +27,7 @@ public interface KhachHangRepository extends JpaRepository<KhachHang, String> {
 
     @Modifying
     @Transactional
-    @Query(value = "UPDATE KhachHang SET da_xoa = 1, ngay_cap_nhat = GETDATE() WHERE id_khach_hang = :id; " +
-                   "UPDATE TaiKhoan SET trang_thai = N'inactive' WHERE id_khach_hang = :id", nativeQuery = true)
+    @Query(value = "UPDATE KhachHang SET da_xoa = 1, ngay_cap_nhat = CURRENT_TIMESTAMP WHERE id_khach_hang = :id; " +
+                   "UPDATE TaiKhoan SET trang_thai = 'inactive' WHERE id_khach_hang = :id", nativeQuery = true)
     void deactivateAccountByKhachHangId(@Param("id") String id);
 }

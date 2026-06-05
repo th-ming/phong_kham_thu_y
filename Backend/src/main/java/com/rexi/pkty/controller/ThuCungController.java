@@ -218,7 +218,7 @@ public class ThuCungController {
                 return ResponseEntity.status(404).body(Map.of("message", "Không tìm thấy thú cưng."));
             }
             com.rexi.pkty.entity.TiemChung tiemChung = new com.rexi.pkty.entity.TiemChung();
-            Long nextId = jdbcTemplate.queryForObject("SELECT ISNULL(MAX(id_tiem_chung), 0) + 1 FROM TiemChung", Long.class);
+            Long nextId = jdbcTemplate.queryForObject("SELECT COALESCE(MAX(id_tiem_chung), 0) + 1 FROM TiemChung", Long.class);
             tiemChung.setId_tiem_chung(nextId);
             tiemChung.setId_thu_cung(id);
             tiemChung.setTen_vaccine(String.valueOf(payload.getOrDefault("ten_vaccine", "Vaccine test")));

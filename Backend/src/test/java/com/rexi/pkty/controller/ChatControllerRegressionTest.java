@@ -183,7 +183,7 @@ class ChatControllerRegressionTest extends BaseControllerTest {
     void adminStandardChatDoesNotFallBackToCustomerPetScopeForOffTopicText() throws Exception {
         when(groqService.chat(anyList())).thenReturn("Tôi không thể tiếp tục cuộc trò chuyện này. Nếu bạn cần hỗ trợ về chăm sóc thú cưng hoặc có câu hỏi khác, tôi sẵn sàng giúp đỡ. Bạn có muốn hỏi về một vấn đề cụ thể về thú cưng không?");
 
-        ChatMessage message = new ChatMessage("user", "Bị thương nặng, trong khi về đến căn cứ, hắn nhất định sẽ báo cáo chuyện này lên cấp trên.", null, null);
+        ChatMessage message = new ChatMessage("user", "Bị thương nặng, trong khi về đến căn cứ, hắn nhất định sẽ kể chuyện này lên cấp trên.", null, null);
 
         mockMvc.perform(post("/api/chat")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -296,6 +296,25 @@ class ChatControllerRegressionTest extends BaseControllerTest {
                 .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.containsString("không thể kê đơn")))
                 .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.containsString("kháng sinh")))
                 .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.containsString("không tự dùng thuốc người")));
+
+        verify(geminiService, never()).chat(anyList());
+        verify(groqService, never()).chat(anyList());
+        verify(groqService, never()).parseIntentJson(anyString());
+        verify(openRouterService, never()).chat(anyList());
+    }
+
+    @Test
+    void oneWordChickenQuestionAsksClarificationWithoutAiProviders() throws Exception {
+        ChatMessage message = new ChatMessage("user", "gà", null, null);
+
+        mockMvc.perform(post("/api/chat")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("history", List.of(message)))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.source").value("local_clarification"))
+                .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.containsString("gà/gia cầm")))
+                .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.containsString("nói rõ")))
+                .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("Không liên quan"))));
 
         verify(geminiService, never()).chat(anyList());
         verify(groqService, never()).chat(anyList());

@@ -30,8 +30,8 @@ public class LichTrucController {
                                 "l.ngay_lam as ngay_lam_viec, l.gio_bat_dau as ca_lam_viec, l.ghi_chu " +
                                 "FROM LichLamViecNhanVien l " +
                                 "JOIN NhanVien nv ON l.id_nhan_vien = nv.id_nhan_vien " +
-                                "WHERE l.ngay_lam >= DATEADD(month, -1, GETDATE()) " +
-                                "AND l.ngay_lam <= DATEADD(month, 3, GETDATE()) " +
+                                "WHERE l.ngay_lam >= CURRENT_TIMESTAMP - INTERVAL '1 month' " +
+                                "AND l.ngay_lam <= CURRENT_TIMESTAMP + INTERVAL '3 months' " +
                                 "ORDER BY l.ngay_lam DESC";
                 return jdbcTemplate.queryForList(sql);
         }
@@ -81,8 +81,8 @@ public class LichTrucController {
                                 "SELECT COUNT(*) FROM NhanVien nv " +
                                                 "JOIN TaiKhoan tk ON tk.id_nhan_vien = nv.id_nhan_vien " +
                                                 "WHERE nv.id_nhan_vien = ? " +
-                                                "AND ISNULL(nv.da_xoa, 0) = 0 " +
-                                                "AND LOWER(ISNULL(tk.trang_thai, '')) IN ('active', N'hoạt động', N'đang làm việc')",
+                                                "AND COALESCE(nv.da_xoa, 0) = 0 " +
+                                                "AND LOWER(COALESCE(tk.trang_thai, '')) IN ('active', 'hoạt động', 'đang làm việc')",
                                 Integer.class, targetNhanVienId);
                 if (activeStaffCount == null || activeStaffCount == 0) {
                         return ResponseEntity.status(409).body(Map.of("message",

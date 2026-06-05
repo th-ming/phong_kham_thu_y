@@ -263,6 +263,11 @@ public class ChatController {
                 return Map.of("reply", localFollowUpReply, "source", "local_follow_up");
             }
 
+            String shortAnimalClarificationReply = tryShortAnimalClarificationReply(normalizedUserQuery);
+            if (!hasMedia && shortAnimalClarificationReply != null) {
+                return Map.of("reply", shortAnimalClarificationReply, "source", "local_clarification");
+            }
+
             if (!hasMedia && isUserComplaintQuery(normalizedUserQuery)) {
                 return Map.of("reply", buildUserComplaintReply(normalizedUserQuery), "source", "local_complaint");
             }
@@ -827,7 +832,8 @@ ChatMessage systemMsg = new ChatMessage();
         boolean verifiedRoute = route == ChatRoute.QUICK_LOCAL
                 || route == ChatRoute.DB_LOCAL
                 || route == ChatRoute.SENSITIVE_HANDOFF
-                || route == ChatRoute.WEB_AI;
+                || route == ChatRoute.WEB_AI
+                || route == ChatRoute.MEDICAL_AI;
         boolean systemProvider = providerUsed != null && normalizeVietnamese(providerUsed.toLowerCase(Locale.ROOT)).contains("system");
         if (verifiedRoute || systemProvider || isSafeEvidenceRefusal(normalizedReply)) {
             return reply;
@@ -1230,6 +1236,26 @@ ChatMessage systemMsg = new ChatMessage();
         return "Dạ Rexi đây ạ. Sen cần hỗ trợ gì hôm nay?";
     }
 
+    private String tryShortAnimalClarificationReply(String normalizedQuery) {
+        if (normalizedQuery == null || normalizedQuery.isBlank()) return null;
+        String q = normalizedQuery.trim().replaceAll("\\s+", " ");
+        String animalName = switch (q) {
+            case "ga", "gia cam" -> "gà/gia cầm";
+            case "chim" -> "chim";
+            case "cho", "cun" -> "chó";
+            case "meo" -> "mèo";
+            case "tho" -> "thỏ";
+            case "hamster" -> "hamster";
+            default -> null;
+        };
+        if (animalName == null) return null;
+
+        if ("gà/gia cầm".equals(animalName) || "chim".equals(animalName)) {
+            return "Rexi hiểu Sen đang hỏi về " + animalName + ". Sen nói rõ giúp Rexi bé đang gặp vấn đề gì: bỏ ăn, tiêu chảy, thở khó, ủ rũ, bị thương, hay cần hỏi phòng khám có hỗ trợ không? Với gia cầm/chim, Rexi sẽ tư vấn an toàn ở mức sơ bộ và nhắc đi cơ sở thú y chuyên gia cầm nếu có dấu hiệu nặng.";
+        }
+        return "Rexi hiểu Sen đang hỏi về " + animalName + ". Sen nói rõ thêm bé đang bị gì hoặc Sen muốn hỏi phần nào: triệu chứng, chăm sóc, dinh dưỡng, đặt lịch khám hay bảng giá?";
+    }
+
     private boolean isUserComplaintQuery(String normalizedQuery) {
         if (normalizedQuery == null || normalizedQuery.isBlank()) return false;
         String q = normalizedQuery.trim();
@@ -1506,7 +1532,8 @@ ChatMessage systemMsg = new ChatMessage();
     private boolean hasPetOrClinicContext(String normalizedQuery) {
         if (normalizedQuery == null || normalizedQuery.isBlank()) return false;
         return containsAny(normalizedQuery,
-                "meo", "cho", "cun", "thu cung", "boss", "be nha", "pet",
+                "meo", "cho", "cun", "ga", "gia cam", "chim", "tho", "hamster",
+                "thu cung", "boss", "be nha", "pet",
                 "thu y", "phong kham", "bac si", "bsi", "benh vien" );
     }
 
@@ -1759,7 +1786,7 @@ ChatMessage systemMsg = new ChatMessage();
             return new ChatRequestPlan(ChatRoute.AUTOPILOT_AI, false, true, false, true, "groq");
         }
         if (isMedicalQuery(normalizedQuery)) {
-            return new ChatRequestPlan(ChatRoute.WEB_AI, false, true, false, true, "medical+sources");
+            return new ChatRequestPlan(ChatRoute.MEDICAL_AI, false, true, false, true, "medical");
         }
         boolean needsClinicContext = isClinicInfoQuery(normalizedQuery);
         return new ChatRequestPlan(ChatRoute.CHAT_AI, false, true, true, needsClinicContext, "groq");

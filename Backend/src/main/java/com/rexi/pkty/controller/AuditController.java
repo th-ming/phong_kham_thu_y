@@ -41,7 +41,7 @@ public class AuditController {
             result.put("Thuoc_Schema", jdbcTemplate.queryForList("SELECT COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'Thuoc'"));
             result.put("HoSoBenhAn_Schema", jdbcTemplate.queryForList("SELECT COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'HoSoBenhAn'"));
             result.put("Detailed_Accounts", jdbcTemplate.queryForList(
-                "SELECT tk.ten_dang_nhap, vt.ten_vai_tro, ISNULL(nv.ho_ten, kh.ten_khach_hang) as ho_ten " +
+                "SELECT tk.ten_dang_nhap, vt.ten_vai_tro, COALESCE(nv.ho_ten, kh.ten_khach_hang) as ho_ten " +
                 "FROM TaiKhoan tk " +
                 "LEFT JOIN VaiTroHeThong vt ON tk.id_vai_tro = vt.id_vai_tro " +
                 "LEFT JOIN NhanVien nv ON tk.id_nhan_vien = nv.id_nhan_vien " +

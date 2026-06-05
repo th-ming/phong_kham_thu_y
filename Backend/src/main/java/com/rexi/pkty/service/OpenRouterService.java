@@ -110,7 +110,7 @@ public class OpenRouterService {
 
     private static final String OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
 
-    @Value("${openrouter.model:deepseek/deepseek-v4-flash:free}")
+    @Value("${openrouter.model:deepseek/deepseek-chat-v3-0324:free}")
     private String modelName;
 
     @Value("${app.frontend-url:http://localhost:3005}")
@@ -193,14 +193,27 @@ public class OpenRouterService {
         if (configuredModel != null && !configuredModel.trim().isEmpty()) {
             models.add(configuredModel.trim());
         }
-        models.addAll(getDynamicFreeModels());
-        
-        // GIỚI HẠN tối đa 3 models để tuân thủ quy định mới của OpenRouter free tier (không bị lỗi 400)
+        models.addAll(getStaticFallbackModels(isMedical));
+
+        // Giới hạn tối đa 3 models để request ổn định, tránh provider tự chọn model free kém chất lượng.
         List<String> list = new ArrayList<>(models);
         if (list.size() > 3) {
             return list.subList(0, 3);
         }
         return list;
+    }
+
+    private List<String> getStaticFallbackModels(boolean isMedical) {
+        if (isMedical) {
+            return List.of(
+                    "deepseek/deepseek-chat-v3-0324:free",
+                    "google/gemini-2.0-flash-exp:free"
+            );
+        }
+        return List.of(
+                "deepseek/deepseek-chat-v3-0324:free",
+                "google/gemini-2.0-flash-exp:free"
+        );
     }
 
     private synchronized List<String> getDynamicFreeModels() {

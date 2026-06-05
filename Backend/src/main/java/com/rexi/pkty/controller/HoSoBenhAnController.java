@@ -227,7 +227,7 @@ public class HoSoBenhAnController {
             String giaTri = String.valueOf(payload.getOrDefault("gia_tri_ket_qua", "7.2"));
 
             List<Map<String, Object>> hoSo = jdbcTemplate.queryForList(
-                    "SELECT TOP 1 hs.id_bac_si, lh.id_dich_vu FROM HoSoBenhAn hs LEFT JOIN LichHen lh ON hs.id_lich_hen = lh.id_lich_hen WHERE hs.id_ho_so_benh_an = ?",
+                    "SELECT hs.id_bac_si, lh.id_dich_vu FROM HoSoBenhAn hs LEFT JOIN LichHen lh ON hs.id_lich_hen = lh.id_lich_hen WHERE hs.id_ho_so_benh_an = ? LIMIT 1",
                     idHoSo);
             if (hoSo.isEmpty()) {
                 return org.springframework.http.ResponseEntity.status(404)
@@ -239,13 +239,13 @@ public class HoSoBenhAnController {
                     : String.valueOf(hoSo.get(0).get("id_dich_vu"));
 
             Integer idDanhMuc = jdbcTemplate.queryForObject(
-                    "INSERT INTO DanhMucXetNghiem (ten_danh_muc, mo_ta) OUTPUT INSERTED.id_danh_muc VALUES (?, ?)",
+                    "INSERT INTO DanhMucXetNghiem (ten_danh_muc, mo_ta) VALUES (?, ?) RETURNING id_danh_muc",
                     Integer.class,
                     tenDanhMuc,
                     "Dữ liệu nhập thủ công từ web/API khi chưa tích hợp máy xét nghiệm");
 
             Integer idLoai = jdbcTemplate.queryForObject(
-                    "INSERT INTO LoaiXetNghiem (id_danh_muc, ten_xet_nghiem, mo_ta, gia_tien) OUTPUT INSERTED.id_loai_xet_nghiem VALUES (?, ?, ?, ?)",
+                    "INSERT INTO LoaiXetNghiem (id_danh_muc, ten_xet_nghiem, mo_ta, gia_tien) VALUES (?, ?, ?, ?) RETURNING id_loai_xet_nghiem",
                     Integer.class,
                     idDanhMuc,
                     tenXetNghiem,
@@ -253,14 +253,14 @@ public class HoSoBenhAnController {
                     new java.math.BigDecimal(String.valueOf(payload.getOrDefault("gia_tien", "0"))));
 
             Integer idChiSo = jdbcTemplate.queryForObject(
-                    "INSERT INTO ChiSoXetNghiem (id_loai_xet_nghiem, ten_thong_so, don_vi) OUTPUT INSERTED.id_chi_so VALUES (?, ?, ?)",
+                    "INSERT INTO ChiSoXetNghiem (id_loai_xet_nghiem, ten_thong_so, don_vi) VALUES (?, ?, ?) RETURNING id_chi_so",
                     Integer.class,
                     idLoai,
                     tenThongSo,
                     String.valueOf(payload.getOrDefault("don_vi", "10^9/L")));
 
             Integer idXetNghiem = jdbcTemplate.queryForObject(
-                    "INSERT INTO BenhAn_XetNghiem (id_ho_so, id_loai_xet_nghiem, ngay_lay_mau, id_bac_si, trang_thai) OUTPUT INSERTED.id_xet_nghiem_benh_an VALUES (?, ?, GETDATE(), ?, ?)",
+                    "INSERT INTO BenhAn_XetNghiem (id_ho_so, id_loai_xet_nghiem, ngay_lay_mau, id_bac_si, trang_thai) VALUES (?, ?, CURRENT_TIMESTAMP, ?, ?) RETURNING id_xet_nghiem_benh_an",
                     Integer.class,
                     idHoSo,
                     String.valueOf(idLoai),
@@ -306,7 +306,7 @@ public class HoSoBenhAnController {
 
             String idHoSo = "HS-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase();
             String sql = "INSERT INTO HoSoBenhAn (id_ho_so_benh_an, id_thu_cung, id_bac_si, id_lich_hen, trieu_chung, chan_doan, ngay_kham, trang_thai_ho_so, id_nguoi_tao, ngay_tao) "
-                    + "VALUES (?, ?, ?, ?, ?, ?, CAST(GETDATE() AS DATE), 'HOAN_TAT', ?, GETDATE())";
+                    + "VALUES (?, ?, ?, ?, ?, ?, CURRENT_DATE, 'HOAN_TAT', ?, CURRENT_TIMESTAMP)";
 
             jdbcTemplate.update(sql, idHoSo, idThuCung, idBacSi, idLichHen, trieuChung, chanDoan, idBacSi);
 
@@ -333,7 +333,7 @@ public class HoSoBenhAnController {
             List<Map<String, Object>> chiTiet = (List<Map<String, Object>>) payload.get("chi_tiet");
 
             String idDonThuoc = "DT-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-            String sqlDonThuoc = "INSERT INTO DonThuoc (id_don_thuoc, id_ho_so_benh_an, id_bac_si, ngay_ke_don, ghi_chu) VALUES (?, ?, ?, GETDATE(), ?)";
+            String sqlDonThuoc = "INSERT INTO DonThuoc (id_don_thuoc, id_ho_so_benh_an, id_bac_si, ngay_ke_don, ghi_chu) VALUES (?, ?, ?, CURRENT_TIMESTAMP, ?)";
             jdbcTemplate.update(sqlDonThuoc, idDonThuoc, idBenhAn, idBacSi, ghiChu);
 
             String sqlChiTiet = "INSERT INTO DonThuocChiTiet (id_chi_tiet_don_thuoc, id_don_thuoc, id_thuoc, so_luong, lieu_dung) VALUES (?, ?, ?, ?, ?)";
@@ -348,7 +348,7 @@ public class HoSoBenhAnController {
                 }
 
                 Integer tonKhaDung = jdbcTemplate.queryForObject(
-                        "SELECT ISNULL(SUM(so_luong_ton), 0) FROM LoThuoc WHERE id_thuoc = ? AND so_luong_ton > 0 AND han_su_dung >= CAST(GETDATE() AS DATE)",
+                        "SELECT COALESCE(SUM(so_luong_ton), 0) FROM LoThuoc WHERE id_thuoc = ? AND so_luong_ton > 0 AND han_su_dung >= CURRENT_DATE",
                         Integer.class, idThuoc);
                 if (tonKhaDung == null || tonKhaDung < soLuong) {
                     throw new RuntimeException("Thuốc có ID " + idThuoc + " không đủ số lượng tồn kho!");
@@ -356,17 +356,17 @@ public class HoSoBenhAnController {
 
                 int conLaiCanXuat = soLuong;
                 List<Map<String, Object>> loXuat = jdbcTemplate.queryForList(
-                        "SELECT id_lo, so_luong_ton, gia_nhap FROM LoThuoc WHERE id_thuoc = ? AND so_luong_ton > 0 AND han_su_dung >= CAST(GETDATE() AS DATE) ORDER BY han_su_dung ASC, ngay_nhap ASC",
+                        "SELECT id_lo, so_luong_ton, gia_nhap FROM LoThuoc WHERE id_thuoc = ? AND so_luong_ton > 0 AND han_su_dung >= CURRENT_DATE ORDER BY han_su_dung ASC, ngay_nhap ASC",
                         idThuoc);
                 for (Map<String, Object> lo : loXuat) {
                     if (conLaiCanXuat <= 0) break;
                     String idLo = String.valueOf(lo.get("id_lo"));
                     int tonLo = ((Number) lo.get("so_luong_ton")).intValue();
                     int soXuat = Math.min(conLaiCanXuat, tonLo);
-                    jdbcTemplate.update("UPDATE LoThuoc SET so_luong_ton = so_luong_ton - ?, ngay_cap_nhat_ton_kho = GETDATE() WHERE id_lo = ? AND so_luong_ton >= ?",
+                    jdbcTemplate.update("UPDATE LoThuoc SET so_luong_ton = so_luong_ton - ?, ngay_cap_nhat_ton_kho = CURRENT_TIMESTAMP WHERE id_lo = ? AND so_luong_ton >= ?",
                             soXuat, idLo, soXuat);
                     jdbcTemplate.update(
-                            "INSERT INTO GiaoDichKho (id_giao_dich, id_thuoc, id_lo, loai_giao_dich, so_luong, gia_tri, ngay_giao_dich, id_nhan_vien, ghi_chu) VALUES (?, ?, ?, N'XUAT_DON_THUOC', ?, ?, GETDATE(), ?, ?)",
+                            "INSERT INTO GiaoDichKho (id_giao_dich, id_thuoc, id_lo, loai_giao_dich, so_luong, gia_tri, ngay_giao_dich, id_nhan_vien, ghi_chu) VALUES (?, ?, ?, N'XUAT_DON_THUOC', ?, ?, CURRENT_TIMESTAMP, ?, ?)",
                             "GDK-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase(),
                             idThuoc,
                             idLo,
@@ -438,7 +438,7 @@ public class HoSoBenhAnController {
 
             String idHoaDon = "HD-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase();
             String sqlHoaDon = "INSERT INTO HoaDon (id_hoa_don, id_khach_hang, id_nhan_vien, id_lich_hen, ngay_lap, ngay_lap_hoa_don, tong_tien_truoc_giam_gia, tong_tien_sau_giam_gia, tong_tien_ban_dau, tong_giam_gia, tong_tien_cuoi, trang_thai, trang_thai_thanh_toan) "
-                    + "VALUES (?, ?, ?, ?, GETDATE(), GETDATE(), ?, ?, ?, 0, ?, 'CHO_THANH_TOAN', N'Chờ thanh toán')";
+                    + "VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, ?, ?, 0, ?, 'CHO_THANH_TOAN', N'Chờ thanh toán')";
             jdbcTemplate.update(sqlHoaDon, idHoaDon, idKhachHang, idBacSi, idLichHen, tongTien, tongTien, tongTien, tongTien);
 
             if (giaKham.compareTo(java.math.BigDecimal.ZERO) > 0) {

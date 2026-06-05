@@ -272,7 +272,7 @@ public class FinanceController {
             if (updated > 0 && "DA_THANH_TOAN".equals(status) && !"DA_THANH_TOAN".equalsIgnoreCase(currentStatus)) {
                 // Ghi nhận dòng tiền mặt vào log thanh toán
                 jdbcTemplate.update(
-                        "INSERT INTO ThanhToan (id_thanh_toan, id_hoa_don, ngay_tra_tien, so_tien, phuong_thuc, ghi_chu) VALUES (?, ?, GETDATE(), (SELECT tong_tien_cuoi FROM HoaDon WHERE id_hoa_don = ?), 'Tien_mat', N'Thanh toán tiền mặt thành công')",
+                        "INSERT INTO ThanhToan (id_thanh_toan, id_hoa_don, ngay_tra_tien, so_tien, phuong_thuc, ghi_chu) VALUES (?, ?, CURRENT_TIMESTAMP, (SELECT tong_tien_cuoi FROM HoaDon WHERE id_hoa_don = ?), 'Tien_mat', 'Thanh toán tiền mặt thành công')",
                         "TT-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase(), id, id);
             }
             // GHI LOG
@@ -313,7 +313,7 @@ public class FinanceController {
                     idNcc);
             if (nccCount == null || nccCount == 0) {
                 jdbcTemplate.update(
-                        "INSERT INTO NhaCungCap (id_ncc, ten_ncc, ghi_chu, ngay_tao) VALUES (?, N'Nhà cung cấp mặc định', N'Tự tạo khi nhập kho từ giao diện chưa chọn nhà cung cấp', GETDATE())",
+                        "INSERT INTO NhaCungCap (id_ncc, ten_ncc, ghi_chu, ngay_tao) VALUES (?, 'Nhà cung cấp mặc định', 'Tự tạo khi nhập kho từ giao diện chưa chọn nhà cung cấp', CURRENT_TIMESTAMP)",
                         idNcc);
             }
 
@@ -335,7 +335,7 @@ public class FinanceController {
 
             String idGiaoDich = "GDK-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase();
             jdbcTemplate.update(
-                    "INSERT INTO GiaoDichKho (id_giao_dich, id_thuoc, id_lo, loai_giao_dich, so_luong, gia_tri, ngay_giao_dich, id_nhan_vien, ghi_chu) VALUES (?, ?, ?, N'NHAP_KHO', ?, ?, GETDATE(), ?, ?)",
+                    "INSERT INTO GiaoDichKho (id_giao_dich, id_thuoc, id_lo, loai_giao_dich, so_luong, gia_tri, ngay_giao_dich, id_nhan_vien, ghi_chu) VALUES (?, ?, ?, 'NHAP_KHO', ?, ?, CURRENT_TIMESTAMP, ?, ?)",
                     idGiaoDich, idThuoc, idLo, soLuongNhap, giaNhap.multiply(java.math.BigDecimal.valueOf(soLuongNhap)),
                     idNhanVien, "Nhập kho từ giao diện quản lý");
 
@@ -364,9 +364,9 @@ public class FinanceController {
         try {
             Map<String, Object> summary = jdbcTemplate.queryForMap(
                     "SELECT " +
-                            "COALESCE(SUM(CASE WHEN UPPER(LTRIM(RTRIM(trang_thai))) = 'DA_THANH_TOAN' THEN tong_tien_cuoi ELSE 0 END), 0) AS TongDoanhThu, "
+                            "COALESCE(SUM(CASE WHEN UPPER(TRIM(trang_thai)) = 'DA_THANH_TOAN' THEN tong_tien_cuoi ELSE 0 END), 0) AS TongDoanhThu, "
                             +
-                            "COUNT(CASE WHEN UPPER(LTRIM(RTRIM(trang_thai))) = 'DA_THANH_TOAN' THEN 1 END) AS SoHoaDonDaThanhToan, "
+                            "COUNT(CASE WHEN UPPER(TRIM(trang_thai)) = 'DA_THANH_TOAN' THEN 1 END) AS SoHoaDonDaThanhToan, "
                             +
                             "COUNT(*) AS TongSoHoaDon " +
                             "FROM HoaDon");
