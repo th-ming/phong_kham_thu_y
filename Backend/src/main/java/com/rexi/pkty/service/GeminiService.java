@@ -70,7 +70,7 @@ public class GeminiService {
     @Value("${gemini.api.key}")
     private String apiKey;
 
-    @Value("${gemini.model:gemini-3.5-flash}")
+    @Value("${gemini.model:gemini-2.0-flash}")
     private String modelName;
 
     private String getApiKey() {
@@ -352,9 +352,8 @@ public class GeminiService {
         if (configured != null && !configured.trim().isEmpty()) {
             models.add(configured.trim());
         }
-        models.add("gemini-3.5-flash");
-        models.add("gemini-flash-lite-latest");
         models.add("gemini-2.0-flash");
+        models.add("gemini-flash-lite-latest");
         return new ArrayList<>(models);
     }
 }

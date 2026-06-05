@@ -320,11 +320,11 @@ public class AiMemoryService {
             
             // Query giới hạn tối đa 15 lịch trực sắp tới
             List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-                "SELECT TOP 15 l.ngay_lam, l.gio_bat_dau, l.gio_ket_thuc, l.ghi_chu, nv.ho_ten " +
+                "SELECT l.ngay_lam, l.gio_bat_dau, l.gio_ket_thuc, l.ghi_chu, nv.ho_ten " +
                 "FROM LichLamViecNhanVien l " +
                 "JOIN NhanVien nv ON l.id_nhan_vien = nv.id_nhan_vien " +
                 "WHERE l.ngay_lam >= ? AND l.ngay_lam < ? " +
-                "ORDER BY l.ngay_lam ASC, l.gio_bat_dau ASC",
+                "ORDER BY l.ngay_lam ASC, l.gio_bat_dau ASC LIMIT 15",
                 java.sql.Date.valueOf(today),
                 java.sql.Date.valueOf(nextWeek)
             );

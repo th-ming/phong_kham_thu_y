@@ -50,7 +50,7 @@ public class GroqService {
         if (dbModel != null && !dbModel.isBlank()) {
             return dbModel;
         }
-        return getModelName();
+        return "llama-3.1-8b-instant";
     }
 
     public String getAudioModelName() {
@@ -87,7 +87,7 @@ public class GroqService {
     private static final String GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
     private static final String GROQ_AUDIO_URL = "https://api.groq.com/openai/v1/audio/transcriptions";
 
-    @Value("${groq.model:llama-3.1-8b-instant}")
+    @Value("${groq.model:llama-3.3-70b-versatile}")
     private String modelName;
 
     // Model để phân tích hình ảnh
