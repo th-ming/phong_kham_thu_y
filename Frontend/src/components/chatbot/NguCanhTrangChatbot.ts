@@ -55,6 +55,13 @@ const isVisibleElement = (el: Element) => {
 
 export const readVisibleProfileNameFromPage = (): string => {
     try {
+        if (typeof window !== "undefined") {
+            const path = window.location.pathname;
+            if (path === "/dang-nhap" || path === "/quen-mat-khau" || path.includes("/auth")) {
+                return "";
+            }
+        }
+
         // Cải tiến 3: Mở rộng nhãn nhận diện đa dạng hơn (chủ nuôi, bác sĩ, nhân viên, ...)
         const nameLabels = [
             "ho va ten", "ho ten", "ten khach hang", "ten nhan vien", "ten cua ban",
