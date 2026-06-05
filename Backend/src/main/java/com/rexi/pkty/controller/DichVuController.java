@@ -94,7 +94,7 @@ public class DichVuController {
         }
         DichVu saved = dichVuRepository.save(dv);
         if (isPostgres()) {
-            jdbcTemplate.update("UPDATE public.\"DichVu\" SET \"ngay_tao\" = COALESCE(\"ngay_tao\", CURRENT_TIMESTAMP) WHERE \"id_dich_vu\" = ?",
+            jdbcTemplate.update("UPDATE public.dichvu SET ngay_tao = COALESCE(ngay_tao, CURRENT_TIMESTAMP) WHERE id_dich_vu = ?",
                     saved.getId_dich_vu());
         } else {
             jdbcTemplate.update("UPDATE DichVu SET ngay_tao = COALESCE(ngay_tao, GETDATE()) WHERE id_dich_vu = ?",
@@ -231,7 +231,7 @@ public class DichVuController {
         Integer count = jdbcTemplate.queryForObject("""
                 SELECT COUNT(*)
                 FROM INFORMATION_SCHEMA.COLUMNS
-                WHERE TABLE_NAME = ? AND COLUMN_NAME = ?
+                WHERE LOWER(TABLE_NAME) = LOWER(?) AND LOWER(COLUMN_NAME) = LOWER(?)
                 """, Integer.class, tableName, columnName);
         return count != null && count > 0;
     }
@@ -247,11 +247,11 @@ public class DichVuController {
     }
 
     private String table(String name, boolean postgres) {
-        return postgres ? "public.\"" + name + "\"" : name;
+        return postgres ? "public." + name.toLowerCase(java.util.Locale.ROOT) : name;
     }
 
     private String column(String alias, String name, boolean postgres) {
-        return postgres ? alias + ".\"" + name + "\"" : alias + "." + name;
+        return postgres ? alias + "." + name.toLowerCase(java.util.Locale.ROOT) : alias + "." + name;
     }
 
     private String trueLiteral(boolean postgres) {
