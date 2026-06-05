@@ -22,7 +22,7 @@ public interface NhanVienRepository extends JpaRepository<NhanVien, String> {
     java.util.Optional<NhanVien> findByHoTen(String ho_ten);
 
     // Get direct by email
-    @Query(value = "SELECT TOP 1 * FROM NhanVien WHERE email = ?1", nativeQuery = true)
+    @Query("SELECT nv FROM NhanVien nv WHERE nv.email = ?1")
     java.util.Optional<NhanVien> findByEmail(String email);
 }
 
