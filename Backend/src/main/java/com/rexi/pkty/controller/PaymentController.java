@@ -284,7 +284,7 @@ public class PaymentController {
     @org.springframework.beans.factory.annotation.Value("${vietqr.account.no:***REMOVED***-VIETQR_ACCOUNT_NO}")
     private String ACCOUNT_NO;
 
-    @org.springframework.beans.factory.annotation.Value("${vietqr.account.name:TRAN MINH HOANG}")
+    @org.springframework.beans.factory.annotation.Value("${vietqr.account.name:***REMOVED***-VIETQR_ACCOUNT_NAME}")
     private String ACCOUNT_NAME;
 
     private String getVietQrBankId() {

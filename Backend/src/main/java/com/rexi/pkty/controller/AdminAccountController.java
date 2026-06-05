@@ -136,6 +136,7 @@ public class AdminAccountController {
         }
 
         TaiKhoan tk = opt.get();
+        boolean updatingSelf = isCurrentAccount(tk);
 
         String username = trimToNull(payload.get("ten_dang_nhap"));
         if (username != null && !username.equals(tk.getTen_dang_nhap())) {
@@ -149,11 +150,19 @@ public class AdminAccountController {
 
         String roleId = trimToNull(payload.get("id_vai_tro"));
         if (roleId != null) {
+            if (updatingSelf && !isAdminRole(roleId)) {
+                return ResponseEntity.badRequest()
+                        .body(Map.of("message", "Không thể tự hạ quyền tài khoản admin đang đăng nhập."));
+            }
             tk.setId_vai_tro(roleId);
         }
 
         String status = trimToNull(payload.get("trang_thai"));
         if (status != null) {
+            if (updatingSelf && isLockedStatus(status)) {
+                return ResponseEntity.badRequest()
+                        .body(Map.of("message", "Không thể tự khóa hoặc vô hiệu hóa tài khoản đang đăng nhập."));
+            }
             tk.setTrang_thai(status);
         }
 
@@ -216,5 +225,28 @@ public class AdminAccountController {
         if (value == null) return null;
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private boolean isCurrentAccount(TaiKhoan tk) {
+        org.springframework.security.core.Authentication auth =
+                org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        String username = auth != null ? auth.getName() : null;
+        return username != null
+                && !username.equals("anonymousUser")
+                && tk.getTen_dang_nhap() != null
+                && tk.getTen_dang_nhap().equalsIgnoreCase(username);
+    }
+
+    private boolean isAdminRole(String roleId) {
+        String role = roleId == null ? "" : roleId.trim().toUpperCase();
+        return role.equals("VT-ADMIN") || role.equals("VT-1") || role.equals("ADMIN");
+    }
+
+    private boolean isLockedStatus(String status) {
+        String value = status == null ? "" : status.trim();
+        return value.equalsIgnoreCase("Đã khóa")
+                || value.equalsIgnoreCase("inactive")
+                || value.equalsIgnoreCase("disabled")
+                || value.equalsIgnoreCase("locked");
     }
 }

@@ -196,7 +196,7 @@ public class AuthController {
                 // Tự động gán thông tin hệ thống cho Admin tối cao
                 displayName = "Admin Rexi System";
                 userData.put("ho_ten", displayName);
-                userData.put("id_nhan_vien", null);
+                userData.put("id_nhan_vien", tk.getId_nhan_vien() != null ? tk.getId_nhan_vien() : "NV-ADMIN-CHINH");
                 userData.put("avatar", "https://api.dicebear.com/7.x/avataaars/svg?seed=Admin&backgroundColor=0f9d8a");
             } else if (!"CUSTOMER".equals(loaiTaiKhoan)) {
                 String idNv = tk.getId_nhan_vien();

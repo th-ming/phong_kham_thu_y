@@ -100,7 +100,7 @@ const CustomerBirthYearGate: React.FC = () => {
       notifyUserProfileChanged(nextUser);
       setShow(false);
       setCustomerProfile(nextProfile);
-      toast.success(yearNum >= 1997 ? "Đã thiết lập phong cách Gen Z cho Rexi!" : "Đã thiết lập phong cách trưởng thành cho Rexi!");
+      toast.success("Đã lưu năm sinh và cập nhật trải nghiệm cá nhân.");
     } catch (err: any) {
       console.error("Lỗi lưu năm sinh khách hàng:", err);
       toast.error(err.response?.data?.message || "Cập nhật năm sinh thất bại. Vui lòng thử lại!");

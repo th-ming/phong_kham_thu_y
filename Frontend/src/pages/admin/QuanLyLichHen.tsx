@@ -137,8 +137,152 @@ const QuanLyLichHen: React.FC = () => {
         .stagger-2 { animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both; }
         .table-row:hover { background-color: var(--surface) !important; transform: scale(1.01) translateX(8px); box-shadow: -10px 10px 20px rgba(15, 157, 138, 0.08); z-index: 10; position: relative; border-radius: 16px; }
         [data-theme='dark'] .table-row:hover { background-color: rgba(15, 23, 42, 0.96) !important; box-shadow: -10px 10px 24px rgba(34, 211, 238, 0.08); }
+        .admin-appointment-mobile-list { display: none; }
+        @media screen and (max-width: 1024px) {
+          .admin-mobile-page-header {
+            display: grid !important;
+            grid-template-columns: 1fr !important;
+            gap: 12px !important;
+            margin-bottom: 16px !important;
+          }
+          .admin-mobile-page-header h1 {
+            max-width: 12ch !important;
+            font-size: clamp(1.42rem, 6.4vw, 1.78rem) !important;
+            line-height: 1.08 !important;
+            letter-spacing: -0.02em !important;
+            margin: 0 0 6px !important;
+          }
+          .admin-mobile-page-header p {
+            max-width: 32ch !important;
+            margin: 0 !important;
+            font-size: 0.82rem !important;
+            line-height: 1.45 !important;
+          }
+          .admin-mobile-page-header .btn {
+            width: min(100%, 290px) !important;
+            min-height: 42px !important;
+            justify-content: center !important;
+            padding: 9px 14px !important;
+            border-radius: 16px !important;
+            font-size: 0.82rem !important;
+          }
+          .admin-mobile-filter-bar {
+            display: grid !important;
+            grid-template-columns: 1fr !important;
+            gap: 10px !important;
+            margin-bottom: 16px !important;
+          }
+          .admin-mobile-filter-tabs {
+            width: 100% !important;
+            max-width: 100% !important;
+            display: grid !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 8px !important;
+            padding: 0 !important;
+            overflow: visible !important;
+          }
+          .admin-mobile-filter-tabs button {
+            width: 100% !important;
+            min-width: 0 !important;
+            min-height: 38px !important;
+            padding: 8px 10px !important;
+            border-radius: 14px !important;
+            font-size: 0.66rem !important;
+            line-height: 1.12 !important;
+            justify-content: center !important;
+          }
+          .admin-mobile-filter-tabs button .material-symbols-outlined {
+            font-size: 16px !important;
+          }
+          .admin-mobile-search-box {
+            width: 100% !important;
+            min-height: 42px !important;
+            border-radius: 16px !important;
+          }
+          .admin-appointment-table {
+            display: none !important;
+          }
+          .admin-appointment-mobile-list {
+            display: grid !important;
+            gap: 10px;
+            padding: 10px;
+          }
+          .admin-appointment-mobile-card {
+            display: grid;
+            gap: 10px;
+            padding: 12px;
+            border-radius: 18px;
+            background: var(--surface);
+            border: 1px solid var(--gray-100);
+          }
+          .admin-appointment-mobile-top {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 10px;
+            align-items: start;
+          }
+          .admin-appointment-mobile-card h3 {
+            margin: 0;
+            color: var(--ink);
+            font-size: 0.95rem;
+            line-height: 1.22;
+            font-weight: 950;
+          }
+          .admin-appointment-mobile-card p {
+            margin: 3px 0 0;
+            color: var(--gray-500);
+            font-size: 0.74rem;
+            line-height: 1.35;
+            font-weight: 700;
+          }
+          .admin-appointment-mobile-time,
+          .admin-appointment-mobile-status {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 28px;
+            padding: 5px 9px;
+            border-radius: 999px;
+            font-size: 0.68rem;
+            line-height: 1;
+            font-weight: 950;
+            white-space: nowrap;
+          }
+          .admin-appointment-mobile-time {
+            background: var(--primary-light);
+            color: var(--primary);
+          }
+          .admin-appointment-mobile-status {
+            justify-self: start;
+            max-width: 100%;
+            background: rgba(245, 158, 11, 0.14);
+            color: #d97706;
+          }
+          .admin-appointment-mobile-meta {
+            display: grid;
+            gap: 7px;
+            font-size: 0.74rem;
+            line-height: 1.35;
+            color: var(--gray-500);
+            font-weight: 750;
+          }
+          .admin-appointment-mobile-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+          }
+          .admin-appointment-mobile-actions .btn {
+            min-height: 36px;
+            justify-content: center;
+            padding: 7px 10px !important;
+            border-radius: 13px !important;
+          }
+        }
+        @media screen and (min-width: 1025px) {
+          .admin-appointment-mobile-list { display: none !important; }
+        }
       `}</style>
-      <div className="stagger-1" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+      <div className="stagger-1 admin-mobile-page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
         <div>
           <h1 style={{ fontSize: '2.5rem', fontWeight: 950, color: 'var(--ink)', letterSpacing: '-1.5px' }}>Điều phối lịch hẹn</h1>
           <p style={{ color: 'var(--gray-500)', fontWeight: 600 }}>Quản lý lộ trình khám và điều phối đội ngũ y bác sĩ.</p>
@@ -149,8 +293,8 @@ const QuanLyLichHen: React.FC = () => {
         </button>
       </div>
 
-      <div className="stagger-1" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px', flexWrap: 'wrap', gap: '16px' }}>
-        <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '4px' }}>
+      <div className="stagger-1 admin-mobile-filter-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px', flexWrap: 'wrap', gap: '16px' }}>
+        <div className="admin-mobile-filter-tabs" style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '4px' }}>
           {[
             { id: 'all', label: 'TẤT CẢ', icon: 'list' },
             { id: 'CHO_XAC_NHAN', label: 'CHỜ XÁC NHẬN', icon: 'pending' },
@@ -177,7 +321,7 @@ const QuanLyLichHen: React.FC = () => {
             </button>
           ))}
         </div>
-        <div className="glass-card" style={{ display: 'flex', alignItems: 'center', padding: '0 16px', borderRadius: '16px', border: '1px solid var(--gray-200)', background: 'var(--surface)', width: '300px' }}>
+        <div className="glass-card admin-mobile-search-box" style={{ display: 'flex', alignItems: 'center', padding: '0 16px', borderRadius: '16px', border: '1px solid var(--gray-200)', background: 'var(--surface)', width: '300px' }}>
           <span className="material-symbols-outlined" style={{ color: 'var(--gray-400)', marginRight: '8px' }}>search</span>
           <input data-ai-id="input-quanlylichhen-zzak"
             type="text"
@@ -190,7 +334,38 @@ const QuanLyLichHen: React.FC = () => {
       </div>
 
       <div className="glass-card stagger-2" style={{ borderRadius: 'var(--radius-xl)', overflow: 'hidden' }}>
-        <div className="table-responsive-wrapper">
+        <div className="admin-appointment-mobile-list">
+          {currentRows.length === 0 ? (
+            <div className="admin-empty-state" style={{ padding: '18px 10px', textAlign: 'center', color: 'var(--gray-500)', fontWeight: 800 }}>
+              Không có lịch hẹn phù hợp.
+            </div>
+          ) : currentRows.map((l) => (
+            <article key={l.id_lich_hen} className="admin-appointment-mobile-card">
+              <div className="admin-appointment-mobile-top">
+                <div>
+                  <h3>{l.ten_thu_cung || "Bệnh nhân chưa cập nhật"}</h3>
+                  <p>{l.ten_khach_hang || "Khách vãng lai"} · #{l.id_lich_hen}</p>
+                </div>
+                <span className="admin-appointment-mobile-time">{gioRutGon(l.gio_kham)}</span>
+              </div>
+              <span className="admin-appointment-mobile-status">{l.trang_thai?.toUpperCase() || 'CHO_XAC_NHAN'}</span>
+              <div className="admin-appointment-mobile-meta">
+                <span><strong>{chuyenNgayISO_SangVN(l.ngay_kham)}</strong> · {l.ten_bac_si || "Chưa phân bổ"}</span>
+                <span>{l.ly_do || "Khám tổng quát"}</span>
+                {l.ghi_chu && <span>{l.ghi_chu}</span>}
+              </div>
+              <div className="admin-appointment-mobile-actions">
+                <button data-ai-id="button-quanlylichhen-mobile-view" className="btn" onClick={() => setViewingLichHen(l)} style={{ background: 'var(--gray-50)', color: 'var(--ink)' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>visibility</span>
+                </button>
+                <button data-ai-id="button-quanlylichhen-mobile-edit" className="btn" onClick={() => setEditingLichHen(l)} style={{ background: 'var(--primary-light)', color: 'var(--primary)' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>edit_square</span>
+                </button>
+              </div>
+            </article>
+          ))}
+        </div>
+        <div className="table-responsive-wrapper admin-appointment-table">
           <div style={{ minWidth: '800px' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
@@ -207,8 +382,8 @@ const QuanLyLichHen: React.FC = () => {
           <tbody>
             {currentRows.length === 0 ? (
               <tr>
-                <td colSpan={7} style={{ padding: '32px 20px', textAlign: 'center', color: 'var(--gray-500)', fontWeight: 700 }}>
-                  Không tìm thấy lịch hẹn phù hợp. Thử đổi bộ lọc hoặc tìm kiếm từ khóa khác.
+                <td className="admin-empty-state" colSpan={7} style={{ padding: '32px 20px', textAlign: 'center', color: 'var(--gray-500)', fontWeight: 700 }}>
+                  Không có lịch hẹn phù hợp.
                 </td>
               </tr>
             ) : currentRows.map((l) => (

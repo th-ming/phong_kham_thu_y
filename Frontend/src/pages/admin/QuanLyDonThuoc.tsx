@@ -97,14 +97,99 @@ const QuanLyDonThuoc: React.FC = () => {
             border-radius: 12px !important;
           }
         }
+        .admin-prescription-mobile-list { display: none; }
+        @media screen and (max-width: 1024px) {
+          .admin-prescription-header {
+            display: grid !important;
+            grid-template-columns: 1fr !important;
+            gap: 12px !important;
+            margin-bottom: 16px !important;
+          }
+          .admin-prescription-header h1 {
+            max-width: 12ch !important;
+            font-size: clamp(1.42rem, 6.4vw, 1.78rem) !important;
+            line-height: 1.08 !important;
+            letter-spacing: -0.02em !important;
+            margin: 0 0 6px !important;
+          }
+          .admin-prescription-header p {
+            max-width: 32ch !important;
+            margin: 0 !important;
+            font-size: 0.82rem !important;
+            line-height: 1.45 !important;
+          }
+          .admin-prescription-search {
+            width: min(100%, 300px) !important;
+            min-height: 42px !important;
+            border-radius: 16px !important;
+          }
+          .admin-prescription-desktop-table {
+            display: none !important;
+          }
+          .admin-prescription-mobile-list {
+            display: grid !important;
+            gap: 10px;
+            padding: 10px;
+          }
+          .admin-prescription-card {
+            display: grid;
+            gap: 10px;
+            padding: 12px;
+            border-radius: 18px;
+            background: var(--surface);
+            border: 1px solid var(--gray-100);
+          }
+          .admin-prescription-card-top {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 10px;
+            align-items: start;
+          }
+          .admin-prescription-card h3 {
+            margin: 0;
+            color: var(--ink);
+            font-size: 0.95rem;
+            line-height: 1.22;
+            font-weight: 950;
+          }
+          .admin-prescription-card p {
+            margin: 4px 0 0;
+            color: var(--gray-500);
+            font-size: 0.72rem;
+            line-height: 1.35;
+            font-weight: 700;
+            overflow-wrap: anywhere;
+          }
+          .admin-prescription-qty {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 28px;
+            padding: 5px 9px;
+            border-radius: 999px;
+            background: var(--primary-light);
+            color: var(--primary);
+            font-size: 0.68rem;
+            line-height: 1;
+            font-weight: 950;
+            white-space: nowrap;
+          }
+          .admin-prescription-card .btn {
+            width: 100%;
+            min-height: 36px;
+            justify-content: center;
+            border-radius: 13px !important;
+            padding: 7px 10px !important;
+          }
+        }
       `}</style>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', flexWrap: 'wrap', gap: '20px' }}>
+      <div className="admin-prescription-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', flexWrap: 'wrap', gap: '20px' }}>
         <div>
           <h1 style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--ink)', letterSpacing: '-1px' }}>Quản lý Đơn thuốc</h1>
           <p style={{ color: 'var(--gray-500)', fontWeight: 600 }}>Theo dõi lịch sử cấp phát thuốc và hướng dẫn điều trị tại nhà.</p>
         </div>
-        <div className="glass-card" style={{ display: 'flex', alignItems: 'center', padding: '0 16px', borderRadius: '16px', border: '1px solid var(--gray-200)', background: 'var(--surface)', width: '300px' }}>
+        <div className="glass-card admin-prescription-search" style={{ display: 'flex', alignItems: 'center', padding: '0 16px', borderRadius: '16px', border: '1px solid var(--gray-200)', background: 'var(--surface)', width: '300px' }}>
           <span className="material-symbols-outlined" style={{ color: 'var(--gray-400)', marginRight: '8px' }}>search</span>
           <input data-ai-id="input-quanlydonthuoc-3bsc"
             type="text"
@@ -117,7 +202,29 @@ const QuanLyDonThuoc: React.FC = () => {
       </div>
 
       <div className="glass-card" style={{ borderRadius: 'var(--radius-xl)', overflow: 'hidden' }}>
-        <div className="table-responsive-wrapper">
+        <div className="admin-prescription-mobile-list">
+          {filteredDonThuocs.length === 0 ? (
+            <div className="admin-empty-state" style={{ padding: '18px 10px', textAlign: 'center', color: 'var(--gray-500)', fontWeight: 800 }}>
+              Không có đơn thuốc phù hợp.
+            </div>
+          ) : filteredDonThuocs.map((dt) => (
+            <article key={dt.id_don_thuoc} className="admin-prescription-card">
+              <div className="admin-prescription-card-top">
+                <div>
+                  <h3>#DT-{dt.id_don_thuoc} · {dt.ten_thuoc || 'Thuốc chưa cập nhật'}</h3>
+                  <p>{dt.ten_thu_cung || 'Bệnh nhân chưa cập nhật'} · HS-{dt.id_ho_so_benh_an}</p>
+                </div>
+                <span className="admin-prescription-qty">SL {dt.so_luong || '—'}</span>
+              </div>
+              <p>{dt.cach_dung || 'Chưa có hướng dẫn dùng'}</p>
+              {dt.ghi_chu && <p>{dt.ghi_chu}</p>}
+              <button data-ai-id="button-quanlydonthuoc-mobile-view" className="btn" onClick={() => setViewingDT(dt)} style={{ background: 'var(--gray-50)', color: 'var(--ink)' }}>
+                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>description</span>
+              </button>
+            </article>
+          ))}
+        </div>
+        <div className="table-responsive-wrapper admin-prescription-desktop-table">
 <div style={{ minWidth: '800px' }}>
 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>

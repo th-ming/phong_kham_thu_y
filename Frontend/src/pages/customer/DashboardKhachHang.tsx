@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axiosInstance from "@services/axios";
-import { Modal, Skeleton } from "@components/CommonUI";
+import { AnimatedNumber, Modal, Skeleton } from "@components/CommonUI";
 import BirthYearSelect from "@components/BirthYearSelect";
 import { decodeHtmlEntities, getUserProfile } from "@utils/index";
 import { customerToneCopy, isGenZBirthYear } from "@utils/customerTone";
@@ -933,7 +933,9 @@ const DashboardKhachHang: React.FC = () => {
               </div>
             </div>
             <p style={{ fontSize: '0.8rem', fontWeight: 900, color: 'var(--gray-500)', margin: '0 0 8px 0', textTransform: 'uppercase', letterSpacing: '1px' }}>{item.label}</p>
-            <h3 style={{ fontSize: '2rem', fontWeight: 950, color: item.color, margin: 0, textShadow: `0 2px 10px ${item.color}10` }}>{item.value}</h3>
+            <h3 style={{ fontSize: '2rem', fontWeight: 950, color: item.color, margin: 0, textShadow: `0 2px 10px ${item.color}10` }}>
+              <AnimatedNumber value={item.value} />
+            </h3>
           </div>
         ))}
       </div>
@@ -957,19 +959,25 @@ const DashboardKhachHang: React.FC = () => {
               .pet-insta-card {
                 min-width: 160px;
                 width: 160px;
-                background: var(--surface);
+                background: rgba(255, 255, 255, 0.45) !important;
+                backdrop-filter: blur(16px);
+                -webkit-backdrop-filter: blur(16px);
                 border-radius: 28px;
-                border: 1px solid var(--gray-200);
+                border: 1px solid rgba(255, 255, 255, 0.5) !important;
                 padding: 20px 16px;
                 text-align: center;
-                transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-                box-shadow: var(--shadow-sm);
+                transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+                box-shadow: 0 10px 25px rgba(0,0,0,0.02);
                 cursor: pointer;
               }
+              [data-theme='dark'] .pet-insta-card {
+                background: rgba(30, 41, 59, 0.4) !important;
+                border-color: rgba(255, 255, 255, 0.08) !important;
+              }
               .pet-insta-card:hover {
-                transform: translateY(-8px) scale(1.03);
+                transform: translateY(-8px) scale(1.04) rotate(1deg);
                 border-color: var(--primary) !important;
-                box-shadow: 0 15px 30px rgba(15, 157, 138, 0.15);
+                box-shadow: 0 15px 30px rgba(15, 157, 138, 0.2);
               }
             `}</style>
             {pets.map(p => {
@@ -1048,9 +1056,17 @@ const DashboardKhachHang: React.FC = () => {
                       <p style={{ fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 700, margin: '2px 0 0 0' }}>Dành cho: <b style={{ color: 'var(--primary)' }}>{pets.find(p => p.id_thu_cung === app.id_thu_cung)?.ten_thu_cung || 'Thú cưng'}</b></p>
                     </div>
                   </div>
-                  <div style={{ textAlign: 'right' }}>
+                  <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
                     <p style={{ fontWeight: 900, color: 'var(--ink)', margin: 0 }}>{app.ngay_kham?.split('T')[0].split('-').reverse().join('/') || "---"}</p>
-                    <p style={{ fontSize: '0.85rem', color: 'var(--primary)', fontWeight: 900, margin: '2px 0 0 0' }}>{app.gio_kham?.substring(0, 5)}</p>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--primary)', fontWeight: 900, margin: 0 }}>{app.gio_kham?.substring(0, 5)}</p>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: app.trang_thai === 'DANG_KHAM' ? 'rgba(20, 184, 166, 0.12)' : 'rgba(59, 130, 246, 0.1)', padding: '4px 10px', borderRadius: '50px', marginTop: '4px' }}>
+                      {app.trang_thai === 'DANG_KHAM' && (
+                        <span className="pulse-dot" style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
+                      )}
+                      <span style={{ fontSize: '0.72rem', fontWeight: 900, textTransform: 'uppercase', color: app.trang_thai === 'DANG_KHAM' ? '#14b8a6' : '#3b82f6' }}>
+                        {app.trang_thai === 'DANG_KHAM' ? 'Đang khám' : app.trang_thai === 'DA_XAC_NHAN' ? 'Đã xác nhận' : 'Chờ xác nhận'}
+                      </span>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -1059,7 +1075,7 @@ const DashboardKhachHang: React.FC = () => {
         </div>
 
         <div className="customer-side-stack" style={{ display: 'grid', gap: '32px' }}>
-          {/* ⚡ BẢNG PHÍM TẮT TIỆN ÍCH NHANH GLASSMORPHISM */}
+          {/* BẢNG PHÍM TẮT TIỆN ÍCH NHANH */}
           <div className="glass-card hover-lift customer-quick-card" style={{ padding: '32px', borderRadius: '32px', border: '1px solid var(--gray-100)' }}>
             <h3 style={{ fontSize: '1.15rem', fontWeight: 950, color: 'var(--ink)', marginBottom: '20px', letterSpacing: '-0.5px' }}>Thao tác nhanh</h3>
             <div className="customer-quick-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
@@ -1072,6 +1088,7 @@ const DashboardKhachHang: React.FC = () => {
                 <div
                   key={idx}
                   onClick={() => navigate(action.path)}
+                  className="hover-scale customer-quick-action"
                   style={{
                     padding: '16px 12px',
                     borderRadius: '20px',
@@ -1086,7 +1103,6 @@ const DashboardKhachHang: React.FC = () => {
                     textAlign: 'center',
                     transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
                   }}
-                  className="hover-scale customer-quick-action"
                 >
                   <div style={{ width: '42px', height: '42px', borderRadius: '14px', background: `${action.color}12`, color: action.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <span className="material-symbols-outlined" style={{ fontSize: '22px' }}>{action.icon}</span>
@@ -1248,21 +1264,21 @@ const DashboardKhachHang: React.FC = () => {
                 `}</style>
               </div>
 
-              {/* DỰ ĐOÁN PHONG CÁCH CHAT DỘNG THỜI GIAN THỰC */}
+              {/* GỢI Ý TRẢI NGHIỆM THEO NĂM SINH */}
               {inputNamSinh && !isNaN(Number(inputNamSinh)) && Number(inputNamSinh) >= 1900 && Number(inputNamSinh) <= new Date().getFullYear() && (
                 <div className="animate-fade-in" style={{
                   padding: '16px 20px',
                   borderRadius: '20px',
-                  background: Number(inputNamSinh) >= 1997 ? 'rgba(20, 184, 166, 0.08)' : 'rgba(245, 158, 11, 0.06)',
-                  border: `1.5px dashed ${Number(inputNamSinh) >= 1997 ? 'var(--primary)' : '#f59e0b'}`,
+                  background: 'rgba(20, 184, 166, 0.08)',
+                  border: '1.5px dashed var(--primary)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
                   animation: 'slideUpFade 0.3s ease-out'
                 }}>
-                  <span className="material-symbols-outlined" style={{ color: Number(inputNamSinh) >= 1997 ? 'var(--primary)' : '#f59e0b' }}>
-                    {Number(inputNamSinh) >= 1997 ? 'celebration' : 'workspace_premium'}
+                  <span className="material-symbols-outlined" style={{ color: 'var(--primary)' }}>
+                    tune
                   </span>
-                  <span style={{ fontSize: '0.88rem', fontWeight: 900, color: Number(inputNamSinh) >= 1997 ? 'var(--primary)' : '#f59e0b' }}>
-                    {Number(inputNamSinh) >= 1997 ? "PHONG CÁCH: Gen Z vui tươi nhí nhố 🐱🎉" : "PHONG CÁCH: Trưởng thành chu đáo chuẩn mực 🩺✨"}
+                  <span style={{ fontSize: '0.88rem', fontWeight: 900, color: 'var(--primary)' }}>
+                    Rexi sẽ cá nhân hóa cách hỗ trợ theo thông tin của bạn.
                   </span>
                 </div>
               )}

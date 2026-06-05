@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import axiosInstance from "@services/axios";
 import { toast } from "@components/Toast";
 import { Modal } from "@components/CommonUI";
@@ -33,6 +33,19 @@ ChartJS.register(
   LineElement,
   Filler
 );
+
+const formatChartTick = (value: number) => {
+  if (value === 0) return '0';
+  if (value >= 1000000) {
+    const val = value / 1000000;
+    return `${val % 1 === 0 ? val : val.toFixed(1)} Tr`;
+  }
+  if (value >= 1000) {
+    const val = value / 1000;
+    return `${val % 1 === 0 ? val : val.toFixed(1)}k`;
+  }
+  return value.toString();
+};
 
 const BaoCaoThongKe: React.FC = () => {
   const [revenueData, setRevenueData] = useState<any[]>([]);
@@ -236,11 +249,10 @@ const BaoCaoThongKe: React.FC = () => {
             if (typeof val === 'object' && val !== null) {
               val = context.chart.options.indexAxis === 'y' ? context.parsed.x : context.parsed.y;
             }
-            label += val;
             if (context.chart.config.type === 'doughnut') {
-              label += ' bé';
+              label += `${val} bé`;
             } else {
-              label += ' Triệu VNĐ';
+              label += `${val.toLocaleString('vi-VN')} đ`;
             }
             return label;
           }
@@ -248,7 +260,18 @@ const BaoCaoThongKe: React.FC = () => {
       }
     },
     scales: {
-      y: { beginAtZero: true, display: false },
+      y: {
+        beginAtZero: true,
+        display: true,
+        grid: {
+          color: 'rgba(148, 163, 184, 0.08)'
+        },
+        ticks: {
+          color: '#94a3b8',
+          font: { weight: 'bold' as const },
+          callback: (value: any) => formatChartTick(value)
+        }
+      },
       x: { grid: { display: false }, ticks: { font: { weight: 'bold' as const }, color: '#94a3b8' } }
     }
   };
@@ -256,8 +279,8 @@ const BaoCaoThongKe: React.FC = () => {
   const revenueChartData = {
     labels: revenueData.map(d => `T${d.Thang || d.thang}`),
     datasets: [{
-      label: 'Doanh thu (Triệu)',
-      data: revenueData.map(d => (d.TongDoanhThu || d.doanh_thu || d.tong_doanh_thu || 0) / 1000000),
+      label: 'Doanh thu',
+      data: revenueData.map(d => (d.TongDoanhThu || d.doanh_thu || d.tong_doanh_thu || 0)),
       backgroundColor: (context: any) => {
         const ctx = context.chart.ctx;
         const gradient = ctx.createLinearGradient(0, 0, 0, 400);
@@ -267,6 +290,7 @@ const BaoCaoThongKe: React.FC = () => {
       },
       borderRadius: 12,
       hoverBackgroundColor: '#0f9d8a',
+      maxBarThickness: 45,
     }]
   };
 
@@ -276,11 +300,12 @@ const BaoCaoThongKe: React.FC = () => {
       return `${date.getDate()}/${date.getMonth() + 1}`;
     }),
     datasets: [{
-      label: 'Doanh thu (Triệu)',
-      data: sortedDailyData.map(d => (d.TongDoanhThu || d.doanh_thu || d.tong_doanh_thu || 0) / 1000000),
+      label: 'Doanh thu',
+      data: sortedDailyData.map(d => (d.TongDoanhThu || d.doanh_thu || d.tong_doanh_thu || 0)),
       backgroundColor: 'rgba(245, 158, 11, 0.8)',
       borderRadius: 8,
       hoverBackgroundColor: '#f59e0b',
+      maxBarThickness: 45,
     }]
   };
 
@@ -307,7 +332,7 @@ const BaoCaoThongKe: React.FC = () => {
     labels: serviceChartItems.map(s => s.TenDichVu || s.ten_dich_vu),
     datasets: [{
       label: 'Doanh thu',
-      data: serviceChartItems.map(s => (s.DoanhThu || s.doanh_thu || s.tong_doanh_thu || 0) / 1000000),
+      data: serviceChartItems.map(s => (s.DoanhThu || s.doanh_thu || s.tong_doanh_thu || 0)),
       backgroundColor: (context: any) => {
         const chart = context.chart;
         const { ctx, chartArea } = chart;
@@ -321,6 +346,7 @@ const BaoCaoThongKe: React.FC = () => {
       borderWidth: 1,
       borderRadius: 8,
       hoverBackgroundColor: 'rgba(34, 211, 238, 1)',
+      maxBarThickness: 45,
     }]
   };
 
@@ -530,7 +556,7 @@ const BaoCaoThongKe: React.FC = () => {
       `}</style>
 
       {/* TIÊU ĐỀ TRANG */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
+      <div className="admin-mobile-page-header report-page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
         <div>
           <h1 style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--ink)', letterSpacing: '-1px' }}>Phân tích & Báo cáo</h1>
           <p style={{ color: 'var(--gray-500)', fontWeight: 600 }}>Cái nhìn chuyên sâu về hiệu suất và tăng trưởng của phòng khám.</p>
@@ -546,7 +572,7 @@ const BaoCaoThongKe: React.FC = () => {
       </div>
 
       {/* HÀNG THẺ KPI KÍNH MỜ CAO CẤP */}
-      <div className="stagger-1 no-print" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '24px', marginBottom: '40px' }}>
+      <div className="stagger-1 no-print admin-report-kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '24px', marginBottom: '40px' }}>
         <div className="glass-card hover-lift report-kpi-card" onClick={() => setSelectedKpi("revenue")} title="Bấm để xem chi tiết doanh thu" style={{ padding: '32px', borderRadius: '32px', border: '1px solid rgba(20, 184, 166, 0.25)', background: 'linear-gradient(135deg, rgba(20, 184, 166, 0.15) 0%, var(--surface) 100%)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
           <div style={{ width: '60px', height: '60px', borderRadius: '20px', background: 'rgba(20, 184, 166, 0.18)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 20px rgba(20, 184, 166, 0.12)', fontSize: '1.55rem', fontWeight: 950, marginBottom: '16px' }}><KpiIcon name="money" /></div>
           <div>
@@ -603,9 +629,9 @@ const BaoCaoThongKe: React.FC = () => {
       </div>
 
       {/* KHU VỰC BIỂU ĐỒ CHÍNH */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '32px', marginBottom: '40px' }}>
+      <div className="admin-report-charts-grid">
         {/* Doanh thu 12 tháng */}
-        <div className="glass-card" style={{ padding: '32px', borderRadius: 'var(--radius-xl)' }}>
+        <div className="glass-card admin-report-chart-card">
           <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '24px', color: 'var(--ink)' }}>Xu hướng doanh thu</h3>
           <div style={{ height: '300px' }}>
             <Bar options={commonOptions} data={revenueChartData} />
@@ -613,7 +639,7 @@ const BaoCaoThongKe: React.FC = () => {
         </div>
 
         {/* Doanh thu 7 ngày */}
-        <div className="glass-card" style={{ padding: '32px', borderRadius: 'var(--radius-xl)' }}>
+        <div className="glass-card admin-report-chart-card">
           <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '24px', color: 'var(--ink)' }}>Doanh thu 7 ngày qua</h3>
           <div style={{ height: '300px' }}>
             <Bar options={commonOptions} data={dailyChartData} />
@@ -621,7 +647,7 @@ const BaoCaoThongKe: React.FC = () => {
         </div>
 
         {/* Tỷ lệ thú cưng (Kèm Legend Pills tương tác Drill-down) */}
-        <div className="glass-card" style={{ padding: '32px', borderRadius: 'var(--radius-xl)' }}>
+        <div className="glass-card admin-report-chart-card">
           <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '20px', color: 'var(--ink)' }}>Tỷ lệ loài thú cưng</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', height: '300px' }}>
             <div style={{ flex: 1, height: '180px', minHeight: '180px' }}>
@@ -631,7 +657,7 @@ const BaoCaoThongKe: React.FC = () => {
                   ...commonOptions,
                   scales: undefined,
                   cutout: '70%',
-                  plugins: { ...commonOptions.plugins, legend: { display: true, position: 'right', labels: { usePointStyle: true, font: { weight: 'bold' as const } } } }
+                  plugins: { ...commonOptions.plugins, legend: { display: false } }
                 }}
               />
             </div>
@@ -672,7 +698,7 @@ const BaoCaoThongKe: React.FC = () => {
         </div>
 
         {/* Hiệu suất bs */}
-        <div className="glass-card" style={{ padding: '32px', borderRadius: 'var(--radius-xl)' }}>
+        <div className="glass-card admin-report-chart-card">
           <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '24px', color: 'var(--ink)' }}>Hiệu suất đội ngũ</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {doctorStats.map((doc, idx) => {
@@ -694,7 +720,7 @@ const BaoCaoThongKe: React.FC = () => {
         </div>
 
         {/* Doanh thu dịch vụ */}
-        <div className="glass-card" style={{ padding: '32px', borderRadius: 'var(--radius-xl)', gridColumn: 'span 2' }}>
+        <div className="glass-card admin-report-chart-card span-2">
           <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '24px', color: 'var(--ink)' }}>Phân bổ doanh thu dịch vụ</h3>
           <div style={{ height: '400px', position: 'relative' }}>
             <Bar
@@ -707,7 +733,7 @@ const BaoCaoThongKe: React.FC = () => {
                     ...commonOptions.plugins.tooltip,
                     callbacks: {
                       label: (context: any) => {
-                        const value = Number(context.parsed.x || 0) * 1000000;
+                        const value = Number(context.parsed.x || 0);
                         return `Doanh thu: ${formatMoney(value)}`;
                       }
                     }
@@ -717,7 +743,12 @@ const BaoCaoThongKe: React.FC = () => {
                   x: {
                     beginAtZero: true,
                     grid: { color: 'rgba(148, 163, 184, 0.18)' },
-                    ticks: { font: { weight: 'bold' as const }, color: '#94a3b8', padding: 8 }
+                    ticks: {
+                      font: { weight: 'bold' as const },
+                      color: '#94a3b8',
+                      padding: 8,
+                      callback: (value: any) => formatChartTick(value)
+                    }
                   },
                   y: {
                     grid: { display: false },
@@ -732,8 +763,8 @@ const BaoCaoThongKe: React.FC = () => {
       </div>
 
       {/* BANNER TỔNG DOANH THU THỰC TẾ DƯỚI CÙNG */}
-      <div className="glass-card" style={{ padding: '40px', borderRadius: 'var(--radius-xl)', background: 'var(--secondary-gradient)', color: 'white', display: 'flex', alignItems: 'center', gap: '32px' }}>
-        <div style={{ width: '80px', height: '80px', background: 'rgba(255,255,255,0.1)', borderRadius: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div className="glass-card admin-report-banner">
+        <div style={{ width: '80px', height: '80px', background: 'rgba(255,255,255,0.1)', borderRadius: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
           <span className="material-symbols-outlined" style={{ fontSize: '40px' }}>trending_up</span>
         </div>
         <div>

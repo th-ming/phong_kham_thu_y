@@ -123,7 +123,7 @@ const AISummaryModal: React.FC<AISummaryModalProps> = ({ isOpen, onClose, summar
           </div>
           <div>
             <h2 className="summary-title" style={{ margin: 0, fontSize: '1.5rem', fontWeight: 900, color: 'var(--ink)' }}>AI Tóm Tắt Bệnh Án</h2>
-            <p style={{ margin: '4px 0 0 0', color: 'var(--gray-400)', fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Phân tích bởi Rexi AI (Gemini)</p>
+            <p style={{ margin: '4px 0 0 0', color: 'var(--gray-400)', fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Phân tích bởi Rexi AI</p>
           </div>
         </div>
 

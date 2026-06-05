@@ -121,14 +121,144 @@ const QuanLyDichVu: React.FC = () => {
         .input-with-icon { position: relative; }
         .input-with-icon .icon { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--gray-400); font-size: 20px; }
         .input-with-icon input { padding-left: 48px !important; }
+        .admin-service-mobile-list { display: none; }
+        @media screen and (max-width: 1024px) {
+          .admin-service-header {
+            display: grid !important;
+            grid-template-columns: 1fr !important;
+            gap: 12px !important;
+            margin-bottom: 16px !important;
+          }
+          .admin-service-header h1 {
+            max-width: 12ch !important;
+            font-size: clamp(1.42rem, 6.4vw, 1.78rem) !important;
+            line-height: 1.08 !important;
+            letter-spacing: -0.02em !important;
+            margin: 0 0 6px !important;
+          }
+          .admin-service-header p {
+            max-width: 32ch !important;
+            margin: 0 !important;
+            font-size: 0.82rem !important;
+            line-height: 1.45 !important;
+          }
+          .admin-service-actions {
+            display: grid !important;
+            grid-template-columns: 1fr !important;
+            width: min(100%, 300px) !important;
+            gap: 8px !important;
+          }
+          .admin-service-search {
+            width: 100% !important;
+            min-height: 40px !important;
+            border-radius: 14px !important;
+          }
+          .admin-service-actions .btn {
+            width: 100% !important;
+            min-height: 40px !important;
+            justify-content: center !important;
+            border-radius: 14px !important;
+            padding: 8px 12px !important;
+            font-size: 0.78rem !important;
+          }
+          .admin-service-form {
+            padding: 14px !important;
+            border-radius: 20px !important;
+            margin-bottom: 16px !important;
+          }
+          .admin-service-form h2 {
+            margin-bottom: 14px !important;
+            font-size: 1rem !important;
+            line-height: 1.25 !important;
+          }
+          .admin-service-form-grid {
+            grid-template-columns: 1fr !important;
+            gap: 12px !important;
+            margin-bottom: 12px !important;
+          }
+          .admin-service-form-actions {
+            display: grid !important;
+            grid-template-columns: 1fr !important;
+            gap: 8px !important;
+          }
+          .admin-service-form-actions .btn {
+            width: 100% !important;
+            justify-content: center !important;
+          }
+          .admin-service-desktop-table {
+            display: none !important;
+          }
+          .admin-service-mobile-list {
+            display: grid !important;
+            gap: 10px;
+            padding: 10px;
+          }
+          .admin-service-card {
+            display: grid;
+            gap: 10px;
+            padding: 12px;
+            border-radius: 18px;
+            background: var(--surface);
+            border: 1px solid var(--gray-100);
+          }
+          .admin-service-card-top {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 10px;
+            align-items: start;
+          }
+          .admin-service-card h3 {
+            margin: 0;
+            color: var(--ink);
+            font-size: 0.95rem;
+            line-height: 1.22;
+            font-weight: 950;
+          }
+          .admin-service-card p {
+            margin: 4px 0 0;
+            color: var(--gray-500);
+            font-size: 0.72rem;
+            line-height: 1.35;
+            font-weight: 700;
+          }
+          .admin-service-price {
+            color: var(--primary);
+            font-size: 0.9rem;
+            font-weight: 950;
+            white-space: nowrap;
+          }
+          .admin-service-meta {
+            display: inline-flex;
+            width: fit-content;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: var(--primary-light);
+            color: var(--primary);
+            font-size: 0.68rem;
+            line-height: 1;
+            font-weight: 950;
+          }
+          .admin-service-card-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+          }
+          .admin-service-card-actions .btn {
+            width: 100%;
+            min-height: 36px;
+            justify-content: center;
+            border-radius: 13px !important;
+            padding: 7px 10px !important;
+          }
+        }
       `}</style>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', flexWrap: 'wrap', gap: '20px' }}>
+      <div className="admin-service-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', flexWrap: 'wrap', gap: '20px' }}>
         <div>
           <h1 style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--ink)', letterSpacing: '-1px' }}>Danh mục dịch vụ</h1>
           <p style={{ color: 'var(--gray-500)', fontWeight: 600 }}>Quản lý bảng giá và thông tin các dịch vụ thú y.</p>
         </div>
-        <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <div className="glass-card" style={{ display: 'flex', alignItems: 'center', padding: '0 16px', borderRadius: '16px', border: '1px solid var(--gray-200)', background: 'var(--surface)', width: '260px' }}>
+        <div className="admin-service-actions" style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div className="glass-card admin-service-search" style={{ display: 'flex', alignItems: 'center', padding: '0 16px', borderRadius: '16px', border: '1px solid var(--gray-200)', background: 'var(--surface)', width: '260px' }}>
             <span className="material-symbols-outlined" style={{ color: 'var(--gray-400)', marginRight: '8px' }}>search</span>
             <input data-ai-id="input-quanlydichvu-qkhi"
               type="text"
@@ -148,9 +278,9 @@ const QuanLyDichVu: React.FC = () => {
       </div>
 
       {formData.ten_dich_vu !== undefined && (
-        <div className="glass-card" style={{ padding: '40px', borderRadius: 'var(--radius-xl)', marginBottom: '40px' }}>
+        <div className="glass-card admin-service-form" style={{ padding: '40px', borderRadius: 'var(--radius-xl)', marginBottom: '40px' }}>
           <h2 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '32px' }}>{editingId ? 'Cập nhật dịch vụ' : 'Định nghĩa dịch vụ mới'}</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '24px', marginBottom: '24px' }}>
+          <div className="admin-service-form-grid" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '24px', marginBottom: '24px' }}>
             <div className="input-with-icon" style={{ display: 'grid', gap: '8px' }}>
               <label style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gray-400)' }}>TÊN DỊCH VỤ</label>
               <span className="material-symbols-outlined icon">medical_services</span>
@@ -171,7 +301,7 @@ const QuanLyDichVu: React.FC = () => {
             <label style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gray-400)' }}>MÔ TẢ CHI TIẾT</label>
             <textarea data-ai-id="textarea-quanlydichvu-mota" className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left', cursor: 'text', minHeight: '100px', lineHeight: '1.5', padding: '16px' }} value={formData.mo_ta} onChange={e => setFormData({ ...formData, mo_ta: e.target.value })} />
           </div>
-          <div style={{ display: 'flex', gap: '12px' }}>
+          <div className="admin-service-form-actions" style={{ display: 'flex', gap: '12px' }}>
             <button data-ai-id="button-quanlydichvu-zqdb" className="btn btn-primary btn-pill" style={{ padding: '12px 40px' }} onClick={editingId ? handleSave : handleAdd} disabled={isSaving}>
               {isSaving ? 'Đang lưu...' : 'Lưu dịch vụ'}
             </button>
@@ -181,7 +311,35 @@ const QuanLyDichVu: React.FC = () => {
       )}
 
       <div className="glass-card" style={{ borderRadius: 'var(--radius-xl)', overflow: 'hidden' }}>
-        <div className="table-responsive-wrapper">
+        <div className="admin-service-mobile-list">
+          {filteredDichVus.length === 0 ? (
+            <div className="admin-empty-state" style={{ padding: '18px 10px', textAlign: 'center', color: 'var(--gray-500)', fontWeight: 800 }}>
+              Không có dịch vụ phù hợp.
+            </div>
+          ) : filteredDichVus.map((dv) => (
+            <article key={dv.id_dich_vu} className="admin-service-card">
+              <div className="admin-service-card-top">
+                <div>
+                  <h3>{dv.ten_dich_vu}</h3>
+                  {dv.mo_ta && <p>{dv.mo_ta}</p>}
+                </div>
+                <span className="admin-service-price">{formatTienVND(dv.gia)}</span>
+              </div>
+              <span className="admin-service-meta">{dv.thoi_luong_phut || '—'} phút</span>
+              {canEdit && (
+                <div className="admin-service-card-actions">
+                  <button data-ai-id="button-quanlydichvu-mobile-edit" className="btn" style={{ background: 'var(--primary-light)', color: 'var(--primary)' }} onClick={() => handleEdit(dv)}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>edit</span>
+                  </button>
+                  <button data-ai-id="button-quanlydichvu-mobile-delete" className="btn" style={{ background: 'var(--danger-light, rgba(239, 68, 68, 0.15))', color: 'var(--danger)' }} onClick={() => handleDelete(dv.id_dich_vu)}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>delete</span>
+                  </button>
+                </div>
+              )}
+            </article>
+          ))}
+        </div>
+        <div className="table-responsive-wrapper admin-service-desktop-table">
 <div style={{ minWidth: '800px' }}>
 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>

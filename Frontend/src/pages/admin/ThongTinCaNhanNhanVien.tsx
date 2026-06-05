@@ -207,7 +207,7 @@ const ThongTinCaNhanNhanVien: React.FC = () => {
     const displayRole = userRole === 'admin' ? 'Quản trị viên tối cao' : (profile?.chuyen_mon || profile?.chuyenMon || profile?.chuc_vu || 'Nhân viên hệ thống');
 
     return (
-        <div style={{ padding: '32px 40px', minHeight: '100vh', background: 'var(--background)' }}>
+        <div className="admin-staff-profile-page" style={{ padding: '32px 40px', minHeight: '100vh', background: 'var(--background)' }}>
             <style>{`
                 .profile-grid {
                     display: grid;
@@ -231,9 +231,145 @@ const ThongTinCaNhanNhanVien: React.FC = () => {
                     font-weight: 700;
                     font-family: inherit;
                 }
+                @media (max-width: 1024px) {
+                    .admin-staff-profile-page {
+                        padding: 18px 12px 190px !important;
+                    }
+                    .admin-staff-profile-header {
+                        display: grid !important;
+                        grid-template-columns: 1fr !important;
+                        gap: 12px !important;
+                        margin-bottom: 16px !important;
+                    }
+                    .admin-staff-profile-header h1 {
+                        max-width: 15ch !important;
+                        font-size: clamp(1.28rem, 5.8vw, 1.58rem) !important;
+                        line-height: 1.08 !important;
+                        letter-spacing: -0.02em !important;
+                    }
+                    .admin-staff-profile-header p {
+                        max-width: 32ch !important;
+                        margin-top: 6px !important;
+                        font-size: 0.72rem !important;
+                        line-height: 1.32 !important;
+                    }
+                    .admin-staff-profile-actions {
+                        display: grid !important;
+                        grid-template-columns: 1fr !important;
+                        gap: 8px !important;
+                        width: min(100%, 260px) !important;
+                    }
+                    .admin-staff-profile-actions .btn,
+                    .admin-staff-profile-header > .btn {
+                        width: 100% !important;
+                        min-height: 38px !important;
+                        padding: 7px 12px !important;
+                        border-radius: 14px !important;
+                        font-size: 0.78rem !important;
+                    }
+                    .profile-grid {
+                        grid-template-columns: 1fr !important;
+                        gap: 14px !important;
+                    }
+                    .admin-staff-profile-card {
+                        padding: 12px !important;
+                        border-radius: 18px !important;
+                    }
+                    .admin-staff-profile-card::before {
+                        height: 70px !important;
+                    }
+                    .admin-staff-avatar {
+                        width: 72px !important;
+                        height: 72px !important;
+                        margin-bottom: 8px !important;
+                        padding: 4px !important;
+                    }
+                    .admin-staff-profile-card h2 {
+                        font-size: 0.92rem !important;
+                        line-height: 1.2 !important;
+                        margin-bottom: 6px !important;
+                    }
+                    .admin-staff-role-chip {
+                        padding: 5px 10px !important;
+                        font-size: 0.64rem !important;
+                        margin-bottom: 10px !important;
+                    }
+                    .admin-staff-profile-info {
+                        display: grid !important;
+                        grid-template-columns: 1fr 1fr !important;
+                        gap: 8px !important;
+                    }
+                    .admin-staff-info-row {
+                        min-width: 0 !important;
+                        padding: 8px !important;
+                        border-radius: 12px !important;
+                        gap: 8px !important;
+                        align-items: flex-start !important;
+                    }
+                    .admin-staff-info-icon {
+                        width: 28px !important;
+                        height: 28px !important;
+                        border-radius: 9px !important;
+                        flex: 0 0 28px !important;
+                    }
+                    .admin-staff-info-row .material-symbols-outlined {
+                        font-size: 17px !important;
+                    }
+                    .admin-staff-info-label {
+                        font-size: 0.52rem !important;
+                        letter-spacing: 0.05em !important;
+                    }
+                    .admin-staff-info-value {
+                        font-size: 0.68rem !important;
+                        line-height: 1.25 !important;
+                        overflow-wrap: anywhere !important;
+                    }
+                    .admin-staff-profile-stack {
+                        gap: 14px !important;
+                    }
+                    .admin-staff-profile-section {
+                        padding: 12px !important;
+                        border-radius: 18px !important;
+                    }
+                    .admin-staff-profile-section h3 {
+                        margin-bottom: 10px !important;
+                        font-size: 0.86rem !important;
+                        line-height: 1.2 !important;
+                        gap: 8px !important;
+                    }
+                    .admin-staff-profile-section h3 > div {
+                        width: 28px !important;
+                        height: 28px !important;
+                        border-radius: 9px !important;
+                    }
+                    .admin-staff-profile-section textarea,
+                    .admin-staff-profile-section input {
+                        font-size: 0.82rem !important;
+                    }
+                    .admin-staff-profile-section .profile-text-panel {
+                        padding: 10px !important;
+                        border-radius: 12px !important;
+                        font-size: 0.7rem !important;
+                        line-height: 1.38 !important;
+                    }
+                    .admin-staff-danger {
+                        padding: 16px !important;
+                        border-radius: 20px !important;
+                    }
+                    .admin-staff-danger p {
+                        font-size: 0.78rem !important;
+                    }
+                    .admin-staff-danger .btn,
+                    .admin-staff-profile-section .btn {
+                        width: 100% !important;
+                        min-height: 42px !important;
+                        padding: 9px 12px !important;
+                        font-size: 0.78rem !important;
+                    }
+                }
             `}</style>
             <RevealSection>
-                <div style={{ marginBottom: '40px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div className="admin-staff-profile-header" style={{ marginBottom: '40px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <div>
                         <h1 style={{ fontSize: '2.5rem', fontWeight: 950, color: 'var(--ink)', margin: 0, letterSpacing: '-1.5px' }}>
                             Hồ Sơ <span style={{ color: 'var(--primary)' }}>Nhân Sự</span>
@@ -248,7 +384,7 @@ const ThongTinCaNhanNhanVien: React.FC = () => {
                             Chỉnh sửa hồ sơ
                         </button>
                     ) : (
-                        <div style={{ display: 'flex', gap: '12px' }}>
+                        <div className="admin-staff-profile-actions" style={{ display: 'flex', gap: '12px' }}>
                             <button data-ai-id="button-thongtincanhannhanvien-18ck" className="btn btn-pill" style={{ background: 'var(--gray-100)', color: 'var(--ink)' }} onClick={() => { setIsEditing(false); setFormData(profile); }}>Hủy</button>
                             <button data-ai-id="button-thongtincanhannhanvien-ripx" className="btn btn-primary btn-pill hover-lift" onClick={handleSave}>Lưu thay đổi</button>
                         </div>
@@ -257,10 +393,10 @@ const ThongTinCaNhanNhanVien: React.FC = () => {
 
                 <div className="profile-grid">
                     {/* Cột trái: Avatar và Thông tin cơ bản */}
-                    <div className="glass-card" style={{ padding: '40px 32px', borderRadius: '32px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
+                    <div className="glass-card admin-staff-profile-card" style={{ padding: '40px 32px', borderRadius: '32px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
                         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '120px', background: 'var(--primary-gradient)', opacity: 0.1 }}></div>
 
-                        <div style={{ width: '140px', height: '140px', margin: '0 auto 24px', borderRadius: '50%', background: 'var(--surface)', padding: '6px', border: '3px solid var(--primary)', position: 'relative', zIndex: 1, boxShadow: '0 10px 25px var(--primary-shadow)' }}>
+                        <div className="admin-staff-avatar" style={{ width: '140px', height: '140px', margin: '0 auto 24px', borderRadius: '50%', background: 'var(--surface)', padding: '6px', border: '3px solid var(--primary)', position: 'relative', zIndex: 1, boxShadow: '0 10px 25px var(--primary-shadow)' }}>
                             <img
                                 src={formData.hinh_anh || profile.hinh_anh || user.avatar || "/img/avtpkty.png"}
                                 alt={profile.ho_ten || 'Avatar'}
@@ -269,9 +405,9 @@ const ThongTinCaNhanNhanVien: React.FC = () => {
                             {isEditing && (
                                 <label style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 'calc(100% - 12px)', height: 'calc(100% - 12px)', background: 'rgba(0,0,0,0.5)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', cursor: 'pointer', transition: 'all 0.3s', zIndex: 10 }}>
                                     <input data-ai-id="input-thongtincanhannhanvien-p2ps" type="file" accept="image/*" onChange={handleImageChange} style={{ display: 'none' }} /> <span className="material-symbols-outlined" style={{ fontSize: '32px' }}>photo_camera</span> </label>
-                            )} {(profile.trang_thai === 'ACTIVE' || profile.trang_thai === 'Đang làm việc' || !profile.trang_thai) && ( <div style={{ position: 'absolute', bottom: '5px', right: '5px', width: '20px', height: '20px', background: '#10b981', border: '4px solid var(--surface)', borderRadius: '50%', zIndex: 2 }}></div> )} </div> {isEditing ? ( <input data-ai-id="input-thongtincanhannhanvien-59by" type="text" name="ho_ten" value={formData.ho_ten || formData.hoTen || ''} onChange={handleChange} className="form-input-edit" style={{ marginBottom: '10px', textAlign: 'center', fontSize: '1.2rem' }} placeholder="Họ và tên" /> ) : ( <h2 style={{ fontSize: '1.6rem', fontWeight: 950, color: 'var(--ink)', margin: '0 0 10px 0', letterSpacing: '-0.5px' }}>{displayHoTen}</h2> )} <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'var(--primary-light)', color: 'var(--primary)', padding: '8px 20px', borderRadius: '50px', fontSize: '0.85rem', fontWeight: 800, marginBottom: '32px' }}> <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>verified_user</span> {displayRole} </div> <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', textAlign: 'left' }}> <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', background: 'var(--background)', borderRadius: '20px', border: '1px solid var(--gray-100)' }}> <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}> <span className="material-symbols-outlined">badge</span> </div> <div> <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--gray-400)', letterSpacing: '1px' }}>MÃ NHÂN SỰ</div> <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--ink)' }}>{profile.id_nhan_vien || currentUserId}</div> </div> </div> <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', background: 'var(--background)', borderRadius: '20px', border: '1px solid var(--gray-100)' }}> <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'var(--blue-50)', color: 'var(--blue-600)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}> <span className="material-symbols-outlined">mail</span> </div> <div style={{ flex: 1, minWidth: 0 }}> <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--gray-400)', letterSpacing: '1px' }}>EMAIL LIÊN HỆ</div> {isEditing ? ( <input data-ai-id="input-thongtincanhannhanvien-8fb5" type="email" name="email" value={formData.email || ''} onChange={handleChange} className="form-input-edit" /> ) : ( <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{profile.email || 'Chưa cập nhật'}</div> )} </div> </div> <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', background: 'var(--background)', borderRadius: '20px', border: '1px solid var(--gray-100)' }}> <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'var(--green-50)', color: 'var(--green-600)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}> <span className="material-symbols-outlined">call</span> </div> <div style={{ flex: 1, minWidth: 0 }}> <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--gray-400)', letterSpacing: '1px' }}>ĐIỆN THOẠI</div> {isEditing ? ( <input data-ai-id="input-thongtincanhannhanvien-rivm" type="tel" name="so_dien_thoai" value={formData.so_dien_thoai || formData.soDienThoai || ''} onChange={handleChange} className="form-input-edit" /> ) : ( <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--ink)' }}>{profile.so_dien_thoai || profile.soDienThoai || 'Chưa cập nhật'}</div> )} </div> </div> <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', background: 'var(--background)', borderRadius: '20px', border: '1px solid var(--gray-100)' }}> <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'var(--orange-50)', color: 'var(--orange-600)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}> <span className="material-symbols-outlined">event_available</span> </div> <div> <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--gray-400)', letterSpacing: '1px' }}>NGÀY GIA NHẬP</div> <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--ink)' }}> {(profile.ngay_vao_lam || profile.ngay_tao || profile.createdAt) ? new Date(profile.ngay_vao_lam || profile.ngay_tao || profile.createdAt).toLocaleDateString('vi-VN') : new Date().toLocaleDateString('vi-VN')} </div> </div> </div> </div> </div> {/* Cột phải: Chi tiết và Đổi mật khẩu */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-                        <div className="glass-card" style={{ padding: '40px', borderRadius: '32px' }}>
+                            )} {(profile.trang_thai === 'ACTIVE' || profile.trang_thai === 'Đang làm việc' || !profile.trang_thai) && ( <div style={{ position: 'absolute', bottom: '5px', right: '5px', width: '20px', height: '20px', background: '#10b981', border: '4px solid var(--surface)', borderRadius: '50%', zIndex: 2 }}></div> )} </div> {isEditing ? ( <input data-ai-id="input-thongtincanhannhanvien-59by" type="text" name="ho_ten" value={formData.ho_ten || formData.hoTen || ''} onChange={handleChange} className="form-input-edit" style={{ marginBottom: '10px', textAlign: 'center', fontSize: '1.2rem' }} placeholder="Họ và tên" /> ) : ( <h2 style={{ fontSize: '1.6rem', fontWeight: 950, color: 'var(--ink)', margin: '0 0 10px 0', letterSpacing: '-0.5px' }}>{displayHoTen}</h2> )} <div className="admin-staff-role-chip" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'var(--primary-light)', color: 'var(--primary)', padding: '8px 20px', borderRadius: '50px', fontSize: '0.85rem', fontWeight: 800, marginBottom: '32px' }}> <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>verified_user</span> {displayRole} </div> <div className="admin-staff-profile-info" style={{ display: 'flex', flexDirection: 'column', gap: '16px', textAlign: 'left' }}> <div className="admin-staff-info-row" style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', background: 'var(--background)', borderRadius: '20px', border: '1px solid var(--gray-100)' }}> <div className="admin-staff-info-icon" style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}> <span className="material-symbols-outlined">badge</span> </div> <div> <div className="admin-staff-info-label" style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--gray-400)', letterSpacing: '1px' }}>MÃ NHÂN SỰ</div> <div className="admin-staff-info-value" style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--ink)' }}>{profile.id_nhan_vien || currentUserId}</div> </div> </div> <div className="admin-staff-info-row" style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', background: 'var(--background)', borderRadius: '20px', border: '1px solid var(--gray-100)' }}> <div className="admin-staff-info-icon" style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'var(--blue-50)', color: 'var(--blue-600)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}> <span className="material-symbols-outlined">mail</span> </div> <div style={{ flex: 1, minWidth: 0 }}> <div className="admin-staff-info-label" style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--gray-400)', letterSpacing: '1px' }}>EMAIL LIÊN HỆ</div> {isEditing ? ( <input data-ai-id="input-thongtincanhannhanvien-8fb5" type="email" name="email" value={formData.email || ''} onChange={handleChange} className="form-input-edit" /> ) : ( <div className="admin-staff-info-value" style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{profile.email || 'Chưa cập nhật'}</div> )} </div> </div> <div className="admin-staff-info-row" style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', background: 'var(--background)', borderRadius: '20px', border: '1px solid var(--gray-100)' }}> <div className="admin-staff-info-icon" style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'var(--green-50)', color: 'var(--green-600)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}> <span className="material-symbols-outlined">call</span> </div> <div style={{ flex: 1, minWidth: 0 }}> <div className="admin-staff-info-label" style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--gray-400)', letterSpacing: '1px' }}>ĐIỆN THOẠI</div> {isEditing ? ( <input data-ai-id="input-thongtincanhannhanvien-rivm" type="tel" name="so_dien_thoai" value={formData.so_dien_thoai || formData.soDienThoai || ''} onChange={handleChange} className="form-input-edit" /> ) : ( <div className="admin-staff-info-value" style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--ink)' }}>{profile.so_dien_thoai || profile.soDienThoai || 'Chưa cập nhật'}</div> )} </div> </div> <div className="admin-staff-info-row" style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', background: 'var(--background)', borderRadius: '20px', border: '1px solid var(--gray-100)' }}> <div className="admin-staff-info-icon" style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'var(--orange-50)', color: 'var(--orange-600)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}> <span className="material-symbols-outlined">event_available</span> </div> <div> <div className="admin-staff-info-label" style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--gray-400)', letterSpacing: '1px' }}>NGÀY GIA NHẬP</div> <div className="admin-staff-info-value" style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--ink)' }}> {(profile.ngay_vao_lam || profile.ngay_tao || profile.createdAt) ? new Date(profile.ngay_vao_lam || profile.ngay_tao || profile.createdAt).toLocaleDateString('vi-VN') : new Date().toLocaleDateString('vi-VN')} </div> </div> </div> </div> </div> {/* Cột phải: Chi tiết và Đổi mật khẩu */}
+                    <div className="admin-staff-profile-stack" style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+                        <div className="glass-card admin-staff-profile-section" style={{ padding: '40px', borderRadius: '32px' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
                                 <h3 style={{ fontSize: '1.4rem', fontWeight: 950, color: 'var(--ink)', margin: 0, display: 'flex', alignItems: 'center', gap: '12px' }}>
                                     <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'var(--primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -281,7 +417,7 @@ const ThongTinCaNhanNhanVien: React.FC = () => {
                                 </h3>
                             </div>
 
-                            <div style={{ padding: '24px', background: 'var(--gray-50)', borderRadius: '20px', color: 'var(--ink)', fontStyle: (profile.gioi_thieu || profile.gioiThieu) ? 'normal' : 'italic', lineHeight: '1.8', fontSize: '0.95rem', border: '1px solid var(--gray-100)' }}>
+                            <div className="profile-text-panel" style={{ padding: '24px', background: 'var(--gray-50)', borderRadius: '20px', color: 'var(--ink)', fontStyle: (profile.gioi_thieu || profile.gioiThieu) ? 'normal' : 'italic', lineHeight: '1.8', fontSize: '0.95rem', border: '1px solid var(--gray-100)' }}>
                                 {isEditing ? (
                                     <textarea
                                         data-ai-id="textarea-thongtincanhannhanvien-gioithieu"
@@ -298,7 +434,7 @@ const ThongTinCaNhanNhanVien: React.FC = () => {
                             </div>
                         </div>
 
-                        <div className="glass-card" style={{ padding: '40px', borderRadius: '32px' }}>
+                        <div className="glass-card admin-staff-profile-section" style={{ padding: '40px', borderRadius: '32px' }}>
                             <h3 style={{ fontSize: '1.4rem', fontWeight: 950, color: 'var(--ink)', marginBottom: '32px', display: 'flex', alignItems: 'center', gap: '12px' }}>
                                 <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(244, 63, 94, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                     <span className="material-symbols-outlined" style={{ color: '#f43f5e' }}>shield_lock</span>
@@ -375,7 +511,7 @@ const ThongTinCaNhanNhanVien: React.FC = () => {
                             </form>
                         </div>
 
-                        <div style={{ padding: '32px', borderRadius: '32px', background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+                        <div className="admin-staff-danger" style={{ padding: '32px', borderRadius: '32px', background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
                             <h4 style={{ color: '#ef4444', fontWeight: 900, marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                 <span className="material-symbols-outlined">warning</span>
                                 Vùng Nguy Hiểm

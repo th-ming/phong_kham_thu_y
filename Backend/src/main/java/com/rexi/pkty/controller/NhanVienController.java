@@ -197,12 +197,15 @@ public class NhanVienController {
 
             // Kiểm tra quyền sở hữu: nhân viên chỉ được đăng ký cho chính mình
             if (!isAdmin && tk != null) {
-                String currentNhanVienId = null;
-                try {
-                    java.util.List<String> allowedIds = jdbcTemplate.queryForList(
-                            "SELECT id_nhan_vien FROM NhanVien WHERE id_tai_khoan = ?", String.class, tk.getId_tai_khoan());
-                    if (!allowedIds.isEmpty()) currentNhanVienId = allowedIds.get(0);
-                } catch (Exception ignored) {}
+                String currentNhanVienId = tk.getId_nhan_vien();
+                // Fallback: nếu TaiKhoan không có id_nhan_vien, tra thêm qua bảng NhanVien
+                if (currentNhanVienId == null) {
+                    try {
+                        java.util.List<String> allowedIds = jdbcTemplate.queryForList(
+                                "SELECT id_nhan_vien FROM NhanVien WHERE id_tai_khoan = ?", String.class, tk.getId_tai_khoan());
+                        if (!allowedIds.isEmpty()) currentNhanVienId = allowedIds.get(0);
+                    } catch (Exception ignored) {}
+                }
 
                 if (currentNhanVienId == null || !currentNhanVienId.equals(lich.getId_nhan_vien())) {
                     return org.springframework.http.ResponseEntity.status(403).body(Map.of("message", "Cảnh báo bảo mật: Bạn không thể đăng ký ca trực cho nhân viên khác!"));
@@ -295,12 +298,15 @@ public class NhanVienController {
 
             // Chỉ được hủy ca trực của chính mình
             if (!isAdmin && tk != null) {
-                String currentNhanVienId = null;
-                try {
-                    java.util.List<String> allowedIds = jdbcTemplate.queryForList(
-                            "SELECT id_nhan_vien FROM NhanVien WHERE id_tai_khoan = ?", String.class, tk.getId_tai_khoan());
-                    if (!allowedIds.isEmpty()) currentNhanVienId = allowedIds.get(0);
-                } catch (Exception ignored) {}
+                String currentNhanVienId = tk.getId_nhan_vien();
+                // Fallback: nếu TaiKhoan không có id_nhan_vien, tra thêm qua bảng NhanVien
+                if (currentNhanVienId == null) {
+                    try {
+                        java.util.List<String> allowedIds = jdbcTemplate.queryForList(
+                                "SELECT id_nhan_vien FROM NhanVien WHERE id_tai_khoan = ?", String.class, tk.getId_tai_khoan());
+                        if (!allowedIds.isEmpty()) currentNhanVienId = allowedIds.get(0);
+                    } catch (Exception ignored) {}
+                }
 
                 if (currentNhanVienId == null || !currentNhanVienId.equals(lichToXoa.getId_nhan_vien())) {
                     return org.springframework.http.ResponseEntity.status(403).body(Map.of("message", "Cảnh báo bảo mật: Bạn không thể hủy ca trực của nhân viên khác!"));
@@ -530,9 +536,13 @@ public class NhanVienController {
     @org.springframework.cache.annotation.CacheEvict(value = "bacSiCache", allEntries = true)
     public org.springframework.http.ResponseEntity<?> deleteNhanVien(@PathVariable String id) {
         try {
+            if (isSelfNhanVien(id)) {
+                return org.springframework.http.ResponseEntity.status(400)
+                        .body(Map.of("message", "Không thể tự vô hiệu hóa tài khoản nhân viên đang đăng nhập."));
+            }
             if (!canManageNhanVien(id)) {
                 return org.springframework.http.ResponseEntity.status(403)
-                        .body(Map.of("message", "Bạn chỉ được vô hiệu hóa tài khoản của chính mình."));
+                        .body(Map.of("message", "Chỉ Admin mới được vô hiệu hóa tài khoản nhân viên khác."));
             }
 
             Optional<NhanVien> nvOpt = nhanVienRepository.findById(id);
@@ -606,3 +616,4 @@ public class NhanVienController {
 
 
 }
+

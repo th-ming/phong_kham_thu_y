@@ -2,7 +2,7 @@ import React, { useCallback, useMemo, useRef, useState, useEffect } from "react"
 import axiosInstance from "@services/axios";
 import { formatTienVND, getUserProfile, matchesSearchFields } from "@utils/index";
 import { customerToneCopy, isGenZBirthYear } from "@utils/customerTone";
-import { Modal } from "@components/CommonUI";
+import { AnimatedNumber, Modal } from "@components/CommonUI";
 import { useLocation } from "react-router-dom";
 import { toast } from "@components/Toast";
 import { useAutoRefresh } from "@hooks/useAutoRefresh";
@@ -682,7 +682,7 @@ const HoaDonThanhToan: React.FC = () => {
         <CustomerKpiCard
           accent="#3b82f6"
           title="Tổng hóa đơn"
-          value={stats.total}
+          value={<AnimatedNumber value={stats.total} />}
           icon={<KpiIcon name="receipt" />}
           details={
             <div>
@@ -696,7 +696,7 @@ const HoaDonThanhToan: React.FC = () => {
         <CustomerKpiCard
           accent="#10b981"
           title="Đã thanh toán"
-          value={stats.paidCount}
+          value={<AnimatedNumber value={stats.paidCount} />}
           icon={<KpiIcon name="check" />}
           details={
             <div>
@@ -710,7 +710,7 @@ const HoaDonThanhToan: React.FC = () => {
         <CustomerKpiCard
           accent="#ef4444"
           title="Đang chờ"
-          value={stats.unpaidCount}
+          value={<AnimatedNumber value={stats.unpaidCount} />}
           icon={<KpiIcon name="alert" />}
           details={
             <div>
@@ -724,7 +724,7 @@ const HoaDonThanhToan: React.FC = () => {
         <CustomerKpiCard
           accent="#14b8a6"
           title="Tổng chi tiêu"
-          value={formatTienVND(stats.totalPaid)}
+          value={<AnimatedNumber value={stats.totalPaid} format="currency" />}
           icon={<KpiIcon name="money" />}
           details={
             <div>

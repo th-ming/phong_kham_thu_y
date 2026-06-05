@@ -257,14 +257,150 @@ const QuanLyNhanVienPhanQuyen: React.FC = () => {
         .stagger-2 { animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both; }
         .table-row:hover { background-color: var(--surface) !important; transform: scale(1.005) translateX(4px); box-shadow: -10px 10px 20px rgba(15, 157, 138, 0.05); z-index: 10; position: relative; }
         [data-theme='dark'] .table-row:hover { background-color: rgba(15, 23, 42, 0.96) !important; box-shadow: -10px 10px 24px rgba(34, 211, 238, 0.08); }
+        .admin-staff-mobile-list { display: none; }
+        .admin-account-mobile-list { display: none; }
+        @media screen and (max-width: 1024px) {
+          .admin-staff-desktop-table {
+            display: none !important;
+          }
+          .admin-account-desktop-table {
+            display: none !important;
+          }
+          .admin-staff-mobile-list {
+            display: grid !important;
+            gap: 10px;
+            padding: 10px;
+          }
+          .admin-account-mobile-list {
+            display: grid !important;
+            gap: 10px;
+            padding: 10px;
+          }
+          .admin-staff-card {
+            display: grid;
+            gap: 10px;
+            padding: 12px;
+            border-radius: 18px;
+            background: var(--surface);
+            border: 1px solid var(--gray-100);
+          }
+          .admin-staff-card-top {
+            display: grid;
+            grid-template-columns: 44px minmax(0, 1fr) auto;
+            gap: 10px;
+            align-items: center;
+          }
+          .admin-staff-card img {
+            width: 44px;
+            height: 44px;
+            border-radius: 14px;
+            object-fit: cover;
+          }
+          .admin-staff-card h3 {
+            margin: 0;
+            color: var(--ink);
+            font-size: 0.95rem;
+            line-height: 1.22;
+            font-weight: 950;
+            overflow-wrap: anywhere;
+          }
+          .admin-staff-card p {
+            margin: 4px 0 0;
+            color: var(--gray-500);
+            font-size: 0.72rem;
+            line-height: 1.35;
+            font-weight: 700;
+            overflow-wrap: anywhere;
+          }
+          .admin-staff-status {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 28px;
+            padding: 5px 9px;
+            border-radius: 999px;
+            font-size: 0.62rem;
+            line-height: 1;
+            font-weight: 950;
+            white-space: nowrap;
+          }
+          .admin-staff-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+          }
+          .admin-staff-actions .btn {
+            width: 100%;
+            min-height: 36px;
+            justify-content: center;
+            border-radius: 13px !important;
+            padding: 7px 10px !important;
+          }
+          .admin-account-card {
+            display: grid;
+            gap: 10px;
+            padding: 12px;
+            border-radius: 18px;
+            background: var(--surface);
+            border: 1px solid var(--gray-100);
+          }
+          .admin-account-card-top {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 10px;
+            align-items: start;
+          }
+          .admin-account-card h3 {
+            margin: 0;
+            color: var(--ink);
+            font-size: 0.95rem;
+            line-height: 1.22;
+            font-weight: 950;
+            overflow-wrap: anywhere;
+          }
+          .admin-account-card p {
+            margin: 4px 0 0;
+            color: var(--gray-500);
+            font-size: 0.72rem;
+            line-height: 1.35;
+            font-weight: 700;
+            overflow-wrap: anywhere;
+          }
+          .admin-account-role {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 28px;
+            padding: 5px 9px;
+            border-radius: 999px;
+            background: var(--primary-light);
+            color: var(--primary);
+            font-size: 0.62rem;
+            line-height: 1;
+            font-weight: 950;
+            white-space: nowrap;
+          }
+          .admin-account-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+          }
+          .admin-account-actions .btn {
+            width: 100%;
+            min-height: 36px;
+            justify-content: center;
+            border-radius: 13px !important;
+            padding: 7px 10px !important;
+          }
+        }
       `}</style>
-      <div className="stagger-1" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', flexWrap: 'wrap', gap: '20px' }}>
-        <div>
+      <div className="stagger-1 admin-staff-page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', flexWrap: 'wrap', gap: '20px' }}>
+        <div className="admin-staff-title-block" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '6px', minWidth: 0 }}>
           <h1 style={{ fontSize: '2.5rem', fontWeight: 950, color: 'var(--ink)', letterSpacing: '-1.5px', margin: 0 }}>Nhân sự & <span style={{ color: 'var(--primary)' }}>Quyền hạn</span></h1>
           <p style={{ color: 'var(--gray-500)', fontWeight: 600, marginTop: '8px' }}>Quản lý đội ngũ y bác sĩ và phân cấp quyền truy cập hệ thống.</p>
         </div>
-        <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <div className="glass-card" style={{ display: 'flex', alignItems: 'center', padding: '0 16px', borderRadius: '16px', border: '1px solid var(--gray-200)', background: 'var(--surface)', width: '260px' }}>
+        <div className="admin-staff-toolbar" style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div className="glass-card admin-mobile-search-box" style={{ display: 'flex', alignItems: 'center', padding: '0 16px', borderRadius: '16px', border: '1px solid var(--gray-200)', background: 'var(--surface)', width: '260px' }}>
             <span className="material-symbols-outlined" style={{ color: 'var(--gray-400)', marginRight: '8px' }}>search</span>
             <input data-ai-id="input-quanlynhanvienphanquyen-14e1"
               type="text"
@@ -274,7 +410,7 @@ const QuanLyNhanVienPhanQuyen: React.FC = () => {
               style={{ border: 'none', outline: 'none', background: 'transparent', padding: '10px 0', fontWeight: 600, width: '100%', color: 'var(--ink)', fontSize: '0.9rem' }}
             />
           </div>
-          <select data-ai-id="select-quanlynhanvienphanquyen-gi4p"
+          <select data-ai-id="select-quanlynhanvienphanquyen-gi4p" className="admin-mobile-select"
             value={filterRole}
             onChange={(e) => setFilterRole(e.target.value)}
             style={{ padding: '12px 20px', borderRadius: '16px', border: '1px solid var(--gray-200)', outline: 'none', fontWeight: 800, cursor: 'pointer', background: 'var(--surface)', color: 'var(--ink)' }}
@@ -567,11 +703,63 @@ const NhanVienVirtualTable: React.FC<{
         <div style={{ padding: '10px 20px 4px 20px', display: 'flex', justifyContent: 'flex-end' }}>
           <span style={{ fontSize: '0.75rem', color: 'var(--gray-400)', fontWeight: 700 }}>
             {filteredNhanViens.length} nhân sự
-            {shouldVirtualize && ' — cuộn ảo đang hoạt động ⚡'}
           </span>
         </div>
       )}
-      <div className="table-responsive-wrapper">
+      <div className="admin-staff-mobile-list">
+        {filteredNhanViens.length === 0 ? (
+          <div className="admin-empty-state" style={{ padding: '18px 10px', textAlign: 'center', color: 'var(--gray-500)', fontWeight: 800 }}>
+            Không tìm thấy nhân sự phù hợp.
+          </div>
+        ) : filteredNhanViens.map((b) => (
+          <article key={b.id_nhan_vien} className="admin-staff-card" style={{ opacity: b.da_xoa ? 0.72 : 1 }}>
+            <div className="admin-staff-card-top">
+              <img
+                src={b.hinh_anh?.trim() && b.hinh_anh !== "null" ? b.hinh_anh : "/img/avtpkty.png"}
+                alt={b.ho_ten}
+                onError={(e) => {
+                  e.currentTarget.src = "/img/avtpkty.png";
+                }}
+              />
+              <div>
+                <h3 style={{ textDecoration: b.da_xoa ? 'line-through' : 'none', color: b.da_xoa ? 'var(--gray-400)' : 'var(--ink)' }}>{b.ho_ten}</h3>
+                <p>{b.chuyen_mon || 'Nhân viên'} · {b.so_dien_thoai || 'Chưa có SĐT'}</p>
+              </div>
+              <span
+                className="admin-staff-status"
+                style={{
+                  background: !b.da_xoa && b.trang_thai === 'Đang làm việc' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                  color: !b.da_xoa && b.trang_thai === 'Đang làm việc' ? '#16a34a' : '#dc2626',
+                }}
+              >
+                {b.da_xoa ? 'ĐÃ XÓA' : (b.trang_thai?.toUpperCase() || 'N/A')}
+              </span>
+            </div>
+            <p>{b.email || 'Chưa có email'} · {tinhKinhNghiem(b.ngay_vao_lam)}</p>
+            {canManageStaff ? (
+              <div className="admin-staff-actions">
+                {b.da_xoa ? (
+                  <button data-ai-id={`button-quanlynhanvienphanquyen-mobile-restore-${b.id_nhan_vien}`} className="btn btn-pill" onClick={() => handleRestore(b.id_nhan_vien)} style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#16a34a' }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>restore</span>
+                  </button>
+                ) : (
+                  <>
+                    <button data-ai-id="button-quanlynhanvienphanquyen-mobile-edit" className="btn btn-pill" onClick={() => handleOpenEdit(b)} style={{ background: 'var(--gray-50)' }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>edit</span>
+                    </button>
+                    {currentUser?.id_nhan_vien !== b.id_nhan_vien && (
+                      <button data-ai-id="button-quanlynhanvienphanquyen-mobile-delete" className="btn btn-pill" onClick={() => handleDelete(b.id_nhan_vien)} style={{ background: 'var(--danger-light, rgba(239, 68, 68, 0.15))', color: 'var(--danger)' }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>delete</span>
+                      </button>
+                    )}
+                  </>
+                )}
+              </div>
+            ) : null}
+          </article>
+        ))}
+      </div>
+      <div className="table-responsive-wrapper admin-staff-desktop-table">
         <div style={{ minWidth: '800px' }}>
           <div
             ref={containerRef}
@@ -603,7 +791,14 @@ const NhanVienVirtualTable: React.FC<{
                     <td style={{ padding: '16px 20px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                         <div style={{ width: '48px', height: '48px', position: 'relative', flexShrink: 0 }}>
-                          <img src={b.hinh_anh || "/img/avtpkty.png"} style={{ width: '100%', height: '100%', borderRadius: '14px', objectFit: 'cover' }} alt={b.ho_ten} />
+                          <img
+                            src={b.hinh_anh?.trim() && b.hinh_anh !== "null" ? b.hinh_anh : "/img/avtpkty.png"}
+                            style={{ width: '100%', height: '100%', borderRadius: '14px', objectFit: 'cover', color: 'transparent' }}
+                            alt={b.ho_ten}
+                            onError={(e) => {
+                              e.currentTarget.src = "/img/avtpkty.png";
+                            }}
+                          />
                           {!b.da_xoa && b.trang_thai === 'Đang làm việc' && <div style={{ position: 'absolute', bottom: '-2px', right: '-2px', width: '14px', height: '14px', background: '#22c55e', border: '3px solid white', borderRadius: '50%' }}></div>}
                         </div>
                         <div>
@@ -688,13 +883,39 @@ const AccountVirtualTable: React.FC<{
   });
 
   return (
-    <div className="table-responsive-wrapper">
+    <>
+    <div className="admin-account-mobile-list">
+      {filteredAccounts.length === 0 ? (
+        <div className="admin-empty-state" style={{ padding: '18px 10px', textAlign: 'center', color: 'var(--gray-500)', fontWeight: 800 }}>
+          Không tìm thấy tài khoản phù hợp.
+        </div>
+      ) : filteredAccounts.map((account) => (
+        <article key={account.id_tai_khoan} className="admin-account-card">
+          <div className="admin-account-card-top">
+            <div>
+              <h3>{account.ten_dang_nhap}</h3>
+              <p>{account.nhan_vien?.ho_ten || 'Chưa liên kết tên'} · {account.trang_thai || 'active'}</p>
+            </div>
+            <span className="admin-account-role">{account.id_vai_tro}</span>
+          </div>
+          <p>{account.nhan_vien?.email || 'Chưa có email'}{account.nhan_vien?.so_dien_thoai ? ` · ${account.nhan_vien.so_dien_thoai}` : ''}</p>
+          <div className="admin-account-actions">
+            <button data-ai-id={`button-quanlynhanvienphanquyen-account-mobile-edit-${account.id_tai_khoan}`} className="btn btn-pill" onClick={() => handleOpenAccountEdit(account)} style={{ background: 'var(--gray-50)' }}>
+              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>manage_accounts</span>
+            </button>
+            <button data-ai-id={`button-quanlynhanvienphanquyen-account-mobile-reset-${account.id_tai_khoan}`} className="btn btn-pill" onClick={() => handleResetPassword(account)} style={{ background: 'var(--primary-light)', color: 'var(--primary)' }}>
+              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>key</span>
+            </button>
+          </div>
+        </article>
+      ))}
+    </div>
+    <div className="table-responsive-wrapper admin-account-desktop-table">
       <div style={{ minWidth: '800px' }}>
         {filteredAccounts.length > 0 && (
           <div style={{ padding: '8px 20px 4px 20px', display: 'flex', justifyContent: 'flex-end' }}>
             <span style={{ fontSize: '0.75rem', color: 'var(--gray-400)', fontWeight: 700 }}>
               {filteredAccounts.length} tài khoản
-              {shouldVirtualize && ' — cuộn ảo đang hoạt động ⚡'}
             </span>
           </div>
         )}
@@ -772,6 +993,7 @@ const AccountVirtualTable: React.FC<{
         </div>
       </div>
     </div>
+    </>
   );
 };
 

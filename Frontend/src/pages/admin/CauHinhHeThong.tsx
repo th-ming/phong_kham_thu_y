@@ -54,7 +54,9 @@ const CauHinhHeThong: React.FC = () => {
     const [restoringFile, setRestoringFile] = useState<string | null>(null);
     const [logs, setLogs] = useState<any[]>([]);
     const [backups, setBackups] = useState<any[]>([]);
-    const [activeTab, setActiveTab] = useState('general');
+    const [activeTab, setActiveTab] = useState(() => {
+        return sessionStorage.getItem('rexi_cauhinh_active_tab') || 'general';
+    });
     const [securityState, setSecurityState] = useState<{ blockedIps: string[], alerts: any[] }>({ blockedIps: [], alerts: [] });
     const [loadingSecurity, setLoadingSecurity] = useState(false);
 
@@ -68,18 +70,97 @@ const CauHinhHeThong: React.FC = () => {
     // Trạng thái ma trận Phân quyền AI
     const [aiPolicy, setAiPolicy] = useState<Record<string, string[]>>({});
 
+    // Trạng thái ẩn/hiện mật khẩu ứng dụng SMTP
+    const [showMailPassword, setShowMailPassword] = useState(false);
+    // Trạng thái ẩn/hiện chuỗi bí mật VNPay
+    const [showVnpaySecret, setShowVnpaySecret] = useState(false);
+    // Trạng thái ẩn/hiện API Key của VietQR
+    const [showVietQrKey, setShowVietQrKey] = useState(false);
+    // Trạng thái đang tra cứu số tài khoản VietQR
+    const [lookingUpVietQr, setLookingUpVietQr] = useState(false);
+    // Danh sách ngân hàng VietQR
+    const [banks, setBanks] = useState<any[]>([]);
+    // Từ khóa tìm kiếm ngân hàng
+    const [bankSearchQuery, setBankSearchQuery] = useState('');
+    // Trạng thái hiển thị menu tìm kiếm ngân hàng
+    const [showBankDropdown, setShowBankDropdown] = useState(false);
+
     useEffect(() => {
         fetchConfigs();
         fetchLogs();
         fetchBackups();
         fetchSecurityState();
+        fetchBanks();
     }, []);
+
+    const fetchBanks = async () => {
+        try {
+            const res = await fetch("https://api.vietqr.io/v2/banks");
+            const data = await res.json();
+            if (data.code === "00" && Array.isArray(data.data)) {
+                setBanks(data.data);
+            }
+        } catch (error) {
+            console.error("Lỗi tải danh sách ngân hàng VietQR:", error);
+        }
+    };
+
+    const handleVietQrLookup = async (bankId: string, accountNo: string) => {
+        if (!bankId || !accountNo || accountNo.length < 5) return;
+        setLookingUpVietQr(true);
+        try {
+            // Chuẩn bị header xác thực nếu có key cấu hình
+            const headers: Record<string, string> = {
+                "Content-Type": "application/json"
+            };
+            if (configs.vietqr_client_id) {
+                headers["x-client-id"] = configs.vietqr_client_id;
+            }
+            if (configs.vietqr_api_key) {
+                headers["x-api-key"] = configs.vietqr_api_key;
+            }
+
+            const response = await fetch("https://api.vietqr.io/v2/lookup", {
+                method: "POST",
+                headers,
+                body: JSON.stringify({
+                    bin: bankId,
+                    accountNumber: accountNo
+                })
+            });
+            const data = await response.json();
+            if (data.code === "00" && data.data && data.data.accountName) {
+                setConfigs((prev: any) => ({
+                    ...prev,
+                    vietqr_account_name: data.data.accountName
+                }));
+                toast.success(`Đã tự động xác minh: ${data.data.accountName}`);
+            } else {
+                console.warn("VietQR Lookup response:", data);
+                // Fallback nếu code không phải 00 (do số tài khoản không tồn tại)
+                toast.error(data.desc || "Không tìm thấy tên chủ tài khoản");
+            }
+        } catch (error) {
+            console.error("Lỗi tra cứu VietQR:", error);
+            // Fallback khi bị CORS Blocked trên Trình duyệt: Gọi gián tiếp qua server backend của chính mình
+            try {
+                await axiosInstance.post("/api/payment/vietqr/generate", {
+                    id_hoa_don: "TEST", // Tạo request giả để kiểm tra tài khoản nhận
+                    custom_bank_id: bankId,
+                    custom_account_no: accountNo
+                });
+            } catch (err) {}
+            toast.error("Không thể kết nối đến máy chủ xác thực tài khoản!");
+        } finally {
+            setLookingUpVietQr(false);
+        }
+    };
 
     const fetchConfigs = async () => {
         try {
             const res = await axiosInstance.get('/api/system/cau-hinh');
             setConfigs(res.data);
-            
+
             // Phân tích cú pháp Phân quyền AI
             try {
                 if (res.data.ai_action_policy) {
@@ -100,6 +181,18 @@ const CauHinhHeThong: React.FC = () => {
             setLoading(false);
         }
     };
+
+    // Effect phụ để thiết lập text input tìm kiếm ngân hàng khi config có sẵn
+    useEffect(() => {
+        if (configs.vietqr_bank_id && banks.length > 0) {
+            const found = banks.find(b => b.bin === configs.vietqr_bank_id);
+            if (found) {
+                setBankSearchQuery(found.shortName || found.short_name || configs.vietqr_bank_id);
+            } else {
+                setBankSearchQuery(configs.vietqr_bank_id);
+            }
+        }
+    }, [configs.vietqr_bank_id, banks]);
 
     const fetchLogs = async () => {
         try {
@@ -167,8 +260,8 @@ const CauHinhHeThong: React.FC = () => {
             });
             setTestEmailResult({ success: true, message: 'Gửi email test thành công! Vui lòng kiểm tra hộp thư.' });
         } catch (error: any) {
-            setTestEmailResult({ 
-                success: false, 
+            setTestEmailResult({
+                success: false,
                 message: error.response?.data?.message || 'Lỗi gửi email test. Vui lòng kiểm tra lại cấu hình SMTP.'
             });
         } finally {
@@ -210,6 +303,50 @@ const CauHinhHeThong: React.FC = () => {
         }
     };
 
+    const renderAiTestPanel = (providerId: string) => {
+        const provider = AI_PROVIDERS.find(item => item.id === providerId);
+        const result = aiTestResults[providerId];
+        if (!provider) return null;
+        return (
+            <div style={{ marginTop: '16px', display: 'grid', gap: '10px' }}>
+                <button
+                    data-ai-id={`button-cauhinhhethong-test-ai-${providerId}`}
+                    type="button"
+                    className="btn btn-outline"
+                    onClick={() => handleTestAiProvider(providerId)}
+                    disabled={testingAiProvider === providerId}
+                    style={{ width: '100%', justifyContent: 'center', display: 'flex', alignItems: 'center', gap: '8px', borderRadius: '12px' }}
+                >
+                    <span className="material-symbols-outlined" style={{ fontSize: '20px', animation: testingAiProvider === providerId ? 'spinBtn 1s linear infinite' : 'none' }}>
+                        {testingAiProvider === providerId ? 'sync' : 'health_and_safety'}
+                    </span>
+                    {testingAiProvider === providerId ? 'Đang kiểm tra...' : `Kiểm tra ${provider.name}`}
+                </button>
+                {result && (
+                    <div style={{
+                        padding: '12px',
+                        borderRadius: '12px',
+                        background: result.success ? 'var(--success-light)' : 'var(--danger-light)',
+                        color: result.success ? 'var(--success)' : 'var(--danger)',
+                        border: `1px solid ${result.success ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'}`,
+                        fontSize: '0.85rem',
+                        fontWeight: 650,
+                        display: 'grid',
+                        gap: '6px'
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 900 }}>
+                            <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>{result.success ? 'check_circle' : 'error'}</span>
+                            {result.success ? 'Đang hoạt động' : `Lỗi: ${result.errorCode || 'unknown'}`}
+                        </div>
+                        <div>{result.message}</div>
+                        {result.statusCode && <div>HTTP: {result.statusCode}</div>}
+                        {result.checkedAt && <div>Kiểm tra lúc: {chuyenNgayGioISO_SangVN(result.checkedAt)}</div>}
+                    </div>
+                )}
+            </div>
+        );
+    };
+
     const handlePolicyToggle = (role: string, action: string) => {
         setAiPolicy(prev => {
             const roleActions = prev[role] || [];
@@ -232,7 +369,7 @@ const CauHinhHeThong: React.FC = () => {
             toast.error('Lỗi khi xóa file: ' + (error.response?.data?.message || error.message));
         }
     };
-    // Khôi phục CSDL từ file backup — hiện cảnh báo 2 lần để tránh thao tác nhầm
+
     const handleRestoreBackup = async (filename: string) => {
         const ok1 = window.confirm(`⚠️ BẠN SẮP KHÔI PHỤC DATABASE!\n\nFile: ${filename}\n\nTOÀN BỘ DỮ LIỆU HIỆN TẠI sẽ bị thay thế bởi bản sao lưu này. Thao tác KHÔNG THỂ HOÀN TÁC.\n\nBạn có chắc chắn muốn tiếp tục không?`);
         if (!ok1) return;
@@ -296,11 +433,9 @@ const CauHinhHeThong: React.FC = () => {
         }
     };
 
-    // Tải file backup về máy thông qua anchor tag ẩn
     const handleDownloadBackup = (filename: string) => {
         const token = localStorage.getItem('token') || sessionStorage.getItem('token') || '';
         const url = `/api/system/backups/download/${encodeURIComponent(filename)}`;
-        // Dùng fetch để lấy blob kèm header Authorization, sau đó tạo link tải
         toast.success(`Đang chuẩn bị tải "${filename}"...`);
         fetch(url, { headers: { 'Authorization': `Bearer ${token}` } })
             .then(res => {
@@ -324,7 +459,7 @@ const CauHinhHeThong: React.FC = () => {
         try {
             const confirm = window.confirm('Quá trình sao lưu có thể mất vài giây. Bạn có chắc chắn muốn tiến hành sao lưu ngay bây giờ?');
             if (!confirm) return;
-            
+
             setBackingUp(true);
             const res = await axiosInstance.post('/api/system/backup');
             toast.success(res.data.message || 'Sao lưu thành công!');
@@ -348,7 +483,10 @@ const CauHinhHeThong: React.FC = () => {
     const renderTabButton = (id: string, icon: string, label: string) => (
         <button
             data-ai-id={`button-cauhinhhethong-tab-${id}`}
-            onClick={() => setActiveTab(id)}
+            onClick={() => {
+                setActiveTab(id);
+                sessionStorage.setItem('rexi_cauhinh_active_tab', id);
+            }}
             style={{
                 padding: '12px 24px',
                 borderRadius: '12px',
@@ -369,73 +507,144 @@ const CauHinhHeThong: React.FC = () => {
         </button>
     );
 
-    const renderAiTestPanel = (providerId: string) => {
-        const provider = AI_PROVIDERS.find(item => item.id === providerId);
-        const result = aiTestResults[providerId];
-        if (!provider) return null;
-        return (
-            <div style={{ marginTop: '16px', display: 'grid', gap: '10px' }}>
-                <button
-                    data-ai-id={`button-cauhinhhethong-test-ai-${providerId}`}
-                    type="button"
-                    className="btn btn-outline"
-                    onClick={() => handleTestAiProvider(providerId)}
-                    disabled={testingAiProvider === providerId}
-                    style={{ width: '100%', justifyContent: 'center', display: 'flex', alignItems: 'center', gap: '8px', borderRadius: '12px' }}
-                >
-                    <span className="material-symbols-outlined" style={{ fontSize: '20px', animation: testingAiProvider === providerId ? 'spinBtn 1s linear infinite' : 'none' }}>
-                        {testingAiProvider === providerId ? 'sync' : 'health_and_safety'}
-                    </span>
-                    {testingAiProvider === providerId ? 'Đang kiểm tra...' : `Kiểm tra ${provider.name}`}
-                </button>
-                {result && (
-                    <div style={{
-                        padding: '12px',
-                        borderRadius: '12px',
-                        background: result.success ? 'var(--success-light)' : 'var(--danger-light)',
-                        color: result.success ? 'var(--success)' : 'var(--danger)',
-                        border: `1px solid ${result.success ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'}`,
-                        fontSize: '0.85rem',
-                        fontWeight: 650,
-                        display: 'grid',
-                        gap: '6px'
-                    }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 900 }}>
-                            <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>{result.success ? 'check_circle' : 'error'}</span>
-                            {result.success ? 'Đang hoạt động' : `Lỗi: ${result.errorCode || 'unknown'}`}
-                        </div>
-                        <div>{result.message}</div>
-                        {result.statusCode && <div>HTTP: {result.statusCode}</div>}
-                        {result.checkedAt && <div>Kiểm tra lúc: {chuyenNgayGioISO_SangVN(result.checkedAt)}</div>}
-                    </div>
-                )}
-            </div>
-        );
-    };
-
     return (
         <div className="animate-fade-in" style={{ maxWidth: '1200px', margin: '0 auto', paddingBottom: '60px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '30px' }}>
+            <style>{`
+                .config-layout-wrapper {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 20px;
+                }
+                .form-input {
+                    transition: all 0.3s ease-in-out !important;
+                    border: 1.5px solid var(--gray-200) !important;
+                    border-radius: 12px !important;
+                }
+                .form-input:focus {
+                    border-color: var(--primary) !important;
+                    box-shadow: 0 0 0 4px var(--primary-light) !important;
+                    outline: none !important;
+                }
+                .custom-checkbox {
+                    accent-color: var(--primary) !important;
+                    width: 18px !important;
+                    height: 18px !important;
+                    cursor: pointer !important;
+                }
+                @media screen and (min-width: 1025px) {
+                    .config-layout-wrapper {
+                        display: grid;
+                        grid-template-columns: 280px 1fr;
+                        gap: 32px;
+                        align-items: start;
+                    }
+                    .admin-config-tabs {
+                        flex-direction: column !important;
+                        border-right: 1px solid var(--gray-200);
+                        padding-right: 24px;
+                        gap: 12px !important;
+                        overflow-x: visible !important;
+                    }
+                    [data-theme='dark'] .admin-config-tabs {
+                        border-color: rgba(255, 255, 255, 0.08);
+                    }
+                    .admin-config-tabs button {
+                        width: 100% !important;
+                        justify-content: flex-start !important;
+                    }
+                }
+                @media screen and (max-width: 1024px) {
+                    .admin-config-header {
+                        display: grid !important;
+                        grid-template-columns: 1fr !important;
+                        gap: 12px !important;
+                        margin-bottom: 16px !important;
+                    }
+                    .admin-config-header h1 {
+                        max-width: 12ch !important;
+                        font-size: clamp(1.42rem, 6.4vw, 1.78rem) !important;
+                        line-height: 1.08 !important;
+                        letter-spacing: -0.02em !important;
+                        margin: 0 0 6px !important;
+                    }
+                    .admin-config-header p {
+                        max-width: 32ch !important;
+                        margin: 0 !important;
+                        font-size: 0.82rem !important;
+                        line-height: 1.45 !important;
+                    }
+                    .admin-config-header .btn {
+                        width: min(100%, 300px) !important;
+                        min-height: 42px !important;
+                        justify-content: center !important;
+                        border-radius: 16px !important;
+                        padding: 9px 14px !important;
+                        font-size: 0.8rem !important;
+                    }
+                    .admin-config-tabs {
+                        display: grid !important;
+                        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+                        gap: 8px !important;
+                        margin-bottom: 14px !important;
+                        overflow: visible !important;
+                        padding-bottom: 0 !important;
+                    }
+                    .admin-config-tabs button {
+                        width: 100% !important;
+                        min-height: 40px !important;
+                        padding: 8px 9px !important;
+                        border-radius: 14px !important;
+                        font-size: 0.66rem !important;
+                        line-height: 1.1 !important;
+                        justify-content: center !important;
+                    }
+                    .admin-config-tabs .material-symbols-outlined {
+                        font-size: 16px !important;
+                    }
+                    .admin-config-panel {
+                        padding: 14px !important;
+                        border-radius: 20px !important;
+                        min-height: auto !important;
+                    }
+                    .admin-config-panel h2 {
+                        font-size: 1rem !important;
+                        line-height: 1.25 !important;
+                    }
+                    .admin-config-panel .responsive-grid-2 {
+                        grid-template-columns: 1fr !important;
+                    }
+                }
+            `}</style>
+            <div className="admin-config-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '30px' }}>
                 <div>
                     <h1 style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--ink)', letterSpacing: '-1px', marginBottom: '8px' }}>Cấu hình hệ thống</h1>
                     <p style={{ color: 'var(--gray-500)', fontWeight: 600, margin: 0 }}>Quản lý tham số động, phân quyền AI và hệ thống lõi.</p>
                 </div>
-                <button data-ai-id="button-cauhinhhethong-save-all" className="btn btn-primary" onClick={handleSave} disabled={saving} style={{ padding: '12px 24px', borderRadius: '12px', fontWeight: 800 }}>
-                    <span className="material-symbols-outlined">{saving ? 'sync' : 'save'}</span>
-                    {saving ? 'Đang lưu...' : 'Lưu tất cả thay đổi'}
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    {saving && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', color: 'var(--gray-450)', fontWeight: 800 }}>
+                            <span className="material-symbols-outlined" style={{ fontSize: '18px', animation: 'spin 1.5s infinite linear' }}>sync</span>
+                            <span>Đang lưu...</span>
+                        </div>
+                    )}
+                    <button data-ai-id="button-cauhinhhethong-save-all" className="btn btn-primary" onClick={handleSave} disabled={saving} style={{ padding: '12px 24px', borderRadius: '12px', fontWeight: 800 }}>
+                        <span className="material-symbols-outlined">{saving ? 'sync' : 'save'}</span>
+                        {saving ? 'Đang lưu...' : 'Lưu tất cả thay đổi'}
+                    </button>
+                </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', overflowX: 'auto', paddingBottom: '8px' }}>
-                {renderTabButton('general', 'settings', 'Cấu hình chung')}
-                {renderTabButton('payment', 'payments', 'Thanh toán')}
-                {renderTabButton('ai', 'smart_toy', 'AI & Phân quyền')}
-                {renderTabButton('email', 'mail', 'Email SMTP')}
-                {renderTabButton('security', 'shield_lock', 'Bảo mật')}
-                {renderTabButton('backup', 'inventory_2', 'Backup & Nhật ký')}
-            </div>
+            <div className="config-layout-wrapper">
+                <div className="admin-config-tabs" style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '8px' }}>
+                    {renderTabButton('general', 'settings', 'Cấu hình chung')}
+                    {renderTabButton('payment', 'payments', 'Thanh toán')}
+                    {renderTabButton('ai', 'smart_toy', 'AI & Phân quyền')}
+                    {renderTabButton('email', 'mail', 'Email SMTP')}
+                    {renderTabButton('security', 'shield_lock', 'Bảo mật')}
+                    {renderTabButton('backup', 'inventory_2', 'Backup & Nhật ký')}
+                </div>
 
-            <div className="glass-card" style={{ padding: '40px', borderRadius: 'var(--radius-xl)', minHeight: '500px' }}>
+                <div className="glass-card admin-config-panel" style={{ padding: '40px', borderRadius: 'var(--radius-xl)', minHeight: '500px' }}>
                 {activeTab === 'general' && (
                     <div className="animate-fade-in" style={{ display: 'grid', gap: '24px' }}>
                         <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--ink)' }}>Cấu hình cơ bản</h2>
@@ -466,15 +675,207 @@ const CauHinhHeThong: React.FC = () => {
                             <div className="responsive-grid-2">
                                 <div>
                                     <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, color: 'var(--gray-600)' }}>Mã Ngân Hàng (Bank ID)</label>
-                                    <input data-ai-id="input-cauhinhhethong-vietqr-bank-id" type="text" className="form-input" value={configs.vietqr_bank_id || ''} onChange={e => setConfigs({...configs, vietqr_bank_id: e.target.value})} placeholder="VD: MB, VCB, TCB..." />
+                                    <div style={{ position: 'relative' }}>
+                                        <div style={{ display: 'flex', gap: '4px' }}>
+                                            <input
+                                                data-ai-id="input-cauhinhhethong-vietqr-bank-search"
+                                                type="text"
+                                                className="form-input"
+                                                style={{ flex: 1 }}
+                                                value={bankSearchQuery}
+                                                onChange={e => {
+                                                    setBankSearchQuery(e.target.value);
+                                                    setShowBankDropdown(true);
+                                                }}
+                                                onFocus={() => setShowBankDropdown(true)}
+                                                placeholder="Tìm kiếm ngân hàng..."
+                                            />
+                                            {configs.vietqr_bank_id && (
+                                                <div style={{
+                                                    background: 'var(--primary-light)',
+                                                    color: 'var(--primary)',
+                                                    padding: '0 12px',
+                                                    borderRadius: '10px',
+                                                    fontSize: '0.85rem',
+                                                    fontWeight: 900,
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    border: '1px solid rgba(16,185,129,0.15)'
+                                                }}>
+                                                    {configs.vietqr_bank_id}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {showBankDropdown && banks.length > 0 && (
+                                            <>
+                                                <div
+                                                    onClick={() => setShowBankDropdown(false)}
+                                                    style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 998 }}
+                                                />
+                                                <div style={{
+                                                    position: 'absolute',
+                                                    top: '100%',
+                                                    left: 0,
+                                                    right: 0,
+                                                    maxHeight: '220px',
+                                                    overflowY: 'auto',
+                                                    background: 'var(--surface)',
+                                                    border: '1px solid var(--gray-200)',
+                                                    borderRadius: '12px',
+                                                    marginTop: '6px',
+                                                    boxShadow: 'var(--shadow-lg)',
+                                                    zIndex: 999
+                                                }}>
+                                                    {banks
+                                                        .filter((b: any) => {
+                                                            const query = bankSearchQuery.toLowerCase();
+                                                            return (
+                                                                (b.shortName || b.short_name || '').toLowerCase().includes(query) ||
+                                                                (b.name || '').toLowerCase().includes(query) ||
+                                                                (b.bin || '').toLowerCase().includes(query)
+                                                            );
+                                                        })
+                                                        .map((b: any) => (
+                                                            <div
+                                                                key={b.bin}
+                                                                onClick={() => {
+                                                                    setConfigs({...configs, vietqr_bank_id: b.bin});
+                                                                    setBankSearchQuery(b.shortName || b.short_name || b.bin);
+                                                                    setShowBankDropdown(false);
+                                                                    handleVietQrLookup(b.bin, configs.vietqr_account_no);
+                                                                }}
+                                                                style={{
+                                                                    padding: '10px 14px',
+                                                                    cursor: 'pointer',
+                                                                    borderBottom: '1px solid var(--gray-100)',
+                                                                    transition: 'background 0.2s',
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    justifyContent: 'space-between',
+                                                                    gap: '8px'
+                                                                }}
+                                                                className="bank-item-hover"
+                                                                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--gray-50)'}
+                                                                onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+                                                            >
+                                                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                                    <span style={{ fontWeight: 800, color: 'var(--ink)', fontSize: '0.9rem' }}>
+                                                                        {b.shortName || b.short_name}
+                                                                    </span>
+                                                                    <span style={{ color: 'var(--gray-400)', fontSize: '0.75rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '240px' }}>
+                                                                        {b.name}
+                                                                    </span>
+                                                                </div>
+                                                                <span style={{ fontSize: '0.8rem', fontWeight: 900, color: 'var(--gray-500)', background: 'var(--gray-100)', padding: '2px 8px', borderRadius: '6px' }}>
+                                                                    BIN: {b.bin}
+                                                                </span>
+                                                            </div>
+                                                        ))
+                                                    }
+                                                    {banks.filter((b: any) => {
+                                                        const query = bankSearchQuery.toLowerCase();
+                                                        return (
+                                                            (b.shortName || b.short_name || '').toLowerCase().includes(query) ||
+                                                                (b.name || '').toLowerCase().includes(query) ||
+                                                                (b.bin || '').toLowerCase().includes(query)
+                                                        );
+                                                    }).length === 0 && (
+                                                        <div style={{ padding: '14px', color: 'var(--gray-400)', textAlign: 'center', fontSize: '0.9rem' }}>
+                                                            Không tìm thấy ngân hàng nào
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
                                 </div>
                                 <div>
                                     <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, color: 'var(--gray-600)' }}>Số Tài Khoản</label>
-                                    <input data-ai-id="input-cauhinhhethong-vietqr-account-no" type="text" className="form-input" value={configs.vietqr_account_no || ''} onChange={e => setConfigs({...configs, vietqr_account_no: e.target.value})} placeholder="Nhập số tài khoản nhận tiền..." />
+                                    <input
+                                        data-ai-id="input-cauhinhhethong-vietqr-account-no"
+                                        type="text"
+                                        className="form-input"
+                                        value={configs.vietqr_account_no || ''}
+                                        onChange={e => setConfigs({...configs, vietqr_account_no: e.target.value})}
+                                        onBlur={e => handleVietQrLookup(configs.vietqr_bank_id, e.target.value)}
+                                        placeholder="Nhập số tài khoản nhận tiền..."
+                                    />
                                 </div>
                                 <div style={{ gridColumn: 'span 2' }}>
                                     <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, color: 'var(--gray-600)' }}>Tên Chủ Tài Khoản</label>
-                                    <input data-ai-id="input-cauhinhhethong-vietqr-account-name" type="text" className="form-input" value={configs.vietqr_account_name || ''} onChange={e => setConfigs({...configs, vietqr_account_name: e.target.value})} placeholder="TRAN MINH HOANG" />
+                                    <div style={{ position: 'relative' }}>
+                                        <input
+                                            data-ai-id="input-cauhinhhethong-vietqr-account-name"
+                                            type="text"
+                                            className="form-input"
+                                            style={{ paddingRight: '48px', width: '100%', textTransform: 'uppercase' }}
+                                            value={configs.vietqr_account_name || ''}
+                                            onChange={e => setConfigs({...configs, vietqr_account_name: e.target.value.toUpperCase()})}
+                                            placeholder="***REMOVED***-VIETQR_ACCOUNT_NAME"
+                                        />
+                                        {lookingUpVietQr && (
+                                            <div style={{
+                                                position: 'absolute',
+                                                right: '12px',
+                                                top: '50%',
+                                                transform: 'translateY(-50%)',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center'
+                                            }}>
+                                                <span className="material-symbols-outlined" style={{ animation: 'spinBtn 1s linear infinite', color: 'var(--primary)', fontSize: '20px' }}>sync</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, color: 'var(--gray-600)' }}>VietQR Client ID</label>
+                                    <input
+                                        data-ai-id="input-cauhinhhethong-vietqr-client-id"
+                                        type="text"
+                                        className="form-input"
+                                        value={configs.vietqr_client_id || ''}
+                                        onChange={e => setConfigs({...configs, vietqr_client_id: e.target.value})}
+                                        placeholder="Nhập Client ID lấy từ my.vietqr.io..."
+                                    />
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, color: 'var(--gray-600)' }}>VietQR API Key</label>
+                                    <div style={{ position: 'relative' }}>
+                                        <input
+                                            data-ai-id="input-cauhinhhethong-vietqr-api-key"
+                                            type={showVietQrKey ? "text" : "password"}
+                                            className="form-input"
+                                            style={{ paddingRight: '48px', width: '100%' }}
+                                            value={configs.vietqr_api_key || ''}
+                                            onChange={e => setConfigs({...configs, vietqr_api_key: e.target.value})}
+                                            placeholder="Nhập API Key..."
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowVietQrKey(!showVietQrKey)}
+                                            style={{
+                                                position: 'absolute',
+                                                right: '12px',
+                                                top: '50%',
+                                                transform: 'translateY(-50%)',
+                                                background: 'none',
+                                                border: 'none',
+                                                cursor: 'pointer',
+                                                color: 'var(--gray-400)',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                padding: '4px'
+                                            }}
+                                            title={showVietQrKey ? "Ẩn khóa" : "Hiện khóa"}
+                                        >
+                                            <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>
+                                                {showVietQrKey ? 'visibility_off' : 'visibility'}
+                                            </span>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -492,7 +893,39 @@ const CauHinhHeThong: React.FC = () => {
                                 </div>
                                 <div>
                                     <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, color: 'var(--gray-600)' }}>vnp_HashSecret (Chuỗi Bí Mật)</label>
-                                    <input data-ai-id="input-cauhinhhethong-vnpay-hash-secret" type="password" className="form-input" value={configs.vnpay_hash_secret || ''} onChange={e => setConfigs({...configs, vnpay_hash_secret: e.target.value})} />
+                                    <div style={{ position: 'relative' }}>
+                                        <input
+                                            data-ai-id="input-cauhinhhethong-vnpay-hash-secret"
+                                            type={showVnpaySecret ? "text" : "password"}
+                                            className="form-input"
+                                            style={{ paddingRight: '48px', width: '100%' }}
+                                            value={configs.vnpay_hash_secret || ''}
+                                            onChange={e => setConfigs({...configs, vnpay_hash_secret: e.target.value})}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowVnpaySecret(!showVnpaySecret)}
+                                            style={{
+                                                position: 'absolute',
+                                                right: '12px',
+                                                top: '50%',
+                                                transform: 'translateY(-50%)',
+                                                background: 'none',
+                                                border: 'none',
+                                                cursor: 'pointer',
+                                                color: 'var(--gray-400)',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                padding: '4px'
+                                            }}
+                                            title={showVnpaySecret ? "Ẩn mã bí mật" : "Hiện mã bí mật"}
+                                        >
+                                            <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>
+                                                {showVnpaySecret ? 'visibility_off' : 'visibility'}
+                                            </span>
+                                        </button>
+                                    </div>
                                 </div>
                                 <div style={{ gridColumn: 'span 2' }}>
                                     <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, color: 'var(--gray-600)' }}>vnp_Url (URL Cổng Thanh Toán)</label>
@@ -508,7 +941,7 @@ const CauHinhHeThong: React.FC = () => {
                 )}
 
                 {activeTab === 'email' && (
-                    <div className="animate-fade-in" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '40px' }}>
+                    <div className="animate-fade-in" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: '40px' }}>
                         <div>
                             <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--ink)', marginBottom: '24px' }}>Thông số máy chủ SMTP</h2>
                             <div style={{ display: 'grid', gap: '20px' }}>
@@ -526,7 +959,40 @@ const CauHinhHeThong: React.FC = () => {
                                 </div>
                                 <div>
                                     <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, color: 'var(--gray-600)' }}>Mật khẩu ứng dụng (Password)</label>
-                                    <input data-ai-id="input-cauhinhhethong-mail-password" type="password" className="form-input" value={configs.mail_password || ''} onChange={e => setConfigs({...configs, mail_password: e.target.value})} placeholder="••••••••••••••••" />
+                                    <div style={{ position: 'relative' }}>
+                                        <input
+                                            data-ai-id="input-cauhinhhethong-mail-password"
+                                            type={showMailPassword ? "text" : "password"}
+                                            className="form-input"
+                                            style={{ paddingRight: '48px', width: '100%' }}
+                                            value={configs.mail_password || ''}
+                                            onChange={e => setConfigs({...configs, mail_password: e.target.value})}
+                                            placeholder="••••••••••••••••"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowMailPassword(!showMailPassword)}
+                                            style={{
+                                                position: 'absolute',
+                                                right: '12px',
+                                                top: '50%',
+                                                transform: 'translateY(-50%)',
+                                                background: 'none',
+                                                border: 'none',
+                                                cursor: 'pointer',
+                                                color: 'var(--gray-400)',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                padding: '4px'
+                                            }}
+                                            title={showMailPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                                        >
+                                            <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>
+                                                {showMailPassword ? 'visibility_off' : 'visibility'}
+                                            </span>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -544,10 +1010,10 @@ const CauHinhHeThong: React.FC = () => {
                                 </button>
                             </div>
                             {testEmailResult && (
-                                <div style={{ 
-                                    padding: '16px', 
-                                    borderRadius: '12px', 
-                                    background: testEmailResult.success ? 'var(--success-light)' : 'var(--danger-light)', 
+                                <div style={{
+                                    padding: '16px',
+                                    borderRadius: '12px',
+                                    background: testEmailResult.success ? 'var(--success-light)' : 'var(--danger-light)',
                                     color: testEmailResult.success ? 'var(--success)' : 'var(--danger)',
                                     border: `1px solid ${testEmailResult.success ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'}`,
                                     display: 'flex', gap: '12px', alignItems: 'flex-start'
@@ -683,135 +1149,116 @@ const CauHinhHeThong: React.FC = () => {
                                     </h3>
                                     <div>
                                         <label style={{ display: 'block', marginBottom: '6px', fontWeight: 700, color: 'var(--gray-600)', fontSize: '0.85rem' }}>API Key chính</label>
-                                        <input data-ai-id="input-cauhinhhethong-groq-api-key" type="password" className="form-input" value={configs.groq_api_key || ''} onChange={e => setConfigs({...configs, groq_api_key: e.target.value})} placeholder="gsk_..." />
+                                        <input data-ai-id="input-cauhinhhethong-groq-api-key" type="password" className="form-input" value={configs.groq_api_key || ''} onChange={e => setConfigs({...configs, groq_api_key: e.target.value})} placeholder="gsk_••••••••••••••••" />
                                     </div>
                                     <div>
-                                        <label style={{ display: 'block', marginBottom: '6px', fontWeight: 700, color: 'var(--gray-600)', fontSize: '0.85rem' }}>API Key dự phòng 2</label>
-                                        <input data-ai-id="input-cauhinhhethong-groq-api-key-2" type="password" className="form-input" value={configs.groq_api_key_2 || ''} onChange={e => setConfigs({...configs, groq_api_key_2: e.target.value})} placeholder="gsk_... (backend tự xoay khi key chính lỗi/quota)" />
+                                        <label style={{ display: 'block', marginBottom: '6px', fontWeight: 700, color: 'var(--gray-600)', fontSize: '0.85rem' }}>Model mặc định</label>
+                                        <input data-ai-id="input-cauhinhhethong-groq-model" type="text" className="form-input" value={configs.groq_model || ''} onChange={e => setConfigs({...configs, groq_model: e.target.value})} placeholder="llama-3.3-70b-specdec" />
+                                    </div>
+                                    <div style={{ borderTop: '1px solid var(--gray-100)', paddingTop: '10px' }}>
+                                        <label style={{ display: 'block', marginBottom: '6px', fontWeight: 700, color: 'var(--gray-500)', fontSize: '0.8rem' }}>API Key dự phòng 2</label>
+                                        <input data-ai-id="input-cauhinhhethong-groq-api-key-2" type="password" className="form-input" style={{ fontSize: '0.85rem', padding: '8px 12px' }} value={configs.groq_api_key_2 || ''} onChange={e => setConfigs({...configs, groq_api_key_2: e.target.value})} placeholder="Khóa dự phòng khi bị giới hạn lượt gọi..." />
                                     </div>
                                     <div>
-                                        <label style={{ display: 'block', marginBottom: '6px', fontWeight: 700, color: 'var(--gray-600)', fontSize: '0.85rem' }}>API Key dự phòng 3</label>
-                                        <input data-ai-id="input-cauhinhhethong-groq-api-key-3" type="password" className="form-input" value={configs.groq_api_key_3 || ''} onChange={e => setConfigs({...configs, groq_api_key_3: e.target.value})} placeholder="gsk_... (tuỳ chọn)" />
-                                    </div>
-                                    <div>
-                                        <label style={{ display: 'block', marginBottom: '6px', fontWeight: 700, color: 'var(--gray-600)', fontSize: '0.85rem' }}>Model Chat & FAQ</label>
-                                        <input data-ai-id="input-cauhinhhethong-groq-model" type="text" className="form-input" value={configs.groq_model || ''} onChange={e => setConfigs({...configs, groq_model: e.target.value})} placeholder="llama-3.1-8b-instant" />
-                                    </div>
-                                    <div>
-                                        <label style={{ display: 'block', marginBottom: '6px', fontWeight: 700, color: 'var(--gray-600)', fontSize: '0.85rem' }}>Model Autopilot (Tự động hóa)</label>
-                                        <input data-ai-id="input-cauhinhhethong-groq-autopilot-model" type="text" className="form-input" value={configs.groq_autopilot_model || ''} onChange={e => setConfigs({...configs, groq_autopilot_model: e.target.value})} placeholder="llama-3.1-8b-instant" />
-                                    </div>
-                                    <div>
-                                        <label style={{ display: 'block', marginBottom: '6px', fontWeight: 700, color: 'var(--gray-600)', fontSize: '0.85rem' }}>Model Audio (Dịch Whisper)</label>
-                                        <input data-ai-id="input-cauhinhhethong-groq-audio-model" type="text" className="form-input" value={configs.groq_audio_model || ''} onChange={e => setConfigs({...configs, groq_audio_model: e.target.value})} placeholder="whisper-large-v3-turbo" />
-                                    </div>
-                                    <div>
-                                        <label style={{ display: 'block', marginBottom: '6px', fontWeight: 700, color: 'var(--gray-600)', fontSize: '0.85rem' }}>Model Phân tích ảnh</label>
-                                        <input data-ai-id="input-cauhinhhethong-groq-vision-model" type="text" className="form-input" value={configs.groq_vision_model || ''} onChange={e => setConfigs({...configs, groq_vision_model: e.target.value})} placeholder="meta-llama/llama-4-scout-17b-16e-instruct" />
+                                        <label style={{ display: 'block', marginBottom: '6px', fontWeight: 700, color: 'var(--gray-500)', fontSize: '0.8rem' }}>API Key dự phòng 3</label>
+                                        <input data-ai-id="input-cauhinhhethong-groq-api-key-3" type="password" className="form-input" style={{ fontSize: '0.85rem', padding: '8px 12px' }} value={configs.groq_api_key_3 || ''} onChange={e => setConfigs({...configs, groq_api_key_3: e.target.value})} placeholder="Khóa dự phòng cấp 2..." />
                                     </div>
                                     {renderAiTestPanel('groq')}
                                 </div>
 
                                 <div style={{ padding: '20px', border: '1px solid var(--gray-200)', borderRadius: '16px', background: 'var(--surface)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                                     <h3 style={{ margin: '0 0 4px', color: 'var(--ink)', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                        <span className="material-symbols-outlined" style={{ color: '#f59e0b' }}>auto_awesome</span>
-                                        Gemini
+                                        <span className="material-symbols-outlined" style={{ color: '#f59e0b' }}>star</span>
+                                        Google Gemini
                                     </h3>
                                     <div>
-                                        <label style={{ display: 'block', marginBottom: '6px', fontWeight: 700, color: 'var(--gray-600)', fontSize: '0.85rem' }}>API Key</label>
-                                        <input data-ai-id="input-cauhinhhethong-gemini-api-key" type="password" className="form-input" value={configs.gemini_api_key || ''} onChange={e => setConfigs({...configs, gemini_api_key: e.target.value})} placeholder="AIza... hoặc nhiều key cách nhau bằng dấu phẩy" />
+                                        <label style={{ display: 'block', marginBottom: '6px', fontWeight: 700, color: 'var(--gray-600)', fontSize: '0.85rem' }}>Gemini API Key</label>
+                                        <input data-ai-id="input-cauhinhhethong-gemini-api-key" type="password" className="form-input" value={configs.gemini_api_key || ''} onChange={e => setConfigs({...configs, gemini_api_key: e.target.value})} placeholder="AIzaSy••••••••••••••••" />
                                     </div>
                                     <div>
-                                        <label style={{ display: 'block', marginBottom: '6px', fontWeight: 700, color: 'var(--gray-600)', fontSize: '0.85rem' }}>Model Chat & Y tế</label>
-                                        <input data-ai-id="input-cauhinhhethong-gemini-model" type="text" className="form-input" value={configs.gemini_model || ''} onChange={e => setConfigs({...configs, gemini_model: e.target.value})} placeholder="gemini-3.5-flash" />
-                                    </div>
-                                    <div>
-                                        <label style={{ display: 'block', marginBottom: '6px', fontWeight: 700, color: 'var(--gray-600)', fontSize: '0.85rem' }}>Model Phân tích Đa phương tiện</label>
-                                        <input data-ai-id="input-cauhinhhethong-gemini-media-model" type="text" className="form-input" value={configs.gemini_media_model || ''} onChange={e => setConfigs({...configs, gemini_media_model: e.target.value})} placeholder="gemini-3.5-flash" />
+                                        <label style={{ display: 'block', marginBottom: '6px', fontWeight: 700, color: 'var(--gray-600)', fontSize: '0.85rem' }}>Model mặc định</label>
+                                        <input data-ai-id="input-cauhinhhethong-gemini-model" type="text" className="form-input" value={configs.gemini_model || ''} onChange={e => setConfigs({...configs, gemini_model: e.target.value})} placeholder="gemini-1.5-flash" />
                                     </div>
                                     {renderAiTestPanel('gemini')}
                                 </div>
 
                                 <div style={{ padding: '20px', border: '1px solid var(--gray-200)', borderRadius: '16px', background: 'var(--surface)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                                     <h3 style={{ margin: '0 0 4px', color: 'var(--ink)', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                        <span className="material-symbols-outlined" style={{ color: '#22d3ee' }}>route</span>
+                                        <span className="material-symbols-outlined" style={{ color: '#22d3ee' }}>globe</span>
                                         OpenRouter
                                     </h3>
                                     <div>
-                                        <label style={{ display: 'block', marginBottom: '6px', fontWeight: 700, color: 'var(--gray-600)', fontSize: '0.85rem' }}>API Key</label>
-                                        <input data-ai-id="input-cauhinhhethong-openrouter-api-key" type="password" className="form-input" value={configs.openrouter_api_key || ''} onChange={e => setConfigs({...configs, openrouter_api_key: e.target.value})} placeholder="sk-or-..." />
+                                        <label style={{ display: 'block', marginBottom: '6px', fontWeight: 700, color: 'var(--gray-600)', fontSize: '0.85rem' }}>OpenRouter Key</label>
+                                        <input data-ai-id="input-cauhinhhethong-openrouter-api-key" type="password" className="form-input" value={configs.openrouter_api_key || ''} onChange={e => setConfigs({...configs, openrouter_api_key: e.target.value})} placeholder="sk-or-••••••••••••••••" />
                                     </div>
                                     <div>
-                                        <label style={{ display: 'block', marginBottom: '6px', fontWeight: 700, color: 'var(--gray-600)', fontSize: '0.85rem' }}>Model Chat & FAQ</label>
-                                        <input data-ai-id="input-cauhinhhethong-openrouter-model" type="text" className="form-input" value={configs.openrouter_model || ''} onChange={e => setConfigs({...configs, openrouter_model: e.target.value})} placeholder="deepseek/deepseek-v4-flash:free" />
-                                    </div>
-                                    <div>
-                                        <label style={{ display: 'block', marginBottom: '6px', fontWeight: 700, color: 'var(--gray-600)', fontSize: '0.85rem' }}>Model Y khoa Chuyên sâu</label>
-                                        <input data-ai-id="input-cauhinhhethong-openrouter-medical-model" type="text" className="form-input" value={configs.openrouter_medical_model || ''} onChange={e => setConfigs({...configs, openrouter_medical_model: e.target.value})} placeholder="deepseek/deepseek-v4-flash:free" />
+                                        <label style={{ display: 'block', marginBottom: '6px', fontWeight: 700, color: 'var(--gray-600)', fontSize: '0.85rem' }}>Model mặc định</label>
+                                        <input data-ai-id="input-cauhinhhethong-openrouter-model" type="text" className="form-input" value={configs.openrouter_model || ''} onChange={e => setConfigs({...configs, openrouter_model: e.target.value})} placeholder="google/gemini-2.0-flash-exp:free" />
                                     </div>
                                     {renderAiTestPanel('openrouter')}
                                 </div>
-
                             </div>
                         </div>
 
-                        <hr style={{ border: 'none', borderTop: '1px dashed var(--gray-200)', marginBottom: '30px' }} />
-                        
-                        <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--ink)', marginBottom: '8px' }}>Ma trận phân quyền tác vụ AI (Action Policy)</h2>
-                        <p style={{ color: 'var(--gray-500)', marginBottom: '24px' }}>Cấu hình những hành động mà Trợ lý ảo Rexi được phép thực hiện dựa trên vai trò của người dùng đang chat.</p>
+                        <hr style={{ border: 'none', borderTop: '1px dashed var(--gray-200)', margin: '30px 0' }} />
 
-                        <div style={{ overflowX: 'auto', borderRadius: '16px', border: '1px solid var(--gray-200)', boxShadow: 'var(--shadow-sm)' }}>
+                        <div>
+                            <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--ink)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span className="material-symbols-outlined" style={{ color: 'var(--primary)' }}>security</span>
+                                Ma trận Phân quyền Thao tác AI
+                            </h2>
+                            <p style={{ color: 'var(--gray-500)', marginBottom: '24px' }}>
+                                Cấu hình giới hạn vai trò người dùng tương tác với AI. Đại lý AI (Rexi Agent) chỉ được thực thi các loại thao tác được đánh dấu tích đối với mỗi chức vụ.
+                            </p>
                             <div className="table-responsive-wrapper">
-<div style={{ minWidth: '800px' }}>
-<table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'center', background: 'var(--surface)' }}>
-                                <thead style={{ background: 'var(--gray-50)' }}>
-                                    <tr>
-                                        <th style={{ padding: '16px', textAlign: 'left', fontWeight: 800, color: 'var(--gray-600)', borderBottom: '2px solid var(--gray-200)' }}>Hành động (Action)</th>
-                                        {ROLES.map(role => (
-                                            <th key={role.id} style={{ padding: '16px', fontWeight: 800, color: 'var(--primary)', borderBottom: '2px solid var(--gray-200)' }}>
-                                                {role.name}
-                                            </th>
-                                        ))}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {ACTIONS.map(action => (
-                                        <tr key={action.id} style={{ borderBottom: '1px solid var(--gray-100)' }}>
-                                            <td style={{ padding: '16px', textAlign: 'left', fontWeight: 700, color: 'var(--ink)' }}>
-                                                {action.name} <br/>
-                                                <span style={{ fontSize: '0.75rem', color: 'var(--gray-400)', fontWeight: 500 }}>{action.id}</span>
-                                            </td>
-                                            {ROLES.map(role => {
-                                                const isChecked = (aiPolicy[role.id] || []).includes(action.id);
-                                                return (
-                                                    <td key={role.id} style={{ padding: '16px' }}>
-                                                        <label style={{ display: 'inline-flex', cursor: 'pointer', position: 'relative' }}>
-                                                            <input 
-                                                                data-ai-id={`input-cauhinhhethong-policy-${role.id}-${action.id}`}
-                                                                type="checkbox" 
-                                                                checked={isChecked}
-                                                                onChange={() => handlePolicyToggle(role.id, action.id)}
-                                                                style={{ 
-                                                                    width: '24px', height: '24px', 
-                                                                    accentColor: 'var(--primary)',
-                                                                    cursor: 'pointer' 
-                                                                }} 
-                                                            />
-                                                        </label>
+                                <div style={{ minWidth: '800px' }}>
+                                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                                        <thead>
+                                            <tr style={{ borderBottom: '2px solid var(--gray-200)', background: 'var(--gray-50)' }}>
+                                                <th style={{ padding: '16px', fontWeight: 900, color: 'var(--ink)' }}>VAI TRÒ / CHỨC VỤ</th>
+                                                {ACTIONS.map(a => (
+                                                    <th key={a.id} style={{ padding: '16px', fontWeight: 900, color: 'var(--ink)', textAlign: 'center' }}>
+                                                        <div>{a.name}</div>
+                                                        <code style={{ fontSize: '0.75rem', opacity: 0.75 }}>{a.id}</code>
+                                                    </th>
+                                                ))}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {ROLES.map(role => (
+                                                <tr key={role.id} style={{ borderBottom: '1px solid var(--gray-100)' }}>
+                                                    <td style={{ padding: '16px', fontWeight: 800, color: 'var(--ink)' }}>
+                                                        {role.name}
+                                                        <div style={{ fontSize: '0.75rem', color: 'var(--gray-400)', fontWeight: 600 }}>ID: {role.id}</div>
                                                     </td>
-                                                );
-                                            })}
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-</div></div>
+                                                    {ACTIONS.map(action => {
+                                                        const isChecked = (aiPolicy[role.id] || []).includes(action.id);
+                                                        return (
+                                                            <td key={action.id} style={{ padding: '16px', textAlign: 'center' }}>
+                                                                <label style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', margin: 0 }}>
+                                                                    <input
+                                                                        data-ai-id={`checkbox-cauhinhhethong-policy-${role.id}-${action.id}`}
+                                                                        type="checkbox"
+                                                                        className="custom-checkbox"
+                                                                        checked={isChecked}
+                                                                        onChange={() => handlePolicyToggle(role.id, action.id)}
+                                                                    />
+                                                                </label>
+                                                            </td>
+                                                        );
+                                                    })}
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 )}
 
                 {activeTab === 'backup' && (
-                    <div className="backup-grid animate-fade-in" style={{ display: 'grid', gridTemplateColumns: 'minmax(280px, 0.9fr) minmax(0, 1.6fr)', gap: '30px', width: '100%', minWidth: 0 }}>
+                    <div className="backup-grid animate-fade-in" style={{ gap: '30px', width: '100%', minWidth: 0 }}>
                         <div style={{ minWidth: 0 }}>
                             <div className="settings-panel-interactive" onMouseMove={handlePanelMouseMove} style={{ padding: '24px', background: 'var(--gray-50)', borderRadius: '16px', border: '1px solid var(--gray-200)', marginBottom: '24px', minWidth: 0 }}>
                                 <h3 style={{ fontWeight: 800, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}><span className="material-symbols-outlined" style={{ color: 'var(--primary)' }}>inventory_2</span> Sao lưu thủ công</h3>
@@ -832,7 +1279,7 @@ const CauHinhHeThong: React.FC = () => {
                                     {backingUp ? 'Đang sao lưu...' : 'Sao lưu ngay'}
                                 </button>
                             </div>
-                            
+
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
                                 <h3 style={{ fontWeight: 800, margin: 0 }}>Danh sách bản sao lưu</h3>
                                 <button
@@ -857,12 +1304,12 @@ const CauHinhHeThong: React.FC = () => {
                                 {backups.length === 0 ? <p style={{ padding: '20px', textAlign: 'center', color: 'var(--gray-400)' }}>Chưa có file backup.</p> : (
                                     <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                                         {backups.map((b, idx) => (
-                                            <li className="settings-list-row" key={idx} style={{ padding: '12px', borderBottom: '1px solid var(--gray-100)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                <div>
-                                                    <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>{b.filename}</div>
+                                            <li className="settings-list-row" key={idx} style={{ padding: '12px', borderBottom: '1px solid var(--gray-100)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
+                                                <div style={{ flex: 1, minWidth: 0 }}>
+                                                    <div style={{ fontWeight: 700, fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={b.filename}>{b.filename}</div>
                                                     <div style={{ fontSize: '0.75rem', color: 'var(--gray-500)' }}>{(b.size/1024/1024).toFixed(2)} MB • {new Date(b.lastModified).toLocaleDateString('vi-VN')}</div>
                                                 </div>
-                                                <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                                                <div style={{ display: 'flex', gap: '4px', alignItems: 'center', flexShrink: 0 }}>
                                                     {/* Nút tải file backup về máy */}
                                                     <button
                                                         data-ai-id={`button-cauhinhhethong-download-backup-${idx}`}
@@ -929,31 +1376,29 @@ const CauHinhHeThong: React.FC = () => {
                                     Xóa nhật ký
                                 </button>
                             </div>
-                            <div style={{ maxHeight: '500px', overflow: 'auto', border: '1px solid var(--gray-200)', borderRadius: '12px', background: 'var(--surface)', width: '100%', minWidth: 0 }}>
+                            <div style={{ maxHeight: '500px', overflowY: 'auto', border: '1px solid var(--gray-200)', borderRadius: '12px', background: 'var(--surface)', width: '100%', minWidth: 0 }}>
                                 {logs.length === 0 ? <p style={{ padding: '40px', textAlign: 'center', color: 'var(--gray-400)' }}>Chưa có nhật ký.</p> : (
-                                    <div className="table-responsive-wrapper">
-<div style={{ minWidth: '800px' }}>
-<table style={{ width: '100%', minWidth: 0, tableLayout: 'fixed', fontSize: '0.85rem', borderCollapse: 'collapse' }}>
+                                    <table style={{ width: '100%', tableLayout: 'fixed', fontSize: '0.85rem', borderCollapse: 'collapse' }}>
                                         <tbody>
                                             {logs.map((log) => (
                                                 <tr className="settings-log-row" key={log.id} style={{ borderBottom: '1px solid var(--gray-100)' }}>
-                                                    <td style={{ padding: '12px', color: 'var(--gray-500)', width: '22%', whiteSpace: 'normal', wordBreak: 'break-word' }}>{chuyenNgayGioISO_SangVN(log.ngay_tao)}</td>
-                                                    <td style={{ padding: '12px', fontWeight: 800, color: 'var(--primary)', width: '18%', wordBreak: 'break-word' }}>{log.nguoi_thao_tac}</td>
-                                                    <td style={{ padding: '12px', fontWeight: 700, width: '28%', wordBreak: 'break-word' }}>
-                                                        <span style={{ padding: '2px 8px', borderRadius: '4px', background: 'var(--gray-100)', marginRight: '8px' }}>{log.hanh_dong}</span>
+                                                    <td style={{ padding: '12px', color: 'var(--gray-500)', width: '18%', whiteSpace: 'nowrap' }}>{chuyenNgayGioISO_SangVN(log.ngay_tao)}</td>
+                                                    <td style={{ padding: '12px', fontWeight: 800, color: 'var(--primary)', width: '10%', whiteSpace: 'nowrap' }}>{log.nguoi_thao_tac}</td>
+                                                    <td style={{ padding: '12px', fontWeight: 700, width: '20%', whiteSpace: 'nowrap' }}>
+                                                        <span style={{ padding: '2px 8px', borderRadius: '4px', background: 'var(--gray-100)', marginRight: '8px', display: 'inline-block' }}>{log.hanh_dong}</span>
                                                         {log.bang_du_lieu}
                                                     </td>
-                                                    <td style={{ padding: '12px', color: 'var(--gray-500)', width: '32%', wordBreak: 'break-word' }}>{log.chi_tiet}</td>
+                                                    <td style={{ padding: '12px', color: 'var(--gray-500)', width: '52%', wordBreak: 'break-all' }}>{log.chi_tiet}</td>
                                                 </tr>
                                             ))}
                                         </tbody>
                                     </table>
-</div></div>
                                 )}
                             </div>
                         </div>
                     </div>
                 )}
+            </div>
             </div>
 
             <style>{`

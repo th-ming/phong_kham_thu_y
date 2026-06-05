@@ -50,7 +50,15 @@ public class ActionAuthFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res, FilterChain chain) throws IOException, ServletException {
         String requestUri = req.getRequestURI();
-        if (requestUri != null && (requestUri.startsWith("/api/chat") || requestUri.startsWith("/api/agent"))) {
+        if (requestUri != null && (
+                requestUri.startsWith("/api/chat")
+                || requestUri.startsWith("/api/agent")
+                || requestUri.startsWith("/api/auth/")
+                || requestUri.equals("/api/system/send-otp")
+                || requestUri.equals("/api/system/verify-otp")
+                || requestUri.startsWith("/ws/")
+                || requestUri.startsWith("/public/")
+        )) {
             chain.doFilter(req, res);
             return;
         }

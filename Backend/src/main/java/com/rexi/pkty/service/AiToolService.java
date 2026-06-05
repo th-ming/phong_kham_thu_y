@@ -27,6 +27,9 @@ public class AiToolService {
     @Autowired
     private EmailService emailService;
 
+    @Autowired(required = false)
+    private CodeRagService codeRagService;
+
     @Autowired
     @Lazy
     private AiToolService self;
@@ -83,6 +86,9 @@ public class AiToolService {
         appendToolIfAllowed(sb, userRole, "thong_ke_ca_kham_bac_si",
             "Thống kê số ca khám/lịch hẹn theo bác sĩ. Dùng cho câu hỏi bác sĩ nào nhiều ca nhất, ít ca nhất, tải/bận nhất.",
             "{\"khoang_thoi_gian\": \"hom_nay|tuan_nay|thang_nay|all\", \"sap_xep\": \"nhieu_nhat|it_nhat\"}");
+        appendToolIfAllowed(sb, userRole, "thong_ke_khach_hang_hom_nay",
+            "Đếm khách hàng mới hôm nay và phân tích xu hướng lịch hẹn hôm nay từ dữ liệu hệ thống. Không được tự ước lượng nếu DB thiếu dữ liệu.",
+            "{\"gom_xu_huong\": \"true|false\"}");
         appendToolIfAllowed(sb, userRole, "tim_kiem_web",
             "Tìm thông tin y khoa trên web.", "{\"query\": \"...\"}");
         appendToolIfAllowed(sb, userRole, "gui_email_don_le",
@@ -92,15 +98,15 @@ public class AiToolService {
         appendToolIfAllowed(sb, userRole, "kiem_tra_kien_truc_he_thong",
             "Xem bản đồ mã nguồn, luồng Agent và provider đang dùng ở mức kiến trúc.", "{}");
         appendToolIfAllowed(sb, userRole, "tra_cuu_ma_nguon",
-            "Tra cứu index mã nguồn whitelist theo từ khóa, không trả raw source/secret.",
-            "{\"tu_khoa\":\"chatbot|agent|đặt lịch|phân quyền|...\"}");
+            "Tra cứu RAG mã nguồn theo từ khóa. Trả file, route/API, dòng code gần nhất và snippet đã che secret. Dùng khi admin hỏi chức năng nằm ở đâu, trang nào, file nào, dòng nào.",
+            "{\"tu_khoa\":\"trang hóa đơn|nút thêm dịch vụ|api đăng nhập|agent provider|...\"}");
         appendToolIfAllowed(sb, userRole, "kiem_tra_phan_he",
             "Xem phân hệ và route hệ thống.", "{}");
         appendToolIfAllowed(sb, userRole, "xem_hoa_don",
             "Xem hóa đơn theo trạng thái.", "{\"trang_thai\": \"CHO_THANH_TOAN|DA_THANH_TOAN|all\"}");
         appendToolIfAllowed(sb, userRole, "thao_tac_tai_khoan",
             "Khóa/mở khóa/xóa mềm tài khoản (bắt buộc xác nhận trước).",
-            "{\"id_khach_hang\":\"...\",\"hanh_dong\":\"KHOA|XOA|MO_KHOA\"}");
+            "{\"id_khach_hang\":\"...\",\"hanh_dong\":\"KHOA|XOA|MO_KHOA\",\"xac_nhan\":true}");
         appendToolIfAllowed(sb, userRole, "tim_tai_khoan_bi_khoa",
             "Danh sách tài khoản bị khóa.", "{}");
         appendToolIfAllowed(sb, userRole, "tra_cuu_tai_lieu_y_khoa",
@@ -195,6 +201,7 @@ public class AiToolService {
                 case "xem_kho_thuoc"         -> toolXemKhoThuoc((String) params.getOrDefault("tu_khoa", ""));
                 case "thong_ke_doanh_thu"    -> toolThongKeDoanhThu((String) params.getOrDefault("khoang_thoi_gian", "hom_nay"));
                 case "thong_ke_ca_kham_bac_si" -> toolThongKeCaKhamBacSi(params);
+                case "thong_ke_khach_hang_hom_nay" -> toolThongKeKhachHangHomNay(params);
                 case "tim_kiem_web"          -> toolTimKiemWeb((String) params.getOrDefault("query", ""));
                 case "gui_email_don_le"      -> toolGuiEmailDonLe(params);
                 case "kiem_tra_cau_hinh_ai"  -> toolKiemTraCauHinhAi();
@@ -360,6 +367,89 @@ public class AiToolService {
               .append(" | Trạng thái: ").append(r.get("trang_thai")).append("\n");
         }
         return sb.toString();
+    }
+
+    private String toolThongKeKhachHangHomNay(Map<String, Object> params) {
+        LocalDate today = LocalDate.now(VN_ZONE);
+        Integer newCustomerCount = jdbcTemplate.queryForObject(
+            "SELECT COUNT(*) FROM KhachHang " +
+            "WHERE (da_xoa = 0 OR da_xoa IS NULL) AND CAST(ngay_tao AS DATE) = ?",
+            Integer.class,
+            java.sql.Date.valueOf(today)
+        );
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("Rexi tra dữ liệu hệ thống ngày ").append(today).append(":\n");
+        sb.append("- Số khách hàng mới hôm nay: ").append(Objects.requireNonNullElse(newCustomerCount, 0)).append(" khách hàng.\n");
+
+        boolean includeTrend = params == null
+            || Boolean.parseBoolean(Objects.toString(params.getOrDefault("gom_xu_huong", "true"), "true"));
+        if (!includeTrend) {
+            return sb.toString().trim();
+        }
+
+        List<Map<String, Object>> appointmentRows = jdbcTemplate.queryForList(
+            "SELECT TOP 200 COALESCE(dv.ten_dich_vu, '') AS ten_dich_vu, COALESCE(lh.ly_do, '') AS ly_do " +
+            "FROM LichHen lh LEFT JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu " +
+            "WHERE lh.ngay_kham = ?",
+            java.sql.Date.valueOf(today)
+        );
+
+        if (appointmentRows.isEmpty()) {
+            sb.append("- Xu hướng hôm nay: chưa có lịch hẹn hôm nay trong hệ thống, nên Rexi không tính tỷ lệ xu hướng.");
+            return sb.toString().trim();
+        }
+
+        Map<String, Integer> categories = new LinkedHashMap<>();
+        for (Map<String, Object> row : appointmentRows) {
+            String service = Objects.toString(row.get("ten_dich_vu"), "");
+            String reason = Objects.toString(row.get("ly_do"), "");
+            String category = classifyAppointmentTrend(service + " " + reason);
+            categories.merge(category, 1, Integer::sum);
+        }
+
+        sb.append("- Xu hướng lịch hẹn hôm nay (").append(appointmentRows.size()).append(" lịch hẹn):\n");
+        categories.entrySet().stream()
+            .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
+            .forEach(entry -> {
+                int percent = Math.round((entry.getValue() * 100.0f) / appointmentRows.size());
+                sb.append("  + ").append(percent).append("% ")
+                    .append(entry.getKey())
+                    .append(" (").append(entry.getValue()).append(" lịch hẹn)\n");
+            });
+        sb.append("Các tỷ lệ trên chỉ tính từ lịch hẹn có trong DB hôm nay; Rexi không suy đoán ngoài dữ liệu này.");
+        return sb.toString().trim();
+    }
+
+    private String classifyAppointmentTrend(String text) {
+        String q = normalizeVietnamese(Objects.toString(text, "").toLowerCase(Locale.ROOT));
+        if (q.isBlank()) return "chưa rõ lý do khám";
+        if (containsTrendAny(q, "cap cuu", "chan thuong", "bi thuong", "vet thuong", "gay xuong", "chay mau", "tai nan")) {
+            return "khám do chấn thương/cấp cứu";
+        }
+        if (containsTrendAny(q, "tiem", "vacxin", "vaccine", "phong benh", "tiem chung")) {
+            return "tiêm phòng/chăm sóc dự phòng";
+        }
+        if (containsTrendAny(q, "dinh duong", "thuc an", "an uong", "tu van")) {
+            return "tư vấn dinh dưỡng/chăm sóc";
+        }
+        if (containsTrendAny(q, "hanh vi", "stress", "lo au", "can pha", "huan luyen")) {
+            return "tư vấn hành vi";
+        }
+        if (containsTrendAny(q, "om", "benh", "sot", "non", "oi", "tieu chay", "bo an", "met", "ho", "viem", "ngua", "gai", "da lieu")) {
+            return "khám bệnh/triệu chứng bất thường";
+        }
+        if (containsTrendAny(q, "tong quat", "dinh ky", "kiem tra", "kham suc khoe", "kham da khoa")) {
+            return "khám tổng quát/định kỳ";
+        }
+        return "chưa rõ lý do khám";
+    }
+
+    private boolean containsTrendAny(String value, String... terms) {
+        for (String term : terms) {
+            if (value.contains(term)) return true;
+        }
+        return false;
     }
 
     private String toolTimThuCung(String tuKhoa) {
@@ -998,6 +1088,7 @@ public class AiToolService {
             - Backend/src/main/java/com/rexi/pkty/controller/AgentController.java: API Rexi Agent nội bộ, gồm /api/agent/react, gọi tool trực tiếp và orchestration.
             - Backend/src/main/java/com/rexi/pkty/service/ReActAgentService.java: vòng lặp ReAct Reason -> Act -> Observe, chọn tool, gọi model theo thứ tự OpenRouter -> Gemini -> Groq.
             - Backend/src/main/java/com/rexi/pkty/service/AiToolService.java: registry tool và thực thi tool thật với database/email/web/system map.
+            - Backend/src/main/java/com/rexi/pkty/service/CodeRagService.java: RAG mã nguồn động, scan Frontend/src và Backend/src để trả file/dòng/snippet đã che secret.
             - Backend/src/main/java/com/rexi/pkty/service/GroqService.java: adapter Groq, prewarm, xoay vòng/cooldown API key.
             - Backend/src/main/java/com/rexi/pkty/service/GeminiService.java: adapter Gemini cho fallback model.
             - Backend/src/main/java/com/rexi/pkty/service/OpenRouterService.java: adapter OpenRouter, provider ưu tiên đầu tiên của ReAct Agent.
@@ -1005,9 +1096,9 @@ public class AiToolService {
             - Backend/src/main/java/com/rexi/pkty/security/SecurityConfig.java: cấu hình bảo mật, CORS và filter xác thực.
 
             Nguyên tắc tự nhận thức của Agent:
-            - Agent không tự đọc file mã nguồn trực tiếp ở runtime; nó hiểu hệ thống qua prompt, tool schema, route map, context giao diện và bản đồ kiến trúc này.
+            - Khi admin hỏi chức năng nằm ở file nào/trang nào/dòng nào, phải dùng tool tra_cuu_ma_nguon để đọc RAG mã nguồn động và trả file + dòng gần nhất.
             - Nếu admin hỏi model/provider/key cấu hình, phải dùng tool kiem_tra_cau_hinh_ai; không bao giờ tiết lộ API key.
-            - Nếu admin hỏi chức năng nào nằm ở đâu, dùng bản đồ kiến trúc này rồi trả lời theo module/controller/service liên quan.
+            - Nếu admin hỏi chức năng nào nằm ở đâu, kết hợp bản đồ kiến trúc này với RAG mã nguồn động; không bịa line nếu RAG không tìm thấy.
             - Nếu yêu cầu thao tác dữ liệu thật, phải dùng tool đúng quyền hoặc hỏi xác nhận khi hành động nhạy cảm.
             """;
     }
@@ -1026,8 +1117,8 @@ public class AiToolService {
         new SourceIndexEntry(
             "chatbot_voice_ui",
             "ChatBot, voice/micro, context frontend",
-            "chatbot chat bot mic micro voice giọng nói opera speech recognition dom context prewarm tab agent trợ lý",
-            "Frontend/src/components/ChatBot.tsx; Frontend/src/components/VoiceInput.tsx; Frontend/src/utils/agentPermissions.ts",
+            "chatbot chat bot mic micro voice giọng nói opera speech recognition dom context prewarm tab agent trợ lý nút gửi send input shell core",
+            "Frontend/src/components/chatbot/ChatBotCore.tsx; Frontend/src/components/chatbot/ChatbotShell.tsx; Frontend/src/components/ChatBot.tsx; Frontend/src/components/VoiceInput.tsx; Frontend/src/utils/agentPermissions.ts",
             "/api/chat; /api/chat/prewarm; /api/agent/react; /api/agent/tool",
             "Không có tool DB trực tiếp; frontend quyết định context và gọi Agent/Chat.",
             "Xử lý UI chat nổi, tab Trợ lý Rexi/Rexi Agent, nhận giọng nói, context trang, streaming/fallback và prewarm."
@@ -1136,7 +1227,7 @@ public class AiToolService {
     private String toolTraCuuMaNguon(String tuKhoa) {
         String query = normalizeVietnamese(Objects.toString(tuKhoa, "").toLowerCase().trim());
         if (query.isBlank()) {
-            return "Cần từ khóa để tra cứu index mã nguồn. Ví dụ: chatbot mic, agent model, phân quyền tool, đặt lịch, hóa đơn.";
+            return "Cần từ khóa để tra cứu RAG mã nguồn. Ví dụ: chatbot mic, agent model, phân quyền tool, đặt lịch, hóa đơn, nút thêm dịch vụ, api đăng nhập.";
         }
 
         List<Map.Entry<Integer, SourceIndexEntry>> scored = new ArrayList<>();
@@ -1148,23 +1239,34 @@ public class AiToolService {
         }
         scored.sort((a, b) -> Integer.compare(b.getKey(), a.getKey()));
 
-        if (scored.isEmpty()) {
-            return "Không tìm thấy module khớp trong index mã nguồn whitelist cho từ khóa: " + tuKhoa
-                + ". Có thể hỏi rộng hơn theo nhóm: chatbot, agent, provider AI, phân quyền, đặt lịch, khách hàng, bệnh án, hóa đơn, kho, marketing, route frontend, health.";
+        StringBuilder sb = new StringBuilder();
+        if (!scored.isEmpty()) {
+            sb.append("Bản đồ module khớp cho \"").append(tuKhoa).append("\" (tối đa 4 mục):\n");
+            int limit = Math.min(4, scored.size());
+            for (int i = 0; i < limit; i++) {
+                SourceIndexEntry e = scored.get(i).getValue();
+                sb.append("\n").append(i + 1).append(". ").append(e.title()).append(" [").append(e.id()).append("]\n")
+                    .append("- Files: ").append(e.files()).append("\n")
+                    .append("- Routes/API: ").append(e.routes()).append("\n")
+                    .append("- Tools/liên kết: ").append(e.tools()).append("\n")
+                    .append("- Ghi chú: ").append(e.notes()).append("\n");
+            }
+            sb.append("\n");
+        } else {
+            sb.append("Bản đồ module tĩnh chưa có mục khớp. Chuyển sang RAG mã nguồn động.\n\n");
         }
 
-        StringBuilder sb = new StringBuilder();
-        sb.append("Kết quả tra cứu index mã nguồn cho \"").append(tuKhoa).append("\" (tối đa 4 mục, không bao gồm raw source/secret):\n");
-        int limit = Math.min(4, scored.size());
-        for (int i = 0; i < limit; i++) {
-            SourceIndexEntry e = scored.get(i).getValue();
-            sb.append("\n").append(i + 1).append(". ").append(e.title()).append(" [").append(e.id()).append("]\n")
-                .append("- Files: ").append(e.files()).append("\n")
-                .append("- Routes/API: ").append(e.routes()).append("\n")
-                .append("- Tools/liên kết: ").append(e.tools()).append("\n")
-                .append("- Ghi chú: ").append(e.notes()).append("\n");
+        CodeRagService rag = codeRagService != null ? codeRagService : new CodeRagService();
+        try {
+            sb.append(rag.search(tuKhoa));
+        } catch (Exception ex) {
+            sb.append("RAG mã nguồn động lỗi: ").append(ex.getMessage()).append("\n");
+            if (scored.isEmpty()) {
+                sb.append("Không tìm thấy module khớp trong index mã nguồn whitelist cho từ khóa: ").append(tuKhoa)
+                    .append(". Có thể hỏi rộng hơn theo nhóm: chatbot, agent, provider AI, phân quyền, đặt lịch, khách hàng, bệnh án, hóa đơn, kho, marketing, route frontend, health.");
+            }
         }
-        sb.append("\nLuật bảo mật: chỉ dùng kết quả này để định vị module/chức năng; không suy đoán secret, API key, mật khẩu hay nội dung file không có trong index.");
+        sb.append("\n\nLuật bảo mật: chỉ trả vị trí code, route/API và snippet ngắn đã che secret; không suy đoán API key, mật khẩu, token hay nội dung file nhạy cảm.");
         return sb.toString();
     }
 
@@ -1223,6 +1325,9 @@ public class AiToolService {
                 return "Lỗi: Thiếu ID khách hàng hoặc ID tài khoản.";
             }
             if ("XOA".equalsIgnoreCase(action) || "KHOA".equalsIgnoreCase(action)) {
+                if (!isConfirmedAccountAction(p)) {
+                    return "Cần xác nhận rõ trước khi khóa/xóa tài khoản. Gửi thêm tham số xac_nhan=true sau khi admin/quản lý đã xác nhận thao tác.";
+                }
                 String customerId = resolveCustomerId(id, idTaiKhoan);
                 if (customerId == null || customerId.isBlank()) return "Lỗi: Không tìm thấy khách hàng cần thao tác.";
                 int rows = jdbcTemplate.update("UPDATE KhachHang SET da_xoa = 1 WHERE id_khach_hang = ?", customerId);
@@ -1244,6 +1349,21 @@ public class AiToolService {
         } catch (Exception e) {
             return "Lỗi thao tác tài khoản: " + e.getMessage();
         }
+    }
+
+    private boolean isConfirmedAccountAction(Map<String, Object> params) {
+        Object confirmed = params.get("xac_nhan");
+        if (confirmed == null) {
+            confirmed = params.get("confirm");
+        }
+        if (confirmed instanceof Boolean value) {
+            return value;
+        }
+        if (confirmed instanceof String value) {
+            String normalized = value.trim().toLowerCase();
+            return normalized.equals("true") || normalized.equals("yes") || normalized.equals("xac_nhan");
+        }
+        return false;
     }
 
     private String resolveCustomerId(String idKhachHang, String idTaiKhoan) {

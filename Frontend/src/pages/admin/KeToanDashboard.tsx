@@ -2,7 +2,7 @@ import React, { useCallback, useState, useEffect, useMemo } from 'react';
 import axiosInstance from '@services/axios';
 import { formatTienVND } from '@utils/index';
 import { toast } from '@components/Toast';
-import { Modal } from '@components/CommonUI';
+import { AnimatedNumber, Modal } from '@components/CommonUI';
 import { useAutoRefresh } from '@hooks/useAutoRefresh';
 import KpiIcon from '@components/KpiIcon';
 import {
@@ -173,33 +173,32 @@ const KeToanDashboard: React.FC = () => {
     const totalPages = Math.ceil(filteredInvoices.length / ITEMS_PER_PAGE);
     const currentRows = filteredInvoices.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
+    const getRevenueDateKey = (item: any) => {
+        const rawDate = item?.Ngay || item?.ngay;
+        if (!rawDate) return "";
+        const date = new Date(rawDate);
+        return Number.isNaN(date.getTime()) ? String(rawDate).slice(0, 10) : date.toISOString().slice(0, 10);
+    };
+
     // Chuẩn bị dữ liệu cho biểu đồ Chart.js
     const chartData = useMemo(() => {
         let labels: string[] = [];
         let data: number[] = [];
 
-        if (!revenueData || revenueData.length === 0) {
-            // Hiển thị mặc định 7 ngày gần nhất với doanh thu 0 nếu ko có dữ liệu
-            for (let i = 6; i >= 0; i--) {
-                const d = new Date();
-                d.setDate(d.getDate() - i);
-                labels.push(`${d.getDate()}/${d.getMonth() + 1}`);
-                data.push(0);
-            }
-        } else {
-            // Sắp xếp ngày tăng dần và lấy 7 ngày gần nhất
-            const sortedData = [...revenueData].sort((a, b) => {
-                const dateA = new Date(a.Ngay || a.ngay).getTime();
-                const dateB = new Date(b.Ngay || b.ngay).getTime();
-                return dateA - dateB;
-            }).slice(-7);
+        const revenueByDate = new Map<string, number>();
+        (revenueData || []).forEach((item: any) => {
+            const dateKey = getRevenueDateKey(item);
+            if (!dateKey) return;
+            const revenue = Number(item.TongDoanhThu || item.doanh_thu || item.tong_doanh_thu || 0);
+            revenueByDate.set(dateKey, (revenueByDate.get(dateKey) || 0) + revenue);
+        });
 
-            labels = sortedData.map(d => {
-                const dateObj = new Date(d.Ngay || d.ngay);
-                return `${dateObj.getDate()}/${dateObj.getMonth() + 1}`;
-            });
-
-            data = sortedData.map(d => d.TongDoanhThu || d.doanh_thu || d.tong_doanh_thu || 0);
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            const dateKey = d.toISOString().slice(0, 10);
+            labels.push(`${d.getDate()}/${d.getMonth() + 1}`);
+            data.push(revenueByDate.get(dateKey) || 0);
         }
 
         return {
@@ -223,6 +222,22 @@ const KeToanDashboard: React.FC = () => {
             ]
         };
     }, [revenueData]);
+
+    const chartSuggestedMax = useMemo(() => {
+        const values = chartData.datasets[0]?.data || [];
+        const maxRevenue = Math.max(...values.map(Number), 0);
+
+        if (maxRevenue <= 0) return 100000;
+
+        const paddedMax = maxRevenue * 1.25;
+        const step =
+            maxRevenue <= 500000 ? 50000 :
+            maxRevenue <= 2000000 ? 100000 :
+            maxRevenue <= 10000000 ? 500000 :
+            1000000;
+
+        return Math.ceil(paddedMax / step) * step;
+    }, [chartData]);
 
     const chartOptions = {
         responsive: true,
@@ -248,12 +263,16 @@ const KeToanDashboard: React.FC = () => {
         scales: {
             y: {
                 beginAtZero: true,
-                suggestedMax: 1000000, // Đảm bảo trục Y ko bị co lại quá mức khi doanh thu bằng 0
+                suggestedMax: chartSuggestedMax,
                 grid: { color: 'rgba(0, 0, 0, 0.05)' },
                 ticks: { 
                     callback: (value: any) => {
-                        if (value === 0) return '0 Tr';
-                        return (value / 1000000).toLocaleString('vi-VN', { maximumFractionDigits: 1 }) + ' Tr';
+                        const numericValue = Number(value);
+                        if (numericValue === 0) return '0 đ';
+                        if (numericValue < 1000000) {
+                            return `${(numericValue / 1000).toLocaleString('vi-VN', { maximumFractionDigits: 0 })}k`;
+                        }
+                        return `${(numericValue / 1000000).toLocaleString('vi-VN', { maximumFractionDigits: 1 })} Tr`;
                     }
                 }
             },
@@ -329,7 +348,153 @@ const KeToanDashboard: React.FC = () => {
 
     return (
         <div className="animate-fade-in" style={{ paddingBottom: '40px' }}>
-            <div className="animate-slide-up" style={{ marginBottom: '40px', padding: '48px', borderRadius: '24px', background: 'var(--primary-gradient)', color: 'white', position: 'relative', overflow: 'hidden', boxShadow: '0 20px 40px var(--primary-shadow)' }}>
+            <style>{`
+                .accounting-mobile-invoice-list { display: none; }
+                @media screen and (max-width: 1024px) {
+                    .accounting-hero {
+                        margin-bottom: 16px !important;
+                        padding: 18px !important;
+                        border-radius: 24px !important;
+                    }
+                    .accounting-hero h1 {
+                        display: grid !important;
+                        grid-template-columns: minmax(0, 1fr) auto !important;
+                        align-items: center !important;
+                        gap: 12px !important;
+                        font-size: clamp(1.38rem, 6vw, 1.74rem) !important;
+                        line-height: 1.08 !important;
+                        letter-spacing: -0.02em !important;
+                        margin-bottom: 8px !important;
+                    }
+                    .accounting-hero p {
+                        max-width: 32ch !important;
+                        font-size: 0.84rem !important;
+                        line-height: 1.45 !important;
+                    }
+                    .accounting-realtime-badge {
+                        max-width: 100% !important;
+                        padding: 6px 10px !important;
+                        font-size: 0.68rem !important;
+                        line-height: 1.25 !important;
+                    }
+                    .ketoan-kpi-grid {
+                        grid-template-columns: 1fr !important;
+                        gap: 12px !important;
+                        margin-bottom: 18px !important;
+                    }
+                    .ketoan-kpi-card {
+                        min-height: 118px !important;
+                        padding: 16px !important;
+                        border-radius: 20px !important;
+                    }
+                    .ketoan-kpi-card h3 {
+                        font-size: clamp(1.35rem, 8vw, 1.75rem) !important;
+                        line-height: 1.12 !important;
+                        overflow-wrap: anywhere !important;
+                    }
+                    .ketoan-kpi-card > div:first-child {
+                        width: 42px !important;
+                        height: 42px !important;
+                        border-radius: 14px !important;
+                    }
+                    .accounting-chart-card {
+                        padding: 16px !important;
+                        border-radius: 20px !important;
+                        margin-bottom: 18px !important;
+                    }
+                    .accounting-chart-card h2,
+                    .accounting-list-card h2 {
+                        font-size: 1rem !important;
+                        line-height: 1.25 !important;
+                    }
+                    .accounting-list-header {
+                        display: grid !important;
+                        grid-template-columns: 1fr !important;
+                        padding: 14px !important;
+                        gap: 12px !important;
+                    }
+                    .accounting-filter-row {
+                        display: grid !important;
+                        grid-template-columns: 1fr !important;
+                        gap: 8px !important;
+                    }
+                    .accounting-filter-row .btn,
+                    .accounting-filter-row input,
+                    .accounting-filter-row select {
+                        width: 100% !important;
+                        min-height: 40px !important;
+                        border-radius: 14px !important;
+                        padding: 8px 12px !important;
+                        font-size: 0.78rem !important;
+                    }
+                    .accounting-filter-separator {
+                        display: none !important;
+                    }
+                    .accounting-invoice-table {
+                        display: none !important;
+                    }
+                    .accounting-mobile-invoice-list {
+                        display: grid !important;
+                        gap: 10px;
+                        padding: 10px;
+                    }
+                    .accounting-invoice-card {
+                        display: grid;
+                        gap: 10px;
+                        padding: 12px;
+                        border-radius: 18px;
+                        background: var(--surface);
+                        border: 1px solid var(--gray-100);
+                    }
+                    .accounting-invoice-top {
+                        display: grid;
+                        grid-template-columns: minmax(0, 1fr) auto;
+                        gap: 10px;
+                        align-items: start;
+                    }
+                    .accounting-invoice-card h3 {
+                        margin: 0;
+                        color: var(--ink);
+                        font-size: 0.94rem;
+                        line-height: 1.22;
+                        font-weight: 950;
+                    }
+                    .accounting-invoice-card p {
+                        margin: 4px 0 0;
+                        color: var(--gray-500);
+                        font-size: 0.72rem;
+                        line-height: 1.35;
+                        font-weight: 700;
+                    }
+                    .accounting-invoice-amount {
+                        color: var(--primary);
+                        font-size: 0.95rem;
+                        font-weight: 950;
+                        white-space: nowrap;
+                    }
+                    .accounting-invoice-status {
+                        justify-self: start;
+                        padding: 6px 10px;
+                        border-radius: 999px;
+                        font-size: 0.66rem;
+                        line-height: 1;
+                        font-weight: 950;
+                    }
+                    .accounting-invoice-actions {
+                        display: grid;
+                        grid-template-columns: 1fr;
+                        gap: 8px;
+                    }
+                    .accounting-invoice-actions .btn {
+                        width: 100%;
+                        min-height: 36px;
+                        justify-content: center;
+                        border-radius: 13px !important;
+                        padding: 7px 10px !important;
+                    }
+                }
+            `}</style>
+            <div className="animate-slide-up accounting-hero" style={{ marginBottom: '40px', padding: '48px', borderRadius: '24px', background: 'var(--primary-gradient)', color: 'white', position: 'relative', overflow: 'hidden', boxShadow: '0 20px 40px var(--primary-shadow)' }}>
                 <div style={{ position: 'absolute', top: '-10%', right: '-5%', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }}></div>
                 <h1 style={{ fontSize: '3rem', fontWeight: 950, letterSpacing: '-1.5px', position: 'relative', zIndex: 1, margin: '0 0 12px 0', display: 'flex', alignItems: 'center', gap: '15px' }}>
                   <span>Bảng Điều Khiển <span style={{ color: '#5eead4' }}>Kế Toán</span></span> 
@@ -337,7 +502,7 @@ const KeToanDashboard: React.FC = () => {
                 </h1>
                 <p style={{ fontWeight: 700, color: 'rgba(255,255,255,0.95)', position: 'relative', zIndex: 1, margin: 0, fontSize: '1.2rem', textShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>Theo dõi dòng tiền, hóa đơn và vận hành tài chính hôm nay.</p>
                 {lastUpdated && (
-                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', fontWeight: 800, background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)', padding: '6px 14px', borderRadius: '999px', marginTop: '14px', border: '1px solid rgba(255,255,255,0.2)', position: 'relative', zIndex: 1, boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
+                    <div className="accounting-realtime-badge" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', fontWeight: 800, background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)', padding: '6px 14px', borderRadius: '999px', marginTop: '14px', border: '1px solid rgba(255,255,255,0.2)', position: 'relative', zIndex: 1, boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
                         <span className="material-symbols-outlined" style={{ fontSize: '15px', color: '#5eead4', animation: 'spin 3s infinite linear' }}>sync</span>
                         <span>Dữ liệu thời gian thực cập nhật lúc: {lastUpdated}</span>
                     </div>
@@ -349,7 +514,7 @@ const KeToanDashboard: React.FC = () => {
                 <KpiCard
                     accent="#10b981"
                     title="DOANH THU HÔM NAY"
-                    value={formatTienVND(stats.todayRevenue)}
+                    value={<AnimatedNumber value={stats.todayRevenue} format="currency" />}
                     icon={<KpiIcon name="money" />}
                     details={
                         <div>
@@ -365,7 +530,7 @@ const KeToanDashboard: React.FC = () => {
                 <KpiCard
                     accent="#f59e0b"
                     title="CÔNG NỢ CHƯA THU"
-                    value={formatTienVND(stats.totalUnpaid)}
+                    value={<AnimatedNumber value={stats.totalUnpaid} format="currency" />}
                     icon={<KpiIcon name="alert" />}
                     details={
                         <div>
@@ -379,7 +544,7 @@ const KeToanDashboard: React.FC = () => {
                 <KpiCard
                     accent="#3b82f6"
                     title="HÓA ĐƠN CHƯA THANH TOÁN"
-                    value={<>{stats.unpaidCount} <span style={{ fontSize: '1rem', color: 'var(--gray-400)' }}>phiếu</span></>}
+                    value={<><AnimatedNumber value={stats.unpaidCount} /> <span style={{ fontSize: '1rem', color: 'var(--gray-400)' }}>phiếu</span></>}
                     icon={<KpiIcon name="receipt" />}
                     details={
                         <div>
@@ -394,7 +559,7 @@ const KeToanDashboard: React.FC = () => {
             </div>
 
             {/* Biểu đồ doanh thu 7 ngày */}
-            <div className="glass-card" style={{ padding: '32px', borderRadius: '24px', marginBottom: '40px' }}>
+            <div className="glass-card accounting-chart-card" style={{ padding: '32px', borderRadius: '24px', marginBottom: '40px' }}>
                 <h2 style={{ fontSize: '1.2rem', margin: '0 0 24px 0', fontWeight: 800, color: 'var(--ink)' }}>Biến động doanh thu (7 ngày gần nhất)</h2>
                 <div style={{ height: '350px', width: '100%' }}>
                     <Line data={chartData} options={chartOptions} />
@@ -402,10 +567,10 @@ const KeToanDashboard: React.FC = () => {
             </div>
 
             {/* Danh sách hóa đơn */}
-            <div className="glass-card" style={{ borderRadius: '24px', overflow: 'hidden' }}>
-                <div style={{ padding: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--gray-100)', flexWrap: 'wrap', gap: '16px' }}>
+            <div className="glass-card accounting-list-card" style={{ borderRadius: '24px', overflow: 'hidden' }}>
+                <div className="accounting-list-header" style={{ padding: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--gray-100)', flexWrap: 'wrap', gap: '16px' }}>
                     <h2 style={{ fontSize: '1.2rem', margin: 0, fontWeight: 800 }}>Danh sách Hóa đơn</h2>
-                    <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                    <div className="accounting-filter-row" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                         <button data-ai-id="button-ketoandashboard-bjms" onClick={handleExportExcel} className="btn btn-pill hover-lift" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '10px 16px', fontSize: '0.85rem', fontWeight: 800 }}>
                             <KpiIcon name="download" size={18} />
                             Xuất Excel
@@ -416,7 +581,7 @@ const KeToanDashboard: React.FC = () => {
                             onChange={e => setFromDate(e.target.value)}
                             style={{ padding: '10px 16px', borderRadius: '12px', outline: 'none', border: '1px solid var(--gray-200)', fontWeight: 600, color: 'var(--ink)' }}
                         />
-                        <span style={{ display: 'flex', alignItems: 'center', fontWeight: 600, color: 'var(--gray-400)' }}>-</span>
+                        <span className="accounting-filter-separator" style={{ display: 'flex', alignItems: 'center', fontWeight: 600, color: 'var(--gray-400)' }}>-</span>
                         <input data-ai-id="input-ketoandashboard-l5io" aria-label="Đến ngày"
                             type="date"
                             value={toDate}
@@ -435,7 +600,42 @@ const KeToanDashboard: React.FC = () => {
                     </div>
                 </div>
 
-                <div style={{ overflowX: 'auto' }}>
+                <div className="accounting-mobile-invoice-list">
+                    {currentRows.length === 0 ? (
+                        <div className="admin-empty-state" style={{ padding: '18px 10px', textAlign: 'center', color: 'var(--gray-500)', fontWeight: 800 }}>Không có dữ liệu hóa đơn.</div>
+                    ) : currentRows.map(inv => (
+                        <article key={inv.id_hoa_don} className="accounting-invoice-card">
+                            <div className="accounting-invoice-top">
+                                <div>
+                                    <h3>#{inv.id_hoa_don} · {inv.ten_khach_hang || 'Khách vãng lai'}</h3>
+                                    <p>{inv.ngay_lap_hoa_don?.split('T')[0].split('-').reverse().join('/') || 'Chưa có ngày'} · SĐT: {inv.sdt || '---'}</p>
+                                </div>
+                                <span className="accounting-invoice-amount">{formatTienVND(inv.tong_tien_cuoi)}</span>
+                            </div>
+                            <span
+                                className="accounting-invoice-status"
+                                style={{
+                                    background: inv.trang_thai?.toUpperCase() === 'DA_THANH_TOAN' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)',
+                                    color: inv.trang_thai?.toUpperCase() === 'DA_THANH_TOAN' ? '#10b981' : '#f59e0b'
+                                }}
+                            >
+                                {inv.trang_thai?.toUpperCase() === 'DA_THANH_TOAN' ? 'ĐÃ THU TIỀN' : 'CHỜ THANH TOÁN'}
+                            </span>
+                            <div className="accounting-invoice-actions">
+                                <button data-ai-id="button-ketoandashboard-mobile-detail" onClick={() => handleViewDetails(inv)} className="btn btn-pill" style={{ background: 'var(--gray-50)', color: 'var(--ink)' }}>
+                                    Xem chi tiết
+                                </button>
+                                {inv.trang_thai?.toUpperCase() === 'CHO_THANH_TOAN' && (
+                                    <button data-ai-id="button-ketoandashboard-mobile-pay" onClick={() => handleConfirmPayment(inv.id_hoa_don)} className="btn btn-pill" style={{ background: 'var(--primary)', color: 'white' }}>
+                                        Xác nhận thu
+                                    </button>
+                                )}
+                            </div>
+                        </article>
+                    ))}
+                </div>
+
+                <div className="accounting-invoice-table" style={{ overflowX: 'auto' }}>
                     <div className="table-responsive-wrapper">
 <div style={{ minWidth: '800px' }}>
 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>

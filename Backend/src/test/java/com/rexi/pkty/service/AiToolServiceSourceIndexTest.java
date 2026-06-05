@@ -54,4 +54,32 @@ class AiToolServiceSourceIndexTest {
         assertTrue(reply.contains("tim_lich_trong"));
         assertTrue(reply.contains("dat_lich_hen"));
     }
+
+    @Test
+    void dynamicCodeRagReturnsFilesAndLineNumbers() {
+        String reply = service.executeTool("tra_cuu_ma_nguon", Map.of("tu_khoa", "trang hóa đơn admin route ở file nào dòng nào"), "ADMIN");
+
+        assertTrue(reply.contains("RAG mã nguồn động"), reply);
+        assertTrue(reply.contains("Frontend/src/App.tsx") || reply.contains("QuanLyHoaDon.tsx"), reply);
+        assertTrue(reply.contains("Dòng "), reply);
+        assertFalse(reply.contains("sk-"));
+        assertFalse(reply.toLowerCase().contains("bearer "));
+    }
+
+    @Test
+    void exactDataAiIdLookupReturnsOwningComponentAndStyleContext() {
+        String reply = service.executeTool("tra_cuu_ma_nguon", Map.of(
+                "tu_khoa",
+                "data-ai-id button-chatbot-5x21 nút gửi chatbot đổi màu background nằm file nào dòng nào"
+        ), "ADMIN");
+
+        assertTrue(reply.contains("Độ chắc chắn: CAO"), reply);
+        assertTrue(reply.contains("Frontend/src/components/chatbot/ChatbotShell.tsx"), reply);
+        assertTrue(reply.contains("Dòng 700") || reply.contains("Dòng 701"), reply);
+        assertTrue(reply.contains("button-chatbot-5x21"), reply);
+        assertTrue(reply.contains("Dòng 704") || reply.contains("Dòng 705"), reply);
+        assertTrue(reply.contains("background:"), reply);
+        assertFalse(reply.contains("sk-"));
+        assertFalse(reply.toLowerCase().contains("bearer "));
+    }
 }

@@ -263,9 +263,11 @@ const DangNhapDangKy: React.FC = () => {
         }
 
         .auth-card {
-          background: var(--surface) !important;
-          border-radius: 24px;
-          box-shadow: var(--shadow-xl);
+          background: rgba(255, 255, 255, 0.45) !important;
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
+          border-radius: 32px;
+          box-shadow: 0 30px 70px rgba(15, 23, 42, 0.1);
           overflow: hidden;
           position: relative;
           z-index: 10;
@@ -274,12 +276,13 @@ const DangNhapDangKy: React.FC = () => {
           width: 100%;
           max-width: 1150px; /* Nới rộng card */
           margin: auto;
-          border: 1px solid var(--gray-200);
+          border: 1px solid rgba(255, 255, 255, 0.4);
+          transition: all 0.4s ease;
         }
 
         .auth-sidebar {
-          background: #0d9488 !important;
-          padding: 40px; /* Thu nhỏ padding sidebar */
+          background: linear-gradient(135deg, #0d9488 0%, #0f766e 50%, #10b981 100%) !important;
+          padding: 48px;
           color: white !important;
           position: relative;
           display: flex;
@@ -297,33 +300,45 @@ const DangNhapDangKy: React.FC = () => {
           display: flex;
           flex-direction: column;
           justify-content: center;
+          background: rgba(255, 255, 255, 0.3) !important;
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
         }
 
         .auth-title {
-          font-size: 2rem;
-          font-weight: 800;
+          font-size: 2.2rem;
+          font-weight: 950;
           color: var(--ink) !important;
-          letter-spacing: -1px;
+          letter-spacing: -1.5px;
         }
 
         .input-group {
-          background: var(--gray-50) !important;
+          background: var(--surface) !important;
           border: 1.5px solid var(--gray-200) !important;
-          border-radius: 12px;
-          padding: 2px 16px;
+          border-radius: 16px;
+          padding: 2px 18px;
           display: flex;
           align-items: center;
-          gap: 10px;
+          gap: 12px;
+          transition: all 0.3s ease;
+          box-shadow: var(--shadow-sm);
+        }
+
+        .input-group:focus-within {
+          border-color: var(--primary) !important;
+          box-shadow: 0 0 0 4px var(--primary-light) !important;
+          transform: translateY(-1px);
         }
 
         .input-group input {
           background: transparent !important;
           border: none !important;
           width: 100%;
-          padding: 14px 0;
+          padding: 16px 0;
           outline: none !important;
-          font-weight: 600;
+          font-weight: 700;
           color: var(--ink) !important;
+          font-size: 0.95rem;
         }
 
         .auth-google-shell {
@@ -340,18 +355,16 @@ const DangNhapDangKy: React.FC = () => {
           color-scheme: dark;
         }
         [data-theme='dark'] .auth-card {
-          background: var(--surface) !important;
-          border: 1px solid var(--glass-border) !important;
-          box-shadow: 0 28px 70px rgba(0, 0, 0, 0.45);
-          backdrop-filter: var(--glass-blur);
-          -webkit-backdrop-filter: var(--glass-blur);
+          background: rgba(30, 41, 59, 0.45) !important;
+          border: 1px solid rgba(255, 255, 255, 0.08) !important;
+          box-shadow: 0 35px 80px rgba(0, 0, 0, 0.5);
         }
         [data-theme='dark'] .auth-sidebar {
           background:
-            linear-gradient(135deg, rgba(6, 182, 212, 0.92) 0%, rgba(20, 184, 166, 0.86) 100%),
+            linear-gradient(135deg, rgba(6, 182, 212, 0.9) 0%, rgba(20, 184, 166, 0.8) 100%),
             url('/img/hinh-nen-chan-thu.png') center/420px repeat !important;
           background-blend-mode: multiply;
-          border-right: 1px solid rgba(34, 211, 238, 0.26);
+          border-right: 1px solid rgba(34, 211, 238, 0.2);
         }
         [data-theme='dark'] .auth-sidebar-copy,
         [data-theme='dark'] .auth-sidebar span,
@@ -359,7 +372,7 @@ const DangNhapDangKy: React.FC = () => {
           color: #ffffff !important;
         }
         [data-theme='dark'] .auth-sidebar h2 {
-          text-shadow: 0 4px 18px rgba(0, 0, 0, 0.24);
+          text-shadow: 0 4px 18 rgba(0, 0, 0, 0.24);
         }
         [data-theme='dark'] .auth-sidebar > div > div:first-child {
           background: rgba(255, 255, 255, 0.22) !important;
@@ -372,19 +385,22 @@ const DangNhapDangKy: React.FC = () => {
         }
         [data-theme='dark'] .auth-title { color: #f8fafc !important; }
         [data-theme='dark'] .auth-form-panel {
-          background: var(--surface) !important;
+          background: rgba(15, 23, 42, 0.2) !important;
         }
         [data-theme='dark'] .auth-form-panel > div > p,
         [data-theme='dark'] .auth-form-panel label {
           color: #cbd5e1 !important;
         }
         [data-theme='dark'] .input-group {
-          background: var(--gray-50) !important;
-          border-color: rgba(34, 211, 238, 0.34) !important;
+          background: rgba(30, 41, 59, 0.8) !important;
+          border-color: rgba(255, 255, 255, 0.08) !important;
+        }
+        [data-theme='dark'] .input-group:focus-within {
+          border-color: var(--primary) !important;
         }
         [data-theme='dark'] .input-group input { color: #f8fafc !important; }
-        [data-theme='dark'] .input-group input::placeholder { color: #cbd5e1 !important; opacity: 0.78; }
-        [data-theme='dark'] .input-group .material-symbols-outlined { color: var(--primary) !important; opacity: 0.9 !important; }
+        [data-theme='dark'] .input-group input::placeholder { color: #94a3b8 !important; opacity: 0.8; }
+        [data-theme='dark'] .input-group .material-symbols-outlined { color: var(--primary) !important; opacity: 0.95; }
         [data-theme='dark'] .btn-auth {
           background: var(--primary-gradient) !important;
           color: #ffffff !important;
@@ -393,7 +409,7 @@ const DangNhapDangKy: React.FC = () => {
         [data-theme='dark'] .auth-home-link {
           background: var(--surface) !important;
           color: #f8fafc !important;
-          border-color: rgba(34, 211, 238, 0.34) !important;
+          border-color: rgba(255, 255, 255, 0.1) !important;
         }
         [data-theme='dark'] .auth-logo-box {
           background: var(--primary-gradient) !important;
@@ -406,27 +422,27 @@ const DangNhapDangKy: React.FC = () => {
           color: var(--gray-400) !important;
           opacity: 1 !important;
         }
-        [data-theme='dark'] .auth-divider-line { background: rgba(148, 163, 184, 0.22) !important; }
+        [data-theme='dark'] .auth-divider-line { background: rgba(148, 163, 184, 0.12) !important; }
         [data-theme='dark'] .auth-divider-label { background: #0f172a !important; color: #94a3b8 !important; }
         [data-theme='dark'] .auth-register-copy { color: #cbd5e1 !important; }
         [data-theme='dark'] .auth-google-shell {
           filter: none;
         }
-        [data-theme='dark'] .aura-blob { opacity: 0.22; }
+        [data-theme='dark'] .aura-blob { opacity: 0.35; }
 
         .aura-blob {
           position: absolute;
-          width: 600px;
-          height: 600px;
+          width: 700px;
+          height: 700px;
           border-radius: 50%;
-          filter: blur(120px);
+          filter: blur(140px);
           z-index: 0;
-          opacity: 0;
+          opacity: 0.12;
           pointer-events: none;
           transition: opacity 0.5s ease;
         }
-        .blob-1 { top: -150px; left: -150px; background: #0d9488; }
-        .blob-2 { bottom: -150px; right: -150px; background: #14b8a6; }
+        .blob-1 { top: -200px; left: -200px; background: #0d9488; }
+        .blob-2 { bottom: -200px; right: -200px; background: #14b8a6; }
 
         /* Wizard UI styles */
         .progress-container {

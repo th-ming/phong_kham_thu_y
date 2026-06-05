@@ -614,32 +614,74 @@ const DatLichHen: React.FC = () => {
             })}
           </div>
 
-          <div style={{ display: 'grid', gap: '12px' }}>
-            <label style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gray-400)', letterSpacing: '1px' }}>1. CHỌN THÚ CƯNG <span style={{ color: '#ff4d4f' }}>*</span></label>
+          <div style={{ display: 'grid', gap: '16px' }}>
+            <label style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--gray-400)', letterSpacing: '1px', textTransform: 'uppercase' }}>1. CHỌN THÚ CƯNG <span style={{ color: '#ff4d4f' }}>*</span></label>
             {pets.length === 0 ? (
-              <div className="customer-pet-missing" style={{ padding: '24px', background: 'rgba(245, 158, 11, 0.05)', borderRadius: '20px', border: '1px dashed var(--accent)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: '1rem', fontWeight: 700 }}>{isGenZCustomer ? "Sen chưa có hồ sơ boss nào." : "Anh/chị chưa có hồ sơ thú cưng nào."}</span>
-                <Link to="/khach-hang/quan-ly-thu-cung" className="btn btn-primary btn-pill" style={{ padding: '10px 24px', textDecoration: 'none', fontSize: '0.9rem' }}>{isGenZCustomer ? "+ Thêm boss ngay" : "+ Thêm thú cưng"}</Link>
+              <div className="customer-pet-missing" style={{ padding: '24px', background: 'rgba(245, 158, 11, 0.05)', borderRadius: '24px', border: '1px dashed var(--accent)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', transition: 'all 0.3s' }}>
+                <span style={{ fontSize: '1rem', fontWeight: 800 }}>{isGenZCustomer ? "Sen chưa có hồ sơ boss nào." : "Anh/chị chưa có hồ sơ thú cưng nào."}</span>
+                <Link to="/khach-hang/quan-ly-thu-cung" className="btn btn-primary btn-pill" style={{ padding: '10px 24px', textDecoration: 'none', fontSize: '0.9rem', boxShadow: '0 8px 20px rgba(245, 158, 11, 0.25)' }}>{isGenZCustomer ? "+ Thêm boss ngay" : "+ Thêm thú cưng"}</Link>
               </div>
             ) : (
-              <select data-ai-id="select-datlichhen-688p" required value={idThuCung} onChange={e => setIdThuCung(e.target.value)}>
-                <option value="">{isGenZCustomer ? "-- Danh sách boss nhà Sen --" : "-- Danh sách thú cưng --"}</option>
-                {pets.map(p => <option key={p.id_thu_cung} value={p.id_thu_cung}>{p.ten_thu_cung} ({p.loai})</option>)}
-              </select>
+              <div style={{ position: 'relative' }}>
+                <select 
+                  data-ai-id="select-datlichhen-688p" 
+                  required 
+                  value={idThuCung} 
+                  onChange={e => setIdThuCung(e.target.value)}
+                  style={{ width: '100%', padding: '16px 20px', borderRadius: '16px', border: '1.5px solid var(--gray-200)', background: 'var(--surface)', color: 'var(--ink)', fontWeight: 750, fontSize: '1rem', outline: 'none', transition: 'all 0.3s', boxShadow: 'var(--shadow-sm)' }}
+                  onFocus={e => {
+                    e.target.style.borderColor = 'var(--primary)';
+                    e.target.style.boxShadow = '0 0 0 4px var(--primary-light)';
+                  }}
+                  onBlur={e => {
+                    e.target.style.borderColor = 'var(--gray-200)';
+                    e.target.style.boxShadow = 'var(--shadow-sm)';
+                  }}
+                >
+                  <option value="">{isGenZCustomer ? "-- Danh sách boss nhà Sen --" : "-- Danh sách thú cưng --"}</option>
+                  {pets.map(p => <option key={p.id_thu_cung} value={p.id_thu_cung}>{p.ten_thu_cung} ({p.loai})</option>)}
+                </select>
+              </div>
             )}
           </div>
 
-          <div style={{ display: 'grid', gap: '12px' }}>
-            <label>
+          <div style={{ display: 'grid', gap: '16px' }}>
+            <label style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--gray-400)', letterSpacing: '1px', textTransform: 'uppercase' }}>
               2. CHỌN DỊCH VỤ <span style={{ color: '#ff4d4f' }}>*</span>
             </label>
             <div style={{ position: 'relative' }}>
               <div className="booking-service-scroll" aria-label="Danh sách dịch vụ có thể cuộn" onScroll={handleServiceScroll}>
                 <div className="booking-service-list">
                   {services.map(s => (
-                    <div key={s.id_dich_vu} data-ai-id={`div-datlichhen-service-${s.id_dich_vu}`} className={`service-card-select ${idDichVu === String(s.id_dich_vu) ? 'selected' : ''}`} onClick={() => setIdDichVu(String(s.id_dich_vu))}>
-                      <div style={{ fontWeight: 800, color: idDichVu === String(s.id_dich_vu) ? 'var(--primary)' : 'var(--ink)', fontSize: '1.05rem', marginBottom: '4px' }}>{s.ten_dich_vu}</div>
-                      <div style={{ fontSize: '0.85rem', color: 'var(--gray-400)', fontWeight: 700 }}>{s.gia > 0 ? `Từ ${formatTienVND(s.gia)}` : 'Theo thực tế'}</div>
+                    <div 
+                      key={s.id_dich_vu} 
+                      data-ai-id={`div-datlichhen-service-${s.id_dich_vu}`} 
+                      className={`service-card-select ${idDichVu === String(s.id_dich_vu) ? 'selected' : ''}`} 
+                      onClick={() => setIdDichVu(String(s.id_dich_vu))}
+                      style={{
+                        padding: '20px',
+                        borderRadius: '20px',
+                        border: idDichVu === String(s.id_dich_vu) ? '2px solid var(--primary)' : '1px solid var(--gray-200)',
+                        background: idDichVu === String(s.id_dich_vu) ? 'var(--primary-light)' : 'var(--surface)',
+                        cursor: 'pointer',
+                        transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                        boxShadow: idDichVu === String(s.id_dich_vu) ? '0 12px 28px rgba(34, 211, 238, 0.15)' : 'var(--shadow-sm)'
+                      }}
+                      onMouseEnter={e => {
+                        if (idDichVu !== String(s.id_dich_vu)) {
+                          e.currentTarget.style.borderColor = 'rgba(34, 211, 238, 0.5)';
+                          e.currentTarget.style.transform = 'translateY(-2px)';
+                        }
+                      }}
+                      onMouseLeave={e => {
+                        if (idDichVu !== String(s.id_dich_vu)) {
+                          e.currentTarget.style.borderColor = 'var(--gray-200)';
+                          e.currentTarget.style.transform = 'translateY(0)';
+                        }
+                      }}
+                    >
+                      <div style={{ fontWeight: 900, color: idDichVu === String(s.id_dich_vu) ? 'var(--primary)' : 'var(--ink)', fontSize: '1.1rem', marginBottom: '6px' }}>{s.ten_dich_vu}</div>
+                      <div style={{ fontSize: '0.88rem', color: 'var(--gray-400)', fontWeight: 800 }}>{s.gia > 0 ? `Từ ${formatTienVND(s.gia)}` : 'Theo thực tế'}</div>
                     </div>
                   ))}
                 </div>
@@ -660,83 +702,156 @@ const DatLichHen: React.FC = () => {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gap: '12px' }}>
-            <label>3. CHỌN NGÀY KHÁM & BÁC SĨ</label>
-            <div className="customer-booking-date-doctor" style={{ display: 'grid', gridTemplateColumns: '190px 1fr', gap: '16px', maxWidth: '640px', alignItems: 'center' }}>
-              <input 
-                data-ai-id="input-datlichhen-mc0h" 
-                required 
-                type="date" 
-                value={date} 
-                onChange={e => setDate(e.target.value)} 
-                min={new Date().toISOString().split("T")[0]} 
-                style={{ width: '100%', boxSizing: 'border-box' }}
-              />
-              <select 
-                data-ai-id="select-datlichhen-33v9" 
-                value={idBacSi} 
-                onChange={e => setIdBacSi(e.target.value)} 
-                disabled={!date}
-                style={{ width: '100%', boxSizing: 'border-box' }}
-              >
-                <option value="">{date ? "-- Bác sĩ khám (Tùy chọn) --" : "-- Vui lòng chọn ngày khám trước --"}</option>
-                {doctors.map(d => <option key={d.id_nhan_vien} value={d.id_nhan_vien}>{d.ho_ten} ({d.chuyen_mon})</option>)}
-              </select>
+          <div style={{ display: 'grid', gap: '16px' }}>
+            <label style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--gray-400)', letterSpacing: '1px', textTransform: 'uppercase' }}>3. CHỌN NGÀY KHÁM & BÁC SĨ MONG MUỐN</label>
+            <div className="customer-booking-date-doctor" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', alignItems: 'center' }}>
+              <div style={{ position: 'relative' }}>
+                <input 
+                  data-ai-id="input-datlichhen-mc0h" 
+                  required 
+                  type="date" 
+                  value={date} 
+                  onChange={e => setDate(e.target.value)} 
+                  min={new Date().toISOString().split("T")[0]} 
+                  style={{ width: '100%', boxSizing: 'border-box', padding: '16px 20px', borderRadius: '16px', border: '1.5px solid var(--gray-200)', background: 'var(--surface)', color: 'var(--ink)', fontWeight: 750, fontSize: '1rem', outline: 'none', transition: 'all 0.3s', boxShadow: 'var(--shadow-sm)' }}
+                  onFocus={e => {
+                    e.target.style.borderColor = 'var(--primary)';
+                    e.target.style.boxShadow = '0 0 0 4px var(--primary-light)';
+                  }}
+                  onBlur={e => {
+                    e.target.style.borderColor = 'var(--gray-200)';
+                    e.target.style.boxShadow = 'var(--shadow-sm)';
+                  }}
+                />
+              </div>
+              <div style={{ position: 'relative' }}>
+                <select 
+                  data-ai-id="select-datlichhen-33v9" 
+                  value={idBacSi} 
+                  onChange={e => setIdBacSi(e.target.value)} 
+                  disabled={!date}
+                  style={{ width: '100%', boxSizing: 'border-box', padding: '16px 20px', borderRadius: '16px', border: '1.5px solid var(--gray-200)', background: 'var(--surface)', color: 'var(--ink)', fontWeight: 750, fontSize: '1rem', outline: 'none', transition: 'all 0.3s', boxShadow: 'var(--shadow-sm)', opacity: date ? 1 : 0.6 }}
+                  onFocus={e => {
+                    e.target.style.borderColor = 'var(--primary)';
+                    e.target.style.boxShadow = '0 0 0 4px var(--primary-light)';
+                  }}
+                  onBlur={e => {
+                    e.target.style.borderColor = 'var(--gray-200)';
+                    e.target.style.boxShadow = 'var(--shadow-sm)';
+                  }}
+                >
+                  <option value="">{date ? "-- Bác sĩ khám (Tùy chọn) --" : "-- Vui lòng chọn ngày khám trước --"}</option>
+                  {doctors.map(d => <option key={d.id_nhan_vien} value={d.id_nhan_vien}>{d.ho_ten} ({d.chuyen_mon})</option>)}
+                </select>
+              </div>
             </div>
           </div>
 
           <div style={{ display: 'grid', gap: '16px' }}>
-            <label style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gray-400)', letterSpacing: '1px' }}>4. CHỌN KHUNG GIỜ <span style={{ color: '#ff4d4f' }}>*</span></label>
+            <label style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--gray-400)', letterSpacing: '1px', textTransform: 'uppercase' }}>4. CHỌN KHUNG GIỜ <span style={{ color: '#ff4d4f' }}>*</span></label>
             {!date || !idDichVu ? (
-              <div style={{ padding: '24px', background: 'var(--gray-50)', borderRadius: '20px', border: '1px dashed var(--gray-200)', color: 'var(--gray-400)', textAlign: 'center', fontWeight: 600 }}>
-                Vui lòng chọn Dịch vụ và Ngày để xem giờ rảnh.
+              <div style={{ padding: '32px 24px', background: 'rgba(34, 211, 238, 0.02)', borderRadius: '24px', border: '1px dashed var(--gray-200)', color: 'var(--gray-450)', textAlign: 'center', fontWeight: 800, fontSize: '0.95rem' }}>
+                Vui lòng chọn Dịch vụ và Ngày để xem các ca trống.
               </div>
             ) : loadingSlots ? (
-              <div style={{ display: 'flex', justifyContent: 'center', padding: '20px' }}><div className="dot-pulse"></div></div>
+              <div style={{ display: 'flex', justifyContent: 'center', padding: '30px' }}><div className="dot-pulse"></div></div>
             ) : availableSlots.length > 0 ? (
-              <div className="customer-booking-slots" style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
+              <div className="customer-booking-slots" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '12px' }}>
                 {availableSlots.map(t => {
+                  const isSelected = time === t;
                   return (
                     <button data-ai-id="button-datlichhen-rvj4"
                       key={t}
                       type="button"
                       onClick={() => setTime(t)}
                       style={{
-                        padding: '12px 20px',
-                        borderRadius: '14px',
-                        border: time === t ? '2px solid var(--primary)' : '1px solid var(--gray-200)',
-                        background: time === t ? 'var(--primary-light)' : 'var(--surface)',
-                        color: time === t ? 'var(--primary)' : 'var(--ink)',
-                        fontWeight: 800,
+                        padding: '14px 10px',
+                        borderRadius: '16px',
+                        border: isSelected ? '2.5px solid var(--primary)' : '1.5px solid var(--gray-200)',
+                        background: isSelected ? 'var(--primary-light)' : 'var(--surface)',
+                        color: isSelected ? 'var(--primary)' : 'var(--ink)',
+                        fontWeight: 900,
                         cursor: 'pointer',
-                        transition: 'all 0.2s',
-                        fontSize: '0.9rem',
+                        transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+                        fontSize: '0.95rem',
+                        boxShadow: isSelected ? '0 8px 20px rgba(34, 211, 238, 0.12)' : 'var(--shadow-sm)'
+                      }}
+                      onMouseEnter={e => {
+                        if (!isSelected) {
+                          e.currentTarget.style.borderColor = 'rgba(34, 211, 238, 0.5)';
+                          e.currentTarget.style.transform = 'translateY(-2px)';
+                        }
+                      }}
+                      onMouseLeave={e => {
+                        if (!isSelected) {
+                          e.currentTarget.style.borderColor = 'var(--gray-200)';
+                          e.currentTarget.style.transform = 'translateY(0)';
+                        }
                       }}
                     >
-                      {t}
+                      {t.substring(0, 5)}
                     </button>
                   );
                 })}
               </div>
             ) : (
-              <div style={{ padding: '24px', background: 'rgba(245, 158, 11, 0.05)', borderRadius: '20px', border: '1px dashed var(--accent)', color: 'var(--accent)', textAlign: 'center', fontWeight: 700 }}>
+              <div style={{ padding: '32px 24px', background: 'rgba(239, 68, 68, 0.04)', borderRadius: '24px', border: '1px dashed #ef4444', color: '#ef4444', textAlign: 'center', fontWeight: 800 }}>
                 Rất tiếc! Đã hết lịch trống cho ngày này hoặc dịch vụ bạn chọn yêu cầu thời gian dài hơn các ca trống còn lại. Hãy thử chọn ngày/bác sĩ khác nhé!
               </div>
             )}
           </div>
 
-          <div style={{ display: 'grid', gap: '12px' }}>
-            <label style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gray-400)' }}>5. TRIỆU CHỨNG / GHI CHÚ</label>
-            <textarea data-ai-id="textarea-datlichhen-note" className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left', minHeight: '100px', padding: '16px', lineHeight: '1.6', borderRadius: '16px', border: '1px solid var(--gray-200)', outline: 'none' }} placeholder={toneCopy.bookingNotePlaceholder} value={note} onChange={e => setNote(e.target.value)} />
+          <div style={{ display: 'grid', gap: '16px' }}>
+            <label style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--gray-400)', letterSpacing: '1px', textTransform: 'uppercase' }}>5. TRIỆU CHỨNG KHÁM / GHI CHÚ</label>
+            <textarea 
+              data-ai-id="textarea-datlichhen-note" 
+              style={{ background: 'var(--gray-50)', textAlign: 'left', minHeight: '130px', padding: '20px', lineHeight: '1.6', borderRadius: '20px', border: '1.5px solid var(--gray-200)', outline: 'none', color: 'var(--ink)', fontWeight: 650, fontSize: '0.95rem', transition: 'all 0.3s', boxShadow: 'var(--shadow-sm) inset' }} 
+              placeholder={toneCopy.bookingNotePlaceholder} 
+              value={note} 
+              onChange={e => setNote(e.target.value)}
+              onFocus={e => {
+                e.target.style.borderColor = 'var(--primary)';
+                e.target.style.background = 'var(--surface)';
+                e.target.style.boxShadow = '0 0 0 4px var(--primary-light)';
+              }}
+              onBlur={e => {
+                e.target.style.borderColor = 'var(--gray-200)';
+                e.target.style.background = 'var(--gray-50)';
+                e.target.style.boxShadow = 'var(--shadow-sm) inset';
+              }}
+            />
           </div>
 
-          <button data-ai-id="button-datlichhen-66iq" type="submit" className="btn btn-primary btn-pill customer-booking-submit" disabled={loading} onClick={notifyCurrentBookingDraftIssue} style={{ padding: '16px', fontSize: '1.1rem' }}>
+          <button 
+            data-ai-id="button-datlichhen-66iq" 
+            type="submit" 
+            className="btn btn-primary btn-pill customer-booking-submit" 
+            disabled={loading} 
+            onClick={notifyCurrentBookingDraftIssue} 
+            style={{ 
+              padding: '18px 30px', 
+              fontSize: '1.15rem', 
+              fontWeight: 950, 
+              letterSpacing: '0.5px', 
+              background: 'var(--primary-gradient)', 
+              color: 'white', 
+              border: 'none',
+              borderRadius: '50px',
+              boxShadow: '0 12px 28px var(--primary-shadow)',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '10px',
+              transition: 'all 0.3s'
+            }}
+          >
             {loading ? (
               <>
                 <span className="material-symbols-outlined icon-spin">autorenew</span>
                 Đang xử lý...
               </>
-            ) : 'XÁC NHẬN ĐẶT LỊCH'}
+            ) : 'XÁC NHẬN ĐẶT LỊCH NGAY'}
           </button>
         </form>
 

@@ -5,11 +5,15 @@ import com.rexi.pkty.service.GeminiService;
 import com.rexi.pkty.service.GroqService;
 import com.rexi.pkty.service.OpenRouterService;
 import com.rexi.pkty.service.ReActAgentService;
+import com.rexi.pkty.service.AgentResponseCache;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.test.context.support.WithMockUser;
 
 import java.util.List;
@@ -19,6 +23,7 @@ import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -33,6 +38,7 @@ class ChatControllerRegressionTest extends BaseControllerTest {
     @MockBean private GroqService groqService;
     @MockBean private OpenRouterService openRouterService;
     @MockBean private ReActAgentService reActAgentService;
+    @MockBean private AgentResponseCache agentResponseCache;
 
     @Test
     void heatstrokeEmergencyBypassesLongMessageGuardAndAiProviders() throws Exception {
@@ -86,7 +92,7 @@ class ChatControllerRegressionTest extends BaseControllerTest {
     @Test
     @WithMockUser(username = "khach_genz", roles = "CUSTOMER")
     void genZSensitiveDataSlangRoutesToReActAgentWithoutAiChatProviders() throws Exception {
-        when(reActAgentService.run(eq("check bill của bé Mực giùm tui với"), eq("khach_genz"), eq("CUSTOMER")))
+        when(reActAgentService.run(eq("check bill của bé Mực giùm tui với"), eq("khach_genz"), eq("khach_hang")))
                 .thenReturn(new ReActAgentService.ReActResult(
                         "Đã chuyển Agent kiểm tra quyền và tra hóa đơn.",
                         List.of(new ReActAgentService.ReActStep("FINAL", "ok", null, null, null)),
@@ -108,7 +114,7 @@ class ChatControllerRegressionTest extends BaseControllerTest {
                 .andExpect(jsonPath("$.provider").value("Mock"))
                 .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.containsString("kiểm tra quyền")));
 
-        verify(reActAgentService).run(eq("check bill của bé Mực giùm tui với"), eq("khach_genz"), eq("CUSTOMER"));
+        verify(reActAgentService).run(eq("check bill của bé Mực giùm tui với"), eq("khach_genz"), eq("khach_hang"));
         verify(geminiService, never()).chat(anyList());
         verify(groqService, never()).chat(anyList());
         verify(openRouterService, never()).chat(anyList());
@@ -117,7 +123,7 @@ class ChatControllerRegressionTest extends BaseControllerTest {
     @Test
     @WithMockUser(username = "khach_genz", roles = "CUSTOMER")
     void genZSensitiveProfileAndPhoneSlangRoutesToReActAgent() throws Exception {
-        when(reActAgentService.run(eq("info acc tui với, sđt khách còn đúng khum?"), eq("khach_genz"), eq("CUSTOMER")))
+        when(reActAgentService.run(eq("info acc tui với, sđt khách còn đúng khum?"), eq("khach_genz"), eq("khach_hang")))
                 .thenReturn(new ReActAgentService.ReActResult(
                         "Agent cần kiểm tra quyền trước khi trả dữ liệu cá nhân.",
                         List.of(),
@@ -138,9 +144,114 @@ class ChatControllerRegressionTest extends BaseControllerTest {
                 .andExpect(jsonPath("$.source").value("react_agent_auto"))
                 .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.containsString("kiểm tra quyền")));
 
-        verify(reActAgentService).run(eq("info acc tui với, sđt khách còn đúng khum?"), eq("khach_genz"), eq("CUSTOMER"));
+        verify(reActAgentService).run(eq("info acc tui với, sđt khách còn đúng khum?"), eq("khach_genz"), eq("khach_hang"));
         verify(geminiService, never()).chat(anyList());
         verify(groqService, never()).chat(anyList());
+        verify(openRouterService, never()).chat(anyList());
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = "ADMIN")
+    void todayCustomerTrendStatsRoutesToReActAgentWithoutChatAiProviders() throws Exception {
+        String query = "Kiểm tra số khách hàng mới và xu hướng hôm nay";
+        when(reActAgentService.run(eq(query), eq("admin"), eq("admin")))
+                .thenReturn(new ReActAgentService.ReActResult(
+                        "Rexi tra dữ liệu hệ thống ngày 2026-06-04:\n- Số khách hàng mới hôm nay: 0 khách hàng.\n- Xu hướng hôm nay: chưa có dữ liệu để tính tỷ lệ.",
+                        List.of(new ReActAgentService.ReActStep("TOOL", "stats", "thong_ke_khach_hang_hom_nay", Map.of(), "ok")),
+                        "System"
+                ));
+
+        ChatMessage message = new ChatMessage("user", query, null, null);
+
+        mockMvc.perform(post("/api/chat")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("history", List.of(message)))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.source").value("react_agent_auto"))
+                .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.containsString("Rexi tra dữ liệu hệ thống")))
+                .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("15 khách hàng"))))
+                .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("60%"))));
+
+        verify(reActAgentService).run(eq(query), eq("admin"), eq("admin"));
+        verify(geminiService, never()).chat(anyList());
+        verify(groqService, never()).chat(anyList());
+        verify(openRouterService, never()).chat(anyList());
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = "ADMIN")
+    void adminStandardChatDoesNotFallBackToCustomerPetScopeForOffTopicText() throws Exception {
+        when(groqService.chat(anyList())).thenReturn("Tôi không thể tiếp tục cuộc trò chuyện này. Nếu bạn cần hỗ trợ về chăm sóc thú cưng hoặc có câu hỏi khác, tôi sẵn sàng giúp đỡ. Bạn có muốn hỏi về một vấn đề cụ thể về thú cưng không?");
+
+        ChatMessage message = new ChatMessage("user", "Bị thương nặng, trong khi về đến căn cứ, hắn nhất định sẽ báo cáo chuyện này lên cấp trên.", null, null);
+
+        mockMvc.perform(post("/api/chat")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("history", List.of(message)))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.containsString("Quản trị viên nội bộ")))
+                .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("chăm sóc thú cưng"))));
+
+        verify(groqService).chat(anyList());
+        verify(geminiService, never()).chat(anyList());
+        verify(openRouterService, never()).chat(anyList());
+    }
+
+    @Test
+    void allInternalRolesDoNotFallBackToCustomerPetScope() throws Exception {
+        when(groqService.chat(anyList())).thenReturn("Tôi không thể tiếp tục cuộc trò chuyện này. Nếu bạn cần hỗ trợ về chăm sóc thú cưng hoặc có câu hỏi khác, tôi sẵn sàng giúp đỡ. Bạn có muốn hỏi về một vấn đề cụ thể về thú cưng không?");
+
+        String[][] roles = {
+                {"bac_si_user", "BAC_SI", "Bác sĩ"},
+                {"y_ta_user", "Y_TA", "Y tá"},
+                {"ke_toan_user", "KE_TOAN", "Kế toán"},
+                {"tiep_tan_user", "TIEP_TAN", "Tiếp tân"},
+                {"quan_ly_user", "QUAN_LY", "Quản lý"}
+        };
+
+        try {
+            for (String[] role : roles) {
+                SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(
+                        role[0],
+                        "n/a",
+                        List.of(new SimpleGrantedAuthority("ROLE_" + role[1]))
+                ));
+                ChatMessage message = new ChatMessage("user", "Viết lại câu này cho đúng văn phong nội bộ.", null, null);
+
+                mockMvc.perform(post("/api/chat")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(Map.of("history", List.of(message)))))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.containsString(role[2] + " nội bộ")))
+                        .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("chăm sóc thú cưng"))))
+                        .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("khách hàng/chủ nuôi"))));
+            }
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
+
+        verify(groqService, times(roles.length)).chat(anyList());
+        verify(geminiService, never()).chat(anyList());
+        verify(openRouterService, never()).chat(anyList());
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = "ADMIN")
+    void unsupportedSystemLookupClaimIsBlockedForNormalChatRoute() throws Exception {
+        when(groqService.chat(anyList())).thenReturn("Rexi kiểm tra dữ liệu hệ thống: hôm nay có 15 khách hàng mới và 60% thú cưng bị ốm.");
+
+        ChatMessage message = new ChatMessage("user", "nói một câu chào nội bộ ngắn", null, null);
+
+        mockMvc.perform(post("/api/chat")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("history", List.of(message)))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.containsString("chưa kiểm tra dữ liệu hệ thống")))
+                .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("15 khách"))))
+                .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("60%"))));
+
+        verify(groqService).chat(anyList());
+        verify(geminiService, never()).chat(anyList());
         verify(openRouterService, never()).chat(anyList());
     }
 

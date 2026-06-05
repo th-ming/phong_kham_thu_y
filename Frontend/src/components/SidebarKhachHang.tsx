@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import ThemeToggle from './ThemeToggle'
 import { useLiveUserProfile } from '@hooks/useLiveUserProfile'
@@ -53,9 +53,8 @@ const SidebarKhachHang: React.FC = () => {
           className="mobile-show sidebar-fab customer-menu-fab"
           onClick={() => setIsMobileOpen(true)}
           style={{
-            position: 'fixed', bottom: '24px', left: '24px', zIndex: 1001,
             background: 'var(--primary)', color: 'white', border: 'none',
-            width: '56px', height: '56px', borderRadius: '50%',
+            borderRadius: '50%',
             boxShadow: '0 4px 15px rgba(15, 157, 138, 0.4)',
             display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
           }}

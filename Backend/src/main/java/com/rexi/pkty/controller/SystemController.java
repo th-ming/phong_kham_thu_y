@@ -353,7 +353,8 @@ public class SystemController {
     public ResponseEntity<?> deleteBackup(@PathVariable String filename) {
         try {
             // Chan Path Traversal
-            if (filename.contains("..") || filename.contains("/") || filename.contains("\\")) {
+            if (filename.contains("..") || filename.contains("/") || filename.contains("\\")
+                    || !filename.toLowerCase().endsWith(".bak")) {
                 return ResponseEntity.status(400).body(Map.of("message", "Tên file không hợp lệ!"));
             }
             String backupDirPath = System.getProperty("user.dir") + java.io.File.separator + "backups";
@@ -373,7 +374,8 @@ public class SystemController {
     public ResponseEntity<org.springframework.core.io.Resource> downloadBackup(@PathVariable String filename) {
         try {
             // Chan Path Traversal
-            if (filename.contains("..") || filename.contains("/") || filename.contains("\\")) {
+            if (filename.contains("..") || filename.contains("/") || filename.contains("\\")
+                    || !filename.toLowerCase().endsWith(".bak")) {
                 return ResponseEntity.status(400).build();
             }
             String backupDirPath = System.getProperty("user.dir") + java.io.File.separator + "backups";
@@ -755,7 +757,7 @@ public class SystemController {
         String email = normalizeEmail(payload.get("email"));
         if (email == null || email.isEmpty()) return ResponseEntity.badRequest().body(Map.of("message", "Email trống", "success", false));
 
-        String rateKey = email + "|" + getClientIp(request);
+        String rateKey = getInteractionSource(request) + "|" + email + "|" + getClientIp(request);
         ResponseEntity<?> rateLimitResponse = checkOtpSendRateLimit(rateKey);
         if (rateLimitResponse != null) return rateLimitResponse;
         
@@ -815,23 +817,6 @@ public class SystemController {
             otpStorage.remove(email);
             otpExpiry.remove(email);
             
-            // BẪY BẢO MẬT: Nếu kẻ tấn công nhập sai mã OTP liên tục 5 lần,
-            // hệ thống sẽ tự động gọi báo động đỏ và khóa vĩnh viễn địa chỉ IP đó.
-            if (securityAlertService != null) {
-                String clientIp = getClientIp(request);
-                String cfCountry = request.getHeader("CF-IPCountry");
-                String locationHint = cfCountry != null && !cfCountry.isBlank() ? "IPCountry: " + cfCountry : "Nhập sai OTP liên tiếp";
-                securityAlertService.reportAndBlock(
-                        clientIp,
-                        "Brute-force OTP",
-                        "/api/system/verify-otp",
-                        "POST",
-                        request.getHeader("User-Agent"),
-                        "Email: " + email + " failed " + failures + " times",
-                        locationHint
-                );
-            }
-            
             return ResponseEntity.status(429).body(Map.of("message", "Bạn đã nhập sai OTP quá nhiều lần. Vui lòng gửi mã mới sau 10 phút."));
         }
         return ResponseEntity.status(400).body(Map.of("message", "Mã OTP không chính xác"));
@@ -876,5 +861,17 @@ public class SystemController {
             return forwardedFor.split(",")[0].trim();
         }
         return request.getRemoteAddr();
+    }
+
+    private String getInteractionSource(jakarta.servlet.http.HttpServletRequest request) {
+        String source = request.getHeader("X-Interaction-Source");
+        if (source != null && source.equalsIgnoreCase("human")) {
+            return "human";
+        }
+        String aiAction = request.getHeader("X-AI-ACTION");
+        if (aiAction != null && !aiAction.isBlank()) {
+            return "automation";
+        }
+        return "unknown";
     }
 }

@@ -84,10 +84,13 @@ const QuanLyLichLamViec: React.FC = () => {
             ]);
             setStaffs(staffRes.data);
             setSchedules(scheduleRes.data);
-            if (!isAdmin && user) {
+            if (user) {
                 const accountId = user.id_tai_khoan || user.idTaiKhoan || user.id;
                 const staff = staffRes.data.find((st: any) => String(st.id_tai_khoan || st.idTaiKhoan || '') === String(accountId || ''));
-                setSelectedStaffId(String(user.id_nhan_vien || user.idNhanVien || staff?.id_nhan_vien || ''));
+                const selfId = String(user.id_nhan_vien || user.idNhanVien || staff?.id_nhan_vien || '');
+                if (!isAdmin || viewMode === 'personal') {
+                    setSelectedStaffId(selfId);
+                }
             }
         } catch (error) {
             toast.error("Lỗi tải dữ liệu lịch trực");
@@ -199,40 +202,38 @@ const QuanLyLichLamViec: React.FC = () => {
     const handleAddShift = (day: any, hour: number) => {
         // RÀNG BUỘC: Nhân viên chỉ được đăng ký lịch cho tuần sau (weekOffset >= 1)
         if (!isAdmin && weekOffset < 1) {
-            toast.error("Bạn chỉ có thể đăng ký lịch trực cho các tuần tiếp theo. Tuần hiện tại chỉ Admin mới có quyền điều chỉnh.");
+            toast.error("Bạn chỉ có thể đăng ký lịch trực cho các tuần tiếp theo. Tuần hiện tại chỉ Admin/Quản lý mới có quyền điều chỉnh.");
             return;
         }
-
         setSelectedSlot({ day, hour });
-        // Ở chế độ cá nhân, chỉ đăng ký cho chính người đang đăng nhập.
         if (!isAllStaffView) setSelectedStaffId(currentStaffId);
         setShowAddModal(true);
     };
 
     const confirmAddShift = async () => {
         if (!selectedStaffId || !selectedSlot) return;
-        // Validate nhân viên đã chọn
         if (!selectedStaffId.trim()) {
             toast.error("Vui lòng chọn nhân viên trước khi đăng ký ca!");
             return;
         }
-
         setIsSubmitting(true);
         try {
             const payload = {
                 id_nhan_vien: selectedStaffId,
                 ngay_lam: selectedSlot.day.dateStr,
                 gio_bat_dau: `${String(selectedSlot.hour).padStart(2, '0')}:00:00`,
-                // Truyền giờ kết thúc thực tế (+1 tiếng, backend vẫn fallback nếu thiếu)
                 gio_ket_thuc: `${String(selectedSlot.hour + 1).padStart(2, '0')}:00:00`,
                 ghi_chu: isAdmin ? "Admin sắp xếp lịch" : "Đăng ký lịch trực"
             };
-
-            await axiosInstance.post('/api/nhan-vien/lich-lam-viec', payload);
+            const res = await axiosInstance.post('/api/nhan-vien/lich-lam-viec', payload);
             toast.success(isAdmin ? "Đã cập nhật ca trực!" : "Đã đăng ký ca trực thành công!");
             setShowAddModal(false);
             setStaffPickerOpen(false);
-            fetchData();
+            if (res.data?.id_lich_lam_viec) {
+                setSchedules(prev => [...prev, res.data]);
+            } else {
+                fetchData();
+            }
         } catch (error: any) {
             console.error('Lỗi đăng ký ca trực:', error.response?.data || error.message);
             toast.error(error.response?.data?.message || "Lỗi khi đăng ký ca trực. Vui lòng kiểm tra lại dữ liệu.");
@@ -243,30 +244,23 @@ const QuanLyLichLamViec: React.FC = () => {
 
     const handleExportExcel = () => {
         try {
-            let csvContent = "\uFEFF"; // Thêm BOM để Excel đọc tiếng Việt ko bị lỗi font
+            let csvContent = "\uFEFF";
             csvContent += "LỊCH TRỰC NHÂN SỰ REXI\n";
             csvContent += `Từ ${weekDates[0].dateStr} đến ${weekDates[6].dateStr}\n\n`;
-
             csvContent += "Ngày,Thứ,Ca làm việc,Tên nhân viên,Chức vụ\n";
-
-            // Lọc ra các ca trực trong tuần hiện tại đang xem
             const weekDateStrs = weekDates.map(d => d.dateStr);
             const shiftsToExport = visibleSchedules.filter(s => weekDateStrs.includes(s.ngay_lam));
-
-            // Sắp xếp theo ngày -> giờ -> tên
             shiftsToExport.sort((a, b) => {
                 if (a.ngay_lam !== b.ngay_lam) return a.ngay_lam.localeCompare(b.ngay_lam);
                 if (a.gio_bat_dau !== b.gio_bat_dau) return a.gio_bat_dau.localeCompare(b.gio_bat_dau);
                 return a.id_nhan_vien.localeCompare(b.id_nhan_vien);
             });
-
             shiftsToExport.forEach(shift => {
                 const dayObj = weekDates.find(d => d.dateStr === shift.ngay_lam);
                 const dayLabel = dayObj ? dayObj.label : "";
                 const staffInfo = staffs.find(st => String(st.id_nhan_vien) === String(shift.id_nhan_vien));
                 csvContent += `${shift.ngay_lam},${dayLabel},${shift.gio_bat_dau?.substring(0, 5)},"${staffInfo?.ho_ten || 'Nhân viên'}","${staffInfo?.chuyen_mon || 'Nhân viên'}"\n`;
             });
-
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
             const url = URL.createObjectURL(blob);
@@ -283,185 +277,90 @@ const QuanLyLichLamViec: React.FC = () => {
 
     const handleCopyScheduleToNextWeek = async (staffId: string) => {
         setConfirmDialog({
-            open: true,
-            title: 'Sao chép lịch trực',
+            open: true, title: 'Sao chép lịch trực',
             message: 'Bạn có chắc chắn muốn sao chép toàn bộ lịch trực của nhân viên này sang tuần tiếp theo không?',
             onConfirm: async () => {
                 setConfirmDialog(prev => ({ ...prev, open: false }));
-
                 const weekDateStrs = weekDates.map(d => d.dateStr);
                 const shiftsToCopy = schedules.filter(s => String(s.id_nhan_vien) === String(staffId) && weekDateStrs.includes(s.ngay_lam));
-
-                if (shiftsToCopy.length === 0) {
-                    toast.info("Nhân viên này không có ca trực nào trong tuần hiện tại để sao chép!");
-                    return;
-                }
-
+                if (shiftsToCopy.length === 0) { toast.info("Nhân viên này không có ca trực nào trong tuần hiện tại để sao chép!"); return; }
                 let successCount = 0;
                 for (const shift of shiftsToCopy) {
                     try {
                         const date = new Date(`${shift.ngay_lam}T00:00:00`);
                         date.setDate(date.getDate() + 7);
                         const nextWeekDateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-
-                        const payload = {
-                            id_nhan_vien: shift.id_nhan_vien,
-                            ngay_lam: nextWeekDateStr,
-                            gio_bat_dau: shift.gio_bat_dau,
-                            gio_ket_thuc: shift.gio_ket_thuc,
-                            ghi_chu: shift.ghi_chu || "Sao chép lịch trực từ tuần trước"
-                        };
-                        await axiosInstance.post('/api/nhan-vien/lich-lam-viec', payload);
+                        await axiosInstance.post('/api/nhan-vien/lich-lam-viec', { id_nhan_vien: shift.id_nhan_vien, ngay_lam: nextWeekDateStr, gio_bat_dau: shift.gio_bat_dau, gio_ket_thuc: shift.gio_ket_thuc, ghi_chu: shift.ghi_chu || "Sao chép lịch trực từ tuần trước" });
                         successCount++;
-                    } catch (error) {
-                        // Bỏ qua lỗi trùng lịch
-                    }
+                    } catch (error) {}
                 }
-
-                if (successCount > 0) {
-                    toast.success(`Đã sao chép thành công ${successCount} ca trực sang tuần tới!`);
-                    fetchData();
-                } else {
-                    toast.error("Không thể sao chép ca trực nào (Có thể do trùng lịch ở tuần tới).");
-                }
+                if (successCount > 0) { toast.success(`Đã sao chép thành công ${successCount} ca trực sang tuần tới!`); fetchData(); }
+                else toast.error("Không thể sao chép ca trực nào (Có thể do trùng lịch ở tuần tới).");
             }
         });
     };
 
     const handleCopyAllSchedulesToNextWeek = async () => {
         setConfirmDialog({
-            open: true,
-            title: 'Sao chép toàn bộ lịch trực',
+            open: true, title: 'Sao chép toàn bộ lịch trực',
             message: 'Bạn có chắc chắn muốn sao chép toàn bộ lịch trực của TẤT CẢ nhân viên trong tuần này sang tuần tiếp theo không?',
             onConfirm: async () => {
                 setConfirmDialog(prev => ({ ...prev, open: false }));
-
                 const weekDateStrs = weekDates.map(d => d.dateStr);
                 const shiftsToCopy = schedules.filter(s => weekDateStrs.includes(s.ngay_lam));
-
-                if (shiftsToCopy.length === 0) {
-                    toast.info("Không có ca trực nào trong tuần hiện tại để sao chép!");
-                    return;
-                }
-
+                if (shiftsToCopy.length === 0) { toast.info("Không có ca trực nào trong tuần hiện tại để sao chép!"); return; }
                 setIsCopying(true);
-                let successCount = 0;
-                let failCount = 0;
-
+                let successCount = 0; let failCount = 0;
                 try {
                     for (const shift of shiftsToCopy) {
                         try {
                             const date = new Date(`${shift.ngay_lam}T00:00:00`);
                             date.setDate(date.getDate() + 7);
                             const nextWeekDateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-
-                            const payload = {
-                                id_nhan_vien: shift.id_nhan_vien,
-                                ngay_lam: nextWeekDateStr,
-                                gio_bat_dau: shift.gio_bat_dau,
-                                gio_ket_thuc: shift.gio_ket_thuc,
-                                ghi_chu: shift.ghi_chu || "Sao chép lịch trực từ tuần trước"
-                            };
-                            await axiosInstance.post('/api/nhan-vien/lich-lam-viec', payload);
+                            await axiosInstance.post('/api/nhan-vien/lich-lam-viec', { id_nhan_vien: shift.id_nhan_vien, ngay_lam: nextWeekDateStr, gio_bat_dau: shift.gio_bat_dau, gio_ket_thuc: shift.gio_ket_thuc, ghi_chu: shift.ghi_chu || "Sao chép lịch trực từ tuần trước" });
                             successCount++;
-                        } catch (error) {
-                            failCount++;
-                        }
+                        } catch (error) { failCount++; }
                     }
-
-                    if (successCount > 0) {
-                        toast.success(`Đã sao chép thành công ${successCount} ca trực sang tuần tới!`);
-                        if (failCount > 0) toast.info(`Có ${failCount} ca bị trùng hoặc lỗi không thể sao chép.`);
-                        fetchData();
-                    } else {
-                        toast.error("Không thể sao chép ca trực nào. Có thể tất cả các ca đều đã tồn tại ở tuần tới.");
-                    }
-                } finally {
-                    setIsCopying(false);
-                }
+                    if (successCount > 0) { toast.success(`Đã sao chép thành công ${successCount} ca trực sang tuần tới!`); if (failCount > 0) toast.info(`Có ${failCount} ca bị trùng hoặc lỗi không thể sao chép.`); fetchData(); }
+                    else toast.error("Không thể sao chép ca trực nào. Có thể tất cả các ca đều đã tồn tại ở tuần tới.");
+                } finally { setIsCopying(false); }
             }
         });
     };
 
     const handleMoveShift = async (shift: any, targetDay: any, targetHour: number) => {
-        // Kiểm tra quyền sở hữu: nhân viên không được động vào lịch người khác
-        if (!isAdmin && String(shift.id_nhan_vien) !== currentStaffId) {
-            toast.error("Bạn không có quyền di chuyển lịch trực của người khác!");
-            return;
-        }
-
-        if (!isAdmin && weekOffset < 1) {
-            toast.error("Bạn chỉ có thể điều chỉnh lịch của chính mình cho các tuần tiếp theo.");
-            return;
-        }
-
+        if (!isAdmin && String(shift.id_nhan_vien) !== currentStaffId) { toast.error("Bạn không có quyền di chuyển lịch trực của người khác!"); return; }
+        if (!isAdmin && weekOffset < 1) { toast.error("Bạn chỉ có thể điều chỉnh lịch của chính mình cho các tuần tiếp theo."); return; }
         const newDateStr = targetDay.dateStr;
         const newTimeStr = `${String(targetHour).padStart(2, '0')}:00:00`;
         const newEndTimeStr = `${String(targetHour + 1).padStart(2, '0')}:00:00`;
-
-        if (shift.ngay_lam === newDateStr && shift.gio_bat_dau?.startsWith(String(targetHour).padStart(2, '0'))) {
-            return; // Đã ở đúng vị trí rồi
-        }
-
+        if (shift.ngay_lam === newDateStr && shift.gio_bat_dau?.startsWith(String(targetHour).padStart(2, '0'))) return;
         try {
-            // Xóa lịch cũ trước
             await axiosInstance.delete(`/api/nhan-vien/lich-lam-viec/${shift.id_lich_lam_viec}`);
-
-            // Thêm lịch mới ở vị trí đã kéo đến
-            const payload = {
-                id_nhan_vien: shift.id_nhan_vien,
-                ngay_lam: newDateStr,
-                gio_bat_dau: newTimeStr,
-                gio_ket_thuc: newEndTimeStr,
-                ghi_chu: shift.ghi_chu || "Chuyển lịch trực"
-            };
-            await axiosInstance.post('/api/nhan-vien/lich-lam-viec', payload);
-
-            toast.success("Đã cập nhật ca trực!");
-            fetchData();
-        } catch (error: any) {
-            toast.error(error.response?.data?.message || "Lỗi khi chuyển ca trực");
-            fetchData(); // Phục hồi dữ liệu giao diện nếu lỗi
-        }
+            await axiosInstance.post('/api/nhan-vien/lich-lam-viec', { id_nhan_vien: shift.id_nhan_vien, ngay_lam: newDateStr, gio_bat_dau: newTimeStr, gio_ket_thuc: newEndTimeStr, ghi_chu: shift.ghi_chu || "Chuyển lịch trực" });
+            toast.success("Đã cập nhật ca trực!"); fetchData();
+        } catch (error: any) { toast.error(error.response?.data?.message || "Lỗi khi chuyển ca trực"); fetchData(); }
     };
 
     const handleDeleteShift = async (id: number, shiftStaffId: string) => {
-        // Kiểm tra quyền sở hữu
-        if (!isAdmin && String(shiftStaffId) !== currentStaffId) {
-            toast.error("Bạn không có quyền xóa lịch trực của người khác!");
-            return;
-        }
-
+        if (!isAdmin && String(shiftStaffId) !== currentStaffId) { toast.error("Bạn không có quyền xóa lịch trực của người khác!"); return; }
         // Ràng buộc: không được xóa ca tuần hiện tại
-        if (!isAdmin && weekOffset < 1) {
-            toast.error("Bạn không thể xóa lịch trực ở tuần hiện tại. Vui lòng liên hệ Admin.");
-            return;
-        }
-
+        if (!isAdmin && weekOffset < 1) { toast.error("Bạn không thể xóa lịch trực ở tuần hiện tại. Vui lòng liên hệ Admin/Quản lý."); return; }
         setConfirmDialog({
-            open: true,
-            title: 'Hủy ca trực',
+            open: true, title: 'Hủy ca trực',
             message: 'Bạn có chắc chắn muốn hủy ca trực này không?',
             onConfirm: async () => {
                 setConfirmDialog(prev => ({ ...prev, open: false }));
-                try {
-                    await axiosInstance.delete(`/api/nhan-vien/lich-lam-viec/${id}`);
-                    toast.success("Đã hủy ca trực");
-                    fetchData();
-                } catch (error: any) {
-                    toast.error(error.response?.data?.message || "Lỗi khi hủy ca trực");
-                }
+                try { await axiosInstance.delete(`/api/nhan-vien/lich-lam-viec/${id}`); toast.success("Đã hủy ca trực"); fetchData(); }
+                catch (error: any) { toast.error(error.response?.data?.message || "Lỗi khi hủy ca trực"); }
             }
         });
     };
 
-
     const getShiftColor = (id: string | number, role: string) => {
         const r = role?.toLowerCase() || '';
         const safeId = String(id || '');
-        if (r.includes('bác sĩ') || r.includes('bac si')) {
-            return DOCTOR_COLORS[safeId.length % DOCTOR_COLORS.length] || DOCTOR_COLORS[0];
-        }
+        if (r.includes('bác sĩ') || r.includes('bac si')) return DOCTOR_COLORS[safeId.length % DOCTOR_COLORS.length] || DOCTOR_COLORS[0];
         if (r.includes('y tá') || r.includes('y ta')) return { bg: 'rgba(59, 130, 246, 0.1)', border: '#3b82f6', text: '#3b82f6' };
         if (r.includes('tiếp tân') || r.includes('tiep tan')) return { bg: 'rgba(245, 158, 11, 0.1)', border: '#f59e0b', text: '#f59e0b' };
         return { bg: 'rgba(107, 114, 128, 0.1)', border: '#6b7280', text: '#6b7280' };
@@ -485,6 +384,7 @@ const QuanLyLichLamViec: React.FC = () => {
                         background: #ffffff !important;
                         color: #111827 !important;
                         box-shadow: none !important;
+                        border: 1px solid #ccc !important;
                     }
                     .no-print, .no-print * {
                         display: none !important;
@@ -587,16 +487,237 @@ const QuanLyLichLamViec: React.FC = () => {
                     max-width: 260px;
                     scroll-snap-align: start;
                 }
+                .schedule-mobile-list {
+                    display: none;
+                }
+                .schedule-slot-cell {
+                    min-height: 138px;
+                    border-top: 1px solid var(--gray-100);
+                    border-right: 1px solid var(--gray-100);
+                    padding: 6px;
+                    position: relative;
+                    transition: all 0.2s ease;
+                    min-width: 0;
+                    overflow: hidden;
+                }
+                .schedule-slot-cell.slot-editable {
+                    cursor: pointer;
+                }
+                .schedule-slot-cell.slot-editable:hover {
+                    background: rgba(20, 184, 166, 0.05) !important;
+                }
+                .schedule-slot-cell.slot-locked {
+                    background: repeating-linear-gradient(
+                        45deg,
+                        var(--gray-50),
+                        var(--gray-50) 10px,
+                        rgba(243, 244, 246, 0.6) 10px,
+                        rgba(243, 244, 246, 0.6) 20px
+                    ) !important;
+                    cursor: not-allowed;
+                }
+                .shift-card {
+                    width: 100%;
+                    min-width: 0;
+                    overflow: hidden;
+                    transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+                }
+                .shift-card:hover {
+                    transform: translateY(-2px);
+                    box-shadow: var(--shadow-md) !important;
+                }
+                .slot-add-btn {
+                    position: absolute;
+                    bottom: 6px;
+                    right: 6px;
+                    background: transparent;
+                    border: none;
+                    color: var(--gray-300);
+                    cursor: pointer;
+                    opacity: 0;
+                    transform: translateY(4px);
+                    transition: all 0.2s ease;
+                }
+                .schedule-slot-cell.slot-editable:hover .slot-add-btn {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+                .slot-add-btn:hover {
+                    color: var(--primary) !important;
+                    transform: scale(1.1) !important;
+                }
+                .staff-popover {
+                    animation: popoverFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+                }
+                @keyframes popoverFadeIn {
+                    from {
+                        opacity: 0;
+                        transform: translateX(-50%) translateY(2px) scale(0.95);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateX(-50%) translateY(-10px) scale(1);
+                    }
+                }
+                @media screen and (max-width: 1024px) {
+                    .admin-schedule-page {
+                        padding: 0 !important;
+                    }
+                    .admin-schedule-header {
+                        gap: 14px !important;
+                        margin-bottom: 20px !important;
+                    }
+                    .admin-schedule-header h1 {
+                        font-size: clamp(1.68rem, 7.4vw, 2.05rem) !important;
+                        line-height: 1.04 !important;
+                        max-width: 12ch !important;
+                    }
+                    .admin-schedule-week-row {
+                        display: grid !important;
+                        grid-template-columns: 1fr !important;
+                        gap: 10px !important;
+                    }
+                    .admin-schedule-week-switch {
+                        display: grid !important;
+                        grid-template-columns: 1fr 1fr 36px minmax(0, 1fr) 36px !important;
+                        width: 100% !important;
+                        min-height: 48px !important;
+                        padding: 5px !important;
+                        gap: 5px !important;
+                        align-items: center !important;
+                        overflow: hidden !important;
+                    }
+                    .admin-schedule-week-switch button,
+                    .admin-schedule-week-switch span {
+                        font-size: 0.78rem !important;
+                        padding: 7px 8px !important;
+                        min-width: 0 !important;
+                    }
+                    .admin-schedule-week-switch > div {
+                        display: none !important;
+                    }
+                    .admin-schedule-week-switch > span {
+                        min-width: 0 !important;
+                        width: 100% !important;
+                        padding-inline: 4px !important;
+                        white-space: nowrap !important;
+                        overflow: hidden !important;
+                        text-overflow: ellipsis !important;
+                    }
+                    .admin-schedule-week-switch > button:nth-of-type(3),
+                    .admin-schedule-week-switch > button:nth-of-type(4) {
+                        width: 36px !important;
+                        height: 36px !important;
+                        justify-content: center !important;
+                    }
+                    .admin-schedule-actions {
+                        display: grid !important;
+                        grid-template-columns: 1fr 1fr !important;
+                        gap: 10px !important;
+                    }
+                    .admin-schedule-actions .btn {
+                        width: 100% !important;
+                        min-height: 42px !important;
+                        padding: 8px 10px !important;
+                        font-size: 0.78rem !important;
+                    }
+                    .admin-schedule-actions .btn:last-child {
+                        grid-column: 1 / -1;
+                    }
+                    .admin-schedule-view-toggle {
+                        display: grid !important;
+                        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+                        min-height: 48px !important;
+                    }
+                    .admin-schedule-filters {
+                        display: grid !important;
+                        grid-template-columns: 1fr !important;
+                        gap: 10px !important;
+                    }
+                    .admin-schedule-filters .glass-card,
+                    .admin-schedule-filters select {
+                        min-height: 50px !important;
+                    }
+                    .schedule-scroll-wrap {
+                        display: none !important;
+                    }
+                    .schedule-mobile-list {
+                        display: grid !important;
+                        gap: 10px;
+                        padding: 10px;
+                    }
+                    .schedule-mobile-day {
+                        display: grid;
+                        gap: 8px;
+                        padding: 12px;
+                        border-radius: 18px;
+                        background: var(--surface);
+                        border: 1px solid var(--gray-100);
+                    }
+                    .schedule-mobile-day h3 {
+                        margin: 0;
+                        color: var(--ink);
+                        font-size: 0.95rem;
+                        line-height: 1.22;
+                        font-weight: 950;
+                    }
+                    .schedule-mobile-shift {
+                        display: grid;
+                        grid-template-columns: auto minmax(0, 1fr);
+                        gap: 9px;
+                        align-items: center;
+                        padding: 9px;
+                        border-radius: 14px;
+                        background: var(--background);
+                        border: 1px solid var(--gray-100);
+                    }
+                    .schedule-mobile-time {
+                        min-width: 72px;
+                        padding: 7px 8px;
+                        border-radius: 12px;
+                        background: var(--primary-light);
+                        color: var(--primary);
+                        text-align: center;
+                        font-size: 0.68rem;
+                        line-height: 1.1;
+                        font-weight: 950;
+                    }
+                    .schedule-mobile-shift h4 {
+                        margin: 0;
+                        color: var(--ink);
+                        font-size: 0.82rem;
+                        line-height: 1.22;
+                        font-weight: 950;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                        white-space: nowrap;
+                    }
+                    .schedule-mobile-shift p {
+                        margin: 3px 0 0;
+                        color: var(--gray-500);
+                        font-size: 0.68rem;
+                        line-height: 1.3;
+                        font-weight: 700;
+                    }
+                    .schedule-mobile-empty {
+                        padding: 12px;
+                        border-radius: 14px;
+                        background: var(--background);
+                        color: var(--gray-500);
+                        font-size: 0.74rem;
+                        font-weight: 800;
+                    }
+                }
             `}</style>
-            <main style={{ flex: 1, padding: '32px 40px', overflowY: 'auto' }}>
+            <main className="admin-schedule-page" style={{ flex: 1, padding: '32px 40px', overflowY: 'auto' }}>
                 <RevealSection>
-                    <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '40px', flexWrap: 'wrap', gap: '32px' }}>
+                    <div className="no-print admin-mobile-page-header admin-schedule-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '40px', flexWrap: 'wrap', gap: '32px' }}>
                         <div style={{ flex: '1', minWidth: '350px' }}>
                             <h1 style={{ fontSize: '2.5rem', fontWeight: 950, color: 'var(--ink)', margin: 0, letterSpacing: '-1.5px' }}>
                                 {viewMode === 'all' ? 'Điều Hành' : 'Lịch Trực'} <span style={{ color: 'var(--primary)' }}>{viewMode === 'all' ? 'Nhân Sự' : 'Cá Nhân'}</span>
                             </h1>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginTop: '12px', flexWrap: 'wrap' }}>
-                                <div style={{ display: 'flex', gap: '8px', background: 'var(--surface)', padding: '6px', borderRadius: '12px', border: '1px solid var(--gray-200)', flexShrink: 0 }}>
+                            <div className="admin-schedule-week-row" style={{ display: 'flex', alignItems: 'center', gap: '20px', marginTop: '12px', flexWrap: 'wrap' }}>
+                                <div className="admin-schedule-week-switch" style={{ display: 'flex', gap: '8px', background: 'var(--surface)', padding: '6px', borderRadius: '12px', border: '1px solid var(--gray-200)', flexShrink: 0 }}>
                                     <button data-ai-id="button-quanlylichlamviec-4q8w"
                                         onClick={() => setWeekOffset(0)}
                                         style={{
@@ -652,9 +773,9 @@ const QuanLyLichLamViec: React.FC = () => {
                             </div>
                         </div>
 
-                        <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                        <div className="admin-schedule-toolbar" style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                             {isAdmin && (
-                                <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap', ...hiddenWhenPersonal }}>
+                                <div className="admin-schedule-actions" style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap', ...hiddenWhenPersonal }}>
                                     <button data-ai-id="button-quanlylichlamviec-z4n2" className="btn btn-pill no-print" disabled={isCopying || !isAllStaffView} onClick={handleCopyAllSchedulesToNextWeek} style={{ background: isCopying ? 'var(--gray-200)' : 'var(--gray-100)', color: 'var(--ink)', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 800 }}>
                                         <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>{isCopying ? 'sync' : 'content_paste'}</span>
                                         {isCopying ? 'Đang sao chép...' : 'Sao chép tất cả'}
@@ -671,7 +792,7 @@ const QuanLyLichLamViec: React.FC = () => {
                             )}
 
                             {isAdmin && (
-                                <div style={{ display: 'flex', gap: '4px', background: 'var(--gray-100)', padding: '4px', borderRadius: '12px' }}>
+                                <div className="admin-schedule-view-toggle" style={{ display: 'flex', gap: '4px', background: 'var(--gray-100)', padding: '4px', borderRadius: '12px' }}>
                                     <button data-ai-id="button-quanlylichlamviec-4x0m"
                                         onClick={() => setViewMode('all')}
                                         style={{
@@ -703,8 +824,8 @@ const QuanLyLichLamViec: React.FC = () => {
                             )}
 
                             {isAdmin && (
-                                <div style={{ display: 'flex', gap: '12px', ...hiddenWhenPersonal }}>
-                                    <div className="glass-card" style={{ display: 'flex', alignItems: 'center', padding: '0 16px', borderRadius: '16px', border: '1px solid var(--gray-200)', background: 'var(--surface)' }}>
+                                <div className="admin-schedule-filters" style={{ display: 'flex', gap: '12px', ...hiddenWhenPersonal }}>
+                                    <div className="glass-card admin-mobile-search-box" style={{ display: 'flex', alignItems: 'center', padding: '0 16px', borderRadius: '16px', border: '1px solid var(--gray-200)', background: 'var(--surface)' }}>
                                         <span className="material-symbols-outlined" style={{ color: 'var(--gray-400)', marginRight: '8px' }}>search</span>
                                         <input data-ai-id="input-quanlylichlamviec-aiab"
                                             type="text"
@@ -730,54 +851,82 @@ const QuanLyLichLamViec: React.FC = () => {
                     </div>
 
                     {isAdmin && (
-                            <div className="no-print" style={{ minHeight: '58px', marginBottom: '14px', animation: isAllStaffView ? 'fadeInUp 0.4s ease-out' : 'none', ...hiddenWhenPersonal }}>
-                                <div style={{ fontSize: '0.8rem', fontWeight: 900, color: 'var(--gray-500)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                                    ⏱️ THỐNG KÊ GIỜ LÀM TRONG TUẦN
-                                </div>
-                                <div className="staff-hours-rail">
-                                    {staffWorkingHours.map((staff, idx) => (
-                                        <div key={idx} className="staff-hours-chip" style={{
-                                            background: staff.hours > 48 ? 'var(--danger-light, rgba(239, 68, 68, 0.15))' : 'var(--surface)',
-                                            border: staff.hours > 48 ? '1px dashed var(--danger)' : '1px solid var(--gray-200)',
-                                            padding: '8px 16px',
-                                            borderRadius: '50px',
-                                            fontSize: '0.85rem',
-                                            fontWeight: 700,
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '6px',
-                                            color: staff.hours > 48 ? 'var(--danger)' : 'var(--ink)',
-                                            boxShadow: 'var(--shadow-sm)',
-                                            whiteSpace: 'nowrap'
-                                        }}>
-                                            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
-                                                {staff.hours > 48 ? 'warning' : 'account_circle'}
-                                            </span>
-                                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{staff.ho_ten}: <span style={{ fontWeight: 900, fontSize: '0.9rem' }}>{staff.hours} giờ</span></span>
-                                            {isAdmin && (
-                                                <button data-ai-id="button-quanlylichlamviec-rjkj"
-                                                    onClick={() => handleCopyScheduleToNextWeek(staff.id_nhan_vien)}
-                                                    title="Sao chép lịch sang tuần tiếp theo"
-                                                    style={{ background: 'var(--primary-light)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', color: 'var(--primary)', padding: '4px', borderRadius: '50%', marginLeft: '4px', transition: 'transform 0.2s' }}
-                                                    onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'}
-                                                    onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
-                                                >
-                                                    <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>content_copy</span>
-                                                </button>
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
+                        <div className="no-print" style={{ minHeight: '58px', marginBottom: '14px', animation: isAllStaffView ? 'fadeInUp 0.4s ease-out' : 'none', ...hiddenWhenPersonal }}>
+                            <div className="admin-schedule-section-label" style={{ fontSize: '0.8rem', fontWeight: 900, color: 'var(--gray-500)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                Thống kê giờ làm trong tuần
                             </div>
-                        )}
+                            <div className="staff-hours-rail">
+                                {staffWorkingHours.map((staff, idx) => (
+                                    <div key={idx} className="staff-hours-chip" style={{
+                                        background: staff.hours > 48 ? 'var(--danger-light, rgba(239, 68, 68, 0.15))' : 'var(--surface)',
+                                        border: staff.hours > 48 ? '1px dashed var(--danger)' : '1px solid var(--gray-200)',
+                                        padding: '8px 16px',
+                                        borderRadius: '50px',
+                                        fontSize: '0.85rem',
+                                        fontWeight: 700,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '6px',
+                                        color: staff.hours > 48 ? 'var(--danger)' : 'var(--ink)',
+                                        boxShadow: 'var(--shadow-sm)',
+                                        whiteSpace: 'nowrap'
+                                    }}>
+                                        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
+                                            {staff.hours > 48 ? 'warning' : 'account_circle'}
+                                        </span>
+                                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{staff.ho_ten}: <span style={{ fontWeight: 900, fontSize: '0.9rem' }}>{staff.hours} giờ</span></span>
+                                        {isAdmin && (
+                                            <button data-ai-id="button-quanlylichlamviec-rjkj"
+                                                onClick={() => handleCopyScheduleToNextWeek(staff.id_nhan_vien)}
+                                                title="Sao chép lịch sang tuần tiếp theo"
+                                                style={{ background: 'var(--primary-light)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', color: 'var(--primary)', padding: '4px', borderRadius: '50%', marginLeft: '4px', transition: 'transform 0.2s' }}
+                                                onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'}
+                                                onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                                            >
+                                                <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>content_copy</span>
+                                            </button>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
 
-                        <div id="print-section">
-                            <div className="print-only" style={{ display: 'none', marginBottom: '20px', textAlign: 'center' }}>
-                                <h2 style={{ fontSize: '1.8rem', fontWeight: 900 }}>{viewMode === 'all' ? 'Lịch Trực Nhân Sự Rexi' : 'Lịch Trực Cá Nhân'}</h2>
-                                <p style={{ fontSize: '1rem', color: '#555' }}>Từ {weekDates[0].dateStr} đến {weekDates[6].dateStr}</p>
+                    <div id="print-section">
+                        <div className="print-only" style={{ display: 'none', marginBottom: '20px', textAlign: 'center' }}>
+                            <h2 style={{ fontSize: '1.8rem', fontWeight: 900 }}>{viewMode === 'all' ? 'Lịch Trực Nhân Sự Rexi' : 'Lịch Trực Cá Nhân'}</h2>
+                            <p style={{ fontSize: '1rem', color: '#555' }}>Từ {weekDates[0].dateStr} đến {weekDates[6].dateStr}</p>
+                        </div>
+                        <div className="glass-card" style={{ borderRadius: '32px', border: '1px solid var(--gray-200)', background: 'var(--surface)', overflow: 'hidden', boxShadow: 'var(--shadow-xl)' }}>
+                            <div className="schedule-mobile-list">
+                                {weekDates.map(day => {
+                                    const shiftsOfDay = visibleSchedules
+                                        .filter(s => s.ngay_lam === day.dateStr)
+                                        .sort((a, b) => (a.gio_bat_dau || '').localeCompare(b.gio_bat_dau || ''));
+                                    return (
+                                        <section key={day.key} className="schedule-mobile-day">
+                                            <h3>{day.label} · {day.date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })}</h3>
+                                            {shiftsOfDay.length === 0 ? (
+                                                <div className="schedule-mobile-empty">Chưa có ca trực.</div>
+                                            ) : shiftsOfDay.map((shift: any) => {
+                                                const staffInfo = staffs.find(s => s.id_nhan_vien === shift.id_nhan_vien);
+                                                return (
+                                                    <article key={shift.id_lich_lam_viec || `${shift.id_nhan_vien}-${shift.ngay_lam}-${shift.gio_bat_dau}`} className="schedule-mobile-shift">
+                                                        <div className="schedule-mobile-time">
+                                                            {(shift.gio_bat_dau || '').substring(0, 5)}<br />{(shift.gio_ket_thuc || '').substring(0, 5)}
+                                                        </div>
+                                                        <div>
+                                                            <h4>{staffInfo?.ho_ten || shift.ho_ten || shift.id_nhan_vien || 'Nhân viên'}</h4>
+                                                            <p>{staffInfo?.chuyen_mon || shift.chuc_vu || 'Nhân viên'}{shift.ghi_chu ? ` · ${shift.ghi_chu}` : ''}</p>
+                                                        </div>
+                                                    </article>
+                                                );
+                                            })}
+                                        </section>
+                                    );
+                                })}
                             </div>
-                            <div className="glass-card" style={{ borderRadius: '32px', border: '1px solid var(--gray-200)', background: 'var(--surface)', overflow: 'hidden', boxShadow: 'var(--shadow-xl)' }}>
-                                <div className="schedule-scroll-wrap">
+                            <div className="schedule-scroll-wrap">
                                 <div className="schedule-grid schedule-header-grid">
                                     <div style={{ padding: '20px', borderRight: '1px solid var(--gray-200)' }}></div>
                                     {weekDates.map(day => (
@@ -822,6 +971,7 @@ const QuanLyLichLamViec: React.FC = () => {
                                                 return (
                                                     <div
                                                         key={`${day.key}-${hour}`}
+                                                        className={`schedule-slot-cell ${isLockedSlot ? 'slot-locked' : 'slot-editable'}`}
                                                         onDragOver={(e) => {
                                                             if (!isLockedSlot) {
                                                                 e.preventDefault();
@@ -834,6 +984,14 @@ const QuanLyLichLamViec: React.FC = () => {
                                                             e.preventDefault();
                                                             setDragOverSlot(null);
                                                             if (!isLockedSlot && draggedShift) handleMoveShift(draggedShift, day, hour);
+                                                        }}
+                                                        onClick={(e) => {
+                                                            if (!isLockedSlot) {
+                                                                const target = e.target as HTMLElement;
+                                                                if (!target.closest('.shift-card') && !target.closest('button')) {
+                                                                    handleAddShift(day, hour);
+                                                                }
+                                                            }
                                                         }}
                                                         style={{
                                                             minHeight: '138px',
@@ -888,11 +1046,11 @@ const QuanLyLichLamViec: React.FC = () => {
                                                                         <div style={{ position: 'relative', display: 'inline-block' }}>
                                                                             <img src={avatar} alt={shift.ho_ten} style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: `1px solid ${colors.border}`, background: 'white' }} />
                                                                             {hoveredStaffId === shift.id_nhan_vien && staffInfo && (
-                                                                                <div style={{
+                                                                                <div className="staff-popover" style={{
                                                                                     position: 'absolute',
-                                                                                    bottom: '100%', // Position above the avatar
+                                                                                    bottom: '100%',
                                                                                     left: '50%',
-                                                                                    transform: 'translateX(-50%) translateY(-10px)', // Adjust for spacing
+                                                                                    transform: 'translateX(-50%) translateY(-10px)',
                                                                                     background: 'var(--surface)',
                                                                                     border: '1px solid var(--gray-200)',
                                                                                     borderRadius: '12px',
@@ -935,11 +1093,8 @@ const QuanLyLichLamViec: React.FC = () => {
 
                                                         {!isPastDay && (
                                                             <button data-ai-id="button-quanlylichlamviec-r0au"
-                                                                className="no-print"
+                                                                className="no-print slot-add-btn"
                                                                 data-testid="add-shift-btn"
-                                                                style={{ position: 'absolute', bottom: '6px', right: '6px', background: 'transparent', border: 'none', color: 'var(--gray-300)', cursor: 'pointer', transition: 'color 0.2s' }}
-                                                                onMouseEnter={e => e.currentTarget.style.color = 'var(--primary)'}
-                                                                onMouseLeave={e => e.currentTarget.style.color = 'var(--gray-300)'}
                                                                 onClick={() => handleAddShift(day, hour)}
                                                             >
                                                                 <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>add_circle</span>
@@ -951,9 +1106,9 @@ const QuanLyLichLamViec: React.FC = () => {
                                         </React.Fragment>
                                     ))}
                                 </div>
-                                </div>
                             </div>
                         </div>
+                    </div>
                 </RevealSection>
             </main>
 
@@ -1077,7 +1232,7 @@ const QuanLyLichLamViec: React.FC = () => {
                             </div>
                         </div>
 
-                        <div style={{ display: 'flex', gap: '12px' }}>
+                        <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
                             <button
                                 data-ai-id="button-quanlylichlamviec-9xrv"
                                 className="btn btn-outline btn-pill"

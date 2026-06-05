@@ -1,9 +1,16 @@
 package com.rexi.pkty.service;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class ReActAgentServiceDeterministicTest {
 
@@ -66,6 +73,42 @@ class ReActAgentServiceDeterministicTest {
     }
 
     @Test
+    void todayCustomerTrendStatsNeverHallucinatesWhenToolUnavailable() {
+        var result = service.run("Kiểm tra số khách hàng mới và xu hướng hôm nay", "admin", "ADMIN");
+
+        assertFalse(result.finalAnswer().contains("15 khách hàng"));
+        assertFalse(result.finalAnswer().contains("60%"));
+        assertTrue(result.finalAnswer().contains("không ước lượng số liệu"), result.finalAnswer());
+    }
+
+    @Test
+    void modelFinalAnswerClaimingCompletedActionWithoutToolIsBlocked() throws Exception {
+        ReActAgentService agent = new ReActAgentService();
+        GroqService groq = mock(GroqService.class);
+        GeminiService gemini = mock(GeminiService.class);
+        OpenRouterService openRouter = mock(OpenRouterService.class);
+        AiToolService toolService = mock(AiToolService.class);
+        AiMemoryService memoryService = mock(AiMemoryService.class);
+
+        when(groq.chat(anyList())).thenReturn("{\"final_answer\":\"Đã gửi email nhắc lịch cho khách Nguyễn A thành công.\"}");
+        when(memoryService.getGlobalContext(anyString())).thenReturn("");
+        when(memoryService.getUserContext(anyString())).thenReturn("");
+        when(toolService.getToolsSchemaForRole(anyString())).thenReturn("");
+
+        ReflectionTestUtils.setField(agent, "groqService", groq);
+        ReflectionTestUtils.setField(agent, "geminiService", gemini);
+        ReflectionTestUtils.setField(agent, "openRouterService", openRouter);
+        ReflectionTestUtils.setField(agent, "toolService", toolService);
+        ReflectionTestUtils.setField(agent, "memoryService", memoryService);
+
+        var result = agent.run("nhắc lịch cho khách Nguyễn A", "admin", "ADMIN");
+
+        assertFalse(result.finalAnswer().contains("Đã gửi email"));
+        assertTrue(result.finalAnswer().contains("chưa thực hiện thao tác nào"), result.finalAnswer());
+        assertTrue(result.steps().stream().noneMatch(step -> "TOOL".equals(step.type())));
+    }
+
+    @Test
     void customerDoctorInfoQuestionAsksForPetOrAppointmentIdentifier() {
         var result = service.run("Cho tôi biết thông tin bác sĩ phụ trách khám cho thú cưng", "customer", "KHACH_HANG");
 
@@ -79,6 +122,23 @@ class ReActAgentServiceDeterministicTest {
         var result = service.run("Mở hồ sơ y tế thú cưng của tôi", "customer", "KHACH_HANG");
 
         assertTrue(result.finalAnswer().contains("[NAVIGATE:/khach-hang/ho-so-benh-an]"));
+    }
+
+    @Test
+    void adminCodeLocationQuestionUsesSourceRagToolWithoutLlm() {
+        ReActAgentService agent = new ReActAgentService();
+        AiToolService toolService = mock(AiToolService.class);
+
+        when(toolService.executeTool(anyString(), anyMap(), anyString(), anyString()))
+                .thenReturn("RAG mã nguồn động\n1. Frontend/src/App.tsx\n- Dòng 194: <Route path=\"/quan-ly/hoa-don\" element={<QuanLyHoaDon />} />");
+        ReflectionTestUtils.setField(agent, "toolService", toolService);
+
+        var result = agent.run("trang hóa đơn admin ở file nào dòng code nào", "admin", "ADMIN");
+
+        assertTrue(result.finalAnswer().contains("Frontend/src/App.tsx"), result.finalAnswer());
+        assertTrue(result.finalAnswer().contains("Dòng 194"), result.finalAnswer());
+        verify(toolService).executeTool(anyString(), anyMap(), anyString(), anyString());
+        assertTrue(result.steps().stream().anyMatch(step -> "tra_cuu_ma_nguon".equals(step.toolName())));
     }
 
     @Test
@@ -106,6 +166,14 @@ class ReActAgentServiceDeterministicTest {
         assertFalse(result.finalAnswer().contains("CẢNH BÁO LỆNH NHẠY CẢM"));
         assertFalse(result.finalAnswer().contains("xóa/hủy dữ liệu quan trọng"));
         assertTrue(result.finalAnswer().contains("[NAVIGATE:/quan-ly/khach-hang-thu-cung]"));
+    }
+
+    @Test
+    void adminApiDocumentationQuestionReturnsSwaggerLinks() {
+        var result = service.run("trang xem api của toàn hệ thống là gì", "admin", "ADMIN");
+
+        assertTrue(result.finalAnswer().contains("http://127.0.0.1:8081/swagger-ui/index.html"), result.finalAnswer());
+        assertTrue(result.finalAnswer().contains("http://127.0.0.1:8081/v3/api-docs"), result.finalAnswer());
     }
 
     @Test

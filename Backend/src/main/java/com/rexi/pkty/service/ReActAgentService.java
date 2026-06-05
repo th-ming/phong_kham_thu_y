@@ -144,6 +144,7 @@ public class ReActAgentService {
                     // —— FINAL ANSWER ——
                     if (node.has("final_answer")) {
                         String answer = sanitizeFinalAnswer(node.get("final_answer").asText(null), normalizedQuery);
+                        answer = enforceNoUnsupportedModelFinalAnswer(answer, normalizedQuery, steps);
                         steps.add(new ReActStep("FINAL", answer, null, null, null));
                         return new ReActResult(answer, steps, modelResponse.provider());
                     }
@@ -240,6 +241,7 @@ public class ReActAgentService {
 
             // Nếu ko phải JSON hợp lệ -> coi đây là câu trả lời cuối
             cleaned = sanitizeFinalAnswer(cleaned, normalizedQuery);
+            cleaned = enforceNoUnsupportedModelFinalAnswer(cleaned, normalizedQuery, steps);
             steps.add(new ReActStep("FINAL", cleaned, null, null, null));
             return new ReActResult(cleaned, steps);
         }
@@ -260,6 +262,23 @@ public class ReActAgentService {
             return finalResult(steps, "Rexi đây. Tôi giúp được: mở lịch hẹn, tra khách hàng, xem hóa đơn, kiểm kho, xem bệnh án hoặc điều phối tác vụ theo màn hình.");
         }
 
+        if (isSystemApiDocumentationQuery(q)) {
+            return finalResult(steps, "Trang xem API toàn hệ thống: http://127.0.0.1:8081/swagger-ui/index.html. JSON OpenAPI: http://127.0.0.1:8081/v3/api-docs.");
+        }
+
+        if (isAiProviderConfigQuery(q)) {
+            if (!RoleAccessPolicy.canUseAgentTool(userRole, "kiem_tra_cau_hinh_ai")) {
+                return finalResult(steps, RoleAccessPolicy.permissionDeniedMessage("kiem_tra_cau_hinh_ai", userRole));
+            }
+            if (toolService == null) {
+                return finalResult(steps, "Rexi cần tool cấu hình AI để kiểm tra provider/model thật, nhưng tool hệ thống chưa sẵn sàng.");
+            }
+            Map<String, Object> params = new HashMap<>();
+            String observation = toolService.executeTool("kiem_tra_cau_hinh_ai", params, userRole, username);
+            steps.add(new ReActStep("TOOL", "Kiểm tra cấu hình provider/model AI thật", "kiem_tra_cau_hinh_ai", params, observation));
+            return finalResult(steps, observation);
+        }
+
         if (!isStaff) {
             ReActResult customerQuickIntent = handleCustomerDeterministicIntent(q, userRole, username, steps);
             if (customerQuickIntent != null) {
@@ -267,8 +286,38 @@ public class ReActAgentService {
             }
         }
 
+        if (isAdminCodeLookupQuery(q, userRole)) {
+            if (toolService == null) {
+                return finalResult(steps, "Rexi cần tool tra cứu mã nguồn để trả file/dòng code, nhưng tool hệ thống chưa sẵn sàng.");
+            }
+            Map<String, Object> params = new HashMap<>();
+            params.put("tu_khoa", q);
+            String observation = toolService.executeTool("tra_cuu_ma_nguon", params, userRole, username);
+            if (!hasCodeLineEvidence(observation)) {
+                String blocked = "Chưa đủ bằng chứng mã nguồn để trả file/dòng chính xác. Rexi Agent đã chặn câu trả lời để tránh bịa; hãy hỏi kèm tên màn hình, route, API, component, function hoặc data-ai-id cụ thể.";
+                steps.add(new ReActStep("TOOL", "Tra cứu RAG mã nguồn nhưng chưa có dòng code đủ bằng chứng", "tra_cuu_ma_nguon", params, observation));
+                return finalResult(steps, blocked);
+            }
+            steps.add(new ReActStep("TOOL", "Tra cứu RAG mã nguồn để định vị file, route/API và dòng code", "tra_cuu_ma_nguon", params, observation));
+            return finalResult(steps, observation);
+        }
+
         if (!isStaff && isCustomerDoctorInfoQuery(q)) {
             return finalResult(steps, "Bạn gửi giúp tôi tên thú cưng hoặc mã lịch hẹn để Rexi kiểm tra đúng bác sĩ phụ trách.");
+        }
+
+        if (isTodayCustomerStatsQuery(q)) {
+            if (!RoleAccessPolicy.canUseAgentTool(userRole, "thong_ke_khach_hang_hom_nay")) {
+                return finalResult(steps, RoleAccessPolicy.permissionDeniedMessage("thong_ke_khach_hang_hom_nay", userRole));
+            }
+            if (toolService == null) {
+                return finalResult(steps, "Rexi cần truy vấn cơ sở dữ liệu để thống kê khách hàng mới và xu hướng hôm nay; hiện tool hệ thống chưa sẵn sàng nên Rexi sẽ không ước lượng số liệu.");
+            }
+            Map<String, Object> params = new HashMap<>();
+            params.put("gom_xu_huong", "true");
+            String observation = toolService.executeTool("thong_ke_khach_hang_hom_nay", params, userRole, username);
+            steps.add(new ReActStep("TOOL", "Thống kê khách hàng mới và xu hướng hôm nay từ cơ sở dữ liệu", "thong_ke_khach_hang_hom_nay", params, observation));
+            return finalResult(steps, observation);
         }
 
         if (isDoctorWorkloadStatsQuery(q)) {
@@ -369,6 +418,26 @@ public class ReActAgentService {
         }
 
         return null;
+    }
+
+    private boolean isSystemApiDocumentationQuery(String q) {
+        if (q == null || q.isBlank()) return false;
+        boolean asksApiDocs = containsAny(q,
+                "trang xem api", "xem api", "api toan he thong", "api cua toan he thong",
+                "tai lieu api", "docs api", "api docs", "swagger", "openapi", "v3 api docs",
+                "danh sach api", "endpoint toan he thong");
+        boolean asksSystemScope = containsAny(q,
+                "toan he thong", "he thong", "tat ca", "full", "backend", "swagger", "openapi", "api docs");
+        return asksApiDocs && asksSystemScope;
+    }
+
+    private boolean isAiProviderConfigQuery(String q) {
+        if (q == null || q.isBlank()) return false;
+        boolean hasAiContext = containsAny(q, "ai", "agent", "model", "provider", "groq", "gemini", "openrouter", "api key", "key");
+        boolean asksConfig = containsAny(q,
+                "model nao", "provider nao", "dang dung", "dang xai", "cau hinh ai",
+                "kiem tra cau hinh", "check cau hinh", "check that", "thuc te", "key nao");
+        return hasAiContext && asksConfig;
     }
 
     private ReActResult handleCustomerDeterministicIntent(String q, String userRole, String username, List<ReActStep> steps) {
@@ -474,13 +543,15 @@ public class ReActAgentService {
         if (q == null || q.isBlank()) return false;
         if (isDoctorWorkloadStatsQuery(q)) return false;
         boolean hasLookupVerb = containsAny(q,
-                "tim", "tra", "tra cuu", "kiem tra", "xem", "liet ke", "danh sach", "co lich", "dang co", "hom nay co");
+                "tim", "tra", "tra cuu", "kiem tra", "xem", "liet ke", "danh sach", "co lich", "dang co", "hom nay co", "check db", "check he thong");
         boolean hasAppointmentContext = containsAny(q,
                 "lich kham", "lich hen", "ca kham", "lich cua bac si", "lich bac si");
         boolean hasDoctorContext = containsAny(q, "bac si", "bsi", "bs ");
         boolean hasCreateIntent = containsAny(q, "dat lich", "book lich", "lap lich", "tao lich");
         boolean hasNavigationIntent = containsAny(q, "mo trang", "vao trang", "chuyen sang", "di toi", "dua toi", "qua trang");
-        return !hasCreateIntent && !hasNavigationIntent && hasLookupVerb && hasAppointmentContext && hasDoctorContext;
+        boolean explicitSystemLookup = containsAny(q, "check db", "check he thong", "du lieu", "trong db", "he thong");
+        return !hasCreateIntent && !hasNavigationIntent && hasLookupVerb && hasAppointmentContext
+                && (hasDoctorContext || explicitSystemLookup || containsAny(q, "hom nay", "today"));
     }
 
     private boolean isDoctorWorkloadStatsQuery(String q) {
@@ -492,6 +563,15 @@ public class ReActAgentService {
         boolean hasRankingOrStats = containsAny(q,
                 "nhieu nhat", "it nhat", "top", "xep hang", "thong ke", "bao cao", "dem", "dang co nhieu", "cao nhat", "thap nhat");
         return hasDoctorContext && hasWorkloadContext && hasRankingOrStats;
+    }
+
+    private boolean isTodayCustomerStatsQuery(String q) {
+        if (q == null || q.isBlank()) return false;
+        boolean hasToday = containsAny(q, "hom nay", "hom", "today", "trong ngay");
+        boolean hasCustomerContext = containsAny(q, "khach hang", "khach moi", "khach hang moi", "dang ky moi", "khach dang ky");
+        boolean hasStatsContext = containsAny(q,
+                "kiem tra", "xem", "bao cao", "thong ke", "dem", "so", "bao nhieu", "xu huong", "trend", "ti le", "ty le");
+        return hasToday && hasCustomerContext && hasStatsContext;
     }
 
     private boolean isCustomerDoctorInfoQuery(String q) {
@@ -558,6 +638,64 @@ public class ReActAgentService {
             return "Tôi chưa đủ dữ liệu để hoàn tất tác vụ này. Bạn gửi thêm SĐT khách hàng, tên thú cưng, ngày/giờ mong muốn hoặc tên phân hệ cần mở.";
         }
         return answer.trim();
+    }
+
+    private String enforceNoUnsupportedModelFinalAnswer(String answer, String normalizedQuery, List<ReActStep> steps) {
+        if (answer == null || answer.isBlank()) return answer;
+        boolean hasExecutedTool = steps != null && steps.stream().anyMatch(step -> "TOOL".equals(step.type()));
+        if (hasExecutedTool) return answer;
+
+        String normalizedAnswer = normalizeVietnamese(answer.toLowerCase(Locale.ROOT));
+        boolean claimedSystemLookup = containsAny(normalizedAnswer,
+                "rexi kiem tra du lieu he thong",
+                "toi da kiem tra du lieu he thong",
+                "da kiem tra du lieu he thong",
+                "tra du lieu he thong",
+                "tra truc tiep tu he thong",
+                "theo du lieu he thong",
+                "trong he thong ghi nhan");
+        boolean claimedCompletedAction = containsAny(normalizedAnswer,
+                "da bam", "da nhan nut", "da chon", "da dien", "da cap nhat", "da xoa", "da huy",
+                "da dat lich", "da tao lich", "da tao hoa don", "da khoa tai khoan", "da mo khoa",
+                "da gui email", "da chuyen sang trang", "toi da mo trang");
+        boolean hasActionTag = answer.matches("(?s).*\\[(CLICK|FILL|SELECT|TOGGLE|DELETE|SCROLL|NAVIGATE|AUTO_BOOK):[^\\]]+\\].*");
+
+        if (claimedSystemLookup) {
+            return "Tôi chưa chạy tool/DB trong lượt này nên sẽ không tự đưa kết quả hệ thống. Hãy yêu cầu tra cứu cụ thể để Rexi Agent kiểm quyền và đọc dữ liệu thật.";
+        }
+        if (claimedCompletedAction && !hasActionTag) {
+            return "Tôi chưa thực hiện thao tác nào trên hệ thống trong lượt này. Nếu muốn thao tác thật, hãy ra lệnh rõ và cung cấp đủ định danh để Rexi Agent gọi đúng tool/DOM sau khi kiểm quyền.";
+        }
+        if (isEvidenceDemandingQuery(normalizedQuery) && !isSafeNonFactualAnswer(normalizedAnswer)) {
+            return "Tôi chưa có bằng chứng từ tool/DB/RAG/nguồn đáng tin cậy trong lượt này nên sẽ không trả lời theo kiểu suy đoán. Hãy yêu cầu tra cứu cụ thể hoặc cung cấp tên màn hình, route, API, data-ai-id, mã hồ sơ hoặc dữ liệu nguồn cần kiểm chứng.";
+        }
+        return answer;
+    }
+
+    private boolean isEvidenceDemandingQuery(String normalizedQuery) {
+        if (normalizedQuery == null || normalizedQuery.isBlank()) return false;
+        return containsAny(normalizedQuery,
+                "file nao", "dong nao", "line nao", "code nao", "ham nao", "function nao",
+                "component nao", "route nao", "api nao", "endpoint nao", "data ai id", "data-ai-id",
+                "model nao", "provider nao", "api key", "cau hinh ai",
+                "bao nhieu", "so luong", "thong ke", "doanh thu", "xu huong", "ti le", "ty le",
+                "kiem tra du lieu", "du lieu he thong", "trong db", "database", "sql",
+                "hoa don", "lich hen", "benh an", "khach hang", "thu cung", "kho thuoc", "ton kho",
+                "da bam", "da sua", "da cap nhat", "da xoa", "da huy", "da gui", "trang thai");
+    }
+
+    private boolean isSafeNonFactualAnswer(String normalizedAnswer) {
+        if (normalizedAnswer == null || normalizedAnswer.isBlank()) return false;
+        return containsAny(normalizedAnswer,
+                "chua du bang chung",
+                "chua co bang chung",
+                "chua chay tool",
+                "chua kiem tra",
+                "can them thong tin",
+                "khong du du lieu",
+                "khong the xac minh",
+                "khong tu dua",
+                "khong suy doan");
     }
 
     private boolean isAffirmation(String normalizedQuery) {
@@ -771,6 +909,9 @@ public class ReActAgentService {
         boolean isStaff  = isStaffRole(userRole);
         String toolsSchema = compactToolsSchemaForQuery(toolService.getToolsSchemaForRole(userRole), userQuery);
         String normalizedRole = RoleAccessPolicy.normalizeRole(userRole);
+        String displayRole = RoleAccessPolicy.displayRoleName(normalizedRole);
+        String roleWorkProfile = RoleAccessPolicy.roleWorkProfile(normalizedRole);
+        String rolePromptGuidance = RoleAccessPolicy.rolePromptGuidance(normalizedRole);
 
         String medicalRule = switch (normalizedRole) {
             case "bac_si" ->
@@ -782,7 +923,7 @@ public class ReActAgentService {
         };
 
         String roleCtx = isStaff
-            ? "Nhan vien noi bo - vai tro: " + userRole + ". Chi dung tool trong danh sach quyen."
+            ? "Nhan su noi bo - vai tro: " + displayRole + " (" + normalizedRole + "). Ho so cong viec: " + roleWorkProfile + " Huong dan ho tro: " + rolePromptGuidance + " Chi dung tool trong danh sach quyen cua vai tro nay; khong doi xu nhu khach hang."
             : "Khach hang - username: " + username + ". Chi dung tool khach duoc phep.";
 
         return buildAgentIdentityBlock(userRole, isStaff)
@@ -825,6 +966,29 @@ public class ReActAgentService {
 
     private boolean canUseTool(String userRole, String toolName) {
         return RoleAccessPolicy.canUseAgentTool(userRole, toolName);
+    }
+
+    private boolean isAdminCodeLookupQuery(String normalizedQuery, String userRole) {
+        if (!RoleAccessPolicy.normalizeRole(userRole).equals("admin")) return false;
+        if (normalizedQuery == null || normalizedQuery.isBlank()) return false;
+        boolean asksLocation = containsAny(normalizedQuery,
+                "o dau", "nam dau", "file nao", "dong nao", "line nao", "line nhiu", "trang nao", "route nao",
+                "api nao", "endpoint nao", "component nao", "controller nao", "service nao",
+                "ham nao", "function nao", "data ai id", "data-ai-id", "button-chatbot", "input-chatbot");
+        boolean codeContext = containsAny(normalizedQuery,
+                "code", "source", "ma nguon", "file", "dong", "line", "route",
+                "api", "endpoint", "component", "controller", "service", "tsx", "java",
+                "button", "nut", "form", "input", "frontend", "backend");
+        return asksLocation && codeContext;
+    }
+
+    private boolean hasCodeLineEvidence(String observation) {
+        if (observation == null || observation.isBlank()) return false;
+        String normalized = normalizeVietnamese(observation.toLowerCase(Locale.ROOT));
+        return normalized.contains("rag ma nguon dong")
+                && (normalized.contains("- dong ") || normalized.contains("\n- dong "))
+                && (normalized.contains(".tsx") || normalized.contains(".ts") || normalized.contains(".java")
+                    || normalized.contains(".css") || normalized.contains(".properties") || normalized.contains(".xml"));
     }
 
     private String compactToolsSchemaForQuery(String schema, String userQuery) {

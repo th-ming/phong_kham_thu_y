@@ -176,7 +176,12 @@ public class FileDinhKemController {
                 try {
                     // Xóa file vật lý
                     String filePathStr = file.getDuongDan().replaceFirst("^/", "");
-                    Path filePath = Paths.get(filePathStr);
+                    Path uploadRoot = Paths.get(UPLOAD_DIR).toAbsolutePath().normalize();
+                    Path filePath = Paths.get(filePathStr).toAbsolutePath().normalize();
+                    if (!filePath.startsWith(uploadRoot)) {
+                        logger.warning("Từ chối xóa file ngoài thư mục uploads: " + filePath);
+                        return ResponseEntity.status(400).body(Map.of("message", "Đường dẫn file không hợp lệ."));
+                    }
                     Files.deleteIfExists(filePath);
 
                     // Xóa record trong DB
