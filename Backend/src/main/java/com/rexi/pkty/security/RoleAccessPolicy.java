@@ -52,6 +52,7 @@ public final class RoleAccessPolicy {
         Map.entry("xem_kho_thuoc", Set.of("admin", "quan_ly", "ke_toan", "bac_si", "y_ta", "tiep_tan")),
         Map.entry("thong_ke_doanh_thu", Set.of("admin", "quan_ly", "ke_toan")),
         Map.entry("thong_ke_ca_kham_bac_si", Set.of("admin", "quan_ly", "staff", "bac_si", "tiep_tan", "y_ta")),
+        Map.entry("thong_ke_khach_hang_hom_nay", Set.of("admin", "quan_ly", "staff", "tiep_tan")),
         Map.entry("tim_kiem_web", Set.of("admin", "quan_ly", "staff", "bac_si", "ke_toan", "tiep_tan", "y_ta")),
         Map.entry("gui_email_don_le", Set.of("admin", "quan_ly")),
         Map.entry("kiem_tra_cau_hinh_ai", Set.of("admin")),
@@ -74,6 +75,66 @@ public final class RoleAccessPolicy {
 
     public static boolean isCustomerRole(String userRole) {
         return CUSTOMER_ROLE_CODES.contains(normalizeRole(userRole));
+    }
+
+    public static boolean isClinicalRole(String userRole) {
+        String normalized = normalizeRole(userRole);
+        return normalized.equals("bac_si") || normalized.equals("y_ta");
+    }
+
+    public static String displayRoleName(String userRole) {
+        return switch (normalizeRole(userRole)) {
+            case "admin" -> "Quản trị viên";
+            case "quan_ly" -> "Quản lý";
+            case "bac_si" -> "Bác sĩ";
+            case "ke_toan" -> "Kế toán";
+            case "tiep_tan" -> "Tiếp tân";
+            case "y_ta" -> "Y tá";
+            case "staff" -> "Nhân viên";
+            default -> "Khách hàng";
+        };
+    }
+
+    public static String roleWorkProfile(String userRole) {
+        return switch (normalizeRole(userRole)) {
+            case "admin" ->
+                "Admin hệ thống: cấu hình, phân quyền, kiểm tra lỗi hệ thống, dữ liệu toàn cục và tác vụ quản trị.";
+            case "quan_ly" ->
+                "Quản lý phòng khám: vận hành, nhân sự, lịch hẹn, khách hàng, báo cáo và điều phối công việc.";
+            case "bac_si" ->
+                "Bác sĩ thú y: khám bệnh, bệnh án, chẩn đoán, xét nghiệm, đơn thuốc và quyết định chuyên môn lâm sàng.";
+            case "y_ta" ->
+                "Y tá thú y: hỗ trợ bác sĩ, chăm sóc sau điều trị, theo dõi dấu hiệu, chuẩn bị ca khám và cập nhật theo chỉ định.";
+            case "ke_toan" ->
+                "Kế toán: hóa đơn, thanh toán, doanh thu, đối soát, báo cáo tài chính và nghiệp vụ thu phí.";
+            case "tiep_tan" ->
+                "Tiếp tân: đặt lịch, xác nhận khách hàng, hồ sơ khách/thú cưng, hướng dẫn khách và điều phối quầy.";
+            case "staff" ->
+                "Nhân viên nội bộ: hỗ trợ vận hành phòng khám theo quyền được cấp.";
+            default ->
+                "Khách hàng/chủ nuôi: tư vấn chăm sóc thú cưng, đặt lịch và tra cứu thông tin cá nhân được phép.";
+        };
+    }
+
+    public static String rolePromptGuidance(String userRole) {
+        return switch (normalizeRole(userRole)) {
+            case "admin" ->
+                "ADMIN_GUIDE: Nói như trợ lý quản trị hệ thống. Hỗ trợ cấu hình, phân quyền, AI provider, lỗi hệ thống, tài khoản và dữ liệu toàn cục. Khi hỏi số liệu/trạng thái hệ thống phải dùng DB/tool thật; nếu chưa gọi tool thì nói chưa kiểm tra. Thao tác nhạy cảm như xóa, khóa tài khoản, sửa hóa đơn, đổi cấu hình phải yêu cầu xác nhận rõ.";
+            case "quan_ly" ->
+                "MANAGER_GUIDE: Nói như trợ lý vận hành cho quản lý phòng khám. Ưu tiên lịch hẹn, khách hàng, nhân sự, ca khám, báo cáo, điều phối và rủi ro vận hành. Số liệu/xu hướng/doanh thu phải lấy từ DB/tool thật; không tự ước lượng. Câu y khoa chuyên sâu thì chuyển bác sĩ/y tá.";
+            case "bac_si" ->
+                "CLINICAL_GUIDE: Người dùng là bác sĩ. Được hỗ trợ lâm sàng chuyên sâu: chẩn đoán phân biệt, xét nghiệm cần cân nhắc, phân tích kết quả, nhóm thuốc/phác đồ tham khảo, chống chỉ định, checklist theo dõi, ghi chú bệnh án và dặn dò chủ nuôi. Luôn coi là tham khảo chuyên môn; quyết định cuối dựa trên khám trực tiếp, cân nặng, tuổi, tiền sử và xét nghiệm. Không bịa bệnh án/kết quả/đơn thuốc nếu chưa đọc DB/tool.";
+            case "y_ta" ->
+                "CLINICAL_GUIDE: Người dùng là y tá. Hỗ trợ lâm sàng theo vai trò chăm sóc và theo dõi: checklist dấu hiệu sinh tồn, chăm sóc sau điều trị, chuẩn bị ca khám, ghi nhận triệu chứng, dấu hiệu cần báo bác sĩ, dặn dò chủ nuôi theo chỉ định. Không tự kê thuốc, không đổi liều, không tự quyết phác đồ. Không bịa bệnh án/kết quả/đơn thuốc nếu chưa đọc DB/tool.";
+            case "ke_toan" ->
+                "ACCOUNTING_GUIDE: Người dùng là kế toán. Ưu tiên hóa đơn, thanh toán, doanh thu, đối soát, công nợ, báo cáo tài chính và thu phí. Chỉ xác nhận số liệu/trạng thái thanh toán khi đã đọc DB/tool thật. Không tư vấn lâm sàng chuyên sâu; phần y khoa chuyển bác sĩ/y tá.";
+            case "tiep_tan" ->
+                "RECEPTION_GUIDE: Người dùng là tiếp tân. Ưu tiên đặt/đổi/hủy lịch theo quyền, xác nhận khách hàng, hồ sơ khách/thú cưng, tra lịch trống, hướng dẫn khách, bảng giá, hotline và điều phối quầy. Nếu thiếu tên khách, SĐT, tên thú cưng hoặc mã lịch hẹn thì hỏi đúng thông tin còn thiếu. Không nói đã đặt/hủy lịch nếu chưa có tool/action thật.";
+            case "staff" ->
+                "STAFF_GUIDE: Người dùng là nhân viên nội bộ. Hỗ trợ vận hành theo quyền được cấp, hướng dẫn dùng hệ thống, tóm tắt/viết lại nội dung và chuyển việc vượt quyền cho vai trò phù hợp. Không đối xử như khách hàng và không vượt quyền.";
+            default ->
+                "CUSTOMER_GUIDE: Người dùng là khách hàng/chủ nuôi. Giữ format khách hàng hiện có: tư vấn chăm sóc thú cưng an toàn, đặt lịch, tra thông tin cá nhân được phép, không kê đơn/kháng sinh/liều dùng, không lộ dữ liệu nội bộ.";
+        };
     }
 
     public static boolean canUseAgentTool(String userRole, String toolName) {
@@ -128,6 +189,8 @@ public final class RoleAccessPolicy {
                 "Báo cáo doanh thu chỉ dành cho Admin, Quản lý và Kế toán.";
             case "thong_ke_ca_kham_bac_si" ->
                 "Thống kê ca khám theo bác sĩ chỉ dành cho nhân sự vận hành và chuyên môn nội bộ.";
+            case "thong_ke_khach_hang_hom_nay" ->
+                "Thống kê khách hàng và xu hướng hôm nay chỉ dành cho nhân sự vận hành nội bộ.";
             case "thao_tac_tai_khoan", "tim_tai_khoan_bi_khoa" ->
                 "Thao tác tài khoản chỉ dành cho Admin và Quản lý.";
             case "gui_email_don_le" ->

@@ -127,6 +127,7 @@ public class SecurityConfig {
             "Accept",
             "Origin",
             "X-AI-ACTION",
+            "X-Interaction-Source",
             "X-Current-Path",
             "X-Current-DOM-Context",
             "X-User-Activity-Logs",

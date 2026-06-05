@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { normalizeUserRole } from "@utils/index";
 import { ADMIN_ROUTE_ROLES } from "@utils/permissions";
@@ -75,6 +75,9 @@ const SidebarAdmin: React.FC = () => {
     }
     return true;
   });
+  const adminMobileNavItems = filteredMenuItems
+    .filter((item) => !item.isHeader && item.path)
+    .slice(0, 5);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -96,19 +99,20 @@ const SidebarAdmin: React.FC = () => {
   return (
     <>
       {/* Nút Hamburger nổi trên mobile */}
-      <button data-ai-id="button-sidebaradmin-mobile"
-        className="mobile-show sidebar-fab"
-        onClick={() => setIsMobileOpen(!isMobileOpen)}
-        style={{
-          position: 'fixed', bottom: '24px', left: '24px', zIndex: 1001,
-          background: 'var(--primary)', color: 'white', border: 'none',
-          width: '56px', height: '56px', borderRadius: '50%',
-          boxShadow: '0 4px 15px rgba(15, 157, 138, 0.4)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
-        }}
-      >
-        <span className="material-symbols-outlined" style={{ fontSize: '28px' }}>{isMobileOpen ? 'close' : 'menu'}</span>
-      </button>
+      {!isMobileOpen && (
+        <button data-ai-id="button-sidebaradmin-mobile"
+          className="mobile-show sidebar-fab admin-menu-fab"
+          onClick={() => setIsMobileOpen(true)}
+          style={{
+            background: 'var(--primary)', color: 'white', border: 'none',
+            borderRadius: '50%',
+            boxShadow: '0 4px 15px rgba(15, 157, 138, 0.4)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
+          }}
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: '28px' }}>menu</span>
+        </button>
+      )}
 
       {/* Lớp phủ mờ khi mở menu trên mobile */}
       {isMobileOpen && (
@@ -119,7 +123,7 @@ const SidebarAdmin: React.FC = () => {
         />
       )}
 
-      <div className={`glass-card sidebar ${isMobileOpen ? 'active' : ''}`} style={{
+      <div className={`glass-card sidebar admin-sidebar admin-control-rail ${isMobileOpen ? 'active' : ''}`} style={{
         width: isMobileOpen ? '280px' : 'var(--sidebar-width)',
         height: 'calc(100vh - 40px)',
         margin: '20px',
@@ -131,8 +135,19 @@ const SidebarAdmin: React.FC = () => {
         top: '20px',
         zIndex: 1000
       }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '24px', padding: '0 10px' }}>
-        <div style={{ width: '42px', height: '42px', borderRadius: '12px', overflow: 'hidden', background: 'var(--primary-gradient)', border: '2px solid rgba(255,255,255,0.2)', boxShadow: '0 0 20px var(--primary-shadow)' }}>
+        {isMobileOpen && (
+          <button
+            data-ai-id="button-sidebaradmin-close-panel"
+            className="mobile-show customer-sidebar-close admin-sidebar-close"
+            onClick={() => setIsMobileOpen(false)}
+            aria-label="Đóng menu quản trị"
+            title="Đóng menu"
+          >
+            <span className="material-symbols-outlined">close</span>
+          </button>
+        )}
+      <div className="admin-rail-brand" style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '24px', padding: '0 10px' }}>
+        <div className="admin-brand-mark" style={{ width: '42px', height: '42px', borderRadius: '12px', overflow: 'hidden', background: 'var(--primary-gradient)', border: '2px solid rgba(255,255,255,0.2)', boxShadow: '0 0 20px var(--primary-shadow)' }}>
           <img src="/img/avtpkty.png" alt="Rexi" style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '6px', filter: 'brightness(0) invert(1)' }} />
         </div>
         <div>
@@ -141,8 +156,8 @@ const SidebarAdmin: React.FC = () => {
         </div>
       </div>
 
-      <div className="glass-card" style={{ display: 'flex', alignItems: 'center', gap: '14px', background: 'rgba(255,255,255,0.03)', padding: '16px', borderRadius: '20px', marginBottom: '30px', border: '1px solid var(--glass-border)' }}>
-        <div style={{ width: '50px', height: '50px', borderRadius: '50%', display: 'grid', placeItems: 'center', flexShrink: 0, position: 'relative' }}>
+      <div className="glass-card admin-operator-card" style={{ display: 'flex', alignItems: 'center', gap: '14px', background: 'rgba(255,255,255,0.03)', padding: '16px', borderRadius: '20px', marginBottom: '30px', border: '1px solid var(--glass-border)' }}>
+        <div className="admin-operator-avatar" style={{ width: '50px', height: '50px', borderRadius: '50%', display: 'grid', placeItems: 'center', flexShrink: 0, position: 'relative' }}>
           <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: '2px solid var(--primary)', boxShadow: '0 0 15px var(--primary), inset 0 0 15px var(--primary)', animation: 'pulse 2s infinite' }} />
           <div style={{ width: '42px', height: '42px', borderRadius: '50%', overflow: 'hidden', background: 'rgba(20, 184, 166, 0.1)', display: 'grid', placeItems: 'center', color: 'var(--primary)', fontWeight: 950, fontSize: '1.15rem', position: 'relative', zIndex: 1, textShadow: '0 0 10px var(--primary)' }}>
             {userAvatar ? (
@@ -169,11 +184,11 @@ const SidebarAdmin: React.FC = () => {
         </div>
       </div>
 
-      <nav style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px', overflowY: 'auto' }}>
+      <nav className="admin-rail-nav" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px', overflowY: 'auto' }}>
         {filteredMenuItems.map((item, index) => {
           if (item.isHeader) {
             return (
-              <div key={`header-${index}`} style={{ marginTop: index === 0 ? '0' : '16px', marginBottom: '4px', padding: '0 12px' }}>
+              <div key={`header-${index}`} className="admin-rail-heading" style={{ marginTop: index === 0 ? '0' : '16px', marginBottom: '4px', padding: '0 12px' }}>
                 <span style={{ fontSize: '0.65rem', fontWeight: 900, color: 'var(--gray-400)', letterSpacing: '1px', textTransform: 'uppercase' }}>
                   {item.label}
                 </span>
@@ -187,7 +202,7 @@ const SidebarAdmin: React.FC = () => {
               key={item.path}
               to={item.path || '#'}
               onClick={() => setIsMobileOpen(false)}
-              className="sidebar-link"
+              className={`sidebar-link admin-rail-link ${isActive ? 'is-active' : ''}`}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -213,10 +228,10 @@ const SidebarAdmin: React.FC = () => {
         })}
       </nav>
 
-      <div style={{ marginTop: '20px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+      <div className="admin-rail-footer" style={{ marginTop: '20px', display: 'flex', gap: '8px', alignItems: 'center' }}>
         <Link
           to="/"
-          className="sidebar-link"
+          className="sidebar-link admin-rail-home"
           style={{
             flex: 1,
             display: 'flex',
@@ -239,7 +254,7 @@ const SidebarAdmin: React.FC = () => {
 
       <button data-ai-id="button-sidebaradmin-yuhf"
         onClick={handleLogout}
-        className="btn"
+        className="btn admin-logout-btn"
         style={{
           marginTop: '8px',
           background: 'rgba(239, 68, 68, 0.1)',
@@ -259,6 +274,23 @@ const SidebarAdmin: React.FC = () => {
         Đăng xuất
       </button>
     </div>
+
+      <nav className="admin-mobile-tabbar" aria-label="Điều hướng quản trị nhanh">
+        {adminMobileNavItems.map((item) => {
+          const isActive = location.pathname === item.path;
+          return (
+            <Link
+              key={item.path}
+              to={item.path || '#'}
+              onClick={() => setIsMobileOpen(false)}
+              className={`admin-mobile-tab ${isActive ? 'active' : ''}`}
+            >
+              <span className="material-symbols-outlined">{item.icon}</span>
+              <span>{item.label}</span>
+            </Link>
+          );
+        })}
+      </nav>
     </>
   );
 };

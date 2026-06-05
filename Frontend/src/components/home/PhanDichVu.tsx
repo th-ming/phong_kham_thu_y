@@ -139,7 +139,7 @@ const PhanDichVu: React.FC = () => {
                         position: relative;
                     }
                     .service-mobile-scrollbar {
-                        display: block;
+                        display: none;
                         position: absolute;
                         top: 12px;
                         right: 4px;

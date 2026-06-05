@@ -275,12 +275,12 @@ const QuanLyKhachHangThuCung: React.FC = () => {
 
   return (
     <div className="animate-fade-in">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
+      <div className="admin-mobile-page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
         <div>
           <h1 style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--ink)', letterSpacing: '-1px' }}>Khách hàng & Thú cưng</h1>
           <p style={{ color: 'var(--gray-500)', fontWeight: 600 }}>Quản lý thông tin chủ nuôi và các bạn nhỏ trong hệ thống.</p>
         </div>
-        <div style={{ display: 'flex', gap: '12px' }}>
+        <div className="admin-mobile-actions" style={{ display: 'flex', gap: '12px' }}>
           <button data-ai-id="button-quanlykhachhangthucung-pac0" className="btn btn-pill" style={{ background: 'var(--gray-50)', color: 'var(--ink)' }} onClick={() => setShowAddKhModal(true)}>
             <span className="material-symbols-outlined">person_add</span>
             Thêm chủ nuôi
@@ -292,13 +292,115 @@ const QuanLyKhachHangThuCung: React.FC = () => {
         </div>
       </div>
 
-      {/* BẢNG QUẢN LÝ KHÁCH HÀNG (SỬ DỤNG VIRTUAL SCROLLING OPTIMIZATION) */}
+      <style>{`
+        .admin-customer-mobile-list,
+        .admin-pet-mobile-list {
+          display: none;
+        }
+        .virtual-row-hover {
+          transition: background-color 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .virtual-row-hover:hover {
+          background-color: var(--gray-50) !important;
+        }
+        @media screen and (max-width: 1024px) {
+          .admin-customer-mobile-list,
+          .admin-pet-mobile-list {
+            display: grid !important;
+            gap: 10px;
+            padding: 10px;
+          }
+          .admin-customer-desktop-table,
+          .admin-pet-desktop-table {
+            display: none !important;
+          }
+          .admin-customer-card,
+          .admin-pet-card {
+            display: grid;
+            gap: 10px;
+            padding: 12px;
+            border-radius: 18px;
+            background: var(--surface);
+            border: 1px solid var(--gray-100);
+          }
+          .admin-customer-card-top,
+          .admin-pet-card-top {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 10px;
+            align-items: start;
+          }
+          .admin-customer-card h3,
+          .admin-pet-card h3 {
+            margin: 0;
+            color: var(--ink);
+            font-size: 0.95rem;
+            line-height: 1.22;
+            font-weight: 950;
+            overflow-wrap: anywhere;
+          }
+          .admin-customer-card p,
+          .admin-pet-card p {
+            margin: 4px 0 0;
+            color: var(--gray-500);
+            font-size: 0.72rem;
+            line-height: 1.35;
+            font-weight: 700;
+            overflow-wrap: anywhere;
+          }
+          .admin-customer-status,
+          .admin-pet-meta-chip {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 28px;
+            padding: 5px 9px;
+            border-radius: 999px;
+            font-size: 0.66rem;
+            line-height: 1;
+            font-weight: 950;
+            white-space: nowrap;
+          }
+          .admin-customer-status {
+            background: rgba(34,197,94,0.12);
+            color: #16a34a;
+          }
+          .admin-customer-status.locked {
+            background: rgba(239,68,68,0.12);
+            color: var(--danger);
+          }
+          .admin-pet-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 7px;
+          }
+          .admin-pet-meta-chip {
+            background: var(--primary-light);
+            color: var(--primary);
+          }
+          .admin-customer-card .btn,
+          .admin-pet-card .btn {
+            width: 100%;
+            min-height: 36px;
+            justify-content: center;
+            border-radius: 13px !important;
+            padding: 7px 10px !important;
+          }
+          .admin-pet-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+          }
+        }
+      `}</style>
+
+      {/* BẢNG QUẢN LÝ KHÁCH HÀNG */}
       <div className="glass-card" style={{ borderRadius: 'var(--radius-xl)', overflow: 'hidden', marginBottom: '32px' }}>
-        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--gray-100)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', background: 'var(--surface)' }}>
+        <div className="admin-mobile-card-header" style={{ padding: '20px 24px', borderBottom: '1px solid var(--gray-100)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', background: 'var(--surface)' }}>
           <h2 style={{ fontSize: '1.1rem', fontWeight: 900, color: 'var(--ink)', margin: 0 }}>
-            Danh sách khách hàng ({filteredKhachHang.length}) <span style={{ fontSize: '0.75rem', background: 'var(--primary-light)', color: 'var(--primary)', padding: '2px 8px', borderRadius: '20px', marginLeft: '6px', fontWeight: 800 }}>Virtual List</span>
+            Danh sách khách hàng ({filteredKhachHang.length})
           </h2>
-          <div className="glass-card" style={{ display: 'flex', alignItems: 'center', padding: '0 16px', borderRadius: '16px', border: '1px solid var(--gray-200)', background: 'var(--surface)', width: '300px', maxWidth: '100%' }}>
+          <div className="glass-card admin-mobile-search-box" style={{ display: 'flex', alignItems: 'center', padding: '0 16px', borderRadius: '16px', border: '1px solid var(--gray-200)', background: 'var(--surface)', width: '300px', maxWidth: '100%' }}>
             <span className="material-symbols-outlined" style={{ color: 'var(--gray-400)', marginRight: '8px' }}>search</span>
             <input data-ai-id="input-quanlykhachhangthucung-ous7"
               type="text"
@@ -310,7 +412,38 @@ const QuanLyKhachHangThuCung: React.FC = () => {
           </div>
         </div>
 
-        <div className="table-responsive-wrapper">
+        <div className="admin-customer-mobile-list">
+          {filteredKhachHang.length === 0 ? (
+            <div className="admin-empty-state" style={{ padding: '18px 10px', textAlign: 'center', color: 'var(--gray-500)', fontWeight: 800 }}>
+              Không tìm thấy chủ nuôi nào phù hợp.
+            </div>
+          ) : filteredKhachHang.slice(0, 30).map((kh: any) => (
+            <article key={kh.id_khach_hang} className="admin-customer-card">
+              <div className="admin-customer-card-top">
+                <div>
+                  <h3 style={{ textDecoration: kh.da_xoa ? 'line-through' : 'none', color: kh.da_xoa ? 'var(--gray-400)' : 'var(--ink)' }}>
+                    {kh.ten_khach_hang || 'Khách hàng chưa cập nhật'}
+                  </h3>
+                  <p>{kh.sdt || 'Chưa có SĐT'} · {kh.email || 'Chưa có email'}</p>
+                </div>
+                <span className={`admin-customer-status ${kh.da_xoa ? 'locked' : ''}`}>{kh.da_xoa ? 'Đã khóa' : 'Hoạt động'}</span>
+              </div>
+              <p>{kh.nam_sinh ? `Năm sinh ${kh.nam_sinh}` : 'Chưa cập nhật năm sinh'}</p>
+              {kh.da_xoa ? (
+                <button data-ai-id="button-quanlykhachhangthucung-mobile-unlock" className="btn btn-pill" onClick={() => handleUnlockKhachHang(kh.id_khach_hang)} style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#16a34a' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>lock_open</span>
+                  Mở khóa
+                </button>
+              ) : (
+                <button data-ai-id="button-quanlykhachhangthucung-mobile-lock" className="btn btn-pill" onClick={() => handleLockKhachHang(kh.id_khach_hang)} style={{ background: 'var(--danger-light, rgba(239, 68, 68, 0.15))', color: 'var(--danger)' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>lock</span>
+                  Khóa
+                </button>
+              )}
+            </article>
+          ))}
+        </div>
+        <div className="table-responsive-wrapper admin-customer-desktop-table">
           <div style={{ minWidth: '800px' }}>
 
         {/* Tiêu đề cột dạng CSS Grid - layout 5 cột cao cấp và khoa học */}
@@ -340,7 +473,7 @@ const QuanLyKhachHangThuCung: React.FC = () => {
           }}
         >
           {filteredKhachHang.length === 0 ? (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--gray-400)', fontWeight: 700 }}>
+            <div className="admin-empty-state" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--gray-400)', fontWeight: 700 }}>
               Không tìm thấy chủ nuôi nào phù hợp.
             </div>
           ) : (
@@ -387,12 +520,8 @@ const QuanLyKhachHangThuCung: React.FC = () => {
                           {kh.nam_sinh ? `${kh.nam_sinh}` : "—"}
                         </div>
                         {kh.nam_sinh ? (
-                          <div style={{ 
-                            fontSize: '0.75rem', 
-                            color: kh.nam_sinh >= 1997 ? 'var(--primary)' : 'var(--gray-400)', 
-                            fontWeight: 700 
-                          }}>
-                            {kh.nam_sinh >= 1997 ? "Gen Z 🐱" : "Mature 🩺"}
+                          <div style={{ fontSize: '0.75rem', color: 'var(--gray-400)', fontWeight: 700 }}>
+                            {kh.nam_sinh >= 1997 ? "Khách trẻ" : "Khách trưởng thành"}
                           </div>
                         ) : null}
                       </div>
@@ -447,21 +576,11 @@ const QuanLyKhachHangThuCung: React.FC = () => {
       </div>
       </div>
 
-      {/* STYLES CHO HOVER VIRTUAL LIST DỄ CĂN CHỈNH */}
-      <style>{`
-        .virtual-row-hover {
-          transition: background-color 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .virtual-row-hover:hover {
-          background-color: var(--gray-50) !important;
-        }
-      `}</style>
-
       {/* BẢNG QUẢN LÝ THÚ CƯNG */}
       <div className="glass-card" style={{ borderRadius: 'var(--radius-xl)', overflow: 'hidden' }}>
-        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--gray-100)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', background: 'var(--surface)' }}>
+        <div className="admin-mobile-card-header" style={{ padding: '20px 24px', borderBottom: '1px solid var(--gray-100)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', background: 'var(--surface)' }}>
           <h2 style={{ fontSize: '1.1rem', fontWeight: 900, color: 'var(--ink)', margin: 0 }}>Danh sách thú cưng ({thuCung.length})</h2>
-          <div className="glass-card" style={{ display: 'flex', alignItems: 'center', padding: '0 16px', borderRadius: '16px', border: '1px solid var(--gray-200)', background: 'var(--surface)', width: '300px', maxWidth: '100%' }}>
+          <div className="glass-card admin-mobile-search-box" style={{ display: 'flex', alignItems: 'center', padding: '0 16px', borderRadius: '16px', border: '1px solid var(--gray-200)', background: 'var(--surface)', width: '300px', maxWidth: '100%' }}>
             <span className="material-symbols-outlined" style={{ color: 'var(--gray-400)', marginRight: '8px' }}>search</span>
             <input data-ai-id="input-quanlykhachhangthucung-1lnd"
               type="text"
@@ -472,7 +591,38 @@ const QuanLyKhachHangThuCung: React.FC = () => {
             />
           </div>
         </div>
-        <div className="table-responsive-wrapper">
+        <div className="admin-pet-mobile-list">
+          {currentRows.length === 0 ? (
+            <div className="admin-empty-state" style={{ padding: '18px 10px', textAlign: 'center', color: 'var(--gray-500)', fontWeight: 800 }}>
+              Không có thú cưng phù hợp.
+            </div>
+          ) : currentRows.map((t) => (
+            <article key={t.id_thu_cung} className="admin-pet-card">
+              <div className="admin-pet-card-top">
+                <div>
+                  <h3>{t.ten_thu_cung || 'Chưa có tên'}</h3>
+                  <p>Chủ: {getTenKhachHang(t.id_khach_hang)}</p>
+                </div>
+                <span className="admin-pet-meta-chip">#{t.id_thu_cung}</span>
+              </div>
+              <div className="admin-pet-meta">
+                <span className="admin-pet-meta-chip">{t.loai || 'Chưa rõ loài'}</span>
+                <span className="admin-pet-meta-chip">{t.giong || 'Chưa rõ giống'}</span>
+                <span className="admin-pet-meta-chip">{t.trong_luong ?? '—'} kg</span>
+              </div>
+              <p>{t.gioi_tinh || 'Chưa rõ giới tính'} · {t.mau_sac || 'Không rõ màu'}{t.ngay_sinh ? ` · Sinh ${new Date(t.ngay_sinh).getFullYear()}` : ''}</p>
+              <div className="admin-pet-actions">
+                <button data-ai-id="button-quanlykhachhangthucung-mobile-edit-pet" className="btn" onClick={() => handleEditPetClick(t)} style={{ background: 'var(--primary-light)', color: 'var(--primary)' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>edit</span>
+                </button>
+                <button data-ai-id="button-quanlykhachhangthucung-mobile-delete-pet" className="btn" onClick={() => handleDeletePet(t.id_thu_cung)} style={{ background: 'var(--danger-light, rgba(239, 68, 68, 0.15))', color: 'var(--danger)' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>delete</span>
+                </button>
+              </div>
+            </article>
+          ))}
+        </div>
+        <div className="table-responsive-wrapper admin-pet-desktop-table">
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ background: 'var(--gray-50)', textAlign: 'left' }}>
@@ -485,7 +635,13 @@ const QuanLyKhachHangThuCung: React.FC = () => {
             </tr>
           </thead>
           <tbody>
-            {currentRows.map((t) => (
+            {currentRows.length === 0 ? (
+              <tr>
+                <td className="admin-empty-state" colSpan={6} style={{ padding: '32px 20px', textAlign: 'center', color: 'var(--gray-500)', fontWeight: 700 }}>
+                  Không có thú cưng phù hợp.
+                </td>
+              </tr>
+            ) : currentRows.map((t) => (
               <tr key={t.id_thu_cung} style={{ borderBottom: '1px solid var(--gray-50)', transition: 'all 0.2s' }}>
                 <td style={{ padding: '20px', fontWeight: 800, color: 'var(--gray-400)' }}>#{t.id_thu_cung}</td>
                 <td style={{ padding: '20px' }}>

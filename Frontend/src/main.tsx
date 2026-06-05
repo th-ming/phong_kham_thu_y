@@ -17,8 +17,12 @@ axios.interceptors.request.use((config) => {
   }
   
   // Lấy thẻ lệnh từ ActionExecutor (nếu AI đang trong phiên "lái tự động")
+  const requestUrl = String(config.url || "");
+  const isHumanAuthRequest = requestUrl.includes("/api/auth/")
+    || requestUrl.includes("/api/system/send-otp")
+    || requestUrl.includes("/api/system/verify-otp");
   const aiActionTag = (window as any).__AI_ACTION_TAG__;
-  if (aiActionTag) {
+  if (aiActionTag && !isHumanAuthRequest) {
     config.headers['X-AI-ACTION'] = aiActionTag;
   }
   

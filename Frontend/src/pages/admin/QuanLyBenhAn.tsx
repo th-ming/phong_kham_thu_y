@@ -180,11 +180,11 @@ const QuanLyBenhAn: React.FC = () => {
     if (loading) return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}><div className="dot-pulse"></div></div>;
 
     return (
-        <div className="animate-fade-in" style={{ display: 'grid', gridTemplateColumns: 'minmax(360px, 1fr) minmax(520px, 1.5fr)', gap: '30px', alignItems: 'start' }}>
+        <div className="animate-fade-in admin-medical-page" style={{ alignItems: 'start' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                <div className="glass-card" style={{ padding: '24px', borderRadius: '24px' }}>
+                <div className="glass-card admin-medical-card" style={{ padding: '24px', borderRadius: '24px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '16px' }}>
-                        <h2 style={{ fontSize: '1.2rem', fontWeight: 900, margin: 0 }}>1. Chọn ca khám hôm nay</h2>
+                        <h2 className="admin-medical-card-title" style={{ fontSize: '1.2rem', fontWeight: 900, margin: 0 }}>1. Chọn ca khám hôm nay</h2>
                         <span style={{ background: 'var(--primary-light)', color: 'var(--primary)', borderRadius: '999px', padding: '6px 12px', fontSize: '0.78rem', fontWeight: 900 }}>
                             {lichHens.length} ca
                         </span>
@@ -211,7 +211,7 @@ const QuanLyBenhAn: React.FC = () => {
                         ))}
                     </select>
                     {lichHens.length === 0 && (
-                        <div style={{ marginTop: '14px', padding: '14px', borderRadius: '14px', background: 'rgba(239, 68, 68, 0.08)', color: 'var(--danger)', fontWeight: 800, fontSize: '0.9rem', lineHeight: 1.5 }}>
+                        <div className="admin-medical-alert" style={{ marginTop: '14px', padding: '14px', borderRadius: '14px', background: 'rgba(239, 68, 68, 0.08)', color: 'var(--danger)', fontWeight: 800, fontSize: '0.9rem', lineHeight: 1.5 }}>
                             Không có ca đã xác nhận hoặc đang khám trong hôm nay. Nếu khách đã tới, hãy check-in ở trang lịch hẹn trước.
                             <Link to="/quan-ly/lich-hen" style={{ display: 'inline-flex', marginLeft: '8px', color: 'var(--danger)', textDecoration: 'underline' }}>Mở lịch hẹn</Link>
                         </div>
@@ -222,7 +222,7 @@ const QuanLyBenhAn: React.FC = () => {
                 </div>
 
                 {selectedLich && (
-                    <div className="glass-card animate-fade-in" style={{ padding: '24px', borderRadius: '24px', border: '1px solid var(--primary-light)' }}>
+                    <div className="glass-card animate-fade-in admin-medical-card" style={{ padding: '24px', borderRadius: '24px', border: '1px solid var(--primary-light)' }}>
                         <h2 style={{ fontSize: '1.2rem', fontWeight: 900, marginBottom: '16px', color: 'var(--primary)' }}>2. Thông tin ca khám</h2>
                         <div className="responsive-grid-2">
                             {[
@@ -251,11 +251,11 @@ const QuanLyBenhAn: React.FC = () => {
             </div>
 
             {selectedLich && (
-                <div className="glass-card animate-fade-in" style={{ padding: '30px', borderRadius: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                <div className="glass-card animate-fade-in admin-medical-card" style={{ padding: '30px', borderRadius: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
                     <h2 style={{ fontSize: '1.5rem', fontWeight: 900, borderBottom: '2px solid var(--gray-100)', paddingBottom: '16px', margin: 0 }}>4. Kê đơn thuốc</h2>
 
                     {chiTietDonThuoc.map((item, index) => (
-                        <div key={index} style={{ display: 'grid', gridTemplateColumns: 'minmax(180px, 2fr) 90px minmax(160px, 2fr) 40px', gap: '12px', alignItems: 'center', background: 'var(--gray-50)', padding: '12px', borderRadius: '12px' }}>
+                        <div key={index} className="prescription-row" style={{ background: 'var(--gray-50)', padding: '12px', borderRadius: '12px' }}>
                             <select data-ai-id="select-quanlybenhan-dttd" className="form-input" value={item.id_thuoc} onChange={e => handleThuocChange(index, 'id_thuoc', e.target.value)}>
                                 <option value="">-- Chọn thuốc --</option>
                                 {thuocs.map(t => <option key={t.id_thuoc} value={t.id_thuoc}>{t.ten_thuoc} (Tồn: {t.so_luong_ton || 0})</option>)}

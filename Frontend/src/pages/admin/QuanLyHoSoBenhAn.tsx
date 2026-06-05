@@ -84,12 +84,97 @@ const QuanLyHoSoBenhAn: React.FC = () => {
 
   return (
     <div className="animate-fade-in">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', flexWrap: 'wrap', gap: '20px' }}>
+      <style>{`
+        .admin-record-mobile-list { display: none; }
+        @media screen and (max-width: 1024px) {
+          .admin-record-header {
+            display: grid !important;
+            grid-template-columns: 1fr !important;
+            gap: 12px !important;
+            margin-bottom: 16px !important;
+          }
+          .admin-record-header h1 {
+            max-width: 12ch !important;
+            font-size: clamp(1.42rem, 6.4vw, 1.78rem) !important;
+            line-height: 1.08 !important;
+            letter-spacing: -0.02em !important;
+            margin: 0 0 6px !important;
+          }
+          .admin-record-header p {
+            max-width: 32ch !important;
+            margin: 0 !important;
+            font-size: 0.82rem !important;
+            line-height: 1.45 !important;
+          }
+          .admin-record-search {
+            width: min(100%, 300px) !important;
+            min-height: 42px !important;
+            border-radius: 16px !important;
+          }
+          .admin-record-desktop-table {
+            display: none !important;
+          }
+          .admin-record-mobile-list {
+            display: grid !important;
+            gap: 10px;
+            padding: 10px;
+          }
+          .admin-record-card {
+            display: grid;
+            gap: 10px;
+            padding: 12px;
+            border-radius: 18px;
+            background: var(--surface);
+            border: 1px solid var(--gray-100);
+          }
+          .admin-record-card-top {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 10px;
+            align-items: start;
+          }
+          .admin-record-card h3 {
+            margin: 0;
+            color: var(--ink);
+            font-size: 0.95rem;
+            line-height: 1.22;
+            font-weight: 950;
+          }
+          .admin-record-card p {
+            margin: 4px 0 0;
+            color: var(--gray-500);
+            font-size: 0.72rem;
+            line-height: 1.35;
+            font-weight: 700;
+            overflow-wrap: anywhere;
+          }
+          .admin-record-status {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 28px;
+            padding: 5px 9px;
+            border-radius: 999px;
+            font-size: 0.66rem;
+            line-height: 1;
+            font-weight: 950;
+            white-space: nowrap;
+          }
+          .admin-record-card .btn {
+            width: 100%;
+            min-height: 36px;
+            justify-content: center;
+            border-radius: 13px !important;
+            padding: 7px 10px !important;
+          }
+        }
+      `}</style>
+      <div className="admin-record-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', flexWrap: 'wrap', gap: '20px' }}>
         <div>
           <h1 className="text-gradient" style={{ fontSize: '2.8rem', fontWeight: 950, letterSpacing: '-2px', margin: '0 0 8px 0' }}>Hồ sơ bệnh án</h1>
           <p style={{ color: 'var(--gray-500)', fontWeight: 600, fontSize: '1.05rem' }}>Quản lý bệnh án điện tử và lịch sử điều trị của bệnh nhân chuẩn quốc tế.</p>
         </div>
-        <div className="glass-card" style={{ display: 'flex', alignItems: 'center', padding: '0 16px', borderRadius: '16px', border: '1px solid var(--gray-200)', background: 'var(--surface)', width: '300px' }}>
+        <div className="glass-card admin-record-search" style={{ display: 'flex', alignItems: 'center', padding: '0 16px', borderRadius: '16px', border: '1px solid var(--gray-200)', background: 'var(--surface)', width: '300px' }}>
           <span className="material-symbols-outlined" style={{ color: 'var(--gray-400)', marginRight: '8px' }}>search</span>
           <input data-ai-id="input-quanlyhosobenhan-jfml"
             type="text"
@@ -102,7 +187,36 @@ const QuanLyHoSoBenhAn: React.FC = () => {
       </div>
 
       <div className="glass-card" style={{ borderRadius: 'var(--radius-xl)', overflow: 'hidden' }}>
-        <div className="table-responsive-wrapper">
+        <div className="admin-record-mobile-list">
+          {currentRows.length === 0 ? (
+            <div className="admin-empty-state" style={{ padding: '18px 10px', textAlign: 'center', color: 'var(--gray-500)', fontWeight: 800 }}>
+              Không tìm thấy hồ sơ bệnh án phù hợp.
+            </div>
+          ) : currentRows.map((h) => (
+            <article key={h.id_ho_so} className="admin-record-card">
+              <div className="admin-record-card-top">
+                <div>
+                  <h3>#HS-{h.id_ho_so} · {h.ten_thu_cung || "Chưa rõ"}</h3>
+                  <p>{chuyenNgayISO_SangVN(h.ngay_kham)} · {h.ten_bac_si || "Đang chờ bác sĩ"}</p>
+                </div>
+                <span
+                  className="admin-record-status"
+                  style={{
+                    background: h.trang_thai_ho_so?.toLowerCase() === 'hoan_tat' ? 'var(--primary-light)' : 'var(--gray-100)',
+                    color: h.trang_thai_ho_so?.toLowerCase() === 'hoan_tat' ? 'var(--primary)' : 'var(--gray-500)'
+                  }}
+                >
+                  {h.trang_thai_ho_so?.toUpperCase() || 'LƯU NHÁP'}
+                </span>
+              </div>
+              <p>{h.chan_doan || "Chưa có chẩn đoán"}</p>
+              <Link to={`/quan-ly/ho-so-benh-an/${h.id_ho_so}`} className="btn" style={{ background: 'var(--primary-light)', color: 'var(--primary)', display: 'inline-flex' }}>
+                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>visibility</span>
+              </Link>
+            </article>
+          ))}
+        </div>
+        <div className="table-responsive-wrapper admin-record-desktop-table">
 <div style={{ minWidth: '800px' }}>
 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>

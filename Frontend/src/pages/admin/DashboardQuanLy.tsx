@@ -287,12 +287,44 @@ const DashboardQuanLy: React.FC = () => {
           from { opacity: 0; transform: translateY(30px); }
           to { opacity: 1; transform: translateY(0); }
         }
+        @keyframes growBar {
+          from { height: 0; }
+        }
         .stagger-1 { animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both; }
         .stagger-2 { animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both; }
         .stagger-3 { animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both; }
-        .hover-lift { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); cursor: default; }
-        .hover-lift:hover { transform: translateY(-8px); box-shadow: 0 25px 50px rgba(0,0,0,0.08); }
-        .table-row:hover { background-color: var(--gray-50) !important; }
+        
+        .hover-lift { 
+          transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); 
+          cursor: default; 
+          border: 1px solid rgba(255, 255, 255, 0.5) !important;
+        }
+        .hover-lift:hover { 
+          transform: translateY(-8px) scale(1.01); 
+          box-shadow: 0 30px 60px rgba(15, 23, 42, 0.08); 
+          border-color: var(--primary) !important;
+        }
+        [data-theme='dark'] .hover-lift {
+          border-color: rgba(255, 255, 255, 0.06) !important;
+        }
+        [data-theme='dark'] .hover-lift:hover {
+          box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4);
+          border-color: var(--primary) !important;
+        }
+
+        .growth-bar-animate {
+          animation: growBar 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          background: linear-gradient(to top, var(--primary) 0%, #14b8a6 100%) !important;
+        }
+
+        .table-row {
+          transition: all 0.25s ease;
+        }
+        .table-row:hover { 
+          background-color: var(--primary-light) !important; 
+          transform: scale(1.002);
+        }
+        
         .kpi-card { position: relative; overflow: visible; }
         .kpi-trend-badge {
           position: absolute;
@@ -353,20 +385,20 @@ const DashboardQuanLy: React.FC = () => {
           color: var(--ink);
         }
       `}</style>
-      <div className="stagger-1" style={{ marginBottom: '40px', padding: '48px', borderRadius: 'var(--radius-xl)', background: 'var(--primary-gradient)', color: 'white', position: 'relative', overflow: 'hidden', boxShadow: 'var(--shadow-2xl)' }}>
+      <div className="stagger-1 admin-dashboard-hero" style={{ marginBottom: '40px', padding: 'clamp(20px, 6vw, 48px)', borderRadius: 'var(--radius-xl)', background: 'var(--primary-gradient)', color: 'white', position: 'relative', overflow: 'hidden', boxShadow: 'var(--shadow-2xl)' }}>
         <div style={{ position: 'absolute', top: '-10%', right: '-5%', width: '300px', height: '300px', background: 'radial-gradient(circle, var(--primary-light) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }}></div>
         <div style={{ position: 'absolute', bottom: '-20%', left: '0%', width: '250px', height: '250px', background: 'radial-gradient(circle, var(--primary-light) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none', opacity: 0.5 }}></div>
-        <h1 style={{ fontSize: '3.5rem', fontWeight: 950, letterSpacing: '-2px', position: 'relative', zIndex: 1, margin: '0 0 12px 0', display: 'flex', alignItems: 'center', gap: '15px' }}>
+        <h1 style={{ fontSize: 'clamp(1.8rem, 6vw, 3.5rem)', fontWeight: 950, letterSpacing: '-2px', position: 'relative', zIndex: 1, margin: '0 0 12px 0', display: 'flex', alignItems: 'center', gap: '15px' }}>
           <span>Tổng quan hệ thống</span>
           <span style={{ filter: 'drop-shadow(0 5px 15px rgba(0,0,0,0.2))' }}>📊</span>
         </h1>
-        <p style={{ fontWeight: 700, color: 'rgba(255,255,255,0.95)', position: 'relative', zIndex: 1, margin: 0, fontSize: '1.2rem', textShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>Xin chào {currentName}, đây là báo cáo hoạt động và vận hành hôm nay.</p>
+        <p style={{ fontWeight: 700, color: 'rgba(255,255,255,0.95)', position: 'relative', zIndex: 1, margin: 0, fontSize: 'clamp(0.95rem, 3vw, 1.2rem)', textShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>Xin chào {currentName}, đây là báo cáo hoạt động và vận hành hôm nay.</p>
         {lastUpdated && <p style={{ margin: '10px 0 0', fontSize: '0.9rem', fontWeight: 700, opacity: 0.9 }}>Cập nhật lúc {lastUpdated}</p>}
       </div>
 
       <CanhBaoThuoc />
 
-      <div className="stagger-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '32px', marginBottom: '40px' }}>
+      <div className="stagger-2 admin-dashboard-kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '32px', marginBottom: '40px' }}>
         {stats.map((item, i) => (
           <div key={i} className="glass-card hover-lift kpi-card" style={{ padding: '32px', borderRadius: '32px', border: `1px solid ${item.color}25`, background: `linear-gradient(135deg, ${item.color}15 0%, var(--surface) 100%)`, minHeight: '190px' }}>
             <button
@@ -399,7 +431,7 @@ const DashboardQuanLy: React.FC = () => {
         ))}
       </div>
 
-      <div className="stagger-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px' }}>
+      <div className="stagger-3 admin-dashboard-content-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 400px), 1fr))', gap: '24px' }}>
         {(['admin', 'quan_ly', 'tiep_tan', 'bac_si', 'y_ta'].includes(userRole)) && (
           <div className="glass-card hover-lift" style={{ padding: '32px', borderRadius: 'var(--radius-xl)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
@@ -448,7 +480,7 @@ const DashboardQuanLy: React.FC = () => {
                 return (
                   <div key={idx} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', height: '100%', justifyContent: 'flex-end' }}>
                     <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--gray-500)' }}>{stat.count}</span>
-                    <div style={{ width: '100%', maxWidth: '32px', height: `${heightPct}%`, minHeight: '6px', background: stat.count > 0 ? '#0f9d8a' : 'var(--gray-100)', borderRadius: '6px 6px 0 0', transition: 'height 0.4s ease' }}></div>
+                    <div className={stat.count > 0 ? "growth-bar-animate" : ""} style={{ width: '100%', maxWidth: '32px', height: `${heightPct}%`, minHeight: '6px', background: stat.count > 0 ? 'var(--primary)' : 'var(--gray-100)', borderRadius: '6px 6px 0 0', transition: 'height 0.4s ease' }}></div>
                     <span style={{ fontSize: '0.75rem', color: 'var(--gray-400)', fontWeight: 600 }}>{stat.month}</span>
                   </div>
                 );

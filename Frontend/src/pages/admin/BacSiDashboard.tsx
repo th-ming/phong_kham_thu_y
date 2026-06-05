@@ -4,6 +4,7 @@ import axiosInstance from "@services/axios";
 import { getUserProfile } from "@utils/index";
 import { useAutoRefresh } from "@hooks/useAutoRefresh";
 import KpiIcon from "@components/KpiIcon";
+import { AnimatedNumber } from "@components/CommonUI";
 
 const BacSiDashboard: React.FC = () => {
     const [myAppointments, setMyAppointments] = useState<any[]>([]);
@@ -205,7 +206,7 @@ const BacSiDashboard: React.FC = () => {
                 <ClinicalKpiCard
                     accent="#3b82f6"
                     title="Ca khám hôm nay"
-                    value={`${myAppointments.length} ca`}
+                    value={<><AnimatedNumber value={myAppointments.length} /> ca</>}
                     icon={<KpiIcon name="calendar" />}
                     details={
                         <div>
@@ -219,7 +220,7 @@ const BacSiDashboard: React.FC = () => {
                 <ClinicalKpiCard
                     accent="#f59e0b"
                     title="Bệnh nhân đang chờ"
-                    value={`${waitingPatients} bé`}
+                    value={<><AnimatedNumber value={waitingPatients} /> bé</>}
                     icon={<KpiIcon name="clock" />}
                     pulse={waitingPatients > 0}
                     details={
@@ -235,7 +236,7 @@ const BacSiDashboard: React.FC = () => {
                 <ClinicalKpiCard
                     accent="#10b981"
                     title="Ca đã hoàn thành"
-                    value={`${completedPatients} ca`}
+                    value={<><AnimatedNumber value={completedPatients} /> ca</>}
                     icon={<KpiIcon name="check" />}
                     details={
                         <div>

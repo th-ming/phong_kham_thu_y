@@ -149,3 +149,86 @@ export const Skeleton: React.FC<{ width?: string | number, height?: string | num
     />
   );
 };
+
+type AnimatedNumberFormat = "number" | "currency";
+
+const parseAnimatedNumber = (value: number | string) => {
+  if (typeof value === "number") return value;
+  const normalized = value.replace(/\./g, "").replace(/,/g, ".").replace(/[^\d.-]/g, "");
+  return Number(normalized) || 0;
+};
+
+const detectAnimatedNumberFormat = (value: number | string, format?: AnimatedNumberFormat): AnimatedNumberFormat => {
+  if (format) return format;
+  if (typeof value === "string" && /(đ|₫|vnd)/i.test(value)) return "currency";
+  return "number";
+};
+
+const formatAnimatedNumber = (value: number, format: AnimatedNumberFormat) => {
+  if (format === "currency") {
+    return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(value);
+  }
+  return new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 0 }).format(value);
+};
+
+export const AnimatedNumber: React.FC<{
+  value: number | string;
+  duration?: number;
+  format?: AnimatedNumberFormat;
+  className?: string;
+  style?: React.CSSProperties;
+}> = ({ value, duration = 1200, format, className, style }) => {
+  const target = React.useMemo(() => parseAnimatedNumber(value), [value]);
+  const numberFormat = React.useMemo(() => detectAnimatedNumberFormat(value, format), [value, format]);
+  const [displayValue, setDisplayValue] = React.useState(0);
+  const [hasStarted, setHasStarted] = React.useState(false);
+  const elementRef = React.useRef<HTMLSpanElement>(null);
+
+  React.useEffect(() => {
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reducedMotion || !elementRef.current) {
+      setDisplayValue(target);
+      setHasStarted(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) setHasStarted(true);
+      },
+      { threshold: 0.35 }
+    );
+
+    observer.observe(elementRef.current);
+    return () => observer.disconnect();
+  }, [target]);
+
+  React.useEffect(() => {
+    if (!hasStarted) return;
+
+    let frameId = 0;
+    let startTime = 0;
+    const startValue = displayValue;
+    const delta = target - startValue;
+
+    const tick = (timestamp: number) => {
+      if (!startTime) startTime = timestamp;
+      const progress = Math.min((timestamp - startTime) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setDisplayValue(Math.round(startValue + delta * eased));
+
+      if (progress < 1) {
+        frameId = window.requestAnimationFrame(tick);
+      }
+    };
+
+    frameId = window.requestAnimationFrame(tick);
+    return () => window.cancelAnimationFrame(frameId);
+  }, [target, duration, hasStarted]);
+
+  return (
+    <span ref={elementRef} className={className} style={style}>
+      {formatAnimatedNumber(displayValue, numberFormat)}
+    </span>
+  );
+};

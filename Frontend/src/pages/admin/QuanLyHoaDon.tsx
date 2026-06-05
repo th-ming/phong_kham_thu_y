@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import axiosInstance from "@services/axios";
 import { formatTienVND, matchesSearchFields } from "@utils/index";
 import { Modal } from "@components/CommonUI";
@@ -40,7 +40,6 @@ const QuanLyHoaDon: React.FC = () => {
       ]);
     });
   }, [hoaDons, searchHoaDon]);
-
 
   const fetchHoaDons = () => {
     if (hoaDons.length === 0) setLoading(true);
@@ -177,7 +176,7 @@ const QuanLyHoaDon: React.FC = () => {
   );
 
   return (
-    <div className="animate-fade-in invoice-admin-page" style={{ margin: '-40px', padding: '40px', minHeight: '100vh', background: '#f8fafc', color: '#0f172a' }}>
+    <div className="animate-fade-in invoice-admin-page" style={{ margin: '-40px', padding: '40px', minHeight: '100vh', background: 'var(--background)', color: 'var(--ink)' }}>
       <style>{`
         @media print {
           @page { size: A4 portrait; margin: 12mm; }
@@ -231,32 +230,86 @@ const QuanLyHoaDon: React.FC = () => {
             border-collapse: collapse !important;
           }
         }
-        .invoice-admin-page {
-          --surface: rgba(255, 255, 255, 0.94);
-          --background: #f8fafc;
-          --ink: #0f172a;
-          --gray-50: #f8fafc;
-          --gray-100: #f1f5f9;
-          --gray-200: #e2e8f0;
-          --gray-300: #cbd5e1;
-          --gray-400: #94a3b8;
-          --gray-500: #64748b;
-          --glass-border: rgba(148, 163, 184, 0.24);
-        }
-        .invoice-admin-page .glass-card {
-          background: rgba(255, 255, 255, 0.94) !important;
-          border-color: rgba(148, 163, 184, 0.24) !important;
-          color: #0f172a;
-        }
         .virtual-row-hover {
           transition: background-color 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .virtual-row-hover:hover {
           background-color: var(--gray-50) !important;
         }
+        .invoice-mobile-list { display: none; }
+        @media screen and (max-width: 1024px) {
+          .invoice-admin-page {
+            margin: 0 !important;
+            padding: 0 !important;
+            min-height: auto !important;
+          }
+          .invoice-mobile-list {
+            display: grid !important;
+            gap: 10px;
+            padding: 10px;
+          }
+          .invoice-desktop-table {
+            display: none !important;
+          }
+          .invoice-card {
+            display: grid;
+            gap: 10px;
+            padding: 12px;
+            border-radius: 18px;
+            background: var(--surface);
+            border: 1px solid var(--gray-100);
+          }
+          .invoice-card-top {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 10px;
+            align-items: start;
+          }
+          .invoice-card h3 {
+            margin: 0;
+            color: var(--ink);
+            font-size: 0.95rem;
+            line-height: 1.22;
+            font-weight: 950;
+          }
+          .invoice-card p {
+            margin: 4px 0 0;
+            color: var(--gray-500);
+            font-size: 0.72rem;
+            line-height: 1.35;
+            font-weight: 700;
+            overflow-wrap: anywhere;
+          }
+          .invoice-amount {
+            color: var(--primary);
+            font-size: 0.92rem;
+            font-weight: 950;
+            white-space: nowrap;
+          }
+          .invoice-status {
+            justify-self: start;
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 0.66rem;
+            line-height: 1;
+            font-weight: 950;
+          }
+          .invoice-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+          }
+          .invoice-actions .btn {
+            width: 100%;
+            min-height: 36px;
+            justify-content: center;
+            border-radius: 13px !important;
+            padding: 7px 10px !important;
+          }
+        }
       `}</style>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', flexWrap: 'wrap', gap: '16px' }}>
+      <div className="admin-mobile-page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <h1 style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--ink)', letterSpacing: '-1px' }}>Quản lý Hóa đơn</h1>
           <p style={{ color: 'var(--gray-500)', fontWeight: 600 }}>Theo dõi dòng tiền và lịch sử thanh toán của khách hàng.</p>
@@ -267,9 +320,9 @@ const QuanLyHoaDon: React.FC = () => {
       </div>
 
       <div className="glass-card" style={{ borderRadius: 'var(--radius-xl)', overflow: 'hidden' }}>
-        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--gray-100)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', background: 'var(--surface)' }}>
-          <h2 style={{ fontSize: '1.1rem', fontWeight: 900, color: 'var(--ink)', margin: 0 }}>Danh sách hóa đơn ({filteredHoaDons.length}) <span style={{ fontSize: '0.75rem', background: 'var(--primary-light)', color: 'var(--primary)', padding: '2px 8px', borderRadius: '20px', marginLeft: '6px', fontWeight: 800 }}>Virtual List</span></h2>
-          <div className="glass-card" style={{ display: 'flex', alignItems: 'center', padding: '0 16px', borderRadius: '16px', border: '1px solid var(--gray-200)', background: 'var(--surface)', width: '300px' }}>
+        <div className="admin-mobile-card-header" style={{ padding: '20px 24px', borderBottom: '1px solid var(--gray-100)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', background: 'var(--surface)' }}>
+          <h2 style={{ fontSize: '1.1rem', fontWeight: 900, color: 'var(--ink)', margin: 0 }}>Danh sách hóa đơn ({filteredHoaDons.length})</h2>
+          <div className="glass-card admin-mobile-search-box" style={{ display: 'flex', alignItems: 'center', padding: '0 16px', borderRadius: '16px', border: '1px solid var(--gray-200)', background: 'var(--surface)', width: '300px' }}>
             <span className="material-symbols-outlined" style={{ color: 'var(--gray-400)', marginRight: '8px' }}>search</span>
             <input data-ai-id="input-quanlyhoadon-unv9"
               type="text"
@@ -280,13 +333,49 @@ const QuanLyHoaDon: React.FC = () => {
             />
           </div>
         </div>
-        <div className="table-responsive-wrapper">
+        <div className="invoice-mobile-list">
+          {filteredHoaDons.length === 0 ? (
+            <div className="admin-empty-state" style={{ padding: '18px 10px', textAlign: 'center', color: 'var(--gray-500)', fontWeight: 800 }}>
+              Không tìm thấy hóa đơn nào phù hợp.
+            </div>
+          ) : filteredHoaDons.map((h) => (
+            <article key={h.id_hoa_don} className="invoice-card">
+              <div className="invoice-card-top">
+                <div>
+                  <h3>#HD-{h.id_hoa_don} · {h.ten_khach_hang || `KH-${h.id_khach_hang}`}</h3>
+                  <p>{chuyenNgayISO_SangVN(h.ngay_lap_hoa_don)} · {h.sdt || 'Chưa có SĐT'}</p>
+                </div>
+                <span className="invoice-amount">{formatTienVND(h.tong_tien_cuoi ?? 0)}</span>
+              </div>
+              <span
+                className="invoice-status"
+                style={{
+                  background: h.trang_thai?.toLowerCase() === 'da_thanh_toan' ? 'var(--primary-light)' : 'var(--warning-light, rgba(245, 158, 11, 0.15))',
+                  color: h.trang_thai?.toLowerCase() === 'da_thanh_toan' ? 'var(--primary)' : 'var(--warning, #d97706)'
+                }}
+              >
+                {h.trang_thai?.toLowerCase() === 'da_thanh_toan' ? 'ĐÃ QUYẾT TOÁN' : 'CHỜ THANH TOÁN'}
+              </span>
+              <div className="invoice-actions">
+                <button data-ai-id="button-quanlyhoadon-mobile-view" className="btn" onClick={() => setViewingHD(h)} style={{ background: 'var(--gray-50)', color: 'var(--ink)' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>visibility</span>
+                </button>
+                {h.trang_thai?.toLowerCase() === 'cho_thanh_toan' && (
+                  <button data-ai-id="button-quanlyhoadon-mobile-paid" className="btn" onClick={() => handleConfirmPayment(h.id_hoa_don)} style={{ background: 'var(--primary-light)', color: 'var(--primary)' }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>check_circle</span>
+                  </button>
+                )}
+              </div>
+            </article>
+          ))}
+        </div>
+        <div className="table-responsive-wrapper invoice-desktop-table">
           <div style={{ minWidth: '800px' }}>
             {/* Tiêu đề cột dạng CSS Grid */}
-            <div style={{ 
-              display: 'grid', 
-              gridTemplateColumns: '1.2fr 1.2fr 1.5fr 1.2fr 1.2fr 0.8fr', 
-              background: 'var(--gray-50)', 
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: '1.2fr 1.2fr 1.5fr 1.2fr 1.2fr 0.8fr',
+              background: 'var(--gray-50)',
               padding: '16px 20px',
               borderBottom: '1px solid var(--gray-100)',
               boxSizing: 'border-box'
@@ -300,17 +389,17 @@ const QuanLyHoaDon: React.FC = () => {
             </div>
 
             {/* Thân danh sách cuộn ảo hiệu năng cao */}
-            <div 
+            <div
               onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
-              style={{ 
-                height: `${VISIBLE_HEIGHT}px`, 
-                overflowY: 'auto', 
+              style={{
+                height: `${VISIBLE_HEIGHT}px`,
+                overflowY: 'auto',
                 position: 'relative',
                 background: 'var(--surface)'
               }}
             >
               {filteredHoaDons.length === 0 ? (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--gray-400)', fontWeight: 700 }}>
+                <div className="admin-empty-state" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--gray-400)', fontWeight: 700 }}>
                   Không tìm thấy hóa đơn nào phù hợp.
                 </div>
               ) : (
@@ -323,22 +412,22 @@ const QuanLyHoaDon: React.FC = () => {
                     return visibleInvoices.map((h: any, idx: number) => {
                       const globalIndex = startIndex + idx;
                       return (
-                        <div 
-                          key={h.id_hoa_don} 
-                          className="virtual-row-hover"
-                          style={{
-                            position: 'absolute',
-                            top: `${globalIndex * ROW_HEIGHT}px`,
-                            left: 0,
-                            width: '100%',
-                            height: `${ROW_HEIGHT}px`,
-                            display: 'grid',
-                            gridTemplateColumns: '1.2fr 1.2fr 1.5fr 1.2fr 1.2fr 0.8fr',
-                            alignItems: 'center',
-                            borderBottom: '1px solid var(--gray-50)',
-                            padding: '0 20px',
-                            boxSizing: 'border-box'
-                          }}
+                        <div
+                           key={h.id_hoa_don}
+                           className="virtual-row-hover"
+                           style={{
+                             position: 'absolute',
+                             top: `${globalIndex * ROW_HEIGHT}px`,
+                             left: 0,
+                             width: '100%',
+                             height: `${ROW_HEIGHT}px`,
+                             display: 'grid',
+                             gridTemplateColumns: '1.2fr 1.2fr 1.5fr 1.2fr 1.2fr 0.8fr',
+                             alignItems: 'center',
+                             borderBottom: '1px solid var(--gray-50)',
+                             padding: '0 20px',
+                             boxSizing: 'border-box'
+                           }}
                         >
                           {/* Mã hóa đơn */}
                           <div style={{ fontWeight: 800, color: 'var(--gray-400)' }}>
@@ -396,7 +485,6 @@ const QuanLyHoaDon: React.FC = () => {
         </div>
       </div>
 
-
       {/* MODAL CHI TIẾT HÓA ĐƠN */}
       <Modal isOpen={!!viewingHD} onClose={() => setViewingHD(null)} title="Chi tiết Hóa đơn" maxWidth="700px">
         {viewingHD && (
@@ -427,34 +515,33 @@ const QuanLyHoaDon: React.FC = () => {
             </div>
 
             <div className="table-responsive-wrapper">
-<div style={{ minWidth: '800px' }}>
-<table style={{ width: '100%', marginBottom: '32px' }}>
-              <thead>
-                <tr style={{ borderBottom: '2px solid var(--gray-100)' }}>
-                  <th style={{ textAlign: 'left', padding: '12px 0', fontSize: '0.8rem', fontWeight: 900, color: 'var(--ink)' }}>DIỄN GIẢI</th>
-                  <th style={{ textAlign: 'right', padding: '12px 0', fontSize: '0.8rem', fontWeight: 900, color: 'var(--ink)' }}>THÀNH TIỀN</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr style={{ borderBottom: '1px solid var(--gray-50)' }}>
-                  <td style={{ padding: '16px 0', fontWeight: 700, color: 'var(--ink)' }}>Tổng tiền dịch vụ & vật tư</td>
-                  <td style={{ padding: '16px 0', textAlign: 'right', fontWeight: 800, color: 'var(--ink)' }}>{formatTienVND(viewingHD.tong_tien_ban_dau)}</td>
-                </tr>
-                {viewingHD.tong_giam_gia > 0 && (
-                  <tr style={{ borderBottom: '1px solid var(--gray-50)' }}>
-                    <td style={{ padding: '16px 0', color: 'var(--danger)', fontWeight: 700 }}>Giảm giá (Ưu đãi)</td>
-                    <td style={{ padding: '16px 0', textAlign: 'right', color: 'var(--danger)', fontWeight: 800 }}>-{formatTienVND(viewingHD.tong_giam_gia)}</td>
+              <table style={{ width: '100%', marginBottom: '32px' }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid var(--gray-100)' }}>
+                    <th style={{ textAlign: 'left', padding: '12px 0', fontSize: '0.8rem', fontWeight: 900, color: 'var(--ink)' }}>DIỄN GIẢI</th>
+                    <th style={{ textAlign: 'right', padding: '12px 0', fontSize: '0.8rem', fontWeight: 900, color: 'var(--ink)' }}>THÀNH TIỀN</th>
                   </tr>
-                )}
-              </tbody>
-              <tfoot>
-                <tr>
-                  <td style={{ padding: '24px 0', fontSize: '1.1rem', fontWeight: 950, color: 'var(--ink)' }}>TỔNG CỘNG THANH TOÁN</td>
-                  <td style={{ padding: '24px 0', textAlign: 'right', fontSize: '1.4rem', fontWeight: 950, color: 'var(--primary)' }}>{formatTienVND(viewingHD.tong_tien_cuoi)}</td>
-                </tr>
-              </tfoot>
-            </table>
-</div></div>
+                </thead>
+                <tbody>
+                  <tr style={{ borderBottom: '1px solid var(--gray-50)' }}>
+                    <td style={{ padding: '16px 0', fontWeight: 700, color: 'var(--ink)' }}>Tổng tiền dịch vụ & vật tư</td>
+                    <td style={{ padding: '16px 0', textAlign: 'right', fontWeight: 800, color: 'var(--ink)' }}>{formatTienVND(viewingHD.tong_tien_ban_dau)}</td>
+                  </tr>
+                  {viewingHD.tong_giam_gia > 0 && (
+                    <tr style={{ borderBottom: '1px solid var(--gray-50)' }}>
+                      <td style={{ padding: '16px 0', color: 'var(--danger)', fontWeight: 700 }}>Giảm giá (Ưu đãi)</td>
+                      <td style={{ padding: '16px 0', textAlign: 'right', color: 'var(--danger)', fontWeight: 800 }}>-{formatTienVND(viewingHD.tong_giam_gia)}</td>
+                    </tr>
+                  )}
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td style={{ padding: '24px 0', fontSize: '1.1rem', fontWeight: 950, color: 'var(--ink)' }}>TỔNG CỘNG THANH TOÁN</td>
+                    <td style={{ padding: '24px 0', textAlign: 'right', fontSize: '1.4rem', fontWeight: 950, color: 'var(--primary)' }}>{formatTienVND(viewingHD.tong_tien_cuoi)}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
 
             <div style={{ textAlign: 'center', color: 'var(--gray-400)', fontSize: '0.8rem', fontStyle: 'italic' }}>
               Cảm ơn bạn đã tin tưởng dịch vụ tại Rexi!

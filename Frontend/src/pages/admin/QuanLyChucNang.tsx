@@ -45,12 +45,109 @@ const QuanLyChucNang: React.FC = () => {
 
   return (
     <div className="animate-fade-in">
-      <div style={{ marginBottom: '40px' }}>
+      <style>{`
+        .admin-feature-mobile-list { display: none; }
+        @media screen and (max-width: 1024px) {
+          .admin-feature-header {
+            margin-bottom: 16px !important;
+          }
+          .admin-feature-header h1 {
+            max-width: 12ch !important;
+            font-size: clamp(1.42rem, 6.4vw, 1.78rem) !important;
+            line-height: 1.08 !important;
+            letter-spacing: -0.02em !important;
+            margin: 0 0 6px !important;
+          }
+          .admin-feature-header p {
+            max-width: 32ch !important;
+            margin: 0 !important;
+            font-size: 0.82rem !important;
+            line-height: 1.45 !important;
+          }
+          .admin-feature-kpis {
+            grid-template-columns: 1fr !important;
+            gap: 10px !important;
+            margin-bottom: 16px !important;
+          }
+          .admin-feature-kpis .glass-card {
+            padding: 13px !important;
+            border-radius: 16px !important;
+          }
+          .admin-feature-kpis .glass-card > div:first-child {
+            font-size: 0.66rem !important;
+          }
+          .admin-feature-kpis .glass-card > div:last-child {
+            font-size: 1.35rem !important;
+            line-height: 1.15 !important;
+          }
+          .admin-feature-desktop-table {
+            display: none !important;
+          }
+          .admin-feature-mobile-list {
+            display: grid !important;
+            gap: 10px;
+            padding: 10px;
+          }
+          .admin-feature-card {
+            display: grid;
+            gap: 10px;
+            padding: 12px;
+            border-radius: 18px;
+            background: var(--surface);
+            border: 1px solid var(--gray-100);
+          }
+          .admin-feature-card-top {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 10px;
+            align-items: start;
+          }
+          .admin-feature-card h3 {
+            margin: 0;
+            color: var(--ink);
+            font-size: 0.95rem;
+            line-height: 1.22;
+            font-weight: 950;
+          }
+          .admin-feature-card p {
+            margin: 4px 0 0;
+            color: var(--gray-500);
+            font-size: 0.72rem;
+            line-height: 1.35;
+            font-weight: 700;
+            overflow-wrap: anywhere;
+          }
+          .admin-feature-code,
+          .admin-feature-status {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 28px;
+            padding: 5px 9px;
+            border-radius: 999px;
+            font-size: 0.62rem;
+            line-height: 1;
+            font-weight: 950;
+            white-space: nowrap;
+          }
+          .admin-feature-code {
+            background: var(--primary-light);
+            color: var(--primary);
+            font-family: monospace;
+          }
+          .admin-feature-status {
+            justify-self: start;
+            background: rgba(34,197,94,0.12);
+            color: #16a34a;
+          }
+        }
+      `}</style>
+      <div className="admin-feature-header" style={{ marginBottom: '40px' }}>
         <h1 style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--ink)', letterSpacing: '-1px' }}>Phân hệ chức năng</h1>
         <p style={{ color: 'var(--gray-500)', fontWeight: 600 }}>Quản trị các mô-đun nghiệp vụ và phân cấp tính năng hệ thống.</p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+      <div className="admin-feature-kpis" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '24px' }}>
         <div className="glass-card" style={{ padding: '18px', borderRadius: '18px', borderLeft: '4px solid var(--primary)' }}>
           <div style={{ fontSize: '0.78rem', color: 'var(--gray-500)', fontWeight: 900, letterSpacing: '0.8px' }}>TỔNG PHÂN HỆ</div>
           <div style={{ fontSize: '2rem', color: 'var(--ink)', fontWeight: 950 }}>{chucNangs.length}</div>
@@ -66,7 +163,22 @@ const QuanLyChucNang: React.FC = () => {
       </div>
 
       <div className="glass-card" style={{ borderRadius: 'var(--radius-xl)', overflow: 'hidden' }}>
-        <div className="table-responsive-wrapper">
+        <div className="admin-feature-mobile-list">
+          {chucNangs.map((cn) => (
+            <article key={cn.id_chuc_nang} className="admin-feature-card">
+              <div className="admin-feature-card-top">
+                <div>
+                  <h3>{cn.ten_chuc_nang}</h3>
+                  <p>{cn.mo_ta || 'Chưa có mô tả'}</p>
+                </div>
+                <span className="admin-feature-code">{cn.ma_chuc_nang}</span>
+              </div>
+              <p>{cn.duong_dan || 'Chưa gắn route'} · Quyền: {cn.vai_tro || '—'}</p>
+              <span className="admin-feature-status">HOẠT ĐỘNG</span>
+            </article>
+          ))}
+        </div>
+        <div className="table-responsive-wrapper admin-feature-desktop-table">
 <div style={{ minWidth: '800px' }}>
 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>

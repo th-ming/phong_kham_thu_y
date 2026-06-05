@@ -57,13 +57,112 @@ const QuanLyXetNghiem: React.FC = () => {
 
   return (
     <div className="animate-fade-in">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', flexWrap: 'wrap', gap: '20px' }}>
+      <style>{`
+        .admin-lab-mobile-list { display: none; }
+        @media screen and (max-width: 1024px) {
+          .admin-lab-header {
+            display: grid !important;
+            grid-template-columns: 1fr !important;
+            gap: 12px !important;
+            margin-bottom: 16px !important;
+          }
+          .admin-lab-header h1 {
+            max-width: 12ch !important;
+            font-size: clamp(1.42rem, 6.4vw, 1.78rem) !important;
+            line-height: 1.08 !important;
+            letter-spacing: -0.02em !important;
+            margin: 0 0 6px !important;
+          }
+          .admin-lab-header p {
+            max-width: 32ch !important;
+            margin: 0 !important;
+            font-size: 0.82rem !important;
+            line-height: 1.45 !important;
+          }
+          .admin-lab-actions {
+            display: grid !important;
+            grid-template-columns: 1fr !important;
+            width: min(100%, 300px) !important;
+            gap: 8px !important;
+          }
+          .admin-lab-search {
+            width: 100% !important;
+            min-height: 42px !important;
+            border-radius: 16px !important;
+          }
+          .admin-lab-actions .btn {
+            width: 100% !important;
+            min-height: 42px !important;
+            justify-content: center !important;
+            border-radius: 16px !important;
+            padding: 9px 14px !important;
+            font-size: 0.8rem !important;
+          }
+          .admin-lab-desktop-table {
+            display: none !important;
+          }
+          .admin-lab-mobile-list {
+            display: grid !important;
+            gap: 10px;
+            padding: 10px;
+          }
+          .admin-lab-card {
+            display: grid;
+            gap: 10px;
+            padding: 12px;
+            border-radius: 18px;
+            background: var(--surface);
+            border: 1px solid var(--gray-100);
+          }
+          .admin-lab-card-top {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 10px;
+            align-items: start;
+          }
+          .admin-lab-card h3 {
+            margin: 0;
+            color: var(--ink);
+            font-size: 0.95rem;
+            line-height: 1.22;
+            font-weight: 950;
+          }
+          .admin-lab-card p {
+            margin: 4px 0 0;
+            color: var(--gray-500);
+            font-size: 0.72rem;
+            line-height: 1.35;
+            font-weight: 700;
+            overflow-wrap: anywhere;
+          }
+          .admin-lab-status {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 28px;
+            padding: 5px 9px;
+            border-radius: 999px;
+            font-size: 0.66rem;
+            line-height: 1;
+            font-weight: 950;
+            white-space: nowrap;
+          }
+          .admin-lab-card .btn {
+            width: 100%;
+            min-height: 36px;
+            justify-content: center;
+            border-radius: 13px !important;
+            padding: 7px 10px !important;
+          }
+        }
+      `}</style>
+      <div className="admin-lab-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', flexWrap: 'wrap', gap: '20px' }}>
         <div>
           <h1 style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--ink)', letterSpacing: '-1px' }}>Quản lý Xét nghiệm</h1>
           <p style={{ color: 'var(--gray-500)', fontWeight: 600 }}>Theo dõi các chỉ số và kết quả xét nghiệm lâm sàng.</p>
         </div>
-        <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <div className="glass-card" style={{ display: 'flex', alignItems: 'center', padding: '0 16px', borderRadius: '16px', border: '1px solid var(--gray-200)', background: 'var(--surface)', width: '260px' }}>
+        <div className="admin-lab-actions" style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div className="glass-card admin-lab-search" style={{ display: 'flex', alignItems: 'center', padding: '0 16px', borderRadius: '16px', border: '1px solid var(--gray-200)', background: 'var(--surface)', width: '260px' }}>
             <span className="material-symbols-outlined" style={{ color: 'var(--gray-400)', marginRight: '8px' }}>search</span>
             <input data-ai-id="input-quanlyxetnghiem-xn2r"
               type="text"
@@ -81,7 +180,36 @@ const QuanLyXetNghiem: React.FC = () => {
       </div>
 
       <div className="glass-card" style={{ borderRadius: 'var(--radius-xl)', overflow: 'hidden' }}>
-        <div className="table-responsive-wrapper">
+        <div className="admin-lab-mobile-list">
+          {filteredXetNghiems.length === 0 ? (
+            <div className="admin-empty-state" style={{ padding: '18px 10px', textAlign: 'center', color: 'var(--gray-500)', fontWeight: 800 }}>
+              Không có xét nghiệm phù hợp.
+            </div>
+          ) : filteredXetNghiems.map((xn) => (
+            <article key={xn.id_xet_nghiem_benh_an} className="admin-lab-card">
+              <div className="admin-lab-card-top">
+                <div>
+                  <h3>#XN-{xn.id_xet_nghiem_benh_an} · {xn.ten_xet_nghiem || "Tổng quát"}</h3>
+                  <p>HS-{xn.id_ho_so} · {xn.ten_bac_si || "Chưa có bác sĩ"}</p>
+                </div>
+                <span
+                  className="admin-lab-status"
+                  style={{
+                    background: xn.trang_thai?.toLowerCase() === 'hoan_thanh' ? 'var(--primary-light)' : 'var(--warning-light, rgba(245, 158, 11, 0.15))',
+                    color: xn.trang_thai?.toLowerCase() === 'hoan_thanh' ? 'var(--primary)' : 'var(--warning, #d97706)'
+                  }}
+                >
+                  {xn.trang_thai?.toUpperCase() || 'ĐANG XỬ LÝ'}
+                </span>
+              </div>
+              <p>Ngày lấy mẫu: {chuyenNgayISO_SangVN(xn.ngay_lay_mau)}</p>
+              <button data-ai-id="button-quanlyxetnghiem-mobile-view" className="btn" onClick={() => setViewingXN(xn)} style={{ background: 'var(--gray-50)', color: 'var(--ink)' }}>
+                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>visibility</span>
+              </button>
+            </article>
+          ))}
+        </div>
+        <div className="table-responsive-wrapper admin-lab-desktop-table">
 <div style={{ minWidth: '800px' }}>
 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>

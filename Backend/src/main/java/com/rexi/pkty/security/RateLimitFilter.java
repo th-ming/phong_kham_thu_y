@@ -34,6 +34,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         String ip = getClientIP(request);
+        String interactionSource = getInteractionSource(request);
+        String rateKey = ip + "|" + interactionSource;
         boolean localhost = "127.0.0.1".equals(ip) || "0:0:0:0:0:0:0:1".equals(ip);
         long currentTime = System.currentTimeMillis();
 
@@ -90,13 +92,13 @@ public class RateLimitFilter extends OncePerRequestFilter {
             return;
         }
 
-        requestTimestamps.compute(ip, (key, timestamp) -> {
+        requestTimestamps.compute(rateKey, (key, timestamp) -> {
             if (timestamp == null || (currentTime - timestamp) > 60000) {
-                requestCounts.put(ip, new java.util.concurrent.atomic.AtomicInteger(1));
+                requestCounts.put(rateKey, new java.util.concurrent.atomic.AtomicInteger(1));
                 return currentTime;
             } else {
                 // AtomicInteger được compute an toàn trong ConcurrentHashMap
-                requestCounts.compute(ip, (k, existing) -> {
+                requestCounts.compute(rateKey, (k, existing) -> {
                     if (existing == null) {
                         return new java.util.concurrent.atomic.AtomicInteger(1);
                     }
@@ -107,25 +109,12 @@ public class RateLimitFilter extends OncePerRequestFilter {
             }
         });
 
-        java.util.concurrent.atomic.AtomicInteger countObj = requestCounts.get(ip);
+        java.util.concurrent.atomic.AtomicInteger countObj = requestCounts.get(rateKey);
         int requests = (countObj != null) ? countObj.get() : 1;
         if (requests > MAX_REQUESTS_PER_MINUTE) {
-            if (securityAlertService != null) {
-                securityAlertService.reportAndBlock(
-                        ip,
-                        "Request flood / DDoS",
-                        request.getRequestURI(),
-                        request.getMethod(),
-                        request.getHeader("User-Agent"),
-                        requests + " requests trong vòng 60 giây",
-                        getLocationHint(request)
-                );
-            } else {
-                persistBlockedIp(ip);
-            }
             response.setStatus(429);
             response.setContentType("application/json;charset=UTF-8");
-            response.getWriter().write("{\"message\": \"Cảnh báo bảo mật: Phát hiện spam/DDoS. IP đã bị chặn cho tới khi Admin gỡ.\"}");
+            response.getWriter().write("{\"message\": \"Bạn thao tác quá nhanh. Vui lòng đợi một lát rồi thử lại.\"}");
             return;
         }
 
@@ -149,8 +138,9 @@ public class RateLimitFilter extends OncePerRequestFilter {
         String uri = safe(request.getRequestURI());
         String query = safe(request.getQueryString());
         String userAgent = safe(request.getHeader("User-Agent"));
-        String aiAction = safe(request.getHeader("X-AI-ACTION"));
-        String probe = (uri + " " + query + " " + userAgent + " " + aiAction).toLowerCase();
+        // Do not inspect X-AI-ACTION as an attack payload. Tool tags like FILL:password
+        // describe UI automation and previously caused false credential-attack blocks on /api/auth/login.
+        String probe = (uri + " " + query + " " + userAgent).toLowerCase();
 
         if (probe.matches(".*(union\\s+select|sleep\\s*\\(|benchmark\\s*\\(|information_schema|xp_cmdshell|or\\s+1\\s*=\\s*1|--|/\\*|\\*/).*")) {
             return new AttackSignal("SQL injection", truncate(probe));
@@ -180,6 +170,14 @@ public class RateLimitFilter extends OncePerRequestFilter {
             return new AttackSignal("Security scanner / non-human client", truncate(userAgent.isBlank() ? "empty user-agent" : userAgent));
         }
         return null;
+    }
+
+    private String getInteractionSource(HttpServletRequest request) {
+        String source = safe(request.getHeader("X-Interaction-Source"));
+        if ("human".equalsIgnoreCase(source)) return "human";
+        String aiAction = safe(request.getHeader("X-AI-ACTION"));
+        if (!aiAction.isBlank()) return "automation";
+        return "unknown";
     }
 
     private void persistBlockedIp(String ip) {

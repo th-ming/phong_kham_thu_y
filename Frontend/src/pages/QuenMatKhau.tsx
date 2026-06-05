@@ -30,6 +30,8 @@ const QuenMatKhau: React.FC = () => {
         username: accountInfo.username,
         email: accountInfo.email,
         phone: accountInfo.phone
+      }, {
+        headers: { "X-Interaction-Source": "human" }
       });
       if (res.status === 200) {
         toast.success("Xác minh thông tin thành công!");
@@ -47,7 +49,9 @@ const QuenMatKhau: React.FC = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      await axiosInstance.post("/api/system/send-otp", { email: accountInfo.email });
+      await axiosInstance.post("/api/system/send-otp", { email: accountInfo.email }, {
+        headers: { "X-Interaction-Source": "human" }
+      });
       toast.success(`Đã gửi mã OTP tới ${accountInfo.email}. Vui lòng kiểm tra hòm thư (bao gồm cả thư rác/Spam)!`, { duration: 6000 });
       setStep(3); // Sang bước nhập OTP
     } catch (err: any) {
@@ -61,7 +65,9 @@ const QuenMatKhau: React.FC = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      await axiosInstance.post("/api/system/verify-otp", { email: accountInfo.email, otp });
+      await axiosInstance.post("/api/system/verify-otp", { email: accountInfo.email, otp }, {
+        headers: { "X-Interaction-Source": "human" }
+      });
       toast.success("Xác minh OTP thành công!");
       setStep(4);
     } catch (err: any) {
@@ -89,6 +95,8 @@ const QuenMatKhau: React.FC = () => {
         phone: accountInfo.phone,
         newPass: passwords.newPass,
         method: method
+      }, {
+        headers: { "X-Interaction-Source": "human" }
       });
       toast.success("Đổi mật khẩu thành công!");
       setTimeout(() => navigate("/dang-nhap"), 2000);

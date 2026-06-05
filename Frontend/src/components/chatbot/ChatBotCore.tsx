@@ -95,6 +95,7 @@ export const ChatBotCore: React.FC = () => {
     const normalizedRoleCode = normalizeUserRole(user);
     const isAdminAccount = normalizedRoleCode === "admin";
     const isCustomerRoute = location.pathname.startsWith("/khach-hang");
+    const isAdminRoute = location.pathname.startsWith("/quan-ly");
     const roleDisplayName: Record<string, string> = {
         admin: "Quản trị",
         quan_ly: "Quản lý",
@@ -2496,7 +2497,9 @@ export const ChatBotCore: React.FC = () => {
                     if (errorCode === "network") {
                         setVoiceStatus("Nhận diện giọng nói bị lỗi mạng.");
                         // [CẢI TIẾN 2] Phát cảnh báo bằng giọng nói luôn, không chỉ hiện text
-                        const text = "Em bị mất kết nối mạng, không nghe được giọng nói nữa. Bác sĩ vui lòng kiểm tra mạng rồi bấm mic lại nhé!";
+                        const text = isClinicStaff
+                            ? "Em bị mất kết nối mạng, không nghe được giọng nói nữa. Bác sĩ vui lòng kiểm tra mạng rồi bấm mic lại nhé!"
+                            : "Em bị mất kết nối mạng, không nghe được giọng nói nữa. Bạn vui lòng kiểm tra mạng rồi thử lại nhé!";
                         reportVoiceIssueToAdmin("SPEECH_NETWORK", text, "HIGH", "SpeechRecognition.onerror");
                         toast.error("Lỗi mạng: Em không nghe được giọng nói. Vui lòng kiểm tra kết nối.");
                         stopVoiceSession("Lỗi mạng — mic đã tắt.");
@@ -2525,7 +2528,9 @@ export const ChatBotCore: React.FC = () => {
                             const MAX_SILENT_RETRIES = 4;
                             if (consecutiveNoSpeechRef.current >= MAX_SILENT_RETRIES) {
                                 consecutiveNoSpeechRef.current = 0;
-                                const shutdownMsg = "Em tạm tắt mic để tiết kiệm pin vì không nghe thấy giọng nói. Khi cần bác sĩ bấm mic lại nhé!";
+                                const shutdownMsg = isClinicStaff
+                                    ? "Em tạm tắt mic để tiết kiệm pin vì không nghe thấy giọng nói. Khi cần bác sĩ bấm mic lại nhé!"
+                                    : "Em tạm tắt mic để tiết kiệm pin vì không nghe thấy giọng nói. Khi cần bạn bấm mic lại nhé!";
                                 stopVoiceSession("Mic tự tắt sau quá trình im lặng.");
                                 notifyVoiceMessage(shutdownMsg, true);
                                 toast.info("Mic đã tự tắt sau một thời gian im lặng.");
@@ -4931,6 +4936,7 @@ export const ChatBotCore: React.FC = () => {
             setZoomedImage={setZoomedImage}
             isCustomerAccount={isCustomerAccount}
             isCustomerRoute={isCustomerRoute}
+            isAdminRoute={isAdminRoute}
             showCallout={showCallout}
             loading={loading}
             shouldUseMatureCustomerTone={shouldUseMatureCustomerTone}

@@ -207,6 +207,11 @@ export const StyleChatbot: React.FC = () => (
                 width: 56px !important;
                 height: 56px !important;
             }
+            #chatBtn.admin-chat-btn {
+                bottom: max(88px, env(safe-area-inset-bottom, 0px) + 84px) !important;
+                width: 46px !important;
+                height: 46px !important;
+            }
             #chatWindow {
                 right: max(10px, env(safe-area-inset-right, 0px)) !important;
                 width: calc(100vw - 20px) !important;

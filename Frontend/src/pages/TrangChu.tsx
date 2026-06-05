@@ -1,5 +1,6 @@
 ﻿import React, { useEffect } from "react";
 import { Preloader } from "@components/Preloader";
+import { useRef } from "react";
 import { MemeCat, ScrollToTop } from "@components/SpecialEffects";
 
 import PhanGioiThieu from "@components/home/PhanGioiThieu";
@@ -13,9 +14,12 @@ import PhanDanhGia from "@components/home/PhanDanhGia";
 import PhanHoiDap from "@components/home/PhanHoiDap";
 import PhanCTA from "@components/home/PhanCTA";
 import PhanLienHe from "@components/home/PhanLienHe";
+import HomeGsapMotion from "@components/home/HomeGsapMotion";
 
 // trang chủ chính
 const TrangChu: React.FC = () => {
+  const mainRef = useRef<HTMLElement>(null);
+
   useEffect(() => {
 
     document.title = "Rexi - Sức Khoẻ Trọn Vẹn Cho Người Bạn Nhỏ";
@@ -25,7 +29,9 @@ const TrangChu: React.FC = () => {
     <>
       <Preloader />
 
-      <main>
+      <main ref={mainRef}>
+        <HomeGsapMotion scopeRef={mainRef} />
+
         {/* phần banner chính */}
         <PhanGioiThieu />
 

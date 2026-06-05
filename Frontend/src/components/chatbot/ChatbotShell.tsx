@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { useNavigate } from "react-router-dom";
 import DOMPurify from "dompurify";
 import { BoTaiSuyNghi, BangQuaTrinhSuyNghi } from "@components/chatbot/BangTrangThaiChatbot";
@@ -36,8 +36,9 @@ export const ChatbotShell: React.FC<ChatbotShellProps> = (props) => {
         isVoiceEnabled, lastAgentQuery, lastQuery, loading, messages, proactiveMessage, removeSelectedFile,
         selectedFiles, setActiveTab, setAgentInput, setInput, setIsOpen, setIsVoiceEnabled, setProactiveMessage, setZoomedImage, showCallout,
         shouldUseMatureCustomerTone, standardElapsedTime, standardEndRef, standardSuggestions, textInputRef,
-        toggleListening, voiceLiveText, voiceMode, voiceStatus, waveBar1Ref, waveBar2Ref, waveBar3Ref, zoomedImage, isCustomerRoute
+        toggleListening, voiceLiveText, voiceMode, voiceStatus, waveBar1Ref, waveBar2Ref, waveBar3Ref, zoomedImage, isCustomerRoute, isAdminRoute
     } = props;
+    const hasMobileBottomNav = isCustomerRoute || isAdminRoute;
 
     return (
         <>
@@ -136,7 +137,8 @@ export const ChatbotShell: React.FC<ChatbotShellProps> = (props) => {
                 isOpen={isOpen}
                 isMobile={isMobile}
                 activeTab={activeTab}
-                isCustomerRoute={isCustomerRoute}
+                hasMobileBottomNav={hasMobileBottomNav}
+                isAdminRoute={isAdminRoute}
                 onToggle={() => setIsOpen(!isOpen)}
             />
 
@@ -151,10 +153,10 @@ export const ChatbotShell: React.FC<ChatbotShellProps> = (props) => {
                         onDragLeave={handleDragLeave}
                         onDrop={handleDrop}
                         style={{
-                            position: 'fixed', 
-                            bottom: isMobile 
-                                ? (isCustomerRoute ? '164px' : '80px') 
-                                : '110px', 
+                            position: 'fixed',
+                            bottom: isMobile
+                                ? (hasMobileBottomNav ? '164px' : '80px')
+                                : '110px',
                             right: isMobile ? '16px' : '30px',
                             width: isMobile ? 'calc(100vw - 32px)' : 'min(450px, calc(100vw - 60px))',
                             height: isMobile ? 'min(650px, calc(100vh - 110px))' : '600px',
@@ -194,10 +196,10 @@ export const ChatbotShell: React.FC<ChatbotShellProps> = (props) => {
                             <>
                                 <div className="chat-message-scroll" style={{ flex: 1, minHeight: 0, minWidth: 0, padding: '20px', overflowY: 'auto', overflowX: 'hidden', display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--background)' }}>
                                     {messages.map((msg: any, idx: number) => (
-                                        <div key={idx} 
+                                        <div key={idx}
                                              className={msg.type === "user" ? "chat-message-user" : "chat-message-ai"}
                                              style={{ display: 'flex', flexDirection: 'column', alignSelf: msg.type === "user" ? "flex-end" : "flex-start", maxWidth: '85%', minWidth: 0 }}>
-                                            <div 
+                                            <div
                                                 style={{
                                                     padding: '12px 16px', borderRadius: msg.type === "user" ? '20px 20px 4px 20px' : '20px 20px 20px 4px',
                                                     background: msg.type === "user" ? (isDark ? 'rgba(16, 185, 129, 0.2)' : '#e6f4ea') : 'var(--surface)',
@@ -326,7 +328,7 @@ export const ChatbotShell: React.FC<ChatbotShellProps> = (props) => {
                                                     onGoLogin={() => navigate("/dang-nhap")}
                                                 />
                                             </div>
-                                            
+
                                             {/* Dynamic Clinical Triage Card */}
                                             {msg.type === "ai" && msg.isEmergency && (
                                                 <BangCapCuuChatbot
@@ -340,9 +342,9 @@ export const ChatbotShell: React.FC<ChatbotShellProps> = (props) => {
                                     ))}
                                     {loading && (
                                         <BoTaiSuyNghi
-                                            elapsedTime={standardElapsedTime} 
-                                            loadingText={getDynamicLoadingText(lastQuery, standardElapsedTime, false)} 
-                                            isDark={isDark} 
+                                            elapsedTime={standardElapsedTime}
+                                            loadingText={getDynamicLoadingText(lastQuery, standardElapsedTime, false)}
+                                            isDark={isDark}
                                         />
                                     )}
                                     <div ref={standardEndRef} />
@@ -356,10 +358,10 @@ export const ChatbotShell: React.FC<ChatbotShellProps> = (props) => {
                             <>
                                 <div className="chat-message-scroll" style={{ flex: 1, minHeight: 0, minWidth: 0, padding: '20px', overflowY: 'auto', overflowX: 'hidden', display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--background)' }}>
                                     {agentMessages.map((msg: any, idx: number) => (
-                                        <div key={idx} 
+                                        <div key={idx}
                                              className={msg.type === "user" ? "chat-message-user" : "chat-message-ai"}
                                              style={{ display: 'flex', flexDirection: 'column', alignSelf: msg.type === "user" ? "flex-end" : "flex-start", maxWidth: '85%', minWidth: 0 }}>
-                                            <div 
+                                            <div
                                                 style={{
                                                     padding: '12px 16px', borderRadius: msg.type === "user" ? '20px 20px 4px 20px' : '20px 20px 20px 4px',
                                                     background: msg.type === "user" ? (isDark ? 'rgba(244, 63, 94, 0.2)' : '#ffe4e6') : 'var(--surface)',
@@ -525,9 +527,9 @@ export const ChatbotShell: React.FC<ChatbotShellProps> = (props) => {
                                     ))}
                                     {agentLoading && (
                                         <BoTaiSuyNghi
-                                            elapsedTime={agentElapsedTime} 
-                                            loadingText={getDynamicLoadingText(lastAgentQuery, agentElapsedTime, true)} 
-                                            isDark={isDark} 
+                                            elapsedTime={agentElapsedTime}
+                                            loadingText={getDynamicLoadingText(lastAgentQuery, agentElapsedTime, true)}
+                                            isDark={isDark}
                                         />
                                     )}
                                     <div ref={agentEndRef} />
@@ -669,7 +671,7 @@ export const ChatbotShell: React.FC<ChatbotShellProps> = (props) => {
                                             <div style={{ width: '3px', height: '15px', background: activeTab === 'agent' ? '#f43f5e' : '#10b981', borderRadius: '3px', transformOrigin: 'center', animation: 'waveGrow 0.6s ease-in-out infinite alternate', animationDelay: '0.1s', boxShadow: activeTab === 'agent' ? '0 0 6px rgba(244,63,94,0.4)' : '0 0 6px rgba(16,185,129,0.4)' }}></div>
                                             <div style={{ width: '3px', height: '6px', background: activeTab === 'agent' ? '#f43f5e' : '#10b981', borderRadius: '3px', transformOrigin: 'center', animation: 'waveGrow 1.2s ease-in-out infinite alternate', animationDelay: '0.2s', boxShadow: activeTab === 'agent' ? '0 0 6px rgba(244,63,94,0.4)' : '0 0 6px rgba(16,185,129,0.4)' }}></div>
                                         </div>
-                                        
+
                                         <div style={{
                                             flex: 1,
                                             fontSize: '0.75rem',

@@ -12,6 +12,7 @@ import com.rexi.pkty.service.AiMemoryService;
 import com.rexi.pkty.service.AuditLogService;
 import com.rexi.pkty.service.ReActAgentService;
 import com.rexi.pkty.service.AgentResponseCache;
+import com.rexi.pkty.security.RoleAccessPolicy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.*;
@@ -31,6 +32,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Locale;
+import java.util.Objects;
 
 @RestController
 @RequestMapping("/api/chat")
@@ -234,6 +236,12 @@ public class ChatController {
             boolean hasImage = lastMsg.getImages() != null && !lastMsg.getImages().isEmpty();
             boolean hasMedia = hasVideo || hasImage;
 
+            Map<String, Object> evidenceBackedAgentReply = tryRunEvidenceBackedAgentFromChat(
+                    userQuery, normalizedUserQuery, realUsername, auth, hasMedia);
+            if (evidenceBackedAgentReply != null) {
+                return evidenceBackedAgentReply;
+            }
+
             boolean webSearchIntent = isWebSearchQuery(userQuery) || (semanticIntent != null && semanticIntent.needsWebSearch());
             EmergencyTriage emergencyTriage = webSearchIntent
                     ? new EmergencyTriage(false, 0, "none", "web-search-intent")
@@ -359,26 +367,13 @@ public class ChatController {
                 ? "Sen hiện ĐÃ ĐĂNG NHẬP với tài khoản: " + realUsername + ". Bạn CÓ QUYỀN đặt lịch khám ngay cho Sen."
                 : "Sen HIỆN CHƯA ĐĂNG NHẬP. Bạn TUYỆT ĐỐI KHÔNG ĐƯỢC trả về tag [AUTO_BOOK]. Nếu Sen muốn đặt lịch, hãy yêu cầu Sen đăng nhập trước nhé.";
 
-            boolean isStaff = false;
-            String userRoleName = "Khách hàng";
-            if (auth != null) {
-                for (org.springframework.security.core.GrantedAuthority ga : auth.getAuthorities()) {
-                    String r = ga.getAuthority().replace("ROLE_", "").toUpperCase();
-                    if (r.equals("ADMIN") || r.equals("QUAN_LY") || r.equals("BAC_SI") || r.equals("KE_TOAN") || r.equals("TIEP_TAN") || r.equals("Y_TA") || r.equals("STAFF")) {
-                        isStaff = true;
-                        if (r.equals("ADMIN")) userRoleName = "Quản trị viên";
-                        else if (r.equals("QUAN_LY")) userRoleName = "Quản lý";
-                        else if (r.equals("BAC_SI")) userRoleName = "Bác sĩ";
-                        else if (r.equals("KE_TOAN")) userRoleName = "Kế toán";
-                        else if (r.equals("TIEP_TAN")) userRoleName = "Tiếp tân";
-                        else if (r.equals("Y_TA")) userRoleName = "Y tá";
-                        else if (r.equals("STAFF")) userRoleName = "Nhân viên";
-                        break;
-                    }
-                }
-            }
+            String normalizedRole = normalizedRoleFromAuth(auth);
+            boolean isStaff = RoleAccessPolicy.isInternalStaffRole(normalizedRole);
+            String userRoleName = RoleAccessPolicy.displayRoleName(normalizedRole);
+            String roleWorkProfile = RoleAccessPolicy.roleWorkProfile(normalizedRole);
+            String rolePromptGuidance = RoleAccessPolicy.rolePromptGuidance(normalizedRole);
             ChatPersonaContext personaContext = buildPersonaContext(isStaff, userRoleName, requestPlan, isLoggedIn);
-            boolean isClinicalStaff = "Bác sĩ".equals(userRoleName) || "Y tá".equals(userRoleName);
+            boolean isClinicalStaff = RoleAccessPolicy.isClinicalRole(normalizedRole);
             String personaBlock = renderPersonaBlock(personaContext, requestPlan, currentPath);
 
             // Get nam sinh KHACH_HANG tu DB de phan loai style chat GenZ/Mature
@@ -403,7 +398,9 @@ public class ChatController {
                         + "BẠN LÀ BÁC SĨ THÚ Y REXI - ĐỒNG NGHIỆP VÀ TRỢ LÝ HỖ TRỢ CHUYÊN NGHIỆP CỦA PHÒNG KHÁM.\n"
                         + realtimeContext
                         + "1. VAI TRÒ: Bạn đang trò chuyện với một thành viên trong đội ngũ nhân viên phòng khám (" + userRoleName + "). Bạn là đồng nghiệp đắc lực hỗ trợ cho họ.\n"
-                        + "2. PHẠM VI HỖ TRỢ: Hỗ trợ tra cứu kiến thức chuyên môn y khoa, quy trình làm việc, tư vấn phác đồ điều trị nâng cao, quản lý danh mục thuốc, quy định nghiệp vụ hoặc giải đáp thắc mắc chuyên môn.\n"
+                        + "1b. HỒ SƠ CÔNG VIỆC CỦA NGƯỜI DÙNG: " + roleWorkProfile + "\n"
+                        + "1c. FORMAT HỖ TRỢ THEO VAI TRÒ: " + rolePromptGuidance + "\n"
+                        + "2. PHẠM VI HỖ TRỢ: Hỗ trợ đúng vai trò hiện tại của người dùng: bác sĩ/y tá nhận hỗ trợ lâm sàng theo quyền; kế toán nhận hỗ trợ hóa đơn-doanh thu; tiếp tân nhận hỗ trợ lịch hẹn-khách hàng; quản lý/admin nhận hỗ trợ vận hành-hệ thống. Không được tự ép mọi câu hỏi về chăm sóc thú cưng.\n"
                         + "3. PHONG CÁCH: Chuyên nghiệp, đồng nghiệp, ngắn gọn, súc tích, không vòng vo. Gọi họ là 'sếp' hoặc 'đồng nghiệp'. Tuyệt đối KHÔNG gọi họ là 'Sen', không xưng hô kiểu bán hàng.\n"
                         + "4. HOTLINE & ĐỊA CHỈ: Dùng số hotline phòng khám: 0353.374.156 và địa chỉ: Gia Lâm, Hà Nội khi đồng nghiệp cần thông tin.\n"
                         + "5. SƠ CỨU KHẨN CẤP (HEIMLICH): Sẵn sàng cung cấp hướng dẫn sơ cứu nhanh khi có ca khẩn cấp.\n"
@@ -413,6 +410,7 @@ public class ChatController {
                             : "Người dùng không phải vai trò lâm sàng trực tiếp (" + userRoleName + "), chỉ giải thích ở mức vận hành/tổng quan. Không đưa phác đồ thuốc, liều dùng, chỉ định kháng sinh/gây mê hoặc hướng dẫn điều trị chuyên sâu; hãy hướng dẫn chuyển cho bác sĩ/y tá.\n")
                         + "6. QUY TẮC QUAN TRỌNG NHẤT - ƯU TIÊN TRẢ LỜI TRỰC TIẾP:\n"
                         + "   Khi đồng nghiệp đặt câu hỏi bất kỳ (ví dụ: 'khóa tài khoản khách hàng thì sao?', 'làm thế nào để thêm nhân viên?'...), bạn BẮT BUỘC phải TRẢ LỜI THẲNG VÀO NỘI DUNG CÂU HỎI trước. TUYỆT ĐỐI KHÔNG tự nhảy vào chế độ Autopilot/điều hướng khi đồng nghiệp chỉ hỏi thông tin.\n"
+                        + "6b. CÂU HỎI NGOÀI PHẠM VI THÚ Y: Nếu đồng nghiệp hỏi văn bản, kỹ thuật, nội dung chung hoặc một đoạn câu rời rạc, hãy xử lý theo vai trò trợ lý nội bộ: giải thích/tóm tắt/viết lại/phân loại rủi ro nếu an toàn. Không kết thúc bằng câu rủ rê hỏi về thú cưng.\n"
                         + "7. BẢO MẬT & TRUY CẬP DỮ LIỆU (CỰC KỲ QUAN TRỌNG):\n"
                         + "   Nếu yêu cầu cần dữ liệu nội bộ nhưng không có dữ liệu trong context, không bịa và không kết luận không tìm thấy. Nói ngắn rằng cần Rexi Agent tự động kiểm tra quyền và quét dữ liệu thật.\n"
                         + "8. QUY TẮC ĐIỀU HƯỚNG TÁC VỤ NGHIÊM NGẶT (STRICT NAVIGATION GATE):\n"
@@ -515,10 +513,7 @@ ChatMessage systemMsg = new ChatMessage();
             String userQueryStr = latest.getContent() != null ? latest.getContent() : "";
             String normalizedQuery = normalizeVietnamese(userQueryStr.toLowerCase());
 
-            String userRole = (auth != null) ? auth.getAuthorities().stream()
-                    .findFirst()
-                    .map(g -> g.getAuthority().replace("ROLE_", ""))
-                    .orElse("") : "";
+            String userRole = normalizedRoleFromAuth(auth);
 
             // —— CACHE LOOKUP (trước LLM routing) ——
             try {
@@ -608,6 +603,11 @@ ChatMessage systemMsg = new ChatMessage();
 
             reply = sanitizeChatReply(reply);
             reply = enforceVeterinaryAnswerQuality(userQuery, normalizedUserQuery, reply, requestPlan.route(), webResults);
+            reply = enforceNoUnsupportedSystemClaims(userQuery, normalizedUserQuery, reply, requestPlan.route(), isStaff, userRoleName);
+            reply = enforceStrictEvidenceGate(userQuery, normalizedUserQuery, reply, requestPlan.route(), providerUsed);
+            if (webSearchRequested && reply != null && reply.startsWith("Rexi chưa lấy được nguồn web phù hợp")) {
+                providerUsed = "System Source Gate";
+            }
             auditMedicalAiReplyIfNeeded(userQuery, reply, userRoleName, providerUsed, requestPlan.route().name());
 
             // —— CACHE PUT (Lưu kết quả chất lượng cao đã qua post-processing) ——
@@ -751,6 +751,172 @@ ChatMessage systemMsg = new ChatMessage();
         }
 
         return "Hiện hệ thống AI đang tạm quá tải hoặc gián đoạn. Sen thử lại sau ít phút nhé. Nếu bé có dấu hiệu khẩn cấp, vui lòng gọi hotline phòng khám ngay.";
+    }
+
+    private String normalizedRoleFromAuth(org.springframework.security.core.Authentication auth) {
+        if (auth == null) return "";
+        return auth.getAuthorities().stream()
+                .map(g -> g.getAuthority() == null ? "" : g.getAuthority().replace("ROLE_", ""))
+                .map(RoleAccessPolicy::normalizeRole)
+                .filter(role -> !role.isBlank())
+                .findFirst()
+                .orElse("");
+    }
+
+    private String enforceNoUnsupportedSystemClaims(
+            String rawQuery,
+            String normalizedQuery,
+            String reply,
+            ChatRoute route,
+            boolean isStaff,
+            String userRoleName
+    ) {
+        if (reply == null || reply.isBlank()) return reply;
+        String normalizedReply = normalizeVietnamese(reply.toLowerCase(Locale.ROOT));
+        boolean claimedSystemLookup = containsAny(normalizedReply,
+                "rexi kiem tra du lieu he thong",
+                "toi da kiem tra du lieu he thong",
+                "da kiem tra du lieu he thong",
+                "tra du lieu he thong",
+                "tra truc tiep tu he thong",
+                "theo du lieu he thong",
+                "trong he thong ghi nhan");
+        boolean claimedCompletedAction = containsAny(normalizedReply,
+                "da bam", "da nhan nut", "da chon", "da dien", "da cap nhat", "da xoa", "da huy",
+                "da dat lich", "da tao lich", "da tao hoa don", "da khoa tai khoan", "da mo khoa",
+                "da gui email", "da chuyen sang trang", "toi da mo trang");
+        boolean hasControlTag = reply.matches("(?s).*\\[(CLICK|FILL|SELECT|TOGGLE|DELETE|SCROLL|NAVIGATE|AUTO_BOOK):[^\\]]+\\].*");
+        boolean privilegedRoute = route == ChatRoute.DB_LOCAL || route == ChatRoute.SENSITIVE_HANDOFF;
+
+        if ((claimedSystemLookup || claimedCompletedAction) && !privilegedRoute && !hasControlTag) {
+            if (claimedSystemLookup || isInternalDataQuestion(normalizedQuery)) {
+                return "Tôi chưa kiểm tra dữ liệu hệ thống trong lượt này nên sẽ không tự đưa số liệu/kết quả. Hãy chuyển sang Rexi Agent hoặc yêu cầu tra cứu cụ thể để hệ thống kiểm quyền và đọc DB thật.";
+            }
+            return "Tôi chưa thực hiện thao tác nào trên hệ thống trong lượt này. Nếu bạn muốn Rexi thao tác thật, hãy ra lệnh rõ trong tab Rexi Agent để hệ thống kiểm quyền, kiểm DOM/tool và xác nhận trước khi làm.";
+        }
+
+        if (isStaff && containsAny(normalizedReply,
+                "ban co muon hoi ve mot van de cu the ve thu cung",
+                "toi san sang giup do ve cham soc thu cung",
+                "neu ban can ho tro ve cham soc thu cung")) {
+            return "Tôi đang nhận bạn là " + userRoleName + " nội bộ. Câu vừa rồi nằm ngoài dữ liệu phòng khám; tôi chưa thực hiện thao tác hay tra cứu hệ thống nào. Tôi sẽ xử lý theo đúng vai trò hiện tại của bạn.";
+        }
+
+        return reply;
+    }
+
+    private boolean isInternalDataQuestion(String normalizedQuery) {
+        return containsAny(normalizedQuery,
+                "khach hang", "khach moi", "xu huong", "thong ke", "bao cao", "doanh thu",
+                "hoa don", "lich hen", "benh an", "thu cung", "kho thuoc", "ton kho",
+                "tai khoan", "nhan vien", "phan quyen", "du lieu he thong");
+    }
+
+    private String enforceStrictEvidenceGate(
+            String rawQuery,
+            String normalizedQuery,
+            String reply,
+            ChatRoute route,
+            String providerUsed
+    ) {
+        if (reply == null || reply.isBlank()) return reply;
+        String q = normalizedQuery == null
+                ? normalizeVietnamese(Objects.toString(rawQuery, "").toLowerCase(Locale.ROOT))
+                : normalizedQuery;
+        String normalizedReply = normalizeVietnamese(reply.toLowerCase(Locale.ROOT));
+        boolean verifiedRoute = route == ChatRoute.QUICK_LOCAL
+                || route == ChatRoute.DB_LOCAL
+                || route == ChatRoute.SENSITIVE_HANDOFF
+                || route == ChatRoute.WEB_AI;
+        boolean systemProvider = providerUsed != null && normalizeVietnamese(providerUsed.toLowerCase(Locale.ROOT)).contains("system");
+        if (verifiedRoute || systemProvider || isSafeEvidenceRefusal(normalizedReply)) {
+            return reply;
+        }
+
+        if (isCodeOrSystemLocationQuestion(q)) {
+            return "Tôi không có bằng chứng RAG mã nguồn trong lượt chat thường này nên sẽ không đoán file/dòng. Hãy chuyển sang Rexi Agent bằng tài khoản Admin và hỏi kèm tên màn hình, route, API, component hoặc data-ai-id cụ thể.";
+        }
+        if (isInternalDataQuestion(q) || isEvidenceDemandingQuestion(q)) {
+            return "Tôi chưa đọc DB/tool/nguồn kiểm chứng trong lượt này nên sẽ không tự đưa số liệu, trạng thái hoặc kết luận hệ thống. Hãy dùng Rexi Agent để kiểm quyền và tra dữ liệu thật.";
+        }
+        return reply;
+    }
+
+    private Map<String, Object> tryRunEvidenceBackedAgentFromChat(
+            String userQuery,
+            String normalizedQuery,
+            String username,
+            org.springframework.security.core.Authentication auth,
+            boolean hasMedia
+    ) {
+        if (hasMedia || normalizedQuery == null || normalizedQuery.isBlank()) {
+            return null;
+        }
+
+        if (isCodeOrSystemLocationQuestion(normalizedQuery)) {
+            String role = normalizedRoleFromAuth(auth);
+            if (!"admin".equals(role)) {
+                return Map.of(
+                        "reply", "Phần file/dòng/API/component/data-ai-id là mã nguồn nội bộ nên Rexi chỉ tra cứu bằng tài khoản Admin. Tôi sẽ không đoán vị trí code khi chưa có quyền đọc RAG mã nguồn.",
+                        "source", "code_rag_admin_required"
+                );
+            }
+            return runAgentFromChat(userQuery, username, auth);
+        }
+
+        if (shouldUseVerifiedSystemAgent(normalizedQuery)) {
+            return runAgentFromChat(userQuery, username, auth);
+        }
+
+        return null;
+    }
+
+    private boolean shouldUseVerifiedSystemAgent(String normalizedQuery) {
+        if (normalizedQuery == null || normalizedQuery.isBlank()) return false;
+        if (isSensitiveDataLookup(normalizedQuery)) return true;
+        boolean hasSystemObject = containsAny(normalizedQuery,
+                "khach hang", "khach moi", "hoa don", "lich hen", "benh an", "thu cung",
+                "kho thuoc", "ton kho", "tai khoan", "nhan vien", "phan quyen",
+                "doanh thu", "bao cao", "thong ke", "du lieu he thong", "trong db", "database", "sql",
+                "bac si", "bsi", "bs", "ca kham", "model", "provider", "cau hinh ai", "api key",
+                "swagger", "openapi", "api docs", "full api");
+        boolean asksVerifiedFact = containsAny(normalizedQuery,
+                "kiem tra", "tra cuu", "xem", "dem", "bao nhieu", "so luong",
+                "trang thai", "xu huong", "ti le", "ty le", "hom nay", "ngay mai",
+                "da cap nhat", "da xoa", "da huy", "da gui", "nhieu ca", "it ca",
+                "nhieu nhat", "it nhat", "xoa", "khoa", "mo khoa", "check", "dang dung",
+                "mo dau", "o dau");
+        return hasSystemObject && asksVerifiedFact;
+    }
+
+    private boolean isCodeOrSystemLocationQuestion(String normalizedQuery) {
+        return containsAny(normalizedQuery,
+                "file nao", "dong nao", "line nao", "line nhiu", "code nao", "ham nao", "function nao",
+                "component nao", "route nao", "api nao", "endpoint nao", "controller nao", "service nao",
+                "data ai id", "data-ai-id", "button-chatbot", "input-chatbot", "chatbot-", "id ",
+                "nam o dau", "nam dau", "o dau", "o file", "trang nao", "swagger", "openapi", "api docs");
+    }
+
+    private boolean isEvidenceDemandingQuestion(String normalizedQuery) {
+        return containsAny(normalizedQuery,
+                "model nao", "provider nao", "api key", "cau hinh ai",
+                "bao nhieu", "so luong", "thong ke", "doanh thu", "xu huong", "ti le", "ty le",
+                "kiem tra du lieu", "du lieu he thong", "trong db", "database", "sql",
+                "da bam", "da sua", "da cap nhat", "da xoa", "da huy", "da gui", "trang thai");
+    }
+
+    private boolean isSafeEvidenceRefusal(String normalizedReply) {
+        return containsAny(normalizedReply,
+                "chua co bang chung",
+                "chua du bang chung",
+                "chua kiem tra",
+                "chua doc db",
+                "chua doc du lieu",
+                "khong du du lieu",
+                "khong the xac minh",
+                "khong suy doan",
+                "se khong doan",
+                "se khong tu dua");
     }
 
     private String buildVideoAnalysisFallbackReply(boolean timeout) {
@@ -1422,6 +1588,10 @@ ChatMessage systemMsg = new ChatMessage();
     }
 
     private String buildDeterministicVeterinaryWebAnswer(String normalizedQuery, List<Map<String, String>> webResults) {
+        if (webResults == null || webResults.isEmpty()) {
+            return null;
+        }
+
         String topic;
         String summary;
         if (containsAny(normalizedQuery, "parvo")) {
@@ -1589,7 +1759,7 @@ ChatMessage systemMsg = new ChatMessage();
             return new ChatRequestPlan(ChatRoute.AUTOPILOT_AI, false, true, false, true, "groq");
         }
         if (isMedicalQuery(normalizedQuery)) {
-            return new ChatRequestPlan(ChatRoute.MEDICAL_AI, false, true, false, true, "gemini");
+            return new ChatRequestPlan(ChatRoute.WEB_AI, false, true, false, true, "medical+sources");
         }
         boolean needsClinicContext = isClinicInfoQuery(normalizedQuery);
         return new ChatRequestPlan(ChatRoute.CHAT_AI, false, true, true, needsClinicContext, "groq");
@@ -1639,10 +1809,7 @@ ChatMessage systemMsg = new ChatMessage();
             );
         }
 
-        String userRole = auth.getAuthorities().stream()
-                .findFirst()
-                .map(g -> g.getAuthority().replace("ROLE_", ""))
-                .orElse("");
+        String userRole = normalizedRoleFromAuth(auth);
 
         try {
             ReActAgentService.ReActResult result = reactAgentService.run(userQuery, username, userRole);
@@ -1683,6 +1850,8 @@ ChatMessage systemMsg = new ChatMessage();
                 "be cua toi", "pet cua toi", "don thuoc cua toi", "benh an cua toi",
                 "lich hen hom nay", "hoa don chua thanh toan", "kho thuoc", "ton kho",
                 "khach hang nao", "co khach hang", "co hoa don", "co lich hen",
+                "khach hang moi hom nay", "so khach hang moi", "xu huong hom nay", "xu huong khach hang",
+                "thong ke khach hang", "bao cao khach hang hom nay",
                 "check profile", "check lich", "check hoa don", "check bill", "bill cua toi",
                 "xem bill", "bill cua be", "bill be", "invoice cua toi", "invoice be",
                 "acc cua toi", "acc toi", "acc tui", "info cua toi", "info toi", "info tui",

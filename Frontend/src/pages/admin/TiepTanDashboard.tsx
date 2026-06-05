@@ -5,6 +5,7 @@ import ModalTaoLichHenAdmin from "./ModalTaoLichHenAdmin";
 import { toast } from "@components/Toast";
 import { useAutoRefresh } from "@hooks/useAutoRefresh";
 import KpiIcon from "@components/KpiIcon";
+import { AnimatedNumber } from "@components/CommonUI";
 
 const ROW_HEIGHT = 86;
 const VISIBLE_ROWS = 8;
@@ -305,13 +306,13 @@ const TiepTanDashboard: React.FC = () => {
       `}</style>
       <ModalTaoLichHenAdmin isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSuccess={() => fetchData(false)} />
 
-      <div className="animate-slide-up stagger-1" style={{ marginBottom: "40px", padding: "48px", borderRadius: "var(--radius-xl)", background: "var(--primary-gradient)", color: "white", position: "relative", overflow: "hidden", boxShadow: "var(--shadow-2xl)" }}>
+      <div className="animate-slide-up stagger-1" style={{ marginBottom: "40px", padding: "clamp(20px, 6vw, 48px)", borderRadius: "var(--radius-xl)", background: "var(--primary-gradient)", color: "white", position: "relative", overflow: "hidden", boxShadow: "var(--shadow-2xl)" }}>
         <div style={{ position: "absolute", top: "-10%", right: "-5%", width: "300px", height: "300px", background: "radial-gradient(circle, var(--primary-light) 0%, transparent 70%)", borderRadius: "50%", pointerEvents: "none" }}></div>
-        <h1 style={{ fontSize: "3rem", fontWeight: 950, letterSpacing: "-1.5px", position: "relative", zIndex: 1, margin: "0 0 12px 0", display: "flex", alignItems: "center", gap: "15px" }}>
+        <h1 style={{ fontSize: "clamp(1.8rem, 6vw, 3rem)", fontWeight: 950, letterSpacing: "-1.5px", position: "relative", zIndex: 1, margin: "0 0 12px 0", display: "flex", alignItems: "center", gap: "15px" }}>
           <span>Sảnh Chờ <span style={{ color: "#5eead4" }}>Tiếp Tân</span></span>
           <span style={{ filter: "drop-shadow(0 5px 15px rgba(0,0,0,0.2))" }}>🛎️</span>
         </h1>
-        <p style={{ fontWeight: 700, color: "rgba(255,255,255,0.95)", position: "relative", zIndex: 1, margin: 0, fontSize: "1.2rem", textShadow: "0 2px 4px rgba(0,0,0,0.1)" }}>Chào mừng, {user.ho_ten || "Lễ tân"}. Quản lý luồng khách hàng và điều phối lịch hẹn hôm nay.</p>
+        <p style={{ fontWeight: 700, color: "rgba(255,255,255,0.95)", position: "relative", zIndex: 1, margin: 0, fontSize: "clamp(0.95rem, 3vw, 1.2rem)", textShadow: "0 2px 4px rgba(0,0,0,0.1)" }}>Chào mừng, {user.ho_ten || "Lễ tân"}. Quản lý luồng khách hàng và điều phối lịch hẹn hôm nay.</p>
         {lastUpdated && (
           <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "0.85rem", fontWeight: 800, background: "rgba(255,255,255,0.15)", backdropFilter: "blur(8px)", padding: "6px 14px", borderRadius: "999px", marginTop: "14px", border: "1px solid rgba(255,255,255,0.2)", position: "relative", zIndex: 1, boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }}>
             <span className="material-symbols-outlined" style={{ fontSize: "15px", color: "#5eead4", animation: "spin 3s infinite linear" }}>sync</span>
@@ -324,7 +325,7 @@ const TiepTanDashboard: React.FC = () => {
         <ReceptionKpiCard
           accent="#3b82f6"
           title="Tổng lịch hẹn nay"
-          value={`${appointments.length} ca`}
+          value={<><AnimatedNumber value={appointments.length} /> ca</>}
           icon={<KpiIcon name="calendar" />}
           details={
             <div>
@@ -338,7 +339,7 @@ const TiepTanDashboard: React.FC = () => {
         <ReceptionKpiCard
           accent="#f59e0b"
           title="Chờ xác nhận"
-          value={`${stats.pendingConfirmation} ca`}
+          value={<><AnimatedNumber value={stats.pendingConfirmation} /> ca</>}
           icon={<KpiIcon name="clock" />}
           details={
             <div>
@@ -353,7 +354,7 @@ const TiepTanDashboard: React.FC = () => {
         <ReceptionKpiCard
           accent="#ef4444"
           title="Hóa đơn chờ thu"
-          value={`${stats.pendingPayment} hóa đơn`}
+          value={<><AnimatedNumber value={stats.pendingPayment} /> hóa đơn</>}
           icon={<KpiIcon name="receipt" />}
           pulse={stats.pendingPayment > 0}
           details={
@@ -368,7 +369,7 @@ const TiepTanDashboard: React.FC = () => {
         />
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 2fr) minmax(280px, 1fr)", gap: "32px", alignItems: "start" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 350px), 1fr))", gap: "32px", alignItems: "start" }}>
         <div className="glass-card" style={{ borderRadius: "24px", overflow: "hidden" }}>
           <div style={{ padding: "24px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--gray-100)", flexWrap: "wrap", gap: "12px" }}>
             <h2 style={{ fontSize: "1.2rem", margin: 0, fontWeight: 800 }}>Điều phối lịch hẹn hôm nay</h2>
@@ -434,7 +435,7 @@ const TiepTanDashboard: React.FC = () => {
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "24px" }}>
             <div style={{ width: "180px", height: "180px", borderRadius: "50%", background: conicGradient, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 10px rgba(0,0,0,0.05)" }}>
               <div style={{ width: "130px", height: "130px", borderRadius: "50%", background: "white", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column" }}>
-                <span style={{ fontSize: "1.8rem", fontWeight: 900, color: "var(--ink)", lineHeight: 1 }}>{appointments.length}</span>
+                <span style={{ fontSize: "1.8rem", fontWeight: 900, color: "var(--ink)", lineHeight: 1 }}><AnimatedNumber value={appointments.length} /></span>
                 <span style={{ fontSize: "0.75rem", color: "var(--gray-500)", fontWeight: 700, marginTop: "4px" }}>TỔNG CA</span>
               </div>
             </div>

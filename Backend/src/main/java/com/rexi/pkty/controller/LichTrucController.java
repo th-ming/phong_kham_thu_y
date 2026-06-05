@@ -53,7 +53,7 @@ public class LichTrucController {
 
                 if (!isAdmin && !ngayLam.isAfter(currentSunday)) {
                         return ResponseEntity.status(403).body(Map.of("message",
-                                        "Bạn chỉ có thể đăng ký lịch trực cho các tuần tiếp theo. Tuần hiện tại chỉ Admin mới có quyền điều chỉnh."));
+                                        "Bạn chỉ có thể đăng ký lịch trực cho các tuần tiếp theo. Tuần hiện tại chỉ Admin/Quản lý mới có quyền điều chỉnh."));
                 }
 
                 String targetNhanVienId = String.valueOf(payload.get("id_nhan_vien"));
@@ -141,7 +141,7 @@ public class LichTrucController {
                         if (!isAdmin && !ngayLam.isAfter(currentSunday)) {
                                 return ResponseEntity.status(403).body(
                                                 Map.of("message",
-                                                                "Bạn không thể xóa lịch trực ở tuần hiện tại. Vui lòng liên hệ Admin."));
+                                                                "Bạn không thể xóa lịch trực ở tuần hiện tại. Vui lòng liên hệ Admin/Quản lý."));
                         }
 
                         org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder

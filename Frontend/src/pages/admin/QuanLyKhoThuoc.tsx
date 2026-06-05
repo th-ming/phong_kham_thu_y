@@ -28,6 +28,8 @@ const QuanLyKhoThuoc: React.FC = () => {
     don_vi: '',
     gia_ban: 0,
     cach_dung: '',
+    dang_bao_che: '',
+    thanh_phan: '',
     trang_thai: true,
     da_xoa: false
   });
@@ -80,14 +82,111 @@ const QuanLyKhoThuoc: React.FC = () => {
   );
 
   return (
-    <div className="animate-fade-in">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', flexWrap: 'wrap', gap: '20px' }}>
+    <div className="animate-fade-in admin-inventory-page">
+      <style>{`
+        @media screen and (max-width: 1024px) {
+          .admin-inventory-page {
+            display: grid !important;
+            gap: 14px !important;
+          }
+          .admin-inventory-header {
+            display: grid !important;
+            grid-template-columns: 1fr !important;
+            gap: 12px !important;
+            margin-bottom: 10px !important;
+            align-items: start !important;
+          }
+          .admin-inventory-header h1 {
+            max-width: 14ch !important;
+            font-size: clamp(1.24rem, 5.5vw, 1.52rem) !important;
+            line-height: 1.08 !important;
+            letter-spacing: -0.02em !important;
+          }
+          .admin-inventory-header p {
+            max-width: 34ch !important;
+            margin-top: 6px !important;
+            font-size: 0.66rem !important;
+            line-height: 1.32 !important;
+          }
+          .admin-inventory-actions {
+            display: grid !important;
+            grid-template-columns: 1fr !important;
+            width: min(100%, 300px) !important;
+            gap: 8px !important;
+          }
+          .admin-inventory-search {
+            width: 100% !important;
+            min-height: 38px !important;
+            height: 38px !important;
+            padding-inline: 12px !important;
+            border-radius: 14px !important;
+          }
+          .admin-inventory-search input {
+            padding-block: 7px !important;
+            font-size: 0.82rem !important;
+          }
+          .admin-inventory-actions .btn {
+            width: 100% !important;
+            min-height: 38px !important;
+            padding: 7px 11px !important;
+            border-radius: 14px !important;
+            font-size: 0.74rem !important;
+            margin-left: 0 !important;
+          }
+          .admin-inventory-actions .btn .material-symbols-outlined {
+            font-size: 18px !important;
+          }
+          .admin-inventory-grid {
+            display: grid !important;
+            grid-template-columns: 1fr !important;
+            gap: 12px !important;
+          }
+          .admin-inventory-list-card,
+          .admin-inventory-side-card {
+            padding: 10px !important;
+            border-radius: 18px !important;
+            overflow: hidden !important;
+          }
+          .admin-inventory-list-card h2,
+          .admin-inventory-side-card h2 {
+            margin-bottom: 10px !important;
+            font-size: 0.86rem !important;
+            line-height: 1.2 !important;
+          }
+          .admin-inventory-desktop-table {
+            display: none !important;
+          }
+          .admin-inventory-mobile-list {
+            display: grid !important;
+            gap: 10px !important;
+          }
+          .admin-inventory-mobile-card {
+            padding: 10px !important;
+            border-radius: 16px !important;
+            gap: 10px !important;
+          }
+          .admin-inventory-mobile-card h3 {
+            font-size: 0.82rem !important;
+            line-height: 1.2 !important;
+          }
+          .admin-inventory-mobile-card p {
+            font-size: 0.66rem !important;
+            line-height: 1.3 !important;
+          }
+          .admin-inventory-mobile-meta span {
+            padding: 8px 9px !important;
+            font-size: 0.64rem !important;
+            border-radius: 12px !important;
+          }
+        }
+      `}</style>
+      <div className="admin-mobile-page-header admin-inventory-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', flexWrap: 'wrap', gap: '20px' }}>
         <div>
           <h1 style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--ink)', letterSpacing: '-1px' }}>Quản lý Kho thuốc</h1>
           <p style={{ color: 'var(--gray-500)', fontWeight: 600 }}>Theo dõi tồn kho, hạn sử dụng và phân phối dược phẩm.</p>
         </div>
-        <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <div className="glass-card" style={{ display: 'flex', alignItems: 'center', padding: '0 16px', borderRadius: '16px', border: '1px solid var(--gray-200)', background: 'var(--surface)', width: '260px' }}>
+        <div className="admin-inventory-actions" style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div className="glass-card admin-mobile-search-box admin-inventory-search" style={{ display: 'flex', alignItems: 'center', padding: '0 16px', borderRadius: '16px', border: '1px solid var(--gray-200)', background: 'var(--surface)', width: '260px' }}>
             <span className="material-symbols-outlined" style={{ color: 'var(--gray-400)', marginRight: '8px' }}>search</span>
             <input data-ai-id="input-quanlykhothuoc-8v88"
               type="text"
@@ -124,7 +223,7 @@ const QuanLyKhoThuoc: React.FC = () => {
               setThuocs(prev => [...prev, saved]);
               toast.success('Đã thêm thuốc thành công');
               setIsAddModalOpen(false);
-              setNewThuoc({ id_thuoc: '', ten_thuoc: '', ma_thuoc: '', loai_thuoc: '', don_vi: '', gia_ban: 0, cach_dung: '', trang_thai: true, da_xoa: false });
+              setNewThuoc({ id_thuoc: '', ten_thuoc: '', ma_thuoc: '', loai_thuoc: '', don_vi: '', gia_ban: 0, cach_dung: '', dang_bao_che: '', thanh_phan: '', trang_thai: true, da_xoa: false });
             } catch (err: any) {
               toast.error(err?.response?.data || 'Lỗi khi thêm thuốc');
             }
@@ -149,6 +248,16 @@ const QuanLyKhoThuoc: React.FC = () => {
             </div>
             <div className="responsive-grid-2">
               <div>
+                <label style={{ display: 'block', marginBottom: 6, fontWeight: 800, color: 'var(--gray-400)' }}>Dạng bào chế</label>
+                <input data-ai-id="input-quanlykhothuoc-dangbaoche" className="form-input" placeholder="Viên nén, siro, tiêm..." value={newThuoc.dang_bao_che} onChange={e => setNewThuoc({ ...newThuoc, dang_bao_che: e.target.value })} />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: 6, fontWeight: 800, color: 'var(--gray-400)' }}>Thành phần</label>
+                <input data-ai-id="input-quanlykhothuoc-thanhphan" className="form-input" placeholder="Hoạt chất chính..." value={newThuoc.thanh_phan} onChange={e => setNewThuoc({ ...newThuoc, thanh_phan: e.target.value })} />
+              </div>
+            </div>
+            <div className="responsive-grid-2">
+              <div>
                 <label style={{ display: 'block', marginBottom: 6, fontWeight: 800, color: 'var(--gray-400)' }}>Giá bán</label>
                 <input data-ai-id="input-quanlykhothuoc-giaban" type="number" className="form-input" value={newThuoc.gia_ban} onChange={e => setNewThuoc({ ...newThuoc, gia_ban: Number(e.target.value) })} />
               </div>
@@ -165,42 +274,68 @@ const QuanLyKhoThuoc: React.FC = () => {
         </Modal>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '32px' }}>
-        <div className="glass-card" style={{ padding: '32px', borderRadius: 'var(--radius-xl)' }}>
+      <div className="admin-inventory-grid" style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '32px' }}>
+        <div className="glass-card admin-inventory-list-card" style={{ padding: '32px', borderRadius: 'var(--radius-xl)' }}>
           <h2 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '24px' }}>Danh mục thuốc</h2>
+          <div className="admin-inventory-mobile-list">
+            {filteredThuocs.map(t => (
+              <article key={t.id_thuoc} className="admin-inventory-mobile-card">
+                <div className="admin-inventory-mobile-card-head">
+                  <div>
+                    <span className="admin-inventory-kicker">{t.ma_thuoc || t.id_thuoc}</span>
+                    <h3>{t.ten_thuoc}</h3>
+                    <p>{t.thanh_phan || "Dược chất"}</p>
+                  </div>
+                  <span className="admin-inventory-pill">{t.don_vi || t.don_vi_tinh || "Đơn vị"}</span>
+                </div>
+                <div className="admin-inventory-mobile-meta">
+                  <span><strong>Dạng</strong>{t.dang_bao_che || "—"}</span>
+                  <span><strong>Loại</strong>{t.loai_thuoc || "—"}</span>
+                  <span className="is-wide"><strong>Giá bán</strong>{t.gia_ban?.toLocaleString('vi-VN')} đ</span>
+                </div>
+              </article>
+            ))}
+          </div>
           <div style={{ overflowX: 'auto' }}>
-            <div className="table-responsive-wrapper">
-<div style={{ minWidth: '800px' }}>
-<table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--gray-100)' }}>
-                  <th style={{ padding: '16px 8px', fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800 }}>TÊN THUỐC</th>
-                  <th style={{ padding: '16px 8px', fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800 }}>DẠNG</th>
-                  <th style={{ padding: '16px 8px', fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800, textAlign: 'right' }}>GIÁ BÁN</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredThuocs.map(t => (
-                  <tr key={t.id_thuoc} style={{ borderBottom: '1px solid var(--gray-50)' }}>
-                    <td style={{ padding: '16px 8px' }}>
-                      <div style={{ fontWeight: 800, color: 'var(--ink)' }}>{t.ten_thuoc}</div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--gray-400)', fontWeight: 600 }}>{t.thanh_phan || "Dược chất"}</div>
-                    </td>
-                    <td style={{ padding: '16px 8px' }}>
-                      <span style={{ background: 'var(--primary-light)', color: 'var(--primary)', padding: '4px 10px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700 }}>{t.dang_bao_che}</span>
-                    </td>
-                    <td style={{ padding: '16px 8px', textAlign: 'right', fontWeight: 900, color: 'var(--primary)' }}>
-                      {t.gia_ban?.toLocaleString('vi-VN')} đ
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-</div></div>
+            <div className="table-responsive-wrapper admin-inventory-desktop-table">
+              <div style={{ minWidth: '800px' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--gray-100)' }}>
+                      <th style={{ padding: '16px 8px', fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800 }}>TÊN THUỐC</th>
+                      <th style={{ padding: '16px 8px', fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800 }}>DẠNG</th>
+                      <th style={{ padding: '16px 8px', fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800, textAlign: 'right' }}>GIÁ BÁN</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredThuocs.map(t => (
+                      <tr key={t.id_thuoc} style={{ borderBottom: '1px solid var(--gray-50)' }}>
+                        <td style={{ padding: '16px 8px' }}>
+                          <div style={{ fontWeight: 800, color: 'var(--ink)' }}>{t.ten_thuoc}</div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--gray-400)', fontWeight: 600 }}>{t.thanh_phan || "Dược chất"}</div>
+                        </td>
+                        <td style={{ padding: '16px 8px' }}>
+                          {t.dang_bao_che ? (
+                            <span style={{ background: 'var(--primary-light)', color: 'var(--primary)', padding: '4px 10px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700 }}>
+                              {t.dang_bao_che}
+                            </span>
+                          ) : (
+                            <span style={{ color: 'var(--gray-450)', fontWeight: 600 }}>—</span>
+                          )}
+                        </td>
+                        <td style={{ padding: '16px 8px', textAlign: 'right', fontWeight: 900, color: 'var(--primary)' }}>
+                          {t.gia_ban?.toLocaleString('vi-VN')} đ
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div className="glass-card" style={{ padding: '32px', borderRadius: 'var(--radius-xl)', background: 'var(--surface)', color: 'var(--ink)', border: '1px solid var(--gray-200)' }}>
+        <div className="glass-card admin-inventory-side-card" style={{ padding: '32px', borderRadius: 'var(--radius-xl)', background: 'var(--surface)', color: 'var(--ink)', border: '1px solid var(--gray-200)' }}>
           <h2 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '24px', color: 'var(--ink)' }}>Lô thuốc & Hạn dùng</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {loThuocs.map(l => (

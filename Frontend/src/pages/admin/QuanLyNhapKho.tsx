@@ -110,14 +110,98 @@ const QuanLyNhapKho: React.FC = () => {
   );
 
   return (
-    <div className="animate-fade-in">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', flexWrap: 'wrap', gap: '20px' }}>
+    <div className="animate-fade-in admin-inventory-page">
+      <style>{`
+        @media screen and (max-width: 1024px) {
+          .admin-inventory-page {
+            display: grid !important;
+            gap: 14px !important;
+          }
+          .admin-inventory-header {
+            display: grid !important;
+            grid-template-columns: 1fr !important;
+            gap: 12px !important;
+            margin-bottom: 10px !important;
+            align-items: start !important;
+          }
+          .admin-inventory-header h1 {
+            max-width: 14ch !important;
+            font-size: clamp(1.24rem, 5.5vw, 1.52rem) !important;
+            line-height: 1.08 !important;
+            letter-spacing: -0.02em !important;
+          }
+          .admin-inventory-header p {
+            max-width: 34ch !important;
+            margin-top: 6px !important;
+            font-size: 0.66rem !important;
+            line-height: 1.32 !important;
+          }
+          .admin-inventory-actions {
+            display: grid !important;
+            grid-template-columns: 1fr !important;
+            width: min(100%, 300px) !important;
+            gap: 8px !important;
+          }
+          .admin-inventory-search {
+            width: 100% !important;
+            min-height: 38px !important;
+            height: 38px !important;
+            padding-inline: 12px !important;
+            border-radius: 14px !important;
+          }
+          .admin-inventory-search input {
+            padding-block: 7px !important;
+            font-size: 0.82rem !important;
+          }
+          .admin-inventory-actions .btn {
+            width: 100% !important;
+            min-height: 38px !important;
+            padding: 7px 11px !important;
+            border-radius: 14px !important;
+            font-size: 0.74rem !important;
+          }
+          .admin-inventory-actions .btn .material-symbols-outlined {
+            font-size: 18px !important;
+          }
+          .admin-inventory-list-card {
+            padding: 10px !important;
+            border-radius: 18px !important;
+            overflow: hidden !important;
+          }
+          .admin-inventory-desktop-table {
+            display: none !important;
+          }
+          .admin-inventory-mobile-list {
+            display: grid !important;
+            gap: 10px !important;
+          }
+          .admin-inventory-mobile-card {
+            padding: 10px !important;
+            border-radius: 16px !important;
+            gap: 10px !important;
+          }
+          .admin-inventory-mobile-card h3 {
+            font-size: 0.82rem !important;
+            line-height: 1.2 !important;
+          }
+          .admin-inventory-mobile-card p {
+            font-size: 0.66rem !important;
+            line-height: 1.3 !important;
+          }
+          .admin-inventory-mobile-meta span {
+            padding: 8px 9px !important;
+            font-size: 0.64rem !important;
+            border-radius: 12px !important;
+          }
+        }
+      `}</style>
+      <div className="admin-mobile-page-header admin-inventory-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', flexWrap: 'wrap', gap: '20px' }}>
         <div>
           <h1 style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--ink)', letterSpacing: '-1px' }}>Quản lý Nhập kho</h1>
           <p style={{ color: 'var(--gray-500)', fontWeight: 600 }}>Theo dõi lịch sử nhập hàng và quản lý lô thuốc.</p>
         </div>
-        <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <div className="glass-card" style={{ display: 'flex', alignItems: 'center', padding: '0 16px', borderRadius: '16px', border: '1px solid var(--gray-200)', background: 'var(--surface)', width: '260px' }}>
+        <div className="admin-inventory-actions" style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div className="glass-card admin-mobile-search-box admin-inventory-search" style={{ display: 'flex', alignItems: 'center', padding: '0 16px', borderRadius: '16px', border: '1px solid var(--gray-200)', background: 'var(--surface)', width: '260px' }}>
             <span className="material-symbols-outlined" style={{ color: 'var(--gray-400)', marginRight: '8px' }}>search</span>
             <input data-ai-id="input-quanlynhapkho-1t1k"
               type="text"
@@ -134,8 +218,30 @@ const QuanLyNhapKho: React.FC = () => {
         </div>
       </div>
 
-      <div className="glass-card" style={{ borderRadius: 'var(--radius-xl)', overflow: 'hidden' }}>
-        <div className="table-responsive-wrapper">
+      <div className="glass-card admin-inventory-list-card" style={{ borderRadius: 'var(--radius-xl)', overflow: 'hidden' }}>
+        <div className="admin-inventory-mobile-list">
+          {filteredLoThuocs.map((l) => {
+            const thuoc = thuocs.find(t => t.id_thuoc === l.id_thuoc);
+            return (
+              <article key={l.id_lo} className="admin-inventory-mobile-card">
+                <div className="admin-inventory-mobile-card-head">
+                  <div>
+                    <span className="admin-inventory-kicker">#LÔ-{l.id_lo}</span>
+                    <h3>{l.so_lo}</h3>
+                    <p>{thuoc?.ten_thuoc || `#${l.id_thuoc}`}</p>
+                  </div>
+                  <span className="admin-inventory-pill">{l.so_luong_nhap}</span>
+                </div>
+                <div className="admin-inventory-mobile-meta">
+                  <span><strong>Ngày nhập</strong>{chuyenNgayISO_SangVN(l.ngay_nhap)}</span>
+                  <span><strong>Hạn dùng</strong>{chuyenNgayISO_SangVN(l.han_su_dung)}</span>
+                  <span className="is-wide"><strong>Giá nhập</strong>{l.gia_nhap?.toLocaleString('vi-VN')} đ</span>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+        <div className="table-responsive-wrapper admin-inventory-desktop-table">
 <div style={{ minWidth: '800px' }}>
 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
@@ -201,7 +307,7 @@ const QuanLyNhapKho: React.FC = () => {
           <div className="responsive-grid-2">
             <div>
               <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '8px', display: 'block' }}>SỐ LÔ</label>
-              <input data-ai-id="input-quanlynhapkho-pc2b" type="text" className="form-input" placeholder="Ví Gụ: LOT2024-001" style={{ width: '100%' }} value={formData.so_lo} onChange={e => setFormData({ ...formData, so_lo: e.target.value })} required />
+              <input data-ai-id="input-quanlynhapkho-pc2b" type="text" className="form-input" placeholder="Ví dụ: LOT2024-001" style={{ width: '100%' }} value={formData.so_lo} onChange={e => setFormData({ ...formData, so_lo: e.target.value })} required />
             </div>
             <div>
               <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '8px', display: 'block' }}>HẠN SỬ DỤNG</label>
