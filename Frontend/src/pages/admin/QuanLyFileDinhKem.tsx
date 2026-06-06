@@ -111,6 +111,41 @@ const QuanLyFileDinhKem: React.FC = () => {
 
   return (
     <div className="animate-fade-in">
+      <style>{`
+        @media (max-width: 640px) {
+          .admin-upload-modal-body,
+          .admin-upload-modal-body * {
+            box-sizing: border-box;
+          }
+          .admin-upload-modal-body,
+          .admin-upload-modal-body > div,
+          .admin-upload-dropzone,
+          .admin-upload-input-wrap,
+          .admin-upload-input-wrap input {
+            width: 100% !important;
+            max-width: 100% !important;
+            min-width: 0 !important;
+          }
+          .admin-upload-dropzone {
+            padding: 28px 14px !important;
+          }
+          .admin-upload-dropzone p {
+            white-space: normal !important;
+            overflow-wrap: anywhere;
+          }
+          .admin-upload-modal-actions {
+            display: grid !important;
+            grid-template-columns: 1fr !important;
+            gap: 10px !important;
+            justify-content: stretch !important;
+          }
+          .admin-upload-modal-actions .btn {
+            width: 100% !important;
+            min-width: 0 !important;
+            justify-content: center !important;
+          }
+        }
+      `}</style>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
         <div>
           <h1 style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--ink)', letterSpacing: '-1px' }}>Kho tệp tin y tế</h1>
@@ -219,14 +254,14 @@ const QuanLyFileDinhKem: React.FC = () => {
 
       {/* MODAL NHẬP MÃ HỒ SƠ KHI UPLOAD */}
       <Modal isOpen={showUploadModal} onClose={() => { setShowUploadModal(false); setSelectedFile(null); }} title="Tải tệp đính kèm mới" maxWidth="450px">
-        <div style={{ display: 'grid', gap: '24px' }}>
+        <div className="admin-upload-modal-body" style={{ display: 'grid', gap: '24px' }}>
           <div>
             <label style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '8px', display: 'block' }}>TỆP ĐÍNH KÈM</label>
 
             {!selectedFile ? (
-              <div style={{ position: 'relative' }}>
+              <div className="admin-upload-input-wrap" style={{ position: 'relative' }}>
                 <input data-ai-id="input-quanlyfiledinhkem-nx4r" type="file" id="file-upload" onChange={(e) => e.target.files && setSelectedFile(e.target.files[0])} style={{ display: 'none' }} />
-                <label htmlFor="file-upload" style={{
+                <label className="admin-upload-dropzone" htmlFor="file-upload" style={{
                   display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px',
                   padding: '40px 20px', border: '2px dashed var(--gray-300)', borderRadius: '16px', background: 'var(--gray-50)',
                   cursor: 'pointer', transition: 'all 0.3s ease', color: 'var(--gray-500)'
@@ -259,12 +294,12 @@ const QuanLyFileDinhKem: React.FC = () => {
           </div>
           <div>
             <label style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '8px', display: 'block' }}>MÃ HỒ SƠ BỆNH ÁN (CẦN GẮN TỆP)</label>
-            <div style={{ position: 'relative' }}>
+            <div className="admin-upload-input-wrap" style={{ position: 'relative' }}>
               <span className="material-symbols-outlined" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--gray-400)', pointerEvents: 'none' }}>clinical_notes</span>
               <input data-ai-id="input-quanlyfiledinhkem-nmns" type="number" className="form-input" placeholder="Ví dụ: 123" value={uploadHoSoId} onChange={e => setUploadHoSoId(e.target.value)} style={{ width: '100%', background: 'var(--gray-50)', padding: '16px 16px 16px 48px', borderRadius: '16px', border: '1px solid var(--gray-200)', outline: 'none', color: 'var(--ink)', fontWeight: 700, fontSize: '1rem' }} />
             </div>
           </div>
-          <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '8px' }}>
+          <div className="admin-upload-modal-actions" style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '8px' }}>
             <button data-ai-id="button-quanlyfiledinhkem-35zr" className="btn btn-pill" onClick={() => { setShowUploadModal(false); setSelectedFile(null); setUploadHoSoId(""); }} style={{ background: 'var(--gray-100)', color: 'var(--ink)' }}>Hủy bỏ</button>
             <button data-ai-id="button-quanlyfiledinhkem-6hph" className="btn btn-primary btn-pill" onClick={executeUpload} disabled={!selectedFile || !uploadHoSoId.trim()}>
               <span className="material-symbols-outlined">backup</span>
