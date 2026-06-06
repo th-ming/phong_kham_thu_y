@@ -93,7 +93,7 @@ public class HoSoBenhAnController {
                 "kh.id_khach_hang, kh.ten_khach_hang " +
                 fromSql + where + " " +
                 "ORDER BY hs.ngay_kham DESC " +
-                "OFFSET ? LIMIT ?";
+                "OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
         java.util.List<Object> dataParams = new java.util.ArrayList<>(params);
         dataParams.add(offset);
         dataParams.add(size);
@@ -193,7 +193,7 @@ public class HoSoBenhAnController {
                 "JOIN NhanVien nv ON dt.id_bac_si = nv.id_nhan_vien " +
                 "JOIN KhachHang kh ON tc.id_khach_hang = kh.id_khach_hang " +
                 "ORDER BY dt.ngay_ke_don DESC " +
-                "OFFSET ? LIMIT ?";
+                "OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
         return jdbcTemplate.queryForList(sql, offset, size);
     }
 
@@ -211,7 +211,7 @@ public class HoSoBenhAnController {
                 "JOIN HoSoBenhAn hs ON baxn.id_ho_so = hs.id_ho_so_benh_an " +
                 "LEFT JOIN NhanVien nv ON COALESCE(baxn.id_bac_si, hs.id_bac_si) = nv.id_nhan_vien " +
                 "ORDER BY baxn.ngay_lay_mau DESC " +
-                "OFFSET ? LIMIT ?";
+                "OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
         return jdbcTemplate.queryForList(sql, offset, size);
     }
 
@@ -227,7 +227,7 @@ public class HoSoBenhAnController {
             String giaTri = String.valueOf(payload.getOrDefault("gia_tri_ket_qua", "7.2"));
 
             List<Map<String, Object>> hoSo = jdbcTemplate.queryForList(
-                    "SELECT hs.id_bac_si, lh.id_dich_vu FROM HoSoBenhAn hs LEFT JOIN LichHen lh ON hs.id_lich_hen = lh.id_lich_hen WHERE hs.id_ho_so_benh_an = ? LIMIT 1",
+                    "SELECT hs.id_bac_si, lh.id_dich_vu FROM HoSoBenhAn hs LEFT JOIN LichHen lh ON hs.id_lich_hen = lh.id_lich_hen WHERE hs.id_ho_so_benh_an = ? OFFSET 0 ROWS FETCH NEXT 1 ROWS ONLY",
                     idHoSo);
             if (hoSo.isEmpty()) {
                 return org.springframework.http.ResponseEntity.status(404)

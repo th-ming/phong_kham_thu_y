@@ -324,7 +324,7 @@ public class AiMemoryService {
                 "FROM LichLamViecNhanVien l " +
                 "JOIN NhanVien nv ON l.id_nhan_vien = nv.id_nhan_vien " +
                 "WHERE l.ngay_lam >= ? AND l.ngay_lam < ? " +
-                "ORDER BY l.ngay_lam ASC, l.gio_bat_dau ASC LIMIT 15",
+                "ORDER BY l.ngay_lam ASC, l.gio_bat_dau ASC OFFSET 0 ROWS FETCH NEXT 15 ROWS ONLY",
                 java.sql.Date.valueOf(today),
                 java.sql.Date.valueOf(nextWeek)
             );

@@ -10,14 +10,14 @@ export const TabChatbot: React.FC<{
 }> = ({ activeTab, isDark, isMobile, onChangeTab }) => (
     <div style={{
         display: 'flex', background: isDark ? 'rgba(30, 41, 59, 0.8)' : 'rgba(241, 245, 249, 0.9)',
-        borderBottom: '1px solid var(--gray-200)', position: 'relative', padding: '6px', gap: '6px'
+        borderBottom: '1px solid var(--gray-200)', position: 'relative', padding: isMobile ? '5px' : '6px', gap: isMobile ? '5px' : '6px'
     }}>
         <div style={{
-            position: 'absolute', top: '6px', bottom: '6px',
-            left: activeTab === 'standard' ? '6px' : 'calc(50% + 3px)',
-            width: 'calc(50% - 9px)',
+            position: 'absolute', top: isMobile ? '5px' : '6px', bottom: isMobile ? '5px' : '6px',
+            left: activeTab === 'standard' ? (isMobile ? '5px' : '6px') : (isMobile ? 'calc(50% + 2.5px)' : 'calc(50% + 3px)'),
+            width: isMobile ? 'calc(50% - 7.5px)' : 'calc(50% - 9px)',
             background: activeTab === 'agent' ? 'linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)' : 'var(--chat-gradient)',
-            borderRadius: '14px', transition: 'all 0.35s cubic-bezier(0.25, 1, 0.5, 1)', zIndex: 1,
+            borderRadius: isMobile ? '12px' : '14px', transition: 'all 0.35s cubic-bezier(0.25, 1, 0.5, 1)', zIndex: 1,
             boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
         }}></div>
 

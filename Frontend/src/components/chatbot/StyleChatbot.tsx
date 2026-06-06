@@ -97,6 +97,12 @@ export const StyleChatbot: React.FC = () => (
             gap: 6px;
             transition: all 0.3s ease;
         }
+        .chat-tab-btn:focus-visible,
+        .chat-suggestion-chip:focus-visible,
+        #chatWindow button:focus-visible {
+            outline: 2px solid rgba(34, 211, 238, 0.85);
+            outline-offset: 2px;
+        }
         .chat-tab-btn.active-tab {
             color: white;
         }
@@ -213,35 +219,77 @@ export const StyleChatbot: React.FC = () => (
                 height: 46px !important;
             }
             #chatWindow {
-                right: max(10px, env(safe-area-inset-right, 0px)) !important;
-                width: calc(100vw - 20px) !important;
-                height: min(650px, calc(var(--rexi-viewport-height, 100dvh) - max(204px, env(safe-area-inset-bottom, 0px) + 196px))) !important;
-                max-height: min(650px, calc(var(--rexi-viewport-height, 100dvh) - max(204px, env(safe-area-inset-bottom, 0px) + 196px))) !important;
-                border-radius: 24px !important;
+                left: 50% !important;
+                right: auto !important;
+                bottom: max(12px, env(safe-area-inset-bottom, 0px) + 12px) !important;
+                width: min(430px, calc(100vw - 20px)) !important;
+                height: min(680px, calc(var(--rexi-viewport-height, 100dvh) - max(24px, env(safe-area-inset-bottom, 0px) + 24px))) !important;
+                max-height: min(680px, calc(var(--rexi-viewport-height, 100dvh) - max(24px, env(safe-area-inset-bottom, 0px) + 24px))) !important;
+                border-radius: 22px !important;
+                transform: translateX(-50%) !important;
                 padding-bottom: env(safe-area-inset-bottom, 0px);
+                box-shadow: 0 16px 42px rgba(2, 132, 199, 0.22) !important;
+            }
+            #chatWindow.chat-window-has-mobile-nav {
+                bottom: max(82px, env(safe-area-inset-bottom, 0px) + 76px) !important;
+                height: min(620px, calc(var(--rexi-viewport-height, 100dvh) - max(96px, env(safe-area-inset-bottom, 0px) + 90px))) !important;
+                max-height: min(620px, calc(var(--rexi-viewport-height, 100dvh) - max(96px, env(safe-area-inset-bottom, 0px) + 90px))) !important;
             }
             #chatWindow textarea {
                 font-size: 16px !important;
             }
+            .chat-tab-btn {
+                padding: 8px 0;
+                gap: 5px;
+                font-size: 0.76rem;
+                min-width: 0;
+            }
+            .chat-tab-btn .material-symbols-outlined {
+                font-size: 17px !important;
+            }
             .chat-message-scroll {
-                padding: 14px !important;
-                gap: 12px !important;
+                padding: 12px !important;
+                gap: 10px !important;
             }
             .chat-message-ai,
             .chat-message-user {
-                max-width: 92% !important;
+                max-width: 90% !important;
+            }
+            .chat-message-ai > div,
+            .chat-message-user > div {
+                padding: 10px 12px !important;
+                border-radius: 17px !important;
+                font-size: 0.95rem;
+                line-height: 1.45;
             }
             .chat-suggestion-shell {
-                padding: 8px 12px;
+                padding: 7px 10px;
                 scrollbar-width: none;
             }
             .chat-suggestion-shell::-webkit-scrollbar {
                 display: none;
             }
             .chat-suggestion-chip {
-                max-width: 180px;
-                padding: 7px 10px;
+                max-width: min(170px, 54vw);
+                padding: 7px 9px;
                 font-size: 0.72rem;
+                border-radius: 11px;
+            }
+        }
+        @media (max-width: 380px) {
+            #chatWindow {
+                width: calc(100vw - 14px) !important;
+                border-radius: 18px !important;
+            }
+            .chat-message-scroll {
+                padding: 10px !important;
+            }
+            .chat-message-ai,
+            .chat-message-user {
+                max-width: 94% !important;
+            }
+            .chat-suggestion-chip {
+                max-width: 148px;
             }
         }
         @keyframes chatSoftWave {

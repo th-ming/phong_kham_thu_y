@@ -250,7 +250,7 @@ public class AiToolService {
             queryParams.add("%" + doctorKeyword + "%");
         }
         sql.append(isAll ? "ORDER BY lh.ngay_kham DESC, lh.gio_kham DESC " : "ORDER BY lh.gio_kham ");
-        sql.append("LIMIT 20");
+        sql.append("OFFSET 0 ROWS FETCH NEXT 20 ROWS ONLY");
 
         var rows = jdbcTemplate.queryForList(sql.toString(), queryParams.toArray());
         if (rows.isEmpty()) {
@@ -298,7 +298,7 @@ public class AiToolService {
                          "FROM KhachHang " +
                          "WHERE (da_xoa IS NULL OR LOWER(CAST(da_xoa AS varchar)) IN ('0', 'false')) " +
                          "AND CAST(ngay_tao AS DATE) = ? " +
-                         "ORDER BY ngay_tao DESC LIMIT 10";
+                         "ORDER BY ngay_tao DESC OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY";
             var matchedRows = jdbcTemplate.queryForList(sql, java.sql.Date.valueOf(today));
             if (matchedRows.isEmpty()) {
                 return "Hôm nay phòng khám chưa ghi nhận khách hàng đăng ký mới nào sếp ơi! 🐾";
@@ -327,7 +327,7 @@ public class AiToolService {
             sql.append(" AND LOWER(COALESCE(ten_khach_hang, '')) LIKE LOWER(?) ");
             args.add("%" + kw + "%");
         }
-        sql.append(")) LIMIT 20");
+        sql.append(")) OFFSET 0 ROWS FETCH NEXT 20 ROWS ONLY");
 
         var matchedRows = jdbcTemplate.queryForList(sql.toString(), args.toArray());
 
@@ -390,9 +390,10 @@ public class AiToolService {
         }
 
         List<Map<String, Object>> appointmentRows = jdbcTemplate.queryForList(
-            "SELECT TOP 200 COALESCE(dv.ten_dich_vu, '') AS ten_dich_vu, COALESCE(lh.ly_do, '') AS ly_do " +
+            "SELECT COALESCE(dv.ten_dich_vu, '') AS ten_dich_vu, COALESCE(lh.ly_do, '') AS ly_do " +
             "FROM LichHen lh LEFT JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu " +
-            "WHERE lh.ngay_kham = ?",
+            "WHERE lh.ngay_kham = ? " +
+            "ORDER BY lh.id_lich_hen OFFSET 0 ROWS FETCH NEXT 200 ROWS ONLY",
             java.sql.Date.valueOf(today)
         );
 
@@ -473,7 +474,7 @@ public class AiToolService {
             args.add("%" + kw + "%");
         }
 
-        sql.append(" LIMIT 20");
+        sql.append(" OFFSET 0 ROWS FETCH NEXT 20 ROWS ONLY");
         var matchedRows = jdbcTemplate.queryForList(sql.toString(), args.toArray());
 
         if (matchedRows.isEmpty()) return "Không tìm thấy thú cưng nào với từ khóa: " + tuKhoa;
@@ -542,7 +543,7 @@ public class AiToolService {
                      "ba.huong_dan_cham_soc, nv.ho_ten AS ten_bac_si " +
                      "FROM HoSoBenhAn ba " +
                      "LEFT JOIN NhanVien nv ON ba.id_bac_si = nv.id_nhan_vien " +
-                     "WHERE ba.id_thu_cung = ? ORDER BY ba.ngay_kham DESC LIMIT 5";
+                     "WHERE ba.id_thu_cung = ? ORDER BY ba.ngay_kham DESC OFFSET 0 ROWS FETCH NEXT 5 ROWS ONLY";
         var rows = jdbcTemplate.queryForList(sql, idThuCung);
         if (rows.isEmpty()) return "Thú cưng ID " + idThuCung + " chưa có bệnh án nào.";
         StringBuilder sb = new StringBuilder("Bệnh án gần nhất:\n");
@@ -689,7 +690,7 @@ public class AiToolService {
             if (!idLichHen.isBlank()) {
                 String sql = "SELECT lh.id_lich_hen, lh.id_khach_hang, kh.ten_khach_hang, kh.sdt, tc.ten_thu_cung, lh.ngay_kham, lh.gio_kham, lh.trang_thai " +
                         "FROM LichHen lh LEFT JOIN KhachHang kh ON lh.id_khach_hang = kh.id_khach_hang " +
-                        "LEFT JOIN ThuCung tc ON lh.id_thu_cung = tc.id_thu_cung WHERE lh.id_lich_hen = ? LIMIT 5";
+                        "LEFT JOIN ThuCung tc ON lh.id_thu_cung = tc.id_thu_cung WHERE lh.id_lich_hen = ? ORDER BY lh.ngay_kham OFFSET 0 ROWS FETCH NEXT 5 ROWS ONLY";
                 matches = jdbcTemplate.queryForList(sql, idLichHen);
             } else {
                 StringBuilder sql = new StringBuilder(
@@ -720,7 +721,7 @@ public class AiToolService {
                     sql.append("AND lh.ngay_kham = ? ");
                     args.add(java.sql.Date.valueOf(today.plusDays(1)));
                 }
-                sql.append("ORDER BY lh.ngay_kham, lh.gio_kham LIMIT 5");
+                sql.append("ORDER BY lh.ngay_kham, lh.gio_kham OFFSET 0 ROWS FETCH NEXT 5 ROWS ONLY");
                 matches = jdbcTemplate.queryForList(sql.toString(), args.toArray());
             }
 
@@ -828,7 +829,7 @@ public class AiToolService {
         } else {
             sql.append(" ORDER BY t.ten_thuoc ASC ");
         }
-        sql.append(" LIMIT 15");
+        sql.append(" OFFSET 0 ROWS FETCH NEXT 15 ROWS ONLY");
 
         var matchedRows = jdbcTemplate.queryForList(sql.toString(), args.toArray());
 
@@ -921,7 +922,7 @@ public class AiToolService {
         }
 
         // Dùng subquery bọc ngoài để áp TOP sau ORDER BY — SQL Server không cho TOP trực tiếp với GROUP BY alias
-        String innerSql = "SELECT TOP 10 COALESCE(nv.ho_ten, 'Chưa gán bác sĩ') AS ten_bac_si, " +
+        String innerSql = "SELECT COALESCE(nv.ho_ten, 'Chưa gán bác sĩ') AS ten_bac_si, " +
             "COUNT(*) AS tong_ca, " +
             "SUM(CASE WHEN lh.trang_thai = 'DA_HUY' OR lh.trang_thai = 'Đã hủy' THEN 1 ELSE 0 END) AS so_ca_huy, " +
             "SUM(CASE WHEN lh.trang_thai IS NULL OR (lh.trang_thai <> 'DA_HUY' AND lh.trang_thai <> 'Đã hủy') THEN 1 ELSE 0 END) AS so_ca_hieu_luc " +
@@ -934,7 +935,8 @@ public class AiToolService {
             "GROUP BY COALESCE(nv.ho_ten, 'Chưa gán bác sĩ') " +
             "ORDER BY so_ca_hieu_luc " + (ascending ? "ASC" : "DESC") +
             ", tong_ca " + (ascending ? "ASC" : "DESC") +
-            ", ten_bac_si ASC";
+            ", ten_bac_si ASC " +
+            "OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY";
         sql = new StringBuilder(finalSql);
 
         var rows = jdbcTemplate.queryForList(sql.toString(), queryParams.toArray());
@@ -1307,7 +1309,7 @@ public class AiToolService {
         String sql = "SELECT hd.id_hoa_don, hd.ngay_lap_hoa_don, hd.tong_tien_cuoi, hd.trang_thai, kh.ten_khach_hang, kh.sdt " +
             "FROM HoaDon hd LEFT JOIN KhachHang kh ON hd.id_khach_hang = kh.id_khach_hang " +
             (filter ? "WHERE hd.trang_thai = ? " : "") +
-            "ORDER BY hd.ngay_lap_hoa_don DESC LIMIT 10";
+            "ORDER BY hd.ngay_lap_hoa_don DESC OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY";
         var rows = filter ? jdbcTemplate.queryForList(sql, trangThai) : jdbcTemplate.queryForList(sql);
         if (rows.isEmpty()) return "Không tìm thấy hóa đơn phù hợp.";
         StringBuilder sb = new StringBuilder("Danh sách hóa đơn (" + rows.size() + " dòng mới nhất):\n");
@@ -1425,7 +1427,7 @@ public class AiToolService {
         }
 
         var existing = jdbcTemplate.queryForList(
-            "SELECT id_thu_cung FROM ThuCung WHERE id_khach_hang = ? AND ten_thu_cung = ? AND (da_xoa IS NULL OR LOWER(CAST(da_xoa AS varchar)) IN ('0', 'false')) LIMIT 1",
+            "SELECT id_thu_cung FROM ThuCung WHERE id_khach_hang = ? AND ten_thu_cung = ? AND (da_xoa IS NULL OR LOWER(CAST(da_xoa AS varchar)) IN ('0', 'false')) ORDER BY id_thu_cung OFFSET 0 ROWS FETCH NEXT 1 ROWS ONLY",
             customerId,
             ten
         );

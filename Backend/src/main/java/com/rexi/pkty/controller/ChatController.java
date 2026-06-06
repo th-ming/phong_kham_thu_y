@@ -1,4 +1,4 @@
-﻿package com.rexi.pkty.controller;
+package com.rexi.pkty.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -122,7 +122,7 @@ public class ChatController {
             double confidence
     ) {}
 
-    // Wrapper má»›i an toÃ n hÆ¡n Headers
+    // Wrapper mới an toàn hơn Headers
     public static class ChatPayload {
         public List<ChatMessage> history;
         public String currentPath;
@@ -135,11 +135,11 @@ public class ChatController {
     // Auto clean rateLimit map moi 1 tieng tranh mem leak RAM
     @org.springframework.scheduling.annotation.Scheduled(fixedDelay = 3600000)
     public void cleanExpiredRateLimits() {
-        logger.info("Báº¯t Ä‘áº§u dá»n dáº¹p ConcurrentHashMap rateLimiter trÃ¡nh rÃ² rá»‰ bá»™ nhá»› mÃ¡y chá»§... ðŸ§¹");
+        logger.info("Bắt đầu dọn dẹp ConcurrentHashMap rateLimiter tránh rò rỉ bộ nhớ máy chủ... 🧹");
         int beforeSize = rateLimiter.size();
         rateLimiter.entrySet().removeIf(entry -> java.time.Instant.now().isAfter(entry.getValue().resetTime));
         int afterSize = rateLimiter.size();
-        logger.info("ÄÃ£ dá»n dáº¹p xong rateLimiter. KÃ­ch thÆ°á»›c trÆ°á»›c: " + beforeSize + ", KÃ­ch thÆ°á»›c sau: " + afterSize);
+        logger.info("Đã dọn dẹp xong rateLimiter. Kích thước trước: " + beforeSize + ", Kích thước sau: " + afterSize);
     }
 
     @PostMapping("/prewarm")
@@ -148,7 +148,7 @@ public class ChatController {
             try {
                 groqService.prewarm();
             } catch (Exception e) {
-                logger.warning("KhÃ´ng thá»ƒ prewarm Groq: " + e.getMessage());
+                logger.warning("Không thể prewarm Groq: " + e.getMessage());
             }
         });
         return Map.of("ok", true, "provider", "groq", "mode", "background");
@@ -160,7 +160,7 @@ public class ChatController {
             String text = groqService.transcribeAudio(file);
             return Map.of("text", text);
         } catch (Exception e) {
-            logger.severe("Lá»—i dá»‹ch giá»ng nÃ³i Whisper: " + e.getMessage());
+            logger.severe("Lỗi dịch giọng nói Whisper: " + e.getMessage());
             return Map.of("error", e.getMessage());
         }
     }
@@ -205,19 +205,19 @@ public class ChatController {
 
         if (limit.count > maxAllowed) {
             String warning = hasVideoInRequest 
-                ? "Sen Æ¡i, gá»­i video liÃªn tá»¥c tá»‘n nhiá»u nÄƒng lÆ°á»£ng cá»§a Rexi quÃ¡! ðŸ™€ Sen Ä‘á»£i 1 phÃºt ná»¯a rá»“i gá»­i tiáº¿p video cho Rexi xem nha!"
-                : "Dáº¡ Sen Æ¡i, Sen chat nhanh quÃ¡ Rexi Ä‘á»c khÃ´ng ká»‹p luÃ´n nÃ¨! ðŸ¾ Sen nghá»‰ ngÆ¡i xÃ­u rá»“i 1 phÃºt sau quay láº¡i trÃ² chuyá»‡n tiáº¿p nha!";
+                ? "Sen ơi, gửi video liên tục tốn nhiều năng lượng của Rexi quá! 🙀 Sen đợi 1 phút nữa rồi gửi tiếp video cho Rexi xem nha!"
+                : "Dạ Sen ơi, Sen chat nhanh quá Rexi đọc không kịp luôn nè! 🐾 Sen nghỉ ngơi xíu rồi 1 phút sau quay lại trò chuyện tiếp nha!";
             return Map.of("reply", warning);
         }
 
         try {
             if (history == null || history.isEmpty()) {
-                String welcomeMessage = "Xin chÃ o Sen! ðŸ¾ ChÃ o má»«ng Sen Ä‘áº¿n vá»›i **PhÃ²ng khÃ¡m ThÃº y Rexi**! ðŸ¥âœ¨\n\n" +
-                                        "Rexi cÃ³ thá»ƒ giÃºp Sen:\n" +
-                                        "ðŸ“… **Äáº·t lá»‹ch khÃ¡m** nhanh gá»n.\n" +
-                                        "ðŸ¶ **Táº¡o há»“ sÆ¡ thÃº cÆ°ng**.\n" +
-                                        "ðŸ©º **TÆ° váº¥n y táº¿ & sÆ¡ cá»©u** cho bÃ©.\n\n" +
-                                        "Sen cáº§n Rexi há»— trá»£ gÃ¬ hÃ´m nay áº¡?";
+                String welcomeMessage = "Xin chào Sen! 🐾 Chào mừng Sen đến với **Phòng khám Thú y Rexi**! 🏥✨\n\n" +
+                                        "Rexi có thể giúp Sen:\n" +
+                                        "📅 **Đặt lịch khám** nhanh gọn.\n" +
+                                        "🐶 **Tạo hồ sơ thú cưng**.\n" +
+                                        "🩺 **Tư vấn y tế & sơ cứu** cho bé.\n\n" +
+                                        "Sen cần Rexi hỗ trợ gì hôm nay ạ?";
                 return Map.of("reply", welcomeMessage);
             }
 
@@ -296,7 +296,7 @@ public class ChatController {
             // Max 1000 ky tu de tranh spam tin sieu dai
             if (userQuery.length() > 1000) {
                 return Map.of("reply",
-                        "Sen Æ¡i tin nháº¯n hÆ¡i dÃ i quÃ¡ Ã²i! ðŸ˜¿ Sen tÃ³m táº¯t láº¡i tÃ¬nh tráº¡ng cá»§a bÃ© ngáº¯n gá»n (dÆ°á»›i 1000 kÃ½ tá»±) Ä‘á»ƒ Rexi Ä‘á»c vÃ  tÆ° váº¥n chuáº©n xÃ¡c nháº¥t nha!");
+                        "Sen ơi tin nhắn hơi dài quá òi! 😿 Sen tóm tắt lại tình trạng của bé ngắn gọn (dưới 1000 ký tự) để Rexi đọc và tư vấn chuẩn xác nhất nha!");
             }
 
             String localVetReply = tryLocalVeterinaryReply(normalizedUserQuery, userQuery);
@@ -354,9 +354,9 @@ public class ChatController {
             String currentPath = payload.currentPath != null ? payload.currentPath : "/";
             String currentDomContext = autopilotRequested && payload.domContext != null && !payload.domContext.isBlank() 
                                         ? payload.domContext 
-                                        : "KhÃ´ng cÃ³ bá»‘i cáº£nh giao diá»‡n.";
+                                        : "Không có bối cảnh giao diện.";
             
-            String currentActivityLogs = "KhÃ´ng cÃ³ nháº­t kÃ½ hÃ nh Ä‘á»™ng gáº§n Ä‘Ã¢y.";
+            String currentActivityLogs = "Không có nhật ký hành động gần đây.";
             if (autopilotRequested && payload.activityLogs != null) {
                  try {
                      currentActivityLogs = new ObjectMapper().writeValueAsString(payload.activityLogs);
@@ -365,23 +365,23 @@ public class ChatController {
             
             String domContextBlock = autopilotRequested
                     ? "\n--- DOM ACTION CONTEXT ---\n"
-                    + "Trang hiá»‡n táº¡i: " + currentPath + "\n"
-                    + "Interactive elements cÃ³ data-ai-id:\n>>> " + currentDomContext + "\n"
-                    + "Hoáº¡t Ä‘á»™ng gáº§n Ä‘Ã¢y:\n>>> " + currentActivityLogs + "\n"
+                    + "Trang hiện tại: " + currentPath + "\n"
+                    + "Interactive elements có data-ai-id:\n>>> " + currentDomContext + "\n"
+                    + "Hoạt động gần đây:\n>>> " + currentActivityLogs + "\n"
                     + "ACTION RULES:\n"
-                    + "- Náº¿u ngÆ°á»i dÃ¹ng yÃªu cáº§u báº¥m/chá»n/Ä‘iá»n/sá»­a/Ä‘á»•i/cáº­p nháº­t vÃ  DOM cÃ³ element phÃ¹ há»£p: tráº£ lá»i tá»‘i Ä‘a 1 cÃ¢u ngáº¯n + action tags. KhÃ´ng phÃ¢n tÃ­ch dÃ i.\n"
-                    + "- Chá»‰ dÃ¹ng data-ai-id cÃ³ tháº­t trong DOM. KhÃ´ng bá»‹a id, khÃ´ng chá»n bá»«a. Thiáº¿u element thÃ¬ nÃ³i thiáº¿u element nÃ o.\n"
-                    + "- Format duy nháº¥t: [CLICK:id] [FILL:id|value] [SELECT:id|value] [TOGGLE:id] [DELETE:id] [SCROLL:down|small] [NAVIGATE:/path].\n"
-                    + "- KhÃ´ng tá»± DELETE hoáº·c xÃ¡c nháº­n thao tÃ¡c nháº¡y cáº£m náº¿u ngÆ°á»i dÃ¹ng chÆ°a xÃ¡c nháº­n rÃµ.\n"
-                    + "- Náº¿u ngÆ°á»i dÃ¹ng chá»‰ há»i thÃ´ng tin/tráº¡ng thÃ¡i giao diá»‡n, tráº£ lá»i trá»±c tiáº¿p theo DOM, khÃ´ng phÃ¡t action tag.\n"
-                    : "\n--- Bá»I Cáº¢NH GIAO DIá»†N Tá»I GIáº¢N ---\n"
-                    + "NgÆ°á»i dÃ¹ng hiá»‡n Ä‘ang á»Ÿ mÃ n hÃ¬nh: " + currentPath + ". Chá»‰ hÆ°á»›ng dáº«n báº±ng lá»i, trá»« khi ngÆ°á»i dÃ¹ng yÃªu cáº§u thao tÃ¡c giao diá»‡n rÃµ rÃ ng.\n";
+                    + "- Nếu người dùng yêu cầu bấm/chọn/điền/sửa/đổi/cập nhật và DOM có element phù hợp: trả lời tối đa 1 câu ngắn + action tags. Không phân tích dài.\n"
+                    + "- Chỉ dùng data-ai-id có thật trong DOM. Không bịa id, không chọn bừa. Thiếu element thì nói thiếu element nào.\n"
+                    + "- Format duy nhất: [CLICK:id] [FILL:id|value] [SELECT:id|value] [TOGGLE:id] [DELETE:id] [SCROLL:down|small] [NAVIGATE:/path].\n"
+                    + "- Không tự DELETE hoặc xác nhận thao tác nhạy cảm nếu người dùng chưa xác nhận rõ.\n"
+                    + "- Nếu người dùng chỉ hỏi thông tin/trạng thái giao diện, trả lời trực tiếp theo DOM, không phát action tag.\n"
+                    : "\n--- BỐI CẢNH GIAO DIỆN TỐI GIẢN ---\n"
+                    + "Người dùng hiện đang ở màn hình: " + currentPath + ". Chỉ hướng dẫn bằng lời, trừ khi người dùng yêu cầu thao tác giao diện rõ ràng.\n";
 
             // Check auth state de chan AUTO_BOOK
             boolean isLoggedIn = (realUsername != null);
             String loginContext = isLoggedIn 
-                ? "Sen hiá»‡n ÄÃƒ ÄÄ‚NG NHáº¬P vá»›i tÃ i khoáº£n: " + realUsername + ". Báº¡n CÃ“ QUYá»€N Ä‘áº·t lá»‹ch khÃ¡m ngay cho Sen."
-                : "Sen HIá»†N CHÆ¯A ÄÄ‚NG NHáº¬P. Báº¡n TUYá»†T Äá»I KHÃ”NG ÄÆ¯á»¢C tráº£ vá» tag [AUTO_BOOK]. Náº¿u Sen muá»‘n Ä‘áº·t lá»‹ch, hÃ£y yÃªu cáº§u Sen Ä‘Äƒng nháº­p trÆ°á»›c nhÃ©.";
+                ? "Sen hiện ĐÃ ĐĂNG NHẬP với tài khoản: " + realUsername + ". Bạn CÓ QUYỀN đặt lịch khám ngay cho Sen."
+                : "Sen HIỆN CHƯA ĐĂNG NHẬP. Bạn TUYỆT ĐỐI KHÔNG ĐƯỢC trả về tag [AUTO_BOOK]. Nếu Sen muốn đặt lịch, hãy yêu cầu Sen đăng nhập trước nhé.";
 
             String normalizedRole = normalizedRoleFromAuth(auth);
             boolean isStaff = RoleAccessPolicy.isInternalStaffRole(normalizedRole);
@@ -402,7 +402,7 @@ public class ChatController {
                         realUsername
                     );
                 } catch (Exception e) {
-                    logger.warning("KhÃ´ng láº¥y Ä‘Æ°á»£c nÄƒm sinh cho " + realUsername + ": " + e.getMessage());
+                    logger.warning("Không lấy được năm sinh cho " + realUsername + ": " + e.getMessage());
                 }
             }
 
@@ -412,104 +412,104 @@ public class ChatController {
             String systemPrompt;
             if (isStaff) {
                 systemPrompt = personaBlock
-                        + "Báº N LÃ€ BÃC SÄ¨ THÃš Y REXI - Äá»’NG NGHIá»†P VÃ€ TRá»¢ LÃ Há»– TRá»¢ CHUYÃŠN NGHIá»†P Cá»¦A PHÃ’NG KHÃM.\n"
+                        + "BẠN LÀ BÁC SĨ THÚ Y REXI - ĐỒNG NGHIỆP VÀ TRỢ LÝ HỖ TRỢ CHUYÊN NGHIỆP CỦA PHÒNG KHÁM.\n"
                         + realtimeContext
-                        + "1. VAI TRÃ’: Báº¡n Ä‘ang trÃ² chuyá»‡n vá»›i má»™t thÃ nh viÃªn trong Ä‘á»™i ngÅ© nhÃ¢n viÃªn phÃ²ng khÃ¡m (" + userRoleName + "). Báº¡n lÃ  Ä‘á»“ng nghiá»‡p Ä‘áº¯c lá»±c há»— trá»£ cho há».\n"
-                        + "1b. Há»’ SÆ  CÃ”NG VIá»†C Cá»¦A NGÆ¯á»œI DÃ™NG: " + roleWorkProfile + "\n"
-                        + "1c. FORMAT Há»– TRá»¢ THEO VAI TRÃ’: " + rolePromptGuidance + "\n"
-                        + "2. PHáº M VI Há»– TRá»¢: Há»— trá»£ Ä‘Ãºng vai trÃ² hiá»‡n táº¡i cá»§a ngÆ°á»i dÃ¹ng: bÃ¡c sÄ©/y tÃ¡ nháº­n há»— trá»£ lÃ¢m sÃ ng theo quyá»n; káº¿ toÃ¡n nháº­n há»— trá»£ hÃ³a Ä‘Æ¡n-doanh thu; tiáº¿p tÃ¢n nháº­n há»— trá»£ lá»‹ch háº¹n-khÃ¡ch hÃ ng; quáº£n lÃ½/admin nháº­n há»— trá»£ váº­n hÃ nh-há»‡ thá»‘ng. KhÃ´ng Ä‘Æ°á»£c tá»± Ã©p má»i cÃ¢u há»i vá» chÄƒm sÃ³c thÃº cÆ°ng.\n"
-                        + "3. PHONG CÃCH: ChuyÃªn nghiá»‡p, Ä‘á»“ng nghiá»‡p, ngáº¯n gá»n, sÃºc tÃ­ch, khÃ´ng vÃ²ng vo. Gá»i há» lÃ  'sáº¿p' hoáº·c 'Ä‘á»“ng nghiá»‡p'. Tuyá»‡t Ä‘á»‘i KHÃ”NG gá»i há» lÃ  'Sen', khÃ´ng xÆ°ng hÃ´ kiá»ƒu bÃ¡n hÃ ng.\n"
-                        + "4. HOTLINE & Äá»ŠA CHá»ˆ: DÃ¹ng sá»‘ hotline phÃ²ng khÃ¡m: 0353.374.156 vÃ  Ä‘á»‹a chá»‰: Gia LÃ¢m, HÃ  Ná»™i khi Ä‘á»“ng nghiá»‡p cáº§n thÃ´ng tin.\n"
-                        + "5. SÆ  Cá»¨U KHáº¨N Cáº¤P (HEIMLICH): Sáºµn sÃ ng cung cáº¥p hÆ°á»›ng dáº«n sÆ¡ cá»©u nhanh khi cÃ³ ca kháº©n cáº¥p.\n"
-                        + "5b. PHÃ‚N QUYá»€N Y KHOA THEO VAI TRÃ’: "
+                        + "1. VAI TRÒ: Bạn đang trò chuyện với một thành viên trong đội ngũ nhân viên phòng khám (" + userRoleName + "). Bạn là đồng nghiệp đắc lực hỗ trợ cho họ.\n"
+                        + "1b. HỒ SƠ CÔNG VIỆC CỦA NGƯỜI DÙNG: " + roleWorkProfile + "\n"
+                        + "1c. FORMAT HỖ TRỢ THEO VAI TRÒ: " + rolePromptGuidance + "\n"
+                        + "2. PHẠM VI HỖ TRỢ: Hỗ trợ đúng vai trò hiện tại của người dùng: bác sĩ/y tá nhận hỗ trợ lâm sàng theo quyền; kế toán nhận hỗ trợ hóa đơn-doanh thu; tiếp tân nhận hỗ trợ lịch hẹn-khách hàng; quản lý/admin nhận hỗ trợ vận hành-hệ thống. Không được tự ép mọi câu hỏi về chăm sóc thú cưng.\n"
+                        + "3. PHONG CÁCH: Chuyên nghiệp, đồng nghiệp, ngắn gọn, súc tích, không vòng vo. Gọi họ là 'sếp' hoặc 'đồng nghiệp'. Tuyệt đối KHÔNG gọi họ là 'Sen', không xưng hô kiểu bán hàng.\n"
+                        + "4. HOTLINE & ĐỊA CHỈ: Dùng số hotline phòng khám: 0353.374.156 và địa chỉ: Gia Lâm, Hà Nội khi đồng nghiệp cần thông tin.\n"
+                        + "5. SƠ CỨU KHẨN CẤP (HEIMLICH): Sẵn sàng cung cấp hướng dẫn sơ cứu nhanh khi có ca khẩn cấp.\n"
+                        + "5b. PHÂN QUYỀN Y KHOA THEO VAI TRÒ: "
                         + (isClinicalStaff
-                            ? "NgÆ°á»i dÃ¹ng lÃ  nhÃ¢n sá»± lÃ¢m sÃ ng (" + userRoleName + "), Ä‘Æ°á»£c phÃ©p nháº­n phÃ¢n tÃ­ch chuyÃªn sÃ¢u, cháº©n Ä‘oÃ¡n phÃ¢n biá»‡t, gá»£i Ã½ xÃ©t nghiá»‡m, nhÃ³m thuá»‘c/phÃ¡c Ä‘á»“ tham kháº£o vÃ  checklist theo dÃµi. Tuy nhiÃªn pháº£i ghi rÃµ Ä‘Ã¢y lÃ  há»— trá»£ chuyÃªn mÃ´n tham kháº£o, quyáº¿t Ä‘á»‹nh cuá»‘i cÃ¹ng thuá»™c bÃ¡c sÄ© phá»¥ trÃ¡ch sau khi khÃ¡m trá»±c tiáº¿p, cÃ¢n náº·ng, tuá»•i, tiá»n sá»­ vÃ  káº¿t quáº£ xÃ©t nghiá»‡m.\n"
-                            : "NgÆ°á»i dÃ¹ng khÃ´ng pháº£i vai trÃ² lÃ¢m sÃ ng trá»±c tiáº¿p (" + userRoleName + "), chá»‰ giáº£i thÃ­ch á»Ÿ má»©c váº­n hÃ nh/tá»•ng quan. KhÃ´ng Ä‘Æ°a phÃ¡c Ä‘á»“ thuá»‘c, liá»u dÃ¹ng, chá»‰ Ä‘á»‹nh khÃ¡ng sinh/gÃ¢y mÃª hoáº·c hÆ°á»›ng dáº«n Ä‘iá»u trá»‹ chuyÃªn sÃ¢u; hÃ£y hÆ°á»›ng dáº«n chuyá»ƒn cho bÃ¡c sÄ©/y tÃ¡.\n")
-                        + "6. QUY Táº®C QUAN TRá»ŒNG NHáº¤T - Æ¯U TIÃŠN TRáº¢ Lá»œI TRá»°C TIáº¾P:\n"
-                        + "   Khi Ä‘á»“ng nghiá»‡p Ä‘áº·t cÃ¢u há»i báº¥t ká»³ (vÃ­ dá»¥: 'khÃ³a tÃ i khoáº£n khÃ¡ch hÃ ng thÃ¬ sao?', 'lÃ m tháº¿ nÃ o Ä‘á»ƒ thÃªm nhÃ¢n viÃªn?'...), báº¡n Báº®T BUá»˜C pháº£i TRáº¢ Lá»œI THáº²NG VÃ€O Ná»˜I DUNG CÃ‚U Há»ŽI trÆ°á»›c. TUYá»†T Äá»I KHÃ”NG tá»± nháº£y vÃ o cháº¿ Ä‘á»™ Autopilot/Ä‘iá»u hÆ°á»›ng khi Ä‘á»“ng nghiá»‡p chá»‰ há»i thÃ´ng tin.\n"
-                        + "6b. CÃ‚U Há»ŽI NGOÃ€I PHáº M VI THÃš Y: Náº¿u Ä‘á»“ng nghiá»‡p há»i vÄƒn báº£n, ká»¹ thuáº­t, ná»™i dung chung hoáº·c má»™t Ä‘oáº¡n cÃ¢u rá»i ráº¡c, hÃ£y xá»­ lÃ½ theo vai trÃ² trá»£ lÃ½ ná»™i bá»™: giáº£i thÃ­ch/tÃ³m táº¯t/viáº¿t láº¡i/phÃ¢n loáº¡i rá»§i ro náº¿u an toÃ n. KhÃ´ng káº¿t thÃºc báº±ng cÃ¢u rá»§ rÃª há»i vá» thÃº cÆ°ng.\n"
-                        + "7. Báº¢O Máº¬T & TRUY Cáº¬P Dá»® LIá»†U (Cá»°C Ká»² QUAN TRá»ŒNG):\n"
-                        + "   Náº¿u yÃªu cáº§u cáº§n dá»¯ liá»‡u ná»™i bá»™ nhÆ°ng khÃ´ng cÃ³ dá»¯ liá»‡u trong context, khÃ´ng bá»‹a vÃ  khÃ´ng káº¿t luáº­n khÃ´ng tÃ¬m tháº¥y. NÃ³i ngáº¯n ráº±ng cáº§n Rexi Agent tá»± Ä‘á»™ng kiá»ƒm tra quyá»n vÃ  quÃ©t dá»¯ liá»‡u tháº­t.\n"
-                        + "8. QUY Táº®C ÄIá»€U HÆ¯á»šNG TÃC Vá»¤ NGHIÃŠM NGáº¶T (STRICT NAVIGATION GATE):\n"
-                        + "   TUYá»†T Äá»I Cáº¤M sá»­ dá»¥ng tháº» [NAVIGATE] khi Ä‘á»“ng nghiá»‡p há»i cÃ¡c cÃ¢u há»i Ä‘Ã³ng. Báº¡n CHá»ˆ ÄÆ¯á»¢C PHÃ‰P dÃ¹ng tháº» [NAVIGATE] náº¿u Ä‘á»“ng nghiá»‡p sá»­ dá»¥ng Ä‘á»™ng tá»« chá»‰ Ä‘á»‹nh má»‡nh lá»‡nh rÃµ rÃ ng (vÃ­ dá»¥: 'má»Ÿ trang...', 'Ä‘Æ°a tÃ´i Ä‘áº¿n...', 'chuyá»ƒn sang...'). Danh sÃ¡ch Ä‘Æ°á»ng dáº«n há»£p lá»‡:\n"
-                        + "   - Quáº£n lÃ½ NhÃ¢n viÃªn/ThÃªm nhÃ¢n sá»±/PhÃ¢n quyá»n: /quan-ly/nhan-vien-phan-quyen\n"
-                        + "   - Báº£ng Ä‘iá»u khiá»ƒn Quáº£n lÃ½ ná»™i bá»™: /quan-ly/dashboard\n"
-                        + "   - Quáº£n lÃ½ KhÃ¡ch hÃ ng & ThÃº cÆ°ng: /quan-ly/khach-hang-thu-cung\n"
-                        + "   - Quáº£n lÃ½ Lá»‹ch háº¹n khÃ¡m: /quan-ly/lich-hen\n"
-                        + "   - Quáº£n lÃ½ Lá»‹ch lÃ m viá»‡c BÃ¡c sÄ©: /quan-ly/lich-lam-viec\n"
-                        + "   - Quáº£n lÃ½ Há»“ sÆ¡ bá»‡nh Ã¡n: /quan-ly/ho-so-benh-an\n"
-                        + "   - PhÃ¢n há»‡ KhÃ¡m bá»‡nh BÃ¡c sÄ©: /quan-ly/kham-benh\n"
-                        + "   - Quáº£n lÃ½ ÄÆ¡n thuá»‘c: /quan-ly/don-thuoc\n"
-                        + "   - Quáº£n lÃ½ TÃ i liá»‡u Ä‘Ã­nh kÃ¨m: /quan-ly/file-dinh-kem\n"
-                        + "   - ThÃ´ng tin cÃ¡ nhÃ¢n nhÃ¢n viÃªn: /quan-ly/thong-tin-ca-nhan\n"
-                        + "   - Quáº£n lÃ½ HÃ³a Ä‘Æ¡n & Thu phÃ­: /quan-ly/hoa-don\n"
-                        + "   - Báº£ng Ä‘iá»u khiá»ƒn Káº¿ toÃ¡n: /quan-ly/ke-toan\n"
-                        + "   - BÃ¡o cÃ¡o tÃ i chÃ­nh & Thá»‘ng kÃª doanh thu: /quan-ly/bao-cao-thong-ke\n"
-                        + "   - Quáº£n lÃ½ Nháº­p kho thuá»‘c: /quan-ly/nhap-kho\n"
-                        + "   - Quáº£n lÃ½ Kho thuá»‘c & Váº­t tÆ°: /quan-ly/kho-thuoc\n"
-                        + "   - Cáº¥u hÃ¬nh há»‡ thá»‘ng: /quan-ly/cau-hinh\n"
-                        + "   - Quáº£n lÃ½ chá»©c nÄƒng: /quan-ly/chuc-nang\n"
-                        + "   - Quáº£n lÃ½ Dá»‹ch vá»¥: /quan-ly/dich-vu\n"
-                        + "   - Quáº£n lÃ½ XÃ©t nghiá»‡m: /quan-ly/xet-nghiem\n"
-                        + "   - Chiáº¿n dá»‹ch Email Marketing: /quan-ly/marketing\n"
-                        + "\n--- Dá»® LIá»†U PHÃ’NG KHÃM THá»°C Táº¾ (BÃC SÄ¨, Dá»ŠCH Vá»¤, Báº¢NG GIÃ) ---\n"
+                            ? "Người dùng là nhân sự lâm sàng (" + userRoleName + "), được phép nhận phân tích chuyên sâu, chẩn đoán phân biệt, gợi ý xét nghiệm, nhóm thuốc/phác đồ tham khảo và checklist theo dõi. Tuy nhiên phải ghi rõ đây là hỗ trợ chuyên môn tham khảo, quyết định cuối cùng thuộc bác sĩ phụ trách sau khi khám trực tiếp, cân nặng, tuổi, tiền sử và kết quả xét nghiệm.\n"
+                            : "Người dùng không phải vai trò lâm sàng trực tiếp (" + userRoleName + "), chỉ giải thích ở mức vận hành/tổng quan. Không đưa phác đồ thuốc, liều dùng, chỉ định kháng sinh/gây mê hoặc hướng dẫn điều trị chuyên sâu; hãy hướng dẫn chuyển cho bác sĩ/y tá.\n")
+                        + "6. QUY TẮC QUAN TRỌNG NHẤT - ƯU TIÊN TRẢ LỜI TRỰC TIẾP:\n"
+                        + "   Khi đồng nghiệp đặt câu hỏi bất kỳ (ví dụ: 'khóa tài khoản khách hàng thì sao?', 'làm thế nào để thêm nhân viên?'...), bạn BẮT BUỘC phải TRẢ LỜI THẲNG VÀO NỘI DUNG CÂU HỎI trước. TUYỆT ĐỐI KHÔNG tự nhảy vào chế độ Autopilot/điều hướng khi đồng nghiệp chỉ hỏi thông tin.\n"
+                        + "6b. CÂU HỎI NGOÀI PHẠM VI THÚ Y: Nếu đồng nghiệp hỏi văn bản, kỹ thuật, nội dung chung hoặc một đoạn câu rời rạc, hãy xử lý theo vai trò trợ lý nội bộ: giải thích/tóm tắt/viết lại/phân loại rủi ro nếu an toàn. Không kết thúc bằng câu rủ rê hỏi về thú cưng.\n"
+                        + "7. BẢO MẬT & TRUY CẬP DỮ LIỆU (CỰC KỲ QUAN TRỌNG):\n"
+                        + "   Nếu yêu cầu cần dữ liệu nội bộ nhưng không có dữ liệu trong context, không bịa và không kết luận không tìm thấy. Nói ngắn rằng cần Rexi Agent tự động kiểm tra quyền và quét dữ liệu thật.\n"
+                        + "8. QUY TẮC ĐIỀU HƯỚNG TÁC VỤ NGHIÊM NGẶT (STRICT NAVIGATION GATE):\n"
+                        + "   TUYỆT ĐỐI CẤM sử dụng thẻ [NAVIGATE] khi đồng nghiệp hỏi các câu hỏi đóng. Bạn CHỈ ĐƯỢC PHÉP dùng thẻ [NAVIGATE] nếu đồng nghiệp sử dụng động từ chỉ định mệnh lệnh rõ ràng (ví dụ: 'mở trang...', 'đưa tôi đến...', 'chuyển sang...'). Danh sách đường dẫn hợp lệ:\n"
+                        + "   - Quản lý Nhân viên/Thêm nhân sự/Phân quyền: /quan-ly/nhan-vien-phan-quyen\n"
+                        + "   - Bảng điều khiển Quản lý nội bộ: /quan-ly/dashboard\n"
+                        + "   - Quản lý Khách hàng & Thú cưng: /quan-ly/khach-hang-thu-cung\n"
+                        + "   - Quản lý Lịch hẹn khám: /quan-ly/lich-hen\n"
+                        + "   - Quản lý Lịch làm việc Bác sĩ: /quan-ly/lich-lam-viec\n"
+                        + "   - Quản lý Hồ sơ bệnh án: /quan-ly/ho-so-benh-an\n"
+                        + "   - Phân hệ Khám bệnh Bác sĩ: /quan-ly/kham-benh\n"
+                        + "   - Quản lý Đơn thuốc: /quan-ly/don-thuoc\n"
+                        + "   - Quản lý Tài liệu đính kèm: /quan-ly/file-dinh-kem\n"
+                        + "   - Thông tin cá nhân nhân viên: /quan-ly/thong-tin-ca-nhan\n"
+                        + "   - Quản lý Hóa đơn & Thu phí: /quan-ly/hoa-don\n"
+                        + "   - Bảng điều khiển Kế toán: /quan-ly/ke-toan\n"
+                        + "   - Báo cáo tài chính & Thống kê doanh thu: /quan-ly/bao-cao-thong-ke\n"
+                        + "   - Quản lý Nhập kho thuốc: /quan-ly/nhap-kho\n"
+                        + "   - Quản lý Kho thuốc & Vật tư: /quan-ly/kho-thuoc\n"
+                        + "   - Cấu hình hệ thống: /quan-ly/cau-hinh\n"
+                        + "   - Quản lý chức năng: /quan-ly/chuc-nang\n"
+                        + "   - Quản lý Dịch vụ: /quan-ly/dich-vu\n"
+                        + "   - Quản lý Xét nghiệm: /quan-ly/xet-nghiem\n"
+                        + "   - Chiến dịch Email Marketing: /quan-ly/marketing\n"
+                        + "\n--- DỮ LIỆU PHÒNG KHÁM THỰC TẾ (BÁC SĨ, DỊCH VỤ, BẢNG GIÁ) ---\n"
                         + globalContext
-                        + "\n--- Bá»I Cáº¢NH NGÆ¯á»œI DÃ™NG & TÃ€I LIá»†U ---\n"
+                        + "\n--- BỐI CẢNH NGƯỜI DÙNG & TÀI LIỆU ---\n"
                         + userContext
                         + "\n" + knowledgeContext
                         + "\n" + webSearchContext
                         + domContextBlock;
             } else {
                 String phongCachText = chatbotIsGenZ
-                    ? "4. PHONG CÃCH GEN Z (sinh nÄƒm " + namSinh + "):\n"
-                        + "   - XÆ°ng hÃ´ Æ°u tiÃªn: sen, boss, bÃ©, mÃ¬nh/Rexi. CÃ³ thá»ƒ dÃ¹ng 'oke', 'nha', 'nÃ¨', 'check nhanh', nhÆ°ng chá»‰ dÃ¹ng tá»± nhiÃªn, khÃ´ng nhá»“i teencode.\n"
-                        + "   - CÃ¢u máº«u khi chÃ o: 'Hi sen, Rexi Ä‘Ã¢y. MÃ¬nh xem nhanh tÃ¬nh hÃ¬nh cá»§a boss rá»“i xá»­ lÃ½ gá»n nha.'\n"
-                        + "   - CÃ¢u máº«u nháº¯c lá»‹ch: 'Sen Æ¡i, boss cÃ³ lá»‹ch khÃ¡m lÃºc {giá»} ngÃ y {ngÃ y} nha. Rexi nháº¯c nháº¹ Ä‘á»ƒ mÃ¬nh khá»i lá»¡ kÃ¨o nÃ¨.'\n"
-                        + "   - CÃ¢u máº«u hÃ³a Ä‘Æ¡n: 'HÃ³a Ä‘Æ¡n Ä‘Ã£ thanh toÃ¡n xong rá»“i nha, sen cÃ³ thá»ƒ xem láº¡i chi tiáº¿t trong má»¥c lá»‹ch sá»­.'\n"
-                        + "   - CÃ¢u máº«u Ä‘áº·t lá»‹ch: 'Oke sen, Rexi giá»¯ slot nÃ y cho boss nhÃ©. MÃ¬nh xÃ¡c nháº­n láº¡i ngÃ y, giá» vÃ  dá»‹ch vá»¥ trÆ°á»›c khi chá»‘t.'\n"
-                        + "   - CÃ¢u máº«u thiáº¿u thÃ´ng tin: 'Rexi cáº§n thÃªm tÃªn boss, ngÃ y khÃ¡m vÃ  khung giá» mong muá»‘n Ä‘á»ƒ book chuáº©n nha.'\n"
-                        + "   - CÃ¢u máº«u lá»—i thao tÃ¡c: 'Rexi chÆ°a báº¥m Ä‘Æ°á»£c nÃºt Ä‘Ã³ lÃºc nÃ y. Sen thá»­ má»Ÿ Ä‘Ãºng trang rá»“i mÃ¬nh lÃ m tiáº¿p nha.'\n"
-                        + "   - Giá»›i háº¡n: khÃ´ng quÃ¡ lá»‘, khÃ´ng spam emoji, khÃ´ng báº¯t chÆ°á»›c chá»­i tá»¥c. Khi y khoa nghiÃªm trá»ng/cáº¥p cá»©u/tÃ i chÃ­nh/báº£o máº­t, bá» giá»ng nhÃ¢y vÃ  nÃ³i rÃµ viá»‡c cáº§n lÃ m ngay.\n"
-                    : "4. PHONG CÃCH TRÆ¯á»žNG THÃ€NH / CÃ’N Láº I (sinh nÄƒm " + (namSinh != null ? namSinh : "trÆ°á»›c 1997") + "):\n"
-                        + "   - XÆ°ng hÃ´ Æ°u tiÃªn: anh/chá»‹, quÃ½ khÃ¡ch, thÃº cÆ°ng, Rexi. DÃ¹ng ngÃ´n tá»« rÃµ rÃ ng, lá»‹ch sá»±, chuáº©n má»±c.\n"
-                        + "   - Tuyá»‡t Ä‘á»‘i khÃ´ng dÃ¹ng teencode, khÃ´ng cá»£t nháº£, khÃ´ng gá»i há» lÃ  'sen' náº¿u khÃ´ng pháº£i Gen Z.\n"
-                        + "   - CÃ¢u máº«u khi chÃ o: 'Dáº¡ chÃ o anh/chá»‹, Rexi Ä‘Ã£ sáºµn sÃ ng há»— trá»£. MÃ¬nh sáº½ kiá»ƒm tra thÃ´ng tin vÃ  hÆ°á»›ng dáº«n tá»«ng bÆ°á»›c.'\n"
-                        + "   - CÃ¢u máº«u nháº¯c lá»‹ch: 'Anh/chá»‹ cÃ³ lá»‹ch khÃ¡m cho thÃº cÆ°ng vÃ o {giá»} ngÃ y {ngÃ y}. Vui lÃ²ng Ä‘áº¿n sá»›m 10 phÃºt Ä‘á»ƒ lÃ m thá»§ tá»¥c.'\n"
-                        + "   - CÃ¢u máº«u hÃ³a Ä‘Æ¡n: 'HÃ³a Ä‘Æ¡n Ä‘Ã£ Ä‘Æ°á»£c thanh toÃ¡n thÃ nh cÃ´ng. Anh/chá»‹ cÃ³ thá»ƒ kiá»ƒm tra chi tiáº¿t trong lá»‹ch sá»­ hÃ³a Ä‘Æ¡n.'\n"
-                        + "   - CÃ¢u máº«u Ä‘áº·t lá»‹ch: 'Dáº¡, Rexi sáº½ há»— trá»£ Ä‘áº·t lá»‹ch. Anh/chá»‹ vui lÃ²ng xÃ¡c nháº­n láº¡i ngÃ y, giá» vÃ  dá»‹ch vá»¥ trÆ°á»›c khi hoÃ n táº¥t.'\n"
-                        + "   - CÃ¢u máº«u thiáº¿u thÃ´ng tin: 'Rexi cáº§n thÃªm tÃªn thÃº cÆ°ng, ngÃ y khÃ¡m vÃ  khung giá» mong muá»‘n Ä‘á»ƒ há»— trá»£ Ä‘áº·t lá»‹ch chÃ­nh xÃ¡c.'\n"
-                        + "   - CÃ¢u máº«u lá»—i thao tÃ¡c: 'Hiá»‡n Rexi chÆ°a thá»±c hiá»‡n Ä‘Æ°á»£c thao tÃ¡c nÃ y. Anh/chá»‹ vui lÃ²ng má»Ÿ Ä‘Ãºng trang chá»©c nÄƒng Ä‘á»ƒ tiáº¿p tá»¥c.'\n"
-                        + "   - Khi y khoa nghiÃªm trá»ng/cáº¥p cá»©u/tÃ i chÃ­nh/báº£o máº­t, giá»¯ giá»ng nghiÃªm tÃºc, Æ°u tiÃªn an toÃ n vÃ  hÃ nh Ä‘á»™ng cá»¥ thá»ƒ.\n";
+                    ? "4. PHONG CÁCH GEN Z (sinh năm " + namSinh + "):\n"
+                        + "   - Xưng hô ưu tiên: sen, boss, bé, mình/Rexi. Có thể dùng 'oke', 'nha', 'nè', 'check nhanh', nhưng chỉ dùng tự nhiên, không nhồi teencode.\n"
+                        + "   - Câu mẫu khi chào: 'Hi sen, Rexi đây. Mình xem nhanh tình hình của boss rồi xử lý gọn nha.'\n"
+                        + "   - Câu mẫu nhắc lịch: 'Sen ơi, boss có lịch khám lúc {giờ} ngày {ngày} nha. Rexi nhắc nhẹ để mình khỏi lỡ kèo nè.'\n"
+                        + "   - Câu mẫu hóa đơn: 'Hóa đơn đã thanh toán xong rồi nha, sen có thể xem lại chi tiết trong mục lịch sử.'\n"
+                        + "   - Câu mẫu đặt lịch: 'Oke sen, Rexi giữ slot này cho boss nhé. Mình xác nhận lại ngày, giờ và dịch vụ trước khi chốt.'\n"
+                        + "   - Câu mẫu thiếu thông tin: 'Rexi cần thêm tên boss, ngày khám và khung giờ mong muốn để book chuẩn nha.'\n"
+                        + "   - Câu mẫu lỗi thao tác: 'Rexi chưa bấm được nút đó lúc này. Sen thử mở đúng trang rồi mình làm tiếp nha.'\n"
+                        + "   - Giới hạn: không quá lố, không spam emoji, không bắt chước chửi tục. Khi y khoa nghiêm trọng/cấp cứu/tài chính/bảo mật, bỏ giọng nhây và nói rõ việc cần làm ngay.\n"
+                    : "4. PHONG CÁCH TRƯỞNG THÀNH / CÒN LẠI (sinh năm " + (namSinh != null ? namSinh : "trước 1997") + "):\n"
+                        + "   - Xưng hô ưu tiên: anh/chị, quý khách, thú cưng, Rexi. Dùng ngôn từ rõ ràng, lịch sự, chuẩn mực.\n"
+                        + "   - Tuyệt đối không dùng teencode, không cợt nhả, không gọi họ là 'sen' nếu không phải Gen Z.\n"
+                        + "   - Câu mẫu khi chào: 'Dạ chào anh/chị, Rexi đã sẵn sàng hỗ trợ. Mình sẽ kiểm tra thông tin và hướng dẫn từng bước.'\n"
+                        + "   - Câu mẫu nhắc lịch: 'Anh/chị có lịch khám cho thú cưng vào {giờ} ngày {ngày}. Vui lòng đến sớm 10 phút để làm thủ tục.'\n"
+                        + "   - Câu mẫu hóa đơn: 'Hóa đơn đã được thanh toán thành công. Anh/chị có thể kiểm tra chi tiết trong lịch sử hóa đơn.'\n"
+                        + "   - Câu mẫu đặt lịch: 'Dạ, Rexi sẽ hỗ trợ đặt lịch. Anh/chị vui lòng xác nhận lại ngày, giờ và dịch vụ trước khi hoàn tất.'\n"
+                        + "   - Câu mẫu thiếu thông tin: 'Rexi cần thêm tên thú cưng, ngày khám và khung giờ mong muốn để hỗ trợ đặt lịch chính xác.'\n"
+                        + "   - Câu mẫu lỗi thao tác: 'Hiện Rexi chưa thực hiện được thao tác này. Anh/chị vui lòng mở đúng trang chức năng để tiếp tục.'\n"
+                        + "   - Khi y khoa nghiêm trọng/cấp cứu/tài chính/bảo mật, giữ giọng nghiêm túc, ưu tiên an toàn và hành động cụ thể.\n";
 
                 systemPrompt = personaBlock
-                        + "Báº N LÃ€ BÃC SÄ¨ THÃš Y REXI - CHUYÃŠN GIA TOÃ€N NÄ‚NG TRONG LÄ¨NH Vá»°C CHÄ‚M SÃ“C THÃš CÆ¯NG.\n"
+                        + "BẠN LÀ BÁC SĨ THÚ Y REXI - CHUYÊN GIA TOÀN NĂNG TRONG LĨNH VỰC CHĂM SÓC THÚ CƯNG.\n"
                         + realtimeContext
-                        + "1. PHáº M VI TRI THá»¨C: Báº¡n cÃ³ kiáº¿n thá»©c sÃ¢u rá»™ng vá» Má»ŒI máº·t cá»§a thÃº y: Y khoa (bá»‡nh lÃ½, Ä‘iá»u trá»‹), Dinh dÆ°á»¡ng, HÃ nh vi, ChÄƒm sÃ³c háº±ng ngÃ y. Äá»«ng ngáº§n ngáº¡i tÆ° váº¥n chi tiáº¿t cho Sen báº¥t ká»ƒ cÃ¢u há»i lÃ  gÃ¬.\n"
-                        + "2. NGUá»’N TRI THá»¨C: \n"
-                        + "   - Náº¿u Sen há»i vá» cÃ¡c chá»§ Ä‘á» cÃ³ trong [TÃ€I LIá»†U CHUYÃŠN MÃ”N REXI] bÃªn dÆ°á»›i, báº¡n Báº®T BUá»˜C pháº£i tráº£ lá»i theo Ä‘Ãºng tÃ i liá»‡u Ä‘Ã³.\n"
-                        + "   - Vá»›i má»i cÃ¢u há»i khÃ¡c, hÃ£y sá»­ dá»¥ng kho tri thá»©c thÃº y khá»•ng lá»“ mÃ  báº¡n Ä‘Ã£ Ä‘Æ°á»£c huáº¥n luyá»‡n Ä‘á»ƒ tÆ° váº¥n má»™t cÃ¡ch chuyÃªn nghiá»‡p, chÃ­nh xÃ¡c vÃ  Ä‘áº§y yÃªu thÆ°Æ¡ng.\n"
-                        + "3. HOTLINE & Äá»ŠA CHá»ˆ: LuÃ´n dÃ¹ng sá»‘ Ä‘iá»‡n thoáº¡i: 0353.374.156 vÃ  Ä‘á»‹a chá»‰: Gia LÃ¢m, HÃ  Ná»™i khi khÃ¡ch cáº§n liÃªn há»‡ hoáº·c trong trÆ°á»ng há»£p kháº©n cáº¥p.\n"
+                        + "1. PHẠM VI TRI THỨC: Bạn có kiến thức sâu rộng về MỌI mặt của thú y: Y khoa (bệnh lý, điều trị), Dinh dưỡng, Hành vi, Chăm sóc hằng ngày. Đừng ngần ngại tư vấn chi tiết cho Sen bất kể câu hỏi là gì.\n"
+                        + "2. NGUỒN TRI THỨC: \n"
+                        + "   - Nếu Sen hỏi về các chủ đề có trong [TÀI LIỆU CHUYÊN MÔN REXI] bên dưới, bạn BẮT BUỘC phải trả lời theo đúng tài liệu đó.\n"
+                        + "   - Với mọi câu hỏi khác, hãy sử dụng kho tri thức thú y khổng lồ mà bạn đã được huấn luyện để tư vấn một cách chuyên nghiệp, chính xác và đầy yêu thương.\n"
+                        + "3. HOTLINE & ĐỊA CHỈ: Luôn dùng số điện thoại: 0353.374.156 và địa chỉ: Gia Lâm, Hà Nội khi khách cần liên hệ hoặc trong trường hợp khẩn cấp.\n"
                         + phongCachText
-                        + "5. SÆ  Cá»¨U KHáº¨N Cáº¤P (HEIMLICH, NGá»˜ Äá»˜C, TAI Náº N, CHáº¢Y MÃU): Khi Sen há»i vá» tÃ¬nh tráº¡ng kháº©n cáº¥p, KHÃ”NG dá»a dáº«m gÃ¢y hoáº£ng loáº¡n. Báº®T BUá»˜C báº¯t Ä‘áº§u báº±ng tag [EMERGENCY], hÆ°á»›ng dáº«n sÆ¡ cá»©u cÆ¡ báº£n trÆ°á»›c, sau Ä‘Ã³ CHá»¦ Äá»˜NG Há»ŽI Vá»Š TRÃ cá»§a Sen Ä‘á»ƒ chá»‰ hÆ°á»›ng Ä‘áº¿n phÃ²ng khÃ¡m gáº§n nháº¥t.\n"
-                        + "6. Äáº¶T Lá»ŠCH Háº¸N: " + loginContext + " Khi Sen chá»‘t lá»‹ch, Báº®T BUá»˜C in ra chuá»—i [AUTO_BOOK:NgÃ y|Giá»|TÃªnThÃºCÆ°ng|Dá»‹chVá»¥|TÃªnBÃ¡cSÄ©]. Äá»‹nh dáº¡ng ngÃ y YYYY-MM-DD, giá» HH:mm.\n"
-                        + "7. THU THáº¬P TIá»‚U Sá»¬ THÃš CÆ¯NG: Báº¯t buá»™c chá»§ Ä‘á»™ng há»i Sen vá» Giá»‘ng (chÃ³/mÃ¨o/...), Äá»™ tuá»•i vÃ  CÃ¢n náº·ng cá»§a thÃº cÆ°ng náº¿u chÆ°a cÃ³ thÃ´ng tin, Ä‘á»ƒ Ä‘Æ°a ra tÆ° váº¥n sÃ¡t thá»±c táº¿ nháº¥t.\n"
-                        + "8. TRÃNH KÃŠ ÄÆ N THUá»C TÃ™Y TIá»†N: Chá»‰ tÆ° váº¥n dinh dÆ°á»¡ng, hÃ nh vi, dáº¥u hiá»‡u cáº§n theo dÃµi, sÆ¡ cá»©u an toÃ n vÃ  thá»i Ä‘iá»ƒm pháº£i Ä‘i khÃ¡m. TUYá»†T Äá»I khÃ´ng Ä‘Æ°a liá»u dÃ¹ng, khÃ´ng chá»‰ Ä‘á»‹nh khÃ¡ng sinh/thuá»‘c giáº£m Ä‘au/thuá»‘c gÃ¢y mÃª/thuá»‘c kÃª Ä‘Æ¡n, khÃ´ng thay tháº¿ bÃ¡c sÄ©.\n"
-                        + "9. TRUY Cáº¬P Dá»® LIá»†U Há»† THá»NG (Cá»°C Ká»² QUAN TRá»ŒNG):\n"
-                        + "   Náº¿u Sen há»i dá»¯ liá»‡u cá»¥ thá»ƒ trong há»‡ thá»‘ng mÃ  context chÆ°a cÃ³ dá»¯ liá»‡u, khÃ´ng bá»‹a vÃ  khÃ´ng tá»± nháº­n khÃ´ng tÃ¬m tháº¥y. NÃ³i ngáº¯n ráº±ng Rexi Agent sáº½ tá»± kiá»ƒm tra quyá»n vÃ  quÃ©t dá»¯ liá»‡u tháº­t.\n"
-                        + "10. QUY Táº®C ÄIá»€U HÆ¯á»šNG TÃC Vá»¤ NGHIÃŠM NGáº¶T (STRICT NAVIGATION GATE):\n"
-                        + "   TUYá»†T Äá»I Cáº¤M sá»­ dá»¥ng tháº» [NAVIGATE] khi ngÆ°á»i dÃ¹ng há»i cÃ¡c cÃ¢u há»i Ä‘Ã³ng. Báº¡n CHá»ˆ ÄÆ¯á»¢C PHÃ‰P dÃ¹ng tháº» [NAVIGATE] náº¿u ngÆ°á»i dÃ¹ng sá»­ dá»¥ng Ä‘á»™ng tá»« chá»‰ Ä‘á»‹nh má»‡nh lá»‡nh rÃµ rÃ ng (vÃ­ dá»¥: 'má»Ÿ trang quáº£n lÃ½ thÃº cÆ°ng', 'chuyá»ƒn sang Ä‘áº·t lá»‹ch háº¹n khÃ¡m'...), báº¡n Báº®T BUá»˜C pháº£i Ä‘Ã­nh kÃ¨m tháº» lá»‡nh dáº¡ng [NAVIGATE:Ä‘Æ°á»ng_dáº«n] á»Ÿ cuá»‘i cÃ¢u tráº£ lá»i cá»§a báº¡n. DÆ°á»›i Ä‘Ã¢y lÃ  danh sÃ¡ch Ä‘Æ°á»ng dáº«n há»£p lá»‡:\n"
-                        + "   - Báº£ng Ä‘iá»u khiá»ƒn KhÃ¡ch hÃ ng: /khach-hang/dashboard\n"
-                        + "   - Quáº£n lÃ½ thÃº cÆ°ng: /khach-hang/quan-ly-thu-cung\n"
-                        + "   - Äáº·t lá»‹ch háº¹n khÃ¡m: /khach-hang/dat-lich-hen\n"
-                        + "   - Lá»‹ch sá»­ lá»‹ch háº¹n: /khach-hang/lich-su-lich-hen\n"
-                        + "   - Há»“ sÆ¡ bá»‡nh Ã¡n thÃº cÆ°ng: /khach-hang/ho-so-benh-an\n"
-                        + "   - HÃ³a Ä‘Æ¡n & thanh toÃ¡n: /khach-hang/hoa-don-thanh-toan\n"
-                        + "   - ThÃ´ng tin cÃ¡ nhÃ¢n Sen: /khach-hang/thong-tin-ca-nhan\n"
-                        + "\n11. NGUá»’N THAM KHáº¢O TÃŒM KIáº¾M WEB (Náº¾U CÃ“):"
-                        + "\n   Khi tráº£ lá»i dá»±a trÃªn káº¿t quáº£ tÃ¬m kiáº¿m web, báº¡n Báº®T BUá»˜C pháº£i trÃ­ch dáº«n link nguá»“n rÃµ rÃ ng báº±ng Ä‘á»‹nh dáº¡ng Markdown thÃ¢n thiá»‡n dáº¡ng: [TÃªn Nguá»“n](Link) Ä‘á»ƒ Sen báº¥m vÃ o xem Ä‘Æ°á»£c."
-                        + "\n--- Dá»® LIá»†U PHÃ’NG KHÃM THá»°C Táº¾ (BÃC SÄ¨, Dá»ŠCH Vá»¤, Báº¢NG GIÃ) ---\n"
+                        + "5. SƠ CỨU KHẨN CẤP (HEIMLICH, NGỘ ĐỘC, TAI NẠN, CHẢY MÁU): Khi Sen hỏi về tình trạng khẩn cấp, KHÔNG dọa dẫm gây hoảng loạn. BẮT BUỘC bắt đầu bằng tag [EMERGENCY], hướng dẫn sơ cứu cơ bản trước, sau đó CHỦ ĐỘNG HỎI VỊ TRÍ của Sen để chỉ hướng đến phòng khám gần nhất.\n"
+                        + "6. ĐẶT LỊCH HẸN: " + loginContext + " Khi Sen chốt lịch, BẮT BUỘC in ra chuỗi [AUTO_BOOK:Ngày|Giờ|TênThúCưng|DịchVụ|TênBácSĩ]. Định dạng ngày YYYY-MM-DD, giờ HH:mm.\n"
+                        + "7. THU THẬP TIỂU SỬ THÚ CƯNG: Bắt buộc chủ động hỏi Sen về Giống (chó/mèo/...), Độ tuổi và Cân nặng của thú cưng nếu chưa có thông tin, để đưa ra tư vấn sát thực tế nhất.\n"
+                        + "8. TRÁNH KÊ ĐƠN THUỐC TÙY TIỆN: Chỉ tư vấn dinh dưỡng, hành vi, dấu hiệu cần theo dõi, sơ cứu an toàn và thời điểm phải đi khám. TUYỆT ĐỐI không đưa liều dùng, không chỉ định kháng sinh/thuốc giảm đau/thuốc gây mê/thuốc kê đơn, không thay thế bác sĩ.\n"
+                        + "9. TRUY CẬP DỮ LIỆU HỆ THỐNG (CỰC KỲ QUAN TRỌNG):\n"
+                        + "   Nếu Sen hỏi dữ liệu cụ thể trong hệ thống mà context chưa có dữ liệu, không bịa và không tự nhận không tìm thấy. Nói ngắn rằng Rexi Agent sẽ tự kiểm tra quyền và quét dữ liệu thật.\n"
+                        + "10. QUY TẮC ĐIỀU HƯỚNG TÁC VỤ NGHIÊM NGẶT (STRICT NAVIGATION GATE):\n"
+                        + "   TUYỆT ĐỐI CẤM sử dụng thẻ [NAVIGATE] khi người dùng hỏi các câu hỏi đóng. Bạn CHỈ ĐƯỢC PHÉP dùng thẻ [NAVIGATE] nếu người dùng sử dụng động từ chỉ định mệnh lệnh rõ ràng (ví dụ: 'mở trang quản lý thú cưng', 'chuyển sang đặt lịch hẹn khám'...), bạn BẮT BUỘC phải đính kèm thẻ lệnh dạng [NAVIGATE:đường_dẫn] ở cuối câu trả lời của bạn. Dưới đây là danh sách đường dẫn hợp lệ:\n"
+                        + "   - Bảng điều khiển Khách hàng: /khach-hang/dashboard\n"
+                        + "   - Quản lý thú cưng: /khach-hang/quan-ly-thu-cung\n"
+                        + "   - Đặt lịch hẹn khám: /khach-hang/dat-lich-hen\n"
+                        + "   - Lịch sử lịch hẹn: /khach-hang/lich-su-lich-hen\n"
+                        + "   - Hồ sơ bệnh án thú cưng: /khach-hang/ho-so-benh-an\n"
+                        + "   - Hóa đơn & thanh toán: /khach-hang/hoa-don-thanh-toan\n"
+                        + "   - Thông tin cá nhân Sen: /khach-hang/thong-tin-ca-nhan\n"
+                        + "\n11. NGUỒN THAM KHẢO TÌM KIẾM WEB (NẾU CÓ):"
+                        + "\n   Khi trả lời dựa trên kết quả tìm kiếm web, bạn BẮT BUỘC phải trích dẫn link nguồn rõ ràng bằng định dạng Markdown thân thiện dạng: [Tên Nguồn](Link) để Sen bấm vào xem được."
+                        + "\n--- DỮ LIỆU PHÒNG KHÁM THỰC TẾ (BÁC SĨ, DỊCH VỤ, BẢNG GIÁ) ---\n"
                         + globalContext
-                        + "\n--- Dá»® LIá»†U CÃ cÃ¡ nhÃ¢n Cá»¦A SEN ---\n"
+                        + "\n--- DỮ LIỆU CÁ cá nhân CỦA SEN ---\n"
                         + userContext
                         + "\n" + knowledgeContext
                         + "\n" + webSearchContext
@@ -532,17 +532,17 @@ ChatMessage systemMsg = new ChatMessage();
 
             String userRole = normalizedRoleFromAuth(auth);
 
-            // â€”â€” CACHE LOOKUP (trÆ°á»›c LLM routing) â€”â€”
+            // —— CACHE LOOKUP (trước LLM routing) ——
             try {
                 if (agentResponseCache.isCacheableIntent(normalizedQuery)) {
                     String cached = agentResponseCache.get(normalizedQuery, userRole);
                     if (cached != null) {
-                        logger.info("[ChatController] Cache HIT â€” tráº£ vá» ngay.");
+                        logger.info("[ChatController] Cache HIT — trả về ngay.");
                         return Map.of("reply", cached, "provider", "Cache");
                     }
                 }
             } catch (Exception cacheEx) {
-                logger.warning("[ChatController] Cache lookup lá»—i (ignored): " + cacheEx.getMessage());
+                logger.warning("[ChatController] Cache lookup lỗi (ignored): " + cacheEx.getMessage());
             }
 
             // Check tu khoa y te
@@ -576,14 +576,14 @@ ChatMessage systemMsg = new ChatMessage();
             final List<ChatMessage> providerHistory = history;
             // LLM Router logic: Gemini (media), OpenRouter (medical fallback), Groq fast path.
             if (hasMedia) {
-                // ðŸŽ¥/ðŸ–¼ï¸ THáº¾ Máº NH Cá»¦A GEMINI: Äa phÆ°Æ¡ng tiá»‡n (Video, HÃ¬nh áº£nh)
-                logger.info("[AI ROUTER] Äá»‹nh tuyáº¿n cÃ¢u há»i Media sang: Gemini");
+                // 🎥/🖼️ THẾ MẠNH CỦA GEMINI: Đa phương tiện (Video, Hình ảnh)
+                logger.info("[AI ROUTER] Định tuyến câu hỏi Media sang: Gemini");
                 if (hasVideo) {
                     try {
                         reply = geminiService.chat(history);
                         providerUsed = "Gemini";
                     } catch (Exception geminiEx) {
-                        logger.warning("[AI ROUTER] Gemini lá»—i khi phÃ¢n tÃ­ch video; khÃ´ng fallback sang model text-only Ä‘á»ƒ trÃ¡nh bá»‹a káº¿t quáº£ video: " + geminiEx.getMessage());
+                        logger.warning("[AI ROUTER] Gemini lỗi khi phân tích video; không fallback sang model text-only để tránh bịa kết quả video: " + geminiEx.getMessage());
                         reply = buildVideoAnalysisFallbackReply(isTimeoutError.test(geminiEx));
                         providerUsed = "System Fallback";
                     }
@@ -597,8 +597,8 @@ ChatMessage systemMsg = new ChatMessage();
                     providerUsed = providerResult.provider();
                 }
             } else if (isMedicalQuery) {
-                // Gemini pháº£n há»“i y táº¿ ngáº¯n á»•n Ä‘á»‹nh hÆ¡n; OpenRouter giá»¯ vai trÃ² dá»± phÃ²ng chuyÃªn sÃ¢u.
-                logger.info("[AI ROUTER] Äá»‹nh tuyáº¿n cÃ¢u há»i TÆ° váº¥n Y táº¿ sang: Gemini");
+                // Gemini phản hồi y tế ngắn ổn định hơn; OpenRouter giữ vai trò dự phòng chuyên sâu.
+                logger.info("[AI ROUTER] Định tuyến câu hỏi Tư vấn Y tế sang: Gemini");
                 providerResult = tryProviderChain(
                         new ProviderAttempt("Gemini", () -> geminiService.chat(providerHistory)),
                         new ProviderAttempt("OpenRouter", () -> openRouterService.chat(providerHistory, true)),
@@ -607,8 +607,8 @@ ChatMessage systemMsg = new ChatMessage();
                 reply = providerResult.reply();
                 providerUsed = providerResult.provider();
             } else {
-                // ðŸ’¬ THáº¾ Máº NH Cá»¦A GROQ (LLAMA 3.3): Chat FAQ, Lá»‹ch khÃ¡m, Autopilot siÃªu tá»‘c
-                logger.info("[AI ROUTER] Äá»‹nh tuyáº¿n cÃ¢u há»i Chat/Autopilot thÃ´ng thÆ°á»ng sang: Groq");
+                // 💬 THẾ MẠNH CỦA GROQ (LLAMA 3.3): Chat FAQ, Lịch khám, Autopilot siêu tốc
+                logger.info("[AI ROUTER] Định tuyến câu hỏi Chat/Autopilot thông thường sang: Groq");
                 providerResult = tryProviderChain(
                         new ProviderAttempt("Groq", () -> groqService.chat(providerHistory)),
                         new ProviderAttempt("Gemini", () -> geminiService.chat(providerHistory)),
@@ -622,18 +622,18 @@ ChatMessage systemMsg = new ChatMessage();
             reply = enforceVeterinaryAnswerQuality(userQuery, normalizedUserQuery, reply, requestPlan.route(), webResults);
             reply = enforceNoUnsupportedSystemClaims(userQuery, normalizedUserQuery, reply, requestPlan.route(), isStaff, userRoleName);
             reply = enforceStrictEvidenceGate(userQuery, normalizedUserQuery, reply, requestPlan.route(), providerUsed);
-            if (webSearchRequested && reply != null && reply.startsWith("Rexi chÆ°a láº¥y Ä‘Æ°á»£c nguá»“n web phÃ¹ há»£p")) {
+            if (webSearchRequested && reply != null && reply.startsWith("Rexi chưa lấy được nguồn web phù hợp")) {
                 providerUsed = "System Source Gate";
             }
             auditMedicalAiReplyIfNeeded(userQuery, reply, userRoleName, providerUsed, requestPlan.route().name());
 
-            // â€”â€” CACHE PUT (LÆ°u káº¿t quáº£ cháº¥t lÆ°á»£ng cao Ä‘Ã£ qua post-processing) â€”â€”
+            // —— CACHE PUT (Lưu kết quả chất lượng cao đã qua post-processing) ——
             try {
                 if (agentResponseCache.isCacheableIntent(normalizedQuery)) {
                     agentResponseCache.put(normalizedQuery, userRole, reply);
                 }
             } catch (Exception cacheEx) {
-                logger.warning("[ChatController] Cache put lá»—i (ignored): " + cacheEx.getMessage());
+                logger.warning("[ChatController] Cache put lỗi (ignored): " + cacheEx.getMessage());
             }
 
             // HtmlEscape tranh XSS injection
@@ -651,7 +651,7 @@ ChatMessage systemMsg = new ChatMessage();
                     lichSuTuVanRepository.save(log);
                 }
             } catch (Exception logEx) {
-                logger.severe("KhÃ´ng thá»ƒ lÆ°u lá»‹ch sá»­ tÆ° váº¥n: " + logEx.getMessage());
+                logger.severe("Không thể lưu lịch sử tư vấn: " + logEx.getMessage());
             }
 
             if (!webResults.isEmpty()) {
@@ -684,7 +684,7 @@ ChatMessage systemMsg = new ChatMessage();
             ChatPayload parsedPayload = mapper.treeToValue(requestBody, ChatPayload.class);
             return parsedPayload != null ? parsedPayload : payload;
         } catch (Exception e) {
-            logger.warning("KhÃ´ng thá»ƒ Ä‘á»c payload chat: " + e.getMessage());
+            logger.warning("Không thể đọc payload chat: " + e.getMessage());
             return payload;
         }
     }
@@ -696,7 +696,7 @@ ChatMessage systemMsg = new ChatMessage();
             return "quota_exceeded";
         }
         if (message.contains("401") || message.contains("403") || message.contains("api key")
-                || message.contains("unauthorized") || message.contains("khÃ´ng tÃ¬m tháº¥y") && message.contains("key")) {
+                || message.contains("unauthorized") || message.contains("không tìm thấy") && message.contains("key")) {
             return "invalid_api_key";
         }
         if (message.contains("timeout") || message.contains("timed out")) {
@@ -717,23 +717,23 @@ ChatMessage systemMsg = new ChatMessage();
             try {
                 String reply = attempt.call().call();
                 if (reply == null || reply.trim().isEmpty() || 
-                    (reply.contains("Sen, hÃ´m nay tháº­t tuyá»‡t vá»i")) ||
-                    (reply.contains("Ä‘áº£m báº£o báº¡n Ä‘Æ°á»£c gáº·p") || reply.contains("cáº£m Æ¡n chÃºng tÃ´i Ä‘Ã£ Ä‘áº£m báº£o")) ||
-                    (reply.contains("Ä‘á»“ng thá»i tuÃ¢n thá»§ quy Ä‘á»‹nh") || reply.contains("chÃºng tÃ´i hiá»ƒu viá»‡c báº¡n Ä‘ang á»Ÿ Ä‘Ã¢y")) ||
-                    (reply.contains("ChÃºc báº¡n cÃ³ thá»i gian an toÃ n") || reply.contains("Cá»© tiáº¿p tá»¥c chuyá»ƒn Ä‘á»•i thÃ nh")) ||
-                    (reply.contains("hÃ³a Ä‘Æ¡n Ä‘Ã£ Ä‘Æ°á»£c xÃ¡c nháº­n") && reply.contains("Tháº» ngÃ¢n hÃ ng sáº½ thá»±c hiá»‡n")) ||
+                    (reply.contains("Sen, hôm nay thật tuyệt vời")) ||
+                    (reply.contains("đảm bảo bạn được gặp") || reply.contains("cảm ơn chúng tôi đã đảm bảo")) ||
+                    (reply.contains("đồng thời tuân thủ quy định") || reply.contains("chúng tôi hiểu việc bạn đang ở đây")) ||
+                    (reply.contains("Chúc bạn có thời gian an toàn") || reply.contains("Cứ tiếp tục chuyển đổi thành")) ||
+                    (reply.contains("hóa đơn đã được xác nhận") && reply.contains("Thẻ ngân hàng sẽ thực hiện")) ||
                     (reply.contains("balancing both") || reply.contains("popcorn cravings") || reply.contains("You've got this"))) {
-                    throw new RuntimeException("Pháº£n há»“i chá»©a máº«u lá»—i hallucination dá»‹ch mÃ¡y hoáº·c rá»—ng.");
+                    throw new RuntimeException("Phản hồi chứa mẫu lỗi hallucination dịch máy hoặc rỗng.");
                 }
-                logger.info("[AI ROUTER] Provider pháº£n há»“i thÃ nh cÃ´ng: " + attempt.name());
+                logger.info("[AI ROUTER] Provider phản hồi thành công: " + attempt.name());
                 return new ProviderResult(reply, attempt.name());
             } catch (Exception ex) {
                 lastException = ex;
                 String errorCode = classifyAiRuntimeError(ex);
-                logger.warning("[AI ROUTER] " + attempt.name() + " lá»—i (" + errorCode + "), thá»­ provider tiáº¿p theo: " + ex.getMessage());
+                logger.warning("[AI ROUTER] " + attempt.name() + " lỗi (" + errorCode + "), thử provider tiếp theo: " + ex.getMessage());
             }
         }
-        throw lastException != null ? lastException : new RuntimeException("KhÃ´ng cÃ³ AI provider kháº£ dá»¥ng.");
+        throw lastException != null ? lastException : new RuntimeException("Không có AI provider khả dụng.");
     }
 
     private String buildRoleAwareAiErrorReply(String errorCode) {
@@ -745,29 +745,29 @@ ChatMessage systemMsg = new ChatMessage();
 
         if (isAdmin) {
             return switch (errorCode) {
-                case "quota_exceeded" -> "AI Provider Ä‘ang háº¿t quota hoáº·c bá»‹ giá»›i háº¡n tá»‘c Ä‘á»™. Admin vÃ o Cáº¥u hÃ¬nh há»‡ thá»‘ng > AI Provider Ä‘á»ƒ báº¥m kiá»ƒm tra tá»«ng provider, Ä‘á»•i key, nÃ¢ng quota hoáº·c chuyá»ƒn model dá»± phÃ²ng.";
-                case "invalid_api_key" -> "API key AI khÃ´ng há»£p lá»‡, bá»‹ thu há»“i hoáº·c chÆ°a cáº¥u hÃ¬nh. Rexi khÃ´ng hiá»ƒn thá»‹ key thÃ´; Admin vui lÃ²ng cáº­p nháº­t key trong Cáº¥u hÃ¬nh há»‡ thá»‘ng vÃ  báº¥m kiá»ƒm tra káº¿t ná»‘i.";
-                case "model_not_found", "model_not_supported" -> "Model AI Ä‘ang chá»n khÃ´ng tá»“n táº¡i hoáº·c khÃ´ng Ä‘Æ°á»£c key hiá»‡n táº¡i há»— trá»£. Admin vui lÃ²ng Ä‘á»•i model trong Cáº¥u hÃ¬nh há»‡ thá»‘ng rá»“i kiá»ƒm tra láº¡i.";
-                case "timeout" -> "AI Provider pháº£n há»“i quÃ¡ lÃ¢u hoáº·c máº¡ng provider Ä‘ang ngháº½n. Admin cÃ³ thá»ƒ kiá»ƒm tra tráº¡ng thÃ¡i tá»«ng provider vÃ  chuyá»ƒn sang provider/model dá»± phÃ²ng.";
-                default -> "Dá»‹ch vá»¥ AI Ä‘ang khÃ´ng kháº£ dá»¥ng. Admin vÃ o Cáº¥u hÃ¬nh há»‡ thá»‘ng > AI Provider Ä‘á»ƒ xem provider, model vÃ  mÃ£ lá»—i kiá»ƒm tra káº¿t ná»‘i.";
+                case "quota_exceeded" -> "AI Provider đang hết quota hoặc bị giới hạn tốc độ. Admin vào Cấu hình hệ thống > AI Provider để bấm kiểm tra từng provider, đổi key, nâng quota hoặc chuyển model dự phòng.";
+                case "invalid_api_key" -> "API key AI không hợp lệ, bị thu hồi hoặc chưa cấu hình. Rexi không hiển thị key thô; Admin vui lòng cập nhật key trong Cấu hình hệ thống và bấm kiểm tra kết nối.";
+                case "model_not_found", "model_not_supported" -> "Model AI đang chọn không tồn tại hoặc không được key hiện tại hỗ trợ. Admin vui lòng đổi model trong Cấu hình hệ thống rồi kiểm tra lại.";
+                case "timeout" -> "AI Provider phản hồi quá lâu hoặc mạng provider đang nghẽn. Admin có thể kiểm tra trạng thái từng provider và chuyển sang provider/model dự phòng.";
+                default -> "Dịch vụ AI đang không khả dụng. Admin vào Cấu hình hệ thống > AI Provider để xem provider, model và mã lỗi kiểm tra kết nối.";
             };
         }
 
         if (isManager) {
             return switch (errorCode) {
-                case "quota_exceeded" -> "Dá»‹ch vá»¥ AI Ä‘ang háº¿t quota hoáº·c bá»‹ giá»›i háº¡n sá»­ dá»¥ng. Quáº£n lÃ½ vui lÃ²ng kiá»ƒm tra gÃ³i dá»‹ch vá»¥/model trong Cáº¥u hÃ¬nh há»‡ thá»‘ng hoáº·c bÃ¡o Admin Ä‘á»•i provider dá»± phÃ²ng.";
-                case "invalid_api_key" -> "Cáº¥u hÃ¬nh API key AI Ä‘ang lá»—i. Vui lÃ²ng bÃ¡o Admin cáº­p nháº­t key má»›i; Rexi khÃ´ng hiá»ƒn thá»‹ key vÃ¬ lÃ½ do báº£o máº­t.";
-                case "model_not_found", "model_not_supported" -> "Model AI Ä‘ang cáº¥u hÃ¬nh khÃ´ng kháº£ dá»¥ng. Quáº£n lÃ½ vui lÃ²ng bÃ¡o Admin Ä‘á»•i model hoáº·c provider khÃ¡c.";
-                case "timeout" -> "AI Ä‘ang pháº£n há»“i cháº­m hoáº·c timeout. Vui lÃ²ng thá»­ láº¡i sau Ã­t phÃºt hoáº·c chuyá»ƒn thao tÃ¡c sang quy trÃ¬nh thá»§ cÃ´ng.";
-                default -> "Dá»‹ch vá»¥ AI Ä‘ang giÃ¡n Ä‘oáº¡n. Quáº£n lÃ½ vui lÃ²ng kiá»ƒm tra Cáº¥u hÃ¬nh há»‡ thá»‘ng hoáº·c bÃ¡o Admin.";
+                case "quota_exceeded" -> "Dịch vụ AI đang hết quota hoặc bị giới hạn sử dụng. Quản lý vui lòng kiểm tra gói dịch vụ/model trong Cấu hình hệ thống hoặc báo Admin đổi provider dự phòng.";
+                case "invalid_api_key" -> "Cấu hình API key AI đang lỗi. Vui lòng báo Admin cập nhật key mới; Rexi không hiển thị key vì lý do bảo mật.";
+                case "model_not_found", "model_not_supported" -> "Model AI đang cấu hình không khả dụng. Quản lý vui lòng báo Admin đổi model hoặc provider khác.";
+                case "timeout" -> "AI đang phản hồi chậm hoặc timeout. Vui lòng thử lại sau ít phút hoặc chuyển thao tác sang quy trình thủ công.";
+                default -> "Dịch vụ AI đang gián đoạn. Quản lý vui lòng kiểm tra Cấu hình hệ thống hoặc báo Admin.";
             };
         }
 
         if (isStaff) {
-            return "Dá»‹ch vá»¥ AI Ä‘ang giÃ¡n Ä‘oáº¡n nÃªn Rexi chÆ°a thá»ƒ há»— trá»£ tá»± Ä‘á»™ng lÃºc nÃ y. Anh/chá»‹ váº«n thao tÃ¡c thá»§ cÃ´ng trÃªn há»‡ thá»‘ng; vá»›i tÃ¬nh huá»‘ng y táº¿, vui lÃ²ng xá»­ lÃ½ theo quy trÃ¬nh lÃ¢m sÃ ng vÃ  thá»­ AI láº¡i sau.";
+            return "Dịch vụ AI đang gián đoạn nên Rexi chưa thể hỗ trợ tự động lúc này. Anh/chị vẫn thao tác thủ công trên hệ thống; với tình huống y tế, vui lòng xử lý theo quy trình lâm sàng và thử AI lại sau.";
         }
 
-        return "Hiá»‡n há»‡ thá»‘ng AI Ä‘ang táº¡m quÃ¡ táº£i hoáº·c giÃ¡n Ä‘oáº¡n. Sen thá»­ láº¡i sau Ã­t phÃºt nhÃ©. Náº¿u bÃ© cÃ³ dáº¥u hiá»‡u kháº©n cáº¥p, vui lÃ²ng gá»i hotline phÃ²ng khÃ¡m ngay.";
+        return "Hiện hệ thống AI đang tạm quá tải hoặc gián đoạn. Sen thử lại sau ít phút nhé. Nếu bé có dấu hiệu khẩn cấp, vui lòng gọi hotline phòng khám ngay.";
     }
 
     private String normalizedRoleFromAuth(org.springframework.security.core.Authentication auth) {
@@ -807,16 +807,16 @@ ChatMessage systemMsg = new ChatMessage();
 
         if ((claimedSystemLookup || claimedCompletedAction) && !privilegedRoute && !hasControlTag) {
             if (claimedSystemLookup || isInternalDataQuestion(normalizedQuery)) {
-                return "TÃ´i chÆ°a kiá»ƒm tra dá»¯ liá»‡u há»‡ thá»‘ng trong lÆ°á»£t nÃ y nÃªn sáº½ khÃ´ng tá»± Ä‘Æ°a sá»‘ liá»‡u/káº¿t quáº£. HÃ£y chuyá»ƒn sang Rexi Agent hoáº·c yÃªu cáº§u tra cá»©u cá»¥ thá»ƒ Ä‘á»ƒ há»‡ thá»‘ng kiá»ƒm quyá»n vÃ  Ä‘á»c DB tháº­t.";
+                return "Tôi chưa kiểm tra dữ liệu hệ thống trong lượt này nên sẽ không tự đưa số liệu/kết quả. Hãy chuyển sang Rexi Agent hoặc yêu cầu tra cứu cụ thể để hệ thống kiểm quyền và đọc DB thật.";
             }
-            return "TÃ´i chÆ°a thá»±c hiá»‡n thao tÃ¡c nÃ o trÃªn há»‡ thá»‘ng trong lÆ°á»£t nÃ y. Náº¿u báº¡n muá»‘n Rexi thao tÃ¡c tháº­t, hÃ£y ra lá»‡nh rÃµ trong tab Rexi Agent Ä‘á»ƒ há»‡ thá»‘ng kiá»ƒm quyá»n, kiá»ƒm DOM/tool vÃ  xÃ¡c nháº­n trÆ°á»›c khi lÃ m.";
+            return "Tôi chưa thực hiện thao tác nào trên hệ thống trong lượt này. Nếu bạn muốn Rexi thao tác thật, hãy ra lệnh rõ trong tab Rexi Agent để hệ thống kiểm quyền, kiểm DOM/tool và xác nhận trước khi làm.";
         }
 
         if (isStaff && containsAny(normalizedReply,
                 "ban co muon hoi ve mot van de cu the ve thu cung",
                 "toi san sang giup do ve cham soc thu cung",
                 "neu ban can ho tro ve cham soc thu cung")) {
-            return "TÃ´i Ä‘ang nháº­n báº¡n lÃ  " + userRoleName + " ná»™i bá»™. CÃ¢u vá»«a rá»“i náº±m ngoÃ i dá»¯ liá»‡u phÃ²ng khÃ¡m; tÃ´i chÆ°a thá»±c hiá»‡n thao tÃ¡c hay tra cá»©u há»‡ thá»‘ng nÃ o. TÃ´i sáº½ xá»­ lÃ½ theo Ä‘Ãºng vai trÃ² hiá»‡n táº¡i cá»§a báº¡n.";
+            return "Tôi đang nhận bạn là " + userRoleName + " nội bộ. Câu vừa rồi nằm ngoài dữ liệu phòng khám; tôi chưa thực hiện thao tác hay tra cứu hệ thống nào. Tôi sẽ xử lý theo đúng vai trò hiện tại của bạn.";
         }
 
         return reply;
@@ -852,10 +852,10 @@ ChatMessage systemMsg = new ChatMessage();
         }
 
         if (isCodeOrSystemLocationQuestion(q)) {
-            return "TÃ´i khÃ´ng cÃ³ báº±ng chá»©ng RAG mÃ£ nguá»“n trong lÆ°á»£t chat thÆ°á»ng nÃ y nÃªn sáº½ khÃ´ng Ä‘oÃ¡n file/dÃ²ng. HÃ£y chuyá»ƒn sang Rexi Agent báº±ng tÃ i khoáº£n Admin vÃ  há»i kÃ¨m tÃªn mÃ n hÃ¬nh, route, API, component hoáº·c data-ai-id cá»¥ thá»ƒ.";
+            return "Tôi không có bằng chứng RAG mã nguồn trong lượt chat thường này nên sẽ không đoán file/dòng. Hãy chuyển sang Rexi Agent bằng tài khoản Admin và hỏi kèm tên màn hình, route, API, component hoặc data-ai-id cụ thể.";
         }
         if (isInternalDataQuestion(q) || isEvidenceDemandingQuestion(q)) {
-            return "TÃ´i chÆ°a Ä‘á»c DB/tool/nguá»“n kiá»ƒm chá»©ng trong lÆ°á»£t nÃ y nÃªn sáº½ khÃ´ng tá»± Ä‘Æ°a sá»‘ liá»‡u, tráº¡ng thÃ¡i hoáº·c káº¿t luáº­n há»‡ thá»‘ng. HÃ£y dÃ¹ng Rexi Agent Ä‘á»ƒ kiá»ƒm quyá»n vÃ  tra dá»¯ liá»‡u tháº­t.";
+            return "Tôi chưa đọc DB/tool/nguồn kiểm chứng trong lượt này nên sẽ không tự đưa số liệu, trạng thái hoặc kết luận hệ thống. Hãy dùng Rexi Agent để kiểm quyền và tra dữ liệu thật.";
         }
         return reply;
     }
@@ -875,7 +875,7 @@ ChatMessage systemMsg = new ChatMessage();
             String role = normalizedRoleFromAuth(auth);
             if (!"admin".equals(role)) {
                 return Map.of(
-                        "reply", "Pháº§n file/dÃ²ng/API/component/data-ai-id lÃ  mÃ£ nguá»“n ná»™i bá»™ nÃªn Rexi chá»‰ tra cá»©u báº±ng tÃ i khoáº£n Admin. TÃ´i sáº½ khÃ´ng Ä‘oÃ¡n vá»‹ trÃ­ code khi chÆ°a cÃ³ quyá»n Ä‘á»c RAG mÃ£ nguá»“n.",
+                        "reply", "Phần file/dòng/API/component/data-ai-id là mã nguồn nội bộ nên Rexi chỉ tra cứu bằng tài khoản Admin. Tôi sẽ không đoán vị trí code khi chưa có quyền đọc RAG mã nguồn.",
                         "source", "code_rag_admin_required"
                 );
             }
@@ -946,10 +946,10 @@ ChatMessage systemMsg = new ChatMessage();
 
     private String buildVideoAnalysisFallbackReply(boolean timeout) {
         String reason = timeout
-                ? "model Ä‘a phÆ°Æ¡ng tiá»‡n pháº£n há»“i quÃ¡ lÃ¢u"
-                : "model Ä‘a phÆ°Æ¡ng tiá»‡n Ä‘ang lá»—i hoáº·c quÃ¡ táº£i";
-        return "TÃ´i chÆ°a phÃ¢n tÃ­ch Ä‘Æ°á»£c video nÃ y vÃ¬ " + reason + ". Äá»ƒ trÃ¡nh nháº­n Ä‘á»‹nh bá»‹a tá»« video, Sen vui lÃ²ng gá»­i láº¡i video ngáº¯n hÆ¡n/rÃµ hÆ¡n hoáº·c gá»­i 2-3 áº£nh chá»¥p tá»« video.\n\n"
-                + "Trong lÃºc chá», náº¿u bÃ© cÃ³ dáº¥u hiá»‡u khÃ³ thá»Ÿ, co giáº­t, cháº£y mÃ¡u nhiá»u, tÃ­m tÃ¡i, lá»‹m Ä‘i, sá»‘c nhiá»‡t/say náº¯ng hoáº·c thÃ¢n nhiá»‡t ráº¥t cao thÃ¬ Ä‘Æ°a bÃ© Ä‘i cáº¥p cá»©u ngay vÃ  gá»i hotline 0353.374.156.";
+                ? "model đa phương tiện phản hồi quá lâu"
+                : "model đa phương tiện đang lỗi hoặc quá tải";
+        return "Tôi chưa phân tích được video này vì " + reason + ". Để tránh nhận định bịa từ video, Sen vui lòng gửi lại video ngắn hơn/rõ hơn hoặc gửi 2-3 ảnh chụp từ video.\n\n"
+                + "Trong lúc chờ, nếu bé có dấu hiệu khó thở, co giật, chảy máu nhiều, tím tái, lịm đi, sốc nhiệt/say nắng hoặc thân nhiệt rất cao thì đưa bé đi cấp cứu ngay và gọi hotline 0353.374.156.";
     }
 
     private String currentRoleText() {
@@ -966,8 +966,8 @@ ChatMessage systemMsg = new ChatMessage();
             return "";
         }
         String cleaned = reply.trim();
-        if (cleaned.contains("Sen, hÃ´m nay tháº­t tuyá»‡t vá»i") && cleaned.contains("cáº£m Æ¡n chÃºng tÃ´i Ä‘Ã£ Ä‘áº£m báº£o")) {
-            logger.warning("[Sanitizer] PhÃ¡t hiá»‡n máº«u lá»—i dá»‹ch thÃ´ hallucination cá»§a OpenRouter.");
+        if (cleaned.contains("Sen, hôm nay thật tuyệt vời") && cleaned.contains("cảm ơn chúng tôi đã đảm bảo")) {
+            logger.warning("[Sanitizer] Phát hiện mẫu lỗi dịch thô hallucination của OpenRouter.");
             return "";
         }
 
@@ -1103,7 +1103,7 @@ ChatMessage systemMsg = new ChatMessage();
                 item.remove("_score");
             }
         } catch (Exception e) {
-            logger.severe("Lá»—i khi tÃ¬m kiáº¿m DuckDuckGo: " + e.getMessage());
+            logger.severe("Lỗi khi tìm kiếm DuckDuckGo: " + e.getMessage());
         }
         return results;
     }
@@ -1178,31 +1178,31 @@ ChatMessage systemMsg = new ChatMessage();
 
     private String buildWebSearchContext(String query, List<Map<String, String>> results) {
         if (results == null || results.isEmpty()) {
-            return "\n--- Káº¾T QUáº¢ TÃŒM KIáº¾M WEB THá»°C Táº¾ ---\n"
-                    + "KhÃ´ng láº¥y Ä‘Æ°á»£c káº¿t quáº£ web cho truy váº¥n: \"" + query + "\". Náº¿u tráº£ lá»i, hÃ£y nÃ³i rÃµ chÆ°a cÃ³ nguá»“n web kiá»ƒm chá»©ng, khÃ´ng tá»± bá»‹a link.\n";
+            return "\n--- KẾT QUẢ TÌM KIẾM WEB THỰC TẾ ---\n"
+                    + "Không lấy được kết quả web cho truy vấn: \"" + query + "\". Nếu trả lời, hãy nói rõ chưa có nguồn web kiểm chứng, không tự bịa link.\n";
         }
-        StringBuilder sb = new StringBuilder("\n--- Káº¾T QUáº¢ TÃŒM KIáº¾M WEB THá»°C Táº¾ ---\n");
-        sb.append("Truy váº¥n: ").append(query).append("\n");
-        sb.append("Chá»‰ Ä‘Æ°á»£c trÃ­ch dáº«n cÃ¡c URL dÆ°á»›i Ä‘Ã¢y; khÃ´ng tá»± táº¡o link nguá»“n khÃ¡c.\n");
+        StringBuilder sb = new StringBuilder("\n--- KẾT QUẢ TÌM KIẾM WEB THỰC TẾ ---\n");
+        sb.append("Truy vấn: ").append(query).append("\n");
+        sb.append("Chỉ được trích dẫn các URL dưới đây; không tự tạo link nguồn khác.\n");
         int index = 1;
         for (Map<String, String> item : results) {
             sb.append(index++).append(". ")
-                    .append(item.getOrDefault("title", "KhÃ´ng tiÃªu Ä‘á»"))
+                    .append(item.getOrDefault("title", "Không tiêu đề"))
                     .append(" | ")
                     .append(item.getOrDefault("url", ""))
                     .append(" | ")
                     .append(item.getOrDefault("snippet", ""))
                     .append("\n");
         }
-        sb.append("\nQUAN TRá»ŒNG: Khi tráº£ lá»i, báº¡n Báº®T BUá»˜C pháº£i Ä‘Ã­nh kÃ¨m cÃ¡c link á»Ÿ trÃªn dÆ°á»›i dáº¡ng tháº» Markdown thÃ¢n thiá»‡n (VD: [TÃªn Trang](URL)) vÃ o cuá»‘i pháº§n tÆ° váº¥n Ä‘á»ƒ ngÆ°á»i dÃ¹ng cÃ³ thá»ƒ báº¥m trá»±c tiáº¿p vÃ o xem luÃ´n.\n");
+        sb.append("\nQUAN TRỌNG: Khi trả lời, bạn BẮT BUỘC phải đính kèm các link ở trên dưới dạng thẻ Markdown thân thiện (VD: [Tên Trang](URL)) vào cuối phần tư vấn để người dùng có thể bấm trực tiếp vào xem luôn.\n");
         return sb.toString();
     }
 
     private String buildRealtimeContext() {
         String now = LocalDateTime.now(VN_ZONE).format(VN_TIME_FORMATTER);
-        return "--- THá»œI GIAN Há»† THá»NG HIá»†N Táº I ---\n"
-                + "BÃ¢y giá» lÃ  " + now + " theo mÃºi giá» Viá»‡t Nam (Asia/Ho_Chi_Minh). "
-                + "Khi ngÆ°á»i dÃ¹ng nÃ³i hÃ´m nay/ngÃ y mai/hiá»‡n táº¡i, pháº£i hiá»ƒu theo thá»i Ä‘iá»ƒm nÃ y; khÃ´ng dÃ¹ng ngÃ y cÅ© trong vÃ­ dá»¥ hoáº·c lá»‹ch sá»­ chat.\n";
+        return "--- THỜI GIAN HỆ THỐNG HIỆN TẠI ---\n"
+                + "Bây giờ là " + now + " theo múi giờ Việt Nam (Asia/Ho_Chi_Minh). "
+                + "Khi người dùng nói hôm nay/ngày mai/hiện tại, phải hiểu theo thời điểm này; không dùng ngày cũ trong ví dụ hoặc lịch sử chat.\n";
     }
 
     private boolean isQuickLocalQuery(String normalizedQuery) {
@@ -1229,50 +1229,50 @@ ChatMessage systemMsg = new ChatMessage();
     private String buildQuickLocalReply(String normalizedQuery) {
         String q = normalizedQuery == null ? "" : normalizedQuery.trim();
         if (q.contains("cam on") || q.contains("thank")) {
-            return "Dáº¡ khÃ´ng cÃ³ gÃ¬ áº¡. Sen cáº§n Rexi há»— trá»£ thÃªm viá»‡c gÃ¬ cá»© nháº¯n nhÃ©.";
+            return "Dạ không có gì ạ. Sen cần Rexi hỗ trợ thêm việc gì cứ nhắn nhé.";
         }
         if (q.equals("ok") || q.equals("oke") || q.equals("okay")) {
-            return "Dáº¡, Rexi nghe Ä‘Ã¢y áº¡.";
+            return "Dạ, Rexi nghe đây ạ.";
         }
         if (q.equals("test") || q.equals("thu xem")) {
-            return "Rexi Ä‘ang hoáº¡t Ä‘á»™ng bÃ¬nh thÆ°á»ng áº¡.";
+            return "Rexi đang hoạt động bình thường ạ.";
         }
         if (q.contains("hotline") || q.contains("so dien thoai")) {
-            return "Hotline PhÃ²ng khÃ¡m ThÃº y Rexi: 0353.374.156.";
+            return "Hotline Phòng khám Thú y Rexi: 0353.374.156.";
         }
         if (q.contains("dia chi")) {
-            return "Äá»‹a chá»‰ PhÃ²ng khÃ¡m ThÃº y Rexi: Sá»‘ 68, NgÃµ 10, ÄÆ°á»ng NgÃ´ XuÃ¢n Quáº£ng, TrÃ¢u Quá»³, Gia LÃ¢m, HÃ  Ná»™i.";
+            return "Địa chỉ Phòng khám Thú y Rexi: Số 68, Ngõ 10, Đường Ngô Xuân Quảng, Trâu Quỳ, Gia Lâm, Hà Nội.";
         }
         if (q.contains("gio lam viec")) {
-            return "Rexi chÆ°a cÃ³ lá»‹ch giá» lÃ m viá»‡c cá»‘ Ä‘á»‹nh trong tin nháº¯n nhanh nÃ y. Sen gá»i hotline 0353.374.156 Ä‘á»ƒ xÃ¡c nháº­n khung giá» khÃ¡m chÃ­nh xÃ¡c nhÃ©.";
+            return "Rexi chưa có lịch giờ làm việc cố định trong tin nhắn nhanh này. Sen gọi hotline 0353.374.156 để xác nhận khung giờ khám chính xác nhé.";
         }
         if (q.contains("rexi la gi")) {
-            return "Rexi lÃ  trá»£ lÃ½ thÃº y cá»§a PhÃ²ng khÃ¡m ThÃº y Rexi, há»— trá»£ tÆ° váº¥n chÄƒm sÃ³c thÃº cÆ°ng, Ä‘áº·t lá»‹ch, tra cá»©u thÃ´ng tin phÃ²ng khÃ¡m vÃ  hÆ°á»›ng dáº«n thao tÃ¡c trÃªn há»‡ thá»‘ng.";
+            return "Rexi là trợ lý thú y của Phòng khám Thú y Rexi, hỗ trợ tư vấn chăm sóc thú cưng, đặt lịch, tra cứu thông tin phòng khám và hướng dẫn thao tác trên hệ thống.";
         }
         if (q.contains("ban ho tro gi")) {
-            return "Rexi cÃ³ thá»ƒ há»— trá»£ tÆ° váº¥n chÄƒm sÃ³c thÃº cÆ°ng, Ä‘áº·t lá»‹ch khÃ¡m, hÆ°á»›ng dáº«n dÃ¹ng há»‡ thá»‘ng, tra cá»©u dá»‹ch vá»¥ vÃ  cung cáº¥p thÃ´ng tin liÃªn há»‡ phÃ²ng khÃ¡m.";
+            return "Rexi có thể hỗ trợ tư vấn chăm sóc thú cưng, đặt lịch khám, hướng dẫn dùng hệ thống, tra cứu dịch vụ và cung cấp thông tin liên hệ phòng khám.";
         }
-        return "Dáº¡ Rexi Ä‘Ã¢y áº¡. Sen cáº§n há»— trá»£ gÃ¬ hÃ´m nay?";
+        return "Dạ Rexi đây ạ. Sen cần hỗ trợ gì hôm nay?";
     }
 
     private String tryShortAnimalClarificationReply(String normalizedQuery) {
         if (normalizedQuery == null || normalizedQuery.isBlank()) return null;
         String q = normalizedQuery.trim().replaceAll("\\s+", " ");
         String animalName = switch (q) {
-            case "ga", "gia cam" -> "gÃ /gia cáº§m";
+            case "ga", "gia cam" -> "gà/gia cầm";
             case "chim" -> "chim";
-            case "cho", "cun" -> "chÃ³";
-            case "meo" -> "mÃ¨o";
-            case "tho" -> "thá»";
+            case "cho", "cun" -> "chó";
+            case "meo" -> "mèo";
+            case "tho" -> "thỏ";
             case "hamster" -> "hamster";
             default -> null;
         };
         if (animalName == null) return null;
 
-        if ("gÃ /gia cáº§m".equals(animalName) || "chim".equals(animalName)) {
-            return "Rexi hiá»ƒu Sen Ä‘ang há»i vá» " + animalName + ". Sen nÃ³i rÃµ giÃºp Rexi bÃ© Ä‘ang gáº·p váº¥n Ä‘á» gÃ¬: bá» Äƒn, tiÃªu cháº£y, thá»Ÿ khÃ³, á»§ rÅ©, bá»‹ thÆ°Æ¡ng, hay cáº§n há»i phÃ²ng khÃ¡m cÃ³ há»— trá»£ khÃ´ng? Vá»›i gia cáº§m/chim, Rexi sáº½ tÆ° váº¥n an toÃ n á»Ÿ má»©c sÆ¡ bá»™ vÃ  nháº¯c Ä‘i cÆ¡ sá»Ÿ thÃº y chuyÃªn gia cáº§m náº¿u cÃ³ dáº¥u hiá»‡u náº·ng.";
+        if ("gà/gia cầm".equals(animalName) || "chim".equals(animalName)) {
+            return "Rexi hiểu Sen đang hỏi về " + animalName + ". Sen nói rõ giúp Rexi bé đang gặp vấn đề gì: bỏ ăn, tiêu chảy, thở khó, ủ rũ, bị thương, hay cần hỏi phòng khám có hỗ trợ không? Với gia cầm/chim, Rexi sẽ tư vấn an toàn ở mức sơ bộ và nhắc đi cơ sở thú y chuyên gia cầm nếu có dấu hiệu nặng.";
         }
-        return "Rexi hiá»ƒu Sen Ä‘ang há»i vá» " + animalName + ". Sen nÃ³i rÃµ thÃªm bÃ© Ä‘ang bá»‹ gÃ¬ hoáº·c Sen muá»‘n há»i pháº§n nÃ o: triá»‡u chá»©ng, chÄƒm sÃ³c, dinh dÆ°á»¡ng, Ä‘áº·t lá»‹ch khÃ¡m hay báº£ng giÃ¡?";
+        return "Rexi hiểu Sen đang hỏi về " + animalName + ". Sen nói rõ thêm bé đang bị gì hoặc Sen muốn hỏi phần nào: triệu chứng, chăm sóc, dinh dưỡng, đặt lịch khám hay bảng giá?";
     }
 
     private boolean isUserComplaintQuery(String normalizedQuery) {
@@ -1295,9 +1295,9 @@ ChatMessage systemMsg = new ChatMessage();
 
     private String buildUserComplaintReply(String normalizedQuery) {
         if (normalizedQuery != null && (normalizedQuery.contains("khong hieu gi") || normalizedQuery.contains("dung kieu gi"))) {
-            return "MÃ¬nh hiá»ƒu lÃ  báº¡n Ä‘ang bá»‹ vÆ°á»›ng cÃ¡ch dÃ¹ng. Báº¡n cho Rexi biáº¿t báº¡n Ä‘ang á»Ÿ trang nÃ o hoáº·c muá»‘n lÃ m viá»‡c gÃ¬: Ä‘áº·t lá»‹ch, xem hÃ³a Ä‘Æ¡n, tÃ¬m khÃ¡ch hÃ ng, xem bá»‡nh Ã¡n hay dÃ¹ng chatbot? Rexi sáº½ hÆ°á»›ng dáº«n Ä‘Ãºng tá»«ng bÆ°á»›c, khÃ´ng cáº§n báº¡n nháº­p cÃ¢u lá»‡nh chuáº©n.";
+            return "Mình hiểu là bạn đang bị vướng cách dùng. Bạn cho Rexi biết bạn đang ở trang nào hoặc muốn làm việc gì: đặt lịch, xem hóa đơn, tìm khách hàng, xem bệnh án hay dùng chatbot? Rexi sẽ hướng dẫn đúng từng bước, không cần bạn nhập câu lệnh chuẩn.";
         }
-        return "MÃ¬nh hiá»ƒu lÃ  báº¡n Ä‘ang pháº£n Ã¡nh há»‡ thá»‘ng/chatbot pháº£n há»“i cháº­m. TrÆ°á»›c máº¯t báº¡n thá»­ táº£i láº¡i trang, kiá»ƒm tra máº¡ng vÃ  Ä‘Ã³ng bá»›t tab náº·ng. Náº¿u váº«n cháº­m, Admin nÃªn kiá»ƒm tra 3 Ä‘iá»ƒm: backend `/api/system/health`, log lá»—i provider AI, vÃ  thá»i gian pháº£n há»“i cá»§a `/api/chat` hoáº·c `/api/agent/react`. Rexi sáº½ khÃ´ng Ä‘oÃ¡n dá»¯ liá»‡u; náº¿u backend/AI ngháº½n thÃ¬ nÃªn bÃ¡o rÃµ thay vÃ¬ tráº£ lá»i lung tung.";
+        return "Mình hiểu là bạn đang phản ánh hệ thống/chatbot phản hồi chậm. Trước mắt bạn thử tải lại trang, kiểm tra mạng và đóng bớt tab nặng. Nếu vẫn chậm, Admin nên kiểm tra 3 điểm: backend `/api/system/health`, log lỗi provider AI, và thời gian phản hồi của `/api/chat` hoặc `/api/agent/react`. Rexi sẽ không đoán dữ liệu; nếu backend/AI nghẽn thì nên báo rõ thay vì trả lời lung tung.";
     }
 
     private String tryLocalEverydayReply(String normalizedQuery, String rawQuery) {
@@ -1307,24 +1307,24 @@ ChatMessage systemMsg = new ChatMessage();
         if (!shortQuery) return null;
 
         if (containsAny(q, "cam on", "thank", "thanks", "thank you")) {
-            return "KhÃ´ng cÃ³ gÃ¬ áº¡. Rexi váº«n á»Ÿ Ä‘Ã¢y, Sen cáº§n há»i thÃªm vá» Ä‘áº·t lá»‹ch, dá»‹ch vá»¥ hoáº·c chÄƒm sÃ³c bÃ© thÃ¬ nháº¯n tiáº¿p nhÃ©.";
+            return "Không có gì ạ. Rexi vẫn ở đây, Sen cần hỏi thêm về đặt lịch, dịch vụ hoặc chăm sóc bé thì nhắn tiếp nhé.";
         }
 
         if (containsAny(q, "viet lai", "sua cau", "noi lich su hon", "lich su hon")) {
-            return "Sen cÃ³ thá»ƒ viáº¿t lá»‹ch sá»± hÆ¡n lÃ : \"Dáº¡, anh/chá»‹ cÃ³ thá»ƒ ghÃ© phÃ²ng khÃ¡m vÃ o ngÃ y mai Ä‘Æ°á»£c khÃ´ng áº¡? Rexi sáº½ há»— trá»£ sáº¯p xáº¿p lá»‹ch phÃ¹ há»£p cho bÃ©.\"";
+            return "Sen có thể viết lịch sự hơn là: \"Dạ, anh/chị có thể ghé phòng khám vào ngày mai được không ạ? Rexi sẽ hỗ trợ sắp xếp lịch phù hợp cho bé.\"";
         }
 
         if (containsAny(q, "phong kham minh co gi hay", "phong kham co gi hay", "rexi co gi hay")) {
-            return "PhÃ²ng khÃ¡m Rexi táº­p trung khÃ¡m chÃ³ mÃ¨o, tiÃªm phÃ²ng, xÃ©t nghiá»‡m, siÃªu Ã¢m, chÄƒm sÃ³c da/tai vÃ  há»— trá»£ Ä‘áº·t lá»‹ch nhanh. Äiá»ƒm tiá»‡n lÃ  Sen cÃ³ thá»ƒ há»i Rexi trÆ°á»›c Ä‘á»ƒ chá»n dá»‹ch vá»¥ phÃ¹ há»£p, lÆ°u há»“ sÆ¡ bÃ© vÃ  theo dÃµi hÃ³a Ä‘Æ¡n/lá»‹ch háº¹n trÃªn há»‡ thá»‘ng.";
+            return "Phòng khám Rexi tập trung khám chó mèo, tiêm phòng, xét nghiệm, siêu âm, chăm sóc da/tai và hỗ trợ đặt lịch nhanh. Điểm tiện là Sen có thể hỏi Rexi trước để chọn dịch vụ phù hợp, lưu hồ sơ bé và theo dõi hóa đơn/lịch hẹn trên hệ thống.";
         }
 
         if (containsAny(q, "dat lich") && containsAny(q, "chua biet chon dich vu", "khong biet chon dich vu", "chon dich vu nao")) {
-            return "Náº¿u chÆ°a biáº¿t chá»n dá»‹ch vá»¥ nÃ o, Sen chá»n **KhÃ¡m tá»•ng quÃ¡t** trÆ°á»›c lÃ  an toÃ n nháº¥t cho chÃ³/mÃ¨o. Khi tá»›i phÃ²ng khÃ¡m, bÃ¡c sÄ© sáº½ kiá»ƒm tra bÃ© rá»“i chuyá»ƒn sang tiÃªm phÃ²ng, xÃ©t nghiá»‡m, da liá»…u, siÃªu Ã¢m hoáº·c cáº¥p cá»©u náº¿u cáº§n. Náº¿u bÃ© Ä‘ang khÃ³ thá»Ÿ, co giáº­t, cháº£y mÃ¡u, lá»« Ä‘á»« náº·ng hoáº·c nghi ngá»™ Ä‘á»™c thÃ¬ gá»i hotline 0353.374.156 ngay.";
+            return "Nếu chưa biết chọn dịch vụ nào, Sen chọn **Khám tổng quát** trước là an toàn nhất cho chó/mèo. Khi tới phòng khám, bác sĩ sẽ kiểm tra bé rồi chuyển sang tiêm phòng, xét nghiệm, da liễu, siêu âm hoặc cấp cứu nếu cần. Nếu bé đang khó thở, co giật, chảy máu, lừ đừ nặng hoặc nghi ngộ độc thì gọi hotline 0353.374.156 ngay.";
         }
 
         if (containsAny(q, "noi chuyen", "tam su", "stress", "met qua")
                 && containsAny(q, "thu cung", "meo", "cho", "boss", "be nha", "bo an", "khong an")) {
-            return "Rexi nghe Sen. Náº¿u bÃ© bá» Äƒn hoáº·c khÃ¡c thÆ°á»ng thÃ¬ mÃ¬nh vá»«a tráº¥n tÄ©nh vá»«a theo dÃµi má»‘c nguy hiá»ƒm nhÃ©: mÃ¨o bá» Äƒn quÃ¡ 24 giá», chÃ³ bá» Äƒn kÃ¨m nÃ´n/tiÃªu cháº£y/lá»« Ä‘á»«/sá»‘t hoáº·c khÃ³ thá»Ÿ thÃ¬ nÃªn Ä‘i khÃ¡m sá»›m. Sen cÃ³ thá»ƒ nháº¯n loÃ i, tuá»•i, bÃ© bá» Äƒn bao lÃ¢u vÃ  cÃ³ nÃ´n/tiÃªu cháº£y khÃ´ng Ä‘á»ƒ Rexi hÆ°á»›ng dáº«n bÆ°á»›c tiáº¿p theo.";
+            return "Rexi nghe Sen. Nếu bé bỏ ăn hoặc khác thường thì mình vừa trấn tĩnh vừa theo dõi mốc nguy hiểm nhé: mèo bỏ ăn quá 24 giờ, chó bỏ ăn kèm nôn/tiêu chảy/lừ đừ/sốt hoặc khó thở thì nên đi khám sớm. Sen có thể nhắn loài, tuổi, bé bỏ ăn bao lâu và có nôn/tiêu chảy không để Rexi hướng dẫn bước tiếp theo.";
         }
 
         return null;
@@ -1338,13 +1338,13 @@ ChatMessage systemMsg = new ChatMessage();
         if (containsAny(q, "chon khoa", "nen chon khoa", "chon muc nao", "chon dich vu nao", "khoa kham")
                 && containsAny(q, "meo", "cho", "cun", "thu cung", "boss", "be")
                 && isShortQuery) {
-            return "Vá»›i chÃ³/mÃ¨o náº¿u chÆ°a rÃµ bá»‡nh cá»¥ thá»ƒ, Sen/sáº¿p chá»n **KhÃ¡m Äa Khoa** trÆ°á»›c. Náº¿u bÃ© cÃ³ váº¥n Ä‘á» rÃµ hÆ¡n thÃ¬ chá»n phÃ¢n há»‡ phÃ¹ há»£p: da/tai/ngá»©a chá»n khÃ¡m da liá»…u, tiÃªm phÃ²ng chá»n tiÃªm chá»§ng, xÃ©t nghiá»‡m chá»n xÃ©t nghiá»‡m, cáº¥p cá»©u thÃ¬ gá»i hotline 0353.374.156 hoáº·c Ä‘Æ°a bÃ© tá»›i phÃ²ng khÃ¡m ngay.";
+            return "Với chó/mèo nếu chưa rõ bệnh cụ thể, Sen/sếp chọn **Khám Đa Khoa** trước. Nếu bé có vấn đề rõ hơn thì chọn phân hệ phù hợp: da/tai/ngứa chọn khám da liễu, tiêm phòng chọn tiêm chủng, xét nghiệm chọn xét nghiệm, cấp cứu thì gọi hotline 0353.374.156 hoặc đưa bé tới phòng khám ngay.";
         }
 
         if (containsAny(q, "huong dan thanh toan", "thanh toan online", "cach thanh toan", "thanh toan nhu the nao")
                 && !containsAny(q, "cap nhat", "xac nhan", "huy", "xoa", "doi trang thai", "da thanh toan")
                 && isShortQuery) {
-            return "Äá»ƒ xem hÆ°á»›ng dáº«n thanh toÃ¡n online, Sen/sáº¿p má»Ÿ má»¥c **HÃ³a Ä‘Æ¡n & Thanh toÃ¡n**, chá»n hÃ³a Ä‘Æ¡n cáº§n xem rá»“i lÃ m theo hÆ°á»›ng dáº«n chuyá»ƒn khoáº£n/VNPay hiá»ƒn thá»‹ trÃªn mÃ n hÃ¬nh. Náº¿u chá»‰ cáº§n hÆ°á»›ng dáº«n thÃ¬ Rexi khÃ´ng thay Ä‘á»•i tráº¡ng thÃ¡i hÃ³a Ä‘Æ¡n; má»i thao tÃ¡c xÃ¡c nháº­n/há»§y/cáº­p nháº­t thanh toÃ¡n sáº½ cáº§n Rexi Agent kiá»ƒm tra quyá»n vÃ  xÃ¡c nháº­n riÃªng.";
+            return "Để xem hướng dẫn thanh toán online, Sen/sếp mở mục **Hóa đơn & Thanh toán**, chọn hóa đơn cần xem rồi làm theo hướng dẫn chuyển khoản/VNPay hiển thị trên màn hình. Nếu chỉ cần hướng dẫn thì Rexi không thay đổi trạng thái hóa đơn; mọi thao tác xác nhận/hủy/cập nhật thanh toán sẽ cần Rexi Agent kiểm tra quyền và xác nhận riêng.";
         }
 
         return null;
@@ -1361,17 +1361,17 @@ ChatMessage systemMsg = new ChatMessage();
         if (!asksSummaryOrDetail) return null;
 
         String compact = userQuery.replaceAll("\\s+", " ").trim();
-        Matcher important = Pattern.compile("(?i)(Chi tiáº¿t quan trá»ng|Chi tiet quan trong)\\s*:\\s*([^\\.\\n]+(?:\\.[^\\.\\n]+){0,2})").matcher(compact);
+        Matcher important = Pattern.compile("(?i)(Chi tiết quan trọng|Chi tiet quan trong)\\s*:\\s*([^\\.\\n]+(?:\\.[^\\.\\n]+){0,2})").matcher(compact);
         if (important.find()) {
-            return "Chi tiáº¿t quan trá»ng trong tÃ i liá»‡u lÃ : " + important.group(2).trim()
-                    + "\n\nRexi Ä‘Ã£ xá»­ lÃ½ pháº§n nÃ y báº±ng bá»™ Ä‘á»c ná»™i bá»™ Ä‘á»ƒ trÃ¡nh gá»­i toÃ n bá»™ tÃ i liá»‡u dÃ i lÃªn provider AI.";
+            return "Chi tiết quan trọng trong tài liệu là: " + important.group(2).trim()
+                    + "\n\nRexi đã xử lý phần này bằng bộ đọc nội bộ để tránh gửi toàn bộ tài liệu dài lên provider AI.";
         }
 
-        int questionIndex = Math.max(compact.toLowerCase(Locale.ROOT).lastIndexOf("há»i:"), compact.toLowerCase(Locale.ROOT).lastIndexOf("hoi:"));
+        int questionIndex = Math.max(compact.toLowerCase(Locale.ROOT).lastIndexOf("hỏi:"), compact.toLowerCase(Locale.ROOT).lastIndexOf("hoi:"));
         String body = questionIndex > 0 ? compact.substring(0, questionIndex).trim() : compact;
         String sample = body.length() > 700 ? body.substring(0, 700) + "..." : body;
-        return "TÃ³m táº¯t nhanh tÃ i liá»‡u: " + sample
-                + "\n\nTÃ i liá»‡u khÃ¡ dÃ i nÃªn Rexi chá»‰ trÃ­ch pháº§n liÃªn quan/tÃ³m táº¯t cá»¥c bá»™ trÆ°á»›c, khÃ´ng Ä‘áº©y toÃ n bá»™ ná»™i dung lÃªn AI Ä‘á»ƒ trÃ¡nh tá»‘n token vÃ  lá»™ ngá»¯ cáº£nh khÃ´ng cáº§n thiáº¿t.";
+        return "Tóm tắt nhanh tài liệu: " + sample
+                + "\n\nTài liệu khá dài nên Rexi chỉ trích phần liên quan/tóm tắt cục bộ trước, không đẩy toàn bộ nội dung lên AI để tránh tốn token và lộ ngữ cảnh không cần thiết.";
     }
 
     private String tryLocalVeterinaryReply(String normalizedQuery, String rawQuery) {
@@ -1382,71 +1382,71 @@ ChatMessage systemMsg = new ChatMessage();
         if (containsAny(q, "ca rong", "chim canh", "chim", "ca canh", "bo sat", "ran canh")
                 && containsAny(q, "ban", "kham", "dich vu", "ho tro", "web minh", "phong kham")
                 && isShortQuery) {
-            return "Dáº¡ hiá»‡n táº¡i Rexi táº­p trung há»— trá»£ thÃº cÆ°ng phá»• biáº¿n nhÆ° chÃ³, mÃ¨o vÃ  má»™t sá»‘ thÃº nhá». Vá»›i cÃ¡ rá»“ng/chim cáº£nh, phÃ²ng khÃ¡m chÆ°a cÃ³ dá»‹ch vá»¥ chuyÃªn sÃ¢u cá»‘ Ä‘á»‹nh nÃªn Rexi khÃ´ng muá»‘n tÆ° váº¥n quÃ¡ tay. Náº¿u bÃ© cÃ³ dáº¥u hiá»‡u nguy cáº¥p, Sen nÃªn liÃªn há»‡ cÆ¡ sá»Ÿ thÃº y chuyÃªn cÃ¡/chim cáº£nh gáº§n nháº¥t hoáº·c gá»i Rexi Ä‘á»ƒ Ä‘Æ°á»£c hÆ°á»›ng dáº«n kÃªnh phÃ¹ há»£p.";
+            return "Dạ hiện tại Rexi tập trung hỗ trợ thú cưng phổ biến như chó, mèo và một số thú nhỏ. Với cá rồng/chim cảnh, phòng khám chưa có dịch vụ chuyên sâu cố định nên Rexi không muốn tư vấn quá tay. Nếu bé có dấu hiệu nguy cấp, Sen nên liên hệ cơ sở thú y chuyên cá/chim cảnh gần nhất hoặc gọi Rexi để được hướng dẫn kênh phù hợp.";
         }
 
         if (isPrescriptionRequest(q)) {
-            return "Rexi khÃ´ng thá»ƒ kÃª Ä‘Æ¡n, chá»‰ Ä‘á»‹nh khÃ¡ng sinh hoáº·c Ä‘Æ°a liá»u dÃ¹ng cho thÃº cÆ°ng qua chat. Vá»›i viÃªm da/nhiá»…m trÃ¹ng, bÃ¡c sÄ© cáº§n khÃ¡m da, cÃ¢n náº·ng, tuá»•i, loÃ i vÃ  cÃ³ thá»ƒ cáº§n soi da/xÃ©t nghiá»‡m trÆ°á»›c khi chá»n thuá»‘c. Viá»‡c an toÃ n nÃªn lÃ m ngay: giá»¯ vÃ¹ng da sáº¡ch vÃ  khÃ´, trÃ¡nh Ä‘á»ƒ bÃ© gÃ£i/liáº¿m, khÃ´ng tá»± dÃ¹ng thuá»‘c ngÆ°á»i hoáº·c khÃ¡ng sinh cÃ²n thá»«a, vÃ  Ä‘áº·t lá»‹ch khÃ¡m da liá»…u náº¿u cÃ³ má»§, lan rá»™ng, hÃ´i, sá»‘t, bá» Äƒn hoáº·c ngá»©a nhiá»u.";
+            return "Rexi không thể kê đơn, chỉ định kháng sinh hoặc đưa liều dùng cho thú cưng qua chat. Với viêm da/nhiễm trùng, bác sĩ cần khám da, cân nặng, tuổi, loài và có thể cần soi da/xét nghiệm trước khi chọn thuốc. Việc an toàn nên làm ngay: giữ vùng da sạch và khô, tránh để bé gãi/liếm, không tự dùng thuốc người hoặc kháng sinh còn thừa, và đặt lịch khám da liễu nếu có mủ, lan rộng, hôi, sốt, bỏ ăn hoặc ngứa nhiều.";
         }
 
         if (isPostVisitCareQuery(q) && isShortQuery) {
-            return "Sau khi bÃ© vá»«a khÃ¡m xong, Sen theo dÃµi 24-48 giá» Ä‘áº§u: Äƒn uá»‘ng, nÃ´n/tiÃªu cháº£y, má»©c tá»‰nh tÃ¡o, váº¿t tiÃªm/váº¿t thÆ°Æ¡ng, nhá»‹p thá»Ÿ vÃ  viá»‡c Ä‘i vá»‡ sinh. Cho bÃ© nghá»‰ á»Ÿ nÆ¡i yÃªn tÄ©nh, dÃ¹ng thuá»‘c Ä‘Ãºng Ä‘Æ¡n náº¿u bÃ¡c sÄ© Ä‘Ã£ kÃª, khÃ´ng tá»± thÃªm thuá»‘c ngÆ°á»i. Cáº§n gá»i láº¡i phÃ²ng khÃ¡m hoáº·c Ä‘Æ°a bÃ© tÃ¡i khÃ¡m sá»›m náº¿u bÃ© lá»« Ä‘á»« tÄƒng, bá» Äƒn, nÃ´n nhiá»u, khÃ³ thá»Ÿ, sá»‘t, cháº£y mÃ¡u, sÆ°ng Ä‘au nhiá»u hoáº·c cÃ³ dáº¥u hiá»‡u láº¡ sau dÃ¹ng thuá»‘c.";
+            return "Sau khi bé vừa khám xong, Sen theo dõi 24-48 giờ đầu: ăn uống, nôn/tiêu chảy, mức tỉnh táo, vết tiêm/vết thương, nhịp thở và việc đi vệ sinh. Cho bé nghỉ ở nơi yên tĩnh, dùng thuốc đúng đơn nếu bác sĩ đã kê, không tự thêm thuốc người. Cần gọi lại phòng khám hoặc đưa bé tái khám sớm nếu bé lừ đừ tăng, bỏ ăn, nôn nhiều, khó thở, sốt, chảy máu, sưng đau nhiều hoặc có dấu hiệu lạ sau dùng thuốc.";
         }
 
         if (isVaccineScheduleQuery(q) && isShortQuery) {
-            return "Lá»‹ch vaccine phá»¥ thuá»™c tuá»•i, loÃ i, vaccine Ä‘Ã£ tiÃªm vÃ  nguy cÆ¡ tiáº¿p xÃºc. ThÃ´ng thÆ°á»ng chÃ³/mÃ¨o con báº¯t Ä‘áº§u tiÃªm tá»« khoáº£ng 6-8 tuáº§n tuá»•i, nháº¯c theo lá»‹ch bÃ¡c sÄ© Ä‘áº¿n khi hoÃ n táº¥t mÅ©i cÆ¡ báº£n, sau Ä‘Ã³ nháº¯c Ä‘á»‹nh ká»³ háº±ng nÄƒm hoáº·c theo khuyáº¿n cÃ¡o tá»«ng loáº¡i vaccine. Sen nÃªn mang sá»• tiÃªm/áº£nh mÅ©i cÅ© khi Ä‘áº·t lá»‹ch Ä‘á»ƒ bÃ¡c sÄ© Rexi chá»‘t lá»‹ch chÃ­nh xÃ¡c, khÃ´ng tiÃªm khi bÃ© Ä‘ang sá»‘t, tiÃªu cháº£y hoáº·c quÃ¡ yáº¿u.";
+            return "Lịch vaccine phụ thuộc tuổi, loài, vaccine đã tiêm và nguy cơ tiếp xúc. Thông thường chó/mèo con bắt đầu tiêm từ khoảng 6-8 tuần tuổi, nhắc theo lịch bác sĩ đến khi hoàn tất mũi cơ bản, sau đó nhắc định kỳ hằng năm hoặc theo khuyến cáo từng loại vaccine. Sen nên mang sổ tiêm/ảnh mũi cũ khi đặt lịch để bác sĩ Rexi chốt lịch chính xác, không tiêm khi bé đang sốt, tiêu chảy hoặc quá yếu.";
         }
 
         if (isPregnantCatCareQuery(q) && isShortQuery) {
-            return "Vá»›i mÃ¨o mang thai, Sen giá»¯ mÃ´i trÆ°á»ng yÃªn tÄ©nh, sáº¡ch, áº¥m vá»«a pháº£i; cho Äƒn kháº©u pháº§n Ä‘á»§ nÄƒng lÆ°á»£ng, dá»… tiÃªu vÃ  luÃ´n cÃ³ nÆ°á»›c sáº¡ch; háº¡n cháº¿ stress, nháº£y cao/va cháº¡m; chuáº©n bá»‹ á»• Ä‘áº» khÃ´ kÃ­n. KhÃ´ng tá»± dÃ¹ng thuá»‘c, táº©y giun hay bá»• sung canxi liá»u cao náº¿u chÆ°a há»i bÃ¡c sÄ©. Cáº§n Ä‘i khÃ¡m náº¿u mÃ¨o bá» Äƒn, sá»‘t, cháº£y dá»‹ch hÃ´i/mÃ¡u nhiá»u, ráº·n lÃ¢u khÃ´ng ra con, Ä‘au nhiá»u hoáº·c thai ká»³ cÃ³ dáº¥u hiá»‡u báº¥t thÆ°á»ng.";
+            return "Với mèo mang thai, Sen giữ môi trường yên tĩnh, sạch, ấm vừa phải; cho ăn khẩu phần đủ năng lượng, dễ tiêu và luôn có nước sạch; hạn chế stress, nhảy cao/va chạm; chuẩn bị ổ đẻ khô kín. Không tự dùng thuốc, tẩy giun hay bổ sung canxi liều cao nếu chưa hỏi bác sĩ. Cần đi khám nếu mèo bỏ ăn, sốt, chảy dịch hôi/máu nhiều, rặn lâu không ra con, đau nhiều hoặc thai kỳ có dấu hiệu bất thường.";
         }
 
         if (isNutritionByAgeWeightQuery(q) && isShortQuery) {
-            return "Äá»ƒ tÆ° váº¥n kháº©u pháº§n chuáº©n, Rexi cáº§n loÃ i, tuá»•i, cÃ¢n náº·ng, tÃ¬nh tráº¡ng triá»‡t sáº£n, má»©c váº­n Ä‘á»™ng vÃ  bá»‡nh ná»n. NguyÃªn táº¯c nhanh: chá»n thá»©c Äƒn Ä‘Ãºng lá»©a tuá»•i, chia bá»¯a Ä‘á»u, Ä‘á»•i thá»©c Äƒn tá»« tá»« 5-7 ngÃ y, luÃ´n cÃ³ nÆ°á»›c sáº¡ch, khÃ´ng cho xÆ°Æ¡ng náº¥u chÃ­n/socola/hÃ nh tá»i. Náº¿u Sen gá»­i tuá»•i + cÃ¢n náº·ng + bÃ© Ä‘ang Äƒn gÃ¬, Rexi sáº½ gá»£i Ã½ cÃ¡ch chia bá»¯a an toÃ n hÆ¡n.";
+            return "Để tư vấn khẩu phần chuẩn, Rexi cần loài, tuổi, cân nặng, tình trạng triệt sản, mức vận động và bệnh nền. Nguyên tắc nhanh: chọn thức ăn đúng lứa tuổi, chia bữa đều, đổi thức ăn từ từ 5-7 ngày, luôn có nước sạch, không cho xương nấu chín/socola/hành tỏi. Nếu Sen gửi tuổi + cân nặng + bé đang ăn gì, Rexi sẽ gợi ý cách chia bữa an toàn hơn.";
         }
 
         if (isEducationalPoisoningQuery(q) && isShortQuery) {
-            return "Náº¿u nghi mÃ¨o/chÃ³ ngá»™ Ä‘á»™c, Æ°u tiÃªn Ä‘Æ°a Ä‘i cáº¥p cá»©u thÃº y ngay vÃ  gá»i hotline 0353.374.156. Trong lÃºc Ä‘i: láº¥y máº«u/thÃ´ng tin thá»© bÃ© Ä‘Ã£ Äƒn, khÃ´ng tá»± gÃ¢y nÃ´n, khÃ´ng cho uá»‘ng thuá»‘c ngÆ°á»i, than hoáº¡t hay sá»¯a náº¿u chÆ°a Ä‘Æ°á»£c bÃ¡c sÄ© hÆ°á»›ng dáº«n, giá»¯ bÃ© yÃªn vÃ  trÃ¡nh Ä‘á»ƒ tiáº¿p tá»¥c Äƒn liáº¿m cháº¥t Ä‘á»™c. Dáº¥u hiá»‡u nguy hiá»ƒm gá»“m nÃ´n liÃªn tá»¥c, co giáº­t, khÃ³ thá»Ÿ, lá»« Ä‘á»«, cháº£y dÃ£i nhiá»u, tiÃªu cháº£y mÃ¡u hoáº·c tÃ­m tÃ¡i.";
+            return "Nếu nghi mèo/chó ngộ độc, ưu tiên đưa đi cấp cứu thú y ngay và gọi hotline 0353.374.156. Trong lúc đi: lấy mẫu/thông tin thứ bé đã ăn, không tự gây nôn, không cho uống thuốc người, than hoạt hay sữa nếu chưa được bác sĩ hướng dẫn, giữ bé yên và tránh để tiếp tục ăn liếm chất độc. Dấu hiệu nguy hiểm gồm nôn liên tục, co giật, khó thở, lừ đừ, chảy dãi nhiều, tiêu chảy máu hoặc tím tái.";
         }
 
         if (isHeimlichTechniqueQuery(q) && isShortQuery) {
-            return "Náº¿u bÃ© nghi hÃ³c dá»‹ váº­t nhÆ°ng cÃ²n thá»Ÿ/ho Ä‘Æ°á»£c, Ä‘á»«ng mÃ³c há»ng sÃ¢u vÃ¬ cÃ³ thá»ƒ Ä‘áº©y dá»‹ váº­t vÃ o trong; hÃ£y Ä‘Æ°a Ä‘i cáº¥p cá»©u ngay. Náº¿u bÃ© khÃ´ng thá»Ÿ, tÃ­m tÃ¡i hoáº·c ngÃ£ lá»‹m: kiá»ƒm tra miá»‡ng chá»‰ láº¥y dá»‹ váº­t nhÃ¬n tháº¥y rÃµ, giá»¯ Ä‘áº§u tháº¥p hÆ¡n thÃ¢n vá»›i bÃ© nhá» vÃ  vá»— lÆ°ng dá»©t khoÃ¡t; vá»›i chÃ³ lá»›n cÃ³ thá»ƒ Ã©p bá»¥ng/ngá»±c ngáº¯n theo hÆ°á»›ng lÃªn-trÆ°á»›c rá»“i láº­p tá»©c Ä‘áº¿n cÆ¡ sá»Ÿ thÃº y. Gá»i Rexi 0353.374.156 trong lÃºc di chuyá»ƒn.";
+            return "Nếu bé nghi hóc dị vật nhưng còn thở/ho được, đừng móc họng sâu vì có thể đẩy dị vật vào trong; hãy đưa đi cấp cứu ngay. Nếu bé không thở, tím tái hoặc ngã lịm: kiểm tra miệng chỉ lấy dị vật nhìn thấy rõ, giữ đầu thấp hơn thân với bé nhỏ và vỗ lưng dứt khoát; với chó lớn có thể ép bụng/ngực ngắn theo hướng lên-trước rồi lập tức đến cơ sở thú y. Gọi Rexi 0353.374.156 trong lúc di chuyển.";
         }
 
         if (isGeneralVetVisitWarningQuery(q) && isShortQuery) {
-            return "Nhá»¯ng dáº¥u hiá»‡u nÃªn Ä‘Æ°a chÃ³/mÃ¨o Ä‘i khÃ¡m ngay gá»“m: khÃ³ thá»Ÿ, tÃ­m tÃ¡i, co giáº­t, lá»‹m Ä‘i; nÃ´n/tiÃªu cháº£y liÃªn tá»¥c hoáº·c cÃ³ mÃ¡u; bá» Äƒn hÆ¡n 24 giá» á»Ÿ mÃ¨o; sá»‘t cao, Ä‘au nhiá»u, bá»¥ng chÆ°á»›ng; tai náº¡n, cháº£y mÃ¡u, nghi gÃ£y xÆ°Æ¡ng; nghi ngá»™ Ä‘á»™c/nuá»‘t dá»‹ váº­t; tiá»ƒu khÃ´ng ra, ráº·n nhiá»u; máº¯t Ä‘á»¥c/Ä‘au/nháº¯m nghiá»n. Náº¿u Ä‘ang cÃ³ dáº¥u hiá»‡u cáº¥p cá»©u, Sen gá»i hotline Rexi 0353.374.156 vÃ  Ä‘Æ°a bÃ© tá»›i phÃ²ng khÃ¡m/cÆ¡ sá»Ÿ thÃº y gáº§n nháº¥t.";
+            return "Những dấu hiệu nên đưa chó/mèo đi khám ngay gồm: khó thở, tím tái, co giật, lịm đi; nôn/tiêu chảy liên tục hoặc có máu; bỏ ăn hơn 24 giờ ở mèo; sốt cao, đau nhiều, bụng chướng; tai nạn, chảy máu, nghi gãy xương; nghi ngộ độc/nuốt dị vật; tiểu không ra, rặn nhiều; mắt đục/đau/nhắm nghiền. Nếu đang có dấu hiệu cấp cứu, Sen gọi hotline Rexi 0353.374.156 và đưa bé tới phòng khám/cơ sở thú y gần nhất.";
         }
 
         if (isVomitingFoamCatQuery(q)) {
-            return "MÃ¨o nÃ´n ra bá»t tráº¯ng cÃ³ thá»ƒ do kÃ­ch á»©ng dáº¡ dÃ y, nuá»‘t lÃ´ng, Äƒn quÃ¡ nhanh, kÃ½ sinh trÃ¹ng, viÃªm dáº¡ dÃ y-ruá»™t hoáº·c bá»‡nh náº·ng hÆ¡n náº¿u Ä‘i kÃ¨m lá»« Ä‘á»«/sá»‘t/tiÃªu cháº£y. TrÆ°á»›c máº¯t cho bÃ© nghá»‰ Äƒn 2-4 giá» náº¿u váº«n tá»‰nh tÃ¡o, luÃ´n Ä‘á»ƒ nÆ°á»›c sáº¡ch, khÃ´ng tá»± cho uá»‘ng thuá»‘c ngÆ°á»i. Cáº§n Ä‘i khÃ¡m sá»›m náº¿u nÃ´n láº·p láº¡i nhiá»u láº§n, khÃ´ng uá»‘ng Ä‘Æ°á»£c nÆ°á»›c, bá» Äƒn trÃªn 24 giá», tiÃªu cháº£y/ra mÃ¡u, bá»¥ng Ä‘au, lá»« Ä‘á»«, mÃ¨o con hoáº·c nghi nuá»‘t dá»‹ váº­t/cháº¥t Ä‘á»™c.";
+            return "Mèo nôn ra bọt trắng có thể do kích ứng dạ dày, nuốt lông, ăn quá nhanh, ký sinh trùng, viêm dạ dày-ruột hoặc bệnh nặng hơn nếu đi kèm lừ đừ/sốt/tiêu chảy. Trước mắt cho bé nghỉ ăn 2-4 giờ nếu vẫn tỉnh táo, luôn để nước sạch, không tự cho uống thuốc người. Cần đi khám sớm nếu nôn lặp lại nhiều lần, không uống được nước, bỏ ăn trên 24 giờ, tiêu chảy/ra máu, bụng đau, lừ đừ, mèo con hoặc nghi nuốt dị vật/chất độc.";
         }
 
         if (containsAny(q, "meo con") && containsAny(q, "moi ve", "moi nhan", "moi don", "can chuan bi", "chuan bi gi") && isShortQuery) {
-            return "MÃ¨o con má»›i vá» cáº§n chuáº©n bá»‹: á»• náº±m áº¥m vÃ  kÃ­n giÃ³, khay cÃ¡t tháº¥p, bÃ¡t nÆ°á»›c/thá»©c Äƒn riÃªng, thá»©c Äƒn Ä‘Ãºng tuá»•i, Ä‘á»“ cÃ o mÃ³ng vÃ  khu vá»±c yÃªn tÄ©nh Ä‘á»ƒ bÃ© lÃ m quen. 3-7 ngÃ y Ä‘áº§u nÃªn háº¡n cháº¿ táº¯m, khÃ´ng Ä‘á»•i thá»©c Äƒn Ä‘á»™t ngá»™t, theo dÃµi Äƒn uá»‘ng/phÃ¢n/nÃ´n/háº¯t hÆ¡i. Náº¿u bÃ© chÆ°a rÃµ lá»‹ch vaccine/táº©y giun, Sen Ä‘áº·t lá»‹ch khÃ¡m tá»•ng quÃ¡t Ä‘á»ƒ bÃ¡c sÄ© kiá»ƒm tra tuá»•i, cÃ¢n náº·ng vÃ  lÃªn lá»‹ch chÄƒm sÃ³c phÃ¹ há»£p.";
+            return "Mèo con mới về cần chuẩn bị: ổ nằm ấm và kín gió, khay cát thấp, bát nước/thức ăn riêng, thức ăn đúng tuổi, đồ cào móng và khu vực yên tĩnh để bé làm quen. 3-7 ngày đầu nên hạn chế tắm, không đổi thức ăn đột ngột, theo dõi ăn uống/phân/nôn/hắt hơi. Nếu bé chưa rõ lịch vaccine/tẩy giun, Sen đặt lịch khám tổng quát để bác sĩ kiểm tra tuổi, cân nặng và lên lịch chăm sóc phù hợp.";
         }
 
         if (isPetEyeProblemQuery(q) && isShortQuery) {
-            return "Rexi hiá»ƒu lÃ  máº¯t cá»§a mÃ¨o Ä‘ang cÃ³ dáº¥u hiá»‡u báº¥t thÆ°á»ng kiá»ƒu Ä‘á»‘m/lá»‘m Ä‘á»‘m, nhÃ¬n láº¡ hoáº·c cÃ³ váº» khÃ³ chá»‹u. Vá»›i máº¯t thÃ¬ khÃ´ng nÃªn chá» lÃ¢u vÃ¬ cÃ³ thá»ƒ liÃªn quan viÃªm káº¿t máº¡c, loÃ©t giÃ¡c máº¡c, dá»‹ váº­t, cháº¥n thÆ°Æ¡ng, nhiá»…m trÃ¹ng hoáº·c tÄƒng nhÃ£n Ã¡p. TrÆ°á»›c máº¯t khÃ´ng nhá» thuá»‘c ngÆ°á»i, khÃ´ng tá»± dÃ¹ng khÃ¡ng sinh/corticoid, khÃ´ng dá»¥i/rá»­a máº¡nh; náº¿u cÃ³ ghÃ¨n nhiá»u, Ä‘á», nheo máº¯t, cháº£y nÆ°á»›c máº¯t, Ä‘á»¥c/tráº¯ng xanh, sÆ°ng, Ä‘au, bÃ© dá»¥i máº¯t hoáº·c nhÃ¬n kÃ©m thÃ¬ nÃªn Ä‘i khÃ¡m thÃº y trong ngÃ y Ä‘á»ƒ soi máº¯t vÃ  nhuá»™m fluorescein kiá»ƒm tra loÃ©t giÃ¡c máº¡c.";
+            return "Rexi hiểu là mắt của mèo đang có dấu hiệu bất thường kiểu đốm/lốm đốm, nhìn lạ hoặc có vẻ khó chịu. Với mắt thì không nên chờ lâu vì có thể liên quan viêm kết mạc, loét giác mạc, dị vật, chấn thương, nhiễm trùng hoặc tăng nhãn áp. Trước mắt không nhỏ thuốc người, không tự dùng kháng sinh/corticoid, không dụi/rửa mạnh; nếu có ghèn nhiều, đỏ, nheo mắt, chảy nước mắt, đục/trắng xanh, sưng, đau, bé dụi mắt hoặc nhìn kém thì nên đi khám thú y trong ngày để soi mắt và nhuộm fluorescein kiểm tra loét giác mạc.";
         }
 
         if (containsAny(q, "meo") && containsAny(q, "moi de", "vua de", "de con", "meo con", "meo me") && isShortQuery) {
-            return "Vá»›i mÃ¨o máº¹ má»›i Ä‘áº», Sen Æ°u tiÃªn 4 viá»‡c: giá»¯ á»• áº¥m, khÃ´ vÃ  yÃªn tÄ©nh; cho mÃ¨o máº¹ Äƒn kháº©u pháº§n giÃ u nÄƒng lÆ°á»£ng/Ä‘áº¡m vÃ  luÃ´n cÃ³ nÆ°á»›c sáº¡ch; theo dÃµi mÃ¨o con bÃº Ä‘á»u, khÃ´ng bá»‹ láº¡nh, khÃ´ng kÃªu yáº¿u kÃ©o dÃ i; khÃ´ng táº¯m hoáº·c báº¿ mÃ¨o con quÃ¡ nhiá»u trong vÃ i ngÃ y Ä‘áº§u. Náº¿u mÃ¨o máº¹ bá» Äƒn, sá»‘t, cháº£y dá»‹ch hÃ´i, bá» con hoáº·c mÃ¨o con láº¡nh/yáº¿u khÃ´ng bÃº thÃ¬ nÃªn Ä‘Æ°a tá»›i bÃ¡c sÄ© thÃº y sá»›m.";
+            return "Với mèo mẹ mới đẻ, Sen ưu tiên 4 việc: giữ ổ ấm, khô và yên tĩnh; cho mèo mẹ ăn khẩu phần giàu năng lượng/đạm và luôn có nước sạch; theo dõi mèo con bú đều, không bị lạnh, không kêu yếu kéo dài; không tắm hoặc bế mèo con quá nhiều trong vài ngày đầu. Nếu mèo mẹ bỏ ăn, sốt, chảy dịch hôi, bỏ con hoặc mèo con lạnh/yếu không bú thì nên đưa tới bác sĩ thú y sớm.";
         }
 
         if (containsAny(q, "di ngoai ra nuoc", "di ngoai", "tieu chay", "phan long")
                 && containsAny(q, "mui hoi", "hoi lam", "ra nuoc", "cun", "cho")
                 && isShortQuery) {
-            return "Rexi hiá»ƒu lÃ  cÃºn Ä‘ang cÃ³ dáº¥u hiá»‡u **tiÃªu cháº£y nÆ°á»›c, mÃ¹i hÃ´i**. ÄÃ¢y cÃ³ thá»ƒ lÃ  rá»‘i loáº¡n tiÃªu hÃ³a, nhiá»…m khuáº©n/kÃ½ sinh trÃ¹ng, vÃ  á»Ÿ chÃ³ con hoáº·c chÃ³ chÆ°a tiÃªm Ä‘á»§ vaccine cáº§n Ä‘áº·c biá»‡t cáº£nh giÃ¡c **Parvovirus**. Viá»‡c cáº§n lÃ m ngay: cho bÃ© uá»‘ng nÆ°á»›c tá»«ng Ã­t má»™t, khÃ´ng tá»± dÃ¹ng thuá»‘c cáº§m tiÃªu cháº£y cá»§a ngÆ°á»i, theo dÃµi nÃ´n/sá»‘t/lá»« Ä‘á»«/phÃ¢n mÃ¡u. Náº¿u bÃ© cÃ²n nhá», bá» Äƒn, nÃ´n, lá»« Ä‘á»« hoáº·c tiÃªu cháº£y liÃªn tá»¥c thÃ¬ nÃªn mang tá»›i phÃ²ng khÃ¡m trong ngÃ y Ä‘á»ƒ test vÃ  truyá»n dá»‹ch náº¿u cáº§n.";
+            return "Rexi hiểu là cún đang có dấu hiệu **tiêu chảy nước, mùi hôi**. Đây có thể là rối loạn tiêu hóa, nhiễm khuẩn/ký sinh trùng, và ở chó con hoặc chó chưa tiêm đủ vaccine cần đặc biệt cảnh giác **Parvovirus**. Việc cần làm ngay: cho bé uống nước từng ít một, không tự dùng thuốc cầm tiêu chảy của người, theo dõi nôn/sốt/lừ đừ/phân máu. Nếu bé còn nhỏ, bỏ ăn, nôn, lừ đừ hoặc tiêu chảy liên tục thì nên mang tới phòng khám trong ngày để test và truyền dịch nếu cần.";
         }
 
         if (containsAny(q, "bo an", "khong an", "an it")
                 && containsAny(q, "nguoi nong", "nong lam", "sot", "meo")
                 && isShortQuery) {
-            return "Rexi hiá»ƒu theo ngÃ´n ngá»¯ thÃº y lÃ  mÃ¨o cÃ³ dáº¥u hiá»‡u **bá» Äƒn kÃ¨m nghi sá»‘t**. MÃ¨o bá» Äƒn quÃ¡ 24 giá» Ä‘Ã£ Ä‘Ã¡ng lo, nháº¥t lÃ  náº¿u ngÆ°á»i nÃ³ng, lá»« Ä‘á»«, trá»‘n, thá»Ÿ nhanh hoáº·c nÃ´n. Sen nÃªn Ä‘o nhiá»‡t Ä‘á»™ háº­u mÃ´n náº¿u cÃ³ nhiá»‡t káº¿ thÃº y; mÃ¨o thÆ°á»ng khoáº£ng 38-39.2Â°C, cao hÆ¡n nÃªn Ä‘i khÃ¡m. TrÆ°á»›c máº¯t giá»¯ bÃ© á»Ÿ nÆ¡i mÃ¡t, cÃ³ nÆ°á»›c sáº¡ch, khÃ´ng tá»± cho uá»‘ng thuá»‘c háº¡ sá»‘t cá»§a ngÆ°á»i vÃ¬ cÃ³ thá»ƒ gÃ¢y ngá»™ Ä‘á»™c. NÃªn Ä‘áº·t lá»‹ch khÃ¡m sá»›m Ä‘á»ƒ bÃ¡c sÄ© kiá»ƒm tra nguyÃªn nhÃ¢n nhiá»…m trÃ¹ng/Ä‘au/stress.";
+            return "Rexi hiểu theo ngôn ngữ thú y là mèo có dấu hiệu **bỏ ăn kèm nghi sốt**. Mèo bỏ ăn quá 24 giờ đã đáng lo, nhất là nếu người nóng, lừ đừ, trốn, thở nhanh hoặc nôn. Sen nên đo nhiệt độ hậu môn nếu có nhiệt kế thú y; mèo thường khoảng 38-39.2°C, cao hơn nên đi khám. Trước mắt giữ bé ở nơi mát, có nước sạch, không tự cho uống thuốc hạ sốt của người vì có thể gây ngộ độc. Nên đặt lịch khám sớm để bác sĩ kiểm tra nguyên nhân nhiễm trùng/đau/stress.";
         }
 
         if (containsAny(q, "ngua tai", "gay tai", "lac dau", "hoi tai", "poodle") && isShortQuery) {
-            return "Dáº¥u hiá»‡u ngá»©a tai/láº¯c Ä‘áº§u á»Ÿ Poodle thÆ°á»ng liÃªn quan viÃªm tai ngoÃ i, náº¥m/vi khuáº©n, ve tai hoáº·c dá»‹ á»©ng da. KhÃ´ng nÃªn tá»± nhá» thuá»‘c khi chÆ°a soi tai vÃ¬ náº¿u mÃ ng nhÄ© tá»•n thÆ°Æ¡ng cÃ³ thá»ƒ nguy hiá»ƒm. Sen nÃªn Ä‘áº·t lá»‹ch khÃ¡m da liá»…u/tai Ä‘á»ƒ bÃ¡c sÄ© soi tai, vá»‡ sinh Ä‘Ãºng cÃ¡ch vÃ  kÃª thuá»‘c phÃ¹ há»£p.";
+            return "Dấu hiệu ngứa tai/lắc đầu ở Poodle thường liên quan viêm tai ngoài, nấm/vi khuẩn, ve tai hoặc dị ứng da. Không nên tự nhỏ thuốc khi chưa soi tai vì nếu màng nhĩ tổn thương có thể nguy hiểm. Sen nên đặt lịch khám da liễu/tai để bác sĩ soi tai, vệ sinh đúng cách và kê thuốc phù hợp.";
         }
 
         return null;
@@ -1501,11 +1501,11 @@ ChatMessage systemMsg = new ChatMessage();
         if (!"vet_advice".equals(intent.intent())) return null;
         if ("eye".equals(intent.bodyPart())) {
             String species = switch (intent.species()) {
-                case "cat" -> "mÃ¨o";
-                case "dog" -> "chÃ³";
-                default -> "thÃº cÆ°ng";
+                case "cat" -> "mèo";
+                case "dog" -> "chó";
+                default -> "thú cưng";
             };
-            return "Rexi hiá»ƒu lÃ  " + species + " Ä‘ang cÃ³ dáº¥u hiá»‡u báº¥t thÆ°á»ng á»Ÿ máº¯t. Vá»›i máº¯t thÃ¬ nÃªn xá»­ lÃ½ tháº­n trá»ng vÃ¬ cÃ³ thá»ƒ liÃªn quan viÃªm káº¿t máº¡c, loÃ©t giÃ¡c máº¡c, dá»‹ váº­t, cháº¥n thÆ°Æ¡ng, nhiá»…m trÃ¹ng hoáº·c tÄƒng nhÃ£n Ã¡p. TrÆ°á»›c máº¯t khÃ´ng nhá» thuá»‘c ngÆ°á»i, khÃ´ng tá»± dÃ¹ng khÃ¡ng sinh/corticoid, khÃ´ng dá»¥i/rá»­a máº¡nh; giá»¯ bÃ© trÃ¡nh gÃ£i máº¯t. Náº¿u máº¯t Ä‘á», Ä‘á»¥c, cÃ³ Ä‘á»‘m/lá»‘m Ä‘á»‘m, ghÃ¨n nhiá»u, cháº£y nÆ°á»›c máº¯t, nheo máº¯t, sÆ°ng, Ä‘au hoáº·c nhÃ¬n kÃ©m thÃ¬ nÃªn Ä‘i khÃ¡m thÃº y trong ngÃ y Ä‘á»ƒ soi máº¯t vÃ  kiá»ƒm tra loÃ©t giÃ¡c máº¡c.";
+            return "Rexi hiểu là " + species + " đang có dấu hiệu bất thường ở mắt. Với mắt thì nên xử lý thận trọng vì có thể liên quan viêm kết mạc, loét giác mạc, dị vật, chấn thương, nhiễm trùng hoặc tăng nhãn áp. Trước mắt không nhỏ thuốc người, không tự dùng kháng sinh/corticoid, không dụi/rửa mạnh; giữ bé tránh gãi mắt. Nếu mắt đỏ, đục, có đốm/lốm đốm, ghèn nhiều, chảy nước mắt, nheo mắt, sưng, đau hoặc nhìn kém thì nên đi khám thú y trong ngày để soi mắt và kiểm tra loét giác mạc.";
         }
         return null;
     }
@@ -1532,10 +1532,10 @@ ChatMessage systemMsg = new ChatMessage();
         if (!appointmentContext) return null;
 
         String petName = extractPetNameFromContext(ctx);
-        String petText = petName.isBlank() ? "bÃ©" : "bÃ© " + petName;
-        return "ÄÆ°á»£c áº¡, Rexi hiá»ƒu mÃ¬nh váº«n Ä‘ang nÃ³i vá» lá»‹ch tiÃªm phÃ²ng/khÃ¡m cho " + petText
-                + ". Náº¿u chuyá»ƒn sang sÃ¡ng Chá»§ nháº­t thÃ¬ nÃªn chá»n khung 08:00-10:30 Ä‘á»ƒ bÃ© Ä‘á»¡ má»‡t vÃ  phÃ²ng khÃ¡m dá»… sáº¯p bÃ¡c sÄ©. "
-                + "Äá»ƒ chá»‘t lá»‹ch tháº­t trÃªn há»‡ thá»‘ng, Sen/Sáº¿p chuyá»ƒn sang Rexi Agent hoáº·c cung cáº¥p thÃªm ngÃ y cá»¥ thá»ƒ, SÄT khÃ¡ch hÃ ng, thÃº cÆ°ng vÃ  dá»‹ch vá»¥ cáº§n Ä‘áº·t.";
+        String petText = petName.isBlank() ? "bé" : "bé " + petName;
+        return "Được ạ, Rexi hiểu mình vẫn đang nói về lịch tiêm phòng/khám cho " + petText
+                + ". Nếu chuyển sang sáng Chủ nhật thì nên chọn khung 08:00-10:30 để bé đỡ mệt và phòng khám dễ sắp bác sĩ. "
+                + "Để chốt lịch thật trên hệ thống, Sen/Sếp chuyển sang Rexi Agent hoặc cung cấp thêm ngày cụ thể, SĐT khách hàng, thú cưng và dịch vụ cần đặt.";
     }
 
     private String extractPetNameFromContext(String normalizedContext) {
@@ -1637,7 +1637,7 @@ ChatMessage systemMsg = new ChatMessage();
                     "xet nghiem", "benh", "trieu chung", "cap cuu", "ngo doc", "gay me");
             if (!medical) return;
 
-            boolean clinicalRole = "BÃ¡c sÄ©".equals(userRoleName) || "Y tÃ¡".equals(userRoleName);
+            boolean clinicalRole = "Bác sĩ".equals(userRoleName) || "Y tá".equals(userRoleName);
             String detail = "scope=" + (clinicalRole ? "CLINICAL_REFERENCE" : "CUSTOMER_SAFE_ADVICE")
                     + "; role=" + userRoleName
                     + "; provider=" + provider
@@ -1646,7 +1646,7 @@ ChatMessage systemMsg = new ChatMessage();
                     + "; replyPreview=" + compactForAudit(reply);
             auditLogService.logAction("AI_MEDICAL_ADVICE", "ChatController", detail);
         } catch (Exception ex) {
-            logger.warning("KhÃ´ng thá»ƒ ghi audit y khoa AI: " + ex.getMessage());
+            logger.warning("Không thể ghi audit y khoa AI: " + ex.getMessage());
         }
     }
 
@@ -1662,11 +1662,11 @@ ChatMessage systemMsg = new ChatMessage();
         String normalizedReply = normalizeVietnamese(safeReply).toLowerCase(Locale.ROOT);
 
         if (isPrescriptionRequest(q)) {
-            return "Rexi khÃ´ng thá»ƒ kÃª Ä‘Æ¡n, chá»‰ Ä‘á»‹nh khÃ¡ng sinh hoáº·c Ä‘Æ°a liá»u dÃ¹ng cho thÃº cÆ°ng qua chat. Vá»›i viÃªm da/nhiá»…m trÃ¹ng, bÃ¡c sÄ© cáº§n khÃ¡m da, cÃ¢n náº·ng, tuá»•i, loÃ i vÃ  cÃ³ thá»ƒ cáº§n soi da/xÃ©t nghiá»‡m trÆ°á»›c khi chá»n thuá»‘c. Viá»‡c an toÃ n nÃªn lÃ m ngay: giá»¯ vÃ¹ng da sáº¡ch vÃ  khÃ´, trÃ¡nh Ä‘á»ƒ bÃ© gÃ£i/liáº¿m, khÃ´ng tá»± dÃ¹ng thuá»‘c ngÆ°á»i hoáº·c khÃ¡ng sinh cÃ²n thá»«a, vÃ  Ä‘áº·t lá»‹ch khÃ¡m da liá»…u náº¿u cÃ³ má»§, lan rá»™ng, hÃ´i, sá»‘t, bá» Äƒn hoáº·c ngá»©a nhiá»u.";
+            return "Rexi không thể kê đơn, chỉ định kháng sinh hoặc đưa liều dùng cho thú cưng qua chat. Với viêm da/nhiễm trùng, bác sĩ cần khám da, cân nặng, tuổi, loài và có thể cần soi da/xét nghiệm trước khi chọn thuốc. Việc an toàn nên làm ngay: giữ vùng da sạch và khô, tránh để bé gãi/liếm, không tự dùng thuốc người hoặc kháng sinh còn thừa, và đặt lịch khám da liễu nếu có mủ, lan rộng, hôi, sốt, bỏ ăn hoặc ngứa nhiều.";
         }
 
         if (isVomitingFoamCatQuery(q) && isClearlyOffTopic(q, normalizedReply)) {
-            return "MÃ¨o nÃ´n ra bá»t tráº¯ng cÃ³ thá»ƒ do kÃ­ch á»©ng dáº¡ dÃ y, nuá»‘t lÃ´ng, Äƒn quÃ¡ nhanh, kÃ½ sinh trÃ¹ng, viÃªm dáº¡ dÃ y-ruá»™t hoáº·c bá»‡nh náº·ng hÆ¡n náº¿u Ä‘i kÃ¨m lá»« Ä‘á»«/sá»‘t/tiÃªu cháº£y. TrÆ°á»›c máº¯t cho bÃ© nghá»‰ Äƒn 2-4 giá» náº¿u váº«n tá»‰nh tÃ¡o, luÃ´n Ä‘á»ƒ nÆ°á»›c sáº¡ch, khÃ´ng tá»± cho uá»‘ng thuá»‘c ngÆ°á»i. Cáº§n Ä‘i khÃ¡m sá»›m náº¿u nÃ´n láº·p láº¡i nhiá»u láº§n, khÃ´ng uá»‘ng Ä‘Æ°á»£c nÆ°á»›c, bá» Äƒn trÃªn 24 giá», tiÃªu cháº£y/ra mÃ¡u, bá»¥ng Ä‘au, lá»« Ä‘á»«, mÃ¨o con hoáº·c nghi nuá»‘t dá»‹ váº­t/cháº¥t Ä‘á»™c.";
+            return "Mèo nôn ra bọt trắng có thể do kích ứng dạ dày, nuốt lông, ăn quá nhanh, ký sinh trùng, viêm dạ dày-ruột hoặc bệnh nặng hơn nếu đi kèm lừ đừ/sốt/tiêu chảy. Trước mắt cho bé nghỉ ăn 2-4 giờ nếu vẫn tỉnh táo, luôn để nước sạch, không tự cho uống thuốc người. Cần đi khám sớm nếu nôn lặp lại nhiều lần, không uống được nước, bỏ ăn trên 24 giờ, tiêu chảy/ra máu, bụng đau, lừ đừ, mèo con hoặc nghi nuốt dị vật/chất độc.";
         }
 
         if (route == ChatRoute.WEB_AI) {
@@ -1674,7 +1674,7 @@ ChatMessage systemMsg = new ChatMessage();
                 safeReply = safeReply.replaceFirst("(?i)^\\[EMERGENCY\\]\\s*", "");
             }
             if (webResults == null || webResults.isEmpty()) {
-                return "Rexi chÆ°a láº¥y Ä‘Æ°á»£c nguá»“n web phÃ¹ há»£p tá»« DuckDuckGo cho cÃ¢u há»i nÃ y, nÃªn khÃ´ng coi pháº§n tráº£ lá»i lÃ  thÃ´ng tin Ä‘Ã£ kiá»ƒm chá»©ng báº±ng nguá»“n ngoÃ i. Báº¡n cÃ³ thá»ƒ há»i láº¡i vá»›i tÃªn bá»‡nh/loÃ i cá»¥ thá»ƒ hÆ¡n, vÃ­ dá»¥: \"giáº£m báº¡ch cáº§u á»Ÿ mÃ¨o FPV\" hoáº·c \"parvo á»Ÿ chÃ³ dáº¥u hiá»‡u cáº¥p cá»©u\".";
+                return "Rexi chưa lấy được nguồn web phù hợp từ DuckDuckGo cho câu hỏi này, nên không coi phần trả lời là thông tin đã kiểm chứng bằng nguồn ngoài. Bạn có thể hỏi lại với tên bệnh/loài cụ thể hơn, ví dụ: \"giảm bạch cầu ở mèo FPV\" hoặc \"parvo ở chó dấu hiệu cấp cứu\".";
             }
             String deterministicWebAnswer = buildDeterministicVeterinaryWebAnswer(q, webResults);
             if (deterministicWebAnswer != null) {
@@ -1682,10 +1682,10 @@ ChatMessage systemMsg = new ChatMessage();
             }
             if (!mentionsAnyResultUrl(safeReply, webResults)) {
                 StringBuilder sb = new StringBuilder(safeReply);
-                sb.append("\n\nNguá»“n DuckDuckGo Rexi Ä‘Ã£ Ä‘á»‘i chiáº¿u:\n");
+                sb.append("\n\nNguồn DuckDuckGo Rexi đã đối chiếu:\n");
                 for (Map<String, String> item : webResults) {
                     sb.append("- [")
-                            .append(item.getOrDefault("title", "Nguá»“n tham kháº£o").replace("[", "").replace("]", ""))
+                            .append(item.getOrDefault("title", "Nguồn tham khảo").replace("[", "").replace("]", ""))
                             .append("](")
                             .append(item.getOrDefault("url", ""))
                             .append(")\n");
@@ -1705,28 +1705,28 @@ ChatMessage systemMsg = new ChatMessage();
         String topic;
         String summary;
         if (containsAny(normalizedQuery, "parvo")) {
-            topic = "Parvo á»Ÿ chÃ³";
-            summary = "Parvo á»Ÿ chÃ³ lÃ  bá»‡nh truyá»n nhiá»…m nguy hiá»ƒm, tiáº¿n triá»ƒn nhanh, thÆ°á»ng gÃ¢y nÃ´n, tiÃªu cháº£y náº·ng, phÃ¢n hÃ´i hoáº·c cÃ³ mÃ¡u, bá» Äƒn, sá»‘t hoáº·c háº¡ thÃ¢n nhiá»‡t, lá»« Ä‘á»« vÃ  máº¥t nÆ°á»›c. Cáº§n Ä‘Æ°a Ä‘i cáº¥p cá»©u thÃº y ngay náº¿u chÃ³ con/chÃ³ chÆ°a tiÃªm Ä‘á»§ vaccine cÃ³ nÃ´n liÃªn tá»¥c, tiÃªu cháº£y mÃ¡u, kiá»‡t sá»©c, khÃ´ng uá»‘ng Ä‘Æ°á»£c nÆ°á»›c, bá»¥ng Ä‘au, náº±m báº¹p hoáº·c dáº¥u hiá»‡u máº¥t nÆ°á»›c. KhÃ´ng tá»± dÃ¹ng khÃ¡ng sinh/thuá»‘c cáº§m tiÃªu cháº£y cá»§a ngÆ°á»i; Æ°u tiÃªn cÃ¡ch ly, giá»¯ áº¥m vá»«a pháº£i vÃ  Ä‘Æ°a tá»›i cÆ¡ sá»Ÿ thÃº y Ä‘á»ƒ test nhanh, truyá»n dá»‹ch vÃ  Ä‘iá»u trá»‹ há»— trá»£.";
+            topic = "Parvo ở chó";
+            summary = "Parvo ở chó là bệnh truyền nhiễm nguy hiểm, tiến triển nhanh, thường gây nôn, tiêu chảy nặng, phân hôi hoặc có máu, bỏ ăn, sốt hoặc hạ thân nhiệt, lừ đừ và mất nước. Cần đưa đi cấp cứu thú y ngay nếu chó con/chó chưa tiêm đủ vaccine có nôn liên tục, tiêu chảy máu, kiệt sức, không uống được nước, bụng đau, nằm bẹp hoặc dấu hiệu mất nước. Không tự dùng kháng sinh/thuốc cầm tiêu chảy của người; ưu tiên cách ly, giữ ấm vừa phải và đưa tới cơ sở thú y để test nhanh, truyền dịch và điều trị hỗ trợ.";
         } else if (containsAny(normalizedQuery, "bach cau", "fpv", "panleukopenia")) {
-            topic = "Giáº£m báº¡ch cáº§u á»Ÿ mÃ¨o";
-            summary = "Giáº£m báº¡ch cáº§u á»Ÿ mÃ¨o thÆ°á»ng Ä‘Æ°á»£c nháº¯c tá»›i nhÆ° FPV/feline panleukopenia, má»™t bá»‡nh virus nguy hiá»ƒm lÃ m mÃ¨o suy sá»¥p nhanh, nÃ´n, tiÃªu cháº£y, bá» Äƒn, sá»‘t hoáº·c háº¡ thÃ¢n nhiá»‡t, máº¥t nÆ°á»›c vÃ  giáº£m miá»…n dá»‹ch. ÄÃ¢y khÃ´ng pháº£i bá»‡nh nÃªn tá»± xá»­ lÃ½ táº¡i nhÃ . Náº¿u mÃ¨o con, mÃ¨o chÆ°a tiÃªm phÃ²ng, lá»« Ä‘á»«, nÃ´n/tiÃªu cháº£y, bá» Äƒn hoáº·c nghi tiáº¿p xÃºc mÃ¨o bá»‡nh thÃ¬ nÃªn Ä‘i khÃ¡m sá»›m Ä‘á»ƒ test vÃ  Ä‘iá»u trá»‹ há»— trá»£.";
+            topic = "Giảm bạch cầu ở mèo";
+            summary = "Giảm bạch cầu ở mèo thường được nhắc tới như FPV/feline panleukopenia, một bệnh virus nguy hiểm làm mèo suy sụp nhanh, nôn, tiêu chảy, bỏ ăn, sốt hoặc hạ thân nhiệt, mất nước và giảm miễn dịch. Đây không phải bệnh nên tự xử lý tại nhà. Nếu mèo con, mèo chưa tiêm phòng, lừ đừ, nôn/tiêu chảy, bỏ ăn hoặc nghi tiếp xúc mèo bệnh thì nên đi khám sớm để test và điều trị hỗ trợ.";
         } else if (containsAny(normalizedQuery, "da cho", "za cho", "benh da cho", "viem da cho")) {
-            topic = "Bá»‡nh da á»Ÿ chÃ³";
-            summary = "Bá»‡nh da á»Ÿ chÃ³ cÃ³ thá»ƒ do náº¥m, gháº»/ve Demodex-Sarcoptes, dá»‹ á»©ng, vi khuáº©n, kÃ½ sinh trÃ¹ng ngoÃ i da hoáº·c rá»‘i loáº¡n ná»™i tiáº¿t. Dáº¥u hiá»‡u cáº§n chÃº Ã½ gá»“m ngá»©a nhiá»u, rá»¥ng lÃ´ng tá»«ng máº£ng, da Ä‘á», váº£y gÃ u, mÃ¹i hÃ´i, má»¥n má»§, cháº£y dá»‹ch hoáº·c bÃ© liáº¿m/gÃ£i liÃªn tá»¥c. Viá»‡c nÃªn lÃ m lÃ  táº¯m/vá»‡ sinh theo hÆ°á»›ng dáº«n thÃº y, háº¡n cháº¿ gÃ£i/liáº¿m báº±ng vÃ²ng chá»‘ng liáº¿m náº¿u cáº§n, giáº·t á»• náº±m vÃ  Ä‘Æ°a chÃ³ Ä‘i khÃ¡m da liá»…u Ä‘á»ƒ soi da/cáº¡o da/xÃ©t nghiá»‡m náº¥m khi tá»•n thÆ°Æ¡ng lan rá»™ng, cÃ³ má»§, hÃ´i, Ä‘au hoáº·c kÃ©o dÃ i. KhÃ´ng tá»± dÃ¹ng thuá»‘c ngÆ°á»i, corticoid hay khÃ¡ng sinh khi chÆ°a khÃ¡m.";
+            topic = "Bệnh da ở chó";
+            summary = "Bệnh da ở chó có thể do nấm, ghẻ/ve Demodex-Sarcoptes, dị ứng, vi khuẩn, ký sinh trùng ngoài da hoặc rối loạn nội tiết. Dấu hiệu cần chú ý gồm ngứa nhiều, rụng lông từng mảng, da đỏ, vảy gàu, mùi hôi, mụn mủ, chảy dịch hoặc bé liếm/gãi liên tục. Việc nên làm là tắm/vệ sinh theo hướng dẫn thú y, hạn chế gãi/liếm bằng vòng chống liếm nếu cần, giặt ổ nằm và đưa chó đi khám da liễu để soi da/cạo da/xét nghiệm nấm khi tổn thương lan rộng, có mủ, hôi, đau hoặc kéo dài. Không tự dùng thuốc người, corticoid hay kháng sinh khi chưa khám.";
         } else if (containsAny(normalizedQuery, "nam da", "viem da", "da lieu")) {
-            topic = "Náº¥m/viÃªm da á»Ÿ mÃ¨o";
-            summary = "Náº¥m da á»Ÿ mÃ¨o thÆ°á»ng liÃªn quan dermatophyte nhÆ° Microsporum canis, cÃ³ thá»ƒ gÃ¢y rá»¥ng lÃ´ng tá»«ng máº£ng, da Ä‘á», váº£y gÃ u, ngá»©a vÃ  cÃ³ kháº£ nÄƒng lÃ¢y sang ngÆ°á»i hoáº·c thÃº khÃ¡c. NÃªn cÃ¡ch ly tÆ°Æ¡ng Ä‘á»‘i, vá»‡ sinh chÄƒn á»•/dá»¥ng cá»¥, rá»­a tay sau tiáº¿p xÃºc vÃ  Ä‘Æ°a mÃ¨o Ä‘i khÃ¡m Ä‘á»ƒ soi da/Ä‘Ã¨n Wood/nuÃ´i cáº¥y khi cáº§n. KhÃ´ng tá»± bÃ´i thuá»‘c ngÆ°á»i hoáº·c dÃ¹ng khÃ¡ng sinh náº¿u chÆ°a cÃ³ bÃ¡c sÄ© thÃº y chá»‰ Ä‘á»‹nh.";
+            topic = "Nấm/viêm da ở mèo";
+            summary = "Nấm da ở mèo thường liên quan dermatophyte như Microsporum canis, có thể gây rụng lông từng mảng, da đỏ, vảy gàu, ngứa và có khả năng lây sang người hoặc thú khác. Nên cách ly tương đối, vệ sinh chăn ổ/dụng cụ, rửa tay sau tiếp xúc và đưa mèo đi khám để soi da/đèn Wood/nuôi cấy khi cần. Không tự bôi thuốc người hoặc dùng kháng sinh nếu chưa có bác sĩ thú y chỉ định.";
         } else {
             return null;
         }
 
         StringBuilder sb = new StringBuilder();
-        sb.append("Dáº¡, Rexi Ä‘Ã£ tra DuckDuckGo vÃ  lá»c nguá»“n Ä‘Ãºng chá»§ Ä‘á» **").append(topic).append("**.\n\n");
+        sb.append("Dạ, Rexi đã tra DuckDuckGo và lọc nguồn đúng chủ đề **").append(topic).append("**.\n\n");
         sb.append(summary).append("\n\n");
-        sb.append("Nguá»“n tham kháº£o:\n");
+        sb.append("Nguồn tham khảo:\n");
         for (Map<String, String> item : webResults) {
             sb.append("- [")
-                    .append(item.getOrDefault("title", "Nguá»“n tham kháº£o").replace("[", "").replace("]", ""))
+                    .append(item.getOrDefault("title", "Nguồn tham khảo").replace("[", "").replace("]", ""))
                     .append("](")
                     .append(item.getOrDefault("url", ""))
                     .append(")\n");
@@ -1758,7 +1758,7 @@ ChatMessage systemMsg = new ChatMessage();
         if (normalizedQuery == null || normalizedQuery.isBlank()) return false;
         boolean petContext = containsAny(normalizedQuery, "meo", "cho", "cun", "thu cung", "boss", "be nha", "pet");
         boolean eyeContext = containsNormalizedTokenOrPhrase(normalizedQuery, "mat")
-                || containsAny(normalizedQuery, "con mat", "máº¯t", "eye", "giac mac", "dong tu");
+                || containsAny(normalizedQuery, "con mat", "mắt", "eye", "giac mac", "dong tu");
         boolean abnormalEye = containsAny(normalizedQuery,
                 "dom dom", "lo dom", "lo dom dom", "lom dom", "lo mom", "lo lo", "loang",
                 "do mat", "mat do", "duc mat", "mat duc", "mo mat", "mat mo",
@@ -1829,60 +1829,60 @@ ChatMessage systemMsg = new ChatMessage();
     }
 
     private ChatPersonaContext buildPersonaContext(boolean isStaff, String userRoleName, ChatRequestPlan plan, boolean isLoggedIn) {
-        String audience = isStaff ? ("nhÃ¢n sá»± ná»™i bá»™ phÃ²ng khÃ¡m - " + userRoleName) : "khÃ¡ch hÃ ng/chá»§ nuÃ´i";
+        String audience = isStaff ? ("nhân sự nội bộ phòng khám - " + userRoleName) : "khách hàng/chủ nuôi";
         String tone = isStaff
-                ? "chuyÃªn nghiá»‡p, ngáº¯n gá»n, trá»±c tiáº¿p, gá»i lÃ  sáº¿p hoáº·c Ä‘á»“ng nghiá»‡p"
-                : "áº¥m Ã¡p, dá»… hiá»ƒu, tráº¥n an, gá»i khÃ¡ch lÃ  Sen vÃ  thÃº cÆ°ng lÃ  bÃ©/boss";
+                ? "chuyên nghiệp, ngắn gọn, trực tiếp, gọi là sếp hoặc đồng nghiệp"
+                : "ấm áp, dễ hiểu, trấn an, gọi khách là Sen và thú cưng là bé/boss";
 
         String mode = switch (plan.route()) {
-            case MEDIA_AI -> "phÃ¢n tÃ­ch áº£nh/video thÃº y";
-            case MEDICAL_AI -> "tÆ° váº¥n y khoa thÃº y";
-            case WEB_AI -> "tÃ¬m kiáº¿m web cÃ³ trÃ­ch nguá»“n";
-            case AUTOPILOT_AI -> "há»— trá»£ thao tÃ¡c giao diá»‡n cÃ³ kiá»ƒm soÃ¡t";
-            case CHAT_AI -> "chat tÆ° váº¥n nhanh";
-            case DB_LOCAL -> "tra cá»©u dá»¯ liá»‡u há»‡ thá»‘ng";
-            case SENSITIVE_HANDOFF -> "chuyá»ƒn giao sang agent dá»¯ liá»‡u";
-            case QUICK_LOCAL -> "tráº£ lá»i nhanh ná»™i bá»™";
+            case MEDIA_AI -> "phân tích ảnh/video thú y";
+            case MEDICAL_AI -> "tư vấn y khoa thú y";
+            case WEB_AI -> "tìm kiếm web có trích nguồn";
+            case AUTOPILOT_AI -> "hỗ trợ thao tác giao diện có kiểm soát";
+            case CHAT_AI -> "chat tư vấn nhanh";
+            case DB_LOCAL -> "tra cứu dữ liệu hệ thống";
+            case SENSITIVE_HANDOFF -> "chuyển giao sang agent dữ liệu";
+            case QUICK_LOCAL -> "trả lời nhanh nội bộ";
         };
 
-        boolean isClinicalStaff = isStaff && ("BÃ¡c sÄ©".equals(userRoleName) || "Y tÃ¡".equals(userRoleName));
+        boolean isClinicalStaff = isStaff && ("Bác sĩ".equals(userRoleName) || "Y tá".equals(userRoleName));
 
         String allowedActions = switch (plan.route()) {
-            case MEDIA_AI -> "mÃ´ táº£ dáº¥u hiá»‡u nhÃ¬n tháº¥y, Ä‘Ã¡nh giÃ¡ má»©c Ä‘á»™ kháº©n, há»i thÃªm thÃ´ng tin cÃ²n thiáº¿u";
+            case MEDIA_AI -> "mô tả dấu hiệu nhìn thấy, đánh giá mức độ khẩn, hỏi thêm thông tin còn thiếu";
             case MEDICAL_AI -> isClinicalStaff
-                    ? "há»— trá»£ lÃ¢m sÃ ng chuyÃªn sÃ¢u: cháº©n Ä‘oÃ¡n phÃ¢n biá»‡t, xÃ©t nghiá»‡m cáº§n cÃ¢n nháº¯c, nhÃ³m thuá»‘c/phÃ¡c Ä‘á»“ tham kháº£o, cáº£nh bÃ¡o chá»‘ng chá»‰ Ä‘á»‹nh"
-                    : "tÆ° váº¥n chÄƒm sÃ³c/sÆ¡ cá»©u, nÃªu kháº£ nÄƒng, khuyáº¿n nghá»‹ Ä‘i khÃ¡m khi cÃ³ dáº¥u hiá»‡u nguy hiá»ƒm";
-            case WEB_AI -> "tá»•ng há»£p thÃ´ng tin tá»« nguá»“n tháº­t vÃ  trÃ­ch link rÃµ rÃ ng";
-            case AUTOPILOT_AI -> "chá»‰ dÃ¹ng tag thao tÃ¡c khi ngÆ°á»i dÃ¹ng yÃªu cáº§u rÃµ vÃ  data-ai-id tá»“n táº¡i";
-            case CHAT_AI -> "tráº£ lá»i trá»±c tiáº¿p, há»i thÃªm khi thiáº¿u dá»¯ kiá»‡n, hÆ°á»›ng dáº«n dÃ¹ng há»‡ thá»‘ng";
-            default -> "tráº£ lá»i theo dá»¯ liá»‡u Ä‘Ã£ Ä‘Æ°á»£c backend cung cáº¥p";
+                    ? "hỗ trợ lâm sàng chuyên sâu: chẩn đoán phân biệt, xét nghiệm cần cân nhắc, nhóm thuốc/phác đồ tham khảo, cảnh báo chống chỉ định"
+                    : "tư vấn chăm sóc/sơ cứu, nêu khả năng, khuyến nghị đi khám khi có dấu hiệu nguy hiểm";
+            case WEB_AI -> "tổng hợp thông tin từ nguồn thật và trích link rõ ràng";
+            case AUTOPILOT_AI -> "chỉ dùng tag thao tác khi người dùng yêu cầu rõ và data-ai-id tồn tại";
+            case CHAT_AI -> "trả lời trực tiếp, hỏi thêm khi thiếu dữ kiện, hướng dẫn dùng hệ thống";
+            default -> "trả lời theo dữ liệu đã được backend cung cấp";
         };
 
         String medicalForbidden = isClinicalStaff
-                ? "khÃ´ng ra quyáº¿t Ä‘á»‹nh thay bÃ¡c sÄ© phá»¥ trÃ¡ch; khÃ´ng kháº³ng Ä‘á»‹nh cháº©n Ä‘oÃ¡n khi thiáº¿u khÃ¡m trá»±c tiáº¿p/xÃ©t nghiá»‡m; khÃ´ng bá» qua cÃ¢n náº·ng, tuá»•i, loÃ i vÃ  chá»‘ng chá»‰ Ä‘á»‹nh khi nháº¯c tá»›i thuá»‘c; "
-                : "khÃ´ng cháº©n Ä‘oÃ¡n cháº¯c cháº¯n, khÃ´ng kÃª Ä‘Æ¡n thuá»‘c, khÃ´ng nÃªu liá»u dÃ¹ng/khÃ¡ng sinh/thuá»‘c kÃª Ä‘Æ¡n; ";
+                ? "không ra quyết định thay bác sĩ phụ trách; không khẳng định chẩn đoán khi thiếu khám trực tiếp/xét nghiệm; không bỏ qua cân nặng, tuổi, loài và chống chỉ định khi nhắc tới thuốc; "
+                : "không chẩn đoán chắc chắn, không kê đơn thuốc, không nêu liều dùng/kháng sinh/thuốc kê đơn; ";
 
-        String forbiddenActions = "khÃ´ng bá»‹a dá»¯ liá»‡u há»‡ thá»‘ng; khÃ´ng tá»± nháº­n Ä‘Ã£ tra DB náº¿u route khÃ´ng cho Ä‘á»c DB; "
+        String forbiddenActions = "không bịa dữ liệu hệ thống; không tự nhận đã tra DB nếu route không cho đọc DB; "
                 + medicalForbidden
-                + "khÃ´ng táº¡o link nguá»“n giáº£; "
-                + (isLoggedIn ? "" : "khÃ´ng táº¡o lá»‹ch/Ä‘Æ¡n/hÃ nh Ä‘á»™ng tÃ i khoáº£n khi ngÆ°á»i dÃ¹ng chÆ°a Ä‘Äƒng nháº­p; ")
-                + "khÃ´ng dÃ¹ng Autopilot náº¿u ngÆ°á»i dÃ¹ng chá»‰ há»i thÃ´ng tin.";
+                + "không tạo link nguồn giả; "
+                + (isLoggedIn ? "" : "không tạo lịch/đơn/hành động tài khoản khi người dùng chưa đăng nhập; ")
+                + "không dùng Autopilot nếu người dùng chỉ hỏi thông tin.";
 
         return new ChatPersonaContext(audience, mode, tone, allowedActions, forbiddenActions);
     }
 
     private String renderPersonaBlock(ChatPersonaContext persona, ChatRequestPlan plan, String currentPath) {
-        return "--- CHAT PERSONA CONTEXT (Báº®T BUá»˜C TUÃ‚N THá»¦) ---\n"
-                + "NgÆ°á»i Ä‘ang nÃ³i chuyá»‡n: " + persona.audience() + ".\n"
-                + "Cháº¿ Ä‘á»™ xá»­ lÃ½ request: " + persona.mode() + " (" + plan.route() + ").\n"
-                + "Provider Æ°u tiÃªn: " + plan.providerHint() + ".\n"
-                + "MÃ n hÃ¬nh hiá»‡n táº¡i: " + currentPath + ".\n"
-                + "Giá»ng Ä‘iá»‡u: " + persona.tone() + ".\n"
-                + "ÄÆ°á»£c phÃ©p: " + persona.allowedActions() + ".\n"
-                + "KhÃ´ng Ä‘Æ°á»£c phÃ©p: " + persona.forbiddenActions() + ".\n"
-                + "NguyÃªn táº¯c tá»‘c Ä‘á»™/Ä‘á»™ Ä‘Ãºng: tráº£ lá»i ngáº¯n vÃ  Ä‘Ãºng viá»‡c trÆ°á»›c; náº¿u cÃ¢u há»i lÃ  lá»‡nh chuyá»ƒn trang/thao tÃ¡c rÃµ rÃ ng thÃ¬ pháº£n há»“i báº±ng hÃ nh Ä‘á»™ng hoáº·c tag Ä‘iá»u hÆ°á»›ng ngay, khÃ´ng giáº£i thÃ­ch dÃ i; chá»‰ Ä‘á»c DB, web, DOM hoáº·c gá»i AI náº·ng khi route cho phÃ©p; náº¿u thiáº¿u dá»¯ liá»‡u thÃ¬ nÃ³i rÃµ thiáº¿u dá»¯ liá»‡u thay vÃ¬ Ä‘oÃ¡n.\n"
-                + "Hiá»ƒu ngÃ´n ngá»¯ tá»± nhiÃªn vÃ  Gen Z: cÃ¡c cÃ¡ch nÃ³i nhÆ° 'check giÃºp', 'qua trang', 'tele qua', 'book lá»‹ch', 'bill', 'acc', 'boss/be nhÃ  tÃ´i', 'khum/hÃ´ng' pháº£i Ä‘Æ°á»£c hiá»ƒu theo Ã½ Ä‘á»‹nh tháº­t, khÃ´ng báº¯t ngÆ°á»i dÃ¹ng nÃ³i Ä‘Ãºng thuáº­t ngá»¯ há»‡ thá»‘ng.\n"
-                + "--- Háº¾T PERSONA CONTEXT ---\n\n";
+        return "--- CHAT PERSONA CONTEXT (BẮT BUỘC TUÂN THỦ) ---\n"
+                + "Người đang nói chuyện: " + persona.audience() + ".\n"
+                + "Chế độ xử lý request: " + persona.mode() + " (" + plan.route() + ").\n"
+                + "Provider ưu tiên: " + plan.providerHint() + ".\n"
+                + "Màn hình hiện tại: " + currentPath + ".\n"
+                + "Giọng điệu: " + persona.tone() + ".\n"
+                + "Được phép: " + persona.allowedActions() + ".\n"
+                + "Không được phép: " + persona.forbiddenActions() + ".\n"
+                + "Nguyên tắc tốc độ/độ đúng: trả lời ngắn và đúng việc trước; nếu câu hỏi là lệnh chuyển trang/thao tác rõ ràng thì phản hồi bằng hành động hoặc tag điều hướng ngay, không giải thích dài; chỉ đọc DB, web, DOM hoặc gọi AI nặng khi route cho phép; nếu thiếu dữ liệu thì nói rõ thiếu dữ liệu thay vì đoán.\n"
+                + "Hiểu ngôn ngữ tự nhiên và Gen Z: các cách nói như 'check giúp', 'qua trang', 'tele qua', 'book lịch', 'bill', 'acc', 'boss/be nhà tôi', 'khum/hông' phải được hiểu theo ý định thật, không bắt người dùng nói đúng thuật ngữ hệ thống.\n"
+                + "--- HẾT PERSONA CONTEXT ---\n\n";
     }
 
     private ChatRequestPlan planChatRequest(String normalizedQuery, String rawQuery, boolean hasMedia) {
@@ -1933,14 +1933,14 @@ ChatMessage systemMsg = new ChatMessage();
                 return buildDoctorListReply();
             }
         } catch (Exception e) {
-            logger.warning("[FAST_DB] KhÃ´ng thá»ƒ tráº£ lá»i nhanh báº±ng DB: " + e.getMessage());
-            return "Dá»¯ liá»‡u há»‡ thá»‘ng hiá»‡n chÆ°a sáºµn sÃ ng Ä‘á»ƒ tra cá»©u chÃ­nh xÃ¡c. TÃ´i sáº½ khÃ´ng Ä‘oÃ¡n bá»«a pháº§n nÃ y; báº¡n kiá»ƒm tra láº¡i káº¿t ná»‘i SQL Server hoáº·c thá»­ láº¡i sau Ã­t giÃ¢y.";
+            logger.warning("[FAST_DB] Không thể trả lời nhanh bằng DB: " + e.getMessage());
+            return "Dữ liệu hệ thống hiện chưa sẵn sàng để tra cứu chính xác. Tôi sẽ không đoán bừa phần này; bạn kiểm tra lại kết nối SQL Server hoặc thử lại sau ít giây.";
         }
-        return "TÃ´i chÆ°a tÃ¬m tháº¥y dá»¯ liá»‡u khá»›p rÃµ trong há»‡ thá»‘ng. Báº¡n nháº­p cá»¥ thá»ƒ hÆ¡n tÃªn dá»‹ch vá»¥, bÃ¡c sÄ©, lá»‹ch trá»±c hoáº·c chuyá»ƒn sang Rexi Agent Ä‘á»ƒ quÃ©t dá»¯ liá»‡u sÃ¢u hÆ¡n.";
+        return "Tôi chưa tìm thấy dữ liệu khớp rõ trong hệ thống. Bạn nhập cụ thể hơn tên dịch vụ, bác sĩ, lịch trực hoặc chuyển sang Rexi Agent để quét dữ liệu sâu hơn.";
     }
 
     private String buildSensitiveDataHandoffReply() {
-        return "Dáº¡ pháº§n tra cá»©u khÃ¡ch hÃ ng, thÃº cÆ°ng, bá»‡nh Ã¡n hoáº·c hÃ³a Ä‘Æ¡n lÃ  dá»¯ liá»‡u ná»™i bá»™. Sen/sáº¿p vui lÃ²ng chuyá»ƒn sang **Rexi Agent** Ä‘á»ƒ há»‡ thá»‘ng kiá»ƒm tra quyá»n vÃ  quÃ©t dá»¯ liá»‡u tháº­t, trÃ¡nh chatbot thÆ°á»ng tÃ¬m nháº§m hoáº·c lá»™ dá»¯ liá»‡u.";
+        return "Dạ phần tra cứu khách hàng, thú cưng, bệnh án hoặc hóa đơn là dữ liệu nội bộ. Sen/sếp vui lòng chuyển sang **Rexi Agent** để hệ thống kiểm tra quyền và quét dữ liệu thật, tránh chatbot thường tìm nhầm hoặc lộ dữ liệu.";
     }
 
     private Map<String, Object> runAgentFromChat(
@@ -1950,7 +1950,7 @@ ChatMessage systemMsg = new ChatMessage();
     ) {
         if (username == null || auth == null) {
             return Map.of(
-                    "reply", "Dáº¡ pháº§n nÃ y cáº§n tra cá»©u dá»¯ liá»‡u ná»™i bá»™ thá»i gian thá»±c. Sen/sáº¿p Ä‘Äƒng nháº­p tÃ i khoáº£n trÆ°á»›c Ä‘á»ƒ Rexi kiá»ƒm tra quyá»n vÃ  láº¥y dá»¯ liá»‡u chÃ­nh xÃ¡c nhÃ©.",
+                    "reply", "Dạ phần này cần tra cứu dữ liệu nội bộ thời gian thực. Sen/sếp đăng nhập tài khoản trước để Rexi kiểm tra quyền và lấy dữ liệu chính xác nhé.",
                     "source", "agent_auth_required"
             );
         }
@@ -1978,9 +1978,9 @@ ChatMessage systemMsg = new ChatMessage();
                     "totalSteps", stepsData.size()
             );
         } catch (Exception e) {
-            logger.severe("[CHAT->AGENT] Lá»—i tá»± chuyá»ƒn Rexi Agent: " + e.getMessage());
+            logger.severe("[CHAT->AGENT] Lỗi tự chuyển Rexi Agent: " + e.getMessage());
             return Map.of(
-                    "reply", "Rexi Ä‘Ã£ tá»± chuyá»ƒn sang Agent Ä‘á»ƒ tra dá»¯ liá»‡u tháº­t nhÆ°ng gáº·p lá»—i há»‡ thá»‘ng. Sáº¿p thá»­ láº¡i sau Ã­t giÃ¢y hoáº·c kiá»ƒm tra backend/AI provider giÃºp em nhÃ©.",
+                    "reply", "Rexi đã tự chuyển sang Agent để tra dữ liệu thật nhưng gặp lỗi hệ thống. Sếp thử lại sau ít giây hoặc kiểm tra backend/AI provider giúp em nhé.",
                     "source", "react_agent_auto_error"
             );
         }
@@ -2040,7 +2040,7 @@ ChatMessage systemMsg = new ChatMessage();
                 "SELECT ten_dich_vu, gia, thoi_luong_phut FROM DichVu "
                         + "WHERE (da_xoa IS NULL OR LOWER(CAST(da_xoa AS varchar)) IN ('0', 'false')) "
                         + "AND (trang_thai IS NULL OR LOWER(CAST(trang_thai AS varchar)) IN ('1', 'true')) "
-                        + "ORDER BY ten_dich_vu LIMIT 30");
+                        + "ORDER BY ten_dich_vu OFFSET 0 ROWS FETCH NEXT 30 ROWS ONLY");
         List<String> terms = extractDbSearchTerms(normalizedQuery);
         List<Map<String, Object>> matched = new ArrayList<>();
         for (Map<String, Object> row : rows) {
@@ -2055,20 +2055,20 @@ ChatMessage systemMsg = new ChatMessage();
             if (match) matched.add(row);
         }
         if (matched.isEmpty() && !terms.isEmpty()) {
-            return "Rexi chÆ°a tÃ¬m tháº¥y dá»‹ch vá»¥ khá»›p rÃµ trong báº£ng giÃ¡. Sen nháº­p tÃªn dá»‹ch vá»¥ cá»¥ thá»ƒ hÆ¡n, vÃ­ dá»¥: khÃ¡m tá»•ng quÃ¡t, tiÃªm phÃ²ng, xÃ©t nghiá»‡m mÃ¡u.";
+            return "Rexi chưa tìm thấy dịch vụ khớp rõ trong bảng giá. Sen nhập tên dịch vụ cụ thể hơn, ví dụ: khám tổng quát, tiêm phòng, xét nghiệm máu.";
         }
         if (matched.isEmpty()) return null;
-        StringBuilder sb = new StringBuilder("Rexi tra báº£ng giÃ¡ trá»±c tiáº¿p tá»« há»‡ thá»‘ng:\n");
+        StringBuilder sb = new StringBuilder("Rexi tra bảng giá trực tiếp từ hệ thống:\n");
         int count = 0;
         for (Map<String, Object> row : matched) {
             if (++count > 8) break;
             sb.append("- ").append(row.get("ten_dich_vu"))
                     .append(": ").append(formatMoney(row.get("gia"))).append(" VND");
             Object minutes = row.get("thoi_luong_phut");
-            if (minutes != null) sb.append(" (~").append(minutes).append(" phÃºt)");
+            if (minutes != null) sb.append(" (~").append(minutes).append(" phút)");
             sb.append("\n");
         }
-        if (matched.size() > 8) sb.append("... cÃ²n ").append(matched.size() - 8).append(" dá»‹ch vá»¥ khÃ¡c, Sen há»i tÃªn dá»‹ch vá»¥ cá»¥ thá»ƒ Ä‘á»ƒ Rexi lá»c tiáº¿p.");
+        if (matched.size() > 8) sb.append("... còn ").append(matched.size() - 8).append(" dịch vụ khác, Sen hỏi tên dịch vụ cụ thể để Rexi lọc tiếp.");
         return sb.toString().trim();
     }
 
@@ -2083,25 +2083,25 @@ ChatMessage systemMsg = new ChatMessage();
                 "SELECT llv.ngay_lam, llv.gio_bat_dau, llv.gio_ket_thuc, llv.ghi_chu, nv.ho_ten, nv.chuyen_mon "
                         + "FROM LichLamViecNhanVien llv JOIN NhanVien nv ON nv.id_nhan_vien = llv.id_nhan_vien "
                         + "WHERE llv.ngay_lam BETWEEN ? AND ? AND (nv.da_xoa IS NULL OR LOWER(CAST(nv.da_xoa AS varchar)) IN ('0', 'false')) "
-                        + "AND (LOWER(COALESCE(nv.chuyen_mon, '')) LIKE '%bÃ¡c sÄ©%' "
+                        + "AND (LOWER(COALESCE(nv.chuyen_mon, '')) LIKE '%bác sĩ%' "
                         + "OR LOWER(COALESCE(nv.chuyen_mon, '')) LIKE '%bac si%' "
                         + "OR LOWER(COALESCE(nv.chuyen_mon, '')) LIKE '%doctor%' "
                         + "OR EXISTS (SELECT 1 FROM TaiKhoan tk WHERE tk.id_nhan_vien = nv.id_nhan_vien "
                         + "AND (tk.id_vai_tro IN ('VT-BS', 'VT-2', '2') OR UPPER(COALESCE(tk.id_vai_tro, '')) LIKE '%BS%'))) "
-                        + "AND LOWER(COALESCE(nv.ho_ten, '')) NOT LIKE '%kiá»ƒm thá»­%' "
+                        + "AND LOWER(COALESCE(nv.ho_ten, '')) NOT LIKE '%kiểm thử%' "
                         + "AND LOWER(COALESCE(nv.ho_ten, '')) NOT LIKE '%admin%' "
-                        + "AND LOWER(COALESCE(nv.ho_ten, '')) NOT LIKE '%tiáº¿p tÃ¢n%' "
-                        + "ORDER BY llv.ngay_lam, llv.gio_bat_dau LIMIT 12",
+                        + "AND LOWER(COALESCE(nv.ho_ten, '')) NOT LIKE '%tiếp tân%' "
+                        + "ORDER BY llv.ngay_lam, llv.gio_bat_dau OFFSET 0 ROWS FETCH NEXT 12 ROWS ONLY",
                 java.sql.Date.valueOf(from), java.sql.Date.valueOf(to));
         if (rows.isEmpty()) {
-            return "Rexi chÆ°a tháº¥y lá»‹ch trá»±c phÃ¹ há»£p trong há»‡ thá»‘ng cho khoáº£ng thá»i gian nÃ y. Sen gá»i hotline 0353.374.156 Ä‘á»ƒ Ä‘Æ°á»£c xÃ¡c nháº­n lá»‹ch khÃ¡m má»›i nháº¥t.";
+            return "Rexi chưa thấy lịch trực phù hợp trong hệ thống cho khoảng thời gian này. Sen gọi hotline 0353.374.156 để được xác nhận lịch khám mới nhất.";
         }
-        StringBuilder sb = new StringBuilder("Rexi tra lá»‹ch trá»±c trá»±c tiáº¿p tá»« há»‡ thá»‘ng:\n");
+        StringBuilder sb = new StringBuilder("Rexi tra lịch trực trực tiếp từ hệ thống:\n");
         for (Map<String, Object> row : rows) {
             sb.append("- ").append(row.get("ngay_lam"))
                     .append(": BS. ").append(row.get("ho_ten"))
-                    .append(" tá»« ").append(row.get("gio_bat_dau"))
-                    .append(" Ä‘áº¿n ").append(row.get("gio_ket_thuc"));
+                    .append(" từ ").append(row.get("gio_bat_dau"))
+                    .append(" đến ").append(row.get("gio_ket_thuc"));
             Object note = row.get("ghi_chu");
             if (note != null && !String.valueOf(note).isBlank()) sb.append(" (").append(note).append(")");
             sb.append("\n");
@@ -2113,18 +2113,18 @@ ChatMessage systemMsg = new ChatMessage();
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(
                 "SELECT ho_ten, chuyen_mon, gioi_thieu FROM NhanVien "
                         + "WHERE (da_xoa IS NULL OR LOWER(CAST(da_xoa AS varchar)) IN ('0', 'false')) "
-                        + "AND (LOWER(COALESCE(chuyen_mon, '')) LIKE '%bÃ¡c sÄ©%' "
+                        + "AND (LOWER(COALESCE(chuyen_mon, '')) LIKE '%bác sĩ%' "
                         + "OR LOWER(COALESCE(chuyen_mon, '')) LIKE '%bac si%' "
                         + "OR LOWER(COALESCE(chuyen_mon, '')) LIKE '%doctor%' "
                         + "OR EXISTS (SELECT 1 FROM TaiKhoan tk WHERE tk.id_nhan_vien = NhanVien.id_nhan_vien "
                         + "AND (tk.id_vai_tro IN ('VT-BS', 'VT-2', '2') OR UPPER(COALESCE(tk.id_vai_tro, '')) LIKE '%BS%'))) "
-                        + "AND LOWER(COALESCE(ho_ten, '')) NOT LIKE '%kiá»ƒm thá»­%' "
+                        + "AND LOWER(COALESCE(ho_ten, '')) NOT LIKE '%kiểm thử%' "
                         + "AND LOWER(COALESCE(ho_ten, '')) NOT LIKE '%admin%' "
-                        + "AND LOWER(COALESCE(ho_ten, '')) NOT LIKE '%tiáº¿p tÃ¢n%' "
+                        + "AND LOWER(COALESCE(ho_ten, '')) NOT LIKE '%tiếp tân%' "
                         + "AND (chuyen_mon IS NOT NULL OR gioi_thieu IS NOT NULL) "
-                        + "ORDER BY ho_ten LIMIT 8");
+                        + "ORDER BY ho_ten OFFSET 0 ROWS FETCH NEXT 8 ROWS ONLY");
         if (rows.isEmpty()) return null;
-        StringBuilder sb = new StringBuilder("Rexi tra danh sÃ¡ch bÃ¡c sÄ©/nhÃ¢n sá»± chuyÃªn mÃ´n tá»« há»‡ thá»‘ng:\n");
+        StringBuilder sb = new StringBuilder("Rexi tra danh sách bác sĩ/nhân sự chuyên môn từ hệ thống:\n");
         for (Map<String, Object> row : rows) {
             String doctorName = String.valueOf(row.get("ho_ten"));
             sb.append("- ");
@@ -2171,11 +2171,11 @@ ChatMessage systemMsg = new ChatMessage();
 
     private String buildMediaPrompt(String rawPrompt, boolean hasImage, boolean hasVideo) {
         String userPrompt = rawPrompt == null ? "" : rawPrompt.trim();
-        String mediaType = hasImage && hasVideo ? "áº£nh vÃ  video" : hasVideo ? "video" : "áº£nh";
-        String base = "Báº¡n Ä‘ang phÃ¢n tÃ­ch " + mediaType + " thÃº y báº±ng nÄƒng lá»±c Ä‘a phÆ°Æ¡ng tiá»‡n. "
-                + "HÃ£y mÃ´ táº£ dáº¥u hiá»‡u nhÃ¬n tháº¥y Ä‘Æ°á»£c, má»©c Ä‘á»™ kháº©n cáº¥p, cÃ¡c kháº£ nÄƒng nguyÃªn nhÃ¢n theo thá»© tá»± Æ°u tiÃªn, "
-                + "viá»‡c chá»§ nuÃ´i cÃ³ thá»ƒ lÃ m ngay, dáº¥u hiá»‡u cáº§n Ä‘i cáº¥p cá»©u vÃ  thÃ´ng tin cÃ²n thiáº¿u cáº§n há»i thÃªm. "
-                + "KhÃ´ng Ä‘Æ°á»£c cháº©n Ä‘oÃ¡n cháº¯c cháº¯n hoáº·c kÃª Ä‘Æ¡n chá»‰ dá»±a trÃªn áº£nh/video; náº¿u hÃ¬nh/video má» hoáº·c khÃ´ng Ä‘á»§ dá»¯ liá»‡u pháº£i nÃ³i rÃµ.";
+        String mediaType = hasImage && hasVideo ? "ảnh và video" : hasVideo ? "video" : "ảnh";
+        String base = "Bạn đang phân tích " + mediaType + " thú y bằng năng lực đa phương tiện. "
+                + "Hãy mô tả dấu hiệu nhìn thấy được, mức độ khẩn cấp, các khả năng nguyên nhân theo thứ tự ưu tiên, "
+                + "việc chủ nuôi có thể làm ngay, dấu hiệu cần đi cấp cứu và thông tin còn thiếu cần hỏi thêm. "
+                + "Không được chẩn đoán chắc chắn hoặc kê đơn chỉ dựa trên ảnh/video; nếu hình/video mờ hoặc không đủ dữ liệu phải nói rõ.";
         return userPrompt.isBlank() ? base : userPrompt + "\n\n" + base;
     }
 
@@ -2214,16 +2214,16 @@ ChatMessage systemMsg = new ChatMessage();
         if (input == null) return "";
         String normalized = java.text.Normalizer.normalize(input, java.text.Normalizer.Form.NFD)
                 .replaceAll("\\p{M}+", "")
-                .replace("Ä‘", "d")
-                .replace("Ä", "D");
+                .replace("đ", "d")
+                .replace("Đ", "D");
         return normalized
-                .replaceAll("[Ã Ã¡áº¡áº£Ã£Ã¢áº§áº¥áº­áº©áº«Äƒáº±áº¯áº·áº³áºµ]", "a")
-                .replaceAll("[Ã¨Ã©áº¹áº»áº½Ãªá»áº¿á»‡á»ƒá»…]", "e")
-                .replaceAll("[Ã¬Ã­á»‹á»‰Ä©]", "i")
-                .replaceAll("[Ã²Ã³á»á»ÃµÃ´á»“á»‘á»™á»•á»—Æ¡á»á»›á»£á»Ÿá»¡]", "o")
-                .replaceAll("[Ã¹Ãºá»¥á»§Å©Æ°á»«á»©á»±á»­á»¯]", "u")
-                .replaceAll("[á»³Ã½á»µá»·á»¹]", "y")
-                .replaceAll("[Ä‘]", "d");
+                .replaceAll("[àáạảãâầấậẩẫăằắặẳẵ]", "a")
+                .replaceAll("[èéẹẻẽêềếệểễ]", "e")
+                .replaceAll("[ìíịỉĩ]", "i")
+                .replaceAll("[òóọỏõôồốộổỗơờớợởỡ]", "o")
+                .replaceAll("[ùúụủũưừứựửữ]", "u")
+                .replaceAll("[ỳýỵỷỹ]", "y")
+                .replaceAll("[đ]", "d");
     }
 
     private String normalizeNoisyVietnameseForIntent(String input) {
@@ -2375,42 +2375,42 @@ ChatMessage systemMsg = new ChatMessage();
 
     private String buildEmergencyReply(String normalizedQuery, EmergencyTriage triage) {
         StringBuilder reply = new StringBuilder();
-        reply.append("[EMERGENCY] Sen bÃ¬nh tÄ©nh lÃ m ngay cÃ¡c bÆ°á»›c sÆ¡ cá»©u dÆ°á»›i Ä‘Ã¢y vÃ  gá»i Rexi theo hotline 0353.374.156.\n\n");
+        reply.append("[EMERGENCY] Sen bình tĩnh làm ngay các bước sơ cứu dưới đây và gọi Rexi theo hotline 0353.374.156.\n\n");
 
         if ("airway".equals(triage.category())) {
-            reply.append("**Nghi hÃ³c dá»‹ váº­t/ngáº¡t thá»Ÿ:**\n")
-                    .append("1. Má»Ÿ miá»‡ng bÃ© kiá»ƒm tra nhanh. Chá»‰ láº¥y dá»‹ váº­t ra náº¿u nhÃ¬n tháº¥y rÃµ vÃ  gáº¯p Ä‘Æ°á»£c an toÃ n.\n")
-                    .append("2. KhÃ´ng mÃ³c tay sÃ¢u vÃ¬ cÃ³ thá»ƒ Ä‘áº©y dá»‹ váº­t vÃ o trong.\n")
-                    .append("3. Náº¿u bÃ© khÃ´ng thá»Ÿ hoáº·c tÃ­m tÃ¡i, thá»±c hiá»‡n Heimlich cho thÃº cÆ°ng: Ä‘áº·t hai tay ngay sau xÆ°Æ¡ng sÆ°á»n, Ã©p nhanh hÆ°á»›ng lÃªn trÃªn 3-5 láº§n, rá»“i kiá»ƒm tra miá»‡ng.\n")
-                    .append("4. Náº¿u bÃ© nhá», cÃ³ thá»ƒ nÃ¢ng pháº§n thÃ¢n sau cao hÆ¡n Ä‘áº§u vÃ  vá»— cháº¯c 3-5 cÃ¡i giá»¯a hai báº£ vai.\n\n");
+            reply.append("**Nghi hóc dị vật/ngạt thở:**\n")
+                    .append("1. Mở miệng bé kiểm tra nhanh. Chỉ lấy dị vật ra nếu nhìn thấy rõ và gắp được an toàn.\n")
+                    .append("2. Không móc tay sâu vì có thể đẩy dị vật vào trong.\n")
+                    .append("3. Nếu bé không thở hoặc tím tái, thực hiện Heimlich cho thú cưng: đặt hai tay ngay sau xương sườn, ép nhanh hướng lên trên 3-5 lần, rồi kiểm tra miệng.\n")
+                    .append("4. Nếu bé nhỏ, có thể nâng phần thân sau cao hơn đầu và vỗ chắc 3-5 cái giữa hai bả vai.\n\n");
         } else if ("poison".equals(triage.category())) {
-            reply.append("**Nghi ngá»™ Ä‘á»™c:**\n")
-                    .append("1. Ngá»«ng cho Äƒn/uá»‘ng thÃªm vÃ  Ä‘Æ°a bÃ© trÃ¡nh xa nguá»“n Ä‘á»™c.\n")
-                    .append("2. KhÃ´ng tá»± gÃ¢y nÃ´n náº¿u chÆ°a cÃ³ bÃ¡c sÄ© hÆ°á»›ng dáº«n.\n")
-                    .append("3. Mang theo bao bÃ¬/cháº¥t nghi Ä‘á»™c khi Ä‘áº¿n phÃ²ng khÃ¡m.\n\n");
+            reply.append("**Nghi ngộ độc:**\n")
+                    .append("1. Ngừng cho ăn/uống thêm và đưa bé tránh xa nguồn độc.\n")
+                    .append("2. Không tự gây nôn nếu chưa có bác sĩ hướng dẫn.\n")
+                    .append("3. Mang theo bao bì/chất nghi độc khi đến phòng khám.\n\n");
         } else if ("neuro".equals(triage.category())) {
-            reply.append("**Co giáº­t/ngáº¥t/lá»‹m:**\n")
-                    .append("1. Dá»n váº­t cá»©ng quanh bÃ©, khÃ´ng giá»¯ cháº·t miá»‡ng hoáº·c kÃ©o lÆ°á»¡i.\n")
-                    .append("2. Ghi láº¡i thá»i gian co giáº­t vÃ  quay video ngáº¯n náº¿u an toÃ n.\n")
-                    .append("3. Náº¿u cÆ¡n kÃ©o dÃ i hÆ¡n 2-3 phÃºt hoáº·c láº·p láº¡i, Ä‘Æ°a bÃ© Ä‘i cáº¥p cá»©u ngay.\n\n");
+            reply.append("**Co giật/ngất/lịm:**\n")
+                    .append("1. Dọn vật cứng quanh bé, không giữ chặt miệng hoặc kéo lưỡi.\n")
+                    .append("2. Ghi lại thời gian co giật và quay video ngắn nếu an toàn.\n")
+                    .append("3. Nếu cơn kéo dài hơn 2-3 phút hoặc lặp lại, đưa bé đi cấp cứu ngay.\n\n");
         } else if ("heatstroke".equals(triage.category())) {
-            reply.append("**Sá»‘c nhiá»‡t/Say náº¯ng:**\n")
-                    .append("1. ÄÆ°a bÃ© vÃ o nÆ¡i bÃ³ng rÃ¢m, mÃ¡t máº» hoáº·c phÃ²ng cÃ³ Ä‘iá»u hÃ²a ngay láº­p tá»©c.\n")
-                    .append("2. DÃ¹ng khÄƒn Æ°á»›t (nÆ°á»›c mÃ¡t, KHÃ”NG dÃ¹ng nÆ°á»›c Ä‘Ã¡) lau vÃ  Ä‘áº¯p lÃªn vÃ¹ng bá»¥ng, nÃ¡ch, báº¹n vÃ  Ä‘á»‡m chÃ¢n bÃ©.\n")
-                    .append("3. Cho bÃ© uá»‘ng má»™t Ã­t nÆ°á»›c mÃ¡t náº¿u bÃ© cÃ²n tá»‰nh tÃ¡o, rá»“i Ä‘Æ°a Ä‘i cáº¥p cá»©u.\n\n");
+            reply.append("**Sốc nhiệt/Say nắng:**\n")
+                    .append("1. Đưa bé vào nơi bóng râm, mát mẻ hoặc phòng có điều hòa ngay lập tức.\n")
+                    .append("2. Dùng khăn ướt (nước mát, KHÔNG dùng nước đá) lau và đắp lên vùng bụng, nách, bẹn và đệm chân bé.\n")
+                    .append("3. Cho bé uống một ít nước mát nếu bé còn tỉnh táo, rồi đưa đi cấp cứu.\n\n");
         } else if ("trauma".equals(triage.category())) {
-            reply.append("**Cháº£y mÃ¡u/tai náº¡n:**\n")
-                    .append("1. DÃ¹ng gáº¡c sáº¡ch Ã©p trá»±c tiáº¿p lÃªn Ä‘iá»ƒm cháº£y mÃ¡u 5-10 phÃºt.\n")
-                    .append("2. Háº¡n cháº¿ di chuyá»ƒn bÃ© náº¿u nghi gÃ£y xÆ°Æ¡ng hoáº·c cháº¥n thÆ°Æ¡ng náº·ng.\n")
-                    .append("3. KhÃ´ng tá»± bÃ´i thuá»‘c dÃ¢n gian lÃªn váº¿t thÆ°Æ¡ng.\n\n");
+            reply.append("**Chảy máu/tai nạn:**\n")
+                    .append("1. Dùng gạc sạch ép trực tiếp lên điểm chảy máu 5-10 phút.\n")
+                    .append("2. Hạn chế di chuyển bé nếu nghi gãy xương hoặc chấn thương nặng.\n")
+                    .append("3. Không tự bôi thuốc dân gian lên vết thương.\n\n");
         } else {
-            reply.append("**ChÆ°a rÃµ tÃ¬nh huá»‘ng nhÆ°ng cÃ³ dáº¥u hiá»‡u kháº©n cáº¥p:**\n")
-                    .append("1. Äáº·t bÃ© á»Ÿ nÆ¡i thoÃ¡ng, yÃªn tÄ©nh, trÃ¡nh tá»¥ táº­p hoáº·c lay máº¡nh.\n")
-                    .append("2. Kiá»ƒm tra nhanh: bÃ© cÃ²n thá»Ÿ khÃ´ng, nÆ°á»›u/lÆ°á»¡i cÃ³ tÃ­m tÃ¡i khÃ´ng, cÃ³ cháº£y mÃ¡u hoáº·c co giáº­t khÃ´ng.\n")
-                    .append("3. Nháº¯n ngay triá»‡u chá»©ng chÃ­nh: khÃ³ thá»Ÿ, hÃ³c, ngá»™ Ä‘á»™c, co giáº­t, cháº£y mÃ¡u, tai náº¡n hoáº·c lá»‹m Ä‘i.\n\n");
+            reply.append("**Chưa rõ tình huống nhưng có dấu hiệu khẩn cấp:**\n")
+                    .append("1. Đặt bé ở nơi thoáng, yên tĩnh, tránh tụ tập hoặc lay mạnh.\n")
+                    .append("2. Kiểm tra nhanh: bé còn thở không, nướu/lưỡi có tím tái không, có chảy máu hoặc co giật không.\n")
+                    .append("3. Nhắn ngay triệu chứng chính: khó thở, hóc, ngộ độc, co giật, chảy máu, tai nạn hoặc lịm đi.\n\n");
         }
 
-        reply.append("Sen cho Rexi biáº¿t vá»‹ trÃ­ hiá»‡n táº¡i cá»§a Sen Ä‘á»ƒ Rexi hÆ°á»›ng dáº«n Ä‘Æ°á»ng Ä‘áº¿n cÆ¡ sá»Ÿ thÃº y gáº§n nháº¥t. Náº¿u á»Ÿ Gia LÃ¢m/HÃ  Ná»™i, Ä‘Æ°a bÃ© tá»›i PhÃ²ng khÃ¡m ThÃº y Rexi, Sá»‘ 68, NgÃµ 10, ÄÆ°á»ng NgÃ´ XuÃ¢n Quáº£ng, TrÃ¢u Quá»³, Gia LÃ¢m, HÃ  Ná»™i.");
+        reply.append("Sen cho Rexi biết vị trí hiện tại của Sen để Rexi hướng dẫn đường đến cơ sở thú y gần nhất. Nếu ở Gia Lâm/Hà Nội, đưa bé tới Phòng khám Thú y Rexi, Số 68, Ngõ 10, Đường Ngô Xuân Quảng, Trâu Quỳ, Gia Lâm, Hà Nội.");
         return reply.toString();
     }
 }

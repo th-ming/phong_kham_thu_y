@@ -171,7 +171,7 @@ public class LichHenController {
                         "  AND (EXTRACT(HOUR FROM h.gio_kham::time) * 60 + EXTRACT(MINUTE FROM h.gio_kham::time))::int < ? " +
                         "  AND (EXTRACT(HOUR FROM h.gio_kham::time) * 60 + EXTRACT(MINUTE FROM h.gio_kham::time))::int + COALESCE(d.thoi_luong_phut, 30) > ? " +
                         "  AND h.trang_thai NOT IN ('Đã hủy', 'DA_HUY', 'da_huy', 'TU_CHOI', 'Hết hạn')" +
-                        ") LIMIT 1";
+                        ") OFFSET 0 ROWS FETCH NEXT 1 ROWS ONLY";
                 try {
                     String autoDocId = jdbcTemplate.queryForObject(findDocQuery, String.class,
                             lichHen.getNgay_kham(), newStart, newEndMinute, newStartMinute);
@@ -457,7 +457,7 @@ public class LichHenController {
 
                 String sql = baseSelect + where +
                         " ORDER BY lh.ngay_kham DESC, lh.gio_kham DESC " +
-                        "OFFSET ? LIMIT ?";
+                        "OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
 
                 java.util.List<Map<String, Object>> content = jdbcTemplate.queryForList(sql, dataParams.toArray());
                 return ResponseEntity.ok(Map.of(
@@ -578,7 +578,7 @@ public class LichHenController {
                   "LEFT JOIN NhanVien nv ON lh.id_bac_si = nv.id_nhan_vien " +
                   "LEFT JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu " +
                   where + " ORDER BY lh.ngay_tao DESC " +
-                  "OFFSET ? LIMIT ?";
+                  "OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
             
             List<Map<String, Object>> content = jdbcTemplate.queryForList(sql, dataParams.toArray());
 

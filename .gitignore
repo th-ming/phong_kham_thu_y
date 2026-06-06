@@ -56,6 +56,8 @@ artifacts/
 video_out/
 test-results/
 **/test-results/
+.tmp/
+Frontend/output/playwright/
 
 # 8. Tài nguyên Lưu trữ (Archived Resources)
 Archived_Resources/

@@ -153,7 +153,7 @@ public class SystemController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> getNhatKy() {
         try {
-            List<Map<String, Object>> logs = jdbcTemplate.queryForList("SELECT * FROM NhatKyHeThong ORDER BY ngay_tao DESC LIMIT 100");
+            List<Map<String, Object>> logs = jdbcTemplate.queryForList("SELECT * FROM NhatKyHeThong ORDER BY ngay_tao DESC OFFSET 0 ROWS FETCH NEXT 100 ROWS ONLY");
             return ResponseEntity.ok(logs);
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of("message", "Lỗi tải nhật ký"));
@@ -257,7 +257,7 @@ public class SystemController {
     public ResponseEntity<?> taoDuLieuNenThieu() {
         try {
             Integer idChucNang = jdbcTemplate.queryForObject(
-                    "SELECT id_chuc_nang FROM ChucNang WHERE ma_chuc_nang = ? LIMIT 1",
+                    "SELECT id_chuc_nang FROM ChucNang WHERE ma_chuc_nang = ? OFFSET 0 ROWS FETCH NEXT 1 ROWS ONLY",
                     Integer.class,
                     "XET_NGHIEM");
             return ResponseEntity.ok(Map.of("message", "Dữ liệu nền đã tồn tại.", "id_chuc_nang", idChucNang));
@@ -272,14 +272,14 @@ public class SystemController {
                     "Xét nghiệm & Cận lâm sàng",
                     "Phiếu xét nghiệm, chỉ số và kết quả cận lâm sàng");
             Integer idChucNang = jdbcTemplate.queryForObject(
-                    "SELECT id_chuc_nang FROM ChucNang WHERE ma_chuc_nang = ? ORDER BY id_chuc_nang DESC LIMIT 1",
+                    "SELECT id_chuc_nang FROM ChucNang WHERE ma_chuc_nang = ? ORDER BY id_chuc_nang DESC OFFSET 0 ROWS FETCH NEXT 1 ROWS ONLY",
                     Integer.class,
                     "XET_NGHIEM");
             String idVaiTro = jdbcTemplate.queryForObject(
-                    "SELECT id_vai_tro FROM VaiTroHeThong ORDER BY id_vai_tro LIMIT 1",
+                    "SELECT id_vai_tro FROM VaiTroHeThong ORDER BY id_vai_tro OFFSET 0 ROWS FETCH NEXT 1 ROWS ONLY",
                     String.class);
             String idNhanVien = jdbcTemplate.queryForObject(
-                    "SELECT id_nhan_vien FROM NhanVien ORDER BY id_nhan_vien LIMIT 1",
+                    "SELECT id_nhan_vien FROM NhanVien ORDER BY id_nhan_vien OFFSET 0 ROWS FETCH NEXT 1 ROWS ONLY",
                     String.class);
             jdbcTemplate.update(
                     "INSERT INTO PhanQuyen (id_vai_tro, id_chuc_nang) VALUES (?, ?)",
@@ -293,7 +293,7 @@ public class SystemController {
             List<Map<String, Object>> lichHen = jdbcTemplate.queryForList(
                     "SELECT lh.id_lich_hen, lh.id_dich_vu, COALESCE(dv.gia, 0) AS don_gia " +
                             "FROM LichHen lh LEFT JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu " +
-                            "WHERE lh.id_dich_vu IS NOT NULL ORDER BY lh.ngay_tao DESC LIMIT 1");
+                            "WHERE lh.id_dich_vu IS NOT NULL ORDER BY lh.ngay_tao DESC OFFSET 0 ROWS FETCH NEXT 1 ROWS ONLY");
             if (!lichHen.isEmpty()) {
                 Map<String, Object> item = lichHen.get(0);
                 jdbcTemplate.update(
@@ -503,7 +503,7 @@ public class SystemController {
             List<String> emails = jdbcTemplate.queryForList(
                 "SELECT email FROM KhachHang " +
                 "WHERE email IS NOT NULL AND email <> '' AND (LOWER(CAST(nhan_email AS varchar)) IN ('1', 'true') OR nhan_email IS NULL) " +
-                "AND (da_xoa IS NULL OR LOWER(CAST(da_xoa AS varchar)) IN ('0', 'false')) LIMIT " + MASS_EMAIL_MAX_BATCH,
+                "AND (da_xoa IS NULL OR LOWER(CAST(da_xoa AS varchar)) IN ('0', 'false')) OFFSET 0 ROWS FETCH NEXT " + MASS_EMAIL_MAX_BATCH + " ROWS ONLY,
                 String.class
             );
 

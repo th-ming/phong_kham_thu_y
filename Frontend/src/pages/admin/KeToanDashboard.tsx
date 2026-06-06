@@ -513,20 +513,17 @@ const KeToanDashboard: React.FC = () => {
                         <span className="material-symbols-outlined" style={{ fontSize: '15px', color: '#5eead4', animation: 'spin 3s infinite linear' }}>sync</span>
                         <span>Dữ liệu thời gian thực cập nhật lúc: {lastUpdated}</span>
                     </div>
-                        <span className="material-symbols-outlined" style={{ fontSize: '15px', color: '#5eead4', animation: 'spin 3s infinite linear' }}>sync</span>
-                        <span>Dữ liệu thời gian thực cập nhật lúc: {lastUpdated}</span>
-                    </div>
                 )}
             </div>
 
             {/* Các thẻ thống kê */}
             <div className="ketoan-kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '24px', marginBottom: '40px' }}>
                 <KpiCard
-                    index={0}
                     accent="#10b981"
                     title="DOANH THU HÔM NAY"
                     value={<AnimatedNumber value={stats.todayRevenue} format="currency" />}
                     icon={<KpiIcon name="money" />}
+                    details={
                         <div>
                             <strong>Chi tiết thực thu hôm nay</strong>
                             <p>{financeInsight.paidToday.length} hóa đơn đã thanh toán, tổng {formatTienVND(stats.todayRevenue)}.</p>

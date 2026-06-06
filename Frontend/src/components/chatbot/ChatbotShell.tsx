@@ -148,7 +148,9 @@ export const ChatbotShell: React.FC<ChatbotShellProps> = (props) => {
                     {/* Backdrop mờ hỗ trợ mobile & desktop (chủ đích của ) */}
                     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(3px)', zIndex: 1100 }} onClick={() => setIsOpen(false)}></div>
 
-                    <div id="chatWindow" className="glass-card animate-fade-in"
+                    <div
+                        id="chatWindow"
+                        className={`glass-card animate-fade-in ${hasMobileBottomNav ? "chat-window-has-mobile-nav" : ""}`}
                         onDragOver={handleDragOver}
                         onDragLeave={handleDragLeave}
                         onDrop={handleDrop}
@@ -157,11 +159,11 @@ export const ChatbotShell: React.FC<ChatbotShellProps> = (props) => {
                             bottom: isMobile
                                 ? (hasMobileBottomNav ? '164px' : '80px')
                                 : '110px',
-                            right: isMobile ? '16px' : '30px',
-                            width: isMobile ? 'calc(100vw - 32px)' : 'min(450px, calc(100vw - 60px))',
-                            height: isMobile ? 'min(650px, calc(100vh - 110px))' : '600px',
+                            right: isMobile ? '10px' : '30px',
+                            width: isMobile ? 'min(430px, calc(100vw - 20px))' : 'min(450px, calc(100vw - 60px))',
+                            height: isMobile ? 'min(680px, calc(var(--rexi-viewport-height, 100dvh) - 24px))' : '600px',
                             zIndex: 1101,
-                            borderRadius: isMobile ? '28px' : '24px', overflow: 'hidden', display: 'flex', flexDirection: 'column',
+                            borderRadius: isMobile ? '22px' : '24px', overflow: 'hidden', display: 'flex', flexDirection: 'column',
                             border: activeTab === 'agent' ? '2.5px solid rgba(244, 63, 94, 0.35)' : '2.5px solid rgba(16, 185, 129, 0.35)',
                             boxShadow: activeTab === 'agent' ? '0 20px 50px rgba(244, 63, 94, 0.2)' : '0 20px 50px rgba(16, 185, 129, 0.2)',
                             transition: 'all 0.4s ease',
@@ -570,7 +572,7 @@ export const ChatbotShell: React.FC<ChatbotShellProps> = (props) => {
 
                         {/* 5. Ô NHẬP TIN NHẮN TẬP TRUNG (CONSOLIDATED INPUT DYNAMIC STYLING) */}
                         <div style={{
-                            padding: isMobile ? '12px 14px max(12px, env(safe-area-inset-bottom, 0px))' : '16px 20px',
+                            padding: isMobile ? '10px 12px max(10px, env(safe-area-inset-bottom, 0px))' : '16px 20px',
                             background: 'var(--surface)', borderTop: '1px solid var(--gray-200)', display: 'flex', alignItems: 'flex-end', gap: isMobile ? '8px' : '12px',
                             flex: '0 0 auto',
                             minWidth: 0
@@ -581,13 +583,13 @@ export const ChatbotShell: React.FC<ChatbotShellProps> = (props) => {
                                     <input data-ai-id="input-chatbot-jmt6"
                                         type="file"
                                         ref={fileInputRef}
-                                        accept="image/*,video/*" multiple style={{ display: 'none' }} onChange={handleFileChange} /> <button data-ai-id="button-chatbot-veod" onClick={() => fileInputRef.current?.click()} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, flexShrink: 0, width: isMobile ? '40px' : '28px', height: isMobile ? '42px' : '28px' }}> <span className="material-symbols-outlined" style={{ fontSize: '28px' }}>add_circle</span> </button> </> )} {/* MICROPHONE NHẬN DIỆN GIỌNG NÓI */}
+                                        accept="image/*,video/*" multiple style={{ display: 'none' }} onChange={handleFileChange} /> <button data-ai-id="button-chatbot-veod" onClick={() => fileInputRef.current?.click()} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, flexShrink: 0, width: isMobile ? '34px' : '28px', height: isMobile ? '38px' : '28px' }}> <span className="material-symbols-outlined" style={{ fontSize: isMobile ? '25px' : '28px' }}>add_circle</span> </button> </> )} {/* MICROPHONE NHẬN DIỆN GIỌNG NÓI */}
                             <button data-ai-id="button-chatbot-4mbq"
                                 onClick={toggleListening}
-                                style={{ background: 'none', border: 'none', color: isListening ? (voiceMode === 'hold' ? '#f59e0b' : voiceMode === 'fast' ? '#22c55e' : '#ef4444') : '#94a3b8', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, flex: '0 0 auto', width: isMobile ? '40px' : '32px', height: isMobile ? '42px' : '34px' }}
+                                style={{ background: 'none', border: 'none', color: isListening ? (voiceMode === 'hold' ? '#f59e0b' : voiceMode === 'fast' ? '#22c55e' : '#ef4444') : '#94a3b8', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, flex: '0 0 auto', width: isMobile ? '34px' : '32px', height: isMobile ? '38px' : '34px' }}
                                 title={isListening ? `Đang nghe liên tục (${voiceMode === 'fast' ? 'nhanh' : voiceMode === 'hold' ? 'đang chờ' : 'bình thường'})` : "Bấm một lần để nói chuyện liên tục với Rexi"}
                             >
-                                <span className="material-symbols-outlined" style={{ fontSize: '28px', animation: isListening ? 'blink 1.5s infinite' : 'none' }}>
+                                <span className="material-symbols-outlined" style={{ fontSize: isMobile ? '25px' : '28px', animation: isListening ? 'blink 1.5s infinite' : 'none' }}>
                                     {isListening ? 'mic' : 'mic_none'}
                                 </span>
                             </button>
@@ -628,9 +630,9 @@ export const ChatbotShell: React.FC<ChatbotShellProps> = (props) => {
                                     placeholder={activeTab === 'agent' ? (isMobile ? "Lệnh" : "Lệnh tác vụ cho Agent (e.g. đặt lịch, tra cứu mạng)...") : (isMobile ? "Tin nhắn" : "Nhắn tin cho Bác sĩ Thú y Rexi...")}
                                     rows={1}
                                     style={{
-                                        width: '100%', minWidth: 0, border: '1px solid var(--gray-300)', borderRadius: '18px', padding: '10px 16px',
+                                        width: '100%', minWidth: 0, border: '1px solid var(--gray-300)', borderRadius: isMobile ? '16px' : '18px', padding: isMobile ? '9px 14px' : '10px 16px',
                                         resize: 'none', background: 'var(--background)', color: 'var(--ink)', fontSize: '0.88rem',
-                                        outline: 'none', maxHeight: '120px', lineHeight: '1.4'
+                                        outline: 'none', maxHeight: isMobile ? '96px' : '120px', lineHeight: '1.4'
                                     }}
                                 />
                                 {((activeTab === 'standard' ? input.length : agentInput.length) > 0) && (
@@ -703,7 +705,7 @@ export const ChatbotShell: React.FC<ChatbotShellProps> = (props) => {
                                 disabled={(activeTab === 'agent' ? agentLoading : false) || isCompressing}
                                 style={{
                                     background: activeTab === 'agent' ? 'linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)' : 'var(--chat-gradient)',
-                                    color: 'white', border: 'none', borderRadius: '50%', width: '42px', height: '42px', flexShrink: 0,
+                                    color: 'white', border: 'none', borderRadius: '50%', width: isMobile ? '40px' : '42px', height: isMobile ? '40px' : '42px', flexShrink: 0,
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                                     cursor: ((activeTab === 'agent' ? agentLoading : false) || isCompressing) ? 'not-allowed' : 'pointer',
                                     opacity: ((activeTab === 'agent' ? agentLoading : false) || isCompressing) ? 0.72 : 1,

@@ -79,8 +79,7 @@ public class AgentController {
                          "FROM ThuCung tc " +
                          "JOIN KhachHang kh ON tc.id_khach_hang = kh.id_khach_hang " +
                          "WHERE (kh.da_xoa IS NULL OR LOWER(CAST(kh.da_xoa AS varchar)) IN ('0', 'false')) " +
-                         "AND (tc.da_xoa IS NULL OR LOWER(CAST(tc.da_xoa AS varchar)) IN ('0', 'false')) " +
-                         "AND tc.id_khach_hang = ? LIMIT 3";
+                         "AND (tc.da_xoa IS NULL OR LOWER(CAST(tc.da_xoa AS varchar)) IN ('0', 'false')) " +" AND tc.id_khach_hang = ? OFFSET 0 ROWS FETCH NEXT 3 ROWS ONLY";
             
             List<Map<String, Object>> pets = jdbcTemplate.queryForList(sql, idKhachHang);
             List<Map<String, Object>> reminders = new ArrayList<>();
@@ -227,38 +226,38 @@ public class AgentController {
                 List<Object> params = new ArrayList<>();
                 com.rexi.pkty.util.SmartSearchSql.appendTokenSearch(where, params, keyword,
                         "LOWER(COALESCE(tc.ten_thu_cung, '')) LIKE LOWER(?)");
-                sqlExecuted = where.toString() + " LIMIT 50";
+                sqlExecuted = where.toString() + " OFFSET 0 ROWS FETCH NEXT 50 ROWS ONLY";
                 dbResults = jdbcTemplate.queryForList(sqlExecuted, params.toArray());
             } else if ("PET_BREED".equals(searchType) && !keyword.isEmpty()) {
                 StringBuilder where = new StringBuilder(sql);
                 List<Object> params = new ArrayList<>();
                 com.rexi.pkty.util.SmartSearchSql.appendTokenSearch(where, params, keyword,
                         "LOWER(COALESCE(tc.giong, '')) LIKE LOWER(?)");
-                sqlExecuted = where.toString() + " LIMIT 50";
+                sqlExecuted = where.toString() + " OFFSET 0 ROWS FETCH NEXT 50 ROWS ONLY";
                 dbResults = jdbcTemplate.queryForList(sqlExecuted, params.toArray());
             } else if ("PET_TYPE".equals(searchType) && !keyword.isEmpty()) {
                 StringBuilder where = new StringBuilder(sql);
                 List<Object> params = new ArrayList<>();
                 com.rexi.pkty.util.SmartSearchSql.appendTokenSearch(where, params, keyword,
                         "LOWER(COALESCE(tc.loai, '')) LIKE LOWER(?)");
-                sqlExecuted = where.toString() + " LIMIT 50";
+                sqlExecuted = where.toString() + " OFFSET 0 ROWS FETCH NEXT 50 ROWS ONLY";
                 dbResults = jdbcTemplate.queryForList(sqlExecuted, params.toArray());
             } else if ("CUSTOMER_NAME".equals(searchType) && !keyword.isEmpty()) {
                 StringBuilder where = new StringBuilder(sql);
                 List<Object> params = new ArrayList<>();
                 com.rexi.pkty.util.SmartSearchSql.appendTokenSearch(where, params, keyword,
                         "LOWER(COALESCE(kh.ten_khach_hang, '')) LIKE LOWER(?)");
-                sqlExecuted = where.toString() + " LIMIT 50";
+                sqlExecuted = where.toString() + " OFFSET 0 ROWS FETCH NEXT 50 ROWS ONLY";
                 dbResults = jdbcTemplate.queryForList(sqlExecuted, params.toArray());
             } else if ("CUSTOMER_EMAIL".equals(searchType) && !keyword.isEmpty()) {
                 StringBuilder where = new StringBuilder(sql);
                 List<Object> params = new ArrayList<>();
                 where.append(" AND kh.email LIKE ?");
                 params.add("%" + keyword + "%");
-                sqlExecuted = where.toString() + " LIMIT 50";
+                sqlExecuted = where.toString() + " OFFSET 0 ROWS FETCH NEXT 50 ROWS ONLY";
                 dbResults = jdbcTemplate.queryForList(sqlExecuted, params.toArray());
             } else {
-                sqlExecuted = sql + " LIMIT 50";
+                sqlExecuted = sql + " OFFSET 0 ROWS FETCH NEXT 50 ROWS ONLY";
                 dbResults = jdbcTemplate.queryForList(sqlExecuted);
             }
 

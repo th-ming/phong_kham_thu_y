@@ -7,7 +7,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface DichVuRepository extends JpaRepository<DichVu, String> {
     
-    @org.springframework.data.jpa.repository.Query(value = "SELECT * FROM DichVu WHERE LOWER(CAST(trang_thai AS varchar)) IN ('1', 'true') LIMIT 8", nativeQuery = true)
+    @org.springframework.data.jpa.repository.Query(value = "SELECT * FROM DichVu WHERE LOWER(CAST(trang_thai AS varchar)) IN ('1', 'true') OFFSET 0 ROWS FETCH NEXT 8 ROWS ONLY", nativeQuery = true)
     java.util.List<DichVu> findTop8ActiveServices();
 
     @org.springframework.data.jpa.repository.Query(value = "SELECT * FROM DichVu WHERE LOWER(CAST(trang_thai AS varchar)) IN ('1', 'true')", nativeQuery = true)

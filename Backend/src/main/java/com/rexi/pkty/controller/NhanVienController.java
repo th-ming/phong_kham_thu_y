@@ -237,7 +237,7 @@ public class NhanVienController {
             }
 
             // Lấy role nhân viên từ DB (không fallback đoán bằng prefix)
-            String getRoleSql = "SELECT id_vai_tro FROM TaiKhoan WHERE id_nhan_vien = ? LIMIT 1";
+            String getRoleSql = "SELECT id_vai_tro FROM TaiKhoan WHERE id_nhan_vien = ? OFFSET 0 ROWS FETCH NEXT 1 ROWS ONLY";
             String staffRoleId = null;
             try {
                 staffRoleId = jdbcTemplate.queryForObject(getRoleSql, String.class, lich.getId_nhan_vien());

@@ -109,7 +109,6 @@ const QuanLyKhoThuoc: React.FC = () => {
         tbody tr:hover {
           background: var(--primary-light) !important;
         }
-      `}
         @media screen and (max-width: 1024px) {
           .admin-inventory-page {
             display: grid !important;
