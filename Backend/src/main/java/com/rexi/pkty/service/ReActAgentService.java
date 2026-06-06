@@ -794,10 +794,10 @@ public class ReActAgentService {
 
     private String findLockedCustomerId(String name, String phone) {
         StringBuilder sql = new StringBuilder(
-                "SELECT TOP 1 tk.id_khach_hang FROM TaiKhoan tk " +
+                "SELECT tk.id_khach_hang FROM TaiKhoan tk " +
                 "LEFT JOIN KhachHang kh ON tk.id_khach_hang = kh.id_khach_hang " +
                 "WHERE tk.id_khach_hang IS NOT NULL " +
-                "AND (tk.trang_thai = N'Đã khóa' OR tk.trang_thai = 'inactive')"
+                "AND (tk.trang_thai = 'Đã khóa' OR tk.trang_thai = 'inactive')"
         );
         List<Object> params = new ArrayList<>();
         if (phone != null && !phone.isBlank()) {

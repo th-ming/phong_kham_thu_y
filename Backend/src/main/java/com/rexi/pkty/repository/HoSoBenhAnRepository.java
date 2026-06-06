@@ -5,32 +5,15 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
 @Repository
 public interface HoSoBenhAnRepository extends JpaRepository<HoSoBenhAn, String> {
 
-    // Call SP tao hs benh an
-    @Query(value = "EXEC sp_AddMedicalRecord :apptId, :date, :doctorId, :weight, :temp, :symptoms, :diagnosis, :treatment, :care, :creatorId", nativeQuery = true)
-    List<Map<String, Object>> callSpAddMedicalRecord(
-        @Param("apptId") String apptId,
-        @Param("date") LocalDate date,
-        @Param("doctorId") String doctorId,
-        @Param("weight") BigDecimal weight,
-        @Param("temp") BigDecimal temp,
-        @Param("symptoms") String symptoms,
-        @Param("diagnosis") String diagnosis,
-        @Param("treatment") String treatment,
-        @Param("care") String care,
-        @Param("creatorId") String creatorId
-    );
-
     // Get ket qua XN tu BenhAn_XetNghiem
     @Query(value = "SELECT bx.*, COALESCE(l.ten_xet_nghiem, bx.id_loai_xet_nghiem) AS ten_xet_nghiem FROM BenhAn_XetNghiem bx " +
-                   "LEFT JOIN LoaiXetNghiem l ON bx.id_loai_xet_nghiem = CONVERT(VARCHAR(50), l.id_loai_xet_nghiem) " +
+                   "LEFT JOIN LoaiXetNghiem l ON bx.id_loai_xet_nghiem = CAST(l.id_loai_xet_nghiem AS varchar) " +
                    "WHERE bx.id_ho_so = :hosoId", nativeQuery = true)
     List<Map<String, Object>> findXetNghiemByHoSo(@Param("hosoId") String hosoId);
 
@@ -55,7 +38,7 @@ public interface HoSoBenhAnRepository extends JpaRepository<HoSoBenhAn, String> 
 
     // Get all XN (ADMIN)
     @Query(value = "SELECT bx.*, COALESCE(l.ten_xet_nghiem, bx.id_loai_xet_nghiem) AS ten_xet_nghiem, nv.ho_ten as ten_bac_si FROM BenhAn_XetNghiem bx " +
-                   "LEFT JOIN LoaiXetNghiem l ON bx.id_loai_xet_nghiem = CONVERT(VARCHAR(50), l.id_loai_xet_nghiem) " +
+                   "LEFT JOIN LoaiXetNghiem l ON bx.id_loai_xet_nghiem = CAST(l.id_loai_xet_nghiem AS varchar) " +
                    "LEFT JOIN NhanVien nv ON bx.id_bac_si = nv.id_nhan_vien " +
                    "ORDER BY bx.ngay_lay_mau DESC", nativeQuery = true)
     List<Map<String, Object>> getAllXetNghiem();

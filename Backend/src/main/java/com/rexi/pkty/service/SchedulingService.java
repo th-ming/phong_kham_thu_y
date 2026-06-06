@@ -89,7 +89,7 @@ public class SchedulingService {
                     "FROM HoaDon hd " +
                     "JOIN KhachHang kh ON hd.id_khach_hang = kh.id_khach_hang " +
                     "WHERE UPPER(hd.trang_thai) = 'CHO_THANH_TOAN' " +
-                    "AND CAST(hd.ngay_lap_hoa_don AS DATE) = CAST(GETDATE() AS DATE)";
+                    "AND CAST(hd.ngay_lap_hoa_don AS DATE) = CURRENT_DATE";
 
             List<Map<String, Object>> unpaidInvoices = jdbcTemplate.queryForList(sql);
 

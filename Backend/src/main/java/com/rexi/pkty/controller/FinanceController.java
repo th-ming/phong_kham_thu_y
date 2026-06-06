@@ -74,13 +74,41 @@ public class FinanceController {
                     .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền lập hóa đơn!"));
         }
         try {
-            List<Map<String, Object>> result = hoaDonRepository.callSpLapHoaDon(
-                    hd.getId_lich_hen(),
-                    hd.getThue_suat(),
-                    hd.getTong_giam_gia(),
-                    hd.getId_nhan_vien(),
-                    hd.getGhi_chu());
-            return ResponseEntity.ok(result.get(0));
+            if (hd.getId_hoa_don() == null || hd.getId_hoa_don().isBlank()) {
+                hd.setId_hoa_don("HD-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+            }
+            if (hd.getNgay_lap() == null) hd.setNgay_lap(java.time.LocalDateTime.now());
+            if (hd.getNgay_lap_hoa_don() == null) hd.setNgay_lap_hoa_don(java.time.LocalDateTime.now());
+
+            if (hd.getId_lich_hen() != null && (hd.getId_khach_hang() == null || hd.getId_nhan_vien() == null)) {
+                List<Map<String, Object>> apptRows = jdbcTemplate.queryForList(
+                        "SELECT lh.id_khach_hang, lh.id_bac_si, COALESCE(dv.gia, 0) AS gia_dich_vu " +
+                                "FROM LichHen lh LEFT JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu WHERE lh.id_lich_hen = ?",
+                        hd.getId_lich_hen());
+                if (!apptRows.isEmpty()) {
+                    Map<String, Object> appt = apptRows.get(0);
+                    if (hd.getId_khach_hang() == null) hd.setId_khach_hang((String) appt.get("id_khach_hang"));
+                    if (hd.getId_nhan_vien() == null) hd.setId_nhan_vien((String) appt.get("id_bac_si"));
+                    if (hd.getTong_tien_truoc_giam_gia() == null && appt.get("gia_dich_vu") instanceof Number n) {
+                        hd.setTong_tien_truoc_giam_gia(new java.math.BigDecimal(n.toString()));
+                    }
+                }
+            }
+
+            java.math.BigDecimal before = hd.getTong_tien_truoc_giam_gia() != null ? hd.getTong_tien_truoc_giam_gia() : java.math.BigDecimal.ZERO;
+            java.math.BigDecimal discount = hd.getTong_giam_gia() != null ? hd.getTong_giam_gia() : java.math.BigDecimal.ZERO;
+            java.math.BigDecimal taxRate = hd.getThue_suat() != null ? hd.getThue_suat() : java.math.BigDecimal.ZERO;
+            java.math.BigDecimal afterDiscount = before.subtract(discount).max(java.math.BigDecimal.ZERO);
+            java.math.BigDecimal tax = afterDiscount.multiply(taxRate).divide(new java.math.BigDecimal("100"));
+
+            hd.setTong_tien_ban_dau(before);
+            hd.setTong_tien_sau_giam_gia(afterDiscount);
+            hd.setTong_tien_cuoi(hd.getTong_tien_cuoi() != null ? hd.getTong_tien_cuoi() : afterDiscount.add(tax));
+            hd.setThue_phai_nop(tax);
+            if (hd.getTrang_thai() == null) hd.setTrang_thai("CHO_THANH_TOAN");
+            if (hd.getTrang_thai_thanh_toan() == null) hd.setTrang_thai_thanh_toan("Chờ thanh toán");
+
+            return ResponseEntity.ok(hoaDonRepository.save(hd));
         } catch (Exception e) {
             return ResponseEntity.status(400).body(Map.of("message", "Lỗi lập hóa đơn: " + e.getMessage()));
         }

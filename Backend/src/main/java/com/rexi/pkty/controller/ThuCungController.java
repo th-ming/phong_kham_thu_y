@@ -45,19 +45,19 @@ public class ThuCungController {
             List<Map<String, Object>> allPets;
             if (search != null && !search.trim().isEmpty()) {
                 java.util.List<Object> params = new java.util.ArrayList<>();
-                StringBuilder where = new StringBuilder("WHERE (t.da_xoa = 0 OR t.da_xoa IS NULL)");
+                StringBuilder where = new StringBuilder("WHERE (t.da_xoa IS NULL OR LOWER(CAST(t.da_xoa AS varchar)) IN ('0', 'false'))");
                 com.rexi.pkty.util.SmartSearchSql.appendTokenSearch(where, params, search,
-                        "t.ten_thu_cung COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI",
-                        "t.loai COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI",
-                        "t.giong COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI",
-                        "k.ten_khach_hang COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI");
+                        "LOWER(COALESCE(t.ten_thu_cung, '')) LIKE LOWER(?)",
+                        "LOWER(COALESCE(t.loai, '')) LIKE LOWER(?)",
+                        "LOWER(COALESCE(t.giong, '')) LIKE LOWER(?)",
+                        "LOWER(COALESCE(k.ten_khach_hang, '')) LIKE LOWER(?)");
                 sql = "SELECT t.*, k.ten_khach_hang FROM ThuCung t " +
                       "LEFT JOIN KhachHang k ON t.id_khach_hang = k.id_khach_hang " +
                       where + " " +
                       "ORDER BY t.ngay_tao DESC";
                 allPets = jdbcTemplate.queryForList(sql, params.toArray());
             } else {
-                sql = "SELECT * FROM ThuCung WHERE da_xoa = 0 OR da_xoa IS NULL ORDER BY ngay_tao DESC";
+                sql = "SELECT * FROM ThuCung WHERE da_xoa IS NULL OR LOWER(CAST(da_xoa AS varchar)) IN ('0', 'false') ORDER BY ngay_tao DESC";
                 allPets = jdbcTemplate.queryForList(sql);
             }
 

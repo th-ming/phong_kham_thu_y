@@ -97,7 +97,7 @@ public class DichVuController {
             jdbcTemplate.update("UPDATE public.dichvu SET ngay_tao = COALESCE(ngay_tao, CURRENT_TIMESTAMP) WHERE id_dich_vu = ?",
                     saved.getId_dich_vu());
         } else {
-            jdbcTemplate.update("UPDATE DichVu SET ngay_tao = COALESCE(ngay_tao, GETDATE()) WHERE id_dich_vu = ?",
+            jdbcTemplate.update("UPDATE DichVu SET ngay_tao = COALESCE(ngay_tao, CURRENT_TIMESTAMP) WHERE id_dich_vu = ?",
                     saved.getId_dich_vu());
         }
         // GHI LOG

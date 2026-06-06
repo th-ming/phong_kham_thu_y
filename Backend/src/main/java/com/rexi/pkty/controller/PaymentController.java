@@ -258,7 +258,7 @@ public class PaymentController {
                         return ResponseEntity.ok(Map.of("message", "Hóa đơn đã được xử lý trước đó.", "success", true));
                     }
                     jdbcTemplate.update(
-                            "INSERT INTO ThanhToan (id_thanh_toan, id_hoa_don, ngay_tra_tien, so_tien, phuong_thuc, ghi_chu) VALUES (?, ?, CURRENT_TIMESTAMP, ?, 'VNPay', N'Thanh toán VNPay thành công')",
+                            "INSERT INTO ThanhToan (id_thanh_toan, id_hoa_don, ngay_tra_tien, so_tien, phuong_thuc, ghi_chu) VALUES (?, ?, CURRENT_TIMESTAMP, ?, 'VNPay', 'Thanh toán VNPay thành công')",
                             "TT-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase(), idHoaDon, amountPaid);
                     return ResponseEntity.ok(Map.of("message", "Thanh toán thành công!", "success", true));
                 }
@@ -413,7 +413,7 @@ public class PaymentController {
                     // FIX LỖI: Ghi số tiền thật vào lịch sử thay vì hardcode 0
                     final java.math.BigDecimal finalSoTien = soTien;
                     jdbcTemplate.update(
-                            "INSERT INTO ThanhToan (id_thanh_toan, id_hoa_don, ngay_tra_tien, so_tien, phuong_thuc, ghi_chu) VALUES (?, ?, CURRENT_TIMESTAMP, ?, 'VietQR', N'Thanh toán VietQR thành công')",
+                            "INSERT INTO ThanhToan (id_thanh_toan, id_hoa_don, ngay_tra_tien, so_tien, phuong_thuc, ghi_chu) VALUES (?, ?, CURRENT_TIMESTAMP, ?, 'VietQR', 'Thanh toán VietQR thành công')",
                             "TT-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase(), idHoaDon, finalSoTien);
                     logger.info("GẠCH NỢ THÀNH CÔNG: Hóa đơn #" + idHoaDon + " | Số tiền: " + finalSoTien);
                 }

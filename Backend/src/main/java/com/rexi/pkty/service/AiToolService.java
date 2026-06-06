@@ -231,7 +231,7 @@ public class AiToolService {
         java.time.LocalDate today = java.time.LocalDate.now();
 
         StringBuilder sql = new StringBuilder(
-            "SELECT TOP 20 lh.id_lich_hen, kh.ten_khach_hang, kh.sdt, tc.ten_thu_cung, " +
+            "SELECT lh.id_lich_hen, kh.ten_khach_hang, kh.sdt, tc.ten_thu_cung, " +
             "dv.ten_dich_vu, nv.ho_ten AS ten_bac_si, lh.ngay_kham, lh.gio_kham, lh.trang_thai " +
             "FROM LichHen lh " +
             "JOIN KhachHang kh ON lh.id_khach_hang = kh.id_khach_hang " +
@@ -249,7 +249,8 @@ public class AiToolService {
             sql.append("AND LOWER(nv.ho_ten) LIKE LOWER(?) ");
             queryParams.add("%" + doctorKeyword + "%");
         }
-        sql.append(isAll ? "ORDER BY lh.ngay_kham DESC, lh.gio_kham DESC" : "ORDER BY lh.gio_kham");
+        sql.append(isAll ? "ORDER BY lh.ngay_kham DESC, lh.gio_kham DESC " : "ORDER BY lh.gio_kham ");
+        sql.append("LIMIT 20");
 
         var rows = jdbcTemplate.queryForList(sql.toString(), queryParams.toArray());
         if (rows.isEmpty()) {
@@ -293,11 +294,11 @@ public class AiToolService {
 
         if (isQueryTodayNew) {
             LocalDate today = LocalDate.now(VN_ZONE);
-            String sql = "SELECT TOP 10 id_khach_hang, ten_khach_hang, sdt, email, dia_chi, ngay_tao " +
+            String sql = "SELECT id_khach_hang, ten_khach_hang, sdt, email, dia_chi, ngay_tao " +
                          "FROM KhachHang " +
-                         "WHERE (da_xoa = 0 OR da_xoa IS NULL) " +
+                         "WHERE (da_xoa IS NULL OR LOWER(CAST(da_xoa AS varchar)) IN ('0', 'false')) " +
                          "AND CAST(ngay_tao AS DATE) = ? " +
-                         "ORDER BY ngay_tao DESC";
+                         "ORDER BY ngay_tao DESC LIMIT 10";
             var matchedRows = jdbcTemplate.queryForList(sql, java.sql.Date.valueOf(today));
             if (matchedRows.isEmpty()) {
                 return "Hôm nay phòng khám chưa ghi nhận khách hàng đăng ký mới nào sếp ơi! 🐾";
@@ -313,8 +314,8 @@ public class AiToolService {
         
         String[] keywords = tuKhoa.trim().split("\\s+");
         StringBuilder sql = new StringBuilder(
-            "SELECT TOP 20 id_khach_hang, ten_khach_hang, sdt, email, dia_chi " +
-            "FROM KhachHang WHERE (da_xoa = 0 OR da_xoa IS NULL) "
+            "SELECT id_khach_hang, ten_khach_hang, sdt, email, dia_chi " +
+            "FROM KhachHang WHERE (da_xoa IS NULL OR LOWER(CAST(da_xoa AS varchar)) IN ('0', 'false')) "
         );
         
         List<Object> args = new ArrayList<>();
@@ -323,10 +324,10 @@ public class AiToolService {
         args.add("%" + tuKhoa.trim() + "%");
         
         for (String kw : keywords) {
-            sql.append(" AND ten_khach_hang COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI ");
+            sql.append(" AND LOWER(COALESCE(ten_khach_hang, '')) LIKE LOWER(?) ");
             args.add("%" + kw + "%");
         }
-        sql.append(")) ");
+        sql.append(")) LIMIT 20");
 
         var matchedRows = jdbcTemplate.queryForList(sql.toString(), args.toArray());
 
@@ -350,7 +351,7 @@ public class AiToolService {
                      "FROM TaiKhoan tk " +
                      "LEFT JOIN KhachHang kh ON tk.id_khach_hang = kh.id_khach_hang " +
                      "LEFT JOIN NhanVien nv ON tk.id_nhan_vien = nv.id_nhan_vien " +
-                     "WHERE tk.trang_thai = N'Đã khóa' OR tk.trang_thai = 'inactive'";
+                     "WHERE tk.trang_thai = 'Đã khóa' OR tk.trang_thai = 'inactive'";
         var rows = jdbcTemplate.queryForList(sql);
         if (rows.isEmpty()) return "Hiện tại không có tài khoản nào đang bị khóa.";
         
@@ -373,7 +374,7 @@ public class AiToolService {
         LocalDate today = LocalDate.now(VN_ZONE);
         Integer newCustomerCount = jdbcTemplate.queryForObject(
             "SELECT COUNT(*) FROM KhachHang " +
-            "WHERE (da_xoa = 0 OR da_xoa IS NULL) AND CAST(ngay_tao AS DATE) = ?",
+            "WHERE (da_xoa IS NULL OR LOWER(CAST(da_xoa AS varchar)) IN ('0', 'false')) AND CAST(ngay_tao AS DATE) = ?",
             Integer.class,
             java.sql.Date.valueOf(today)
         );
@@ -389,9 +390,9 @@ public class AiToolService {
         }
 
         List<Map<String, Object>> appointmentRows = jdbcTemplate.queryForList(
-            "SELECT TOP 200 COALESCE(dv.ten_dich_vu, '') AS ten_dich_vu, COALESCE(lh.ly_do, '') AS ly_do " +
+            "SELECT COALESCE(dv.ten_dich_vu, '') AS ten_dich_vu, COALESCE(lh.ly_do, '') AS ly_do " +
             "FROM LichHen lh LEFT JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu " +
-            "WHERE lh.ngay_kham = ?",
+            "WHERE lh.ngay_kham = ? LIMIT 200",
             java.sql.Date.valueOf(today)
         );
 
@@ -456,22 +457,23 @@ public class AiToolService {
         if (tuKhoa == null || tuKhoa.trim().isEmpty()) return "Vui lòng cung cấp từ khóa tìm kiếm.";
         
         StringBuilder sql = new StringBuilder(
-            "SELECT TOP 20 tc.id_thu_cung, tc.ten_thu_cung, tc.loai, tc.giong, " +
+            "SELECT tc.id_thu_cung, tc.ten_thu_cung, tc.loai, tc.giong, " +
             "tc.trong_luong, tc.ngay_sinh, kh.ten_khach_hang, kh.sdt " +
             "FROM ThuCung tc JOIN KhachHang kh ON tc.id_khach_hang = kh.id_khach_hang " +
-            "WHERE (tc.da_xoa = 0 OR tc.da_xoa IS NULL) "
+            "WHERE (tc.da_xoa IS NULL OR LOWER(CAST(tc.da_xoa AS varchar)) IN ('0', 'false')) "
         );
         
         String[] keywords = tuKhoa.trim().split("\\s+");
         List<Object> args = new ArrayList<>();
         
         for (String kw : keywords) {
-            sql.append(" AND (tc.ten_thu_cung COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI ")
-               .append(" OR tc.loai COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI) ");
+            sql.append(" AND (LOWER(COALESCE(tc.ten_thu_cung, '')) LIKE LOWER(?) ")
+               .append(" OR LOWER(COALESCE(tc.loai, '')) LIKE LOWER(?)) ");
             args.add("%" + kw + "%");
             args.add("%" + kw + "%");
         }
 
+        sql.append(" LIMIT 20");
         var matchedRows = jdbcTemplate.queryForList(sql.toString(), args.toArray());
 
         if (matchedRows.isEmpty()) return "Không tìm thấy thú cưng nào với từ khóa: " + tuKhoa;
@@ -499,7 +501,7 @@ public class AiToolService {
 
         var rows = jdbcTemplate.queryForList(
             "SELECT id_thu_cung, ten_thu_cung, loai, giong, gioi_tinh, mau_sac, trong_luong, ngay_sinh, ghi_chu " +
-            "FROM ThuCung WHERE id_khach_hang = ? AND (da_xoa = 0 OR da_xoa IS NULL) " +
+            "FROM ThuCung WHERE id_khach_hang = ? AND (da_xoa IS NULL OR LOWER(CAST(da_xoa AS varchar)) IN ('0', 'false')) " +
             "ORDER BY ten_thu_cung ASC",
             customerId
         );
@@ -536,11 +538,11 @@ public class AiToolService {
     }
 
     private String toolXemBenhAn(String idThuCung) {
-        String sql = "SELECT TOP 5 ba.ngay_kham, ba.trieu_chung, ba.chan_doan, ba.phac_do_dieu_tri, " +
+        String sql = "SELECT ba.ngay_kham, ba.trieu_chung, ba.chan_doan, ba.phac_do_dieu_tri, " +
                      "ba.huong_dan_cham_soc, nv.ho_ten AS ten_bac_si " +
                      "FROM HoSoBenhAn ba " +
                      "LEFT JOIN NhanVien nv ON ba.id_bac_si = nv.id_nhan_vien " +
-                     "WHERE ba.id_thu_cung = ? ORDER BY ba.ngay_kham DESC";
+                     "WHERE ba.id_thu_cung = ? ORDER BY ba.ngay_kham DESC LIMIT 5";
         var rows = jdbcTemplate.queryForList(sql, idThuCung);
         if (rows.isEmpty()) return "Thú cưng ID " + idThuCung + " chưa có bệnh án nào.";
         StringBuilder sb = new StringBuilder("Bệnh án gần nhất:\n");
@@ -593,16 +595,16 @@ public class AiToolService {
 
             // Validate all entities exist before proceeding
             Integer customerExists = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM KhachHang WHERE id_khach_hang = ? AND (da_xoa = 0 OR da_xoa IS NULL)",
+                "SELECT COUNT(*) FROM KhachHang WHERE id_khach_hang = ? AND (da_xoa IS NULL OR LOWER(CAST(da_xoa AS varchar)) IN ('0', 'false'))",
                 Integer.class, idKhachHang);
             Integer petExists = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM ThuCung WHERE id_thu_cung = ? AND id_khach_hang = ? AND (da_xoa = 0 OR da_xoa IS NULL)",
+                "SELECT COUNT(*) FROM ThuCung WHERE id_thu_cung = ? AND id_khach_hang = ? AND (da_xoa IS NULL OR LOWER(CAST(da_xoa AS varchar)) IN ('0', 'false'))",
                 Integer.class, idThuCung, idKhachHang);
             Integer doctorExists = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM NhanVien WHERE id_nhan_vien = ? AND (da_xoa = 0 OR da_xoa IS NULL)",
+                "SELECT COUNT(*) FROM NhanVien WHERE id_nhan_vien = ? AND (da_xoa IS NULL OR LOWER(CAST(da_xoa AS varchar)) IN ('0', 'false'))",
                 Integer.class, idBacSi);
             Integer serviceExists = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM DichVu WHERE id_dich_vu = ? AND (da_xoa = 0 OR da_xoa IS NULL)",
+                "SELECT COUNT(*) FROM DichVu WHERE id_dich_vu = ? AND (da_xoa IS NULL OR LOWER(CAST(da_xoa AS varchar)) IN ('0', 'false'))",
                 Integer.class, idDichVu);
 
             // Null-safe validation
@@ -623,9 +625,9 @@ public class AiToolService {
             Integer duplicateDoctorSlot = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM LichHen lh LEFT JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu " +
                 "WHERE lh.ngay_kham = ? AND lh.id_bac_si = ? " +
-                "AND DATEDIFF(minute, CAST('00:00:00' AS time), CAST(lh.gio_kham AS time)) < ? " +
-                "AND DATEDIFF(minute, CAST('00:00:00' AS time), CAST(lh.gio_kham AS time)) + ISNULL(dv.thoi_luong_phut, 30) > ? " +
-                "AND (lh.trang_thai IS NULL OR lh.trang_thai NOT IN (N'Đã hủy', 'DA_HUY', 'da_huy', 'TU_CHOI', N'Hết hạn'))",
+                "AND (EXTRACT(HOUR FROM lh.gio_kham::time) * 60 + EXTRACT(MINUTE FROM lh.gio_kham::time))::int < ? " +
+                "AND (EXTRACT(HOUR FROM lh.gio_kham::time) * 60 + EXTRACT(MINUTE FROM lh.gio_kham::time))::int + COALESCE(dv.thoi_luong_phut, 30) > ? " +
+                "AND (lh.trang_thai IS NULL OR lh.trang_thai NOT IN ('Đã hủy', 'DA_HUY', 'da_huy', 'TU_CHOI', 'Hết hạn'))",
                 Integer.class, java.sql.Date.valueOf(ngayKham), idBacSi,
                 gioKetThucMinute, gioKhamMinute);
             if (duplicateDoctorSlot != null && duplicateDoctorSlot > 0) {
@@ -636,9 +638,9 @@ public class AiToolService {
             Integer duplicatePetSlot = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM LichHen lh LEFT JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu " +
                 "WHERE lh.ngay_kham = ? AND lh.id_thu_cung = ? " +
-                "AND DATEDIFF(minute, CAST('00:00:00' AS time), CAST(lh.gio_kham AS time)) < ? " +
-                "AND DATEDIFF(minute, CAST('00:00:00' AS time), CAST(lh.gio_kham AS time)) + ISNULL(dv.thoi_luong_phut, 30) > ? " +
-                "AND (lh.trang_thai IS NULL OR lh.trang_thai NOT IN (N'Đã hủy', 'DA_HUY', 'da_huy', 'TU_CHOI', N'Hết hạn'))",
+                "AND (EXTRACT(HOUR FROM lh.gio_kham::time) * 60 + EXTRACT(MINUTE FROM lh.gio_kham::time))::int < ? " +
+                "AND (EXTRACT(HOUR FROM lh.gio_kham::time) * 60 + EXTRACT(MINUTE FROM lh.gio_kham::time))::int + COALESCE(dv.thoi_luong_phut, 30) > ? " +
+                "AND (lh.trang_thai IS NULL OR lh.trang_thai NOT IN ('Đã hủy', 'DA_HUY', 'da_huy', 'TU_CHOI', 'Hết hạn'))",
                 Integer.class, java.sql.Date.valueOf(ngayKham), idThuCung,
                 gioKetThucMinute, gioKhamMinute);
             if (duplicatePetSlot != null && duplicatePetSlot > 0) {
@@ -685,22 +687,22 @@ public class AiToolService {
 
             List<Map<String, Object>> matches;
             if (!idLichHen.isBlank()) {
-                String sql = "SELECT TOP 5 lh.id_lich_hen, lh.id_khach_hang, kh.ten_khach_hang, kh.sdt, tc.ten_thu_cung, lh.ngay_kham, lh.gio_kham, lh.trang_thai " +
+                String sql = "SELECT lh.id_lich_hen, lh.id_khach_hang, kh.ten_khach_hang, kh.sdt, tc.ten_thu_cung, lh.ngay_kham, lh.gio_kham, lh.trang_thai " +
                         "FROM LichHen lh LEFT JOIN KhachHang kh ON lh.id_khach_hang = kh.id_khach_hang " +
-                        "LEFT JOIN ThuCung tc ON lh.id_thu_cung = tc.id_thu_cung WHERE lh.id_lich_hen = ?";
+                        "LEFT JOIN ThuCung tc ON lh.id_thu_cung = tc.id_thu_cung WHERE lh.id_lich_hen = ? LIMIT 5";
                 matches = jdbcTemplate.queryForList(sql, idLichHen);
             } else {
                 StringBuilder sql = new StringBuilder(
-                    "SELECT TOP 5 lh.id_lich_hen, lh.id_khach_hang, kh.ten_khach_hang, kh.sdt, tc.ten_thu_cung, lh.ngay_kham, lh.gio_kham, lh.trang_thai " +
+                    "SELECT lh.id_lich_hen, lh.id_khach_hang, kh.ten_khach_hang, kh.sdt, tc.ten_thu_cung, lh.ngay_kham, lh.gio_kham, lh.trang_thai " +
                     "FROM LichHen lh LEFT JOIN KhachHang kh ON lh.id_khach_hang = kh.id_khach_hang " +
                     "LEFT JOIN ThuCung tc ON lh.id_thu_cung = tc.id_thu_cung " +
-                    "WHERE lh.trang_thai NOT IN ('DA_HUY', N'Đã hủy', 'da_huy', 'TU_CHOI', N'Hết hạn') ");
+                    "WHERE lh.trang_thai NOT IN ('DA_HUY', 'Đã hủy', 'da_huy', 'TU_CHOI', 'Hết hạn') ");
                 List<Object> args = new ArrayList<>();
                 if (isCustomer) {
                     sql.append("AND lh.id_khach_hang = ? ");
                     args.add(customerId);
                 } else if (!tuKhoaKhach.isBlank()) {
-                    sql.append("AND (kh.ten_khach_hang COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI OR kh.sdt LIKE ?) ");
+                    sql.append("AND (LOWER(COALESCE(kh.ten_khach_hang, '')) LIKE LOWER(?) OR kh.sdt LIKE ?) ");
                     args.add("%" + tuKhoaKhach + "%");
                     args.add("%" + tuKhoaKhach + "%");
                 } else {
@@ -718,7 +720,7 @@ public class AiToolService {
                     sql.append("AND lh.ngay_kham = ? ");
                     args.add(java.sql.Date.valueOf(today.plusDays(1)));
                 }
-                sql.append("ORDER BY lh.ngay_kham, lh.gio_kham");
+                sql.append("ORDER BY lh.ngay_kham, lh.gio_kham LIMIT 5");
                 matches = jdbcTemplate.queryForList(sql.toString(), args.toArray());
             }
 
@@ -803,17 +805,17 @@ public class AiToolService {
         int limit = isSearch ? 5 : 10;
 
         StringBuilder sql = new StringBuilder(
-            "SELECT TOP 15 t.ten_thuoc, t.don_vi, t.gia_ban, " +
+            "SELECT t.ten_thuoc, t.don_vi, t.gia_ban, " +
             "COALESCE(SUM(l.so_luong_ton), 0) AS so_luong_ton, MAX(l.han_su_dung) AS han_su_dung " +
             "FROM Thuoc t LEFT JOIN LoThuoc l ON t.id_thuoc = l.id_thuoc " +
-            "WHERE (t.da_xoa = 0 OR t.da_xoa IS NULL) "
+            "WHERE (t.da_xoa IS NULL OR LOWER(CAST(t.da_xoa AS varchar)) IN ('0', 'false')) "
         );
 
         List<Object> args = new ArrayList<>();
         if (isSearch) {
             String[] keywords = tuKhoa.trim().split("\\s+");
             for (String kw : keywords) {
-                sql.append(" AND t.ten_thuoc COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI ");
+                sql.append(" AND LOWER(COALESCE(t.ten_thuoc, '')) LIKE LOWER(?) ");
                 args.add("%" + kw + "%");
             }
         }
@@ -826,6 +828,7 @@ public class AiToolService {
         } else {
             sql.append(" ORDER BY t.ten_thuoc ASC ");
         }
+        sql.append(" LIMIT 15");
 
         var matchedRows = jdbcTemplate.queryForList(sql.toString(), args.toArray());
 
@@ -884,10 +887,10 @@ public class AiToolService {
 
         LocalDate today = LocalDate.now(VN_ZONE);
         StringBuilder sql = new StringBuilder(
-            "SELECT TOP 10 COALESCE(nv.ho_ten, N'Chưa gán bác sĩ') AS ten_bac_si, " +
+            "SELECT COALESCE(nv.ho_ten, 'Chưa gán bác sĩ') AS ten_bac_si, " +
             "COUNT(*) AS tong_ca, " +
-            "SUM(CASE WHEN lh.trang_thai = 'DA_HUY' OR lh.trang_thai = N'Đã hủy' THEN 1 ELSE 0 END) AS so_ca_huy, " +
-            "SUM(CASE WHEN lh.trang_thai IS NULL OR (lh.trang_thai <> 'DA_HUY' AND lh.trang_thai <> N'Đã hủy') THEN 1 ELSE 0 END) AS so_ca_hieu_luc " +
+            "SUM(CASE WHEN lh.trang_thai = 'DA_HUY' OR lh.trang_thai = 'Đã hủy' THEN 1 ELSE 0 END) AS so_ca_huy, " +
+            "SUM(CASE WHEN lh.trang_thai IS NULL OR (lh.trang_thai <> 'DA_HUY' AND lh.trang_thai <> 'Đã hủy') THEN 1 ELSE 0 END) AS so_ca_hieu_luc " +
             "FROM LichHen lh " +
             "LEFT JOIN NhanVien nv ON lh.id_bac_si = nv.id_nhan_vien " +
             "WHERE lh.id_bac_si IS NOT NULL "
@@ -917,10 +920,10 @@ public class AiToolService {
             default -> khoang = "all";
         }
 
-        sql.append("GROUP BY COALESCE(nv.ho_ten, N'Chưa gán bác sĩ') ");
+        sql.append("GROUP BY COALESCE(nv.ho_ten, 'Chưa gán bác sĩ') ");
         sql.append("ORDER BY so_ca_hieu_luc ").append(ascending ? "ASC" : "DESC")
             .append(", tong_ca ").append(ascending ? "ASC" : "DESC")
-            .append(", ten_bac_si ASC");
+            .append(", ten_bac_si ASC LIMIT 10");
 
         var rows = jdbcTemplate.queryForList(sql.toString(), queryParams.toArray());
         if (rows.isEmpty()) {
@@ -1289,10 +1292,10 @@ public class AiToolService {
 
     private String toolXemHoaDon(String trangThai) {
         boolean filter = trangThai != null && !trangThai.isBlank() && !"all".equalsIgnoreCase(trangThai);
-        String sql = "SELECT TOP 10 hd.id_hoa_don, hd.ngay_lap_hoa_don, hd.tong_tien_cuoi, hd.trang_thai, kh.ten_khach_hang, kh.sdt " +
+        String sql = "SELECT hd.id_hoa_don, hd.ngay_lap_hoa_don, hd.tong_tien_cuoi, hd.trang_thai, kh.ten_khach_hang, kh.sdt " +
             "FROM HoaDon hd LEFT JOIN KhachHang kh ON hd.id_khach_hang = kh.id_khach_hang " +
             (filter ? "WHERE hd.trang_thai = ? " : "") +
-            "ORDER BY hd.ngay_lap_hoa_don DESC";
+            "ORDER BY hd.ngay_lap_hoa_don DESC LIMIT 10";
         var rows = filter ? jdbcTemplate.queryForList(sql, trangThai) : jdbcTemplate.queryForList(sql);
         if (rows.isEmpty()) return "Không tìm thấy hóa đơn phù hợp.";
         StringBuilder sb = new StringBuilder("Danh sách hóa đơn (" + rows.size() + " dòng mới nhất):\n");
@@ -1330,16 +1333,16 @@ public class AiToolService {
                 }
                 String customerId = resolveCustomerId(id, idTaiKhoan);
                 if (customerId == null || customerId.isBlank()) return "Lỗi: Không tìm thấy khách hàng cần thao tác.";
-                int rows = jdbcTemplate.update("UPDATE KhachHang SET da_xoa = 1 WHERE id_khach_hang = ?", customerId);
-                jdbcTemplate.update("UPDATE TaiKhoan SET trang_thai = N'Đã khóa' WHERE id_khach_hang = ?", customerId);
+                int rows = jdbcTemplate.update("UPDATE KhachHang SET da_xoa = true WHERE id_khach_hang = ?", customerId);
+                jdbcTemplate.update("UPDATE TaiKhoan SET trang_thai = 'Đã khóa' WHERE id_khach_hang = ?", customerId);
                 if (rows > 0) return "✅ Đã " + action.toLowerCase() + " tài khoản khách hàng " + customerId + " thành công.";
                 else return "Lỗi: Không tìm thấy khách hàng ID " + customerId;
             }
             if ("MO_KHOA".equalsIgnoreCase(action) || "MOKHOA".equalsIgnoreCase(action) || "UNLOCK".equalsIgnoreCase(action)) {
                 String customerId = resolveCustomerId(id, idTaiKhoan);
                 if (customerId == null || customerId.isBlank()) return "Lỗi: Không tìm thấy khách hàng cần mở khóa.";
-                int customerRows = jdbcTemplate.update("UPDATE KhachHang SET da_xoa = 0 WHERE id_khach_hang = ?", customerId);
-                int accountRows = jdbcTemplate.update("UPDATE TaiKhoan SET trang_thai = N'Hoạt động' WHERE id_khach_hang = ?", customerId);
+                int customerRows = jdbcTemplate.update("UPDATE KhachHang SET da_xoa = false WHERE id_khach_hang = ?", customerId);
+                int accountRows = jdbcTemplate.update("UPDATE TaiKhoan SET trang_thai = 'Hoạt động' WHERE id_khach_hang = ?", customerId);
                 if (customerRows > 0 || accountRows > 0) {
                     return "✅ Đã mở khóa tài khoản khách hàng " + customerId + " thành công.";
                 }
@@ -1401,7 +1404,7 @@ public class AiToolService {
         }
 
         Integer ownerExists = jdbcTemplate.queryForObject(
-            "SELECT COUNT(*) FROM KhachHang WHERE id_khach_hang = ? AND (da_xoa = 0 OR da_xoa IS NULL)",
+            "SELECT COUNT(*) FROM KhachHang WHERE id_khach_hang = ? AND (da_xoa IS NULL OR LOWER(CAST(da_xoa AS varchar)) IN ('0', 'false'))",
             Integer.class,
             customerId
         );
@@ -1410,7 +1413,7 @@ public class AiToolService {
         }
 
         var existing = jdbcTemplate.queryForList(
-            "SELECT TOP 1 id_thu_cung FROM ThuCung WHERE id_khach_hang = ? AND ten_thu_cung = ? AND (da_xoa = 0 OR da_xoa IS NULL)",
+            "SELECT id_thu_cung FROM ThuCung WHERE id_khach_hang = ? AND ten_thu_cung = ? AND (da_xoa IS NULL OR LOWER(CAST(da_xoa AS varchar)) IN ('0', 'false')) LIMIT 1",
             customerId,
             ten
         );
@@ -1429,7 +1432,7 @@ public class AiToolService {
 
         jdbcTemplate.update(
             "INSERT INTO ThuCung (id_thu_cung, id_khach_hang, ten_thu_cung, loai, giong, ngay_sinh, gioi_tinh, mau_sac, trong_luong, ghi_chu, da_xoa, ngay_tao) " +
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, GETDATE())",
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, false, CURRENT_TIMESTAMP)",
             id,
             customerId,
             ten,
@@ -1527,11 +1530,11 @@ public class AiToolService {
             // 2. Kết hợp truy vấn Database bảng file_dinh_kem (nếu sau này sếp upload thêm file vật lý mới)
             String sql = "SELECT id, ten_file, duong_dan, loai, kich_thuoc " +
                          "FROM file_dinh_kem " +
-                         "WHERE loai = N'Tài liệu' OR loai = 'Tài liệu' OR ten_file LIKE '%.pdf' OR ten_file LIKE '%.docx'";
+                         "WHERE loai = 'Tài liệu' OR ten_file LIKE '%.pdf' OR ten_file LIKE '%.docx'";
             
             List<Map<String, Object>> dbRows;
             if (isSearch) {
-                String searchSql = sql + " AND (ten_file COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI)";
+                String searchSql = sql + " AND (LOWER(COALESCE(ten_file, '')) LIKE LOWER(?))";
                 dbRows = jdbcTemplate.queryForList(searchSql, "%" + tuKhoa.trim() + "%");
             } else {
                 dbRows = jdbcTemplate.queryForList(sql);

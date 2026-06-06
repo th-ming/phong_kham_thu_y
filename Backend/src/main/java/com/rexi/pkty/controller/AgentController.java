@@ -73,13 +73,13 @@ public class AgentController {
                 return ResponseEntity.ok(List.of());
             }
 
-            // TOP 3 be goi y, dung idKhachHang login
+            // Lay toi da 3 be goi y, dung idKhachHang login.
             String sql = "SELECT tc.id_thu_cung, tc.ten_thu_cung, tc.loai, tc.giong, " +
                          "tc.id_khach_hang, kh.ten_khach_hang, kh.sdt " +
                          "FROM ThuCung tc " +
                          "JOIN KhachHang kh ON tc.id_khach_hang = kh.id_khach_hang " +
-                         "WHERE (kh.da_xoa = 0 OR kh.da_xoa IS NULL) " +
-                         "AND (tc.da_xoa = 0 OR tc.da_xoa IS NULL) " +
+                         "WHERE (kh.da_xoa IS NULL OR LOWER(CAST(kh.da_xoa AS varchar)) IN ('0', 'false')) " +
+                         "AND (tc.da_xoa IS NULL OR LOWER(CAST(tc.da_xoa AS varchar)) IN ('0', 'false')) " +
                          "AND tc.id_khach_hang = ? LIMIT 3";
             
             List<Map<String, Object>> pets = jdbcTemplate.queryForList(sql, idKhachHang);
@@ -216,7 +216,8 @@ public class AgentController {
             String sql = "SELECT kh.ten_khach_hang, kh.email, kh.sdt, tc.ten_thu_cung, tc.loai, tc.giong " +
                     "FROM KhachHang kh " +
                     "JOIN ThuCung tc ON kh.id_khach_hang = tc.id_khach_hang " +
-                    "WHERE (kh.da_xoa = 0 OR kh.da_xoa IS NULL) AND (tc.da_xoa = 0 OR tc.da_xoa IS NULL)";
+                    "WHERE (kh.da_xoa IS NULL OR LOWER(CAST(kh.da_xoa AS varchar)) IN ('0', 'false')) " +
+                    "AND (tc.da_xoa IS NULL OR LOWER(CAST(tc.da_xoa AS varchar)) IN ('0', 'false'))";
             
             List<Map<String, Object>> dbResults = new ArrayList<>();
             String sqlExecuted = sql;
@@ -225,28 +226,28 @@ public class AgentController {
                 StringBuilder where = new StringBuilder(sql);
                 List<Object> params = new ArrayList<>();
                 com.rexi.pkty.util.SmartSearchSql.appendTokenSearch(where, params, keyword,
-                        "tc.ten_thu_cung COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI");
+                        "LOWER(COALESCE(tc.ten_thu_cung, '')) LIKE LOWER(?)");
                 sqlExecuted = where.toString() + " LIMIT 50";
                 dbResults = jdbcTemplate.queryForList(sqlExecuted, params.toArray());
             } else if ("PET_BREED".equals(searchType) && !keyword.isEmpty()) {
                 StringBuilder where = new StringBuilder(sql);
                 List<Object> params = new ArrayList<>();
                 com.rexi.pkty.util.SmartSearchSql.appendTokenSearch(where, params, keyword,
-                        "tc.giong COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI");
+                        "LOWER(COALESCE(tc.giong, '')) LIKE LOWER(?)");
                 sqlExecuted = where.toString() + " LIMIT 50";
                 dbResults = jdbcTemplate.queryForList(sqlExecuted, params.toArray());
             } else if ("PET_TYPE".equals(searchType) && !keyword.isEmpty()) {
                 StringBuilder where = new StringBuilder(sql);
                 List<Object> params = new ArrayList<>();
                 com.rexi.pkty.util.SmartSearchSql.appendTokenSearch(where, params, keyword,
-                        "tc.loai COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI");
+                        "LOWER(COALESCE(tc.loai, '')) LIKE LOWER(?)");
                 sqlExecuted = where.toString() + " LIMIT 50";
                 dbResults = jdbcTemplate.queryForList(sqlExecuted, params.toArray());
             } else if ("CUSTOMER_NAME".equals(searchType) && !keyword.isEmpty()) {
                 StringBuilder where = new StringBuilder(sql);
                 List<Object> params = new ArrayList<>();
                 com.rexi.pkty.util.SmartSearchSql.appendTokenSearch(where, params, keyword,
-                        "kh.ten_khach_hang COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI");
+                        "LOWER(COALESCE(kh.ten_khach_hang, '')) LIKE LOWER(?)");
                 sqlExecuted = where.toString() + " LIMIT 50";
                 dbResults = jdbcTemplate.queryForList(sqlExecuted, params.toArray());
             } else if ("CUSTOMER_EMAIL".equals(searchType) && !keyword.isEmpty()) {

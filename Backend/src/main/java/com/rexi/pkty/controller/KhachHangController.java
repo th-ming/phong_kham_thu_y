@@ -166,20 +166,25 @@ public class KhachHangController {
                 }
             }
 
-            List<Map<String, Object>> result = khachHangRepository.callSpUpdateKhachHang(
-                    id,
-                    kh.getTen_khach_hang(),
-                    kh.getEmail(),
-                    kh.getSdt(),
-                    kh.getDia_chi(),
-                    kh.getNam_sinh());
+            KhachHang existing = khachHangRepository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy khách hàng"));
+            existing.setTen_khach_hang(kh.getTen_khach_hang());
+            existing.setEmail(kh.getEmail());
+            existing.setSdt(kh.getSdt());
+            existing.setDia_chi(kh.getDia_chi());
+            existing.setNam_sinh(kh.getNam_sinh());
+            existing.setNgay_cap_nhat(java.time.LocalDateTime.now());
+            KhachHang saved = khachHangRepository.save(existing);
+            List<Map<String, Object>> result = java.util.List.of(Map.of(
+                    "id_khach_hang", saved.getId_khach_hang(),
+                    "ten_khach_hang", saved.getTen_khach_hang()));
 
             // Stored procedure hiện chỉ cập nhật thông tin chữ. Avatar lưu trực tiếp qua JPA
             // để trang cá nhân khách hàng đổi ảnh đại diện được ngay.
             if (kh.getHinh_anh() != null) {
-                khachHangRepository.findById(id).ifPresent(existing -> {
-                    existing.setHinh_anh(kh.getHinh_anh());
-                    khachHangRepository.save(existing);
+                khachHangRepository.findById(id).ifPresent(customer -> {
+                    customer.setHinh_anh(kh.getHinh_anh());
+                    khachHangRepository.save(customer);
                 });
             }
 
@@ -243,7 +248,11 @@ public class KhachHangController {
                 return ResponseEntity.status(404).body(Map.of("message", "Không tìm thấy tài khoản xác thực!"));
             }
 
-            khachHangRepository.deactivateAccountByKhachHangId(id);
+            KhachHang customerToDeactivate = khachHangRepository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy khách hàng"));
+            customerToDeactivate.setDa_xoa(true);
+            customerToDeactivate.setNgay_cap_nhat(java.time.LocalDateTime.now());
+            khachHangRepository.save(customerToDeactivate);
 
             // BẢO MẬT: Khóa luôn tài khoản đăng nhập để ngăn chặn việc khách hàng dùng mật
             // khẩu cũ đăng nhập lại
