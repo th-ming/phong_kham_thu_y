@@ -209,6 +209,15 @@ const ThongTinCaNhanNhanVien: React.FC = () => {
     return (
         <div className="admin-staff-profile-page" style={{ padding: '32px 40px', minHeight: '100vh', background: 'var(--background)' }}>
             <style>{`
+                @keyframes slideUpFade { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+                @keyframes editSlide { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: translateX(0); } }
+                @keyframes pulseSave { 0%, 100% { box-shadow: 0 0 0 0 rgba(20,184,166,0); } 50% { box-shadow: 0 0 0 8px rgba(20,184,166,0.15); } }
+                .admin-staff-profile-card { animation: slideUpFade 0.45s cubic-bezier(.22,.68,0,1.2) both; }
+                .admin-staff-profile-section { animation: slideUpFade 0.45s cubic-bezier(.22,.68,0,1.2) both; }
+                .admin-staff-profile-section:nth-child(2) { animation-delay: 0.08s; }
+                .admin-staff-danger { animation: slideUpFade 0.45s cubic-bezier(.22,.68,0,1.2) both; animation-delay: 0.16s; }
+                .form-input-edit { animation: editSlide 0.25s ease both; transition: border-color 0.2s, box-shadow 0.2s; }
+                .form-input-edit:focus { border-color: var(--primary) !important; box-shadow: 0 0 0 3px rgba(20,184,166,0.15) !important; }
                 .profile-grid {
                     display: grid;
                     grid-template-columns: 1fr 2.5fr;

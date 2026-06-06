@@ -318,6 +318,15 @@ const ThongTinCaNhan: React.FC = () => {
   return (
     <div className="animate-fade-in customer-profile-page">
       <style>{`
+        @keyframes slideUpFade { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes editSlide { from { opacity: 0; transform: translateX(-6px); } to { opacity: 1; transform: translateX(0); } }
+        .stagger-1 { animation: slideUpFade 0.5s cubic-bezier(.22,.68,0,1.2) 0.05s both; }
+        .stagger-2 { animation: slideUpFade 0.5s cubic-bezier(.22,.68,0,1.2) 0.12s both; }
+        .stagger-3 { animation: slideUpFade 0.5s cubic-bezier(.22,.68,0,1.2) 0.19s both; }
+        .customer-profile-card { animation: slideUpFade 0.45s cubic-bezier(.22,.68,0,1.2) 0.08s both; }
+        .customer-profile-security-card { animation: slideUpFade 0.45s cubic-bezier(.22,.68,0,1.2) 0.16s both; }
+        .customer-profile-avatar-card { animation: slideUpFade 0.45s cubic-bezier(.22,.68,0,1.2) 0.04s both; transition: transform 0.2s ease; }
+        .customer-profile-avatar-card:hover { transform: translateY(-2px); }
         @media (max-width: 768px) {
           .customer-profile-page {
             display: grid;

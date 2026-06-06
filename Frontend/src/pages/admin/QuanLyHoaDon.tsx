@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import axiosInstance from "@services/axios";
 import { formatTienVND, matchesSearchFields } from "@utils/index";
 import { Modal } from "@components/CommonUI";
@@ -231,11 +231,15 @@ const QuanLyHoaDon: React.FC = () => {
           }
         }
         .virtual-row-hover {
-          transition: background-color 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+          transition: background-color 0.25s cubic-bezier(0.4, 0, 0.2, 1), transform 0.18s ease;
         }
         .virtual-row-hover:hover {
           background-color: var(--gray-50) !important;
         }
+        @keyframes slideUpFade { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+        .invoice-admin-page > div:first-child { animation: slideUpFade 0.45s cubic-bezier(.22,.68,0,1.2) both; }
+        .invoice-card { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+        .invoice-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
         .invoice-mobile-list { display: none; }
         @media screen and (max-width: 1024px) {
           .invoice-admin-page {

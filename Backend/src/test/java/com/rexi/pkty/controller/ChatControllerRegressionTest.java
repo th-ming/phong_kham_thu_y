@@ -321,4 +321,216 @@ class ChatControllerRegressionTest extends BaseControllerTest {
         verify(groqService, never()).parseIntentJson(anyString());
         verify(openRouterService, never()).chat(anyList());
     }
+
+    @Test
+    void everydayClinicIntroDoesNotFallIntoWebSourceGate() throws Exception {
+        ChatMessage message = new ChatMessage("user", "phòng khám mình có gì hay không", null, null);
+
+        mockMvc.perform(post("/api/chat")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("history", List.of(message)))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.source").value("local_everyday"))
+                .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.containsString("khám chó mèo")))
+                .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("DuckDuckGo"))));
+
+        verify(geminiService, never()).chat(anyList());
+        verify(groqService, never()).chat(anyList());
+        verify(openRouterService, never()).chat(anyList());
+    }
+
+    @Test
+    void everydayRewriteRequestReturnsPolishedSentenceLocally() throws Exception {
+        ChatMessage message = new ChatMessage("user", "viết lại câu này lịch sự hơn: khách bảo mai qua", null, null);
+
+        mockMvc.perform(post("/api/chat")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("history", List.of(message)))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.source").value("local_everyday"))
+                .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.containsString("ghé phòng khám vào ngày mai")))
+                .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("kiểm tra thông tin"))));
+
+        verify(groqService, never()).chat(anyList());
+        verify(openRouterService, never()).chat(anyList());
+    }
+
+    @Test
+    void newKittenCareIsNotConfusedWithMotherCatAfterBirth() throws Exception {
+        ChatMessage message = new ChatMessage("user", "nuôi mèo con mới về cần chuẩn bị gì", null, null);
+
+        mockMvc.perform(post("/api/chat")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("history", List.of(message)))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.source").value("local_vet"))
+                .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.containsString("Mèo con mới về")))
+                .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("mèo mẹ mới đẻ"))));
+
+        verify(groqService, never()).chat(anyList());
+        verify(openRouterService, never()).chat(anyList());
+    }
+
+    @Test
+    void appointmentServiceChoiceGetsHelpfulLocalAdvice() throws Exception {
+        ChatMessage message = new ChatMessage("user", "tôi muốn đặt lịch nhưng chưa biết chọn dịch vụ nào", null, null);
+
+        mockMvc.perform(post("/api/chat")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("history", List.of(message)))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.source").value("local_everyday"))
+                .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.containsString("Khám tổng quát")))
+                .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.containsString("chó/mèo")));
+
+        verify(groqService, never()).chat(anyList());
+        verify(openRouterService, never()).chat(anyList());
+    }
+
+    @Test
+    void casualThanksWithParticleStaysWarmAndLocal() throws Exception {
+        ChatMessage message = new ChatMessage("user", "cảm ơn nha", null, null);
+
+        mockMvc.perform(post("/api/chat")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("history", List.of(message)))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.source").value("local_everyday"))
+                .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.containsString("Không có gì")))
+                .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.containsString("Rexi")));
+
+        verify(groqService, never()).chat(anyList());
+        verify(openRouterService, never()).chat(anyList());
+    }
+
+    @Test
+    void quickSuggestionVetVisitWarningAnswersLocallyWithoutDuckDuckGoGate() throws Exception {
+        ChatMessage message = new ChatMessage("user", "Những dấu hiệu nào ở chó mèo cần đưa đi khám ngay?", null, null);
+
+        mockMvc.perform(post("/api/chat")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("history", List.of(message)))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.source").value("local_vet"))
+                .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.containsString("khó thở")))
+                .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.containsString("0353.374.156")))
+                .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("DuckDuckGo"))));
+
+        verify(geminiService, never()).chat(anyList());
+        verify(groqService, never()).chat(anyList());
+        verify(openRouterService, never()).chat(anyList());
+    }
+
+    @Test
+    void postVisitCareSuggestionAnswersLocally() throws Exception {
+        ChatMessage message = new ChatMessage("user", "Sau khi bé vừa khám xong cần chăm sóc theo dõi thế nào?", null, null);
+
+        mockMvc.perform(post("/api/chat")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("history", List.of(message)))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.source").value("local_vet"))
+                .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.containsString("24-48 giờ")))
+                .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("DuckDuckGo"))));
+
+        verify(groqService, never()).chat(anyList());
+        verify(openRouterService, never()).chat(anyList());
+    }
+
+    @Test
+    void poisoningFirstAidSuggestionAnswersLocally() throws Exception {
+        ChatMessage message = new ChatMessage("user", "Cách sơ cứu mèo bị ngộ độc thực phẩm?", null, null);
+
+        mockMvc.perform(post("/api/chat")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("history", List.of(message)))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.source").value("local_vet"))
+                .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.containsString("không tự gây nôn")))
+                .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.containsString("0353.374.156")));
+
+        verify(groqService, never()).chat(anyList());
+        verify(openRouterService, never()).chat(anyList());
+    }
+
+    @Test
+    void diazepamDoseRequestIsBlockedLocally() throws Exception {
+        ChatMessage message = new ChatMessage("user", "Cần chuẩn bị liều lượng Diazepam cấp cứu thế nào?", null, null);
+
+        mockMvc.perform(post("/api/chat")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("history", List.of(message)))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.source").value("local_vet"))
+                .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.containsString("không thể kê đơn")))
+                .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("DuckDuckGo"))));
+
+        verify(groqService, never()).chat(anyList());
+        verify(openRouterService, never()).chat(anyList());
+    }
+
+    @Test
+    void doctorInfoQuestionUsesFastDbInsteadOfMedicalWebGate() throws Exception {
+        when(jdbcTemplate.queryForList(anyString())).thenReturn(List.of(Map.of(
+                "ho_ten", "Nguyễn A",
+                "chuyen_mon", "Bác sĩ thú y",
+                "gioi_thieu", "Khám tổng quát"
+        )));
+        ChatMessage message = new ChatMessage("user", "Cho tôi biết thông tin bác sĩ của phòng khám", null, null);
+
+        mockMvc.perform(post("/api/chat")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("history", List.of(message)))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.source").value("fast_db"))
+                .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.containsString("BS. Nguyễn A")))
+                .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("DuckDuckGo"))));
+
+        verify(groqService, never()).chat(anyList());
+        verify(openRouterService, never()).chat(anyList());
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = "ADMIN")
+    void openInvoicePageRoutesToAgent() throws Exception {
+        String query = "Mở trang hóa đơn chưa thanh toán giúp tôi";
+        when(reActAgentService.run(eq(query), eq("admin"), eq("admin")))
+                .thenReturn(new ReActAgentService.ReActResult(
+                        "Đã mở trang hóa đơn và áp bộ lọc chưa thanh toán.",
+                        List.of(),
+                        "System"
+                ));
+
+        mockMvc.perform(post("/api/chat")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("history", List.of(new ChatMessage("user", query, null, null))))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.source").value("react_agent_auto"))
+                .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.containsString("Đã mở trang hóa đơn")));
+
+        verify(reActAgentService).run(eq(query), eq("admin"), eq("admin"));
+        verify(groqService, never()).chat(anyList());
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = "ADMIN")
+    void serviceRevenueQuestionRoutesToAgent() throws Exception {
+        String query = "Dịch vụ nào đang được đặt nhiều và tạo doanh thu tốt?";
+        when(reActAgentService.run(eq(query), eq("admin"), eq("admin")))
+                .thenReturn(new ReActAgentService.ReActResult(
+                        "Agent đã đọc dữ liệu thật và tổng hợp dịch vụ theo lịch hẹn/doanh thu.",
+                        List.of(),
+                        "System"
+                ));
+
+        mockMvc.perform(post("/api/chat")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("history", List.of(new ChatMessage("user", query, null, null))))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.source").value("react_agent_auto"))
+                .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.containsString("dữ liệu thật")));
+
+        verify(reActAgentService).run(eq(query), eq("admin"), eq("admin"));
+        verify(groqService, never()).chat(anyList());
+    }
 }

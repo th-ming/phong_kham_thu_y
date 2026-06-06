@@ -116,6 +116,7 @@ export const ChatBotCore: React.FC = () => {
     const hasCustomerBirthYear = isCustomerAccount && Number.isInteger(customerBirthYear) && customerBirthYear >= 1900;
     const isGenZCustomer = hasCustomerBirthYear && customerBirthYear >= 1997;
     const shouldUseMatureCustomerTone = isCustomerAccount && hasCustomerBirthYear && !isGenZCustomer;
+    const customerDisplayName = userName || (shouldUseMatureCustomerTone ? "anh/chị" : "nhà mình");
     const customerAddress = shouldUseMatureCustomerTone ? "anh/chị" : "Sen";
 
     const displayGreetingName = (userName.toLowerCase().includes(userRoleName.toLowerCase()) || 
@@ -146,8 +147,10 @@ export const ChatBotCore: React.FC = () => {
         text: isClinicStaff
             ? `${timeGreeting} **${displayGreetingName}**. Rexi sẵn sàng hỗ trợ ca trực hôm nay. Bạn cần tra cứu nhanh, kiểm tra dữ liệu hay tư vấn y học thú y phần nào trước?`
             : shouldUseMatureCustomerTone
-                ? `${timeGreeting}. Rexi đã sẵn sàng hỗ trợ. Anh/chị cần tư vấn sức khỏe thú cưng, đặt lịch khám hay kiểm tra thông tin nào trước?`
-                : `${timeGreeting}. Rexi có thể hỗ trợ tư vấn sức khỏe thú cưng, đặt lịch khám hoặc tra cứu dịch vụ. Sen cần hỗ trợ việc gì trước?`
+                ? `${timeGreeting} **${customerDisplayName}**. Rexi đã sẵn sàng hỗ trợ. Anh/chị cần tư vấn sức khỏe thú cưng, đặt lịch khám hay kiểm tra thông tin nào trước?`
+                : userName
+                    ? `${timeGreeting} Sen **${userName}**. Rexi đây, mình xem nhanh tình hình của boss rồi xử lý gọn nha. Hôm nay boss ổn không, hay có điều gì làm Sen lo cần Rexi xem cùng?`
+                    : `${timeGreeting} Sen. Rexi đây nè. Sen cần hỏi sức khỏe, đặt lịch hay tìm dịch vụ cho boss trước?`
     });
 
     const createAgentGreeting = () => ({
@@ -155,8 +158,8 @@ export const ChatBotCore: React.FC = () => {
         text: isClinicStaff
             ? `${timeGreeting} **Đồng nghiệp ${userRoleName} ${userName}**. **Rexi Agent** đã sẵn sàng xử lý tác vụ. Bạn nói việc cần làm: tra cứu khách hàng, lập lịch khám, xem bệnh án, kiểm tra thuốc hoặc điều phối nhanh.`
             : shouldUseMatureCustomerTone
-                ? `${timeGreeting}. **Rexi Agent** có thể hỗ trợ đặt lịch, tra cứu lịch trực bác sĩ và tìm tài liệu thú y. Anh/chị muốn Rexi thực hiện việc nào trước?`
-                : `${timeGreeting}. **Rexi Agent** có thể hỗ trợ đặt lịch, tra lịch bác sĩ và tìm tài liệu thú y. Sen muốn Rexi xử lý việc nào trước?`
+                ? `${timeGreeting} **${customerDisplayName}**. **Rexi Agent** có thể hỗ trợ đặt lịch, tra cứu lịch trực bác sĩ và tìm tài liệu thú y. Anh/chị muốn Rexi thực hiện việc nào trước?`
+                : `${timeGreeting} Sen **${customerDisplayName}**. **Rexi Agent** có thể đặt lịch, tra lịch bác sĩ và tìm tài liệu thú y chuẩn xác. Sen muốn Rexi xử lý việc nào trước nha?`
     });
 
     const isChatGreetingMessage = (text: string) =>

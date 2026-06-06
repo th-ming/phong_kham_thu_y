@@ -62,8 +62,16 @@ const QuanLyMarketing: React.FC = () => {
 
     return (
         <div style={{ padding: '40px', background: 'var(--background)', minHeight: '100vh' }}>
+            <style>{`
+                @keyframes slideUpFade { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+                @keyframes fadeInScale { from { opacity: 0; transform: scale(0.97); } to { opacity: 1; transform: scale(1); } }
+                .marketing-card { animation: slideUpFade 0.45s cubic-bezier(.22,.68,0,1.2) both; transition: transform 0.25s ease, box-shadow 0.25s ease; }
+                .marketing-card:hover { transform: translateY(-4px); box-shadow: 0 16px 40px rgba(15,157,138,0.1) !important; }
+                .marketing-input:focus { border-color: var(--primary) !important; box-shadow: 0 0 0 3px rgba(20,184,166,0.15) !important; }
+                .marketing-header { animation: fadeInScale 0.4s cubic-bezier(.22,.68,0,1.2) both; }
+            `}</style>
             <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-                <header style={{ marginBottom: '40px' }}>
+                <header className="marketing-header" style={{ marginBottom: '40px' }}>
                     <h1 style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--ink)', marginBottom: '10px' }}>
                         Trung Tâm <span style={{ color: 'var(--primary)' }}>Marketing</span> 🚀
                     </h1>
@@ -72,7 +80,7 @@ const QuanLyMarketing: React.FC = () => {
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '30px' }}>
                     {/* Thống kê nhanh */}
-                    <div className="glass-card" style={{ padding: '30px', borderRadius: '24px', display: 'flex', alignItems: 'center', gap: '20px' }}>
+                    <div className="glass-card marketing-card" style={{ padding: '30px', borderRadius: '24px', display: 'flex', alignItems: 'center', gap: '20px' }}>
                         <div style={{ background: 'var(--primary-light)', color: 'var(--primary)', width: '60px', height: '60px', borderRadius: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>
                             <span className="material-symbols-outlined">group</span>
                         </div>
@@ -83,7 +91,7 @@ const QuanLyMarketing: React.FC = () => {
                     </div>
 
                     {/* Form soạn thảo */}
-                    <div className="glass-card" style={{ padding: '40px', borderRadius: '32px' }}>
+                    <div className="glass-card marketing-card" style={{ padding: '40px', borderRadius: '32px', animationDelay: '0.1s' }}>
                         <h3 style={{ marginBottom: '25px', fontWeight: 800, fontSize: '1.3rem', color: 'var(--ink)' }}>Soạn chiến dịch mới</h3>
 
                         <div style={{ marginBottom: '25px' }}>

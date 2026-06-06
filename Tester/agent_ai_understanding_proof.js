@@ -3,7 +3,7 @@ const path = require("path");
 
 const root = path.resolve(__dirname, "..");
 const backendPath = path.join(root, "Backend", "src", "main", "java", "com", "rexi", "pkty", "service", "ReActAgentService.java");
-const frontendPath = path.join(root, "Frontend", "src", "components", "ChatBot.tsx");
+const frontendPath = path.join(root, "Frontend", "src", "components", "chatbot", "ChatBotCore.tsx");
 const testPath = path.join(root, "Backend", "src", "test", "java", "com", "rexi", "pkty", "service", "ReActAgentServiceDeterministicTest.java");
 
 const backend = fs.readFileSync(backendPath, "utf8");

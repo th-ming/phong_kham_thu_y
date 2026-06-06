@@ -116,6 +116,13 @@ const QuenMatKhau: React.FC = () => {
         .input-group { background: var(--gray-50) !important; border: 1.5px solid var(--gray-200) !important; border-radius: 12px; padding: 4px 16px; margin-bottom: 12px; }
         .input-group input { background: transparent !important; border: none !important; width: 100%; padding: 14px 0; outline: none !important; font-weight: 600; color: var(--ink) !important; }
         .btn-auth { background: var(--primary-gradient) !important; color: white !important; border: none !important; border-radius: 50px !important; padding: 16px !important; font-weight: 800 !important; cursor: pointer !important; width: 100% !important; transition: all 0.3s !important; box-shadow: 0 12px 28px var(--primary-shadow); }
+        .btn-auth:hover:not(:disabled) { transform: translateY(-2px) scale(1.01); box-shadow: 0 16px 36px var(--primary-shadow) !important; }
+        .btn-auth:active:not(:disabled) { transform: scale(0.98); }
+        @keyframes slideUpFade { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-8px)} 40%{transform:translateX(8px)} 60%{transform:translateX(-6px)} 80%{transform:translateX(6px)} }
+        .auth-card { animation: slideUpFade 0.5s cubic-bezier(.22,.68,0,1.2) 0.08s both; }
+        .input-group { transition: border-color 0.2s ease, box-shadow 0.2s ease; }
+        .input-group:focus-within { border-color: var(--primary) !important; box-shadow: 0 0 0 3px rgba(15,157,138,0.12) !important; }
         .tab-btn { flex: 1; padding: 12px; border-radius: 12px; border: none; font-weight: 800; cursor: pointer; transition: all 0.3s; }
         .auth-form-panel { padding: 60px; display: flex; flex-direction: column; justify-content: center; }
 

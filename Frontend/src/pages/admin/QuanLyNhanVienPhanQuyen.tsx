@@ -816,7 +816,9 @@ const NhanVienVirtualTable: React.FC<{
                         padding: '8px 16px', borderRadius: '50px', fontSize: '0.7rem', fontWeight: 900,
                         background: !b.da_xoa && b.trang_thai === 'Đang làm việc' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
                         color: !b.da_xoa && b.trang_thai === 'Đang làm việc' ? '#16a34a' : '#dc2626',
-                        border: !b.da_xoa && b.trang_thai === 'Đang làm việc' ? '1px solid rgba(34, 197, 94, 0.2)' : '1px solid rgba(239, 68, 68, 0.2)'
+                        border: !b.da_xoa && b.trang_thai === 'Đang làm việc' ? '1px solid rgba(34, 197, 94, 0.2)' : '1px solid rgba(239, 68, 68, 0.2)',
+                        whiteSpace: 'nowrap',
+                        display: 'inline-block'
                       }}>
                         {b.da_xoa ? 'ĐÃ XÓA MỀM' : (b.trang_thai?.toUpperCase() || 'KHÔNG XÁC ĐỊNH')}
                       </span>

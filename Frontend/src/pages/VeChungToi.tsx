@@ -1,4 +1,4 @@
-﻿import React, { useEffect } from "react";
+import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { MemeCat, ScrollToTop, RevealSection } from "@components/SpecialEffects";
 
@@ -33,6 +33,11 @@ const VeChungToi: React.FC = () => {
                     border: 1.5px solid var(--gray-200);
                     transition: all 0.4s ease;
                     text-align: center;
+                    animation: slideUpFade 0.55s cubic-bezier(.22,.68,0,1.2) both;
+                }
+                @keyframes slideUpFade {
+                    from { opacity: 0; transform: translateY(22px); }
+                    to   { opacity: 1; transform: translateY(0); }
                 }
                 .mission-card:hover {
                     transform: translateY(-12px);
@@ -130,7 +135,7 @@ const VeChungToi: React.FC = () => {
                             { title: "Giá Trị", icon: "verified", text: "Minh bạch trong điều trị, không ngừng học hỏi và luôn đặt phúc lợi của thú cưng lên hàng đầu.", color: "#f59e0b" }
                         ].map((m, i) => (
                             <RevealSection key={i}>
-                                <div className="mission-card">
+                                <div className="mission-card" style={{ animationDelay: `${i * 0.12}s` }}>
                                     <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: `${m.color}15`, color: m.color, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 32px' }}>
                                         <span className="material-symbols-outlined" style={{ fontSize: '40px' }}>{m.icon}</span>
                                     </div>
@@ -160,7 +165,7 @@ const VeChungToi: React.FC = () => {
                             { title: "Phòng Chẩn Đoán Hình Ảnh", icon: "medical_services", img: "/img/chan_doan_hinh_anh.png" }
                         ].map((f, i) => (
                             <RevealSection key={i}>
-                                <div className="facility-item" style={{ position: 'relative', overflow: 'hidden', borderRadius: '32px' }}>
+                                <div className="facility-item" style={{ position: 'relative', overflow: 'hidden', borderRadius: '32px', animation: 'slideUpFade 0.5s cubic-bezier(.22,.68,0,1.2) both', animationDelay: `${i * 0.08}s` }}>
                                     <img src={f.img} alt={f.title} className="facility-img" />
                                     <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '40px 24px 24px', background: 'linear-gradient(to top, rgba(15,23,42,0.8), transparent)', color: 'white' }}>
                                         <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 900 }}>{f.title}</h4>

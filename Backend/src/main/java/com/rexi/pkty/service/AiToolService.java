@@ -390,9 +390,9 @@ public class AiToolService {
         }
 
         List<Map<String, Object>> appointmentRows = jdbcTemplate.queryForList(
-            "SELECT COALESCE(dv.ten_dich_vu, '') AS ten_dich_vu, COALESCE(lh.ly_do, '') AS ly_do " +
+            "SELECT TOP 200 COALESCE(dv.ten_dich_vu, '') AS ten_dich_vu, COALESCE(lh.ly_do, '') AS ly_do " +
             "FROM LichHen lh LEFT JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu " +
-            "WHERE lh.ngay_kham = ? LIMIT 200",
+            "WHERE lh.ngay_kham = ?",
             java.sql.Date.valueOf(today)
         );
 
@@ -920,10 +920,22 @@ public class AiToolService {
             default -> khoang = "all";
         }
 
-        sql.append("GROUP BY COALESCE(nv.ho_ten, 'Chưa gán bác sĩ') ");
-        sql.append("ORDER BY so_ca_hieu_luc ").append(ascending ? "ASC" : "DESC")
-            .append(", tong_ca ").append(ascending ? "ASC" : "DESC")
-            .append(", ten_bac_si ASC LIMIT 10");
+        // Dùng subquery bọc ngoài để áp TOP sau ORDER BY — SQL Server không cho TOP trực tiếp với GROUP BY alias
+        String innerSql = "SELECT TOP 10 COALESCE(nv.ho_ten, 'Chưa gán bác sĩ') AS ten_bac_si, " +
+            "COUNT(*) AS tong_ca, " +
+            "SUM(CASE WHEN lh.trang_thai = 'DA_HUY' OR lh.trang_thai = 'Đã hủy' THEN 1 ELSE 0 END) AS so_ca_huy, " +
+            "SUM(CASE WHEN lh.trang_thai IS NULL OR (lh.trang_thai <> 'DA_HUY' AND lh.trang_thai <> 'Đã hủy') THEN 1 ELSE 0 END) AS so_ca_hieu_luc " +
+            "FROM LichHen lh LEFT JOIN NhanVien nv ON lh.id_bac_si = nv.id_nhan_vien " +
+            "WHERE lh.id_bac_si IS NOT NULL ";
+        // Thêm điều kiện thời gian từ sql đã build (chứa WHERE ... AND ...)
+        // Ta chỉ lấy phần WHERE đã append sau "WHERE lh.id_bac_si IS NOT NULL "
+        String whereExtra = sql.toString().substring(sql.toString().indexOf("WHERE lh.id_bac_si IS NOT NULL ") + "WHERE lh.id_bac_si IS NOT NULL ".length());
+        String finalSql = innerSql + whereExtra +
+            "GROUP BY COALESCE(nv.ho_ten, 'Chưa gán bác sĩ') " +
+            "ORDER BY so_ca_hieu_luc " + (ascending ? "ASC" : "DESC") +
+            ", tong_ca " + (ascending ? "ASC" : "DESC") +
+            ", ten_bac_si ASC";
+        sql = new StringBuilder(finalSql);
 
         var rows = jdbcTemplate.queryForList(sql.toString(), queryParams.toArray());
         if (rows.isEmpty()) {

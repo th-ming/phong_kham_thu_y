@@ -114,6 +114,11 @@ const BacSiDashboard: React.FC = () => {
     return (
         <div className="animate-fade-in">
             <style>{`
+                @keyframes slideInRight { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+                @keyframes slideUpFade { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+                .clinical-kpi-card { animation: slideUpFade 0.45s cubic-bezier(.22,.68,0,1.2) both; }
+                .appointment-row { animation: slideUpFade 0.35s cubic-bezier(.22,.68,0,1.2) both; }
+                .sidebar-card { animation: slideInRight 0.45s cubic-bezier(.22,.68,0,1.2) both; }
                 @keyframes pulseWarning {
                     0% { transform: scale(1); text-shadow: 0 0 0 rgba(245, 158, 11, 0); }
                     50% { transform: scale(1.05); text-shadow: 0 0 15px rgba(245, 158, 11, 0.7); }

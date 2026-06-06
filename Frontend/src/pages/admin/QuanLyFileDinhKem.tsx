@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import axiosInstance from "@services/axios";
 import { Modal } from "@components/CommonUI";
 import { toast } from "@components/Toast";
@@ -97,6 +97,7 @@ const QuanLyFileDinhKem: React.FC = () => {
   };
 
   const formatSize = (bytes: number) => {
+    if (bytes === undefined || bytes === null || isNaN(bytes)) return "—";
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
     const sizes = ['B', 'KB', 'MB', 'GB'];

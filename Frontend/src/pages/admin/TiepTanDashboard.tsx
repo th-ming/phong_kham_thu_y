@@ -190,6 +190,9 @@ const TiepTanDashboard: React.FC = () => {
           50% { transform: scale(1.05); text-shadow: 0 0 15px rgba(239, 68, 68, 0.7); }
           100% { transform: scale(1); text-shadow: 0 0 0 rgba(239, 68, 68, 0); }
         }
+        @keyframes slideUpFade { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+        .reception-kpi-card { animation: slideUpFade 0.45s cubic-bezier(.22,.68,0,1.2) both; }
+        .reception-row { transition: background 0.18s ease; }
         .pulse-danger-text { animation: pulseDanger 1.5s infinite ease-in-out; }
         .reception-grid {
           display: grid;

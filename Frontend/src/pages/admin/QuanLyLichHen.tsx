@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import axiosInstance from "@services/axios";
 import ModalTaoLichHenAdmin from "./ModalTaoLichHenAdmin";
 import { Modal, InfoRow } from "@components/CommonUI";
@@ -137,6 +137,8 @@ const QuanLyLichHen: React.FC = () => {
         .stagger-2 { animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both; }
         .table-row:hover { background-color: var(--surface) !important; transform: scale(1.01) translateX(8px); box-shadow: -10px 10px 20px rgba(15, 157, 138, 0.08); z-index: 10; position: relative; border-radius: 16px; }
         [data-theme='dark'] .table-row:hover { background-color: rgba(15, 23, 42, 0.96) !important; box-shadow: -10px 10px 24px rgba(34, 211, 238, 0.08); }
+        .admin-appointment-mobile-card { transition: transform 0.2s ease, box-shadow 0.2s ease; animation: slideUpFade 0.4s cubic-bezier(.22,.68,0,1.2) both; }
+        .admin-appointment-mobile-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
         .admin-appointment-mobile-list { display: none; }
         @media screen and (max-width: 1024px) {
           .admin-mobile-page-header {
