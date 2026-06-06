@@ -153,7 +153,7 @@ public class SystemController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> getNhatKy() {
         try {
-            List<Map<String, Object>> logs = jdbcTemplate.queryForList("SELECT TOP 100 * FROM NhatKyHeThong ORDER BY ngay_tao DESC");
+            List<Map<String, Object>> logs = jdbcTemplate.queryForList("SELECT * FROM NhatKyHeThong ORDER BY ngay_tao DESC LIMIT 100");
             return ResponseEntity.ok(logs);
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of("message", "Lỗi tải nhật ký"));
@@ -257,7 +257,7 @@ public class SystemController {
     public ResponseEntity<?> taoDuLieuNenThieu() {
         try {
             Integer idChucNang = jdbcTemplate.queryForObject(
-                    "SELECT TOP 1 id_chuc_nang FROM ChucNang WHERE ma_chuc_nang = ?",
+                    "SELECT id_chuc_nang FROM ChucNang WHERE ma_chuc_nang = ? LIMIT 1",
                     Integer.class,
                     "XET_NGHIEM");
             return ResponseEntity.ok(Map.of("message", "Dữ liệu nền đã tồn tại.", "id_chuc_nang", idChucNang));
@@ -272,28 +272,28 @@ public class SystemController {
                     "Xét nghiệm & Cận lâm sàng",
                     "Phiếu xét nghiệm, chỉ số và kết quả cận lâm sàng");
             Integer idChucNang = jdbcTemplate.queryForObject(
-                    "SELECT TOP 1 id_chuc_nang FROM ChucNang WHERE ma_chuc_nang = ? ORDER BY id_chuc_nang DESC",
+                    "SELECT id_chuc_nang FROM ChucNang WHERE ma_chuc_nang = ? ORDER BY id_chuc_nang DESC LIMIT 1",
                     Integer.class,
                     "XET_NGHIEM");
             String idVaiTro = jdbcTemplate.queryForObject(
-                    "SELECT TOP 1 id_vai_tro FROM VaiTroHeThong ORDER BY id_vai_tro",
+                    "SELECT id_vai_tro FROM VaiTroHeThong ORDER BY id_vai_tro LIMIT 1",
                     String.class);
             String idNhanVien = jdbcTemplate.queryForObject(
-                    "SELECT TOP 1 id_nhan_vien FROM NhanVien ORDER BY id_nhan_vien",
+                    "SELECT id_nhan_vien FROM NhanVien ORDER BY id_nhan_vien LIMIT 1",
                     String.class);
             jdbcTemplate.update(
                     "INSERT INTO PhanQuyen (id_vai_tro, id_chuc_nang) VALUES (?, ?)",
                     idVaiTro,
                     idChucNang);
             jdbcTemplate.update(
-                    "INSERT INTO PhanCongNhanVien (id_nhan_vien, id_vai_tro, ngay_bat_dau_phan_cong) VALUES (?, ?, CAST(GETDATE() AS DATE))",
+                    "INSERT INTO PhanCongNhanVien (id_nhan_vien, id_vai_tro, ngay_bat_dau_phan_cong) VALUES (?, ?, CURRENT_DATE)",
                     idNhanVien,
                     idVaiTro);
 
             List<Map<String, Object>> lichHen = jdbcTemplate.queryForList(
-                    "SELECT TOP 1 lh.id_lich_hen, lh.id_dich_vu, ISNULL(dv.gia, 0) AS don_gia " +
+                    "SELECT lh.id_lich_hen, lh.id_dich_vu, COALESCE(dv.gia, 0) AS don_gia " +
                             "FROM LichHen lh LEFT JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu " +
-                            "WHERE lh.id_dich_vu IS NOT NULL ORDER BY lh.ngay_tao DESC");
+                            "WHERE lh.id_dich_vu IS NOT NULL ORDER BY lh.ngay_tao DESC LIMIT 1");
             if (!lichHen.isEmpty()) {
                 Map<String, Object> item = lichHen.get(0);
                 jdbcTemplate.update(
@@ -422,7 +422,7 @@ public class SystemController {
     public ResponseEntity<?> getNewsletterCount() {
         try {
             // KhachHang nhan email, da_xoa = 0
-            Integer count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM KhachHang WHERE email IS NOT NULL AND email <> '' AND (nhan_email = 1 OR nhan_email IS NULL) AND da_xoa = 0", Integer.class);
+            Integer count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM KhachHang WHERE email IS NOT NULL AND email <> '' AND (LOWER(CAST(nhan_email AS varchar)) IN ('1', 'true') OR nhan_email IS NULL) AND (da_xoa IS NULL OR LOWER(CAST(da_xoa AS varchar)) IN ('0', 'false'))", Integer.class);
             return ResponseEntity.ok(Map.of("count", count != null ? count : 0));
         } catch (Exception e) {
             return ResponseEntity.ok(Map.of("count", 0));
@@ -448,7 +448,7 @@ public class SystemController {
                 email);
             if (marketingExists == null || marketingExists == 0) {
                 jdbcTemplate.update(
-                    "INSERT INTO EmailMarketing (email, ngay_dang_ky, trang_thai) VALUES (?, GETDATE(), 1)",
+                    "INSERT INTO EmailMarketing (email, ngay_dang_ky, trang_thai) VALUES (?, CURRENT_TIMESTAMP, 1)",
                     email);
             }
 
@@ -458,7 +458,7 @@ public class SystemController {
                 email);
             if (legacyExists == null || legacyExists == 0) {
                 jdbcTemplate.update(
-                    "INSERT INTO DangKyNhanTin (Email, NgayDangKy) VALUES (?, GETDATE())",
+                    "INSERT INTO DangKyNhanTin (Email, NgayDangKy) VALUES (?, CURRENT_TIMESTAMP)",
                     email);
             }
 
@@ -501,8 +501,9 @@ public class SystemController {
 
         try {
             List<String> emails = jdbcTemplate.queryForList(
-                "SELECT TOP (" + MASS_EMAIL_MAX_BATCH + ") email FROM KhachHang " +
-                "WHERE email IS NOT NULL AND email <> '' AND (nhan_email = 1 OR nhan_email IS NULL) AND da_xoa = 0",
+                "SELECT email FROM KhachHang " +
+                "WHERE email IS NOT NULL AND email <> '' AND (LOWER(CAST(nhan_email AS varchar)) IN ('1', 'true') OR nhan_email IS NULL) " +
+                "AND (da_xoa IS NULL OR LOWER(CAST(da_xoa AS varchar)) IN ('0', 'false')) LIMIT " + MASS_EMAIL_MAX_BATCH,
                 String.class
             );
 

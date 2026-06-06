@@ -69,14 +69,14 @@ public class HoSoBenhAnController {
         StringBuilder where = new StringBuilder("WHERE 1=1");
         java.util.List<Object> params = new java.util.ArrayList<>();
         com.rexi.pkty.util.SmartSearchSql.appendTokenSearch(where, params, search,
-                "CAST(hs.id_ho_so_benh_an AS NVARCHAR(50)) LIKE ?",
-                "tc.ten_thu_cung COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI",
-                "tc.giong COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI",
-                "kh.ten_khach_hang COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI",
-                "nv.ho_ten COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI",
-                "hs.trieu_chung COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI",
-                "hs.chan_doan COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI",
-                "hs.trang_thai_ho_so COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI");
+                "CAST(hs.id_ho_so_benh_an AS varchar) LIKE ?",
+                "LOWER(COALESCE(tc.ten_thu_cung, '')) LIKE LOWER(?)",
+                "LOWER(COALESCE(tc.giong, '')) LIKE LOWER(?)",
+                "LOWER(COALESCE(kh.ten_khach_hang, '')) LIKE LOWER(?)",
+                "LOWER(COALESCE(nv.ho_ten, '')) LIKE LOWER(?)",
+                "LOWER(COALESCE(hs.trieu_chung, '')) LIKE LOWER(?)",
+                "LOWER(COALESCE(hs.chan_doan, '')) LIKE LOWER(?)",
+                "LOWER(COALESCE(hs.trang_thai_ho_so, '')) LIKE LOWER(?)");
 
         String fromSql = "FROM HoSoBenhAn hs " +
                 "LEFT JOIN ThuCung tc ON hs.id_thu_cung = tc.id_thu_cung " +
@@ -93,7 +93,7 @@ public class HoSoBenhAnController {
                 "kh.id_khach_hang, kh.ten_khach_hang " +
                 fromSql + where + " " +
                 "ORDER BY hs.ngay_kham DESC " +
-                "OFFSET CAST(? AS INT) ROWS FETCH NEXT CAST(? AS INT) ROWS ONLY";
+                "OFFSET ? LIMIT ?";
         java.util.List<Object> dataParams = new java.util.ArrayList<>(params);
         dataParams.add(offset);
         dataParams.add(size);
@@ -193,7 +193,7 @@ public class HoSoBenhAnController {
                 "JOIN NhanVien nv ON dt.id_bac_si = nv.id_nhan_vien " +
                 "JOIN KhachHang kh ON tc.id_khach_hang = kh.id_khach_hang " +
                 "ORDER BY dt.ngay_ke_don DESC " +
-                "OFFSET CAST(? AS INT) ROWS FETCH NEXT CAST(? AS INT) ROWS ONLY";
+                "OFFSET ? LIMIT ?";
         return jdbcTemplate.queryForList(sql, offset, size);
     }
 
@@ -207,11 +207,11 @@ public class HoSoBenhAnController {
                 "baxn.id_ho_so, baxn.ngay_lay_mau, " +
                 "baxn.trang_thai, nv.ho_ten as ten_bac_si " +
                 "FROM BenhAn_XetNghiem baxn " +
-                "LEFT JOIN LoaiXetNghiem lxn ON baxn.id_loai_xet_nghiem = CONVERT(VARCHAR(50), lxn.id_loai_xet_nghiem) " +
+                "LEFT JOIN LoaiXetNghiem lxn ON baxn.id_loai_xet_nghiem = CAST(lxn.id_loai_xet_nghiem AS varchar) " +
                 "JOIN HoSoBenhAn hs ON baxn.id_ho_so = hs.id_ho_so_benh_an " +
                 "LEFT JOIN NhanVien nv ON COALESCE(baxn.id_bac_si, hs.id_bac_si) = nv.id_nhan_vien " +
                 "ORDER BY baxn.ngay_lay_mau DESC " +
-                "OFFSET CAST(? AS INT) ROWS FETCH NEXT CAST(? AS INT) ROWS ONLY";
+                "OFFSET ? LIMIT ?";
         return jdbcTemplate.queryForList(sql, offset, size);
     }
 
@@ -366,7 +366,7 @@ public class HoSoBenhAnController {
                     jdbcTemplate.update("UPDATE LoThuoc SET so_luong_ton = so_luong_ton - ?, ngay_cap_nhat_ton_kho = CURRENT_TIMESTAMP WHERE id_lo = ? AND so_luong_ton >= ?",
                             soXuat, idLo, soXuat);
                     jdbcTemplate.update(
-                            "INSERT INTO GiaoDichKho (id_giao_dich, id_thuoc, id_lo, loai_giao_dich, so_luong, gia_tri, ngay_giao_dich, id_nhan_vien, ghi_chu) VALUES (?, ?, ?, N'XUAT_DON_THUOC', ?, ?, CURRENT_TIMESTAMP, ?, ?)",
+                            "INSERT INTO GiaoDichKho (id_giao_dich, id_thuoc, id_lo, loai_giao_dich, so_luong, gia_tri, ngay_giao_dich, id_nhan_vien, ghi_chu) VALUES (?, ?, ?, 'XUAT_DON_THUOC', ?, ?, CURRENT_TIMESTAMP, ?, ?)",
                             "GDK-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase(),
                             idThuoc,
                             idLo,
@@ -438,11 +438,11 @@ public class HoSoBenhAnController {
 
             String idHoaDon = "HD-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase();
             String sqlHoaDon = "INSERT INTO HoaDon (id_hoa_don, id_khach_hang, id_nhan_vien, id_lich_hen, ngay_lap, ngay_lap_hoa_don, tong_tien_truoc_giam_gia, tong_tien_sau_giam_gia, tong_tien_ban_dau, tong_giam_gia, tong_tien_cuoi, trang_thai, trang_thai_thanh_toan) "
-                    + "VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, ?, ?, 0, ?, 'CHO_THANH_TOAN', N'Chờ thanh toán')";
+                    + "VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, ?, ?, 0, ?, 'CHO_THANH_TOAN', 'Chờ thanh toán')";
             jdbcTemplate.update(sqlHoaDon, idHoaDon, idKhachHang, idBacSi, idLichHen, tongTien, tongTien, tongTien, tongTien);
 
             if (giaKham.compareTo(java.math.BigDecimal.ZERO) > 0) {
-                jdbcTemplate.update("INSERT INTO HoaDonChiTiet (id_chi_tiet_hoa_don, id_hoa_don, ten_muc, loai_muc, so_luong, don_gia) VALUES (?, ?, ?, N'DICH_VU', 1, ?)",
+                jdbcTemplate.update("INSERT INTO HoaDonChiTiet (id_chi_tiet_hoa_don, id_hoa_don, ten_muc, loai_muc, so_luong, don_gia) VALUES (?, ?, ?, 'DICH_VU', 1, ?)",
                         "HDCT-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase(),
                         idHoaDon,
                         "Tiền khám/dịch vụ",
@@ -452,7 +452,7 @@ public class HoSoBenhAnController {
                     "SELECT t.ten_thuoc, dtct.so_luong, t.gia_ban FROM DonThuoc dt JOIN DonThuocChiTiet dtct ON dt.id_don_thuoc = dtct.id_don_thuoc JOIN Thuoc t ON dtct.id_thuoc = t.id_thuoc WHERE dt.id_ho_so_benh_an = ?",
                     idBenhAn);
             for (Map<String, Object> item : thuocHoaDon) {
-                jdbcTemplate.update("INSERT INTO HoaDonChiTiet (id_chi_tiet_hoa_don, id_hoa_don, ten_muc, loai_muc, so_luong, don_gia) VALUES (?, ?, ?, N'THUOC', ?, ?)",
+                jdbcTemplate.update("INSERT INTO HoaDonChiTiet (id_chi_tiet_hoa_don, id_hoa_don, ten_muc, loai_muc, so_luong, don_gia) VALUES (?, ?, ?, 'THUOC', ?, ?)",
                         "HDCT-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase(),
                         idHoaDon,
                         item.get("ten_thuoc"),

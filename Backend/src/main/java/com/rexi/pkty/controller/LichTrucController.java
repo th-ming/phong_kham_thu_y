@@ -81,7 +81,7 @@ public class LichTrucController {
                                 "SELECT COUNT(*) FROM NhanVien nv " +
                                                 "JOIN TaiKhoan tk ON tk.id_nhan_vien = nv.id_nhan_vien " +
                                                 "WHERE nv.id_nhan_vien = ? " +
-                                                "AND COALESCE(nv.da_xoa, 0) = 0 " +
+                                                "AND (nv.da_xoa IS NULL OR LOWER(CAST(nv.da_xoa AS varchar)) IN ('0', 'false')) " +
                                                 "AND LOWER(COALESCE(tk.trang_thai, '')) IN ('active', 'hoạt động', 'đang làm việc')",
                                 Integer.class, targetNhanVienId);
                 if (activeStaffCount == null || activeStaffCount == 0) {
@@ -97,7 +97,7 @@ public class LichTrucController {
 
                 // Check neu nv la bac si
                 String roleCheckSql = "SELECT COUNT(*) FROM NhanVien WHERE id_nhan_vien = ? " +
-                                      "AND (chuyen_mon LIKE N'%Bác sĩ%' OR chuyen_mon LIKE N'%Doctor%')";
+                                      "AND (LOWER(COALESCE(chuyen_mon, '')) LIKE '%bác sĩ%' OR LOWER(COALESCE(chuyen_mon, '')) LIKE '%doctor%')";
                 Integer isDoctor = jdbcTemplate.queryForObject(roleCheckSql, Integer.class, targetNhanVienId);
                 
                 if (isDoctor != null && isDoctor > 0) {
@@ -105,7 +105,7 @@ public class LichTrucController {
                     String countSql = "SELECT COUNT(DISTINCT l.id_nhan_vien) FROM LichLamViecNhanVien l " +
                                       "JOIN NhanVien n ON l.id_nhan_vien = n.id_nhan_vien " +
                                       "WHERE l.ngay_lam = ? AND l.gio_bat_dau = ? " +
-                                      "AND (n.chuyen_mon LIKE N'%Bác sĩ%' OR n.chuyen_mon LIKE N'%Doctor%')";
+                                      "AND (LOWER(COALESCE(n.chuyen_mon, '')) LIKE '%bác sĩ%' OR LOWER(COALESCE(n.chuyen_mon, '')) LIKE '%doctor%')";
                     Integer doctorCount = jdbcTemplate.queryForObject(countSql, Integer.class, ngayLamStr, gioBatDauStr);
                     
                     if (doctorCount != null && doctorCount >= 3) {
@@ -169,7 +169,7 @@ public class LichTrucController {
                         LocalTime shiftEnd = shiftStart.plusMinutes(30);
 
                         List<Map<String, Object>> existingApps = jdbcTemplate.queryForList(
-                                        "SELECT lh.gio_kham, dv.thoi_luong_phut FROM LichHen lh LEFT JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu WHERE lh.id_bac_si = ? AND lh.ngay_kham = ? AND lh.trang_thai NOT IN (N'Đã hủy', 'DA_HUY', 'da_huy', 'TU_CHOI', N'Hết hạn')",
+                                        "SELECT lh.gio_kham, dv.thoi_luong_phut FROM LichHen lh LEFT JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu WHERE lh.id_bac_si = ? AND lh.ngay_kham = ? AND lh.trang_thai NOT IN ('Đã hủy', 'DA_HUY', 'da_huy', 'TU_CHOI', 'Hết hạn')",
                                         idNhanVien, sqlDate);
 
                         boolean isConflict = false;

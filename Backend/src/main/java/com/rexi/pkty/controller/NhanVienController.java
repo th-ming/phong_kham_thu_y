@@ -125,8 +125,13 @@ public class NhanVienController {
                 String sql = "SELECT DISTINCT nv.id_nhan_vien, nv.ho_ten, nv.chuyen_mon, nv.so_dien_thoai, nv.email, nv.dia_chi " +
                              "FROM NhanVien nv " +
                              "JOIN LichLamViecNhanVien l ON nv.id_nhan_vien = l.id_nhan_vien " +
-                             "WHERE nv.id_nhan_vien IN (SELECT id_nhan_vien FROM TaiKhoan WHERE id_vai_tro = 'VT-BS') " +
-                             "AND nv.da_xoa = 0 AND l.ngay_lam = ? " +
+                             "WHERE (nv.da_xoa IS NULL OR LOWER(CAST(nv.da_xoa AS varchar)) IN ('0', 'false')) " +
+                             "AND (LOWER(COALESCE(nv.chuyen_mon, '')) LIKE '%bác sĩ%' " +
+                             "OR LOWER(COALESCE(nv.chuyen_mon, '')) LIKE '%bac si%' " +
+                             "OR LOWER(COALESCE(nv.chuyen_mon, '')) LIKE '%doctor%' " +
+                             "OR EXISTS (SELECT 1 FROM TaiKhoan tk WHERE tk.id_nhan_vien = nv.id_nhan_vien " +
+                             "AND (tk.id_vai_tro IN ('VT-BS', 'VT-2', '2') OR UPPER(COALESCE(tk.id_vai_tro, '')) LIKE '%BS%'))) " +
+                             "AND l.ngay_lam = ? " +
                              "ORDER BY nv.ho_ten ASC";
                 return jdbcTemplate.queryForList(sql, ngay);
             }
@@ -187,8 +192,8 @@ public class NhanVienController {
                     "SELECT COUNT(*) FROM NhanVien nv " +
                             "JOIN TaiKhoan tk ON tk.id_nhan_vien = nv.id_nhan_vien " +
                             "WHERE nv.id_nhan_vien = ? " +
-                            "AND ISNULL(nv.da_xoa, 0) = 0 " +
-                            "AND LOWER(ISNULL(tk.trang_thai, '')) IN ('active', N'hoạt động', N'đang làm việc')",
+                            "AND (nv.da_xoa IS NULL OR LOWER(CAST(nv.da_xoa AS varchar)) IN ('0', 'false')) " +
+                            "AND LOWER(COALESCE(tk.trang_thai, '')) IN ('active', 'hoạt động', 'đang làm việc')",
                     Integer.class, lich.getId_nhan_vien());
             if (activeStaffCount == null || activeStaffCount == 0) {
                 return org.springframework.http.ResponseEntity.status(409)
@@ -232,7 +237,7 @@ public class NhanVienController {
             }
 
             // Lấy role nhân viên từ DB (không fallback đoán bằng prefix)
-            String getRoleSql = "SELECT TOP 1 id_vai_tro FROM TaiKhoan WHERE id_nhan_vien = ?";
+            String getRoleSql = "SELECT id_vai_tro FROM TaiKhoan WHERE id_nhan_vien = ? LIMIT 1";
             String staffRoleId = null;
             try {
                 staffRoleId = jdbcTemplate.queryForObject(getRoleSql, String.class, lich.getId_nhan_vien());
@@ -338,7 +343,7 @@ public class NhanVienController {
             if (shiftEnd == null) shiftEnd = shiftStart.plusMinutes(30);
 
             java.util.List<Map<String, Object>> existingApps = jdbcTemplate.queryForList(
-                    "SELECT lh.gio_kham, dv.thoi_luong_phut FROM LichHen lh JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu WHERE lh.id_bac_si = ? AND lh.ngay_kham = ? AND lh.trang_thai NOT IN (N'Đã hủy', 'da_huy')",
+                    "SELECT lh.gio_kham, dv.thoi_luong_phut FROM LichHen lh JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu WHERE lh.id_bac_si = ? AND lh.ngay_kham = ? AND lh.trang_thai NOT IN ('Đã hủy', 'da_huy')",
                     lichToXoa.getId_nhan_vien(), java.sql.Date.valueOf(lichToXoa.getNgay_lam()));
 
             boolean isConflict = false;

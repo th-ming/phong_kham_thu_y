@@ -5,21 +5,11 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
 @Repository
 public interface HoaDonRepository extends JpaRepository<HoaDon, String> {
-
-        // Call SP lap hoa don
-        @Query(value = "EXEC sp_LapHoaDon :apptId, :taxRate, :discount, :staffId, :note", nativeQuery = true)
-        List<Map<String, Object>> callSpLapHoaDon(
-                        @Param("apptId") String apptId,
-                        @Param("taxRate") BigDecimal taxRate,
-                        @Param("discount") BigDecimal discount,
-                        @Param("staffId") String staffId,
-                        @Param("note") String note);
 
         // Get thuoc sap het han tu View
         @Query(value = "SELECT * FROM v_ThuocSapHetHan", nativeQuery = true)
@@ -84,7 +74,7 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, String> {
                         "FROM HoaDon hd " +
                         "JOIN LichHen lh ON hd.id_lich_hen = lh.id_lich_hen " +
                         "JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu " +
-                        "WHERE UPPER(LTRIM(RTRIM(hd.trang_thai))) = 'DA_THANH_TOAN' " +
+                        "WHERE UPPER(TRIM(hd.trang_thai)) = 'DA_THANH_TOAN' " +
                         "GROUP BY dv.ten_dich_vu " +
                         "ORDER BY DoanhThu DESC", nativeQuery = true)
         List<Map<String, Object>> getDoanhThuTheoDichVu();

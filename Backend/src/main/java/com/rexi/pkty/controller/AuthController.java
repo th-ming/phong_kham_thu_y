@@ -396,8 +396,8 @@ public class AuthController {
             } else {
                 // BẢO MẬT & FIX LỖI 500: Đảm bảo Vai trò tồn tại trong DB để tránh lỗi Foreign Key Constraint
                 try {
-                    jdbcTemplate.update("IF NOT EXISTS (SELECT 1 FROM VaiTroHeThong WHERE id_vai_tro = 'VT-5') INSERT INTO VaiTroHeThong (id_vai_tro, ten_vai_tro, mo_ta) VALUES ('VT-5', N'Khách hàng', N'Khách hàng hệ thống')");
-                    jdbcTemplate.update("IF NOT EXISTS (SELECT 1 FROM VaiTroHeThong WHERE id_vai_tro = 'VT-3') INSERT INTO VaiTroHeThong (id_vai_tro, ten_vai_tro, mo_ta) VALUES ('VT-3', N'Nhân viên', N'Nhân viên phòng khám')");
+                    jdbcTemplate.update("INSERT INTO VaiTroHeThong (id_vai_tro, ten_vai_tro, mo_ta) SELECT 'VT-5', 'Khách hàng', 'Khách hàng hệ thống' WHERE NOT EXISTS (SELECT 1 FROM VaiTroHeThong WHERE id_vai_tro = 'VT-5')");
+                    jdbcTemplate.update("INSERT INTO VaiTroHeThong (id_vai_tro, ten_vai_tro, mo_ta) SELECT 'VT-3', 'Nhân viên', 'Nhân viên phòng khám' WHERE NOT EXISTS (SELECT 1 FROM VaiTroHeThong WHERE id_vai_tro = 'VT-3')");
                 } catch (Exception ignored) {}
 
                 // Nếu chưa có tài khoản, thì mới đi tìm xem là Nhân viên hay Khách hàng để tạo
@@ -552,7 +552,7 @@ public class AuthController {
 
             // BẢO MẬT & FIX LỖI 500: Đảm bảo Vai trò tồn tại trong DB để tránh lỗi Foreign Key Constraint
             try {
-                jdbcTemplate.update("IF NOT EXISTS (SELECT 1 FROM VaiTroHeThong WHERE id_vai_tro = 'VT-5') INSERT INTO VaiTroHeThong (id_vai_tro, ten_vai_tro, mo_ta) VALUES ('VT-5', N'Khách hàng', N'Khách hàng hệ thống')");
+                jdbcTemplate.update("INSERT INTO VaiTroHeThong (id_vai_tro, ten_vai_tro, mo_ta) SELECT 'VT-5', 'Khách hàng', 'Khách hàng hệ thống' WHERE NOT EXISTS (SELECT 1 FROM VaiTroHeThong WHERE id_vai_tro = 'VT-5')");
             } catch (Exception ignored) {}
 
             // Tạo Khách hàng
@@ -679,12 +679,13 @@ public class AuthController {
             String token = jwtUtil.generateToken(username, "khach_hang");
             String refreshToken = jwtUtil.generateRefreshToken(username);
 
-            // Xác định vai trò
-            List<Map<String, Object>> loginResult = taiKhoanRepository.callSpDangNhap(username);
+            // Xác định vai trò trực tiếp, không phụ thuộc stored procedure SQL Server.
             Map<String, Object> userData = new java.util.HashMap<>();
-            if (!loginResult.isEmpty()) {
-                userData = new java.util.HashMap<>(loginResult.get(0));
-            }
+            userData.put("id_tai_khoan", tk.getId_tai_khoan());
+            userData.put("id_vai_tro", tk.getId_vai_tro());
+            userData.put("id_khach_hang", tk.getId_khach_hang());
+            userData.put("id_nhan_vien", tk.getId_nhan_vien());
+            userData.put("trang_thai", tk.getTrang_thai());
             userData.put("ten_dang_nhap", username);
             if (picture != null)
                 userData.put("avatar", picture); // Truyền ảnh Google xuống cho Frontend
@@ -756,7 +757,7 @@ public class AuthController {
 
             // BẢO MẬT & FIX LỖI: Bỏ qua Stored Procedure cũ vì nó cắt xén mất chuỗi Hash 60 ký tự
             try {
-                jdbcTemplate.update("IF NOT EXISTS (SELECT 1 FROM VaiTroHeThong WHERE id_vai_tro = 'VT-5') INSERT INTO VaiTroHeThong (id_vai_tro, ten_vai_tro, mo_ta) VALUES ('VT-5', N'Khách hàng', N'Khách hàng hệ thống')");
+                jdbcTemplate.update("INSERT INTO VaiTroHeThong (id_vai_tro, ten_vai_tro, mo_ta) SELECT 'VT-5', 'Khách hàng', 'Khách hàng hệ thống' WHERE NOT EXISTS (SELECT 1 FROM VaiTroHeThong WHERE id_vai_tro = 'VT-5')");
             } catch (Exception ignored) {}
 
             com.rexi.pkty.entity.KhachHang kh = new com.rexi.pkty.entity.KhachHang();

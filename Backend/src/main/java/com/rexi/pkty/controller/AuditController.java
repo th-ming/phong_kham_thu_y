@@ -31,7 +31,7 @@ public class AuditController {
             // Chuan hoa ten vai tro de khop repo
             
             result.put("VaiTroHeThong", jdbcTemplate.queryForList("SELECT * FROM VaiTroHeThong"));
-            result.put("Doctor_Links", jdbcTemplate.queryForList("SELECT ho_ten, id_tai_khoan FROM NhanVien WHERE chuyen_mon LIKE N'%Bác sĩ%' OR chuyen_mon LIKE N'%bác sĩ%'"));
+            result.put("Doctor_Links", jdbcTemplate.queryForList("SELECT ho_ten, id_tai_khoan FROM NhanVien WHERE LOWER(COALESCE(chuyen_mon, '')) LIKE '%bác sĩ%'"));
             result.put("TaiKhoan_Doctor_Sample", jdbcTemplate.queryForList("SELECT id_tai_khoan, ten_dang_nhap, id_vai_tro FROM TaiKhoan WHERE id_vai_tro = 'VT-8'"));
             result.put("NhanVien", jdbcTemplate.queryForList("SELECT ho_ten, id_tai_khoan, chuyen_mon, email FROM NhanVien"));
             result.put("LichHen_Schema", jdbcTemplate.queryForList("SELECT COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'LichHen'"));

@@ -114,7 +114,7 @@ public class LichHenController {
             }
 
             Integer petOwnerCount = jdbcTemplate.queryForObject(
-                    "SELECT COUNT(*) FROM ThuCung WHERE id_thu_cung = ? AND id_khach_hang = ? AND COALESCE(da_xoa, 0) = 0",
+                    "SELECT COUNT(*) FROM ThuCung WHERE id_thu_cung = ? AND id_khach_hang = ? AND (da_xoa IS NULL OR LOWER(CAST(da_xoa AS varchar)) IN ('0', 'false'))",
                     Integer.class, lichHen.getId_thu_cung(), lichHen.getId_khach_hang());
             if (petOwnerCount == null || petOwnerCount == 0) {
                 throw new RuntimeException("Thú cưng đã chọn không thuộc hồ sơ khách hàng này hoặc đã bị xóa!");
@@ -125,7 +125,7 @@ public class LichHenController {
             }
 
             Integer activeServiceCount = jdbcTemplate.queryForObject(
-                    "SELECT COUNT(*) FROM DichVu WHERE id_dich_vu = ? AND trang_thai = 1",
+                    "SELECT COUNT(*) FROM DichVu WHERE id_dich_vu = ? AND LOWER(CAST(trang_thai AS varchar)) IN ('1', 'true')",
                     Integer.class, lichHen.getId_dich_vu());
             if (activeServiceCount == null || activeServiceCount == 0) {
                 throw new RuntimeException("Dịch vụ đã chọn không còn khả dụng. Vui lòng chọn dịch vụ khác!");
@@ -170,7 +170,7 @@ public class LichHenController {
                         "  WHERE h.id_bac_si = l.id_nhan_vien AND h.ngay_kham = l.ngay_lam " +
                         "  AND (EXTRACT(HOUR FROM h.gio_kham::time) * 60 + EXTRACT(MINUTE FROM h.gio_kham::time))::int < ? " +
                         "  AND (EXTRACT(HOUR FROM h.gio_kham::time) * 60 + EXTRACT(MINUTE FROM h.gio_kham::time))::int + COALESCE(d.thoi_luong_phut, 30) > ? " +
-                        "  AND h.trang_thai NOT IN (N'Đã hủy', 'DA_HUY', 'da_huy', 'TU_CHOI', N'Hết hạn')" +
+                        "  AND h.trang_thai NOT IN ('Đã hủy', 'DA_HUY', 'da_huy', 'TU_CHOI', 'Hết hạn')" +
                         ") LIMIT 1";
                 try {
                     String autoDocId = jdbcTemplate.queryForObject(findDocQuery, String.class,
@@ -208,7 +208,7 @@ public class LichHenController {
 
             boolean isConflict = false;
             List<Map<String, Object>> existingApps = jdbcTemplate.queryForList(
-                    "SELECT lh.gio_kham, dv.thoi_luong_phut FROM LichHen lh LEFT JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu WHERE lh.id_bac_si = ? AND lh.ngay_kham = ? AND lh.trang_thai NOT IN (N'Đã hủy', 'DA_HUY', 'da_huy', 'TU_CHOI', N'Hết hạn')",
+                    "SELECT lh.gio_kham, dv.thoi_luong_phut FROM LichHen lh LEFT JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu WHERE lh.id_bac_si = ? AND lh.ngay_kham = ? AND lh.trang_thai NOT IN ('Đã hủy', 'DA_HUY', 'da_huy', 'TU_CHOI', 'Hết hạn')",
                     lichHen.getId_bac_si(), lichHen.getNgay_kham());
 
             for (Map<String, Object> app : existingApps) {
@@ -241,7 +241,7 @@ public class LichHenController {
             boolean isPetConflict = false;
             if (lichHen.getId_thu_cung() != null && !lichHen.getId_thu_cung().isEmpty()) {
                 List<Map<String, Object>> existingPetApps = jdbcTemplate.queryForList(
-                        "SELECT lh.gio_kham, dv.thoi_luong_phut FROM LichHen lh LEFT JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu WHERE lh.id_thu_cung = ? AND lh.ngay_kham = ? AND lh.trang_thai NOT IN (N'Đã hủy', 'DA_HUY', 'da_huy', 'TU_CHOI', N'Hết hạn')",
+                        "SELECT lh.gio_kham, dv.thoi_luong_phut FROM LichHen lh LEFT JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu WHERE lh.id_thu_cung = ? AND lh.ngay_kham = ? AND lh.trang_thai NOT IN ('Đã hủy', 'DA_HUY', 'da_huy', 'TU_CHOI', 'Hết hạn')",
                         lichHen.getId_thu_cung(), lichHen.getNgay_kham());
 
                 for (Map<String, Object> app : existingPetApps) {
@@ -362,7 +362,7 @@ public class LichHenController {
                 String generatedPass = "Rexi@" + UUID.randomUUID().toString().substring(0, 8);
 
                 jdbcTemplate.update(
-                        "INSERT INTO TaiKhoan (id_tai_khoan, ten_dang_nhap, mat_khau, mat_khau_hash, id_vai_tro, trang_thai, ngay_tao) VALUES (?, ?, ?, ?, 'VT-5', N'Hoạt động', CURRENT_TIMESTAMP)",
+                        "INSERT INTO TaiKhoan (id_tai_khoan, ten_dang_nhap, mat_khau, mat_khau_hash, id_vai_tro, trang_thai, ngay_tao) VALUES (?, ?, ?, ?, 'VT-5', 'Hoạt động', CURRENT_TIMESTAMP)",
                         idTaiKhoan, (email != null && !email.isEmpty() ? email : sdt + "@rexi.vn"), "[ENCRYPTED]", passwordEncoder.encode(generatedPass));
 
                 if (email != null && !email.isEmpty()) {
@@ -379,7 +379,7 @@ public class LichHenController {
 
             String idThuCung = "TC-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
             jdbcTemplate.update(
-                    "INSERT INTO ThuCung (id_thu_cung, id_khach_hang, ten_thu_cung, loai, giong) VALUES (?, ?, ?, N'Chưa xác định', N'Chưa xác định')",
+                    "INSERT INTO ThuCung (id_thu_cung, id_khach_hang, ten_thu_cung, loai, giong) VALUES (?, ?, ?, 'Chưa xác định', 'Chưa xác định')",
                     idThuCung, idKhachHang, tc.get("ten_thu_cung"));
 
             LichHen lichHen = new LichHen();
@@ -423,14 +423,14 @@ public class LichHenController {
             params.add(status.toUpperCase());
         }
         com.rexi.pkty.util.SmartSearchSql.appendTokenSearch(where, params, search,
-                "CAST(lh.id_lich_hen AS NVARCHAR(50)) LIKE ?",
-                "tc.ten_thu_cung COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI",
-                "kh.ten_khach_hang COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI",
+                "CAST(lh.id_lich_hen AS varchar) LIKE ?",
+                "LOWER(COALESCE(tc.ten_thu_cung, '')) LIKE LOWER(?)",
+                "LOWER(COALESCE(kh.ten_khach_hang, '')) LIKE LOWER(?)",
                 "kh.sdt LIKE ?",
-                "nv.ho_ten COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI",
-                "dv.ten_dich_vu COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI",
-                "lh.ly_do COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI",
-                "lh.ghi_chu_noi_bo COLLATE SQL_Latin1_General_CP1_CI_AI LIKE ? COLLATE SQL_Latin1_General_CP1_CI_AI");
+                "LOWER(COALESCE(nv.ho_ten, '')) LIKE LOWER(?)",
+                "LOWER(COALESCE(dv.ten_dich_vu, '')) LIKE LOWER(?)",
+                "LOWER(COALESCE(lh.ly_do, '')) LIKE LOWER(?)",
+                "LOWER(COALESCE(lh.ghi_chu_noi_bo, '')) LIKE LOWER(?)");
 
         String baseSelect = "SELECT lh.*, kh.ten_khach_hang, kh.sdt, tc.ten_thu_cung, nv.ho_ten as ten_bac_si, dv.ten_dich_vu " +
                 "FROM LichHen lh " +
@@ -457,7 +457,7 @@ public class LichHenController {
 
                 String sql = baseSelect + where +
                         " ORDER BY lh.ngay_kham DESC, lh.gio_kham DESC " +
-                        "OFFSET CAST(? AS INT) ROWS FETCH NEXT CAST(? AS INT) ROWS ONLY";
+                        "OFFSET ? LIMIT ?";
 
                 java.util.List<Map<String, Object>> content = jdbcTemplate.queryForList(sql, dataParams.toArray());
                 return ResponseEntity.ok(Map.of(
@@ -578,7 +578,7 @@ public class LichHenController {
                   "LEFT JOIN NhanVien nv ON lh.id_bac_si = nv.id_nhan_vien " +
                   "LEFT JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu " +
                   where + " ORDER BY lh.ngay_tao DESC " +
-                  "OFFSET CAST(? AS INT) ROWS FETCH NEXT CAST(? AS INT) ROWS ONLY";
+                  "OFFSET ? LIMIT ?";
             
             List<Map<String, Object>> content = jdbcTemplate.queryForList(sql, dataParams.toArray());
 
@@ -718,7 +718,7 @@ public class LichHenController {
                     caTrucList.add(LocalTime.parse(obj.toString()));
             }
             existingApps = jdbcTemplate.queryForList(
-                    "SELECT lh.gio_kham, dv.thoi_luong_phut FROM LichHen lh LEFT JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu WHERE lh.id_bac_si = ? AND lh.ngay_kham = ? AND lh.trang_thai NOT IN (N'Đã hủy', 'DA_HUY', 'da_huy', 'TU_CHOI', N'Hết hạn')",
+                    "SELECT lh.gio_kham, dv.thoi_luong_phut FROM LichHen lh LEFT JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu WHERE lh.id_bac_si = ? AND lh.ngay_kham = ? AND lh.trang_thai NOT IN ('Đã hủy', 'DA_HUY', 'da_huy', 'TU_CHOI', 'Hết hạn')",
                     id_nhan_vien, ngay);
         } else {
             List<Map<String, Object>> allShifts = jdbcTemplate.queryForList(
@@ -727,7 +727,7 @@ public class LichHenController {
             List<Map<String, Object>> allBusy = jdbcTemplate.queryForList(
                     "SELECT lh.id_bac_si, lh.gio_kham, dv.thoi_luong_phut " +
                             "FROM LichHen lh LEFT JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu " +
-                            "WHERE lh.ngay_kham = ? AND lh.trang_thai NOT IN (N'Đã hủy', 'DA_HUY', 'da_huy', 'TU_CHOI', N'Hết hạn')",
+                            "WHERE lh.ngay_kham = ? AND lh.trang_thai NOT IN ('Đã hủy', 'DA_HUY', 'da_huy', 'TU_CHOI', 'Hết hạn')",
                     ngay);
 
             Map<String, List<Map<String, Object>>> parsedBusyByDoctor = new java.util.HashMap<>();

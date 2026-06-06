@@ -883,6 +883,7 @@ ChatMessage systemMsg = new ChatMessage();
         boolean hasSystemObject = containsAny(normalizedQuery,
                 "khach hang", "khach moi", "hoa don", "lich hen", "benh an", "thu cung",
                 "kho thuoc", "ton kho", "tai khoan", "nhan vien", "phan quyen",
+                "dich vu", "excel", "kpi", "vat tu", "noi tru", "xet nghiem",
                 "doanh thu", "bao cao", "thong ke", "du lieu he thong", "trong db", "database", "sql",
                 "bac si", "bsi", "bs", "ca kham", "model", "provider", "cau hinh ai", "api key",
                 "swagger", "openapi", "api docs", "full api");
@@ -891,7 +892,9 @@ ChatMessage systemMsg = new ChatMessage();
                 "trang thai", "xu huong", "ti le", "ty le", "hom nay", "ngay mai",
                 "da cap nhat", "da xoa", "da huy", "da gui", "nhieu ca", "it ca",
                 "nhieu nhat", "it nhat", "xoa", "khoa", "mo khoa", "check", "dang dung",
-                "mo dau", "o dau");
+                "mo dau", "o dau", "tong hop", "phan tich", "doi soat", "tao bao cao",
+                "dich vu nao", "dang duoc dat", "tao doanh thu", "thuc thu", "cho thu",
+                "con cho thu", "cong no", "can xu ly", "xuat excel");
         return hasSystemObject && asksVerifiedFact;
     }
 
@@ -1340,8 +1343,40 @@ ChatMessage systemMsg = new ChatMessage();
             return "Rexi không thể kê đơn, chỉ định kháng sinh hoặc đưa liều dùng cho thú cưng qua chat. Với viêm da/nhiễm trùng, bác sĩ cần khám da, cân nặng, tuổi, loài và có thể cần soi da/xét nghiệm trước khi chọn thuốc. Việc an toàn nên làm ngay: giữ vùng da sạch và khô, tránh để bé gãi/liếm, không tự dùng thuốc người hoặc kháng sinh còn thừa, và đặt lịch khám da liễu nếu có mủ, lan rộng, hôi, sốt, bỏ ăn hoặc ngứa nhiều.";
         }
 
+        if (isPostVisitCareQuery(q) && isShortQuery) {
+            return "Sau khi bé vừa khám xong, Sen theo dõi 24-48 giờ đầu: ăn uống, nôn/tiêu chảy, mức tỉnh táo, vết tiêm/vết thương, nhịp thở và việc đi vệ sinh. Cho bé nghỉ ở nơi yên tĩnh, dùng thuốc đúng đơn nếu bác sĩ đã kê, không tự thêm thuốc người. Cần gọi lại phòng khám hoặc đưa bé tái khám sớm nếu bé lừ đừ tăng, bỏ ăn, nôn nhiều, khó thở, sốt, chảy máu, sưng đau nhiều hoặc có dấu hiệu lạ sau dùng thuốc.";
+        }
+
+        if (isVaccineScheduleQuery(q) && isShortQuery) {
+            return "Lịch vaccine phụ thuộc tuổi, loài, vaccine đã tiêm và nguy cơ tiếp xúc. Thông thường chó/mèo con bắt đầu tiêm từ khoảng 6-8 tuần tuổi, nhắc theo lịch bác sĩ đến khi hoàn tất mũi cơ bản, sau đó nhắc định kỳ hằng năm hoặc theo khuyến cáo từng loại vaccine. Sen nên mang sổ tiêm/ảnh mũi cũ khi đặt lịch để bác sĩ Rexi chốt lịch chính xác, không tiêm khi bé đang sốt, tiêu chảy hoặc quá yếu.";
+        }
+
+        if (isPregnantCatCareQuery(q) && isShortQuery) {
+            return "Với mèo mang thai, Sen giữ môi trường yên tĩnh, sạch, ấm vừa phải; cho ăn khẩu phần đủ năng lượng, dễ tiêu và luôn có nước sạch; hạn chế stress, nhảy cao/va chạm; chuẩn bị ổ đẻ khô kín. Không tự dùng thuốc, tẩy giun hay bổ sung canxi liều cao nếu chưa hỏi bác sĩ. Cần đi khám nếu mèo bỏ ăn, sốt, chảy dịch hôi/máu nhiều, rặn lâu không ra con, đau nhiều hoặc thai kỳ có dấu hiệu bất thường.";
+        }
+
+        if (isNutritionByAgeWeightQuery(q) && isShortQuery) {
+            return "Để tư vấn khẩu phần chuẩn, Rexi cần loài, tuổi, cân nặng, tình trạng triệt sản, mức vận động và bệnh nền. Nguyên tắc nhanh: chọn thức ăn đúng lứa tuổi, chia bữa đều, đổi thức ăn từ từ 5-7 ngày, luôn có nước sạch, không cho xương nấu chín/socola/hành tỏi. Nếu Sen gửi tuổi + cân nặng + bé đang ăn gì, Rexi sẽ gợi ý cách chia bữa an toàn hơn.";
+        }
+
+        if (isEducationalPoisoningQuery(q) && isShortQuery) {
+            return "Nếu nghi mèo/chó ngộ độc, ưu tiên đưa đi cấp cứu thú y ngay và gọi hotline 0353.374.156. Trong lúc đi: lấy mẫu/thông tin thứ bé đã ăn, không tự gây nôn, không cho uống thuốc người, than hoạt hay sữa nếu chưa được bác sĩ hướng dẫn, giữ bé yên và tránh để tiếp tục ăn liếm chất độc. Dấu hiệu nguy hiểm gồm nôn liên tục, co giật, khó thở, lừ đừ, chảy dãi nhiều, tiêu chảy máu hoặc tím tái.";
+        }
+
+        if (isHeimlichTechniqueQuery(q) && isShortQuery) {
+            return "Nếu bé nghi hóc dị vật nhưng còn thở/ho được, đừng móc họng sâu vì có thể đẩy dị vật vào trong; hãy đưa đi cấp cứu ngay. Nếu bé không thở, tím tái hoặc ngã lịm: kiểm tra miệng chỉ lấy dị vật nhìn thấy rõ, giữ đầu thấp hơn thân với bé nhỏ và vỗ lưng dứt khoát; với chó lớn có thể ép bụng/ngực ngắn theo hướng lên-trước rồi lập tức đến cơ sở thú y. Gọi Rexi 0353.374.156 trong lúc di chuyển.";
+        }
+
+        if (isGeneralVetVisitWarningQuery(q) && isShortQuery) {
+            return "Những dấu hiệu nên đưa chó/mèo đi khám ngay gồm: khó thở, tím tái, co giật, lịm đi; nôn/tiêu chảy liên tục hoặc có máu; bỏ ăn hơn 24 giờ ở mèo; sốt cao, đau nhiều, bụng chướng; tai nạn, chảy máu, nghi gãy xương; nghi ngộ độc/nuốt dị vật; tiểu không ra, rặn nhiều; mắt đục/đau/nhắm nghiền. Nếu đang có dấu hiệu cấp cứu, Sen gọi hotline Rexi 0353.374.156 và đưa bé tới phòng khám/cơ sở thú y gần nhất.";
+        }
+
         if (isVomitingFoamCatQuery(q)) {
             return "Mèo nôn ra bọt trắng có thể do kích ứng dạ dày, nuốt lông, ăn quá nhanh, ký sinh trùng, viêm dạ dày-ruột hoặc bệnh nặng hơn nếu đi kèm lừ đừ/sốt/tiêu chảy. Trước mắt cho bé nghỉ ăn 2-4 giờ nếu vẫn tỉnh táo, luôn để nước sạch, không tự cho uống thuốc người. Cần đi khám sớm nếu nôn lặp lại nhiều lần, không uống được nước, bỏ ăn trên 24 giờ, tiêu chảy/ra máu, bụng đau, lừ đừ, mèo con hoặc nghi nuốt dị vật/chất độc.";
+        }
+
+        if (containsAny(q, "meo con") && containsAny(q, "moi ve", "moi nhan", "moi don", "can chuan bi", "chuan bi gi") && isShortQuery) {
+            return "Mèo con mới về cần chuẩn bị: ổ nằm ấm và kín gió, khay cát thấp, bát nước/thức ăn riêng, thức ăn đúng tuổi, đồ cào móng và khu vực yên tĩnh để bé làm quen. 3-7 ngày đầu nên hạn chế tắm, không đổi thức ăn đột ngột, theo dõi ăn uống/phân/nôn/hắt hơi. Nếu bé chưa rõ lịch vaccine/tẩy giun, Sen đặt lịch khám tổng quát để bác sĩ kiểm tra tuổi, cân nặng và lên lịch chăm sóc phù hợp.";
         }
 
         if (isPetEyeProblemQuery(q) && isShortQuery) {
@@ -1471,11 +1506,13 @@ ChatMessage systemMsg = new ChatMessage();
         String q = normalizedQuery;
 
         if (containsAny(q,
-                "mo trang", "dua toi den", "di toi", "vao trang",
+                "mo trang", "mo bao cao", "mo quan ly", "mo danh sach", "mo hoa don", "mo ho so",
+                "mo lich", "mo kho", "mo dieu hanh", "dua toi den", "di toi", "vao trang",
                 "qua trang", "nhay qua", "tele qua", "bay qua",
                 "dan toi", "dan den", "di den", "chuyen den", "chuyen sang",
                 "dat lich", "book lich", "lap lich", "tao lich", "huy lich", "doi lich",
-                "tim khach", "tim ho so", "tra cuu khach", "tra cuu", "quet du lieu", "check giup", "check ho")) {
+                "tim khach", "tim ho so", "tra cuu khach", "tra cuu", "quet du lieu", "check giup", "check ho",
+                "loc hoa don", "loc lich", "loc cac ca", "xuat excel")) {
             return true;
         }
 
@@ -1653,7 +1690,7 @@ ChatMessage systemMsg = new ChatMessage();
 
     private boolean isPrescriptionRequest(String normalizedQuery) {
         if (normalizedQuery == null || normalizedQuery.isBlank()) return false;
-        return containsAny(normalizedQuery, "ke don", "toa thuoc", "lieu dung", "uong bao nhieu", "uong bao nhieu", "cho uong may vien")
+        return containsAny(normalizedQuery, "ke don", "toa thuoc", "lieu dung", "lieu luong", "diazepam", "uong bao nhieu", "cho uong may vien")
                 || ((containsAny(normalizedQuery, "dung khang sinh", "khang sinh")
                 || containsAny(normalizedQuery, "thuoc nguoi", "thuoc nguoi thay"))
                 && containsAny(normalizedQuery, "bao nhieu", "may vien", "lieu", "uong", "cho uong", "duoc su dung", "sai cach"));
@@ -1683,6 +1720,42 @@ ChatMessage systemMsg = new ChatMessage();
                 "dau mat", "liem mat", "dui mat", "loet", "di vat", "nhin kem",
                 "la la", "bat thuong", "khac thuong");
         return petContext && eyeContext && abnormalEye;
+    }
+
+    private boolean isPostVisitCareQuery(String q) {
+        return containsAny(q, "sau khi", "vua kham", "kham xong", "ve nha", "tai kham")
+                && containsAny(q, "cham soc", "theo doi", "can lam gi", "luu y gi", "chuan bi gi");
+    }
+
+    private boolean isVaccineScheduleQuery(String q) {
+        return containsAny(q, "vaccine", "vac xin", "tiem phong", "lich tiem", "mui tiem")
+                && containsAny(q, "dinh ky", "lich", "cho meo", "cho", "meo", "thu cung");
+    }
+
+    private boolean isPregnantCatCareQuery(String q) {
+        return containsAny(q, "meo mang thai", "meo bau", "meo co bau", "meo chua")
+                && containsAny(q, "cham soc", "an toan", "tai nha", "can lam gi", "luu y");
+    }
+
+    private boolean isNutritionByAgeWeightQuery(String q) {
+        return containsAny(q, "khau phan", "dinh duong", "an bao nhieu", "che do an")
+                && containsAny(q, "tuoi", "can nang", "phu hop", "theo tuoi", "theo can");
+    }
+
+    private boolean isEducationalPoisoningQuery(String q) {
+        return containsAny(q, "ngo doc", "an nham", "uong nham", "thuc pham doc", "ngo doc thuc pham")
+                && containsAny(q, "so cuu", "cach xu ly", "lam gi", "phai lam gi", "huong dan");
+    }
+
+    private boolean isHeimlichTechniqueQuery(String q) {
+        return containsAny(q, "heimlich", "hoc di vat", "nghen", "nghet", "mac xuong")
+                && containsAny(q, "huong dan", "ky thuat", "cach lam", "so cuu");
+    }
+
+    private boolean isGeneralVetVisitWarningQuery(String q) {
+        return containsAny(q, "dau hieu nao", "nhung dau hieu", "khi nao", "truong hop nao")
+                && containsAny(q, "can dua di kham", "di kham ngay", "di cap cuu", "cap cuu", "kham ngay")
+                && containsAny(q, "cho meo", "cho", "meo", "thu cung", "boss", "pet");
     }
 
     private boolean isClearlyOffTopic(String normalizedQuery, String normalizedReply) {
@@ -1912,14 +1985,16 @@ ChatMessage systemMsg = new ChatMessage();
 
     private boolean isDoctorListQuery(String q) {
         return (q.contains("bac si") || q.contains("bsi"))
-                && (q.contains("nao") || q.contains("danh sach") || q.contains("co ai") || q.contains("gioi thieu"));
+                && (q.contains("nao") || q.contains("danh sach") || q.contains("co ai") || q.contains("gioi thieu")
+                || q.contains("thong tin") || q.contains("cho toi biet") || q.contains("doi ngu"));
     }
 
     private String buildServicePriceReply(String normalizedQuery) {
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-                "SELECT TOP 30 ten_dich_vu, gia, thoi_luong_phut FROM DichVu "
-                        + "WHERE (da_xoa = 0 OR da_xoa IS NULL) AND (trang_thai = 1 OR trang_thai IS NULL) "
-                        + "ORDER BY ten_dich_vu");
+                "SELECT ten_dich_vu, gia, thoi_luong_phut FROM DichVu "
+                        + "WHERE (da_xoa IS NULL OR LOWER(CAST(da_xoa AS varchar)) IN ('0', 'false')) "
+                        + "AND (trang_thai IS NULL OR LOWER(CAST(trang_thai AS varchar)) IN ('1', 'true')) "
+                        + "ORDER BY ten_dich_vu LIMIT 30");
         List<String> terms = extractDbSearchTerms(normalizedQuery);
         List<Map<String, Object>> matched = new ArrayList<>();
         for (Map<String, Object> row : rows) {
@@ -1959,12 +2034,18 @@ ChatMessage systemMsg = new ChatMessage();
             to = from;
         }
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-                "SELECT TOP 12 llv.ngay_lam, llv.gio_bat_dau, llv.gio_ket_thuc, llv.ghi_chu, nv.ho_ten, nv.chuyen_mon "
+                "SELECT llv.ngay_lam, llv.gio_bat_dau, llv.gio_ket_thuc, llv.ghi_chu, nv.ho_ten, nv.chuyen_mon "
                         + "FROM LichLamViecNhanVien llv JOIN NhanVien nv ON nv.id_nhan_vien = llv.id_nhan_vien "
-                        + "WHERE llv.ngay_lam BETWEEN ? AND ? AND (nv.da_xoa = 0 OR nv.da_xoa IS NULL) "
-                        + "AND EXISTS (SELECT 1 FROM TaiKhoan tk WHERE tk.id_nhan_vien = nv.id_nhan_vien AND tk.id_vai_tro = 'VT-BS') "
-                        + "AND nv.ho_ten NOT LIKE N'%Kiểm thử%' AND nv.ho_ten NOT LIKE N'%Admin%' AND nv.ho_ten NOT LIKE N'%Tiếp tân%' "
-                        + "ORDER BY llv.ngay_lam, llv.gio_bat_dau",
+                        + "WHERE llv.ngay_lam BETWEEN ? AND ? AND (nv.da_xoa IS NULL OR LOWER(CAST(nv.da_xoa AS varchar)) IN ('0', 'false')) "
+                        + "AND (LOWER(COALESCE(nv.chuyen_mon, '')) LIKE '%bác sĩ%' "
+                        + "OR LOWER(COALESCE(nv.chuyen_mon, '')) LIKE '%bac si%' "
+                        + "OR LOWER(COALESCE(nv.chuyen_mon, '')) LIKE '%doctor%' "
+                        + "OR EXISTS (SELECT 1 FROM TaiKhoan tk WHERE tk.id_nhan_vien = nv.id_nhan_vien "
+                        + "AND (tk.id_vai_tro IN ('VT-BS', 'VT-2', '2') OR UPPER(COALESCE(tk.id_vai_tro, '')) LIKE '%BS%'))) "
+                        + "AND LOWER(COALESCE(nv.ho_ten, '')) NOT LIKE '%kiểm thử%' "
+                        + "AND LOWER(COALESCE(nv.ho_ten, '')) NOT LIKE '%admin%' "
+                        + "AND LOWER(COALESCE(nv.ho_ten, '')) NOT LIKE '%tiếp tân%' "
+                        + "ORDER BY llv.ngay_lam, llv.gio_bat_dau LIMIT 12",
                 java.sql.Date.valueOf(from), java.sql.Date.valueOf(to));
         if (rows.isEmpty()) {
             return "Rexi chưa thấy lịch trực phù hợp trong hệ thống cho khoảng thời gian này. Sen gọi hotline 0353.374.156 để được xác nhận lịch khám mới nhất.";
@@ -1984,12 +2065,18 @@ ChatMessage systemMsg = new ChatMessage();
 
     private String buildDoctorListReply() {
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-                "SELECT TOP 8 ho_ten, chuyen_mon, gioi_thieu FROM NhanVien "
-                        + "WHERE (da_xoa = 0 OR da_xoa IS NULL) "
-                        + "AND EXISTS (SELECT 1 FROM TaiKhoan tk WHERE tk.id_nhan_vien = NhanVien.id_nhan_vien AND tk.id_vai_tro = 'VT-BS') "
-                        + "AND ho_ten NOT LIKE N'%Kiểm thử%' AND ho_ten NOT LIKE N'%Admin%' AND ho_ten NOT LIKE N'%Tiếp tân%' "
+                "SELECT ho_ten, chuyen_mon, gioi_thieu FROM NhanVien "
+                        + "WHERE (da_xoa IS NULL OR LOWER(CAST(da_xoa AS varchar)) IN ('0', 'false')) "
+                        + "AND (LOWER(COALESCE(chuyen_mon, '')) LIKE '%bác sĩ%' "
+                        + "OR LOWER(COALESCE(chuyen_mon, '')) LIKE '%bac si%' "
+                        + "OR LOWER(COALESCE(chuyen_mon, '')) LIKE '%doctor%' "
+                        + "OR EXISTS (SELECT 1 FROM TaiKhoan tk WHERE tk.id_nhan_vien = NhanVien.id_nhan_vien "
+                        + "AND (tk.id_vai_tro IN ('VT-BS', 'VT-2', '2') OR UPPER(COALESCE(tk.id_vai_tro, '')) LIKE '%BS%'))) "
+                        + "AND LOWER(COALESCE(ho_ten, '')) NOT LIKE '%kiểm thử%' "
+                        + "AND LOWER(COALESCE(ho_ten, '')) NOT LIKE '%admin%' "
+                        + "AND LOWER(COALESCE(ho_ten, '')) NOT LIKE '%tiếp tân%' "
                         + "AND (chuyen_mon IS NOT NULL OR gioi_thieu IS NOT NULL) "
-                        + "ORDER BY ho_ten");
+                        + "ORDER BY ho_ten LIMIT 8");
         if (rows.isEmpty()) return null;
         StringBuilder sb = new StringBuilder("Rexi tra danh sách bác sĩ/nhân sự chuyên môn từ hệ thống:\n");
         for (Map<String, Object> row : rows) {
