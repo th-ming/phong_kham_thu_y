@@ -115,6 +115,11 @@ const BacSi: React.FC = () => {
                     position: relative;
                     transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
                     box-shadow: var(--shadow-md);
+                    animation: slideUpFade 0.5s cubic-bezier(.22,.68,0,1.2) both;
+                }
+                @keyframes slideUpFade {
+                    from { opacity: 0; transform: translateY(22px); }
+                    to   { opacity: 1; transform: translateY(0); }
                 }
                 .doctor-card:hover {
                     transform: translateY(-6px);
@@ -344,8 +349,8 @@ const BacSi: React.FC = () => {
                     ) : (
                         <>
                             <div className="doctors-page-grid">
-                                {pagedDoctors.map((d) => (
-                                    <div key={d.id_nhan_vien} className="doctor-card">
+                                {pagedDoctors.map((d, idx) => (
+                                    <div key={d.id_nhan_vien} className="doctor-card" style={{ animationDelay: `${idx * 0.07}s` }}>
                                         <div className="doctor-card-image">
                                             <img src={d.hinh_anh?.trim() || "/img/avtpkty.png"} alt={d.ho_ten} style={{ objectFit: d.hinh_anh?.trim() ? "cover" : "contain", padding: d.hinh_anh?.trim() ? 0 : "32px" }} />
                                             <div className="doctor-card-overlay">

@@ -468,6 +468,9 @@ const BaoCaoThongKe: React.FC = () => {
         }
         .hover-lift { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: default; }
         .hover-lift:hover { transform: translateY(-6px); box-shadow: 0 20px 40px rgba(15, 157, 138, 0.08) !important; }
+        @keyframes slideUpFade { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes growBar { from { width: 0 !important; } to {} }
+        .report-kpi-card { animation: slideUpFade 0.5s cubic-bezier(.22,.68,0,1.2) both; }
         .report-kpi-card {
           position: relative;
           min-height: 190px;
@@ -711,7 +714,7 @@ const BaoCaoThongKe: React.FC = () => {
                     <span style={{ fontWeight: 900, color: 'var(--primary)' }}>{doc.SoHoSo || doc.so_ho_so || 0} ca</span>
                   </div>
                   <div style={{ height: '8px', background: 'var(--gray-100)', borderRadius: '10px', overflow: 'hidden' }}>
-                    <div style={{ width: `${width}%`, height: '100%', background: 'var(--primary-gradient)', borderRadius: '10px' }}></div>
+                    <div style={{ width: `${width}%`, height: '100%', background: 'var(--primary-gradient)', borderRadius: '10px', animation: 'growBar 0.8s cubic-bezier(.22,.68,0,1.2) both', animationDelay: `${idx * 0.1}s` }}></div>
                   </div>
                 </div>
               );

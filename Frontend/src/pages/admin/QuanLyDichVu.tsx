@@ -117,7 +117,13 @@ const QuanLyDichVu: React.FC = () => {
   return (
     <div className="animate-fade-in">
       <style>{`
-        .table-row:hover { background-color: var(--gray-50) !important; }
+        .table-row:hover { background-color: var(--gray-50) !important; transform: translateX(2px); }
+        @keyframes slideUpFade { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeInScale { from { opacity: 0; transform: scale(0.97); } to { opacity: 1; transform: scale(1); } }
+        .admin-service-form { animation: fadeInScale 0.35s cubic-bezier(.22,.68,0,1.2) both !important; }
+        .table-row { animation: slideUpFade 0.4s cubic-bezier(.22,.68,0,1.2) both; }
+        .admin-service-card { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+        .admin-service-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
         .input-with-icon { position: relative; }
         .input-with-icon .icon { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--gray-400); font-size: 20px; }
         .input-with-icon input { padding-left: 48px !important; }

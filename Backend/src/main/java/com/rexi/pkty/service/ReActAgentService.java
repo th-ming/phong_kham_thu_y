@@ -396,18 +396,19 @@ public class ReActAgentService {
             return finalResult(steps, obs1 + " " + obs2 + " Mở lại danh sách thú cưng để kiểm tra. [NAVIGATE:/khach-hang/quan-ly-thu-cung]");
         }
 
-        if (containsAny(q, "tra khach", "tim khach", "kiem khach", "khach hang", "chu nuoi", "sen nao")) {
-            if (RoleAccessPolicy.canUseAgentTool(userRole, "tim_khach_hang")) {
-                return finalResult(steps, "Mở trang khách hàng để tra cứu. [NAVIGATE:/quan-ly/khach-hang-thu-cung]");
-            }
-            return finalResult(steps, RoleAccessPolicy.permissionDeniedMessage("tim_khach_hang", userRole));
-        }
-
+        // hoa don phải check TRƯỚC khach hang — câu “xem hóa đơn của khách hàng” chứa cả hai từ khóa
         if (containsAny(q, "hoa don", "bill", "thanh toan")) {
             if (RoleAccessPolicy.canUseAgentTool(userRole, "xem_hoa_don")) {
                 return finalResult(steps, "Mở trang hóa đơn cho bạn. [NAVIGATE:/quan-ly/hoa-don]");
             }
             return finalResult(steps, RoleAccessPolicy.permissionDeniedMessage("xem_hoa_don", userRole));
+        }
+
+        if (containsAny(q, "tra khach", "tim khach", "kiem khach", "khach hang", "chu nuoi", "sen nao")) {
+            if (RoleAccessPolicy.canUseAgentTool(userRole, "tim_khach_hang")) {
+                return finalResult(steps, "Mở trang khách hàng để tra cứu. [NAVIGATE:/quan-ly/khach-hang-thu-cung]");
+            }
+            return finalResult(steps, RoleAccessPolicy.permissionDeniedMessage("tim_khach_hang", userRole));
         }
 
         if (containsAny(q, "kho", "thuoc", "ton kho")) {

@@ -181,8 +181,28 @@ const QuanLyBenhAn: React.FC = () => {
 
     return (
         <div className="animate-fade-in admin-medical-page" style={{ alignItems: 'start' }}>
+            <style>{`
+                @keyframes slideUpFade {
+                    from { opacity: 0; transform: translateY(18px); }
+                    to   { opacity: 1; transform: translateY(0); }
+                }
+                @keyframes fadeInScale {
+                    from { opacity: 0; transform: scale(0.97); }
+                    to   { opacity: 1; transform: scale(1); }
+                }
+                .med-anim-1 { animation: slideUpFade 0.5s cubic-bezier(.22,.68,0,1.2) 0.05s both; }
+                .med-anim-2 { animation: fadeInScale 0.38s cubic-bezier(.22,.68,0,1.2) 0.05s both; }
+                .med-anim-3 { animation: fadeInScale 0.38s cubic-bezier(.22,.68,0,1.2) 0.05s both; }
+                .med-card-hover { transition: transform 0.22s cubic-bezier(.22,.68,0,1.2), box-shadow 0.22s ease; }
+                .med-card-hover:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(15,157,138,0.12); }
+                .med-save-btn { transition: transform 0.18s ease, box-shadow 0.18s ease !important; }
+                .med-save-btn:hover:not(:disabled) { transform: translateY(-2px) scale(1.02); box-shadow: 0 14px 32px rgba(15,157,138,0.38) !important; }
+                .med-save-btn:active:not(:disabled) { transform: scale(0.98); }
+                .prescription-row { animation: slideUpFade 0.3s cubic-bezier(.22,.68,0,1.2) both; transition: background 0.2s ease; }
+                .admin-medical-alert { transition: all 0.3s ease; }
+            `}</style>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                <div className="glass-card admin-medical-card" style={{ padding: '24px', borderRadius: '24px' }}>
+                <div className="glass-card admin-medical-card med-anim-1 med-card-hover" style={{ padding: '24px', borderRadius: '24px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '16px' }}>
                         <h2 className="admin-medical-card-title" style={{ fontSize: '1.2rem', fontWeight: 900, margin: 0 }}>1. Chọn ca khám hôm nay</h2>
                         <span style={{ background: 'var(--primary-light)', color: 'var(--primary)', borderRadius: '999px', padding: '6px 12px', fontSize: '0.78rem', fontWeight: 900 }}>
@@ -222,7 +242,7 @@ const QuanLyBenhAn: React.FC = () => {
                 </div>
 
                 {selectedLich && (
-                    <div className="glass-card animate-fade-in admin-medical-card" style={{ padding: '24px', borderRadius: '24px', border: '1px solid var(--primary-light)' }}>
+                    <div className="glass-card animate-fade-in admin-medical-card med-anim-2 med-card-hover" style={{ padding: '24px', borderRadius: '24px', border: '1px solid var(--primary-light)' }}>
                         <h2 style={{ fontSize: '1.2rem', fontWeight: 900, marginBottom: '16px', color: 'var(--primary)' }}>2. Thông tin ca khám</h2>
                         <div className="responsive-grid-2">
                             {[
@@ -251,7 +271,7 @@ const QuanLyBenhAn: React.FC = () => {
             </div>
 
             {selectedLich && (
-                <div className="glass-card animate-fade-in admin-medical-card" style={{ padding: '30px', borderRadius: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                <div className="glass-card animate-fade-in admin-medical-card med-anim-3 med-card-hover" style={{ padding: '30px', borderRadius: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
                     <h2 style={{ fontSize: '1.5rem', fontWeight: 900, borderBottom: '2px solid var(--gray-100)', paddingBottom: '16px', margin: 0 }}>4. Kê đơn thuốc</h2>
 
                     {chiTietDonThuoc.map((item, index) => (
@@ -287,7 +307,7 @@ const QuanLyBenhAn: React.FC = () => {
                         <button data-ai-id="button-quanlybenhan-1pce"
                             onClick={handleSaveBenhAn}
                             disabled={isSaving}
-                            className="btn btn-primary btn-pill"
+                            className="btn btn-primary btn-pill med-save-btn"
                             style={{ padding: '16px 40px', fontSize: '1.1rem', boxShadow: '0 10px 20px rgba(15,157,138,0.3)' }}
                         >
                             {isSaving ? "ĐANG XỬ LÝ..." : "LƯU BỆNH ÁN & HOÀN THÀNH"}

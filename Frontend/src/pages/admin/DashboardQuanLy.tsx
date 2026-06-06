@@ -7,6 +7,7 @@ import BacSiDashboard from "./BacSiDashboard";
 import TiepTanDashboard from "./TiepTanDashboard";
 import CanhBaoThuoc from "@components/admin/CanhBaoThuoc";
 import { useAutoRefresh } from "@hooks/useAutoRefresh";
+import { AnimatedNumber } from "@components/CommonUI";
 
 const formatTienVND = (tien: number) => {
   return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(tien);
@@ -426,7 +427,9 @@ const DashboardQuanLy: React.FC = () => {
               </div>
             </div>
             <p style={{ fontSize: '0.8rem', fontWeight: 900, color: 'var(--gray-500)', margin: '0 0 8px 0', textTransform: 'uppercase', letterSpacing: '1px' }}>{item.label}</p>
-            <h3 style={{ fontSize: '2rem', fontWeight: 950, color: item.color, margin: 0, textShadow: `0 2px 10px ${item.color}10` }}>{item.value}</h3>
+            <h3 style={{ fontSize: '2rem', fontWeight: 950, color: item.color, margin: 0, textShadow: `0 2px 10px ${item.color}10` }}>
+              <AnimatedNumber value={item.value} />
+            </h3>
           </div>
         ))}
       </div>

@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import axiosInstance from "@services/axios";
 import { getUserProfile, matchesSearchFields, normalizeUserRole } from "@utils/index";
@@ -84,6 +84,32 @@ const QuanLyKhoThuoc: React.FC = () => {
   return (
     <div className="animate-fade-in admin-inventory-page">
       <style>{`
+        @keyframes slideUpFade {
+          from { opacity: 0; transform: translateY(18px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes growBar {
+          from { transform: scaleX(0); }
+          to   { transform: scaleX(1); }
+        }
+        .inv-header-anim { animation: slideUpFade 0.5s cubic-bezier(.22,.68,0,1.2) both; }
+        .inv-card-anim   { animation: slideUpFade 0.5s cubic-bezier(.22,.68,0,1.2) both; }
+        .inv-row-anim    { animation: slideUpFade 0.4s cubic-bezier(.22,.68,0,1.2) both; }
+        .inv-lot-anim    { animation: slideUpFade 0.45s cubic-bezier(.22,.68,0,1.2) both; }
+        .admin-inventory-mobile-card {
+          transition: transform 0.22s cubic-bezier(.22,.68,0,1.2), box-shadow 0.22s;
+        }
+        .admin-inventory-mobile-card:hover {
+          transform: translateY(-3px) scale(1.01);
+          box-shadow: 0 8px 28px rgba(15,157,138,0.13);
+        }
+        tbody tr {
+          transition: background 0.18s ease;
+        }
+        tbody tr:hover {
+          background: var(--primary-light) !important;
+        }
+      `}
         @media screen and (max-width: 1024px) {
           .admin-inventory-page {
             display: grid !important;
@@ -180,7 +206,7 @@ const QuanLyKhoThuoc: React.FC = () => {
           }
         }
       `}</style>
-      <div className="admin-mobile-page-header admin-inventory-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', flexWrap: 'wrap', gap: '20px' }}>
+      <div className="admin-mobile-page-header admin-inventory-header inv-header-anim" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', flexWrap: 'wrap', gap: '20px', animationDelay: '0.05s' }}>
         <div>
           <h1 style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--ink)', letterSpacing: '-1px' }}>Quản lý Kho thuốc</h1>
           <p style={{ color: 'var(--gray-500)', fontWeight: 600 }}>Theo dõi tồn kho, hạn sử dụng và phân phối dược phẩm.</p>
@@ -275,11 +301,11 @@ const QuanLyKhoThuoc: React.FC = () => {
       </div>
 
       <div className="admin-inventory-grid" style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '32px' }}>
-        <div className="glass-card admin-inventory-list-card" style={{ padding: '32px', borderRadius: 'var(--radius-xl)' }}>
+        <div className="glass-card admin-inventory-list-card inv-card-anim" style={{ padding: '32px', borderRadius: 'var(--radius-xl)', animationDelay: '0.1s' }}>
           <h2 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '24px' }}>Danh mục thuốc</h2>
           <div className="admin-inventory-mobile-list">
-            {filteredThuocs.map(t => (
-              <article key={t.id_thuoc} className="admin-inventory-mobile-card">
+            {filteredThuocs.map((t, idx) => (
+              <article key={t.id_thuoc} className="admin-inventory-mobile-card inv-row-anim" style={{ animationDelay: `${0.12 + idx * 0.06}s` }}>
                 <div className="admin-inventory-mobile-card-head">
                   <div>
                     <span className="admin-inventory-kicker">{t.ma_thuoc || t.id_thuoc}</span>
@@ -308,8 +334,8 @@ const QuanLyKhoThuoc: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredThuocs.map(t => (
-                      <tr key={t.id_thuoc} style={{ borderBottom: '1px solid var(--gray-50)' }}>
+                    {filteredThuocs.map((t, idx) => (
+                      <tr key={t.id_thuoc} className="inv-row-anim" style={{ borderBottom: '1px solid var(--gray-50)', animationDelay: `${0.12 + idx * 0.04}s` }}>
                         <td style={{ padding: '16px 8px' }}>
                           <div style={{ fontWeight: 800, color: 'var(--ink)' }}>{t.ten_thuoc}</div>
                           <div style={{ fontSize: '0.75rem', color: 'var(--gray-400)', fontWeight: 600 }}>{t.thanh_phan || "Dược chất"}</div>
@@ -335,11 +361,11 @@ const QuanLyKhoThuoc: React.FC = () => {
           </div>
         </div>
 
-        <div className="glass-card admin-inventory-side-card" style={{ padding: '32px', borderRadius: 'var(--radius-xl)', background: 'var(--surface)', color: 'var(--ink)', border: '1px solid var(--gray-200)' }}>
+        <div className="glass-card admin-inventory-side-card inv-card-anim" style={{ padding: '32px', borderRadius: 'var(--radius-xl)', background: 'var(--surface)', color: 'var(--ink)', border: '1px solid var(--gray-200)', animationDelay: '0.18s' }}>
           <h2 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '24px', color: 'var(--ink)' }}>Lô thuốc & Hạn dùng</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {loThuocs.map(l => (
-              <div key={l.id_lo} style={{ background: 'var(--primary-light)', padding: '16px', borderRadius: '16px', border: '1px solid var(--primary-border, rgba(15, 157, 138, 0.18))' }}>
+            {loThuocs.map((l, idx) => (
+              <div key={l.id_lo} className="inv-lot-anim" style={{ background: 'var(--primary-light)', padding: '16px', borderRadius: '16px', border: '1px solid var(--primary-border, rgba(15, 157, 138, 0.18))', animationDelay: `${0.2 + idx * 0.07}s`, transition: 'transform 0.2s, box-shadow 0.2s', cursor: 'default' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                   <span style={{ fontWeight: 800, color: 'var(--ink)' }}>Lô: {l.so_lo}</span>
                   <span style={{

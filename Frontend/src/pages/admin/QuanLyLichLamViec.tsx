@@ -549,6 +549,10 @@ const QuanLyLichLamViec: React.FC = () => {
                 .staff-popover {
                     animation: popoverFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
                 }
+                @keyframes slideUpFade { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+                .schedule-mobile-day { animation: slideUpFade 0.4s cubic-bezier(.22,.68,0,1.2) both; transition: transform 0.2s ease, box-shadow 0.2s ease; }
+                .schedule-mobile-day:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
+                .staff-hours-chip { animation: slideUpFade 0.35s cubic-bezier(.22,.68,0,1.2) both; }
                 @keyframes popoverFadeIn {
                     from {
                         opacity: 0;

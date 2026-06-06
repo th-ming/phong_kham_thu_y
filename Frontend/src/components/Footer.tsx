@@ -151,7 +151,7 @@ const Footer: React.FC<{ isSimple?: boolean }> = ({ isSimple }) => {
     const footerRef = useRef<HTMLElement>(null);
     const liveUser = useLiveUserProfile();
     const footerBubbleText = isGenZBirthYear(liveUser?.nam_sinh)
-        ? "Click để xem mèo nhảy nè! 🐾"
+        ? "Sen! Click xem trẫm múa nè! 🐾"
         : "Nhấn để xem mèo nhảy! 🐾";
     const [services, setServices] = useState<any[]>([]);
     const [isMemePlaying, setIsMemePlaying] = useState(false);
@@ -402,10 +402,45 @@ const Footer: React.FC<{ isSimple?: boolean }> = ({ isSimple }) => {
                         padding-right: 18px !important;
                     }
 
-                    .footer-virtual-pets,
-                    .footer-cat-bubble-wrap,
+                    .footer-virtual-pets {
+                        display: block !important;
+                    }
+
+                    .pet-container {
+                        width: 45px !important;
+                        height: 45px !important;
+                        left: -22px !important;
+                        top: -33px !important;
+                    }
+
                     .footer-cat-media {
-                        display: none !important;
+                        display: flex !important;
+                        left: 50% !important;
+                        right: auto !important;
+                        bottom: 40px !important;
+                        transform: translateX(-50%) !important;
+                    }
+
+                    .footer-cat-media img {
+                        height: 60px !important;
+                    }
+
+                    .footer-cat-media .transparent-video-container,
+                    .footer-cat-media video {
+                        height: 110px !important;
+                    }
+
+                    .footer-cat-bubble-wrap {
+                        display: flex !important;
+                        left: 50% !important;
+                        right: auto !important;
+                        bottom: 105px !important;
+                        transform: translateX(-50%) !important;
+                    }
+
+                    .footer-chat-bubble {
+                        font-size: 0.65rem !important;
+                        padding: 6px 12px !important;
                     }
 
                     .footer-main-grid {

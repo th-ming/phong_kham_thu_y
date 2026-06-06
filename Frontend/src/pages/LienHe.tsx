@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { Link } from "react-router-dom";
 import { MemeCat, ScrollToTop, RevealSection } from "@components/SpecialEffects";
 import { useTheme } from "../contexts/ThemeContextV2";
@@ -14,6 +14,33 @@ const LienHe: React.FC = () => {
 
     return (
         <div style={{ background: 'var(--background)', minHeight: '100vh' }}>
+            <style>{`
+                @keyframes slideUpFade {
+                    from { opacity: 0; transform: translateY(18px); }
+                    to   { opacity: 1; transform: translateY(0); }
+                }
+                @keyframes iconPulse {
+                    0%, 100% { transform: scale(1); }
+                    50%       { transform: scale(1.12); }
+                }
+                .contact-card {
+                    transition: transform 0.22s cubic-bezier(.22,.68,0,1.2), box-shadow 0.22s ease, border-color 0.22s ease !important;
+                }
+                .contact-card:hover {
+                    transform: translateY(-5px) scale(1.01) !important;
+                    box-shadow: 0 12px 36px rgba(15,157,138,0.14) !important;
+                    border-color: var(--primary) !important;
+                }
+                .contact-card:hover .contact-icon {
+                    animation: iconPulse 0.6s ease;
+                }
+                .map-card {
+                    transition: box-shadow 0.3s ease;
+                }
+                .map-card:hover {
+                    box-shadow: 0 24px 60px rgba(0,0,0,0.13) !important;
+                }
+            `}</style>
             {/* banner trang liên hệ */}
             <section style={{ padding: '100px 0 80px', background: isDark ? 'var(--secondary-gradient)' : 'var(--primary-gradient)', color: 'white', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
                 <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: isDark ? 0.05 : 0.1, backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '30px 30px' }}></div>
@@ -47,8 +74,8 @@ const LienHe: React.FC = () => {
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '32px', marginBottom: '80px' }}>
                         {/* địa chỉ phòng khám trang liên hệ */}
                         <RevealSection>
-                            <div className="glass-card" style={{ background: 'var(--surface)', padding: '40px', borderRadius: '32px', textAlign: 'center', height: '100%', border: '1px solid var(--gray-200)' }}>
-                                <div style={{ width: '64px', height: '64px', background: 'var(--primary-light)', color: 'var(--primary)', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
+                            <div className="glass-card contact-card" style={{ background: 'var(--surface)', padding: '40px', borderRadius: '32px', textAlign: 'center', height: '100%', border: '1px solid var(--gray-200)' }}>
+                                <div className="contact-icon" style={{ width: '64px', height: '64px', background: 'var(--primary-light)', color: 'var(--primary)', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
                                     <span className="material-symbols-outlined" style={{ fontSize: '32px' }}>location_on</span>
                                 </div>
                                 <h3 style={{ fontSize: '1.4rem', fontWeight: 900, color: 'var(--ink)', marginBottom: '16px' }}>Địa chỉ phòng khám</h3>
@@ -58,8 +85,8 @@ const LienHe: React.FC = () => {
 
                         {/* đường dây cấp cứu 24/7 trang liên hệ */}
                         <RevealSection>
-                            <div className="glass-card" style={{ background: 'var(--surface)', padding: '40px', borderRadius: '32px', textAlign: 'center', height: '100%', border: '1px solid var(--gray-200)' }}>
-                                <div style={{ width: '64px', height: '64px', background: 'var(--danger-light, rgba(239,68,68,0.1))', color: 'var(--danger)', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
+                            <div className="glass-card contact-card" style={{ background: 'var(--surface)', padding: '40px', borderRadius: '32px', textAlign: 'center', height: '100%', border: '1px solid var(--gray-200)' }}>
+                                <div className="contact-icon" style={{ width: '64px', height: '64px', background: 'var(--danger-light, rgba(239,68,68,0.1))', color: 'var(--danger)', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
                                     <span className="material-symbols-outlined" style={{ fontSize: '32px' }}>emergency</span>
                                 </div>
                                 <h3 style={{ fontSize: '1.4rem', fontWeight: 900, color: 'var(--ink)', marginBottom: '16px' }}>Cấp cứu 24/7</h3>
@@ -70,8 +97,8 @@ const LienHe: React.FC = () => {
 
                         {/* số hotline tư vấn thông thường trang liên hệ */}
                         <RevealSection>
-                            <div className="glass-card" style={{ background: 'var(--surface)', padding: '40px', borderRadius: '32px', textAlign: 'center', height: '100%', border: '1px solid var(--gray-200)' }}>
-                                <div style={{ width: '64px', height: '64px', background: 'var(--primary-light)', color: '#3b82f6', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
+                            <div className="glass-card contact-card" style={{ background: 'var(--surface)', padding: '40px', borderRadius: '32px', textAlign: 'center', height: '100%', border: '1px solid var(--gray-200)' }}>
+                                <div className="contact-icon" style={{ width: '64px', height: '64px', background: 'var(--primary-light)', color: '#3b82f6', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
                                     <span className="material-symbols-outlined" style={{ fontSize: '32px' }}>support_agent</span>
                                 </div>
                                 <h3 style={{ fontSize: '1.4rem', fontWeight: 900, color: 'var(--ink)', marginBottom: '16px' }}>Tư vấn & Đặt lịch</h3>
@@ -83,7 +110,7 @@ const LienHe: React.FC = () => {
 
                     {/* bản đồ google maps */}
                     <RevealSection>
-                        <div style={{ background: 'var(--surface)', borderRadius: '40px', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.08)', border: '1px solid var(--gray-200)' }}>
+                        <div className="map-card" style={{ background: 'var(--surface)', borderRadius: '40px', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.08)', border: '1px solid var(--gray-200)' }}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap', padding: '24px 40px', background: 'var(--surface)', borderBottom: '1px solid var(--gray-200)' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                     <span className="material-symbols-outlined" style={{ color: 'var(--primary)', fontSize: '28px' }}>map</span>

@@ -483,6 +483,7 @@ const CauHinhHeThong: React.FC = () => {
     const renderTabButton = (id: string, icon: string, label: string) => (
         <button
             data-ai-id={`button-cauhinhhethong-tab-${id}`}
+            className={`admin-config-tab-btn ${activeTab === id ? 'is-active' : ''}`}
             onClick={() => {
                 setActiveTab(id);
                 sessionStorage.setItem('rexi_cauhinh_active_tab', id);
@@ -515,6 +516,9 @@ const CauHinhHeThong: React.FC = () => {
                     flex-direction: column;
                     gap: 20px;
                 }
+                @keyframes slideUpFade { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+                @keyframes slideInRight { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+                .config-section-card { animation: slideUpFade 0.4s cubic-bezier(.22,.68,0,1.2) both; }
                 .form-input {
                     transition: all 0.3s ease-in-out !important;
                     border: 1.5px solid var(--gray-200) !important;
@@ -531,28 +535,87 @@ const CauHinhHeThong: React.FC = () => {
                     height: 18px !important;
                     cursor: pointer !important;
                 }
+                .admin-config-tab-btn {
+                    border: 1px solid rgba(148, 163, 184, 0.18) !important;
+                    background: color-mix(in srgb, var(--surface) 58%, transparent) !important;
+                    box-shadow: none !important;
+                    min-width: 0;
+                }
+                .admin-config-tab-btn.is-active {
+                    border-color: rgba(34, 211, 238, 0.42) !important;
+                    background: var(--surface) !important;
+                    box-shadow: 0 14px 32px rgba(15, 23, 42, 0.06) !important;
+                }
+                .responsive-grid-2 {
+                    display: grid;
+                    grid-template-columns: repeat(2, minmax(0, 1fr));
+                    gap: 20px;
+                }
+
                 @media screen and (min-width: 1025px) {
                     .config-layout-wrapper {
-                        display: grid;
-                        grid-template-columns: 280px 1fr;
-                        gap: 32px;
-                        align-items: start;
+                        display: flex;
+                        flex-direction: column;
+                        gap: 22px;
                     }
                     .admin-config-tabs {
-                        flex-direction: column !important;
-                        border-right: 1px solid var(--gray-200);
-                        padding-right: 24px;
-                        gap: 12px !important;
+                        display: flex !important;
+                        flex-direction: row !important;
+                        flex-wrap: wrap;
+                        gap: 10px !important;
                         overflow-x: visible !important;
+                        padding-bottom: 0 !important;
+                        border-right: 0;
                     }
-                    [data-theme='dark'] .admin-config-tabs {
-                        border-color: rgba(255, 255, 255, 0.08);
+                    .admin-config-tabs button {
+                        width: auto !important;
+                        min-height: 48px;
+                        justify-content: center !important;
+                        padding: 12px 18px !important;
+                        text-align: center;
+                        white-space: nowrap;
+                        line-height: 1.2;
+                    }
+                    .admin-config-tabs .material-symbols-outlined {
+                        flex-shrink: 0;
+                        font-size: 22px;
+                    }
+                    .admin-config-panel {
+                        width: 100%;
+                    }
+                    .backup-grid {
+                        grid-template-columns: minmax(320px, 0.85fr) minmax(520px, 1.35fr) !important;
+                        gap: 30px !important;
+                    }
+                }
+
+                @media screen and (min-width: 1400px) {
+                    .admin-config-tabs {
+                        display: grid !important;
+                        grid-template-columns: repeat(6, minmax(0, 1fr));
+                        gap: 12px !important;
                     }
                     .admin-config-tabs button {
                         width: 100% !important;
-                        justify-content: flex-start !important;
+                        min-height: 56px;
+                        padding: 12px 10px !important;
+                        white-space: normal;
                     }
                 }
+
+                @media screen and (max-width: 1180px) {
+                    .admin-payment-tab .responsive-grid-2 {
+                        grid-template-columns: 1fr !important;
+                    }
+                    .admin-payment-tab label {
+                        line-height: 1.35 !important;
+                        overflow-wrap: normal !important;
+                    }
+                    .admin-payment-tab .form-input {
+                        min-width: 0 !important;
+                    }
+                }
+
                 @media screen and (max-width: 1024px) {
                     .admin-config-header {
                         display: grid !important;
@@ -591,12 +654,14 @@ const CauHinhHeThong: React.FC = () => {
                     }
                     .admin-config-tabs button {
                         width: 100% !important;
-                        min-height: 40px !important;
-                        padding: 8px 9px !important;
-                        border-radius: 14px !important;
-                        font-size: 0.66rem !important;
+                        min-height: 46px !important;
+                        padding: 9px 10px !important;
+                        border-radius: 16px !important;
+                        font-size: 0.68rem !important;
                         line-height: 1.1 !important;
                         justify-content: center !important;
+                        text-align: center !important;
+                        gap: 7px !important;
                     }
                     .admin-config-tabs .material-symbols-outlined {
                         font-size: 16px !important;
@@ -612,6 +677,20 @@ const CauHinhHeThong: React.FC = () => {
                     }
                     .admin-config-panel .responsive-grid-2 {
                         grid-template-columns: 1fr !important;
+                    }
+                    .span-2-desktop {
+                        grid-column: span 1 !important;
+                    }
+                }
+                .span-2-desktop {
+                    grid-column: span 2;
+                }
+                @media screen and (max-width: 768px) {
+                    .responsive-grid-2 {
+                        grid-template-columns: 1fr !important;
+                    }
+                    .span-2-desktop {
+                        grid-column: span 1 !important;
                     }
                 }
             `}</style>
@@ -667,7 +746,7 @@ const CauHinhHeThong: React.FC = () => {
                 )}
 
                 {activeTab === 'payment' && (
-                    <div className="animate-fade-in" style={{ display: 'grid', gap: '32px' }}>
+                    <div className="animate-fade-in admin-payment-tab" style={{ display: 'grid', gap: '32px' }}>
                         <div>
                             <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--ink)', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
                                 <span className="material-symbols-outlined" style={{ color: 'var(--primary)' }}>qr_code_2</span> Cấu hình VietQR
@@ -802,7 +881,7 @@ const CauHinhHeThong: React.FC = () => {
                                         placeholder="Nhập số tài khoản nhận tiền..."
                                     />
                                 </div>
-                                <div style={{ gridColumn: 'span 2' }}>
+                                <div className="span-2-desktop">
                                     <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, color: 'var(--gray-600)' }}>Tên Chủ Tài Khoản</label>
                                     <div style={{ position: 'relative' }}>
                                         <input
@@ -927,11 +1006,11 @@ const CauHinhHeThong: React.FC = () => {
                                         </button>
                                     </div>
                                 </div>
-                                <div style={{ gridColumn: 'span 2' }}>
+                                <div className="span-2-desktop">
                                     <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, color: 'var(--gray-600)' }}>vnp_Url (URL Cổng Thanh Toán)</label>
                                     <input data-ai-id="input-cauhinhhethong-vnpay-url" type="text" className="form-input" value={configs.vnpay_url || ''} onChange={e => setConfigs({...configs, vnpay_url: e.target.value})} placeholder="https://sandbox.vnpayment.vn/paymentv2/vpcpay.html" />
                                 </div>
-                                <div style={{ gridColumn: 'span 2' }}>
+                                <div className="span-2-desktop">
                                     <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, color: 'var(--gray-600)' }}>vnp_ReturnUrl (URL Trả Về)</label>
                                     <input data-ai-id="input-cauhinhhethong-vnpay-return-url" type="text" className="form-input" value={configs.vnpay_return_url || ''} onChange={e => setConfigs({...configs, vnpay_return_url: e.target.value})} placeholder="http://localhost:5173/khach-hang/hoa-don-thanh-toan" />
                                 </div>
@@ -1002,9 +1081,9 @@ const CauHinhHeThong: React.FC = () => {
                                 Thử nghiệm gửi email bằng các thông số SMTP bạn vừa nhập bên trên. Lệnh test sẽ được gửi trực tiếp mà không cần lưu.
                             </p>
                             <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, color: 'var(--gray-600)' }}>Gửi đến địa chỉ Email</label>
-                            <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
-                                <input data-ai-id="input-cauhinhhethong-test-email-to" type="email" className="form-input" style={{ flex: 1 }} value={testEmailTo} onChange={e => setTestEmailTo(e.target.value)} placeholder="example@gmail.com" />
-                                <button data-ai-id="button-cauhinhhethong-test-email" className="btn btn-primary" onClick={handleTestEmail} disabled={testingEmail} style={{ whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', alignItems: 'stretch' }}>
+                                <input data-ai-id="input-cauhinhhethong-test-email-to" type="email" className="form-input" style={{ flex: 1, minWidth: 0, width: '100%' }} value={testEmailTo} onChange={e => setTestEmailTo(e.target.value)} placeholder="example@gmail.com" />
+                                <button data-ai-id="button-cauhinhhethong-test-email" className="btn btn-primary" onClick={handleTestEmail} disabled={testingEmail} style={{ whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
                                     {testingEmail ? <span className="material-symbols-outlined" style={{ animation: 'spinBtn 1s linear infinite' }}>sync</span> : <span className="material-symbols-outlined">send</span>}
                                     {testingEmail ? 'Đang gửi...' : 'Gửi Test'}
                                 </button>
@@ -1376,19 +1455,19 @@ const CauHinhHeThong: React.FC = () => {
                                     Xóa nhật ký
                                 </button>
                             </div>
-                            <div style={{ maxHeight: '500px', overflowY: 'auto', border: '1px solid var(--gray-200)', borderRadius: '12px', background: 'var(--surface)', width: '100%', minWidth: 0 }}>
+                            <div style={{ maxHeight: '500px', overflow: 'auto', border: '1px solid var(--gray-200)', borderRadius: '12px', background: 'var(--surface)', width: '100%', minWidth: 0 }}>
                                 {logs.length === 0 ? <p style={{ padding: '40px', textAlign: 'center', color: 'var(--gray-400)' }}>Chưa có nhật ký.</p> : (
-                                    <table style={{ width: '100%', tableLayout: 'fixed', fontSize: '0.85rem', borderCollapse: 'collapse' }}>
+                                    <table style={{ width: '100%', minWidth: '760px', fontSize: '0.85rem', borderCollapse: 'collapse' }}>
                                         <tbody>
                                             {logs.map((log) => (
                                                 <tr className="settings-log-row" key={log.id} style={{ borderBottom: '1px solid var(--gray-100)' }}>
-                                                    <td style={{ padding: '12px', color: 'var(--gray-500)', width: '18%', whiteSpace: 'nowrap' }}>{chuyenNgayGioISO_SangVN(log.ngay_tao)}</td>
-                                                    <td style={{ padding: '12px', fontWeight: 800, color: 'var(--primary)', width: '10%', whiteSpace: 'nowrap' }}>{log.nguoi_thao_tac}</td>
-                                                    <td style={{ padding: '12px', fontWeight: 700, width: '20%', whiteSpace: 'nowrap' }}>
+                                                    <td style={{ padding: '12px', color: 'var(--gray-500)', width: '160px', whiteSpace: 'nowrap' }}>{chuyenNgayGioISO_SangVN(log.ngay_tao)}</td>
+                                                    <td style={{ padding: '12px', fontWeight: 800, color: 'var(--primary)', width: '120px', whiteSpace: 'nowrap' }}>{log.nguoi_thao_tac}</td>
+                                                    <td style={{ padding: '12px', fontWeight: 700, width: '190px', whiteSpace: 'nowrap' }}>
                                                         <span style={{ padding: '2px 8px', borderRadius: '4px', background: 'var(--gray-100)', marginRight: '8px', display: 'inline-block' }}>{log.hanh_dong}</span>
                                                         {log.bang_du_lieu}
                                                     </td>
-                                                    <td style={{ padding: '12px', color: 'var(--gray-500)', width: '52%', wordBreak: 'break-all' }}>{log.chi_tiet}</td>
+                                                    <td style={{ padding: '12px', color: 'var(--gray-500)', minWidth: '290px', wordBreak: 'break-word' }}>{log.chi_tiet}</td>
                                                 </tr>
                                             ))}
                                         </tbody>

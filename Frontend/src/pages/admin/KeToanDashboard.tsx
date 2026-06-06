@@ -350,6 +350,13 @@ const KeToanDashboard: React.FC = () => {
         <div className="animate-fade-in" style={{ paddingBottom: '40px' }}>
             <style>{`
                 .accounting-mobile-invoice-list { display: none; }
+                @keyframes slideUpFade { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+                .ketoan-kpi-card { animation: slideUpFade 0.5s cubic-bezier(.22,.68,0,1.2) both; }
+                .ketoan-kpi-card:hover { transform: translateY(-4px) !important; box-shadow: 0 16px 40px rgba(15,157,138,0.15) !important; }
+                .accounting-invoice-card { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+                .accounting-invoice-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
+                tbody tr { transition: background 0.18s ease; }
+                tbody tr:hover { background: var(--primary-light) !important; }
                 @media screen and (max-width: 1024px) {
                     .accounting-hero {
                         margin-bottom: 16px !important;
@@ -506,17 +513,20 @@ const KeToanDashboard: React.FC = () => {
                         <span className="material-symbols-outlined" style={{ fontSize: '15px', color: '#5eead4', animation: 'spin 3s infinite linear' }}>sync</span>
                         <span>Dữ liệu thời gian thực cập nhật lúc: {lastUpdated}</span>
                     </div>
+                        <span className="material-symbols-outlined" style={{ fontSize: '15px', color: '#5eead4', animation: 'spin 3s infinite linear' }}>sync</span>
+                        <span>Dữ liệu thời gian thực cập nhật lúc: {lastUpdated}</span>
+                    </div>
                 )}
             </div>
 
             {/* Các thẻ thống kê */}
             <div className="ketoan-kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '24px', marginBottom: '40px' }}>
                 <KpiCard
+                    index={0}
                     accent="#10b981"
                     title="DOANH THU HÔM NAY"
                     value={<AnimatedNumber value={stats.todayRevenue} format="currency" />}
                     icon={<KpiIcon name="money" />}
-                    details={
                         <div>
                             <strong>Chi tiết thực thu hôm nay</strong>
                             <p>{financeInsight.paidToday.length} hóa đơn đã thanh toán, tổng {formatTienVND(stats.todayRevenue)}.</p>

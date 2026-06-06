@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import axiosInstance from "@services/axios";
 import { toast } from "@components/Toast";
 import { matchesSearchFields } from "@utils/index";
@@ -298,11 +298,14 @@ const QuanLyKhachHangThuCung: React.FC = () => {
           display: none;
         }
         .virtual-row-hover {
-          transition: background-color 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+          transition: background-color 0.25s cubic-bezier(0.4, 0, 0.2, 1), transform 0.15s ease;
         }
         .virtual-row-hover:hover {
           background-color: var(--gray-50) !important;
         }
+        @keyframes slideUpFade { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+        .admin-customer-card, .admin-pet-card { transition: transform 0.2s ease, box-shadow 0.2s ease; animation: slideUpFade 0.4s cubic-bezier(.22,.68,0,1.2) both; }
+        .admin-customer-card:hover, .admin-pet-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
         @media screen and (max-width: 1024px) {
           .admin-customer-mobile-list,
           .admin-pet-mobile-list {
