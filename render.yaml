@@ -3,6 +3,8 @@ services:
     name: rexi-backend
     runtime: docker
     rootDir: Backend
+    branch: master
+    autoDeployTrigger: commit
     plan: free
     healthCheckPath: /api/system/health
     envVars:
