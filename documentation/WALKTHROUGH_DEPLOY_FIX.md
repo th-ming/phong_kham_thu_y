@@ -46,3 +46,9 @@ Bản build mới nhất (commit `774f30f`) đã hoàn tất biên dịch và kh
 Kiểm tra sức khỏe hệ thống qua endpoint `/api/system/health` hoạt động ổn định và trả về kết quả thành công:
 
 ![Bằng chứng API Hoạt Động](./images/live_health_check.png)
+
+
+### Bằng chứng giao diện Frontend hoạt động thực tế (Vercel App)
+Dưới đây là ảnh chụp màn hình trang đăng nhập của ứng dụng Frontend chạy thực tế trên Vercel sau khi hoàn tất build:
+
+![Bằng chứng giao diện Frontend](./images/live_vercel_app.png)
