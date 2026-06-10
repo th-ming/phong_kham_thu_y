@@ -41,6 +41,16 @@ services:
       SPRING_DATA_REDIS_HOST: "redis"
       SPRING_DATA_REDIS_PORT: "6379"
       CORS_ALLOWED_ORIGINS: "${CORS_ALLOWED_ORIGINS:-http://localhost,http://localhost:3000}"
+      MAIL_USERNAME: "${MAIL_USERNAME}"
+      MAIL_PASSWORD: "${MAIL_PASSWORD}"
+      WEBHOOK_SECRET: "${WEBHOOK_SECRET}"
+      VIETQR_BANK_ID: "${VIETQR_BANK_ID}"
+      VIETQR_ACCOUNT_NO: "${VIETQR_ACCOUNT_NO}"
+      VIETQR_ACCOUNT_NAME: "${VIETQR_ACCOUNT_NAME}"
+      VNPAY_TMN_CODE: "${VNPAY_TMN_CODE}"
+      VNPAY_HASH_SECRET: "${VNPAY_HASH_SECRET}"
+      VNPAY_URL: "${VNPAY_URL}"
+      VNPAY_RETURN_URL: "${VNPAY_RETURN_URL}"
     # ports:
     #   - "8081:8081" # BẢO MẬT: Ẩn port Backend, bắt buộc đi qua NGINX
     depends_on:
