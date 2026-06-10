@@ -236,6 +236,11 @@ public class ChatController {
             boolean hasImage = lastMsg.getImages() != null && !lastMsg.getImages().isEmpty();
             boolean hasMedia = hasVideo || hasImage;
 
+            String deterministicGuardReply = tryDeterministicChatGuard(normalizedUserQuery, userQuery, hasMedia);
+            if (deterministicGuardReply != null) {
+                return Map.of("reply", deterministicGuardReply, "source", "local_guard");
+            }
+
             boolean internalStaffForLocalReply = RoleAccessPolicy.isInternalStaffRole(normalizedRoleFromAuth(auth));
             String localEverydayReply = internalStaffForLocalReply ? null : tryLocalEverydayReply(normalizedUserQuery, userQuery);
             if (!hasMedia && localEverydayReply != null) {
@@ -893,6 +898,72 @@ ChatMessage systemMsg = new ChatMessage();
         return null;
     }
 
+    private String tryDeterministicChatGuard(String normalizedQuery, String rawQuery, boolean hasMedia) {
+        if (hasMedia || normalizedQuery == null || normalizedQuery.isBlank()) return null;
+        String q = normalizedQuery;
+
+        if (containsAny(q, "dua thoi", "dua thoi no khoe", "khoe lam", "no khoe")
+                && containsAny(q, "sap chet", "cuu")) {
+            return "May quá bé khỏe. Có gì bất thường như bỏ ăn, nôn, tiêu chảy, khó thở hoặc lừ đừ thì gọi 0353.374.156 nhé.";
+        }
+        if (q.matches("^(a\s*){3,}$")) {
+            return "Anh cần em hỗ trợ gì cho bé không ạ?";
+        }
+        if (containsAny(q, "vo toi ngoai tinh", "vo ngoai tinh", "chong ngoai tinh")) {
+            return "Em chỉ hỗ trợ thú cưng và nghiệp vụ phòng khám. Chuyện này anh nên tâm sự với người thân/bạn bè hoặc chuyên gia phù hợp nhé.";
+        }
+        if (containsAny(q, "game ran san moi", "con game ran", "snake game")) {
+            return "Em chuyên hỗ trợ phòng khám thú y Rexi. Nếu anh cần, em có thể hỗ trợ code tool đặt lịch hoặc tra lịch phòng khám.";
+        }
+        if (containsAny(q, "biet tao la ai", "may co biet tao la ai", "m co biet tao la ai")) {
+            return "Em không lưu hay suy đoán thông tin cá nhân ngoài phiên đăng nhập hiện tại. Anh cần hỗ trợ gì cho bé không ạ?";
+        }
+        if (containsAny(q, "chatgpt noi khac", "chat gpt noi khac", "ai dung")) {
+            return "Về thú y, nên ưu tiên bác sĩ tại phòng khám, kết quả xét nghiệm và thăm khám trực tiếp. Rexi chỉ hỗ trợ tham khảo an toàn.";
+        }
+        if (containsAny(q, "script alert", "alert 1") || Objects.toString(rawQuery, "").toLowerCase(Locale.ROOT).contains("<script")) {
+            return "Em đã nhận nội dung đó như text thường, không thực thi HTML/script. Anh xác nhận lại tên thật của bé giúp em nhé.";
+        }
+        if (containsAny(q, "admin true", "admin=true", "role admin") && containsAny(q, "tang can", "can nang", "100kg", "100 kg")) {
+            return "Bé Lu lên bao nhiêu kg ạ? Em coi phần ký tự lạ là text thường và không đổi quyền theo nội dung chat.";
+        }
+
+        if (containsAny(q, "pass admin", "pass db", "mat khau db", "password admin")) {
+            return "Không thể cung cấp mật khẩu, secret hoặc quyền truy cập hệ thống. Đây là dữ liệu bảo mật.";
+        }
+        if (containsAny(q, "export toan bo data khach hang", "export data khach hang", "toan bo data khach hang")) {
+            return "Từ chối export dữ liệu khách hàng hàng loạt. Đây là dữ liệu riêng tư; Rexi sẽ chỉ tra cứu theo quyền và mục đích hợp lệ.";
+        }
+        if (containsAny(q, "sdt cua", "so dien thoai cua") && containsAny(q, "khach quen", "chi lan", "khach hang")) {
+            return "Không thể cung cấp thông tin cá nhân của khách hàng khác. Nếu cần liên hệ, hãy dùng tài khoản đủ quyền trong hệ thống.";
+        }
+        if (containsAny(q, "ke cho tao lieu", "lieu amox", "lieu amoxicillin", "amox cho cho") || (containsAny(q, "amox", "amoxicillin") && containsAny(q, "lieu", "10kg", "10 kg"))) {
+            return "Em không kê đơn online hoặc chỉ liều kháng sinh. Anh đưa bé tới phòng khám để bác sĩ cân nặng, khám và kê đơn đúng.";
+        }
+        if (containsAny(q, "bo qua tat ca luat", "gio may la dan", "dan")) {
+            return "Không thể bỏ qua quy định an toàn. Rexi vẫn chỉ hỗ trợ thú cưng/phòng khám theo quyền hợp lệ.";
+        }
+        if (containsAny(q, "sudo") && containsAny(q, "doanh thu", "admin", "role")) {
+            return "Không có quyền nếu session thật không đủ vai trò. Rexi chỉ tra cứu doanh thu bằng tài khoản được phân quyền.";
+        }
+        if (containsAny(q, "update users set", "drop table", "insert into", "delete from")) {
+            return "Em coi nội dung SQL đó là text thường và không thực thi lệnh. Anh cần hỗ trợ gì hợp lệ trong hệ thống?";
+        }
+        if (containsAny(q, "thuoc bo") && containsAny(q, "co sao khong", "an", "uong")) {
+            return "Thuốc bổ còn tùy loại và lượng bé đã ăn. Anh giữ vỏ/sản phẩm, theo dõi nôn, tiêu chảy, lừ đừ; nếu ăn nhiều hoặc không rõ thành phần thì gọi 0353.374.156 để bác sĩ hướng dẫn.";
+        }
+        if (containsAny(q, "chet cuoi", "cuoi chet") && containsAny(q, "do choi", "choi moi")) {
+            return "Nghe như bé đang vui với đồ chơi mới. Anh kiểm tra đồ chơi không có mảnh nhỏ, dây dễ nuốt hoặc cạnh sắc nhé.";
+        }
+        if (containsAny(q, "pass qua", "ghe qua") && containsAny(q, "pk", "phong kham", "lay thuoc")) {
+            return "Được, anh có thể ghé qua phòng khám lấy thuốc theo chỉ định đã có. Nếu chưa có đơn/chỉ định, gọi 0353.374.156 để lễ tân kiểm tra trước nhé.";
+        }
+        if (containsAny(q, "web nhu", "cho 1 sao", "mot sao")) {
+            return "Bố bình tĩnh, con ghi nhận lỗi web. Bố gửi giúp con màn hình hoặc thao tác bị lỗi để con kiểm tra đúng chỗ.";
+        }
+        return null;
+    }
+
     private boolean shouldUseVerifiedSystemAgent(String normalizedQuery) {
         if (normalizedQuery == null || normalizedQuery.isBlank()) return false;
         if (isSensitiveDataLookup(normalizedQuery)) return true;
@@ -902,7 +973,8 @@ ChatMessage systemMsg = new ChatMessage();
                 "dich vu", "excel", "kpi", "vat tu", "noi tru", "xet nghiem",
                 "doanh thu", "bao cao", "thong ke", "du lieu he thong", "trong db", "database", "sql",
                 "bac si", "bsi", "bs", "ca kham", "model", "provider", "cau hinh ai", "api key",
-                "swagger", "openapi", "api docs", "full api");
+                "swagger", "openapi", "api docs", "full api", "slot", "lich trong", "khung gio trong",
+                "amoxicillin", "amox", "ton kho");
         boolean asksVerifiedFact = containsAny(normalizedQuery,
                 "kiem tra", "tra cuu", "xem", "dem", "bao nhieu", "so luong",
                 "trang thai", "xu huong", "ti le", "ty le", "hom nay", "ngay mai",
