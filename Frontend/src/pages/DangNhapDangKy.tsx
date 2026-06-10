@@ -4,6 +4,7 @@ import axiosInstance from "@services/axios";
 import BirthYearSelect from "@components/BirthYearSelect";
 import { normalizeUserRole } from "@utils/index";
 import { isValidPassword, PASSWORD_POLICY_MESSAGE } from "@utils/passwordPolicy";
+import { getApiErrorMessage } from "@utils/apiErrorMessage";
 
 const API_URL = `/api/auth`;
 
@@ -118,15 +119,7 @@ const DangNhapDangKy: React.FC = () => {
       }
     } catch (err: any) {
       console.error("Lỗi Google Login:", err);
-      let errorMessage = "Đăng nhập Google thất bại.";
-      if (err.response?.data) {
-        const d = err.response.data;
-        if (typeof d === 'string' && d.trim() !== '' && !d.startsWith('<')) errorMessage = d;
-        else if (d.message && typeof d.message === 'string') errorMessage = d.message;
-      } else if (err.message) {
-        errorMessage = `Lỗi kết nối: ${err.message}`;
-      }
-      setError(errorMessage);
+      setError(getApiErrorMessage(err, "Đăng nhập Google thất bại."));
     } finally {
       setLoading(false);
     }
@@ -151,9 +144,9 @@ const DangNhapDangKy: React.FC = () => {
       setError("Định dạng Email không hợp lệ!");
       return;
     }
-    // Validate độ dài SĐT tối thiểu
-    if (phone.length < 9) {
-      setError("Số điện thoại không hợp lệ (tối thiểu 9 chữ số)!");
+    // Validate SĐT phải đúng 10-11 chữ số (khớp Backend)
+    if (!/^\d{10,11}$/.test(phone)) {
+      setError("Số điện thoại phải gồm đúng 10-11 chữ số!");
       return;
     }
     setStep(2);
@@ -187,6 +180,13 @@ const DangNhapDangKy: React.FC = () => {
       // Xác thực bước 2
       if (!username || !password || !confirmPassword) {
         setError("Vui lòng điền đầy đủ thông tin tài khoản đăng nhập!");
+        setLoading(false);
+        return;
+      }
+
+      // Validate tên đăng nhập 3-50 ký tự (khớp Backend)
+      if (username.length < 3 || username.length > 50) {
+        setError("Tên đăng nhập phải từ 3 đến 50 ký tự!");
         setLoading(false);
         return;
       }
@@ -232,13 +232,7 @@ const DangNhapDangKy: React.FC = () => {
         setSuccess("Đăng ký thành công! Tài khoản và mật khẩu đã được điền sẵn, bạn chỉ cần đăng nhập để tiếp tục.");
       }
     } catch (err: any) {
-      let errorMessage = "Đã xảy ra lỗi không xác định. Vui lòng thử lại.";
-      if (err.response?.data) {
-        const d = err.response.data;
-        if (typeof d === 'string' && d.trim() !== '' && !d.startsWith('<')) errorMessage = d;
-        else if (d.message && typeof d.message === 'string') errorMessage = d.message;
-      }
-      setError(errorMessage);
+      setError(getApiErrorMessage(err, "Đã xảy ra lỗi không xác định. Vui lòng thử lại."));
     } finally {
       setLoading(false);
     }

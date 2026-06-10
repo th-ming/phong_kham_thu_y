@@ -44,12 +44,29 @@ public class BoXuLyLoiHeThong {
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     public ResponseEntity<?> handleMethodNotSupported(HttpRequestMethodNotSupportedException ex) {
         return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(Map.of("message", "Phuong thuc khong duoc ho tro."));
-    }
-
-    // Fallback: log full stack trace debug
+    }        // Fallback: log full stack trace debug, sanitize message before returning
     @ExceptionHandler(Exception.class)
     public ResponseEntity<?> handleGlobalException(Exception ex) {
         logger.log(Level.SEVERE, "[BoXuLyLoiHeThong] Lỗi hệ thống chưa xử lý: " + ex.getMessage(), ex);
-        return ResponseEntity.status(500).body(Map.of("message", "Loi he thong. Vui long thu lai sau."));
+        return ResponseEntity.status(500).body(Map.of("message", "Lỗi hệ thống: " + sanitizeError(ex) + ". Vui lòng thử lại sau."));
+    }
+
+    /** Loại bỏ thông tin nhạy cảm (SQL, path, stack trace) khỏi message trước khi trả client */
+    private static String sanitizeError(Exception ex) {
+        String msg = ex.getMessage();
+        if (msg == null || msg.isBlank()) return "Không rõ nguyên nhân";
+        // Nếu chứa từ khóa SQL/DB → thay bằng thông báo chung
+        String lower = msg.toLowerCase();
+        if (lower.contains("select ") || lower.contains("insert ") || lower.contains("update ")
+            || lower.contains("from ") || lower.contains("where ") || lower.contains("column")
+            || lower.contains("table") || lower.contains("constraint") || lower.contains("foreign key")) {
+            return "Lỗi cơ sở dữ liệu nội bộ";
+        }
+        // Loại bỏ đường dẫn file
+        msg = msg.replaceAll("[A-Z]:\\\\[^\\s\"']*", "[path]");
+        msg = msg.replaceAll("/home/[^\\s\"']*", "[path]");
+        // Cắt ngắn
+        if (msg.length() > 200) msg = msg.substring(0, 200) + "...";
+        return msg;
     }
 }

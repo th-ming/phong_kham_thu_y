@@ -23,12 +23,12 @@ const SidebarAdmin: React.FC = () => {
     { path: '/quan-ly/dashboard', icon: 'dashboard', label: 'Bảng điều khiển', roles: ['admin', 'staff', 'bac_si', 'quan_ly', 'tiep_tan', 'y_ta', 'ke_toan'] },
     { path: '/quan-ly/bao-cao-thong-ke', icon: 'monitoring', label: 'Báo cáo & Thống kê', roles: ['admin', 'quan_ly', 'ke_toan'] },
 
-    { isHeader: true, label: 'LỊCH TRÌNH & NHÂN SỰ', roles: ['admin', 'quan_ly', 'staff', 'bac_si', 'tiep_tan', 'y_ta'] },
+    { isHeader: true, label: 'LỊCH TRÌNH & NHÂN SỰ', roles: ['admin', 'quan_ly', 'staff', 'bac_si', 'tiep_tan', 'y_ta', 'ke_toan'] },
     { path: '/quan-ly/lich-hen', icon: 'calendar_month', label: 'Quản lý lịch hẹn', roles: ['admin', 'staff', 'bac_si', 'quan_ly', 'tiep_tan', 'y_ta'] },
     { 
       path: '/quan-ly/lich-lam-viec', 
       icon: 'edit_calendar', 
-      label: (userRole === 'admin' || userRole === 'quan_ly') ? 'Điều hành nhân sự' : 'Lịch trực của tôi', 
+      label: (userRole === 'admin' || userRole === 'quan_ly') ? 'Điều hành nhân sự' : 'Đặt lịch làm việc', 
       roles: ['admin', 'staff', 'bac_si', 'quan_ly', 'tiep_tan', 'y_ta', 'ke_toan'] 
     },
     { path: '/quan-ly/nhan-vien-phan-quyen', icon: 'badge', label: 'Nhân sự & Quyền hạn', roles: ['admin', 'quan_ly'] },

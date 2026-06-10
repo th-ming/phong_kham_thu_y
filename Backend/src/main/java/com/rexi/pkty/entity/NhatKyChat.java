@@ -19,10 +19,10 @@ public class NhatKyChat {
     @Column(name = "id_tai_khoan", length = 20)
     private String idTaiKhoan;
 
-    @Column(name = "cau_hoi", nullable = false, columnDefinition = "NVARCHAR(MAX)")
+    @Column(name = "cau_hoi", nullable = false)
     private String cauHoi;
 
-    @Column(name = "cau_tra_loi", nullable = false, columnDefinition = "NVARCHAR(MAX)")
+    @Column(name = "cau_tra_loi", nullable = false)
     private String cauTraLoi;
 
     @Column(name = "thoi_gian", nullable = false, updatable = false)

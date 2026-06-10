@@ -13,6 +13,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.jdbc.core.JdbcTemplate;
 import com.rexi.pkty.service.AuditLogService;
+import com.rexi.pkty.util.DatabaseDialect;
 import jakarta.annotation.PostConstruct;
 import java.util.List;
 import java.util.Map;
@@ -84,6 +85,28 @@ public class NhanVienController {
         return authorities.contains("ADMIN") || role.equals("VT-ADMIN") || role.equals("VT-1");
     }
 
+    private boolean canManageAnySchedule(org.springframework.security.core.Authentication auth,
+            com.rexi.pkty.entity.TaiKhoan tk) {
+        String authorities = (auth != null && auth.getAuthorities() != null)
+                ? auth.getAuthorities().toString().toUpperCase()
+                : "";
+        String role = tk != null && tk.getId_vai_tro() != null ? tk.getId_vai_tro().toUpperCase() : "";
+        return authorities.contains("ADMIN")
+                || authorities.contains("QUAN_LY")
+                || role.equals("VT-ADMIN")
+                || role.equals("VT-1")
+                || role.equals("VT-QL")
+                || role.equals("VT-6");
+    }
+
+    private boolean canEmployeeManageScheduleNow() {
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+        java.time.DayOfWeek day = now.getDayOfWeek();
+        if (day == java.time.DayOfWeek.SUNDAY) return false;
+        if (day == java.time.DayOfWeek.SATURDAY) return now.toLocalTime().isBefore(java.time.LocalTime.NOON);
+        return true;
+    }
+
     private boolean canManageNhanVien(String id) {
         org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
                 .getContext().getAuthentication();
@@ -122,10 +145,11 @@ public class NhanVienController {
     public List<?> getBacSi(@RequestParam(required = false) String ngay) {
         try {
             if (ngay != null && !ngay.trim().isEmpty()) {
+                boolean pg = DatabaseDialect.isPostgres(jdbcTemplate);
                 String sql = "SELECT DISTINCT nv.id_nhan_vien, nv.ho_ten, nv.chuyen_mon, nv.so_dien_thoai, nv.email, nv.dia_chi " +
                              "FROM NhanVien nv " +
                              "JOIN LichLamViecNhanVien l ON nv.id_nhan_vien = l.id_nhan_vien " +
-                             "WHERE (nv.da_xoa IS NULL OR LOWER(CAST(nv.da_xoa AS varchar)) IN ('0', 'false')) " +
+                             "WHERE " + DatabaseDialect.isNotDeleted(pg, "nv.da_xoa") + " " +
                              "AND (LOWER(COALESCE(nv.chuyen_mon, '')) LIKE '%bác sĩ%' " +
                              "OR LOWER(COALESCE(nv.chuyen_mon, '')) LIKE '%bac si%' " +
                              "OR LOWER(COALESCE(nv.chuyen_mon, '')) LIKE '%doctor%' " +
@@ -170,7 +194,7 @@ public class NhanVienController {
             // Đọc role từ DB qua token đã xác thực — không tin header từ client
             com.rexi.pkty.entity.TaiKhoan tk = taiKhoanRepository.findByTenDangNhap(username).orElse(null);
             String tkRole = (tk != null && tk.getId_vai_tro() != null) ? tk.getId_vai_tro().toUpperCase() : "";
-            boolean isAdmin = tkRole.equals("VT-ADMIN") || tkRole.equals("VT-1") || tkRole.equals("VT-QL") || tkRole.equals("VT-2");
+            boolean isAdmin = canManageAnySchedule(auth, tk);
 
             // Validate dữ liệu đầu vào bắt buộc
             if (lich.getId_nhan_vien() == null || lich.getId_nhan_vien().isBlank()) {
@@ -188,11 +212,12 @@ public class NhanVienController {
                 return org.springframework.http.ResponseEntity.status(400).body(Map.of("message", "Giờ bắt đầu ca phải nằm trong khoảng 8:00 - 20:00!"));
             }
 
+            boolean pg = DatabaseDialect.isPostgres(jdbcTemplate);
             Integer activeStaffCount = jdbcTemplate.queryForObject(
                     "SELECT COUNT(*) FROM NhanVien nv " +
                             "JOIN TaiKhoan tk ON tk.id_nhan_vien = nv.id_nhan_vien " +
                             "WHERE nv.id_nhan_vien = ? " +
-                            "AND (nv.da_xoa IS NULL OR LOWER(CAST(nv.da_xoa AS varchar)) IN ('0', 'false')) " +
+                            "AND " + DatabaseDialect.isNotDeleted(pg, "nv.da_xoa") + " " +
                             "AND LOWER(COALESCE(tk.trang_thai, '')) IN ('active', 'hoạt động', 'đang làm việc')",
                     Integer.class, lich.getId_nhan_vien());
             if (activeStaffCount == null || activeStaffCount == 0) {
@@ -217,17 +242,12 @@ public class NhanVienController {
                 }
             }
 
-            // Nhân viên thường chỉ được đăng ký tuần sau trở đi
-            java.time.LocalDate today = java.time.LocalDate.now();
-            java.time.LocalDate currentMonday = today.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
-            java.time.LocalDate currentSunday = currentMonday.plusDays(6);
-
-            if (!isAdmin && !lich.getNgay_lam().isAfter(currentSunday)) {
-                return org.springframework.http.ResponseEntity.status(403).body(Map.of("message", "Bạn chỉ có thể đăng ký lịch trực cho các tuần tiếp theo. Tuần hiện tại chỉ Admin/Quản lý mới có quyền điều chỉnh."));
+            if (!isAdmin && !canEmployeeManageScheduleNow()) {
+                return org.springframework.http.ResponseEntity.status(403).body(Map.of("message", "Nhân viên không thể đăng ký/chỉnh lịch từ 12:00 Thứ 7 đến hết Chủ nhật. Khoảng thời gian này dành cho Admin/Quản lý xếp lại lịch."));
             }
 
             // Kiểm tra trùng ca (cùng nhân viên, cùng ngày, cùng giờ)
-            String checkDupSql = "SELECT COUNT(*) FROM LichLamViecNhanVien WHERE id_nhan_vien = ? AND ngay_lam = ? AND gio_bat_dau = CAST(? AS time)";
+            String checkDupSql = "SELECT COUNT(*) FROM LichLamViecNhanVien WHERE id_nhan_vien = ? AND ngay_lam = ? AND CAST(gio_bat_dau AS time) = CAST(? AS time)";
             Integer dupCount = jdbcTemplate.queryForObject(checkDupSql, Integer.class,
                     lich.getId_nhan_vien(), lich.getNgay_lam(), lich.getGio_bat_dau());
             if (dupCount != null && dupCount > 0) {
@@ -237,7 +257,7 @@ public class NhanVienController {
             }
 
             // Lấy role nhân viên từ DB (không fallback đoán bằng prefix)
-            String getRoleSql = "SELECT id_vai_tro FROM TaiKhoan WHERE id_nhan_vien = ? OFFSET 0 ROWS FETCH NEXT 1 ROWS ONLY";
+            String getRoleSql = "SELECT id_vai_tro FROM TaiKhoan WHERE id_nhan_vien = ? " + com.rexi.pkty.util.DatabaseDialect.topN(com.rexi.pkty.util.DatabaseDialect.isPostgres(jdbcTemplate), 1);
             String staffRoleId = null;
             try {
                 staffRoleId = jdbcTemplate.queryForObject(getRoleSql, String.class, lich.getId_nhan_vien());
@@ -248,7 +268,7 @@ public class NhanVienController {
                 // Kiểm tra số nhân sự cùng chức vụ trực cùng khung giờ đó
                 String countRoleSql = "SELECT COUNT(DISTINCT l.id_nhan_vien) FROM LichLamViecNhanVien l " +
                         "JOIN TaiKhoan t ON l.id_nhan_vien = t.id_nhan_vien " +
-                        "WHERE l.ngay_lam = ? AND l.gio_bat_dau = CAST(? AS time) AND t.id_vai_tro = ?";
+                        "WHERE l.ngay_lam = ? AND CAST(l.gio_bat_dau AS time) = CAST(? AS time) AND t.id_vai_tro = ?";
                 Integer roleCount = jdbcTemplate.queryForObject(countRoleSql, Integer.class,
                         lich.getNgay_lam(), lich.getGio_bat_dau(), staffRoleId);
 
@@ -299,7 +319,7 @@ public class NhanVienController {
             // Đọc role từ tài khoản đã xác thực trong DB
             com.rexi.pkty.entity.TaiKhoan tk = taiKhoanRepository.findByTenDangNhap(username).orElse(null);
             String tkRole = (tk != null && tk.getId_vai_tro() != null) ? tk.getId_vai_tro().toUpperCase() : "";
-            boolean isAdmin = tkRole.equals("VT-ADMIN") || tkRole.equals("VT-1") || tkRole.equals("VT-QL") || tkRole.equals("VT-2");
+            boolean isAdmin = canManageAnySchedule(auth, tk);
 
             // Chỉ được hủy ca trực của chính mình
             if (!isAdmin && tk != null) {
@@ -318,13 +338,8 @@ public class NhanVienController {
                 }
             }
 
-            // Nhân viên thường không được hủy ca thuộc tuần hiện tại
-            java.time.LocalDate today = java.time.LocalDate.now();
-            java.time.LocalDate currentMonday = today.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
-            java.time.LocalDate currentSunday = currentMonday.plusDays(6);
-
-            if (!isAdmin && !lichToXoa.getNgay_lam().isAfter(currentSunday)) {
-                return org.springframework.http.ResponseEntity.status(403).body(Map.of("message", "Bạn không thể xóa lịch trực ở tuần hiện tại. Vui lòng liên hệ Admin."));
+            if (!isAdmin && !canEmployeeManageScheduleNow()) {
+                return org.springframework.http.ResponseEntity.status(403).body(Map.of("message", "Nhân viên không thể đăng ký/chỉnh lịch từ 12:00 Thứ 7 đến hết Chủ nhật. Khoảng thời gian này dành cho Admin/Quản lý xếp lại lịch."));
             }
 
             // Nhân viên phải hủy ca trước ít nhất 2 giờ so với giờ bắt đầu ca

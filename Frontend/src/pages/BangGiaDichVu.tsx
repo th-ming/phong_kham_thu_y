@@ -15,15 +15,6 @@ interface ServiceData {
     trang_thai: boolean;
 }
 
-const FALLBACK_SERVICES: ServiceData[] = [
-    { id_dich_vu: "fallback-kham", ten_dich_vu: "Khám tổng quát", mo_ta: "Kiểm tra sức khỏe toàn diện cho thú cưng.", gia: 150000, trang_thai: true },
-    { id_dich_vu: "fallback-tiem", ten_dich_vu: "Tiêm phòng", mo_ta: "Tiêm vaccine định kỳ theo lịch.", gia: 200000, trang_thai: true },
-    { id_dich_vu: "fallback-xn", ten_dich_vu: "Xét nghiệm máu", mo_ta: "Xét nghiệm máu toàn phần.", gia: 280000, trang_thai: true },
-    { id_dich_vu: "fallback-sieu-am", ten_dich_vu: "Siêu âm", mo_ta: "Chẩn đoán hình ảnh bằng siêu âm.", gia: 350000, trang_thai: true },
-    { id_dich_vu: "fallback-pt", ten_dich_vu: "Phẫu thuật nhỏ", mo_ta: "Các ca phẫu thuật nhỏ theo chỉ định.", gia: 1500000, trang_thai: true },
-    { id_dich_vu: "fallback-spa", ten_dich_vu: "Spa & Grooming", mo_ta: "Tắm, vệ sinh và cắt tỉa lông.", gia: 100000, trang_thai: true },
-];
-
 const priceGridStyle: React.CSSProperties = {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 450px), 1fr))',
@@ -60,7 +51,7 @@ const BangGiaDichVu: React.FC = () => {
         } catch (error) {
             console.error("Lỗi lấy bảng giá:", error);
             setLoadError(true);
-            setServices((current) => current.length > 0 ? current : FALLBACK_SERVICES);
+            setServices([]);
         } finally {
             setLoading(false);
         }
@@ -239,7 +230,7 @@ const BangGiaDichVu: React.FC = () => {
                 <div className="container">
                     <RevealSection>
                         <h2 style={{ fontSize: '2.5rem', fontWeight: 950, marginBottom: '24px' }}>Cần Báo Giá Chi Tiết Hơn?</h2>
-                        <a href="#" onClick={handleBookingClick} style={{
+                        <a data-ai-id="link_price_booking" href="#" onClick={handleBookingClick} style={{
                             display: 'inline-flex',
                             alignItems: 'center',
                             gap: '8px',

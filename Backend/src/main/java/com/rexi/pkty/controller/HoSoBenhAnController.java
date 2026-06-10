@@ -1,6 +1,7 @@
 package com.rexi.pkty.controller;
 
 import com.rexi.pkty.security.RexiSecurityRoles;
+import com.rexi.pkty.util.DatabaseDialect;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -92,13 +93,13 @@ public class HoSoBenhAnController {
                 "nv.id_nhan_vien as id_bac_si, nv.ho_ten as ten_bac_si, " +
                 "kh.id_khach_hang, kh.ten_khach_hang " +
                 fromSql + where + " " +
-                "ORDER BY hs.ngay_kham DESC " +
-                "OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
+                "ORDER BY hs.ngay_kham DESC ";
+        boolean pg = DatabaseDialect.isPostgres(jdbcTemplate);
+        StringBuilder sqlBuilder = new StringBuilder(sql);
+        DatabaseDialect.appendPagination(sqlBuilder, pg, size, offset);
         java.util.List<Object> dataParams = new java.util.ArrayList<>(params);
-        dataParams.add(offset);
-        dataParams.add(size);
         return org.springframework.http.ResponseEntity.ok(Map.of(
-                "content", jdbcTemplate.queryForList(sql, dataParams.toArray()),
+                "content", jdbcTemplate.queryForList(sqlBuilder.toString(), dataParams.toArray()),
                 "totalPages", totalPages,
                 "totalElements", total != null ? total : 0,
                 "currentPage", page
@@ -192,9 +193,10 @@ public class HoSoBenhAnController {
                 "JOIN ThuCung tc ON hs.id_thu_cung = tc.id_thu_cung " +
                 "JOIN NhanVien nv ON dt.id_bac_si = nv.id_nhan_vien " +
                 "JOIN KhachHang kh ON tc.id_khach_hang = kh.id_khach_hang " +
-                "ORDER BY dt.ngay_ke_don DESC " +
-                "OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
-        return jdbcTemplate.queryForList(sql, offset, size);
+                "ORDER BY dt.ngay_ke_don DESC ";
+        StringBuilder sqlBuilder = new StringBuilder(sql);
+        DatabaseDialect.appendPagination(sqlBuilder, DatabaseDialect.isPostgres(jdbcTemplate), size, offset);
+        return jdbcTemplate.queryForList(sqlBuilder.toString());
     }
 
     @GetMapping("/xet-nghiem")
@@ -210,9 +212,10 @@ public class HoSoBenhAnController {
                 "LEFT JOIN LoaiXetNghiem lxn ON baxn.id_loai_xet_nghiem = CAST(lxn.id_loai_xet_nghiem AS varchar) " +
                 "JOIN HoSoBenhAn hs ON baxn.id_ho_so = hs.id_ho_so_benh_an " +
                 "LEFT JOIN NhanVien nv ON COALESCE(baxn.id_bac_si, hs.id_bac_si) = nv.id_nhan_vien " +
-                "ORDER BY baxn.ngay_lay_mau DESC " +
-                "OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
-        return jdbcTemplate.queryForList(sql, offset, size);
+                "ORDER BY baxn.ngay_lay_mau DESC ";
+        StringBuilder sqlBuilder = new StringBuilder(sql);
+        DatabaseDialect.appendPagination(sqlBuilder, DatabaseDialect.isPostgres(jdbcTemplate), size, offset);
+        return jdbcTemplate.queryForList(sqlBuilder.toString());
     }
 
     @PostMapping("/xet-nghiem/manual")
@@ -227,7 +230,7 @@ public class HoSoBenhAnController {
             String giaTri = String.valueOf(payload.getOrDefault("gia_tri_ket_qua", "7.2"));
 
             List<Map<String, Object>> hoSo = jdbcTemplate.queryForList(
-                    "SELECT hs.id_bac_si, lh.id_dich_vu FROM HoSoBenhAn hs LEFT JOIN LichHen lh ON hs.id_lich_hen = lh.id_lich_hen WHERE hs.id_ho_so_benh_an = ? OFFSET 0 ROWS FETCH NEXT 1 ROWS ONLY",
+                    "SELECT hs.id_bac_si, lh.id_dich_vu FROM HoSoBenhAn hs LEFT JOIN LichHen lh ON hs.id_lich_hen = lh.id_lich_hen WHERE hs.id_ho_so_benh_an = ? " + DatabaseDialect.topN(DatabaseDialect.isPostgres(jdbcTemplate), 1),
                     idHoSo);
             if (hoSo.isEmpty()) {
                 return org.springframework.http.ResponseEntity.status(404)
@@ -238,30 +241,30 @@ public class HoSoBenhAnController {
                     ? String.valueOf(payload.get("id_dich_vu"))
                     : String.valueOf(hoSo.get(0).get("id_dich_vu"));
 
-            Integer idDanhMuc = jdbcTemplate.queryForObject(
-                    "INSERT INTO DanhMucXetNghiem (ten_danh_muc, mo_ta) VALUES (?, ?) RETURNING id_danh_muc",
-                    Integer.class,
+            Integer idDanhMuc = insertAndReturnId(
+                    "INSERT INTO DanhMucXetNghiem (ten_danh_muc, mo_ta) VALUES (?, ?)",
+                    "id_danh_muc",
                     tenDanhMuc,
                     "Dữ liệu nhập thủ công từ web/API khi chưa tích hợp máy xét nghiệm");
 
-            Integer idLoai = jdbcTemplate.queryForObject(
-                    "INSERT INTO LoaiXetNghiem (id_danh_muc, ten_xet_nghiem, mo_ta, gia_tien) VALUES (?, ?, ?, ?) RETURNING id_loai_xet_nghiem",
-                    Integer.class,
+            Integer idLoai = insertAndReturnId(
+                    "INSERT INTO LoaiXetNghiem (id_danh_muc, ten_xet_nghiem, mo_ta, gia_tien) VALUES (?, ?, ?, ?)",
+                    "id_loai_xet_nghiem",
                     idDanhMuc,
                     tenXetNghiem,
                     "Phiếu xét nghiệm tạo thủ công",
                     new java.math.BigDecimal(String.valueOf(payload.getOrDefault("gia_tien", "0"))));
 
-            Integer idChiSo = jdbcTemplate.queryForObject(
-                    "INSERT INTO ChiSoXetNghiem (id_loai_xet_nghiem, ten_thong_so, don_vi) VALUES (?, ?, ?) RETURNING id_chi_so",
-                    Integer.class,
+            Integer idChiSo = insertAndReturnId(
+                    "INSERT INTO ChiSoXetNghiem (id_loai_xet_nghiem, ten_thong_so, don_vi) VALUES (?, ?, ?)",
+                    "id_chi_so",
                     idLoai,
                     tenThongSo,
                     String.valueOf(payload.getOrDefault("don_vi", "10^9/L")));
 
-            Integer idXetNghiem = jdbcTemplate.queryForObject(
-                    "INSERT INTO BenhAn_XetNghiem (id_ho_so, id_loai_xet_nghiem, ngay_lay_mau, id_bac_si, trang_thai) VALUES (?, ?, CURRENT_TIMESTAMP, ?, ?) RETURNING id_xet_nghiem_benh_an",
-                    Integer.class,
+            Integer idXetNghiem = insertAndReturnId(
+                    "INSERT INTO BenhAn_XetNghiem (id_ho_so, id_loai_xet_nghiem, ngay_lay_mau, id_bac_si, trang_thai) VALUES (?, ?, CURRENT_TIMESTAMP, ?, ?)",
+                    "id_xet_nghiem_benh_an",
                     idHoSo,
                     String.valueOf(idLoai),
                     idBacSi,
@@ -285,6 +288,13 @@ public class HoSoBenhAnController {
         }
     }
 
+    private Integer insertAndReturnId(String insertSql, String idColumn, Object... args) {
+        if (DatabaseDialect.isPostgres(jdbcTemplate)) {
+            return jdbcTemplate.queryForObject(insertSql + " RETURNING " + idColumn, Integer.class, args);
+        }
+        return jdbcTemplate.queryForObject(insertSql + "; SELECT CAST(SCOPE_IDENTITY() AS int)", Integer.class, args);
+    }
+
     private boolean hasMedicalPermission() {
         org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
                 .getContext().getAuthentication();
@@ -306,9 +316,9 @@ public class HoSoBenhAnController {
 
             String idHoSo = "HS-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase();
             String sql = "INSERT INTO HoSoBenhAn (id_ho_so_benh_an, id_thu_cung, id_bac_si, id_lich_hen, trieu_chung, chan_doan, ngay_kham, trang_thai_ho_so, id_nguoi_tao, ngay_tao) "
-                    + "VALUES (?, ?, ?, ?, ?, ?, CURRENT_DATE, 'HOAN_TAT', ?, CURRENT_TIMESTAMP)";
+                    + "VALUES (?, ?, ?, ?, ?, ?, ?, 'HOAN_TAT', ?, CURRENT_TIMESTAMP)";
 
-            jdbcTemplate.update(sql, idHoSo, idThuCung, idBacSi, idLichHen, trieuChung, chanDoan, idBacSi);
+            jdbcTemplate.update(sql, idHoSo, idThuCung, idBacSi, idLichHen, trieuChung, chanDoan, java.sql.Date.valueOf(java.time.LocalDate.now()), idBacSi);
 
             auditLogService.logAction("THÊM MỚI", "HoSoBenhAn",
                     "// log audit: ok");
@@ -317,7 +327,7 @@ public class HoSoBenhAnController {
                     .ok(Map.of("message", "Lưu bệnh án thành công!", "id_ho_so_benh_an", idHoSo));
         } catch (Exception e) {
             return org.springframework.http.ResponseEntity.status(500)
-                    .body(Map.of("message", "Đã xảy ra lỗi hệ thống khi lưu bệnh án. Vui lòng liên hệ Admin."));
+                    .body(Map.of("message", "Lỗi lưu bệnh án: " + e.getMessage()));
         }
     }
 
@@ -348,16 +358,16 @@ public class HoSoBenhAnController {
                 }
 
                 Integer tonKhaDung = jdbcTemplate.queryForObject(
-                        "SELECT COALESCE(SUM(so_luong_ton), 0) FROM LoThuoc WHERE id_thuoc = ? AND so_luong_ton > 0 AND han_su_dung >= CURRENT_DATE",
-                        Integer.class, idThuoc);
+                        "SELECT COALESCE(SUM(so_luong_ton), 0) FROM LoThuoc WHERE id_thuoc = ? AND so_luong_ton > 0 AND han_su_dung >= ?",
+                        Integer.class, idThuoc, java.sql.Date.valueOf(java.time.LocalDate.now()));
                 if (tonKhaDung == null || tonKhaDung < soLuong) {
                     throw new RuntimeException("Thuốc có ID " + idThuoc + " không đủ số lượng tồn kho!");
                 }
 
                 int conLaiCanXuat = soLuong;
                 List<Map<String, Object>> loXuat = jdbcTemplate.queryForList(
-                        "SELECT id_lo, so_luong_ton, gia_nhap FROM LoThuoc WHERE id_thuoc = ? AND so_luong_ton > 0 AND han_su_dung >= CURRENT_DATE ORDER BY han_su_dung ASC, ngay_nhap ASC",
-                        idThuoc);
+                        "SELECT id_lo, so_luong_ton, gia_nhap FROM LoThuoc WHERE id_thuoc = ? AND so_luong_ton > 0 AND han_su_dung >= ? ORDER BY han_su_dung ASC, ngay_nhap ASC",
+                        idThuoc, java.sql.Date.valueOf(java.time.LocalDate.now()));
                 for (Map<String, Object> lo : loXuat) {
                     if (conLaiCanXuat <= 0) break;
                     String idLo = String.valueOf(lo.get("id_lo"));
@@ -470,7 +480,7 @@ public class HoSoBenhAnController {
             return org.springframework.http.ResponseEntity.ok(Map.of("message", "Đã tự động lập hóa đơn thành công!"));
         } catch (Exception e) {
             return org.springframework.http.ResponseEntity.status(500)
-                    .body(Map.of("message", "Đã xảy ra lỗi hệ thống khi tạo hóa đơn."));
+                    .body(Map.of("message", "Lỗi tạo hóa đơn: " + e.getMessage()));
         }
     }
 }

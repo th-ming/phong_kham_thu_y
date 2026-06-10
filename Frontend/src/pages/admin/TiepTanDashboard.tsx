@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import axiosInstance from "@services/axios";
 import { getUserProfile, matchesSearchFields } from "@utils/index";
 import ModalTaoLichHenAdmin from "./ModalTaoLichHenAdmin";
@@ -316,12 +317,18 @@ const TiepTanDashboard: React.FC = () => {
           <span style={{ filter: "drop-shadow(0 5px 15px rgba(0,0,0,0.2))" }}>🛎️</span>
         </h1>
         <p style={{ fontWeight: 700, color: "rgba(255,255,255,0.95)", position: "relative", zIndex: 1, margin: 0, fontSize: "clamp(0.95rem, 3vw, 1.2rem)", textShadow: "0 2px 4px rgba(0,0,0,0.1)" }}>Chào mừng, {user.ho_ten || "Lễ tân"}. Quản lý luồng khách hàng và điều phối lịch hẹn hôm nay.</p>
-        {lastUpdated && (
-          <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "0.85rem", fontWeight: 800, background: "rgba(255,255,255,0.15)", backdropFilter: "blur(8px)", padding: "6px 14px", borderRadius: "999px", marginTop: "14px", border: "1px solid rgba(255,255,255,0.2)", position: "relative", zIndex: 1, boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }}>
-            <span className="material-symbols-outlined" style={{ fontSize: "15px", color: "#5eead4", animation: "spin 3s infinite linear" }}>sync</span>
-            <span>Dữ liệu thời gian thực cập nhật lúc: {lastUpdated}</span>
-          </div>
-        )}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginTop: "16px", position: "relative", zIndex: 1 }}>
+          <Link to="/quan-ly/lich-lam-viec" className="btn btn-pill" style={{ background: "rgba(255,255,255,0.18)", color: "white", border: "1px solid rgba(255,255,255,0.28)", fontWeight: 800 }}>
+            <span className="material-symbols-outlined">edit_calendar</span>
+            Đặt lịch làm việc
+          </Link>
+          {lastUpdated && (
+            <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "0.85rem", fontWeight: 800, background: "rgba(255,255,255,0.15)", backdropFilter: "blur(8px)", padding: "6px 14px", borderRadius: "999px", border: "1px solid rgba(255,255,255,0.2)", boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }}>
+              <span className="material-symbols-outlined" style={{ fontSize: "15px", color: "#5eead4", animation: "spin 3s infinite linear" }}>sync</span>
+              <span>Dữ liệu thời gian thực cập nhật lúc: {lastUpdated}</span>
+            </div>
+          )}
+        </div>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "24px", marginBottom: "40px", position: "relative", zIndex: 80 }}>

@@ -242,6 +242,7 @@ const CustomerLayout: React.FC = () => {
               />
 
               <button
+                data-ai-id="btn_customer_birth_year_submit"
                 type="submit"
                 disabled={savingBirthYear}
                 className="btn btn-primary"

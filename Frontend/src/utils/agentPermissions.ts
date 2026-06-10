@@ -4,15 +4,18 @@ import { ROLE_GROUPS, canAccessAdminPath } from "./permissions";
 // * Tool Agent / truy vấn nội bộ — khớp RoleAccessPolicy backend
 export const AGENT_TOOL_ROLES: Record<string, UserRoleCode[]> = {
   tim_lich_hen_hom_nay: ROLE_GROUPS.appointment,
-  tim_khach_hang: ROLE_GROUPS.customerAndPet,
+  tim_khach_hang: [...ROLE_GROUPS.customerAndPet, "staff"],
   tim_thu_cung: ROLE_GROUPS.customerAndPet,
   xem_benh_an: ROLE_GROUPS.clinicalRecord,
   tim_lich_trong: [...ROLE_GROUPS.allInternal, "khach_hang"],
   dat_lich_hen: ROLE_GROUPS.appointment,
   huy_lich_hen: [...ROLE_GROUPS.appointment, "khach_hang"],
+  them_thu_cung: ["admin", "quan_ly", "staff", "tiep_tan", "khach_hang"],
+  danh_sach_thu_cung_cua_toi: ["khach_hang"],
   cap_nhat_benh_an: ["bac_si", "y_ta"],
   xem_kho_thuoc: ROLE_GROUPS.inventory,
   thong_ke_doanh_thu: ROLE_GROUPS.finance,
+  tim_lich_lam_bac_si: ["admin", "quan_ly", "staff", "bac_si", "tiep_tan", "y_ta"],
   tim_kiem_web: [...ROLE_GROUPS.allInternal, "khach_hang"],
   gui_email_don_le: ROLE_GROUPS.marketing,
   kiem_tra_cau_hinh_ai: ROLE_GROUPS.adminOnly,
@@ -28,6 +31,8 @@ export const AGENT_TOOL_ROLES: Record<string, UserRoleCode[]> = {
 export const CUSTOMER_SAFE_AGENT_TOOLS = new Set([
   "tim_lich_trong",
   "huy_lich_hen",
+  "them_thu_cung",
+  "danh_sach_thu_cung_cua_toi",
   "tim_kiem_web",
   "kiem_tra_phan_he",
   "tra_cuu_tai_lieu_y_khoa", // đồng bộ với backend — có output filter riêng cho khách hàng

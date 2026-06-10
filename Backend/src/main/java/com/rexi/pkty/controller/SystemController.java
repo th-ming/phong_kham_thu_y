@@ -4,6 +4,7 @@ import com.rexi.pkty.service.EmailService;
 import com.rexi.pkty.service.DatabaseBackupService;
 import com.rexi.pkty.service.AuditLogService;
 import com.rexi.pkty.service.SecurityAlertService;
+import com.rexi.pkty.util.DatabaseDialect;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.http.ResponseEntity;
@@ -153,7 +154,9 @@ public class SystemController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> getNhatKy() {
         try {
-            List<Map<String, Object>> logs = jdbcTemplate.queryForList("SELECT * FROM NhatKyHeThong ORDER BY ngay_tao DESC OFFSET 0 ROWS FETCH NEXT 100 ROWS ONLY");
+            StringBuilder logsSql = new StringBuilder("SELECT * FROM NhatKyHeThong ORDER BY ngay_tao DESC");
+            DatabaseDialect.appendPagination(logsSql, DatabaseDialect.isPostgres(jdbcTemplate), 100, 0);
+            List<Map<String, Object>> logs = jdbcTemplate.queryForList(logsSql.toString());
             return ResponseEntity.ok(logs);
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of("message", "Lỗi tải nhật ký"));
@@ -231,7 +234,7 @@ public class SystemController {
             Map.of("id_chuc_nang", "1", "ma_chuc_nang", "TONG_QUAN", "ten_chuc_nang", "Tổng quan quản trị", "mo_ta", "Bảng điều khiển vận hành theo vai trò", "duong_dan", "/quan-ly/dashboard", "vai_tro", "ADMIN, QUAN_LY, BAC_SI, KE_TOAN, TIEP_TAN, Y_TA, STAFF"),
             Map.of("id_chuc_nang", "2", "ma_chuc_nang", "BAO_CAO", "ten_chuc_nang", "Báo cáo & Thống kê", "mo_ta", "KPI doanh thu, ca điều trị, bác sĩ và dịch vụ", "duong_dan", "/quan-ly/bao-cao-thong-ke", "vai_tro", "ADMIN, QUAN_LY, KE_TOAN"),
             Map.of("id_chuc_nang", "3", "ma_chuc_nang", "LICH_HEN", "ten_chuc_nang", "Quản lý lịch hẹn", "mo_ta", "Điều phối, xác nhận, check-in và hoàn tất lịch khám", "duong_dan", "/quan-ly/lich-hen", "vai_tro", "ADMIN, QUAN_LY, STAFF, BAC_SI, TIEP_TAN, Y_TA"),
-            Map.of("id_chuc_nang", "4", "ma_chuc_nang", "LICH_TRUC", "ten_chuc_nang", "Điều hành nhân sự", "mo_ta", "Quản lý lịch trực, ca làm và tải nhân sự", "duong_dan", "/quan-ly/lich-lam-viec", "vai_tro", "ADMIN, QUAN_LY, STAFF, BAC_SI, TIEP_TAN, Y_TA"),
+            Map.of("id_chuc_nang", "4", "ma_chuc_nang", "LICH_TRUC", "ten_chuc_nang", "Điều hành nhân sự", "mo_ta", "Quản lý lịch trực, ca làm và tải nhân sự", "duong_dan", "/quan-ly/lich-lam-viec", "vai_tro", "ADMIN, QUAN_LY, STAFF, BAC_SI, TIEP_TAN, Y_TA, KE_TOAN"),
             Map.of("id_chuc_nang", "5", "ma_chuc_nang", "NHAN_SU", "ten_chuc_nang", "Nhân sự & Phân quyền", "mo_ta", "Tài khoản nhân viên, vai trò và quyền truy cập", "duong_dan", "/quan-ly/nhan-vien-phan-quyen", "vai_tro", "ADMIN, QUAN_LY"),
             Map.of("id_chuc_nang", "6", "ma_chuc_nang", "KHACH_HANG", "ten_chuc_nang", "Khách hàng & Thú cưng", "mo_ta", "Quản lý hồ sơ chủ nuôi và thú cưng", "duong_dan", "/quan-ly/khach-hang-thu-cung", "vai_tro", "ADMIN, QUAN_LY, TIEP_TAN, BAC_SI, Y_TA"),
             Map.of("id_chuc_nang", "7", "ma_chuc_nang", "DICH_VU", "ten_chuc_nang", "Danh mục dịch vụ", "mo_ta", "Bảng giá, thời lượng, mô tả dịch vụ và cấu hình hiển thị", "duong_dan", "/quan-ly/dich-vu", "vai_tro", "ADMIN, QUAN_LY, TIEP_TAN"),
@@ -257,57 +260,14 @@ public class SystemController {
     public ResponseEntity<?> taoDuLieuNenThieu() {
         try {
             Integer idChucNang = jdbcTemplate.queryForObject(
-                    "SELECT id_chuc_nang FROM ChucNang WHERE ma_chuc_nang = ? OFFSET 0 ROWS FETCH NEXT 1 ROWS ONLY",
+                    "SELECT id_chuc_nang FROM ChucNang WHERE ma_chuc_nang = ? " + DatabaseDialect.topN(DatabaseDialect.isPostgres(jdbcTemplate), 1),
                     Integer.class,
                     "XET_NGHIEM");
             return ResponseEntity.ok(Map.of("message", "Dữ liệu nền đã tồn tại.", "id_chuc_nang", idChucNang));
         } catch (Exception ignored) {
-            // Chưa có dữ liệu nền, tạo mẫu tối thiểu để màn phân hệ/quyền có dữ liệu thật.
-        }
-
-        try {
-            jdbcTemplate.update(
-                    "INSERT INTO ChucNang (ma_chuc_nang, ten_chuc_nang, mo_ta) VALUES (?, ?, ?)",
-                    "XET_NGHIEM",
-                    "Xét nghiệm & Cận lâm sàng",
-                    "Phiếu xét nghiệm, chỉ số và kết quả cận lâm sàng");
-            Integer idChucNang = jdbcTemplate.queryForObject(
-                    "SELECT id_chuc_nang FROM ChucNang WHERE ma_chuc_nang = ? ORDER BY id_chuc_nang DESC OFFSET 0 ROWS FETCH NEXT 1 ROWS ONLY",
-                    Integer.class,
-                    "XET_NGHIEM");
-            String idVaiTro = jdbcTemplate.queryForObject(
-                    "SELECT id_vai_tro FROM VaiTroHeThong ORDER BY id_vai_tro OFFSET 0 ROWS FETCH NEXT 1 ROWS ONLY",
-                    String.class);
-            String idNhanVien = jdbcTemplate.queryForObject(
-                    "SELECT id_nhan_vien FROM NhanVien ORDER BY id_nhan_vien OFFSET 0 ROWS FETCH NEXT 1 ROWS ONLY",
-                    String.class);
-            jdbcTemplate.update(
-                    "INSERT INTO PhanQuyen (id_vai_tro, id_chuc_nang) VALUES (?, ?)",
-                    idVaiTro,
-                    idChucNang);
-            jdbcTemplate.update(
-                    "INSERT INTO PhanCongNhanVien (id_nhan_vien, id_vai_tro, ngay_bat_dau_phan_cong) VALUES (?, ?, CURRENT_DATE)",
-                    idNhanVien,
-                    idVaiTro);
-
-            List<Map<String, Object>> lichHen = jdbcTemplate.queryForList(
-                    "SELECT lh.id_lich_hen, lh.id_dich_vu, COALESCE(dv.gia, 0) AS don_gia " +
-                            "FROM LichHen lh LEFT JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu " +
-                            "WHERE lh.id_dich_vu IS NOT NULL ORDER BY lh.ngay_tao DESC OFFSET 0 ROWS FETCH NEXT 1 ROWS ONLY");
-            if (!lichHen.isEmpty()) {
-                Map<String, Object> item = lichHen.get(0);
-                jdbcTemplate.update(
-                        "INSERT INTO DichVuLichHen (id_lich_hen, id_dich_vu, so_luong, don_gia, ghi_chu) VALUES (?, ?, 1, ?, ?)",
-                        item.get("id_lich_hen"),
-                        item.get("id_dich_vu"),
-                        item.get("don_gia"),
-                        "Liên kết dịch vụ theo lịch hẹn hiện có");
-            }
-
-            auditLogService.logAction("THÊM MỚI", "ChucNang/PhanQuyen", "Tạo dữ liệu nền quyền/phân hệ tối thiểu");
-            return ResponseEntity.ok(Map.of("message", "Đã tạo dữ liệu nền còn thiếu.", "id_chuc_nang", idChucNang));
-        } catch (Exception e) {
-            return ResponseEntity.status(400).body(Map.of("message", "Không thể tạo dữ liệu nền: " + e.getMessage()));
+            return ResponseEntity.status(409).body(Map.of(
+                    "message", "Thiếu dữ liệu nền thật trong DB. Hệ thống đã dừng, không tự tạo dữ liệu vào DB.",
+                    "missing", "XET_NGHIEM"));
         }
     }
 
@@ -422,7 +382,10 @@ public class SystemController {
     public ResponseEntity<?> getNewsletterCount() {
         try {
             // KhachHang nhan email, da_xoa = 0
-            Integer count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM KhachHang WHERE email IS NOT NULL AND email <> '' AND (LOWER(CAST(nhan_email AS varchar)) IN ('1', 'true') OR nhan_email IS NULL) AND (da_xoa IS NULL OR LOWER(CAST(da_xoa AS varchar)) IN ('0', 'false'))", Integer.class);
+            boolean pg = DatabaseDialect.isPostgres(jdbcTemplate);
+            Integer count = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM KhachHang WHERE email IS NOT NULL AND email <> '' AND (" + DatabaseDialect.isActive(pg, "nhan_email") + " OR nhan_email IS NULL) AND " + DatabaseDialect.isNotDeleted(pg, "da_xoa"),
+                    Integer.class);
             return ResponseEntity.ok(Map.of("count", count != null ? count : 0));
         } catch (Exception e) {
             return ResponseEntity.ok(Map.of("count", 0));
@@ -500,10 +463,12 @@ public class SystemController {
         }
 
         try {
+            boolean pg = DatabaseDialect.isPostgres(jdbcTemplate);
             List<String> emails = jdbcTemplate.queryForList(
                 "SELECT email FROM KhachHang " +
-                "WHERE email IS NOT NULL AND email <> '' AND (LOWER(CAST(nhan_email AS varchar)) IN ('1', 'true') OR nhan_email IS NULL) " +
-                "AND (da_xoa IS NULL OR LOWER(CAST(da_xoa AS varchar)) IN ('0', 'false')) OFFSET 0 ROWS FETCH NEXT " + MASS_EMAIL_MAX_BATCH + " ROWS ONLY,
+                "WHERE email IS NOT NULL AND email <> '' AND (" + DatabaseDialect.isActive(pg, "nhan_email") + " OR nhan_email IS NULL) " +
+                "AND " + DatabaseDialect.isNotDeleted(pg, "da_xoa") + " " +
+                DatabaseDialect.topN(pg, MASS_EMAIL_MAX_BATCH),
                 String.class
             );
 
@@ -603,7 +568,7 @@ public class SystemController {
 
         try {
             HttpRequest request = buildAiProviderRequest(provider, apiKey, model);
-            HttpResponse<String> response = aiTestClient.send(request, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = aiTestClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
             boolean ok = response.statusCode() >= 200 && response.statusCode() < 300;
             String errorCode = ok ? "ok" : classifyAiProviderError(response.statusCode(), response.body());
             String technicalMessage = ok

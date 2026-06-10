@@ -3,6 +3,7 @@ package com.rexi.pkty.controller;
 import com.rexi.pkty.entity.HoaDon;
 import com.rexi.pkty.repository.HoaDonRepository;
 import com.rexi.pkty.security.RexiSecurityRoles;
+import com.rexi.pkty.util.DatabaseDialect;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -253,7 +254,11 @@ public class FinanceController {
     @PreAuthorize(RexiSecurityRoles.INVENTORY_READ)
     public ResponseEntity<?> getAllThuoc() {
         try {
-            return ResponseEntity.ok(hoaDonRepository.getAllThuoc());
+            String todayExpr = DatabaseDialect.isPostgres(jdbcTemplate) ? "CURRENT_DATE" : "CAST(GETDATE() AS date)";
+            String sql = "SELECT t.*, COALESCE(SUM(CASE WHEN lt.han_su_dung >= " + todayExpr + " THEN lt.so_luong_ton ELSE 0 END), 0) AS so_luong_ton "
+                    + "FROM Thuoc t LEFT JOIN LoThuoc lt ON t.id_thuoc = lt.id_thuoc "
+                    + "GROUP BY t.id_thuoc, t.ten_thuoc, t.thanh_phan, t.dang_bao_che, t.don_vi, t.mo_ta, t.gia_ban, t.trang_thai, t.da_xoa";
+            return ResponseEntity.ok(jdbcTemplate.queryForList(sql));
         } catch (Exception e) {
             return ResponseEntity.status(500)
                     .body(Map.of("message", "Lỗi truy xuất danh sách thuốc: " + e.getMessage()));
@@ -378,7 +383,14 @@ public class FinanceController {
     @PreAuthorize(RexiSecurityRoles.FINANCE_READ)
     public ResponseEntity<?> getDoanhThuThang() {
         try {
-            return ResponseEntity.ok(hoaDonRepository.getDoanhThuTheoThang());
+            String sql = DatabaseDialect.isPostgres(jdbcTemplate)
+                    ? "SELECT EXTRACT(YEAR FROM ngay_lap_hoa_don)::int AS Nam, EXTRACT(MONTH FROM ngay_lap_hoa_don)::int AS Thang, SUM(tong_tien_cuoi) AS TongDoanhThu "
+                            + "FROM HoaDon WHERE UPPER(TRIM(trang_thai)) = 'DA_THANH_TOAN' "
+                            + "GROUP BY EXTRACT(YEAR FROM ngay_lap_hoa_don)::int, EXTRACT(MONTH FROM ngay_lap_hoa_don)::int ORDER BY Nam DESC, Thang DESC"
+                    : "SELECT YEAR(ngay_lap_hoa_don) AS Nam, MONTH(ngay_lap_hoa_don) AS Thang, SUM(tong_tien_cuoi) AS TongDoanhThu "
+                            + "FROM HoaDon WHERE UPPER(TRIM(trang_thai)) = 'DA_THANH_TOAN' "
+                            + "GROUP BY YEAR(ngay_lap_hoa_don), MONTH(ngay_lap_hoa_don) ORDER BY Nam DESC, Thang DESC";
+            return ResponseEntity.ok(jdbcTemplate.queryForList(sql));
         } catch (Exception e) {
             return ResponseEntity.status(500)
                     .body(Map.of("message", "Lỗi truy xuất báo cáo doanh thu: " + e.getMessage()));
@@ -422,9 +434,9 @@ public class FinanceController {
     @PreAuthorize(RexiSecurityRoles.FINANCE_READ)
     public ResponseEntity<?> testDoanhThu() {
         try {
-            return ResponseEntity.ok(hoaDonRepository.getDoanhThuTheoNgay());
+            return ResponseEntity.ok(getDoanhThuTheoNgayRows());
         } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of("message", "Lỗi hệ thống khi truy xuất doanh thu. Vui lòng thử lại sau."));
+            return ResponseEntity.status(500).body(Map.of("message", "Lỗi truy xuất doanh thu: " + e.getMessage()));
         }
     }
 
@@ -433,12 +445,23 @@ public class FinanceController {
     @PreAuthorize(RexiSecurityRoles.FINANCE_READ)
     public ResponseEntity<?> getDoanhThuNgay() {
         try {
-            return ResponseEntity.ok(hoaDonRepository.getDoanhThuTheoNgay());
+            return ResponseEntity.ok(getDoanhThuTheoNgayRows());
         } catch (Exception e) {
             e.printStackTrace(); // Thêm log để bắt lỗi 500
             return ResponseEntity.status(500)
                     .body(Map.of("message", "Lỗi truy xuất báo cáo doanh thu ngày: " + e.getMessage()));
         }
+    }
+
+    private List<Map<String, Object>> getDoanhThuTheoNgayRows() {
+        String sql = DatabaseDialect.isPostgres(jdbcTemplate)
+                ? "SELECT ngay_lap_hoa_don::date as Ngay, SUM(tong_tien_cuoi) as TongDoanhThu FROM HoaDon "
+                        + "WHERE UPPER(TRIM(trang_thai)) = 'DA_THANH_TOAN' AND ngay_lap_hoa_don >= CURRENT_DATE - 6 "
+                        + "GROUP BY ngay_lap_hoa_don::date ORDER BY Ngay ASC"
+                : "SELECT CAST(ngay_lap_hoa_don AS date) as Ngay, SUM(tong_tien_cuoi) as TongDoanhThu FROM HoaDon "
+                        + "WHERE UPPER(TRIM(trang_thai)) = 'DA_THANH_TOAN' AND ngay_lap_hoa_don >= " + DatabaseDialect.currentDateMinusDays(DatabaseDialect.isPostgres(jdbcTemplate), 6) + " "
+                        + "GROUP BY CAST(ngay_lap_hoa_don AS date) ORDER BY Ngay ASC";
+        return jdbcTemplate.queryForList(sql);
     }
 
     // Thống kê tỷ lệ thú cưng

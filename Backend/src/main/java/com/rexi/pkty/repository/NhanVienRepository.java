@@ -10,14 +10,14 @@ import java.util.Map;
 @Repository
 public interface NhanVienRepository extends JpaRepository<NhanVien, String> {
 
-    // Get ds BS. Role IDs differ between seed data and auth mapping, so accept both.
-    @Query(value = "SELECT * FROM NhanVien nv WHERE (nv.da_xoa IS NULL OR LOWER(CAST(nv.da_xoa AS varchar)) IN ('0', 'false')) " +
+    // Get ds BS - JPQL cross-database (works on both SQL Server & PostgreSQL)
+    @Query("SELECT nv FROM NhanVien nv WHERE (nv.da_xoa IS NULL OR nv.da_xoa = false) " +
             "AND (LOWER(COALESCE(nv.chuyen_mon, '')) LIKE '%bác sĩ%' " +
             "OR LOWER(COALESCE(nv.chuyen_mon, '')) LIKE '%bac si%' " +
             "OR LOWER(COALESCE(nv.chuyen_mon, '')) LIKE '%doctor%' " +
             "OR EXISTS (SELECT 1 FROM TaiKhoan tk WHERE tk.id_nhan_vien = nv.id_nhan_vien " +
             "AND (tk.id_vai_tro IN ('VT-BS', 'VT-2', '2') OR UPPER(COALESCE(tk.id_vai_tro, '')) LIKE '%BS%'))) " +
-            "ORDER BY nv.ho_ten ASC", nativeQuery = true)
+            "ORDER BY nv.ho_ten ASC")
     List<NhanVien> findAllBacSi();
 
     // Get tu View v_ThongKe_BacSi

@@ -204,7 +204,7 @@ const QuanLyFileDinhKem: React.FC = () => {
                   <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--ink)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.ten_file}</h3>
                   <p style={{ fontSize: '0.75rem', color: 'var(--gray-400)', fontWeight: 700, margin: '4px 0' }}>{formatSize(file.kich_thuoc)} · {file.ngay_upload?.split('T')[0]}</p>
                 </div>
-                <a href={`${API_BASE_URL}${file.duong_dan}`} target="_blank" rel="noreferrer" className="btn" style={{ padding: '8px', background: 'var(--gray-50)', color: 'var(--ink)' }}>
+                                        <a data-ai-id={`link_file_view_${file.id}`} href={`${API_BASE_URL}${file.duong_dan}`} target="_blank" rel="noreferrer" className="btn" style={{ padding: '8px', background: 'var(--gray-50)', color: 'var(--ink)' }}>
                   <span className="material-symbols-outlined">download</span>
                 </a>
               </div>
@@ -235,7 +235,7 @@ const QuanLyFileDinhKem: React.FC = () => {
                     <td style={{ padding: '20px', textAlign: 'right', fontWeight: 700 }}>{formatSize(file.kich_thuoc)}</td>
                     <td style={{ padding: '20px', textAlign: 'center' }}>
                       <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-                        <a href={`${API_BASE_URL}${file.duong_dan}`} target="_blank" rel="noreferrer" className="btn" style={{ padding: '8px', background: 'var(--primary-light)', color: 'var(--primary)' }}>
+                                <a data-ai-id={`link_file_download_${file.id}`} href={`${API_BASE_URL}${file.duong_dan}`} target="_blank" rel="noreferrer" className="btn" style={{ padding: '8px', background: 'var(--primary-light)', color: 'var(--primary)' }}>
                           <span className="material-symbols-outlined">visibility</span>
                         </a>
                         <button data-ai-id="button-quanlyfiledinhkem-bnuc" className="btn" style={{ padding: '8px', background: 'var(--danger-light, rgba(239, 68, 68, 0.15))', color: 'var(--danger)' }} onClick={() => handleDelete(file.id)}>

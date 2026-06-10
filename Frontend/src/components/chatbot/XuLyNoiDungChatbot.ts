@@ -173,7 +173,7 @@ export const stripChatControlTags = (text: string): string => {
     return cleaned
         .replace(/\[EMERGENCY\]/gi, "")
         .replace(/\[NAVIGATE:[^\]]+\]/gi, "")
-        .replace(/\[(CLICK|FILL|TOGGLE|SELECT|DELETE|SCROLL):[^\]]+\]/gi, "")
+        .replace(/\[(CLICK|FILL|TOGGLE|SELECT|DELETE|SCROLL|PREVIEW_STYLE|PREVIEW_TEXT|PREVIEW_LINK|PREVIEW_REMOVE_LINK|PREVIEW_RESET):[^\]]+\]/gi, "")
         .replace(/\[AUTO_BOOK:[^\]]*\]/gi, "")
         .replace(/\[GENERATE_TREATMENT_PDF:[^\]]*\]/gi, "")
         .replace(/\[SWARM_ORCHESTRATION:[^\]]*\]/gi, "")

@@ -65,7 +65,7 @@ export type BookingPageSummary = {
 
 export const readBookingSummaryFromPage = (): BookingPageSummary => {
     const missing: string[] = [];
-    const petSelect = document.querySelector('select[data-ai-id="select-datlichhen-688p"]') as HTMLSelectElement | null;
+    const petSelect = document.querySelector('select[data-ai-id="select_appointment_pet"]') as HTMLSelectElement | null;
     const pet = petSelect?.selectedOptions?.[0]?.textContent?.trim() || "Chưa chọn";
     if (!petSelect?.value) missing.push("thú cưng");
 
@@ -73,12 +73,12 @@ export const readBookingSummaryFromPage = (): BookingPageSummary => {
     const service = serviceCard ? getBookingServiceCardTitle(serviceCard) : "Chưa chọn";
     if (!serviceCard) missing.push("dịch vụ");
 
-    const doctorSelect = document.querySelector('select[data-ai-id="select-datlichhen-33v9"]') as HTMLSelectElement | null;
+    const doctorSelect = document.querySelector('select[data-ai-id="dropdown_doctor"]') as HTMLSelectElement | null;
     const doctor = doctorSelect?.value
         ? (doctorSelect.selectedOptions?.[0]?.textContent?.trim() || "Đã chọn bác sĩ")
         : "Bác sĩ bất kỳ";
 
-    const dateInput = document.querySelector('input[data-ai-id="input-datlichhen-mc0h"]') as HTMLInputElement | null;
+    const dateInput = document.querySelector('input[data-ai-id="input_appointment_date"]') as HTMLInputElement | null;
     const dateValue = dateInput?.value || "";
     if (!dateValue) missing.push("ngày khám");
 
@@ -94,7 +94,7 @@ export const readBookingSummaryFromPage = (): BookingPageSummary => {
         ? `${dateValue.split("-").reverse().join("/")}${timeLabel ? ` • ${timeLabel}` : ""}`
         : "Chưa chọn ngày/giờ";
 
-    const noteInput = document.querySelector('textarea[data-ai-id="textarea-datlichhen-note"]') as HTMLTextAreaElement | null;
+    const noteInput = document.querySelector('textarea[data-ai-id="textarea_symptom"]') as HTMLTextAreaElement | null;
     const note = noteInput?.value?.trim() || "(chưa ghi chú)";
 
     return {

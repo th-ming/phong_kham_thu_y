@@ -40,30 +40,13 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, String> {
                         "ORDER BY hd.ngay_lap_hoa_don DESC", nativeQuery = true)
         List<Map<String, Object>> getAllHoaDon();
 
-        // Get ds thuoc
-        @Query(value = "SELECT t.*, COALESCE(SUM(CASE WHEN lt.han_su_dung >= CURRENT_DATE THEN lt.so_luong_ton ELSE 0 END), 0) AS so_luong_ton FROM Thuoc t LEFT JOIN LoThuoc lt ON t.id_thuoc = lt.id_thuoc GROUP BY t.id_thuoc, t.ten_thuoc, t.thanh_phan, t.dang_bao_che, t.don_vi, t.mo_ta, t.gia_ban, t.trang_thai, t.da_xoa", nativeQuery = true)
-        List<Map<String, Object>> getAllThuoc();
-
         // Get ds lo thuoc
         @Query(value = "SELECT * FROM LoThuoc", nativeQuery = true)
         List<Map<String, Object>> getAllLoThuoc();
 
-        // Bcao dt thang tu hoa don da_thanh_toan
-        @Query(value = "SELECT EXTRACT(YEAR FROM ngay_lap_hoa_don)::int AS Nam, EXTRACT(MONTH FROM ngay_lap_hoa_don)::int AS Thang, SUM(tong_tien_cuoi) AS TongDoanhThu "
-                        +
-                        "FROM HoaDon " +
-                        "WHERE UPPER(TRIM(trang_thai)) = 'DA_THANH_TOAN' " +
-                        "GROUP BY EXTRACT(YEAR FROM ngay_lap_hoa_don)::int, EXTRACT(MONTH FROM ngay_lap_hoa_don)::int " +
-                        "ORDER BY Nam DESC, Thang DESC", nativeQuery = true)
-        List<Map<String, Object>> getDoanhThuTheoThang();
-
         // Tke theo BS (View)
         @Query(value = "SELECT TenBacSi, SoLichHen, SoHoSo, TongDoanhThu FROM v_ThongKe_BacSi", nativeQuery = true)
         List<Map<String, Object>> getThongKeBacSi();
-
-        // Bcao dt 7 ngay gan nhat
-        @Query(value = "SELECT ngay_lap_hoa_don::date as Ngay, SUM(tong_tien_cuoi) as TongDoanhThu FROM HoaDon WHERE UPPER(TRIM(trang_thai)) = 'DA_THANH_TOAN' AND ngay_lap_hoa_don >= CURRENT_DATE - 6 GROUP BY ngay_lap_hoa_don::date ORDER BY Ngay ASC", nativeQuery = true)
-        List<Map<String, Object>> getDoanhThuTheoNgay();
 
         // Tke ty le pet
         @Query(value = "SELECT COALESCE(loai, 'Khác') as LoaiThuCung, COUNT(*) as SoLuong FROM ThuCung GROUP BY COALESCE(loai, 'Khác')", nativeQuery = true)
@@ -79,4 +62,3 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, String> {
                         "ORDER BY DoanhThu DESC", nativeQuery = true)
         List<Map<String, Object>> getDoanhThuTheoDichVu();
 }
-

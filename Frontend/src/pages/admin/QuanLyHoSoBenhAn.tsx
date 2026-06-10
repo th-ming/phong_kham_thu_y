@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import axiosInstance from "@services/axios";
 import { matchesSearchFields } from "@utils/index";
 import { useAutoRefresh } from "@hooks/useAutoRefresh";
+import useVirtualScroll from "@hooks/useVirtualScroll";
 
 const chuyenNgayISO_SangVN = (dateString: string) => {
   if (!dateString) return "—";
@@ -20,9 +21,9 @@ const QuanLyHoSoBenhAn: React.FC = () => {
   const [isServerPaginated, setIsServerPaginated] = useState(false);
   const [searchHoSo, setSearchHoSo] = useState("");
 
-  // Phân trang
+  // Phân trang - Tăng size để Virtual Scroll có ý nghĩa (audit 40-300+ items)
   const [currentPage, setCurrentPage] = useState(1);
-  const ITEMS_PER_PAGE = 10;
+  const ITEMS_PER_PAGE = 200;
 
   // useCallback để tránh tạo function mới mỗi render → ngăn useEffect vòng lặp vô tận
   const fetchData = useCallback(() => {
@@ -76,11 +77,23 @@ const QuanLyHoSoBenhAn: React.FC = () => {
   const totalPages = isServerPaginated ? totalServerPages : Math.ceil(filteredHoSos.length / ITEMS_PER_PAGE);
   const currentRows = isServerPaginated ? hoSos : filteredHoSos.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
+  // Virtual Scrolling configuration
+  const VIRTUAL_ITEM_HEIGHT = 80;
+  const VIRTUAL_CONTAINER_HEIGHT = 500;
+  const { visibleItems, containerRef, onScrollHandler, visibleRange, shouldVirtualize } = useVirtualScroll({
+    items: currentRows,
+    itemHeight: VIRTUAL_ITEM_HEIGHT,
+    containerHeight: VIRTUAL_CONTAINER_HEIGHT,
+    visibleCount: 6,
+    threshold: 3
+  });
+
   if (loading && hoSos.length === 0) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
       <div className="dot-pulse"></div>
     </div>
   );
+
 
   return (
     <div className="animate-fade-in">
@@ -210,71 +223,85 @@ const QuanLyHoSoBenhAn: React.FC = () => {
                 </span>
               </div>
               <p>{h.chan_doan || "Chưa có chẩn đoán"}</p>
-              <Link to={`/quan-ly/ho-so-benh-an/${h.id_ho_so}`} className="btn" style={{ background: 'var(--primary-light)', color: 'var(--primary)', display: 'inline-flex' }}>
+              <Link to={`/quan-ly/chi-tiet-benh-an/${h.id_ho_so}`} className="btn" style={{ background: 'var(--primary-light)', color: 'var(--primary)', display: 'inline-flex' }}>
                 <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>visibility</span>
               </Link>
             </article>
           ))}
         </div>
         <div className="table-responsive-wrapper admin-record-desktop-table">
-<div style={{ minWidth: '800px' }}>
-<table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ background: 'var(--gray-50)', color: 'var(--gray-500)', textAlign: 'left', borderBottom: '1px solid var(--gray-200)' }}>
-              <th style={{ padding: '24px 20px', fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px' }}>MÃ HỒ SƠ</th>
-              <th style={{ padding: '24px 20px', fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px' }}>NGÀY KHÁM</th>
-              <th style={{ padding: '24px 20px', fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px' }}>THÚ CƯNG</th>
-              <th style={{ padding: '24px 20px', fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px' }}>BÁC SĨ ĐIỀU TRỊ</th>
-              <th style={{ padding: '24px 20px', fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px' }}>CHẨN ĐOÁN</th>
-              <th style={{ padding: '24px 20px', fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px' }}>TRẠNG THÁI</th>
-              <th style={{ padding: '24px 20px', fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', textAlign: 'center' }}>THAO TÁC</th>
-            </tr>
-          </thead>
-          <tbody>
-            {currentRows.length === 0 ? (
-              <tr>
-                <td colSpan={7} style={{ padding: '32px 20px', textAlign: 'center', color: 'var(--gray-500)', fontWeight: 700 }}>
-                  Không tìm thấy hồ sơ bệnh án phù hợp. Hãy thử xóa bộ lọc hoặc tìm kiếm khác.
-                </td>
-              </tr>
-            ) : currentRows.map((h) => (
-              <tr key={h.id_ho_so} style={{ borderBottom: '1px solid var(--gray-50)', transition: 'all 0.2s' }}>
-                <td style={{ padding: '20px', fontWeight: 800, color: 'var(--gray-400)' }}>#HS-{h.id_ho_so}</td>
-                <td style={{ padding: '20px', fontWeight: 700 }}>{chuyenNgayISO_SangVN(h.ngay_kham)}</td>
-                <td style={{ padding: '20px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div style={{ width: '32px', height: '32px', background: 'var(--primary-light)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
-                      <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>pets</span>
-                    </div>
-                    <span style={{ fontWeight: 800, color: 'var(--ink)' }}>{h.ten_thu_cung || "Chưa rõ"}</span>
-                  </div>
-                </td>
-                <td style={{ padding: '20px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span className="material-symbols-outlined" style={{ fontSize: '18px', color: 'var(--primary)' }}>medical_information</span>
-                    <span style={{ fontWeight: 700 }}>{h.ten_bac_si || "Đang chờ"}</span>
-                  </div>
-                </td>
-                <td style={{ padding: '20px', color: 'var(--ink)', fontWeight: 500, maxWidth: '250px' }}>{h.chan_doan || "—"}</td>
-                <td style={{ padding: '20px' }}>
-                  <span style={{
-                    padding: '6px 16px', borderRadius: '50px', fontSize: '0.75rem', fontWeight: 800,
-                    background: h.trang_thai_ho_so?.toLowerCase() === 'hoan_tat' ? 'var(--primary-light)' : 'var(--gray-100)',
-                    color: h.trang_thai_ho_so?.toLowerCase() === 'hoan_tat' ? 'var(--primary)' : 'var(--gray-500)'
-                  }}>
-                    {h.trang_thai_ho_so?.toUpperCase() || 'LƯU NHÁP'}
-                  </span>
-                </td>
-                <td style={{ padding: '20px', textAlign: 'center' }}>
-                  <Link to={`/quan-ly/ho-so-benh-an/${h.id_ho_so}`} aria-label={`Xem hồ sơ bệnh án #${h.id_ho_so}`} title={`Xem hồ sơ bệnh án #${h.id_ho_so}`} className="btn" style={{ padding: '8px', background: 'var(--primary-light)', color: 'var(--primary)', display: 'inline-flex' }}>
-                    <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>visibility</span>
-                  </Link>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-</div></div>
+          <div style={{ minWidth: '800px' }}>
+            <div
+              ref={containerRef}
+              onScroll={onScrollHandler}
+              style={shouldVirtualize ? { height: `${VIRTUAL_CONTAINER_HEIGHT}px`, overflowY: 'auto', overflowX: 'hidden' } : {}}
+            >
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead style={{ position: shouldVirtualize ? 'sticky' : undefined, top: shouldVirtualize ? 0 : undefined, zIndex: shouldVirtualize ? 2 : undefined, background: 'var(--gray-50)', color: 'var(--gray-500)', textAlign: 'left', borderBottom: '1px solid var(--gray-200)' }}>
+                  <tr>
+                    <th style={{ padding: '24px 20px', fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px' }}>MÃ HỒ SƠ</th>
+                    <th style={{ padding: '24px 20px', fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px' }}>NGÀY KHÁM</th>
+                    <th style={{ padding: '24px 20px', fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px' }}>THÚ CƯNG</th>
+                    <th style={{ padding: '24px 20px', fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px' }}>BÁC SĨ ĐIỀU TRỊ</th>
+                    <th style={{ padding: '24px 20px', fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px' }}>CHẨN ĐOÁN</th>
+                    <th style={{ padding: '24px 20px', fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px' }}>TRẠNG THÁI</th>
+                    <th style={{ padding: '24px 20px', fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', textAlign: 'center' }}>THAO TÁC</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {shouldVirtualize && visibleRange.start > 0 && (
+                    <tr style={{ height: `${visibleRange.start * VIRTUAL_ITEM_HEIGHT}px` }} aria-hidden="true"><td colSpan={7} /></tr>
+                  )}
+                  {currentRows.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} style={{ padding: '32px 20px', textAlign: 'center', color: 'var(--gray-500)', fontWeight: 700 }}>
+                        Không tìm thấy hồ sơ bệnh án phù hợp. Hãy thử xóa bộ lọc hoặc tìm kiếm khác.
+                      </td>
+                    </tr>
+                  ) : (shouldVirtualize ? visibleItems : currentRows).map((h) => (
+                    <tr key={h.id_ho_so} style={{ borderBottom: '1px solid var(--gray-50)', transition: 'all 0.2s', height: `${VIRTUAL_ITEM_HEIGHT}px` }}>
+                      <td style={{ padding: '20px', fontWeight: 800, color: 'var(--gray-400)' }}>#HS-{h.id_ho_so}</td>
+                      <td style={{ padding: '20px', fontWeight: 700 }}>{chuyenNgayISO_SangVN(h.ngay_kham)}</td>
+                      <td style={{ padding: '20px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <div style={{ width: '32px', height: '32px', background: 'var(--primary-light)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
+                            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>pets</span>
+                          </div>
+                          <span style={{ fontWeight: 800, color: 'var(--ink)' }}>{h.ten_thu_cung || "Chưa rõ"}</span>
+                        </div>
+                      </td>
+                      <td style={{ padding: '20px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span className="material-symbols-outlined" style={{ fontSize: '18px', color: 'var(--primary)' }}>medical_information</span>
+                          <span style={{ fontWeight: 700 }}>{h.ten_bac_si || "Đang chờ"}</span>
+                        </div>
+                      </td>
+                      <td style={{ padding: '20px', color: 'var(--ink)', fontWeight: 500, maxWidth: '250px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{h.chan_doan || "—"}</td>
+                      <td style={{ padding: '20px' }}>
+                        <span style={{
+                          padding: '6px 16px', borderRadius: '50px', fontSize: '0.75rem', fontWeight: 800,
+                          background: h.trang_thai_ho_so?.toLowerCase() === 'hoan_tat' ? 'var(--primary-light)' : 'var(--gray-100)',
+                          color: h.trang_thai_ho_so?.toLowerCase() === 'hoan_tat' ? 'var(--primary)' : 'var(--gray-500)'
+                        }}>
+                          {h.trang_thai_ho_so?.toUpperCase() || 'LƯU NHÁP'}
+                        </span>
+                      </td>
+                      <td style={{ padding: '20px', textAlign: 'center' }}>
+                        <Link to={`/quan-ly/chi-tiet-benh-an/${h.id_ho_so}`} aria-label={`Xem hồ sơ bệnh án #${h.id_ho_so}`} title={`Xem hồ sơ bệnh án #${h.id_ho_so}`} className="btn" style={{ padding: '8px', background: 'var(--primary-light)', color: 'var(--primary)', display: 'inline-flex' }}>
+                          <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>visibility</span>
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                  {shouldVirtualize && visibleRange.end < currentRows.length && (
+                    <tr style={{ height: `${(currentRows.length - visibleRange.end) * VIRTUAL_ITEM_HEIGHT}px` }} aria-hidden="true"><td colSpan={7} /></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
       </div>
 
       {/* BỘ NÚT ĐIỀU HƯỚNG PHÂN TRANG */}

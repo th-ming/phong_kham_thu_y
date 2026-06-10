@@ -230,7 +230,7 @@ public class OpenRouterService {
                     .timeout(Duration.ofSeconds(10))
                     .build();
 
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
             if (response.statusCode() == 200) {
                 JsonNode root = objectMapper.readTree(response.body());
                 JsonNode dataNode = root.path("data");
@@ -297,7 +297,7 @@ public class OpenRouterService {
                 .timeout(Duration.ofSeconds(12))
                 .build();
 
-        return client.send(request, HttpResponse.BodyHandlers.ofString());
+        return client.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
     }
 
     private String parseOpenRouterReply(String responseBody) throws Exception {

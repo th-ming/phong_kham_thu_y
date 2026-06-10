@@ -115,9 +115,8 @@ export const useChatbotAttachments = (activeTab: "standard" | "agent") => {
     };
 
     const handlePasteFiles = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
-        if (activeTab !== "standard") return;
         const files = Array.from(e.clipboardData?.files || []);
-        const mediaFiles = files.filter(file => file.type.startsWith("image") || file.type.startsWith("video"));
+        const mediaFiles = files.filter(file => file.type.startsWith("image") || (activeTab === "standard" && file.type.startsWith("video")));
         if (mediaFiles.length === 0) return;
         e.preventDefault();
         await processFiles(mediaFiles);

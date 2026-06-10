@@ -301,6 +301,9 @@ const BacSiDashboard: React.FC = () => {
                     <div className="glass-card" style={{ padding: '24px', borderRadius: '24px' }}>
                         <h2 style={{ fontSize: '1.2rem', margin: '0 0 16px 0', fontWeight: 800 }}>Lối tắt nhanh</h2>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            <Link to="/quan-ly/lich-lam-viec" className="btn" style={{ justifyContent: 'flex-start', background: 'rgba(245, 158, 11, 0.12)', color: '#d97706' }}>
+                                <span className="material-symbols-outlined">edit_calendar</span> Đặt lịch làm việc
+                            </Link>
                             <Link to="/quan-ly/kham-benh" className="btn" style={{ justifyContent: 'flex-start', background: 'var(--primary-light)', color: 'var(--primary)' }}>
                                 <span className="material-symbols-outlined">stethoscope</span> Khám & Kê đơn
                             </Link>

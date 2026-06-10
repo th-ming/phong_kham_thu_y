@@ -309,8 +309,9 @@ const PhanLienHe: React.FC = () => {
                                         <p style={{ margin: "0 0 4px 0", fontSize: "0.65rem", color: "#0f9d8a", fontWeight: 900, letterSpacing: "1.5px", textTransform: 'uppercase' }}>Cơ sở chính</p>
                                         <p style={{ margin: 0, fontSize: "1rem", color: "var(--ink)", fontWeight: 800 }}>Gia Lâm, Hà Nội</p>
                                     </div>
-                                    <a
-                                        href="https://www.google.com/maps/search/?api=1&query=Phòng+khám+thú+y+Rexi+Gia+Lâm"
+                        <a
+                            data-ai-id="link_home_contact_directions"
+                            href="https://www.google.com/maps/search/?api=1&query=Phòng+khám+thú+y+Rexi+Gia+Lâm"
                                         target="_blank"
                                         rel="noreferrer"
                                         style={{

@@ -932,6 +932,7 @@ const CauHinhHeThong: React.FC = () => {
                                             placeholder="Nhập API Key..."
                                         />
                                         <button
+                                            data-ai-id="btn_toggle_vietqr_api_key"
                                             type="button"
                                             onClick={() => setShowVietQrKey(!showVietQrKey)}
                                             style={{
@@ -982,6 +983,7 @@ const CauHinhHeThong: React.FC = () => {
                                             onChange={e => setConfigs({...configs, vnpay_hash_secret: e.target.value})}
                                         />
                                         <button
+                                            data-ai-id="btn_toggle_vnpay_hash_secret"
                                             type="button"
                                             onClick={() => setShowVnpaySecret(!showVnpaySecret)}
                                             style={{
@@ -1049,6 +1051,7 @@ const CauHinhHeThong: React.FC = () => {
                                             placeholder="••••••••••••••••"
                                         />
                                         <button
+                                            data-ai-id="btn_toggle_mail_password"
                                             type="button"
                                             onClick={() => setShowMailPassword(!showMailPassword)}
                                             style={{

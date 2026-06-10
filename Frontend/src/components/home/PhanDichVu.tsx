@@ -512,7 +512,7 @@ const PhanDichVu: React.FC = () => {
                             <h2 style={{ fontSize: "clamp(2rem, 4vw, 3rem)", fontWeight: 950, color: "var(--ink)", marginBottom: '12px', letterSpacing: '-1px' }}>Chăm Sóc <span style={{ color: "var(--primary)" }}>Toàn Diện</span></h2>
                             <p style={{ color: "var(--gray-500)", fontWeight: 500, fontSize: '1rem', maxWidth: '480px', lineHeight: 1.6 }}>Đầy đủ dịch vụ thú y từ khám tổng quát đến phẫu thuật phức tạp.</p>
                         </div>
-                        <a href="#" onClick={handleBookingClick} className="btn service-booking-btn" style={{ padding: '14px 28px', borderRadius: '50px', background: 'var(--primary)', color: 'white', textDecoration: 'none', fontWeight: 800, fontSize: '0.9rem', boxShadow: '0 8px 20px var(--primary-light)', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center' }}><span style={{ position: 'relative', zIndex: 1 }}>Đặt lịch ngay →</span></a>
+                                        <a data-ai-id="link_home_service_booking" href="#" onClick={handleBookingClick} className="btn service-booking-btn" style={{ padding: '14px 28px', borderRadius: '50px', background: 'var(--primary)', color: 'white', textDecoration: 'none', fontWeight: 800, fontSize: '0.9rem', boxShadow: '0 8px 20px var(--primary-light)', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center' }}><span style={{ position: 'relative', zIndex: 1 }}>Đặt lịch ngay →</span></a>
                     </div>
 
                     {/* bố cục dịch vụ */}

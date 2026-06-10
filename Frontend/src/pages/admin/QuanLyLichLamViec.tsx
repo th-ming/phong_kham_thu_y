@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import axiosInstance from '@services/axios';
 import { toast } from '@components/Toast';
 import { RevealSection } from '@components/SpecialEffects';
@@ -15,6 +16,16 @@ const DAYS = [
     { label: 'Thứ 7', key: 'Saturday', index: 6 },
     { label: 'Chủ Nhật', key: 'Sunday', index: 0 }
 ];
+
+const canEmployeeManageScheduleNow = () => {
+    const now = new Date();
+    const day = now.getDay();
+    if (day === 0) return false;
+    if (day === 6) return now.getHours() < 12;
+    return true;
+};
+
+const SCHEDULE_REGISTRATION_CLOSED_MESSAGE = "Nhân viên không thể đăng ký/chỉnh lịch từ 12:00 Thứ 7 đến hết Chủ nhật. Khoảng thời gian này dành cho Admin/Quản lý xếp lại lịch.";
 
 const DOCTOR_COLORS = [
     { bg: 'rgba(15, 157, 138, 0.15)', border: '#0f9d8a', text: '#0f9d8a' }, // Teal (Màu chuẩn Rexi)
@@ -199,10 +210,28 @@ const QuanLyLichLamViec: React.FC = () => {
         return staffs.find(s => String(s.id_nhan_vien) === String(selectedStaffId));
     }, [staffs, selectedStaffId]);
 
+    const hasDuplicateShift = (staffId: string, ngayLam: string, gioBatDau: string) => {
+        const normalizedStart = (gioBatDau || '').substring(0, 5);
+        return schedules.some(s =>
+            String(s.id_nhan_vien) === String(staffId) &&
+            String(s.ngay_lam) === String(ngayLam) &&
+            String(s.gio_bat_dau || '').substring(0, 5) === normalizedStart
+        );
+    };
+
+    const hasDuplicateShiftExcludingId = (staffId: string, ngayLam: string, gioBatDau: string, shiftId: number | string) => {
+        const normalizedStart = (gioBatDau || '').substring(0, 5);
+        return schedules.some(s =>
+            String(s.id_lich_lam_viec) !== String(shiftId) &&
+            String(s.id_nhan_vien) === String(staffId) &&
+            String(s.ngay_lam) === String(ngayLam) &&
+            String(s.gio_bat_dau || '').substring(0, 5) === normalizedStart
+        );
+    };
+
     const handleAddShift = (day: any, hour: number) => {
-        // RÀNG BUỘC: Nhân viên chỉ được đăng ký lịch cho tuần sau (weekOffset >= 1)
-        if (!isAdmin && weekOffset < 1) {
-            toast.error("Bạn chỉ có thể đăng ký lịch trực cho các tuần tiếp theo. Tuần hiện tại chỉ Admin/Quản lý mới có quyền điều chỉnh.");
+        if (!isAdmin && !canEmployeeManageScheduleNow()) {
+            toast.error(SCHEDULE_REGISTRATION_CLOSED_MESSAGE);
             return;
         }
         setSelectedSlot({ day, hour });
@@ -218,10 +247,16 @@ const QuanLyLichLamViec: React.FC = () => {
         }
         setIsSubmitting(true);
         try {
+            const startStr = `${String(selectedSlot.hour).padStart(2, '0')}:00:00`;
+            if (hasDuplicateShift(selectedStaffId, selectedSlot.day.dateStr, startStr)) {
+                toast.error("Nhân viên này đã có ca trực ở khung giờ đó rồi.");
+                setIsSubmitting(false);
+                return;
+            }
             const payload = {
                 id_nhan_vien: selectedStaffId,
                 ngay_lam: selectedSlot.day.dateStr,
-                gio_bat_dau: `${String(selectedSlot.hour).padStart(2, '0')}:00:00`,
+                gio_bat_dau: startStr,
                 gio_ket_thuc: `${String(selectedSlot.hour + 1).padStart(2, '0')}:00:00`,
                 ghi_chu: isAdmin ? "Admin sắp xếp lịch" : "Đăng ký lịch trực"
             };
@@ -290,6 +325,9 @@ const QuanLyLichLamViec: React.FC = () => {
                         const date = new Date(`${shift.ngay_lam}T00:00:00`);
                         date.setDate(date.getDate() + 7);
                         const nextWeekDateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+                        if (hasDuplicateShift(shift.id_nhan_vien, nextWeekDateStr, shift.gio_bat_dau)) {
+                            continue;
+                        }
                         await axiosInstance.post('/api/nhan-vien/lich-lam-viec', { id_nhan_vien: shift.id_nhan_vien, ngay_lam: nextWeekDateStr, gio_bat_dau: shift.gio_bat_dau, gio_ket_thuc: shift.gio_ket_thuc, ghi_chu: shift.ghi_chu || "Sao chép lịch trực từ tuần trước" });
                         successCount++;
                     } catch (error) {}
@@ -317,6 +355,10 @@ const QuanLyLichLamViec: React.FC = () => {
                             const date = new Date(`${shift.ngay_lam}T00:00:00`);
                             date.setDate(date.getDate() + 7);
                             const nextWeekDateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+                            if (hasDuplicateShift(shift.id_nhan_vien, nextWeekDateStr, shift.gio_bat_dau)) {
+                                failCount++;
+                                continue;
+                            }
                             await axiosInstance.post('/api/nhan-vien/lich-lam-viec', { id_nhan_vien: shift.id_nhan_vien, ngay_lam: nextWeekDateStr, gio_bat_dau: shift.gio_bat_dau, gio_ket_thuc: shift.gio_ket_thuc, ghi_chu: shift.ghi_chu || "Sao chép lịch trực từ tuần trước" });
                             successCount++;
                         } catch (error) { failCount++; }
@@ -330,11 +372,15 @@ const QuanLyLichLamViec: React.FC = () => {
 
     const handleMoveShift = async (shift: any, targetDay: any, targetHour: number) => {
         if (!isAdmin && String(shift.id_nhan_vien) !== currentStaffId) { toast.error("Bạn không có quyền di chuyển lịch trực của người khác!"); return; }
-        if (!isAdmin && weekOffset < 1) { toast.error("Bạn chỉ có thể điều chỉnh lịch của chính mình cho các tuần tiếp theo."); return; }
+        if (!isAdmin && !canEmployeeManageScheduleNow()) { toast.error(SCHEDULE_REGISTRATION_CLOSED_MESSAGE); return; }
         const newDateStr = targetDay.dateStr;
         const newTimeStr = `${String(targetHour).padStart(2, '0')}:00:00`;
         const newEndTimeStr = `${String(targetHour + 1).padStart(2, '0')}:00:00`;
         if (shift.ngay_lam === newDateStr && shift.gio_bat_dau?.startsWith(String(targetHour).padStart(2, '0'))) return;
+        if (hasDuplicateShiftExcludingId(shift.id_nhan_vien, newDateStr, newTimeStr, shift.id_lich_lam_viec)) {
+            toast.error("Khung giờ này đã có ca trực rồi, không thể chuyển vào chỗ trùng.");
+            return;
+        }
         try {
             await axiosInstance.delete(`/api/nhan-vien/lich-lam-viec/${shift.id_lich_lam_viec}`);
             await axiosInstance.post('/api/nhan-vien/lich-lam-viec', { id_nhan_vien: shift.id_nhan_vien, ngay_lam: newDateStr, gio_bat_dau: newTimeStr, gio_ket_thuc: newEndTimeStr, ghi_chu: shift.ghi_chu || "Chuyển lịch trực" });
@@ -344,8 +390,8 @@ const QuanLyLichLamViec: React.FC = () => {
 
     const handleDeleteShift = async (id: number, shiftStaffId: string) => {
         if (!isAdmin && String(shiftStaffId) !== currentStaffId) { toast.error("Bạn không có quyền xóa lịch trực của người khác!"); return; }
-        // Ràng buộc: không được xóa ca tuần hiện tại
-        if (!isAdmin && weekOffset < 1) { toast.error("Bạn không thể xóa lịch trực ở tuần hiện tại. Vui lòng liên hệ Admin/Quản lý."); return; }
+        const shift = schedules.find(s => Number(s.id_lich_lam_viec) === Number(id));
+        if (!isAdmin && !canEmployeeManageScheduleNow()) { toast.error(SCHEDULE_REGISTRATION_CLOSED_MESSAGE); return; }
         setConfirmDialog({
             open: true, title: 'Hủy ca trực',
             message: 'Bạn có chắc chắn muốn hủy ca trực này không?',
@@ -507,6 +553,9 @@ const QuanLyLichLamViec: React.FC = () => {
                     background: rgba(20, 184, 166, 0.05) !important;
                 }
                 .schedule-slot-cell.slot-locked {
+                    cursor: not-allowed;
+                }
+                .schedule-slot-cell.slot-past {
                     background: repeating-linear-gradient(
                         45deg,
                         var(--gray-50),
@@ -854,6 +903,23 @@ const QuanLyLichLamViec: React.FC = () => {
                         </div>
                     </div>
 
+                    {staffs.length === 0 && (
+                        <div className="glass-card no-print" style={{ marginBottom: '20px', padding: '20px 24px', borderRadius: '20px', border: '1px dashed rgba(245, 158, 11, 0.45)', background: 'rgba(245, 158, 11, 0.08)', display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
+                            <span className="material-symbols-outlined" style={{ color: '#d97706', fontSize: '28px' }}>group_off</span>
+                            <div>
+                                <h3 style={{ margin: '0 0 6px', fontWeight: 900, color: 'var(--ink)' }}>Chưa có nhân viên trong hệ thống</h3>
+                                <p style={{ margin: 0, color: 'var(--gray-500)', fontWeight: 600, lineHeight: 1.5 }}>
+                                    Danh sách bác sĩ, y tá, tiếp tân, kế toán đang trống hoặc đã bị xóa mềm.
+                                    {isAdmin ? (
+                                        <> Vào <Link to="/quan-ly/nhan-vien-phan-quyen" style={{ color: 'var(--primary)', fontWeight: 800 }}>Nhân sự &amp; Quyền hạn</Link> để thêm mới hoặc phục hồi nhân viên.</>
+                                    ) : (
+                                        <> Vui lòng liên hệ Admin/Quản lý để được thêm lại vào hệ thống.</>
+                                    )}
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
                     {isAdmin && (
                         <div className="no-print" style={{ minHeight: '58px', marginBottom: '14px', animation: isAllStaffView ? 'fadeInUp 0.4s ease-out' : 'none', ...hiddenWhenPersonal }}>
                             <div className="admin-schedule-section-label" style={{ fontSize: '0.8rem', fontWeight: 900, color: 'var(--gray-500)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
@@ -963,19 +1029,19 @@ const QuanLyLichLamViec: React.FC = () => {
                                                 today.setHours(0, 0, 0, 0);
                                                 const cellDate = new Date(`${day.dateStr}T00:00:00`);
                                                 const isPastDay = cellDate < today;
-                                                const isLockedSlot = isPastDay || (!isAdmin && weekOffset < 1);
+                                                const isLockedSlot = isPastDay || (!isAdmin && !canEmployeeManageScheduleNow());
 
                                                 const shiftsInSlot = visibleSchedules.filter(s => {
                                                     return s.ngay_lam === day.dateStr && parseInt(s.gio_bat_dau?.split(':')[0]) === hour;
                                                 });
 
-                                                const isShortStaffed = !isPastDay && shiftsInSlot.length > 0 && shiftsInSlot.length < 2;
+                                                const isShortStaffed = isAllStaffView && !isPastDay && shiftsInSlot.length > 0 && shiftsInSlot.length < 2;
                                                 const isDragOver = dragOverSlot === `${day.key}-${hour}`;
 
                                                 return (
                                                     <div
                                                         key={`${day.key}-${hour}`}
-                                                        className={`schedule-slot-cell ${isLockedSlot ? 'slot-locked' : 'slot-editable'}`}
+                                                        className={`schedule-slot-cell ${isPastDay ? 'slot-past' : (isLockedSlot ? 'slot-locked' : 'slot-editable')}`}
                                                         onDragOver={(e) => {
                                                             if (!isLockedSlot) {
                                                                 e.preventDefault();
@@ -1081,7 +1147,7 @@ const QuanLyLichLamViec: React.FC = () => {
                                                                             <div className="shift-sub-text" title={staffInfo ? (staffInfo.chuyen_mon || staffInfo.chuc_vu) : 'Nhân viên'}>{staffInfo ? (staffInfo.chuyen_mon || staffInfo.chuc_vu) : 'Nhân viên'}</div>
                                                                         </div>
 
-                                                                        {!isPastDay && (
+                                                                        {!isLockedSlot && (
                                                                             <button data-ai-id="button-quanlylichlamviec-axos"
                                                                                 className="no-print"
                                                                                 onClick={() => handleDeleteShift(shift.id_lich_lam_viec, shift.id_nhan_vien)}
@@ -1095,7 +1161,7 @@ const QuanLyLichLamViec: React.FC = () => {
                                                             })}
                                                         </div>
 
-                                                        {!isPastDay && (
+                                                        {!isLockedSlot && (
                                                             <button data-ai-id="button-quanlylichlamviec-r0au"
                                                                 className="no-print slot-add-btn"
                                                                 data-testid="add-shift-btn"

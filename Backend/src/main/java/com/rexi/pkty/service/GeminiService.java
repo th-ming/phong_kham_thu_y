@@ -310,7 +310,7 @@ public class GeminiService {
                         .build();
 
                 try {
-                    HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+                    HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
 
                     if (response.statusCode() == 200) {
                         JsonNode rootNode = objectMapper.readTree(response.body());

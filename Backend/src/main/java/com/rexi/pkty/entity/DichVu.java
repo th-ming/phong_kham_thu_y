@@ -13,10 +13,10 @@ public class DichVu {
     @Column(name = "id_dich_vu")
     private String id_dich_vu;
 
-    @Column(name = "ten_dich_vu", nullable = false, columnDefinition = "NVARCHAR(255)")
+    @Column(name = "ten_dich_vu", nullable = false, length = 255)
     private String ten_dich_vu;
 
-    @Column(name = "mo_ta", columnDefinition = "NVARCHAR(MAX)")
+    @Column(name = "mo_ta")
     private String mo_ta;
 
     @Column(name = "gia")

@@ -6,6 +6,7 @@ import { customerToneCopy, isGenZBirthYear } from "@utils/customerTone";
 import { toast } from "@components/Toast";
 import { useAutoRefresh } from "@hooks/useAutoRefresh";
 import { Skeleton } from "@components/CommonUI";
+import useVirtualScroll from "@hooks/useVirtualScroll";
 
 const chuyenNgayISO_SangVN = (dateString: string) => {
   if (!dateString) return "—";
@@ -161,7 +162,7 @@ const LichSuLichHen: React.FC = () => {
   const [totalServerPages, setTotalServerPages] = useState(1);
   const [isServerPaginated, setIsServerPaginated] = useState(false);
   const hasLoadedRef = useRef(false);
-  const ITEMS_PER_PAGE = 5;
+  const ITEMS_PER_PAGE = 100;
   const currentUser = getUserProfile();
   const toneCopy = customerToneCopy[isGenZBirthYear(currentUser?.nam_sinh) ? "genz" : "mature"];
 
@@ -249,7 +250,6 @@ const LichSuLichHen: React.FC = () => {
   };
 
   const handleRebook = (item: any) => {
-    // FIX: Đúng route /khach-hang/dat-lich-hen (trước đây sai là /dat-lich)
     const params = new URLSearchParams({
       id_thu_cung: String(getPetId(item) ?? ""),
       id_dich_vu: String(getServiceId(item) ?? ""),
@@ -274,6 +274,17 @@ const LichSuLichHen: React.FC = () => {
   // Tính toán dữ liệu hiển thị cho trang hiện tại
   const totalPages = isServerPaginated ? totalServerPages : Math.ceil(rows.length / ITEMS_PER_PAGE);
   const currentRows = isServerPaginated ? rows : rows.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+
+  // Virtual Scrolling configuration
+  const VIRTUAL_ITEM_HEIGHT = 120; // Height of AppointmentCard without expansion
+  const VIRTUAL_CONTAINER_HEIGHT = 600;
+  const { visibleItems, containerRef, onScrollHandler, visibleRange, shouldVirtualize } = useVirtualScroll({
+    items: currentRows,
+    itemHeight: VIRTUAL_ITEM_HEIGHT,
+    containerHeight: VIRTUAL_CONTAINER_HEIGHT,
+    visibleCount: 5,
+    threshold: 3
+  });
 
   if (loading) {
     return (
@@ -477,7 +488,7 @@ const LichSuLichHen: React.FC = () => {
         </div>
       </div>
 
-      <div className="stagger-2 customer-history-list" style={{ display: 'grid', gap: '28px' }}>
+      <div className="stagger-2 customer-history-list">
         {serverError ? (
           <div className="glass-card" style={{ 
             padding: '80px 40px', 
@@ -543,9 +554,40 @@ const LichSuLichHen: React.FC = () => {
               {toneCopy.appointmentButton}
             </button>
           </div>
-        ) : currentRows.map((item) => (
-          <AppointmentCard key={getAppointmentId(item)} item={item} thuCungs={thuCungs} onCancel={handleCancelAppointment} onRebook={handleRebook} />
-        ))}
+        ) : (
+          <div
+            ref={containerRef}
+            onScroll={onScrollHandler}
+            style={{
+              height: shouldVirtualize ? `${VIRTUAL_CONTAINER_HEIGHT}px` : 'auto',
+              overflowY: shouldVirtualize ? 'auto' : 'visible',
+              borderRadius: 'var(--radius-xl)',
+              padding: '4px'
+            }}
+          >
+            <div
+              style={{
+                height: shouldVirtualize ? `${currentRows.length * VIRTUAL_ITEM_HEIGHT}px` : 'auto',
+                position: 'relative'
+              }}
+            >
+              <div
+                style={{
+                  transform: shouldVirtualize ? `translateY(${visibleRange.start * VIRTUAL_ITEM_HEIGHT}px)` : undefined,
+                  display: 'grid',
+                  gap: '28px'
+                }}
+              >
+                {(shouldVirtualize ? visibleItems : currentRows).map((item) => (
+                  <div key={getAppointmentId(item)} style={{ height: shouldVirtualize ? `${VIRTUAL_ITEM_HEIGHT}px` : 'auto' }}>
+                    <AppointmentCard item={item} thuCungs={thuCungs} onCancel={handleCancelAppointment} onRebook={handleRebook} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
 
         {/* BỘ NÚT ĐIỀU HƯỚNG PHÂN TRANG */}
         {totalPages > 1 && (

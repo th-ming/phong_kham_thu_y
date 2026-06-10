@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import axiosInstance from "@services/axios";
 import { formatTienVND, getUserProfile, matchesSearchFields, normalizeUserRole } from "@utils/index";
 import { toast } from "@components/Toast";
@@ -20,6 +20,7 @@ const QuanLyDichVu: React.FC = () => {
   const [formData, setFormData] = useState<Partial<DichVu>>({});
   const [isSaving, setIsSaving] = useState(false);
   const [searchDichVu, setSearchDichVu] = useState("");
+  const formRef = useRef<HTMLDivElement | null>(null);
 
   const currentUser = getUserProfile();
   const userRole = normalizeUserRole(currentUser);
@@ -57,7 +58,9 @@ const QuanLyDichVu: React.FC = () => {
   const handleEdit = (dichVu: DichVu) => {
     setEditingId(dichVu.id_dich_vu);
     setFormData(dichVu);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.requestAnimationFrame(() => {
+      formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
   };
 
   const handleSave = async () => {
@@ -124,8 +127,28 @@ const QuanLyDichVu: React.FC = () => {
         .table-row { animation: slideUpFade 0.4s cubic-bezier(.22,.68,0,1.2) both; }
         .admin-service-card { transition: transform 0.2s ease, box-shadow 0.2s ease; }
         .admin-service-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
+        .admin-service-icon-button {
+          width: 40px !important;
+          height: 40px !important;
+          min-width: 40px !important;
+          min-height: 40px !important;
+          padding: 0 !important;
+          display: inline-flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          line-height: 1 !important;
+          border-radius: 12px !important;
+          flex: 0 0 40px !important;
+        }
+        .admin-service-icon-button .material-symbols-outlined {
+          display: block;
+          width: 20px;
+          height: 20px;
+          font-size: 20px !important;
+          line-height: 20px !important;
+        }
         .input-with-icon { position: relative; }
-        .input-with-icon .icon { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--gray-400); font-size: 20px; }
+        .input-with-icon .icon { position: absolute; left: 16px; bottom: 18px; width: 20px; height: 20px; color: var(--gray-400); font-size: 20px; line-height: 20px; pointer-events: none; }
         .input-with-icon input { padding-left: 48px !important; }
         .admin-service-mobile-list { display: none; }
         @media screen and (max-width: 1024px) {
@@ -275,7 +298,7 @@ const QuanLyDichVu: React.FC = () => {
             />
           </div>
           {canEdit && formData.ten_dich_vu === undefined && (
-            <button data-ai-id="button-quanlydichvu-xpbd" className="btn btn-primary btn-pill" onClick={() => setFormData({ ten_dich_vu: "", mo_ta: "", gia: 0 })}>
+            <button data-ai-id="btn_service_add" className="btn btn-primary btn-pill" onClick={() => setFormData({ ten_dich_vu: "", mo_ta: "", gia: 0 })}>
               <span className="material-symbols-outlined">add</span>
               Thêm dịch vụ
             </button>
@@ -284,31 +307,31 @@ const QuanLyDichVu: React.FC = () => {
       </div>
 
       {formData.ten_dich_vu !== undefined && (
-        <div className="glass-card admin-service-form" style={{ padding: '40px', borderRadius: 'var(--radius-xl)', marginBottom: '40px' }}>
+        <div ref={formRef} className="glass-card admin-service-form" style={{ padding: '40px', borderRadius: 'var(--radius-xl)', marginBottom: '40px', scrollMarginTop: '24px' }}>
           <h2 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '32px' }}>{editingId ? 'Cập nhật dịch vụ' : 'Định nghĩa dịch vụ mới'}</h2>
           <div className="admin-service-form-grid" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '24px', marginBottom: '24px' }}>
             <div className="input-with-icon" style={{ display: 'grid', gap: '8px' }}>
               <label style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gray-400)' }}>TÊN DỊCH VỤ</label>
               <span className="material-symbols-outlined icon">medical_services</span>
-              <input data-ai-id="input-quanlydichvu-9ned" className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left', cursor: 'text' }} value={formData.ten_dich_vu} onChange={e => setFormData({ ...formData, ten_dich_vu: e.target.value })} />
+            <input data-ai-id="input_service_name" className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left', cursor: 'text' }} value={formData.ten_dich_vu} onChange={e => setFormData({ ...formData, ten_dich_vu: e.target.value })} />
             </div>
             <div className="input-with-icon" style={{ display: 'grid', gap: '8px' }}>
               <label style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gray-400)' }}>GIÁ NIÊM YẾT</label>
               <span className="material-symbols-outlined icon">payments</span>
-              <input data-ai-id="input-quanlydichvu-mv4q" type="number" className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left', cursor: 'text' }} value={formData.gia} onChange={e => setFormData({ ...formData, gia: Number(e.target.value) })} />
+            <input data-ai-id="input_service_price" type="number" className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left', cursor: 'text' }} value={formData.gia} onChange={e => setFormData({ ...formData, gia: Number(e.target.value) })} />
             </div>
             <div className="input-with-icon" style={{ display: 'grid', gap: '8px' }}>
               <label style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gray-400)' }}>THỜI LƯỢNG (PHÚT)</label>
               <span className="material-symbols-outlined icon">timer</span>
-              <input data-ai-id="input-quanlydichvu-q3n9" type="number" className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left', cursor: 'text' }} value={formData.thoi_luong_phut} onChange={e => setFormData({ ...formData, thoi_luong_phut: Number(e.target.value) })} />
+            <input data-ai-id="input_service_duration" type="number" className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left', cursor: 'text' }} value={formData.thoi_luong_phut} onChange={e => setFormData({ ...formData, thoi_luong_phut: Number(e.target.value) })} />
             </div>
           </div>
           <div style={{ display: 'grid', gap: '8px', marginBottom: '32px' }}>
             <label style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gray-400)' }}>MÔ TẢ CHI TIẾT</label>
-            <textarea data-ai-id="textarea-quanlydichvu-mota" className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left', cursor: 'text', minHeight: '100px', lineHeight: '1.5', padding: '16px' }} value={formData.mo_ta} onChange={e => setFormData({ ...formData, mo_ta: e.target.value })} />
+            <textarea data-ai-id="textarea_service_description" className="btn" style={{ background: 'var(--gray-50)', textAlign: 'left', cursor: 'text', minHeight: '100px', lineHeight: '1.5', padding: '16px' }} value={formData.mo_ta} onChange={e => setFormData({ ...formData, mo_ta: e.target.value })} />
           </div>
           <div className="admin-service-form-actions" style={{ display: 'flex', gap: '12px' }}>
-            <button data-ai-id="button-quanlydichvu-zqdb" className="btn btn-primary btn-pill" style={{ padding: '12px 40px' }} onClick={editingId ? handleSave : handleAdd} disabled={isSaving}>
+            <button data-ai-id="btn_service_save" className="btn btn-primary btn-pill" style={{ padding: '12px 40px' }} onClick={editingId ? handleSave : handleAdd} disabled={isSaving}>
               {isSaving ? 'Đang lưu...' : 'Lưu dịch vụ'}
             </button>
             <button data-ai-id="button-quanlydichvu-g56d" className="btn btn-pill" style={{ background: 'var(--gray-100)', color: 'var(--ink)' }} onClick={() => { setEditingId(null); setFormData({}); }} disabled={isSaving}>Hủy</button>
@@ -334,10 +357,10 @@ const QuanLyDichVu: React.FC = () => {
               <span className="admin-service-meta">{dv.thoi_luong_phut || '—'} phút</span>
               {canEdit && (
                 <div className="admin-service-card-actions">
-                  <button data-ai-id="button-quanlydichvu-mobile-edit" className="btn" style={{ background: 'var(--primary-light)', color: 'var(--primary)' }} onClick={() => handleEdit(dv)}>
+                  <button data-ai-id="button-quanlydichvu-mobile-edit" className="btn admin-service-icon-button" style={{ background: 'var(--primary-light)', color: 'var(--primary)' }} onClick={() => handleEdit(dv)} aria-label="Sửa dịch vụ">
                     <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>edit</span>
                   </button>
-                  <button data-ai-id="button-quanlydichvu-mobile-delete" className="btn" style={{ background: 'var(--danger-light, rgba(239, 68, 68, 0.15))', color: 'var(--danger)' }} onClick={() => handleDelete(dv.id_dich_vu)}>
+                  <button data-ai-id="button-quanlydichvu-mobile-delete" className="btn admin-service-icon-button" style={{ background: 'var(--danger-light, rgba(239, 68, 68, 0.15))', color: 'var(--danger)' }} onClick={() => handleDelete(dv.id_dich_vu)} aria-label="Xóa dịch vụ">
                     <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>delete</span>
                   </button>
                 </div>
@@ -375,10 +398,10 @@ const QuanLyDichVu: React.FC = () => {
                 {canEdit && (
                   <td style={{ padding: '20px', textAlign: 'center' }}>
                     <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-                      <button data-ai-id="button-quanlydichvu-1qtr" className="btn" style={{ padding: '8px', background: 'var(--primary-light)', color: 'var(--primary)' }} onClick={() => handleEdit(dv)}>
+                      <button data-ai-id="button-quanlydichvu-1qtr" className="btn admin-service-icon-button" style={{ background: 'var(--primary-light)', color: 'var(--primary)' }} onClick={() => handleEdit(dv)} aria-label="Sửa dịch vụ">
                         <span className="material-symbols-outlined">edit</span>
                       </button>
-                      <button data-ai-id="button-quanlydichvu-5ywo" className="btn" style={{ padding: '8px', background: 'var(--danger-light, rgba(239, 68, 68, 0.15))', color: 'var(--danger)' }} onClick={() => handleDelete(dv.id_dich_vu)}>
+                      <button data-ai-id="button-quanlydichvu-5ywo" className="btn admin-service-icon-button" style={{ background: 'var(--danger-light, rgba(239, 68, 68, 0.15))', color: 'var(--danger)' }} onClick={() => handleDelete(dv.id_dich_vu)} aria-label="Xóa dịch vụ">
                         <span className="material-symbols-outlined">delete</span>
                       </button>
                     </div>
@@ -395,3 +418,4 @@ const QuanLyDichVu: React.FC = () => {
 };
 
 export default React.memo(QuanLyDichVu);
+

@@ -173,6 +173,7 @@ const App: React.FC = () => {
 
             <Route element={<ProtectedRoute allowedRoles={ROLE_GROUPS.clinicalRecord} />}>
               <Route path="/quan-ly/ho-so-benh-an" element={<QuanLyHoSoBenhAn />} />
+              <Route path="/quan-ly/ho-so-benh-an/:id" element={<ChiTietHoSoBenhAn />} />
               <Route path="/quan-ly/chi-tiet-benh-an/:id" element={<ChiTietHoSoBenhAn />} />
             </Route>
 

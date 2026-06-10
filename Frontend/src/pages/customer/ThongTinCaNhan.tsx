@@ -251,11 +251,11 @@ const ThongTinCaNhan: React.FC = () => {
         })
         .catch(err => {
           console.error(err);
-          toast.error("Cập nhật thất bại!");
+          toast.error(err.response?.data?.message || "Cập nhật thất bại. Vui lòng thử lại!");
         });
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      toast.error("Đã xảy ra lỗi hệ thống!");
+      toast.error(error?.message || "Đã xảy ra lỗi không xác định. Vui lòng thử lại!");
     }
   };
 

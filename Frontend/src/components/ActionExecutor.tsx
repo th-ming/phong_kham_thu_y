@@ -8,8 +8,32 @@ const escapeCssIdent = (value: string) => {
   return value.replace(/["\\\]\[]/g, '\\$&');
 };
 
+const ACTION_ALIAS: Record<string, string[]> = {
+  rexi_agent_tab: ["button-chatbot-jdzj"],
+  chatbot_agent_tab: ["button-chatbot-jdzj"],
+  btn_vnpay: ["button-hoadonthanhtoan-vnpay", "button-quanlyhoadon-9rt0", "button-ketoandashboard-mobile-pay"],
+  input_service_name: ["input-quanlydichvu-9ned"],
+  btn_add_service: ["btn_service_add", "button-quanlydichvu-xpbd"],
+  btn_save_service: ["btn_service_save", "button-quanlydichvu-zqdb"],
+  btn_save_pet: ["btn_pet_save", "button-quanlykhachhangthucung-czfa"],
+  btn_export_pdf: ["button-quanlyhoadon-1v4i", "button-hoadonthanhtoan-qkgo"],
+  btn_save_hsba: ["button-quanlybenhan-1pce", "button-quanlybenhan-save", "button-quanlybenhan-luu", "button-hosobenhan-save"],
+  btn_open_camera: ["button-chatbot-veod"],
+  btn_upload_file: ["button-chatbot-veod", "button-quanlyfiledinhkem-6hph"],
+  btn_add_pet: ["button-quanlykhachhangthucung-324x", "btn_pet_add", "button-quanlykhachhangthucung-add-pet"],
+  select_species: ["select_pet_species"],
+  dropdown_doctor: ["select_appointment_doctor", "select-datlichhen-33v9"],
+  textarea_symptom: ["textarea_symptom", "textarea-datlichhen-note", "textarea-quanlybenhan-trieuchung", "textarea-symptom"],
+};
+
 const getAiElement = <T extends HTMLElement = HTMLElement>(id: string): T | null => {
-  return document.querySelector(`[data-ai-id="${escapeCssIdent(id)}"]`) as T | null;
+  const direct = document.querySelector(`[data-ai-id="${escapeCssIdent(id)}"]`) as T | null;
+  if (direct) return direct;
+  for (const alias of ACTION_ALIAS[id] || []) {
+    const el = document.querySelector(`[data-ai-id="${escapeCssIdent(alias)}"]`) as T | null;
+    if (el) return el;
+  }
+  return null;
 };
 
 const isSensitiveElement = (el: HTMLElement, payload: string) => {
@@ -20,13 +44,54 @@ const isSensitiveElement = (el: HTMLElement, payload: string) => {
   return isSensitiveAction(text);
 };
 
+const PREVIEW_STYLE_STORE = "__REXI_PREVIEW_STYLE_STORE__";
+const PREVIEW_LINK_STORE = "__REXI_PREVIEW_LINK_STORE__";
+const SAFE_PREVIEW_STYLE_PROPS = new Set([
+  "background", "backgroundColor", "color", "borderColor", "boxShadow", "outline", "transform",
+  "fontSize", "fontWeight", "padding", "margin", "borderRadius", "opacity", "display"
+]);
+
+const getPreviewStore = () => {
+  const win = window as any;
+  if (!win[PREVIEW_STYLE_STORE]) win[PREVIEW_STYLE_STORE] = new Map<string, Record<string, string>>();
+  return win[PREVIEW_STYLE_STORE] as Map<string, Record<string, string>>;
+};
+
+const getPreviewLinkStore = () => {
+  const win = window as any;
+  if (!win[PREVIEW_LINK_STORE]) win[PREVIEW_LINK_STORE] = new Map<string, { parent: HTMLElement; node: HTMLElement }>();
+  return win[PREVIEW_LINK_STORE] as Map<string, { parent: HTMLElement; node: HTMLElement }>;
+};
+
+const rememberPreviewStyle = (id: string, el: HTMLElement, prop: string) => {
+  const store = getPreviewStore();
+  const current = store.get(id) || {};
+  if (!(prop in current)) {
+    current[prop] = (el.style as any)[prop] || "";
+    store.set(id, current);
+  }
+};
+
+const isSafePreviewValue = (value: string) => {
+  const v = value.trim().toLowerCase();
+  if (!v || v.length > 80) return false;
+  return !/[<>;{}]/.test(v) && !v.includes("javascript:") && !v.includes("url(") && !v.includes("expression(");
+};
+
+const highlightPreviewElement = (id: string, el: HTMLElement) => {
+  rememberPreviewStyle(id, el, "outline");
+  rememberPreviewStyle(id, el, "boxShadow");
+  el.style.outline = "2px solid #22c55e";
+  el.style.boxShadow = "0 0 0 4px rgba(34, 197, 94, 0.18), 0 12px 30px rgba(15, 23, 42, 0.16)";
+};
+
 /**
  * Execute a single AI action tag.
- * Supported tags: CLICK, FILL, TOGGLE, SELECT, DELETE, SCROLL
+ * Supported tags: CLICK, FILL, TOGGLE, SELECT, DELETE, SCROLL, NAVIGATE, PREVIEW_STYLE, PREVIEW_TEXT, PREVIEW_LINK, PREVIEW_REMOVE_LINK, PREVIEW_RESET
  */
 export const executeAction = async (tag: string, skipConfirm: boolean = false) => {
   try {
-    const match = tag.match(/^\[(CLICK|FILL|TOGGLE|SELECT|DELETE|SCROLL):([^\]]+)\]$/);
+    const match = tag.match(/^\[(CLICK|FILL|TOGGLE|SELECT|DELETE|SCROLL|NAVIGATE|PREVIEW_STYLE|PREVIEW_TEXT|PREVIEW_LINK|PREVIEW_REMOVE_LINK|PREVIEW_RESET):([^\]]+)\]$/);
     if (!match) return;
 
     // Helper: Đính kèm thẻ tag vào window để Axios Interceptor có thể chộp lấy
@@ -241,12 +306,175 @@ export const executeAction = async (tag: string, skipConfirm: boolean = false) =
         }));
         break;
       }
+      case 'NAVIGATE': {
+        const path = payload.trim();
+        if (!path.startsWith('/') || path.startsWith('//') || path.includes('://')) {
+          window.dispatchEvent(new CustomEvent('agent-action', {
+            detail: { type: 'ERROR', tag, message: `Đường dẫn điều hướng không hợp lệ: ${path}` }
+          }));
+          break;
+        }
+        window.history.pushState({}, '', path);
+        window.dispatchEvent(new PopStateEvent('popstate'));
+        toast.success(`Đã chuyển trang: ${path}`);
+        window.dispatchEvent(new CustomEvent('agent-action', {
+          detail: { type: 'SUCCESS', tag, message: `Đã chuyển trang: ${path}` }
+        }));
+        break;
+      }
+      case 'PREVIEW_STYLE': {
+        const [idRaw, propRaw, ...valueParts] = payload.split('|');
+        const id = (idRaw || '').trim();
+        const prop = (propRaw || '').trim();
+        const value = valueParts.join('|').trim();
+        const el = getAiElement(id);
+        if (!el || !SAFE_PREVIEW_STYLE_PROPS.has(prop) || !isSafePreviewValue(value)) {
+          window.dispatchEvent(new CustomEvent('agent-action', {
+            detail: { type: 'ERROR', tag, message: `Không thể chỉnh thử style an toàn: ${payload}` }
+          }));
+          break;
+        }
+        rememberPreviewStyle(id, el, prop);
+        (el.style as any)[prop] = value;
+        highlightPreviewElement(id, el);
+        toast.success('Đã chỉnh thử giao diện. Reload trang sẽ mất.');
+        window.dispatchEvent(new CustomEvent('agent-action', {
+          detail: { type: 'SUCCESS', tag, message: `Đã preview style ${prop} cho ${id}` }
+        }));
+        break;
+      }
+      case 'PREVIEW_TEXT': {
+        const separatorIdx = payload.indexOf('|');
+        const id = separatorIdx > -1 ? payload.slice(0, separatorIdx).trim() : payload.trim();
+        const value = separatorIdx > -1 ? payload.slice(separatorIdx + 1).trim() : '';
+        const el = getAiElement(id);
+        if (!el || !value || value.length > 80 || /[<>]/.test(value)) {
+          window.dispatchEvent(new CustomEvent('agent-action', {
+            detail: { type: 'ERROR', tag, message: `Không thể chỉnh thử chữ an toàn: ${payload}` }
+          }));
+          break;
+        }
+        const textKey = `${id}.__textContent`;
+        const store = getPreviewStore();
+        if (!store.has(textKey)) store.set(textKey, { value: el.textContent || '' });
+        el.textContent = value;
+        highlightPreviewElement(id, el);
+        toast.success('Đã đổi thử chữ. Reload trang sẽ mất.');
+        window.dispatchEvent(new CustomEvent('agent-action', {
+          detail: { type: 'SUCCESS', tag, message: `Đã preview text cho ${id}` }
+        }));
+        break;
+      }
+      case 'PREVIEW_LINK': {
+        const [parentRaw, labelRaw, ...urlParts] = payload.split('|');
+        const parentSelector = (parentRaw || '').trim();
+        const label = (labelRaw || '').trim();
+        const href = urlParts.join('|').trim();
+        const rawTarget = parentSelector === 'footer'
+          ? document.querySelector('footer') as HTMLElement | null
+          : parentSelector === 'header'
+            ? document.querySelector('header') as HTMLElement | null
+            : getAiElement<HTMLElement>(parentSelector);
+        const parent = rawTarget && ['A', 'BUTTON', 'INPUT', 'TEXTAREA', 'SELECT'].includes(rawTarget.tagName)
+          ? rawTarget.parentElement as HTMLElement | null
+          : rawTarget;
+        if (!parent || !label || !href || href.length > 250 || /[<>\s]/.test(href)) {
+          window.dispatchEvent(new CustomEvent('agent-action', {
+            detail: { type: 'ERROR', tag, message: `Không thể thêm link an toàn: ${payload}` }
+          }));
+          break;
+        }
+        const normalizedHref = href.trim();
+        if (!/^(https?:|mailto:|tel:|zalo:)/i.test(normalizedHref)) {
+          window.dispatchEvent(new CustomEvent('agent-action', {
+            detail: { type: 'ERROR', tag, message: `Chỉ cho phép link http/https/tel/mailto/zalo: ${payload}` }
+          }));
+          break;
+        }
+        const link = document.createElement('a');
+        link.href = normalizedHref;
+        link.textContent = label;
+        link.target = normalizedHref.startsWith('tel:') || normalizedHref.startsWith('mailto:') ? '' : '_blank';
+        link.rel = 'noopener noreferrer';
+        link.style.display = 'inline-flex';
+        link.style.alignItems = 'center';
+        link.style.gap = '8px';
+        link.style.margin = '6px 10px 0 0';
+        link.style.padding = '8px 12px';
+        link.style.borderRadius = '999px';
+        link.style.background = 'rgba(255,255,255,0.08)';
+        link.style.color = 'white';
+        link.style.textDecoration = 'none';
+        link.dataset.aiPreview = 'true';
+        const previewId = `preview-link-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        link.dataset.aiPreviewId = previewId;
+        parent.appendChild(link);
+        getPreviewLinkStore().set(previewId, { parent, node: link });
+        toast.success('Đã thêm thử link. Reload trang sẽ mất.');
+        window.dispatchEvent(new CustomEvent('agent-action', {
+          detail: { type: 'SUCCESS', tag, message: `Đã preview link: ${label}` }
+        }));
+        break;
+      }
+      case 'PREVIEW_REMOVE_LINK': {
+        const target = payload.trim();
+        const store = getPreviewLinkStore();
+        const links = target === 'all' ? Array.from(store.values()) : [...store.values()].filter(item => item.node.dataset.aiPreviewId === target || item.node.textContent?.trim() === target || item.parent.dataset.aiId === target);
+        if (links.length === 0) {
+          window.dispatchEvent(new CustomEvent('agent-action', {
+            detail: { type: 'ERROR', tag, message: `Không tìm thấy link preview để xóa: ${payload}` }
+          }));
+          break;
+        }
+        for (const item of links) {
+          item.node.remove();
+          const id = item.node.dataset.aiPreviewId;
+          if (id) store.delete(id);
+        }
+        toast.success('Đã xóa link thử.');
+        window.dispatchEvent(new CustomEvent('agent-action', {
+          detail: { type: 'SUCCESS', tag, message: `Đã xóa preview link: ${payload}` }
+        }));
+        break;
+      }
+      case 'PREVIEW_RESET': {
+        const id = payload.trim();
+        const store = getPreviewStore();
+        const ids = id === 'all' ? Array.from(store.keys()).map(key => key.replace(/\.__textContent$/, '')) : [id];
+        for (const targetId of new Set(ids)) {
+          const el = getAiElement(targetId);
+          if (!el) continue;
+          const saved = store.get(targetId);
+          if (saved) {
+            Object.entries(saved).forEach(([prop, value]) => { (el.style as any)[prop] = value; });
+            store.delete(targetId);
+          }
+          const textSaved = store.get(`${targetId}.__textContent`);
+          if (textSaved) {
+            el.textContent = textSaved.value || '';
+            store.delete(`${targetId}.__textContent`);
+          }
+        }
+        const linkStore = getPreviewLinkStore();
+        for (const { node } of Array.from(linkStore.values())) {
+          if (id === 'all' || node.dataset.aiPreviewId?.startsWith(id)) {
+            node.remove();
+          }
+        }
+        if (id === 'all') linkStore.clear();
+        toast.success('Đã hoàn tác chỉnh thử giao diện.');
+        window.dispatchEvent(new CustomEvent('agent-action', {
+          detail: { type: 'SUCCESS', tag, message: `Đã reset preview: ${id}` }
+        }));
+        break;
+      }
       default:
         break;
     }
   } catch (e) {
     console.error('Error executing AI action', e);
-    toast.error('Có lỗi xảy ra khi AI thực thi hành động!');
+    const detail = e instanceof Error ? e.message : '';
+    toast.error(detail ? `Lỗi AI thực thi hành động: ${detail}` : 'Có lỗi xảy ra khi AI thực thi hành động!');
     window.dispatchEvent(new CustomEvent('agent-action', {
       detail: { type: 'ERROR', tag: tag, message: 'Có lỗi hệ thống xảy ra!' }
     }));

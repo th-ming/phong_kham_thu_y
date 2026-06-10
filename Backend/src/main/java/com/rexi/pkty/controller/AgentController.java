@@ -1,6 +1,7 @@
 package com.rexi.pkty.controller;
 
 import com.rexi.pkty.dto.ChatMessage;
+import com.rexi.pkty.util.DatabaseDialect;
 import com.rexi.pkty.security.RoleAccessPolicy;
 import com.rexi.pkty.security.RexiSecurityRoles;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -74,12 +75,14 @@ public class AgentController {
             }
 
             // Lay toi da 3 be goi y, dung idKhachHang login.
+            boolean pg = DatabaseDialect.isPostgres(jdbcTemplate);
             String sql = "SELECT tc.id_thu_cung, tc.ten_thu_cung, tc.loai, tc.giong, " +
                          "tc.id_khach_hang, kh.ten_khach_hang, kh.sdt " +
                          "FROM ThuCung tc " +
                          "JOIN KhachHang kh ON tc.id_khach_hang = kh.id_khach_hang " +
-                         "WHERE (kh.da_xoa IS NULL OR LOWER(CAST(kh.da_xoa AS varchar)) IN ('0', 'false')) " +
-                         "AND (tc.da_xoa IS NULL OR LOWER(CAST(tc.da_xoa AS varchar)) IN ('0', 'false')) " +" AND tc.id_khach_hang = ? OFFSET 0 ROWS FETCH NEXT 3 ROWS ONLY";
+                         "WHERE " + DatabaseDialect.softDeleteWhere(pg, "kh.da_xoa") +
+                         " AND " + DatabaseDialect.softDeleteWhere(pg, "tc.da_xoa") +
+                         " AND tc.id_khach_hang = ? ORDER BY tc.id_thu_cung" + DatabaseDialect.topN(pg, 3);
             
             List<Map<String, Object>> pets = jdbcTemplate.queryForList(sql, idKhachHang);
             List<Map<String, Object>> reminders = new ArrayList<>();
@@ -153,18 +156,18 @@ public class AgentController {
             String dataPrompt = "Bạn là DataAgent - chuyên gia phân tích dữ liệu của phòng khám thú y Rexi.\n" +
                     "Nhiệm vụ của bạn là đọc yêu cầu tìm kiếm của người dùng và trích xuất thành tham số tìm kiếm an toàn dạng JSON.\n" +
                     "Bạn chỉ được chọn một trong các kiểu tìm kiếm (searchType) sau:\n" +
-                    "- `PET_NAME`: Nếu người dùng tìm theo tên thú cưng (Ví dụ: bé Lu, thú cưng tên Mimi)\n" +
-                    "- `PET_BREED`: Nếu người dùng tìm theo giống thú cưng (Ví dụ: Poodle, Corgi, mèo ba tư)\n" +
+                    "- `PET_NAME`: Nếu người dùng tìm theo tên thú cưng (Ví dụ: <ten_be_cung>)\n" +
+                    "- `PET_BREED`: Nếu người dùng tìm theo giống thú cưng (Ví dụ: <giong_thu_cung>)\n" +
                     "- `PET_TYPE`: Nếu người dùng tìm theo loài thú cưng (Ví dụ: Chó, Mèo, Chim)\n" +
-                    "- `CUSTOMER_NAME`: Nếu người dùng tìm theo tên chủ nuôi (Ví dụ: Trần Minh, Anh Ánh)\n" +
-                    "- `CUSTOMER_EMAIL`: Nếu người dùng tìm theo email khách hàng (Ví dụ: khachhang@gmail.com)\n" +
+                    "- `CUSTOMER_NAME`: Nếu người dùng tìm theo tên chủ nuôi (Ví dụ: <ten_chu_nuoi>)\n" +
+                    "- `CUSTOMER_EMAIL`: Nếu người dùng tìm theo email khách hàng (Ví dụ: <email_khach_hang>)\n" +
                     "- `ALL`: Nếu người dùng muốn lọc tất cả hoặc không có điều kiện cụ thể.\n\n" +
                     "Yêu cầu của người dùng: \"" + query + "\"\n\n" +
                     "Hãy trích xuất từ khóa tìm kiếm chính xác (keyword) và kiểu tìm kiếm (searchType).\n" +
                     "CHỈ TRẢ VỀ RÕ RÀNG 1 KHỐI JSON DUY NHẤT KHÔNG CÓ BẤT KỲ ĐOẠN CHỮ HOẶC KÝ TỰ MARKDOWN NÀO KHÁC. Ví dụ:\n" +
                     "{\n" +
                     "  \"searchType\": \"PET_NAME\",\n" +
-                    "  \"keyword\": \"Lu\"\n" +
+                    "  \"keyword\": \"<tu_khoa>\"\n" +
                     "}";
 
             List<ChatMessage> dataHistory = new ArrayList<>();
@@ -198,25 +201,16 @@ public class AgentController {
                 keyword = jsonNode.path("keyword").asText("");
             } catch (Exception e) {
                 logger.warning("Không thể phân tích phản hồi JSON từ DataAgent: " + e.getMessage());
-                // Regex fallback
-                if (query.toLowerCase().contains("lu")) {
-                    searchType = "PET_NAME";
-                    keyword = "Lu";
-                } else if (query.toLowerCase().contains("poodle")) {
-                    searchType = "PET_BREED";
-                    keyword = "Poodle";
-                } else if (query.toLowerCase().contains("mèo")) {
-                    searchType = "PET_TYPE";
-                    keyword = "Mèo";
-                }
+                return ResponseEntity.ok(Map.of("reply", "Không phân tích được bộ lọc dữ liệu thật từ yêu cầu. Rexi đã dừng tác vụ để tránh tự đoán dữ liệu."));
             }
 
             // Query an toan, chan SQLi
+            boolean pg = DatabaseDialect.isPostgres(jdbcTemplate);
             String sql = "SELECT kh.ten_khach_hang, kh.email, kh.sdt, tc.ten_thu_cung, tc.loai, tc.giong " +
                     "FROM KhachHang kh " +
                     "JOIN ThuCung tc ON kh.id_khach_hang = tc.id_khach_hang " +
-                    "WHERE (kh.da_xoa IS NULL OR LOWER(CAST(kh.da_xoa AS varchar)) IN ('0', 'false')) " +
-                    "AND (tc.da_xoa IS NULL OR LOWER(CAST(tc.da_xoa AS varchar)) IN ('0', 'false'))";
+                    "WHERE " + DatabaseDialect.softDeleteWhere(pg, "kh.da_xoa") +
+                    " AND " + DatabaseDialect.softDeleteWhere(pg, "tc.da_xoa") + "";
             
             List<Map<String, Object>> dbResults = new ArrayList<>();
             String sqlExecuted = sql;
@@ -226,38 +220,38 @@ public class AgentController {
                 List<Object> params = new ArrayList<>();
                 com.rexi.pkty.util.SmartSearchSql.appendTokenSearch(where, params, keyword,
                         "LOWER(COALESCE(tc.ten_thu_cung, '')) LIKE LOWER(?)");
-                sqlExecuted = where.toString() + " OFFSET 0 ROWS FETCH NEXT 50 ROWS ONLY";
+                sqlExecuted = where.toString() + " ORDER BY kh.id_khach_hang, tc.id_thu_cung" + DatabaseDialect.topN(pg, 50);
                 dbResults = jdbcTemplate.queryForList(sqlExecuted, params.toArray());
             } else if ("PET_BREED".equals(searchType) && !keyword.isEmpty()) {
                 StringBuilder where = new StringBuilder(sql);
                 List<Object> params = new ArrayList<>();
                 com.rexi.pkty.util.SmartSearchSql.appendTokenSearch(where, params, keyword,
                         "LOWER(COALESCE(tc.giong, '')) LIKE LOWER(?)");
-                sqlExecuted = where.toString() + " OFFSET 0 ROWS FETCH NEXT 50 ROWS ONLY";
+                sqlExecuted = where.toString() + " ORDER BY kh.id_khach_hang, tc.id_thu_cung" + DatabaseDialect.topN(pg, 50);
                 dbResults = jdbcTemplate.queryForList(sqlExecuted, params.toArray());
             } else if ("PET_TYPE".equals(searchType) && !keyword.isEmpty()) {
                 StringBuilder where = new StringBuilder(sql);
                 List<Object> params = new ArrayList<>();
                 com.rexi.pkty.util.SmartSearchSql.appendTokenSearch(where, params, keyword,
                         "LOWER(COALESCE(tc.loai, '')) LIKE LOWER(?)");
-                sqlExecuted = where.toString() + " OFFSET 0 ROWS FETCH NEXT 50 ROWS ONLY";
+                sqlExecuted = where.toString() + " ORDER BY kh.id_khach_hang, tc.id_thu_cung" + DatabaseDialect.topN(pg, 50);
                 dbResults = jdbcTemplate.queryForList(sqlExecuted, params.toArray());
             } else if ("CUSTOMER_NAME".equals(searchType) && !keyword.isEmpty()) {
                 StringBuilder where = new StringBuilder(sql);
                 List<Object> params = new ArrayList<>();
                 com.rexi.pkty.util.SmartSearchSql.appendTokenSearch(where, params, keyword,
                         "LOWER(COALESCE(kh.ten_khach_hang, '')) LIKE LOWER(?)");
-                sqlExecuted = where.toString() + " OFFSET 0 ROWS FETCH NEXT 50 ROWS ONLY";
+                sqlExecuted = where.toString() + " ORDER BY kh.id_khach_hang, tc.id_thu_cung" + DatabaseDialect.topN(pg, 50);
                 dbResults = jdbcTemplate.queryForList(sqlExecuted, params.toArray());
             } else if ("CUSTOMER_EMAIL".equals(searchType) && !keyword.isEmpty()) {
                 StringBuilder where = new StringBuilder(sql);
                 List<Object> params = new ArrayList<>();
                 where.append(" AND kh.email LIKE ?");
                 params.add("%" + keyword + "%");
-                sqlExecuted = where.toString() + " OFFSET 0 ROWS FETCH NEXT 50 ROWS ONLY";
+                sqlExecuted = where.toString() + " ORDER BY kh.id_khach_hang, tc.id_thu_cung" + DatabaseDialect.topN(pg, 50);
                 dbResults = jdbcTemplate.queryForList(sqlExecuted, params.toArray());
             } else {
-                sqlExecuted = sql + " OFFSET 0 ROWS FETCH NEXT 50 ROWS ONLY";
+                sqlExecuted = sql + " ORDER BY kh.id_khach_hang, tc.id_thu_cung" + DatabaseDialect.topN(pg, 50);
                 dbResults = jdbcTemplate.queryForList(sqlExecuted);
             }
 
@@ -288,7 +282,7 @@ public class AgentController {
                 steps.add(Map.of(
                     "agent", "🛡️ Reviewer Agent",
                     "action", "Kiểm tra an toàn trước khi gửi",
-                    "output", "Đạt yêu cầu an toàn: không có dữ liệu người nhận nên chiến dịch được dừng lại, tránh gửi nhầm hoặc tạo dữ liệu demo giả."
+                    "output", "Đạt yêu cầu an toàn: không có dữ liệu người nhận nên chiến dịch được dừng lại, tránh gửi nhầm."
                 ));
                 swarmData.put("steps", steps);
                 swarmData.put("finalReply", "Không tìm thấy khách hàng hoặc thú cưng phù hợp với yêu cầu. Rexi đã dừng chiến dịch và không tạo email gửi hàng loạt để tránh gửi nhầm.");
@@ -302,17 +296,11 @@ public class AgentController {
             String step3Agent = "✍️ Copywriter Agent";
             String step3Action = "Soạn thảo kịch bản email/tin nhắn cá nhân hóa hàng loạt dựa trên thông tin chủ nuôi và boss cưng";
             
-            // Template mau tu db record 0
-            Map<String, Object> samplePet = dbResults.get(0);
-            String sampleName = samplePet.get("ten_khach_hang").toString();
-            String samplePetName = samplePet.get("ten_thu_cung").toString();
-            
             String creativePrompt = "Bạn là CopywriterAgent - chuyên gia truyền thông sáng tạo của phòng khám thú y Rexi.\n" +
                     "Nhiệm vụ của bạn là viết một email nhắc lịch tái khám, tặng voucher hoặc tri ân cực kỳ dễ thương, tinh tế và ấm áp.\n" +
                     "Hãy dùng từ 'Sen' để gọi chủ nuôi, và 'Boss' hoặc 'Bé' để gọi thú cưng.\n" +
                     "Hãy chèn các thẻ cá nhân hóa là [Tên Khách Hàng] và [Tên Thú Cưng] chính xác vào email để hệ thống tự điền hàng loạt.\n" +
                     "Yêu cầu nội dung của sếp: \"" + query + "\"\n" +
-                    "Dữ liệu mẫu tham khảo: Tên chủ: " + sampleName + ", Tên thú cưng: " + samplePetName + "\n\n" +
                     "Hãy trả về nội dung email hoàn chỉnh, ngắn gọn, có tiêu đề email rõ ràng.";
 
             List<ChatMessage> creativeHistory = new ArrayList<>();
@@ -330,16 +318,10 @@ public class AgentController {
             try {
                 draftedEmail = geminiService.chat(creativeHistory);
             } catch (Exception e) {
-                // Email fallback neu LLM loi
-                draftedEmail = "Tiêu đề: Thư nhắc lịch tái khám sức khỏe định kỳ cho bé cưng 🐾\n\n" +
-                        "Chào Sen [Tên Khách Hàng] thân mến,\n\n" +
-                        "Bác sĩ Rexi gửi lời chào tới Sen và bé [Tên Thú Cưng] nhé! 🏥✨\n\n" +
-                        "Theo lịch trình theo dõi của phòng khám, tuần sau bé [Tên Thú Cưng] nhà mình có lịch hẹn tái khám định kỳ để kiểm tra tình trạng sức khỏe. Sen nhớ sắp xếp thời gian đưa bé qua phòng khám Rexi (Địa chỉ: Gia Lâm, Hà Nội) nha!\n\n" +
-                        "Đặc biệt, Rexi tặng riêng Sen mã voucher giảm 10% chi phí khám. Sen cần đặt lịch hẹn nhanh cứ chat trực tiếp với Rexi tại đây nhé!\n\n" +
-                        "Chúc bé [Tên Thú Cưng] và Sen luôn mạnh khỏe, tràn đầy niềm vui! ❤️🐾";
+                return ResponseEntity.ok(Map.of("reply", "Không soạn được email từ dữ liệu thật ở lượt này. Rexi đã dừng tác vụ, không dùng email mẫu."));
             }
 
-            String step3Output = "MẪU THƯ MARKETING CÁ NHÂN HÓA ĐÃ ĐƯỢC SOẠN THÀNH CÔNG:\n\n" + draftedEmail;
+            String step3Output = "THƯ MARKETING CÁ NHÂN HÓA ĐÃ ĐƯỢC SOẠN THÀNH CÔNG TỪ DỮ LIỆU TRUY VẤN:\n\n" + draftedEmail;
 
             // B4: Reviewer Agent check check email nhap
             String step4Agent = "🛡️ Reviewer Agent";
@@ -553,8 +535,9 @@ public class AgentController {
     // ReAct Agent Core (Reason-Act-Observe)
     @PostMapping("/react")
     @PreAuthorize(RexiSecurityRoles.AUTHENTICATED)
-    public ResponseEntity<?> reactAgent(@RequestBody Map<String, String> body, jakarta.servlet.http.HttpServletRequest request) {
-        String query = body.getOrDefault("query", "").trim();
+    public ResponseEntity<?> reactAgent(@RequestBody Map<String, Object> body, jakarta.servlet.http.HttpServletRequest request) {
+        String query = Objects.toString(body.getOrDefault("query", ""), "").trim();
+        List<String> images = extractStringList(body.get("images"));
         if (query.isEmpty()) {
             return ResponseEntity.badRequest().body(Map.of("error", "Query không được để trống."));
         }
@@ -571,7 +554,7 @@ public class AgentController {
 
         try {
             logger.info("[ReAct] Yêu cầu từ [" + username + "]: " + query);
-            com.rexi.pkty.service.ReActAgentService.ReActResult result = reactAgentService.run(query, username, userRole);
+            com.rexi.pkty.service.ReActAgentService.ReActResult result = reactAgentService.run(query, username, userRole, images);
             boolean adminDebugAllowed = RoleAccessPolicy.normalizeRole(userRole).equals("admin");
             String finalAnswer = adminDebugAllowed ? result.finalAnswer() : stripNonAdminTechnicalIds(result.finalAnswer());
 
@@ -601,6 +584,16 @@ public class AgentController {
             saveAgentChatLog(username, query, "Lỗi ReAct Agent: " + e.getMessage(), "System", List.of());
             return ResponseEntity.internalServerError().body(Map.of("error", "Lỗi ReAct Agent: " + e.getMessage()));
         }
+    }
+
+    private List<String> extractStringList(Object value) {
+        if (!(value instanceof List<?> rawList)) return List.of();
+        List<String> result = new ArrayList<>();
+        for (Object item : rawList) {
+            String text = Objects.toString(item, "").trim();
+            if (!text.isBlank()) result.add(text);
+        }
+        return result;
     }
 
     private String stripNonAdminTechnicalIds(String value) {

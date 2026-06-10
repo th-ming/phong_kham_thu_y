@@ -95,7 +95,19 @@ public class AuthController {
         logger.info("Login attempt: user=" + username);
 
         if (bindingResult.hasErrors()) {
-            return ResponseEntity.badRequest().body(Map.of("message", "Dữ liệu không hợp lệ"));
+            StringBuilder sb = new StringBuilder();
+            bindingResult.getFieldErrors().forEach(fe -> {
+                if (sb.length() > 0) sb.append("; ");
+                String field = fe.getField();
+                String label;
+                switch (field) {
+                    case "username": label = "Tên đăng nhập"; break;
+                    case "password": label = "Mật khẩu"; break;
+                    default: label = field;
+                }
+                sb.append(label).append(": ").append(fe.getDefaultMessage());
+            });
+            return ResponseEntity.badRequest().body(Map.of("message", sb.toString()));
         }
 
         com.rexi.pkty.entity.TaiKhoan tk = null;
@@ -718,6 +730,28 @@ public class AuthController {
         String clientIp = httpRequest.getRemoteAddr();
         String userAgent = httpRequest.getHeader("User-Agent");
         boolean isTest = userAgent != null && userAgent.toLowerCase().contains("playwright");
+
+        if (bindingResult.hasErrors()) {
+            // Thu thập lỗi cụ thể từng trường để user biết cần sửa gì
+            StringBuilder sb = new StringBuilder();
+            bindingResult.getFieldErrors().forEach(fe -> {
+                if (sb.length() > 0) sb.append("; ");
+                String field = fe.getField();
+                String label;
+                switch (field) {
+                    case "ten_dang_nhap": label = "Tên đăng nhập"; break;
+                    case "mat_khau": label = "Mật khẩu"; break;
+                    case "ten_khach_hang": label = "Họ tên"; break;
+                    case "email": label = "Email"; break;
+                    case "sdt": label = "Số điện thoại"; break;
+                    case "dia_chi": label = "Địa chỉ"; break;
+                    case "nam_sinh": label = "Năm sinh"; break;
+                    default: label = field;
+                }
+                sb.append(label).append(": ").append(fe.getDefaultMessage());
+            });
+            return ResponseEntity.badRequest().body(Map.of("message", sb.toString()));
+        }
         if (!PasswordPolicy.isValid(request.getMat_khau())) {
             return ResponseEntity.badRequest().body(Map.of("message", PasswordPolicy.message()));
         }
@@ -728,9 +762,12 @@ public class AuthController {
                     "Cảnh báo chống Spam: Bạn đang tạo tài khoản quá nhanh. Vui lòng đợi 1 phút rồi thử lại!"));
         }
 
-        if (bindingResult.hasErrors()) {
-            return ResponseEntity.badRequest().body(Map.of("message", "Dữ liệu không hợp lệ"));
-        }
+        String tenDangNhap = request.getTen_dang_nhap() != null ? request.getTen_dang_nhap().trim() : null;
+        String matKhau = request.getMat_khau() != null ? request.getMat_khau().trim() : null;
+        String tenKhachHang = request.getTen_khach_hang() != null ? request.getTen_khach_hang().trim() : null;
+        String email = request.getEmail() != null ? request.getEmail().trim().toLowerCase() : null;
+        String sdt = request.getSdt() != null ? request.getSdt().trim() : null;
+        String diaChi = request.getDia_chi() != null ? request.getDia_chi().trim() : null;
         if (request.getNam_sinh() == null || request.getNam_sinh() > java.time.Year.now().getValue()) {
             return ResponseEntity.badRequest()
                     .body(Map.of("message", "Năm sinh không hợp lệ. Vui lòng nhập năm sinh từ 1900 đến năm hiện tại."));
@@ -739,18 +776,18 @@ public class AuthController {
         try {
             // BẢO MẬT: Kiểm tra trước (Early-check trùng lặp trước khi gọi Stored
             // Procedure)
-            if (taiKhoanRepository.findByTenDangNhap(request.getTen_dang_nhap()).isPresent()) {
+            if (taiKhoanRepository.findByTenDangNhap(tenDangNhap).isPresent()) {
                 return ResponseEntity.status(409)
                         .body(Map.of("message", "Tên đăng nhập đã tồn tại. Vui lòng chọn tên khác."));
             }
-            if (request.getEmail() != null && !request.getEmail().isEmpty()) {
-                if (khachHangRepository.findByEmail(request.getEmail()).isPresent()) {
+            if (email != null && !email.isEmpty()) {
+                if (khachHangRepository.findByEmail(email).isPresent()) {
                     return ResponseEntity.status(409)
                             .body(Map.of("message", "Email này đã được sử dụng. Vui lòng dùng email khác."));
                 }
             }
-            if (request.getSdt() != null && !request.getSdt().isEmpty()) {
-                if (khachHangRepository.findAll().stream().anyMatch(kh -> request.getSdt().equals(kh.getSdt()))) {
+            if (sdt != null && !sdt.isEmpty()) {
+                if (khachHangRepository.findAll().stream().anyMatch(kh -> sdt.equals(kh.getSdt()))) {
                     return ResponseEntity.status(409).body(Map.of("message", "Số điện thoại đã được đăng ký."));
                 }
             }
@@ -762,10 +799,10 @@ public class AuthController {
 
             com.rexi.pkty.entity.KhachHang kh = new com.rexi.pkty.entity.KhachHang();
             kh.setId_khach_hang("KH-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase());
-            kh.setTen_khach_hang(request.getTen_khach_hang());
-            kh.setEmail(request.getEmail());
-            kh.setSdt(request.getSdt());
-            kh.setDia_chi(request.getDia_chi());
+            kh.setTen_khach_hang(tenKhachHang);
+            kh.setEmail(email);
+            kh.setSdt(sdt);
+            kh.setDia_chi(diaChi);
             // Lưu năm sinh của khách hàng để phân loại độ tuổi tự động (VD: GenZ vs người lớn tuổi)
             kh.setNam_sinh(request.getNam_sinh());
             kh.setDa_xoa(false);
@@ -775,18 +812,18 @@ public class AuthController {
 
             com.rexi.pkty.entity.TaiKhoan tk = new com.rexi.pkty.entity.TaiKhoan();
             tk.setId_tai_khoan("TK-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase());
-            tk.setTen_dang_nhap(request.getTen_dang_nhap());
+            tk.setTen_dang_nhap(tenDangNhap);
             tk.setMat_khau("[ENCRYPTED]");
-            tk.setMat_khau_hash(passwordEncoder.encode(request.getMat_khau()));
+            tk.setMat_khau_hash(passwordEncoder.encode(matKhau));
             tk.setId_khach_hang(kh.getId_khach_hang());
             tk.setId_vai_tro("VT-5"); 
             tk.setTrang_thai("active");
             tk.setNgay_tao(java.time.LocalDateTime.now());
             taiKhoanRepository.save(tk);
 
-            logger.info("Đăng ký thành công cho tài khoản: " + request.getTen_dang_nhap());
+            logger.info("Đăng ký thành công cho tài khoản: " + tenDangNhap);
             lastRegisterTime.put(clientIp, System.currentTimeMillis());
-            return ResponseEntity.ok(Map.of("message", "Đăng ký thành công!", "username", request.getTen_dang_nhap()));
+            return ResponseEntity.ok(Map.of("message", "Đăng ký thành công!", "username", tenDangNhap));
         } catch (org.springframework.dao.DataIntegrityViolationException e) {
             String msg = e.getMostSpecificCause().getMessage();
             logger.warning("Registration data conflict: " + msg);
@@ -831,7 +868,7 @@ public class AuthController {
         try {
             // BẪY BẢO MẬT: Check trùng lặp SĐT hoặc Email trong db trước khi tạo, tránh trùng lặp dữ liệu.
             String sdt = request.get("sdt");
-            String email = request.get("email");
+            String email = trimToNull(request.get("email"));
             if (sdt == null || sdt.trim().isEmpty()) {
                 return ResponseEntity.status(400).body(Map.of("message", "Số điện thoại là bắt buộc!"));
             }
@@ -930,7 +967,7 @@ public class AuthController {
         }
 
         String currentPass = request.get("currentPass");
-        String newPass = request.get("newPass");
+        String newPass = trimToNull(request.get("newPass"));
 
         if (currentPass == null || currentPass.trim().isEmpty()) {
             return ResponseEntity.status(400).body(Map.of("message", "Vui lòng nhập mật khẩu hiện tại!"));
@@ -978,9 +1015,9 @@ public class AuthController {
      */
     @PostMapping("/forgot-password-verify")
     public ResponseEntity<?> verifyAccount(@RequestBody Map<String, String> request) {
-        String username = request.get("username");
-        String email = request.get("email");
-        String phone = request.get("phone");
+        String username = trimToNull(request.get("username"));
+        String email = trimToNull(request.get("email"));
+        String phone = trimToNull(request.get("phone"));
 
         Optional<com.rexi.pkty.entity.TaiKhoan> tkOpt = taiKhoanRepository.findByTenDangNhap(username);
 
@@ -1018,14 +1055,14 @@ public class AuthController {
      */
     @PostMapping("/reset-password")
     public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> request) {
-        String username = request.get("username");
-        String providedEmail = request.get("email");
-        String providedPhone = request.get("phone");
-        String newPass = request.get("newPass");
-        String method = request.get("method");
+        String username = trimToNull(request.get("username"));
+        String providedEmail = trimToNull(request.get("email"));
+        String providedPhone = trimToNull(request.get("phone"));
+        String newPass = trimToNull(request.get("newPass"));
+        String method = trimToNull(request.get("method"));
 
         if (providedEmail != null) {
-            providedEmail = providedEmail.trim().toLowerCase();
+            providedEmail = providedEmail.toLowerCase();
         }
         if (!PasswordPolicy.isValid(newPass)) {
             return ResponseEntity.status(400).body(Map.of("message", PasswordPolicy.message()));
@@ -1109,6 +1146,14 @@ public class AuthController {
         return ResponseEntity.ok(Map.of("message", "Đặt lại mật khẩu thành công! Hãy đăng nhập lại."));
     }
 
+    private String trimToNull(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
     private Map<String, Object> verifyGoogleToken(String googleToken) {
         if (googleToken == null || googleToken.isEmpty()) {
             return null;
@@ -1181,4 +1226,3 @@ public class AuthController {
     }
 
 }
-

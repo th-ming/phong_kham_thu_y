@@ -97,7 +97,7 @@ const Header: React.FC<{ hideMenu?: boolean }> = ({ hideMenu }) => {
         <div className="container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '25px', position: 'relative', zIndex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span className="material-symbols-outlined animate-pulse" style={{ fontSize: '20px' }}>support_agent</span>
-            <span>Đường dây cấp cứu 24/7: <a href="tel:***REMOVED***-VIETQR_ACCOUNT_NO" style={{ color: 'white', textDecoration: 'none' }}>0353.374.156</a></span>
+            <span>Đường dây cấp cứu 24/7: <a data-ai-id="link_header_emergency_phone" href="tel:***REMOVED***-VIETQR_ACCOUNT_NO" style={{ color: 'white', textDecoration: 'none' }}>0353.374.156</a></span>
           </div>
           <div className="mobile-hide" style={{ display: 'flex', alignItems: 'center', gap: '8px', opacity: 0.9 }}>
             <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>schedule</span>
@@ -124,7 +124,7 @@ const Header: React.FC<{ hideMenu?: boolean }> = ({ hideMenu }) => {
         <span className="text-blink-red" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
           <span className="material-symbols-outlined" style={{ fontSize: '18px', color: 'var(--alert-icon-color)' }}>warning</span>
           Mùa bệnh dại đang gia tăng — Nhớ tiêm phòng trước 30/06! 
-          <button type="button" onClick={handleBookingRedirect} aria-label="Đặt lịch ngay" style={{ background: 'none', border: 'none', padding: 0, color: 'var(--alert-link)', fontWeight: 950, textDecoration: 'underline', marginLeft: '10px', cursor: 'pointer' }}>Đặt lịch ngay →</button>
+          <button data-ai-id="btn_header_booking_alert" type="button" onClick={handleBookingRedirect} aria-label="Đặt lịch ngay" style={{ background: 'none', border: 'none', padding: 0, color: 'var(--alert-link)', fontWeight: 950, textDecoration: 'underline', marginLeft: '10px', cursor: 'pointer' }}>Đặt lịch ngay →</button>
         </span>
       </div>
 

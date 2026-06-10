@@ -74,7 +74,7 @@ Write-Host "Khi sua code backend, dung Ctrl+C roi chay lai script nay." -Foregro
 Write-Host ''
 
 Set-Location (Join-Path $RepoRoot 'Backend')
-& .\mvnw.cmd spring-boot:run `
+& .\mvnw.cmd clean spring-boot:run `
     '-Dmaven.test.skip=true' `
     '-Dspring-boot.run.main-class=com.rexi.pkty.PktyApplication' `
     '-Dspring-boot.run.arguments=--server.port=8081 --spring.devtools.restart.enabled=false --spring.devtools.livereload.enabled=false' `

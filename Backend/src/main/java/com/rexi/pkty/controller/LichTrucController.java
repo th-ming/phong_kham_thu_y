@@ -12,6 +12,7 @@ import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
 import java.time.DayOfWeek;
 import org.springframework.http.ResponseEntity;
+import com.rexi.pkty.util.DatabaseDialect;
 
 @RestController
 @RequestMapping("/api/lich-truc")
@@ -24,16 +25,39 @@ public class LichTrucController {
         @Autowired
         private com.rexi.pkty.repository.TaiKhoanRepository taiKhoanRepository;
 
+        private boolean canManageAnySchedule(org.springframework.security.core.Authentication auth,
+                        com.rexi.pkty.entity.TaiKhoan tk) {
+                String authorities = (auth != null && auth.getAuthorities() != null)
+                                ? auth.getAuthorities().toString().toUpperCase()
+                                : "";
+                String role = tk != null && tk.getId_vai_tro() != null ? tk.getId_vai_tro().toUpperCase() : "";
+                return authorities.contains("ADMIN")
+                                || authorities.contains("QUAN_LY")
+                                || role.equals("VT-ADMIN")
+                                || role.equals("VT-1")
+                                || role.equals("VT-QL")
+                                || role.equals("VT-6");
+        }
+
+        private boolean canEmployeeManageScheduleNow() {
+                java.time.LocalDateTime now = java.time.LocalDateTime.now();
+                DayOfWeek day = now.getDayOfWeek();
+                if (day == DayOfWeek.SUNDAY) return false;
+                if (day == DayOfWeek.SATURDAY) return now.toLocalTime().isBefore(LocalTime.NOON);
+                return true;
+        }
+
         @GetMapping
         public List<Map<String, Object>> getAllLichTruc() {
                 String sql = "SELECT l.id_lich_lam_viec, l.id_nhan_vien, nv.ho_ten, nv.chuyen_mon as chuc_vu, " +
                                 "l.ngay_lam as ngay_lam_viec, l.gio_bat_dau as ca_lam_viec, l.ghi_chu " +
                                 "FROM LichLamViecNhanVien l " +
                                 "JOIN NhanVien nv ON l.id_nhan_vien = nv.id_nhan_vien " +
-                                "WHERE l.ngay_lam >= CURRENT_TIMESTAMP - INTERVAL '1 month' " +
-                                "AND l.ngay_lam <= CURRENT_TIMESTAMP + INTERVAL '3 months' " +
+                                "WHERE l.ngay_lam >= ? " +
+                                "AND l.ngay_lam <= ? " +
                                 "ORDER BY l.ngay_lam DESC";
-                return jdbcTemplate.queryForList(sql);
+                LocalDate today = LocalDate.now();
+                return jdbcTemplate.queryForList(sql, java.sql.Date.valueOf(today.minusMonths(1)), java.sql.Date.valueOf(today.plusMonths(3)));
         }
 
         @PostMapping
@@ -45,15 +69,17 @@ public class LichTrucController {
                 org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
                                 .getContext().getAuthentication();
                 String username = (auth != null) ? auth.getName() : null;
-                String roles = (auth != null) ? auth.getAuthorities().toString().toUpperCase() : "";
-                boolean isAdmin = roles.contains("ADMIN") || roles.contains("QUAN_LY");
+                com.rexi.pkty.entity.TaiKhoan tk = username == null || username.equals("anonymousUser")
+                                ? null
+                                : taiKhoanRepository.findByTenDangNhap(username).orElse(null);
+                boolean isAdmin = canManageAnySchedule(auth, tk);
 
                 LocalDate currentMonday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
                 LocalDate currentSunday = currentMonday.plusDays(6);
 
-                if (!isAdmin && !ngayLam.isAfter(currentSunday)) {
+                if (!isAdmin && !canEmployeeManageScheduleNow()) {
                         return ResponseEntity.status(403).body(Map.of("message",
-                                        "Bạn chỉ có thể đăng ký lịch trực cho các tuần tiếp theo. Tuần hiện tại chỉ Admin/Quản lý mới có quyền điều chỉnh."));
+                                        "Nhân viên không thể đăng ký/chỉnh lịch từ 12:00 Thứ 7 đến hết Chủ nhật. Khoảng thời gian này dành cho Admin/Quản lý xếp lại lịch."));
                 }
 
                 String targetNhanVienId = String.valueOf(payload.get("id_nhan_vien"));
@@ -62,7 +88,6 @@ public class LichTrucController {
                         return ResponseEntity.status(401).body(Map.of("message", "Token không hợp lệ!"));
                 }
 
-                com.rexi.pkty.entity.TaiKhoan tk = taiKhoanRepository.findByTenDangNhap(username).orElse(null);
                 if (!isAdmin && tk != null && tk.getId_vai_tro() != null && !tk.getId_vai_tro().equals("4")
                                 && targetNhanVienId != null) {
                         List<String> allowedIds = jdbcTemplate.queryForList(
@@ -77,11 +102,12 @@ public class LichTrucController {
                 LocalTime gioBatDau = LocalTime.parse(gioBatDauStr);
                 LocalTime gioKetThuc = gioBatDau.plusMinutes(30);
 
+                boolean pg = DatabaseDialect.isPostgres(jdbcTemplate);
                 Integer activeStaffCount = jdbcTemplate.queryForObject(
                                 "SELECT COUNT(*) FROM NhanVien nv " +
                                                 "JOIN TaiKhoan tk ON tk.id_nhan_vien = nv.id_nhan_vien " +
                                                 "WHERE nv.id_nhan_vien = ? " +
-                                                "AND (nv.da_xoa IS NULL OR LOWER(CAST(nv.da_xoa AS varchar)) IN ('0', 'false')) " +
+                                                "AND " + DatabaseDialect.isNotDeleted(pg, "nv.da_xoa") + " " +
                                                 "AND LOWER(COALESCE(tk.trang_thai, '')) IN ('active', 'hoạt động', 'đang làm việc')",
                                 Integer.class, targetNhanVienId);
                 if (activeStaffCount == null || activeStaffCount == 0) {
@@ -89,7 +115,7 @@ public class LichTrucController {
                                         "Không thể đăng ký lịch trực cho nhân viên đã khóa hoặc đã xóa mềm."));
                 }
 
-                String sqlCheck = "SELECT COUNT(*) FROM LichLamViecNhanVien WHERE id_nhan_vien = ? AND ngay_lam = ? AND gio_bat_dau = ?";
+                String sqlCheck = "SELECT COUNT(*) FROM LichLamViecNhanVien WHERE id_nhan_vien = ? AND ngay_lam = ? AND CAST(gio_bat_dau AS time) = CAST(? AS time)";
                 Integer count = jdbcTemplate.queryForObject(sqlCheck, Integer.class, targetNhanVienId, ngayLamStr, gioBatDauStr);
                 if (count != null && count > 0) {
                     return ResponseEntity.status(409).body(Map.of("message", "Ca trực này đã được đăng ký rồi, sếp không cần đăng ký lại đâu! 🐾"));
@@ -104,7 +130,7 @@ public class LichTrucController {
                     // Dem so BS truc cung gio cung ngay
                     String countSql = "SELECT COUNT(DISTINCT l.id_nhan_vien) FROM LichLamViecNhanVien l " +
                                       "JOIN NhanVien n ON l.id_nhan_vien = n.id_nhan_vien " +
-                                      "WHERE l.ngay_lam = ? AND l.gio_bat_dau = ? " +
+                        "WHERE l.ngay_lam = ? AND CAST(l.gio_bat_dau AS time) = CAST(? AS time) " +
                                       "AND (LOWER(COALESCE(n.chuyen_mon, '')) LIKE '%bác sĩ%' OR LOWER(COALESCE(n.chuyen_mon, '')) LIKE '%doctor%')";
                     Integer doctorCount = jdbcTemplate.queryForObject(countSql, Integer.class, ngayLamStr, gioBatDauStr);
                     
@@ -136,23 +162,25 @@ public class LichTrucController {
                         LocalDate currentMonday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
                         LocalDate currentSunday = currentMonday.plusDays(6);
 
-                        boolean isAdmin = "admin".equalsIgnoreCase(role) || "quan-ly".equalsIgnoreCase(role);
-
-                        if (!isAdmin && !ngayLam.isAfter(currentSunday)) {
-                                return ResponseEntity.status(403).body(
-                                                Map.of("message",
-                                                                "Bạn không thể xóa lịch trực ở tuần hiện tại. Vui lòng liên hệ Admin/Quản lý."));
-                        }
-
                         org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
                                         .getContext().getAuthentication();
                         String username = (auth != null) ? auth.getName() : null;
+                        com.rexi.pkty.entity.TaiKhoan tk = username == null || username.equals("anonymousUser")
+                                        ? null
+                                        : taiKhoanRepository.findByTenDangNhap(username).orElse(null);
+                        boolean isAdmin = canManageAnySchedule(auth, tk);
+
+                        if (!isAdmin && !canEmployeeManageScheduleNow()) {
+                                return ResponseEntity.status(403).body(
+                                                Map.of("message",
+                                                                "Nhân viên không thể đăng ký/chỉnh lịch từ 12:00 Thứ 7 đến hết Chủ nhật. Khoảng thời gian này dành cho Admin/Quản lý xếp lại lịch."));
+                        }
+
                         if (username == null || username.equals("anonymousUser")) {
                                 return ResponseEntity.status(401)
                                                 .body(Map.of("message", "Token ko hop le"));
                         }
 
-                        com.rexi.pkty.entity.TaiKhoan tk = taiKhoanRepository.findByTenDangNhap(username).orElse(null);
                         if (!isAdmin && tk != null && tk.getId_vai_tro() != null && !tk.getId_vai_tro().equals("4")) {
                                 List<String> allowedIds = jdbcTemplate.queryForList(
                                                 "SELECT id_nhan_vien FROM NhanVien WHERE id_tai_khoan = ?",

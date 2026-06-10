@@ -624,7 +624,7 @@ const DatLichHen: React.FC = () => {
             ) : (
               <div style={{ position: 'relative' }}>
                 <select 
-                  data-ai-id="select-datlichhen-688p" 
+                  data-ai-id="select_appointment_pet" 
                   required 
                   value={idThuCung} 
                   onChange={e => setIdThuCung(e.target.value)}
@@ -707,7 +707,7 @@ const DatLichHen: React.FC = () => {
             <div className="customer-booking-date-doctor" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', alignItems: 'center' }}>
               <div style={{ position: 'relative' }}>
                 <input 
-                  data-ai-id="input-datlichhen-mc0h" 
+                  data-ai-id="input_appointment_date" 
                   required 
                   type="date" 
                   value={date} 
@@ -726,7 +726,7 @@ const DatLichHen: React.FC = () => {
               </div>
               <div style={{ position: 'relative' }}>
                 <select 
-                  data-ai-id="select-datlichhen-33v9" 
+                  data-ai-id="dropdown_doctor" 
                   value={idBacSi} 
                   onChange={e => setIdBacSi(e.target.value)} 
                   disabled={!date}
@@ -760,7 +760,7 @@ const DatLichHen: React.FC = () => {
                 {availableSlots.map(t => {
                   const isSelected = time === t;
                   return (
-                    <button data-ai-id="button-datlichhen-rvj4"
+                    <button data-ai-id={`btn_appointment_slot_${t.replace(/[^0-9]/g, '')}`}
                       key={t}
                       type="button"
                       onClick={() => setTime(t)}
@@ -804,7 +804,7 @@ const DatLichHen: React.FC = () => {
           <div style={{ display: 'grid', gap: '16px' }}>
             <label style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--gray-400)', letterSpacing: '1px', textTransform: 'uppercase' }}>5. TRIỆU CHỨNG KHÁM / GHI CHÚ</label>
             <textarea 
-              data-ai-id="textarea-datlichhen-note" 
+              data-ai-id="textarea_symptom" 
               style={{ background: 'var(--gray-50)', textAlign: 'left', minHeight: '130px', padding: '20px', lineHeight: '1.6', borderRadius: '20px', border: '1.5px solid var(--gray-200)', outline: 'none', color: 'var(--ink)', fontWeight: 650, fontSize: '0.95rem', transition: 'all 0.3s', boxShadow: 'var(--shadow-sm) inset' }} 
               placeholder={toneCopy.bookingNotePlaceholder} 
               value={note} 
@@ -823,7 +823,7 @@ const DatLichHen: React.FC = () => {
           </div>
 
           <button 
-            data-ai-id="button-datlichhen-66iq" 
+            data-ai-id="btn_appointment_submit" 
             type="submit" 
             className="btn btn-primary btn-pill customer-booking-submit" 
             disabled={loading} 

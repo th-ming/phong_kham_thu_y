@@ -54,6 +54,7 @@ export const ChatbotShell: React.FC<ChatbotShellProps> = (props) => {
                 <div style={{ width: '10px', height: '10px', background: '#10b981', borderRadius: '50%', animation: 'blink 1s infinite', boxShadow: '0 0 10px #10b981' }}></div>
                 {calloutMessage}
                 <button
+                    data-ai-id="btn_chat_callout_dismiss"
                     type="button"
                     aria-label="Ẩn bong bóng gợi ý chatbot"
                     title="Ẩn bong bóng gợi ý cho tới khi tải lại trang"
@@ -91,6 +92,7 @@ export const ChatbotShell: React.FC<ChatbotShellProps> = (props) => {
                     animation: 'chatPulseGlow 3s infinite ease-in-out'
                 }}>
                     <button
+                        data-ai-id="btn_chat_proactive_dismiss_bubble"
                         type="button"
                         aria-label="Ẩn bong bóng gợi ý chatbot"
                         title="Ẩn bong bóng gợi ý cho tới khi tải lại trang"
@@ -119,11 +121,11 @@ export const ChatbotShell: React.FC<ChatbotShellProps> = (props) => {
                         <div style={{ lineHeight: '1.5', color: 'var(--ink)' }}>{proactiveMessage.text}</div>
                     </div>
                     <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '4px' }}>
-                        <button onClick={dismissProactiveMessage} style={{
+                        <button data-ai-id="btn_chat_proactive_later" onClick={dismissProactiveMessage} style={{
                             background: 'transparent', border: 'none', color: 'var(--gray-500)',
                             fontWeight: 800, cursor: 'pointer', padding: '6px 12px', fontSize: '0.78rem'
                         }}>{shouldUseMatureCustomerTone ? "Để sau" : "Lờ đi"}</button>
-                        <button onClick={() => { proactiveMessage.action(); setProactiveMessage(null); setIsOpen(true); }} style={{
+                        <button data-ai-id="btn_chat_proactive_accept" onClick={() => { proactiveMessage.action(); setProactiveMessage(null); setIsOpen(true); }} style={{
                             background: 'var(--primary-gradient)', border: 'none', color: 'white',
                             fontWeight: 800, cursor: 'pointer', padding: '8px 16px', borderRadius: '12px',
                             fontSize: '0.78rem', boxShadow: '0 4px 10px var(--primary-light)'
@@ -399,6 +401,32 @@ export const ChatbotShell: React.FC<ChatbotShellProps> = (props) => {
                                                     </div>
                                                 )}
 
+                                                {msg.suggestedNavigation && (
+                                                    <button
+                                                        data-ai-id="button-agent-suggested-nav"
+                                                        onClick={() => navigate(msg.suggestedNavigation.path)}
+                                                        style={{
+                                                            marginTop: '12px',
+                                                            width: '100%',
+                                                            border: '1px solid rgba(244, 63, 94, 0.4)',
+                                                            background: isDark ? 'rgba(244,63,94,0.1)' : '#fff1f2',
+                                                            color: isDark ? '#fb7185' : '#be123c',
+                                                            borderRadius: '14px',
+                                                            padding: '10px 12px',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            gap: '8px',
+                                                            fontWeight: 950,
+                                                            cursor: 'pointer',
+                                                            boxShadow: 'var(--shadow-sm)'
+                                                        }}
+                                                    >
+                                                        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>open_in_new</span>
+                                                        {msg.suggestedNavigation.label || 'Xem hết'}
+                                                    </button>
+                                                )}
+
                                                 {/* KỸ NĂNG 5+7: HIỂN THỊ KẾT QUẢ DẠNG BẢNG (THUỐC, THÚ CƯNG, V.V.) */}
                                                 {msg.isTableData && msg.tableHeader && msg.tableRows && (
                                                     <div style={{ marginTop: '12px', overflowX: 'auto' }}>
@@ -604,6 +632,7 @@ export const ChatbotShell: React.FC<ChatbotShellProps> = (props) => {
                             {/* Ô Nhập Dữ Liệu Tự Động Co Giãn */}
                             <div style={{ flex: '1 1 auto', minWidth: 0, display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                 <textarea
+                                    data-ai-id="textarea_chatbot_input"
                                     ref={textInputRef}
                                     value={activeTab === 'standard' ? input : agentInput}
                                     maxLength={1000}

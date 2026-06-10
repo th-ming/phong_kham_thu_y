@@ -2,6 +2,7 @@ package com.rexi.pkty.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rexi.pkty.security.RoleAccessPolicy;
+import com.rexi.pkty.util.DatabaseDialect;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.context.annotation.Lazy;
@@ -228,7 +229,10 @@ public class AiToolService {
         String phamVi = params != null ? Objects.toString(params.getOrDefault("pham_vi", "hom_nay"), "hom_nay").trim().toLowerCase() : "hom_nay";
         boolean isAll = phamVi.equals("all") || phamVi.equals("lich_su") || phamVi.equals("toan_bo");
         String doctorKeyword = params != null ? Objects.toString(params.getOrDefault("tu_khoa_bac_si", ""), "").trim() : "";
-        java.time.LocalDate today = java.time.LocalDate.now();
+        String loaiNgay = params != null ? Objects.toString(params.getOrDefault("loai_ngay", "ngay_kham"), "ngay_kham").trim().toLowerCase() : "ngay_kham";
+        boolean byCreatedDate = loaiNgay.equals("ngay_tao") || loaiNgay.equals("dat_lich") || loaiNgay.equals("created");
+        String dateColumn = byCreatedDate ? "lh.ngay_tao" : "lh.ngay_kham";
+        LocalDate today = LocalDate.now(VN_ZONE);
 
         StringBuilder sql = new StringBuilder(
             "SELECT lh.id_lich_hen, kh.ten_khach_hang, kh.sdt, tc.ten_thu_cung, " +
@@ -242,23 +246,33 @@ public class AiToolService {
         );
         List<Object> queryParams = new ArrayList<>();
         if (!isAll) {
-            sql.append("AND lh.ngay_kham = ? ");
-            queryParams.add(java.sql.Date.valueOf(today));
+            LocalDate start = switch (phamVi) {
+                case "hom_qua", "yesterday" -> today.minusDays(1);
+                case "hom_kia", "truoc_hom_qua" -> today.minusDays(2);
+                default -> today;
+            };
+            sql.append("AND CAST(").append(dateColumn).append(" AS DATE) = ? ");
+            queryParams.add(java.sql.Date.valueOf(start));
         }
         if (!doctorKeyword.isBlank()) {
             sql.append("AND LOWER(nv.ho_ten) LIKE LOWER(?) ");
             queryParams.add("%" + doctorKeyword + "%");
         }
-        sql.append(isAll ? "ORDER BY lh.ngay_kham DESC, lh.gio_kham DESC " : "ORDER BY lh.gio_kham ");
+        if (isAll) {
+            sql.append("ORDER BY ").append(dateColumn).append(" DESC, lh.gio_kham DESC ");
+        } else {
+            sql.append("ORDER BY lh.gio_kham ");
+        }
         sql.append("OFFSET 0 ROWS FETCH NEXT 20 ROWS ONLY");
 
         var rows = jdbcTemplate.queryForList(sql.toString(), queryParams.toArray());
         if (rows.isEmpty()) {
-            String scope = isAll ? "trong hệ thống" : "hôm nay";
+            String scope = isAll ? "trong hệ thống" : phamVi.replace("_", " ");
             String doctorText = doctorKeyword.isBlank() ? "" : " của bác sĩ khớp '" + doctorKeyword + "'";
-            return "Không tìm thấy lịch hẹn khám" + doctorText + " " + scope + ".";
+            return "Không tìm thấy lịch hẹn" + (byCreatedDate ? " được đặt" : " khám") + doctorText + " " + scope + ".";
         }
-        String scopeTitle = isAll ? "Lịch hẹn tìm thấy" : "Lịch hẹn hôm nay";
+        String scopeTitle = isAll ? "Lịch hẹn tìm thấy" : "Lịch hẹn " + phamVi.replace("_", " ");
+        if (byCreatedDate) scopeTitle += " theo ngày đặt";
         if (!doctorKeyword.isBlank()) scopeTitle += " của bác sĩ khớp '" + doctorKeyword + "'";
         StringBuilder sb = new StringBuilder(scopeTitle + " (" + rows.size() + " ca):\n");
         for (var r : rows) {
@@ -622,12 +636,17 @@ public class AiToolService {
             int gioKhamMinute = gioKham.getHour() * 60 + gioKham.getMinute();
             int gioKetThucMinute = gioKetThuc.getHour() * 60 + gioKetThuc.getMinute();
 
+            boolean pg = DatabaseDialect.isPostgres(jdbcTemplate);
+            String busyStartMinute = pg
+                ? "(EXTRACT(HOUR FROM lh.gio_kham::time) * 60 + EXTRACT(MINUTE FROM lh.gio_kham::time))::int"
+                : "(DATEPART(HOUR, lh.gio_kham) * 60 + DATEPART(MINUTE, lh.gio_kham))";
+
             // Check duplicate: cùng bác sĩ + khoảng thời gian bị chồng lấn
             Integer duplicateDoctorSlot = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM LichHen lh LEFT JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu " +
                 "WHERE lh.ngay_kham = ? AND lh.id_bac_si = ? " +
-                "AND (EXTRACT(HOUR FROM lh.gio_kham::time) * 60 + EXTRACT(MINUTE FROM lh.gio_kham::time))::int < ? " +
-                "AND (EXTRACT(HOUR FROM lh.gio_kham::time) * 60 + EXTRACT(MINUTE FROM lh.gio_kham::time))::int + COALESCE(dv.thoi_luong_phut, 30) > ? " +
+                "AND " + busyStartMinute + " < ? " +
+                "AND " + busyStartMinute + " + COALESCE(dv.thoi_luong_phut, 30) > ? " +
                 "AND (lh.trang_thai IS NULL OR lh.trang_thai NOT IN ('Đã hủy', 'DA_HUY', 'da_huy', 'TU_CHOI', 'Hết hạn'))",
                 Integer.class, java.sql.Date.valueOf(ngayKham), idBacSi,
                 gioKetThucMinute, gioKhamMinute);
@@ -639,8 +658,8 @@ public class AiToolService {
             Integer duplicatePetSlot = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM LichHen lh LEFT JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu " +
                 "WHERE lh.ngay_kham = ? AND lh.id_thu_cung = ? " +
-                "AND (EXTRACT(HOUR FROM lh.gio_kham::time) * 60 + EXTRACT(MINUTE FROM lh.gio_kham::time))::int < ? " +
-                "AND (EXTRACT(HOUR FROM lh.gio_kham::time) * 60 + EXTRACT(MINUTE FROM lh.gio_kham::time))::int + COALESCE(dv.thoi_luong_phut, 30) > ? " +
+                "AND " + busyStartMinute + " < ? " +
+                "AND " + busyStartMinute + " + COALESCE(dv.thoi_luong_phut, 30) > ? " +
                 "AND (lh.trang_thai IS NULL OR lh.trang_thai NOT IN ('Đã hủy', 'DA_HUY', 'da_huy', 'TU_CHOI', 'Hết hạn'))",
                 Integer.class, java.sql.Date.valueOf(ngayKham), idThuCung,
                 gioKetThucMinute, gioKhamMinute);
@@ -852,30 +871,72 @@ public class AiToolService {
         LocalDate today = LocalDate.now(VN_ZONE);
         java.time.LocalDateTime startDate;
         java.time.LocalDateTime endDate;
+        java.time.LocalDateTime compareStart = null;
+        java.time.LocalDateTime compareEnd = null;
+        boolean isAll = false;
 
         switch (khoang) {
+            case "hom_qua", "yesterday" -> {
+                startDate = today.minusDays(1).atStartOfDay();
+                endDate = today.atStartOfDay();
+                compareStart = today.minusDays(2).atStartOfDay();
+                compareEnd = startDate;
+            }
+            case "hom_kia", "truoc_hom_qua" -> {
+                startDate = today.minusDays(2).atStartOfDay();
+                endDate = today.minusDays(1).atStartOfDay();
+                compareStart = today.minusDays(3).atStartOfDay();
+                compareEnd = startDate;
+            }
             case "tuan_nay" -> {
                 startDate = today.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY)).atStartOfDay();
                 endDate = startDate.plusWeeks(1);
+                compareStart = startDate.minusWeeks(1);
+                compareEnd = startDate;
             }
             case "thang_nay" -> {
                 startDate = java.time.YearMonth.from(today).atDay(1).atStartOfDay();
                 endDate = startDate.plusMonths(1);
+                compareStart = startDate.minusMonths(1);
+                compareEnd = startDate;
+            }
+            case "all", "toan_bo", "lich_su" -> {
+                startDate = null;
+                endDate = null;
+                isAll = true;
             }
             default -> { // hom_nay
                 startDate = today.atStartOfDay();
                 endDate = startDate.plusDays(1);
+                compareStart = today.minusDays(1).atStartOfDay();
+                compareEnd = startDate;
             }
         }
 
         try {
-            String sql = "SELECT COUNT(*) AS so_hoa_don, SUM(tong_tien_cuoi) AS tong_doanh_thu, " +
-                         "AVG(tong_tien_cuoi) AS trung_binh FROM HoaDon WHERE " +
-                         "ngay_lap_hoa_don >= ? AND ngay_lap_hoa_don < ? " +
-                         " AND (trang_thai = 'DA_THANH_TOAN' OR trang_thai_thanh_toan = 'DA_THANH_TOAN')";
-            var row = jdbcTemplate.queryForMap(sql, startDate, endDate);
-            return String.format("Thống kê %s: %s hóa đơn | Doanh thu: %s VNĐ | TB/hóa đơn: %s VNĐ",
-                khoang.replace("_", " "), row.get("so_hoa_don"), row.get("tong_doanh_thu"), row.get("trung_binh"));
+            String paidFilter = "(trang_thai = 'DA_THANH_TOAN' OR trang_thai_thanh_toan = 'DA_THANH_TOAN')";
+            String sql = "SELECT COUNT(*) AS so_hoa_don, COALESCE(SUM(tong_tien_cuoi), 0) AS tong_doanh_thu, " +
+                          "COALESCE(AVG(tong_tien_cuoi), 0) AS trung_binh FROM HoaDon WHERE " +
+                          paidFilter + (isAll ? "" : " AND ngay_lap_hoa_don >= ? AND ngay_lap_hoa_don < ?");
+            var row = isAll ? jdbcTemplate.queryForMap(sql) : jdbcTemplate.queryForMap(sql, startDate, endDate);
+            java.math.BigDecimal current = new java.math.BigDecimal(Objects.toString(row.get("tong_doanh_thu"), "0"));
+            String compareText = "";
+            if (compareStart != null && compareEnd != null) {
+                String compareSql = "SELECT COALESCE(SUM(tong_tien_cuoi), 0) FROM HoaDon WHERE " + paidFilter +
+                        " AND ngay_lap_hoa_don >= ? AND ngay_lap_hoa_don < ?";
+                java.math.BigDecimal previous = jdbcTemplate.queryForObject(compareSql, java.math.BigDecimal.class, compareStart, compareEnd);
+                previous = previous == null ? java.math.BigDecimal.ZERO : previous;
+                java.math.BigDecimal diff = current.subtract(previous);
+                if (previous.compareTo(java.math.BigDecimal.ZERO) > 0) {
+                    java.math.BigDecimal pct = diff.multiply(java.math.BigDecimal.valueOf(100)).divide(previous, 2, java.math.RoundingMode.HALF_UP);
+                    compareText = String.format(" | So với kỳ trước: %s%s VNĐ (%s%s%%)",
+                            diff.signum() >= 0 ? "+" : "", diff.toPlainString(), pct.signum() >= 0 ? "+" : "", pct.toPlainString());
+                } else {
+                    compareText = " | Kỳ trước doanh thu = 0 nên không tính được % tăng/giảm đáng tin cậy";
+                }
+            }
+            return String.format("Thống kê %s: %s hóa đơn | Doanh thu: %s VNĐ | TB/hóa đơn: %s VNĐ%s",
+                khoang.replace("_", " "), row.get("so_hoa_don"), current.toPlainString(), row.get("trung_binh"), compareText);
         } catch (Exception e) {
             return "Lỗi thống kê: " + e.getMessage();
         }
@@ -1004,8 +1065,7 @@ public class AiToolService {
                 count++;
             }
             if (count > 0) {
-                result.append("\nYêu cầu trả lời: đừng chỉ liệt kê link. Hãy đọc các ý chính ở trên, tổng hợp thành câu trả lời tiếng Việt dễ hiểu, nêu điểm đáng tin/cần kiểm chứng, rồi đặt link nguồn Markdown ở cuối.");
-                return result.toString();
+        return result.toString();
             }
             return "Không tìm thấy kết quả web.";
         } catch (Exception e) {

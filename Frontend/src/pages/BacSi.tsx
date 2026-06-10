@@ -14,33 +14,6 @@ interface DoctorData {
     ngay_vao_lam: string;
 }
 
-const FALLBACK_DOCTORS: DoctorData[] = [
-    {
-        id_nhan_vien: "fallback-ma",
-        ho_ten: "BS. Minh Anh",
-        chuyen_mon: "Nội khoa & Bệnh truyền nhiễm",
-        hinh_anh: "/img/bac_si_minh_anh.png",
-        gioi_thieu: "Chuyên gia về bệnh truyền nhiễm và nội khoa thú y.",
-        ngay_vao_lam: "2021-01-01",
-    },
-    {
-        id_nhan_vien: "fallback-kl",
-        ho_ten: "BS. Khánh Linh",
-        chuyen_mon: "Phẫu thuật tổng quát",
-        hinh_anh: "/img/bac_si_khanh_linh.png",
-        gioi_thieu: "Tận tâm trong phẫu thuật và chăm sóc hồi phục sau mổ.",
-        ngay_vao_lam: "2020-01-01",
-    },
-    {
-        id_nhan_vien: "fallback-tt",
-        ho_ten: "BS. Thu Thủy",
-        chuyen_mon: "Dinh dưỡng & Nội tiết",
-        hinh_anh: "/img/bac_si_thu_thuy.png",
-        gioi_thieu: "Tư vấn dinh dưỡng và điều trị các bệnh nội tiết phức tạp.",
-        ngay_vao_lam: "2022-01-01",
-    },
-];
-
 const BacSi: React.FC = () => {
     const { theme } = useTheme();
     const isDark = theme === "dark";
@@ -58,7 +31,7 @@ const BacSi: React.FC = () => {
         } catch (err) {
             console.error("Lỗi lấy danh sách bác sĩ:", err);
             setLoadError(true);
-            setDoctors((current) => current.length > 0 ? current : FALLBACK_DOCTORS);
+            setDoctors([]);
         } finally {
             setLoading(false);
         }
@@ -375,17 +348,17 @@ const BacSi: React.FC = () => {
 
                             {totalPages > 1 && (
                                 <div className="doctors-pagination" aria-label="Phân trang bác sĩ">
-                                    <button className="doctors-page-btn" type="button" disabled={currentPage === 1} onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}>
+                                    <button data-ai-id="btn_doctors_page_prev" className="doctors-page-btn" type="button" disabled={currentPage === 1} onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}>
                                         <span className="material-symbols-outlined" style={{ fontSize: "18px" }}>chevron_left</span>
                                     </button>
                                     {paginationItems.map((item, idx) => item === "..." ? (
                                         <span key={`ellipsis-${idx}`} className="doctors-page-ellipsis">...</span>
                                     ) : (
-                                        <button key={item} className={`doctors-page-btn ${item === currentPage ? "active" : ""}`} type="button" onClick={() => setCurrentPage(item)}>
+                                        <button data-ai-id={`btn_doctors_page_${item}`} key={item} className={`doctors-page-btn ${item === currentPage ? "active" : ""}`} type="button" onClick={() => setCurrentPage(item)}>
                                             {item}
                                         </button>
                                     ))}
-                                    <button className="doctors-page-btn" type="button" disabled={currentPage === totalPages} onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}>
+                                    <button data-ai-id="btn_doctors_page_next" className="doctors-page-btn" type="button" disabled={currentPage === totalPages} onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}>
                                         <span className="material-symbols-outlined" style={{ fontSize: "18px" }}>chevron_right</span>
                                     </button>
                                 </div>

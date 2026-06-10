@@ -236,7 +236,7 @@ const PhanHoiDap: React.FC = () => {
                                 </div>
                                 <div style={{ fontWeight: 900, color: 'var(--ink)', fontSize: '0.95rem', marginBottom: '8px', position: 'relative', zIndex: 1 }}>Còn câu hỏi khác?</div>
                                 <div style={{ color: 'var(--gray-500)', fontSize: '0.85rem', fontWeight: 500, marginBottom: '16px', lineHeight: 1.5, position: 'relative', zIndex: 1 }}>Hãy chat trực tiếp với Trợ lý Rexi hoặc gọi hotline.</div>
-                                <a href="tel:02412345678" className="faq-call-link" style={{ background: 'var(--primary)', color: 'white', padding: '10px 20px', borderRadius: '50px', fontWeight: 800, textDecoration: 'none', fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '8px', position: 'relative', zIndex: 1 }}>
+                                <a data-ai-id="link_faq_call" href="tel:02412345678" className="faq-call-link" style={{ background: 'var(--primary)', color: 'white', padding: '10px 20px', borderRadius: '50px', fontWeight: 800, textDecoration: 'none', fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '8px', position: 'relative', zIndex: 1 }}>
                                     <span className="material-symbols-outlined call-icon" style={{ fontSize: '16px', position: 'relative', zIndex: 1 }}>call</span>
                                     <span style={{ position: 'relative', zIndex: 1 }}>Gọi ngay</span>
                                 </a>

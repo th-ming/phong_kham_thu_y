@@ -1,8 +1,10 @@
 package com.rexi.pkty.controller;
 
 import com.rexi.pkty.entity.LichHen;
+import com.rexi.pkty.entity.TaiKhoan;
 import com.rexi.pkty.repository.LichHenRepository;
 import com.rexi.pkty.security.RexiSecurityRoles;
+import com.rexi.pkty.util.DatabaseDialect;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -113,8 +115,10 @@ public class LichHenController {
                 throw new RuntimeException("Vui lòng chọn thú cưng cần khám!");
             }
 
+            boolean pg = DatabaseDialect.isPostgres(jdbcTemplate);
+
             Integer petOwnerCount = jdbcTemplate.queryForObject(
-                    "SELECT COUNT(*) FROM ThuCung WHERE id_thu_cung = ? AND id_khach_hang = ? AND (da_xoa IS NULL OR LOWER(CAST(da_xoa AS varchar)) IN ('0', 'false'))",
+                    "SELECT COUNT(*) FROM ThuCung WHERE id_thu_cung = ? AND id_khach_hang = ? AND " + DatabaseDialect.isNotDeleted(pg, "da_xoa"),
                     Integer.class, lichHen.getId_thu_cung(), lichHen.getId_khach_hang());
             if (petOwnerCount == null || petOwnerCount == 0) {
                 throw new RuntimeException("Thú cưng đã chọn không thuộc hồ sơ khách hàng này hoặc đã bị xóa!");
@@ -125,7 +129,7 @@ public class LichHenController {
             }
 
             Integer activeServiceCount = jdbcTemplate.queryForObject(
-                    "SELECT COUNT(*) FROM DichVu WHERE id_dich_vu = ? AND LOWER(CAST(trang_thai AS varchar)) IN ('1', 'true')",
+                    "SELECT COUNT(*) FROM DichVu WHERE id_dich_vu = ? AND " + DatabaseDialect.isActive(pg, "trang_thai"),
                     Integer.class, lichHen.getId_dich_vu());
             if (activeServiceCount == null || activeServiceCount == 0) {
                 throw new RuntimeException("Dịch vụ đã chọn không còn khả dụng. Vui lòng chọn dịch vụ khác!");
@@ -163,15 +167,18 @@ public class LichHenController {
             int newEndMinute = newEnd.getHour() * 60 + newEnd.getMinute();
 
             if (lichHen.getId_bac_si() == null || lichHen.getId_bac_si().isEmpty() || lichHen.getId_bac_si().equals("0")) {
+                String busyStartMinute = pg
+                        ? "(EXTRACT(HOUR FROM h.gio_kham::time) * 60 + EXTRACT(MINUTE FROM h.gio_kham::time))::int"
+                        : "(DATEPART(HOUR, h.gio_kham) * 60 + DATEPART(MINUTE, h.gio_kham))";
                 String findDocQuery = "SELECT l.id_nhan_vien FROM LichLamViecNhanVien l " +
                         "WHERE l.ngay_lam = ? AND l.gio_bat_dau = CAST(? AS time) " +
                         "AND NOT EXISTS (SELECT 1 FROM LichHen h " +
                         "  LEFT JOIN DichVu d ON h.id_dich_vu = d.id_dich_vu " +
                         "  WHERE h.id_bac_si = l.id_nhan_vien AND h.ngay_kham = l.ngay_lam " +
-                        "  AND (EXTRACT(HOUR FROM h.gio_kham::time) * 60 + EXTRACT(MINUTE FROM h.gio_kham::time))::int < ? " +
-                        "  AND (EXTRACT(HOUR FROM h.gio_kham::time) * 60 + EXTRACT(MINUTE FROM h.gio_kham::time))::int + COALESCE(d.thoi_luong_phut, 30) > ? " +
+                        "  AND " + busyStartMinute + " < ? " +
+                        "  AND " + busyStartMinute + " + COALESCE(d.thoi_luong_phut, 30) > ? " +
                         "  AND h.trang_thai NOT IN ('Đã hủy', 'DA_HUY', 'da_huy', 'TU_CHOI', 'Hết hạn')" +
-                        ") OFFSET 0 ROWS FETCH NEXT 1 ROWS ONLY";
+                        ") " + DatabaseDialect.topN(DatabaseDialect.isPostgres(jdbcTemplate), 1);
                 try {
                     String autoDocId = jdbcTemplate.queryForObject(findDocQuery, String.class,
                             lichHen.getNgay_kham(), newStart, newEndMinute, newStartMinute);
@@ -404,7 +411,7 @@ public class LichHenController {
             return ResponseEntity.ok(saved);
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.status(500).body(Map.of("message", "Đã xảy ra lỗi hệ thống khi đặt lịch nhanh."));
+            return ResponseEntity.status(500).body(Map.of("message", "Lỗi đặt lịch nhanh: " + e.getMessage()));
         }
     }
 
@@ -452,14 +459,12 @@ public class LichHenController {
                 int totalPages = (int) Math.ceil((double) (total != null ? total : 0) / size);
 
                 java.util.List<Object> dataParams = new java.util.ArrayList<>(params);
-                dataParams.add(page * size);
-                dataParams.add(size);
 
-                String sql = baseSelect + where +
-                        " ORDER BY lh.ngay_kham DESC, lh.gio_kham DESC " +
-                        "OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
+                StringBuilder sqlBuilder = new StringBuilder(baseSelect).append(where)
+                        .append(" ORDER BY lh.ngay_kham DESC, lh.gio_kham DESC");
+                DatabaseDialect.appendPagination(sqlBuilder, DatabaseDialect.isPostgres(jdbcTemplate), size, page * size);
 
-                java.util.List<Map<String, Object>> content = jdbcTemplate.queryForList(sql, dataParams.toArray());
+                java.util.List<Map<String, Object>> content = jdbcTemplate.queryForList(sqlBuilder.toString(), dataParams.toArray());
                 return ResponseEntity.ok(Map.of(
                         "content", content,
                         "totalPages", totalPages,
@@ -468,7 +473,7 @@ public class LichHenController {
                 ));
             } catch (Exception e) {
                 logger.severe("Lỗi phân trang lịch hẹn: " + e.getMessage());
-                return ResponseEntity.status(500).body(Map.of("message", "Lỗi hệ thống khi phân trang."));
+                return ResponseEntity.status(500).body(Map.of("message", "Lỗi phân trang lịch hẹn: " + e.getMessage()));
             }
         }
 
@@ -480,16 +485,48 @@ public class LichHenController {
 
     @GetMapping("/hom-nay")
     @PreAuthorize(RexiSecurityRoles.APPOINTMENT_READ)
-    public ResponseEntity<?> getTodayAppointments() {
-        return ResponseEntity.ok(jdbcTemplate.queryForList(
+    public ResponseEntity<?> getTodayAppointments(@RequestParam(required = false, defaultValue = "ngay_kham") String loai) {
+        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
+                .getContext().getAuthentication();
+        String username = (auth != null) ? auth.getName() : null;
+        boolean byCreatedToday = "dat_hom_nay".equalsIgnoreCase(loai)
+                || "ngay_tao".equalsIgnoreCase(loai)
+                || "created_today".equalsIgnoreCase(loai);
+
+        StringBuilder sql = new StringBuilder(
                 "SELECT lh.*, kh.ten_khach_hang, kh.sdt, tc.ten_thu_cung, nv.ho_ten as ten_bac_si, dv.ten_dich_vu " +
                         "FROM LichHen lh " +
                         "LEFT JOIN KhachHang kh ON lh.id_khach_hang = kh.id_khach_hang " +
                         "LEFT JOIN ThuCung tc ON lh.id_thu_cung = tc.id_thu_cung " +
                         "LEFT JOIN NhanVien nv ON lh.id_bac_si = nv.id_nhan_vien " +
                         "LEFT JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu " +
-                        "WHERE CAST(lh.ngay_kham AS DATE) = CURRENT_DATE " +
-                        "ORDER BY lh.gio_kham ASC"));
+                        "WHERE CAST(" + (byCreatedToday ? "lh.ngay_tao" : "lh.ngay_kham") + " AS DATE) = ? ");
+        java.util.List<Object> params = new java.util.ArrayList<>();
+        params.add(java.sql.Date.valueOf(java.time.LocalDate.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"))));
+
+        if (username != null && !username.equals("anonymousUser")) {
+            TaiKhoan tk = taiKhoanRepository.findByTenDangNhap(username).orElse(null);
+            if (tk != null) {
+                String role = tk.getId_vai_tro() != null ? tk.getId_vai_tro().toUpperCase() : "";
+                boolean isAdminView = role.equals("VT-1") || role.contains("ADMIN") || role.contains("QUAN_LY") || role.contains("TIEP_TAN") || role.contains("STAFF");
+                boolean isDoctorView = role.contains("BAC_SI") || role.equals("VT-2") || role.equals("VT_BS") || role.equals("VT-8") || role.contains("Y_TA");
+                boolean isCustomerView = role.equals("VT-5") || role.contains("KHACH_HANG");
+
+                if (isDoctorView && tk.getId_nhan_vien() != null && !tk.getId_nhan_vien().isBlank()) {
+                    sql.append(" AND lh.id_bac_si = ? ");
+                    params.add(tk.getId_nhan_vien());
+                } else if (isCustomerView && tk.getId_khach_hang() != null && !tk.getId_khach_hang().isBlank()) {
+                    sql.append(" AND lh.id_khach_hang = ? ");
+                    params.add(tk.getId_khach_hang());
+                } else if (!isAdminView && tk.getId_nhan_vien() != null && !tk.getId_nhan_vien().isBlank()) {
+                    sql.append(" AND lh.id_bac_si = ? ");
+                    params.add(tk.getId_nhan_vien());
+                }
+            }
+        }
+
+        sql.append(byCreatedToday ? " ORDER BY lh.ngay_tao DESC, lh.gio_kham ASC" : " ORDER BY lh.gio_kham ASC");
+        return ResponseEntity.ok(jdbcTemplate.queryForList(sql.toString(), params.toArray()));
     }
 
     @GetMapping("/khach-hang/{idKhachHang}")
@@ -569,18 +606,15 @@ public class LichHenController {
             int totalPages = (int) Math.ceil((double) (total != null ? total : 0) / safeSize);
 
             java.util.List<Object> dataParams = new java.util.ArrayList<>(params);
-            
-            dataParams.add(safePage * safeSize);
-            dataParams.add(safeSize);
-            String sql = "SELECT lh.*, tc.ten_thu_cung, nv.ho_ten as ten_bac_si, dv.ten_dich_vu " +
+            StringBuilder sqlBuilder = new StringBuilder("SELECT lh.*, tc.ten_thu_cung, nv.ho_ten as ten_bac_si, dv.ten_dich_vu " +
                   "FROM LichHen lh " +
                   "LEFT JOIN ThuCung tc ON lh.id_thu_cung = tc.id_thu_cung " +
                   "LEFT JOIN NhanVien nv ON lh.id_bac_si = nv.id_nhan_vien " +
                   "LEFT JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu " +
-                  where + " ORDER BY lh.ngay_tao DESC " +
-                  "OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
+                  where + " ORDER BY lh.ngay_tao DESC");
+            DatabaseDialect.appendPagination(sqlBuilder, DatabaseDialect.isPostgres(jdbcTemplate), safeSize, safePage * safeSize);
             
-            List<Map<String, Object>> content = jdbcTemplate.queryForList(sql, dataParams.toArray());
+            List<Map<String, Object>> content = jdbcTemplate.queryForList(sqlBuilder.toString(), dataParams.toArray());
 
             return ResponseEntity.ok(Map.of(
                     "content", content,
@@ -592,7 +626,7 @@ public class LichHenController {
             e.printStackTrace();
             logger.severe("Lỗi lấy lịch hẹn cho khách " + idKhachHang + ": " + e.getMessage());
             return ResponseEntity.status(500).body(Map.of(
-                    "message", "Đã xảy ra lỗi hệ thống khi truy vấn lịch hẹn.",
+                    "message", "Lỗi truy vấn lịch hẹn: " + e.getMessage(),
                     "content", new java.util.ArrayList<>(),
                     "totalPages", 0,
                     "totalElements", 0,

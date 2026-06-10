@@ -22,7 +22,7 @@ export const HienThiVanBanChatbot: React.FC<{ text: string }> = ({ text }) => {
                         const match = subPart.match(/\[([^\]]+)\]\(([^)]+)\)/);
                         if (match) {
                             return (
-                                <a key={sIdx} href={match[2]} target="_blank" rel="noreferrer" style={{ color: 'var(--primary)', fontWeight: 800, textDecoration: 'underline' }}>
+                                <a key={sIdx} data-ai-id={`link_chat_rendered_url_${sIdx}`} href={match[2]} target="_blank" rel="noreferrer" style={{ color: 'var(--primary)', fontWeight: 800, textDecoration: 'underline' }}>
                                     {match[1]}
                                 </a>
                             );

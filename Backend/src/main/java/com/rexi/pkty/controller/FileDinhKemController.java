@@ -63,7 +63,7 @@ public class FileDinhKemController {
             return ResponseEntity.ok(fileDinhKemRepository.findAll());
         } catch (Exception e) {
             logger.severe("Lỗi khi liệt kê danh sách file: " + e.getMessage());
-            return ResponseEntity.status(500).body(Map.of("message", "Đã xảy ra lỗi hệ thống khi đọc danh sách file."));
+            return ResponseEntity.status(500).body(Map.of("message", "Lỗi đọc danh sách file: " + e.getMessage()));
         }
     }
 
@@ -160,7 +160,7 @@ public class FileDinhKemController {
             return ResponseEntity.ok(result);
         } catch (Exception e) {
             logger.severe("Lỗi khi tải lên file: " + e.getMessage());
-            return ResponseEntity.status(500).body(Map.of("message", "Đã xảy ra lỗi hệ thống khi tải file lên. Vui lòng thử lại sau."));
+            return ResponseEntity.status(500).body(Map.of("message", "Lỗi tải file lên: " + e.getMessage()));
         }
     }
 
@@ -195,12 +195,12 @@ public class FileDinhKemController {
                     return ResponseEntity.ok(Map.of("message", "Đã xóa file thành công"));
                 } catch (IOException e) {
                     logger.severe("Lỗi khi xóa file vật lý: " + e.getMessage());
-                    return ResponseEntity.status(500).body(Map.of("message", "Đã xảy ra lỗi khi xóa file vật lý khỏi máy chủ."));
+                    return ResponseEntity.status(500).body(Map.of("message", "Lỗi xóa file vật lý: " + e.getMessage()));
                 }
             }).orElse(ResponseEntity.status(404).body(Map.of("message", "Không tìm thấy file cần xóa.")));
         } catch (Exception e) {
             logger.severe("Lỗi khi xóa file: " + e.getMessage());
-            return ResponseEntity.status(500).body(Map.of("message", "Đã xảy ra lỗi hệ thống khi xóa file."));
+            return ResponseEntity.status(500).body(Map.of("message", "Lỗi xóa file: " + e.getMessage()));
         }
     }
 

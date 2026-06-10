@@ -243,11 +243,11 @@ const PhanCTA: React.FC = () => {
                         <div style={{ fontWeight: 900, color: 'white', fontSize: '1.1rem', marginBottom: '28px' }}>Thời gian chờ trung bình: <span style={{ color: '#a7f3d0' }}>~5 phút</span></div>
 
                         <div className="cta-btn-group" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                            <a href="#" onClick={handleBookingClick} className="cta-btn-primary" style={{ background: 'linear-gradient(135deg, #f59e0b, #ea580c)', color: 'white', padding: '16px 32px', borderRadius: '50px', fontWeight: 900, textDecoration: 'none', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', transition: 'all 0.3s', boxShadow: '0 8px 24px rgba(245,158,11,0.3)', border: 'none' }}>
+                        <a data-ai-id="link_home_cta_booking" href="#" onClick={handleBookingClick} className="cta-btn-primary" style={{ background: 'linear-gradient(135deg, #f59e0b, #ea580c)', color: 'white', padding: '16px 32px', borderRadius: '50px', fontWeight: 900, textDecoration: 'none', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', transition: 'all 0.3s', boxShadow: '0 8px 24px rgba(245,158,11,0.3)', border: 'none' }}>
                                 <span className="material-symbols-outlined cta-btn-icon" style={{ fontSize: '20px' }}>calendar_month</span>
                                 <span>Đặt lịch hẹn ngay</span>
                             </a>
-                            <a href="tel:02412345678" className="cta-btn-outline" style={{ background: 'transparent', color: 'white', padding: '14px 32px', borderRadius: '50px', fontWeight: 800, textDecoration: 'none', fontSize: '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', border: '2px solid rgba(255,255,255,0.4)', transition: 'all 0.3s' }}>
+                        <a data-ai-id="link_home_cta_phone" href="tel:02412345678" className="cta-btn-outline" style={{ background: 'transparent', color: 'white', padding: '14px 32px', borderRadius: '50px', fontWeight: 800, textDecoration: 'none', fontSize: '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', border: '2px solid rgba(255,255,255,0.4)', transition: 'all 0.3s' }}>
                                 <span className="material-symbols-outlined cta-btn-icon" style={{ fontSize: '18px' }}>call</span>
                                 <span>024 1234 5678</span>
                             </a>

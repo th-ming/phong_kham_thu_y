@@ -182,7 +182,7 @@ const Loi404: React.FC = () => {
                                 <span className="material-symbols-outlined" style={{ fontSize: '20px', color: 'var(--gray-500)' }}>help</span>
                             </div>
                             <span style={{ fontSize: '0.95rem', color: 'var(--gray-500)', fontWeight: 600 }}>
-                                Cần hỗ trợ tìm kiếm? <a href="#" style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: 800 }}>Liên hệ Hỗ trợ</a>
+                        Cần hỗ trợ tìm kiếm? <a data-ai-id="link_404_support" href="#" style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: 800 }}>Liên hệ Hỗ trợ</a>
                             </span>
                         </div>
                     </div>

@@ -178,6 +178,7 @@ const CustomerBirthYearGate: React.FC = () => {
             }}
           />
           <button
+            data-ai-id="btn_birth_year_gate_submit"
             type="submit"
             disabled={saving}
             className="btn btn-primary"

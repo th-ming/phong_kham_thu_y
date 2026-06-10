@@ -6,6 +6,7 @@ import './styles/index.css'
 import { toast } from '@components/Toast'
 import { WebSocketProvider } from './contexts/WebSocketProvider'
 import { installClientErrorReporter, reportAxiosError } from './services/clientErrorReporter'
+import { getApiErrorMessage } from '@utils/apiErrorMessage'
 
 installClientErrorReporter();
 
@@ -36,8 +37,7 @@ axios.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 403) {
-      const errorMessage = error.response.data?.message || error.response.data || "Cảnh báo bảo mật: Bạn không có quyền thực hiện hành động này!";
-      toast.error(typeof errorMessage === 'string' ? errorMessage : "Bạn không có quyền thực thi tác vụ AI này!");
+      toast.error(getApiErrorMessage(error, "Cảnh báo bảo mật: Bạn không có quyền thực hiện hành động này!"));
     }
     reportAxiosError(error);
     return Promise.reject(error);

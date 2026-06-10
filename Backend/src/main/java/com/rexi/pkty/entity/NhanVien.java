@@ -54,13 +54,13 @@ public class NhanVien {
     @Column(name = "trang_thai", length = 50)
     private String trang_thai;
 
-    @Column(name = "hinh_anh", columnDefinition = "NVARCHAR(MAX)")
+    @Column(name = "hinh_anh")
     private String hinh_anh;
 
-    @Column(name = "gioi_thieu", columnDefinition = "NVARCHAR(MAX)")
+    @Column(name = "gioi_thieu")
     private String gioi_thieu;
 
-    @Column(name = "chuyen_mon", columnDefinition = "NVARCHAR(255)")
+    @Column(name = "chuyen_mon", length = 255)
     private String chuyen_mon;
 
     @Column(name = "nhan_email")

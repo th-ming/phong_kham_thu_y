@@ -1,7 +1,8 @@
-﻿import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axiosInstance from "@services/axios";
 import { normalizeUserRole } from "@utils/index";
+import { getApiErrorMessage } from "@utils/apiErrorMessage";
 
 interface GoogleUser {
   name: string;
@@ -54,11 +55,7 @@ const GoogleAccountLink: React.FC = () => {
 
       setTimeout(() => navigate("/khach-hang/dashboard"), 500);
     } catch (err: any) {
-      if (err.code === 'ERR_NETWORK') {
-        setError("Lỗi kết nối máy chủ. Vui lòng kiểm tra mạng!");
-      } else {
-        setError(err.response?.data?.message || "Lỗi tạo tài khoản mới.");
-      }
+      setError(getApiErrorMessage(err, "Lỗi tạo tài khoản mới."));
       setIsLoading(false);
     }
   };
@@ -86,11 +83,7 @@ const GoogleAccountLink: React.FC = () => {
         navigate(normalizeUserRole(res.data.user) === 'khach_hang' ? "/khach-hang/dashboard" : "/quan-ly/dashboard");
       }, 500);
     } catch (err: any) {
-      if (err.code === 'ERR_NETWORK') {
-        setError("Lỗi kết nối máy chủ. Vui lòng kiểm tra mạng!");
-      } else {
-        setError(err.response?.data?.message || "❌ Tên đăng nhập hoặc mật khẩu không đúng.");
-      }
+      setError(getApiErrorMessage(err, "Tên đăng nhập hoặc mật khẩu không đúng."));
       setIsLoading(false);
     }
   };

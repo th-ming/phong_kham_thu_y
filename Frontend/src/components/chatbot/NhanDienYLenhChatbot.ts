@@ -19,7 +19,8 @@ const hasUiActionTarget = (text: string) => {
     const normalized = normalizeSearchText(text);
     const targets = [
         "trang", "phan he", "muc", "danh sach", "hoa don", "ho so", "thu cung", "form",
-        "nut", "button", "bang gia", "tai khoan", "lich", "khach hang", "ho so benh", "instr"
+        "nut", "button", "bang gia", "tai khoan", "lich", "khach hang", "ho so benh",
+        "kho", "kho thuoc", "ton kho", "thuoc", "instr", "chatbot", "chat bot", "rexi agent", "tro ly", "header", "footer", "hotline", "link", "duong link", "giao dien"
     ];
     return targets.some(target => normalized.includes(target));
 };
@@ -29,10 +30,10 @@ export const hasExplicitAgentActionIntent = (text: string) => {
         "dat lich", "book lich", "lap lich", "tao lich", "huy lich", "doi lich",
         "tim khach", "tim thu cung", "tra cuu", "kiem tra form", "xem hoa don", "xem danh sach",
         "xem thu cung", "xem ho so", "quan ly thu cung", "sua thong tin",
-        "xoa thong tin", "them moi", "tao moi", "xuat file", "in hoa don", "gui email", "dien form"
+        "xoa thong tin", "them moi", "tao moi", "xuat file", "in hoa don", "gui email", "dien form", "them link", "them duong link", "xoa link", "go link"
     ];
 
-    const uiActionVerbs = ["bam", "nhan", "click", "tap", "an vao", "cuon", "keo xuong", "keo len"];
+    const uiActionVerbs = ["bam", "nhan", "click", "tap", "an vao", "cuon", "keo xuong", "keo len", "doi", "chinh", "sua", "cho", "to", "them", "an", "hien"];
     return matchesPhraseIntent(text, actionPhrases)
         || (matchesPhraseIntent(text, uiActionVerbs) && hasUiActionTarget(text));
 };

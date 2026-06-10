@@ -19,7 +19,7 @@ export const KetQuaTimKiemChatbot: React.FC<{
                                 verified
                             </span>
                         )}
-                        <a href={result.url} target="_blank" rel="noreferrer" style={{ fontWeight: 800, fontSize: '0.8rem', color: '#2563eb', textDecoration: 'none' }}>
+                        <a data-ai-id={`link_chat_search_result_${rIdx}`} href={result.url} target="_blank" rel="noreferrer" style={{ fontWeight: 800, fontSize: '0.8rem', color: '#2563eb', textDecoration: 'none' }}>
                             {result.title}
                         </a>
                     </div>

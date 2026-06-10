@@ -12,6 +12,7 @@ public final class RoleAccessPolicy {
         "huy_lich_hen",
         "them_thu_cung",
         "danh_sach_thu_cung_cua_toi",
+        "getslotusage",
         "tim_kiem_web",
         "kiem_tra_phan_he",
         "tra_cuu_tai_lieu_y_khoa"
@@ -52,6 +53,15 @@ public final class RoleAccessPolicy {
         Map.entry("xem_kho_thuoc", Set.of("admin", "quan_ly", "ke_toan", "bac_si", "y_ta", "tiep_tan")),
         Map.entry("thong_ke_doanh_thu", Set.of("admin", "quan_ly", "ke_toan")),
         Map.entry("thong_ke_ca_kham_bac_si", Set.of("admin", "quan_ly", "staff", "bac_si", "tiep_tan", "y_ta")),
+        Map.entry("tim_lich_lam_bac_si", Set.of("admin", "quan_ly", "staff", "bac_si", "tiep_tan", "y_ta")),
+        Map.entry("getstaffschedule", Set.of("admin", "quan_ly", "staff", "bac_si", "tiep_tan", "y_ta", "ke_toan")),
+        Map.entry("getslotusage", Set.of("admin", "quan_ly", "staff", "bac_si", "tiep_tan", "y_ta")),
+        Map.entry("findoverlapstaff", Set.of("admin", "quan_ly", "staff", "bac_si", "tiep_tan", "y_ta")),
+        Map.entry("suggestschedule", Set.of("admin", "quan_ly", "staff", "tiep_tan")),
+        Map.entry("checkconflict", Set.of("admin", "quan_ly", "staff", "bac_si", "tiep_tan", "y_ta")),
+        Map.entry("findfreestaff", Set.of("admin", "quan_ly", "staff", "ke_toan", "tiep_tan")),
+        Map.entry("autoschedule", Set.of("admin", "quan_ly")),
+        Map.entry("overridedoctorslot", Set.of("admin", "quan_ly")),
         Map.entry("thong_ke_khach_hang_hom_nay", Set.of("admin", "quan_ly", "staff", "tiep_tan")),
         Map.entry("tim_kiem_web", Set.of("admin", "quan_ly", "staff", "bac_si", "ke_toan", "tiep_tan", "y_ta")),
         Map.entry("gui_email_don_le", Set.of("admin", "quan_ly")),
@@ -189,6 +199,10 @@ public final class RoleAccessPolicy {
                 "Báo cáo doanh thu chỉ dành cho Admin, Quản lý và Kế toán.";
             case "thong_ke_ca_kham_bac_si" ->
                 "Thống kê ca khám theo bác sĩ chỉ dành cho nhân sự vận hành và chuyên môn nội bộ.";
+            case "tim_lich_lam_bac_si", "getstaffschedule", "getslotusage", "findoverlapstaff", "suggestschedule", "checkconflict", "findfreestaff", "autoschedule" ->
+                "Điều phối lịch làm việc chỉ dành cho nhân sự vận hành và chuyên môn nội bộ.";
+            case "overridedoctorslot" ->
+                "Override giới hạn slot bác sĩ chỉ dành cho Admin và Quản lý.";
             case "thong_ke_khach_hang_hom_nay" ->
                 "Thống kê khách hàng và xu hướng hôm nay chỉ dành cho nhân sự vận hành nội bộ.";
             case "thao_tac_tai_khoan", "tim_tai_khoan_bi_khoa" ->

@@ -23,6 +23,7 @@ export const PhieuDieuTriChatbot: React.FC<{
                 Hồ sơ y khoa của bé <b>{treatmentData.petName}</b> đã được bác sĩ Rexi thiết lập chuẩn lâm sàng. Vui lòng tải phiếu điều trị PDF để in ấn hoặc lưu trữ nhé!
             </div>
             <button
+                data-ai-id="btn_treatment_pdf_download"
                 onClick={() => onDownload(treatmentData)}
                 style={{
                     background: color, color: 'white', border: 'none',

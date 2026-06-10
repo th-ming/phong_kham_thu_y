@@ -85,13 +85,14 @@ public class SchedulingService {
     public void autoReportDailyDebt() {
         try {
             // Dùng UPPER() để so sánh case-insensitive, bảo vệ khỏi data ko nhất quán
+            LocalDate today = LocalDate.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"));
             String sql = "SELECT hd.id_hoa_don, hd.tong_tien_cuoi, kh.email, kh.ten_khach_hang " +
                     "FROM HoaDon hd " +
                     "JOIN KhachHang kh ON hd.id_khach_hang = kh.id_khach_hang " +
                     "WHERE UPPER(hd.trang_thai) = 'CHO_THANH_TOAN' " +
-                    "AND CAST(hd.ngay_lap_hoa_don AS DATE) = CURRENT_DATE";
+                    "AND CAST(hd.ngay_lap_hoa_don AS DATE) = ?";
 
-            List<Map<String, Object>> unpaidInvoices = jdbcTemplate.queryForList(sql);
+            List<Map<String, Object>> unpaidInvoices = jdbcTemplate.queryForList(sql, java.sql.Date.valueOf(today));
 
             int soLuong = unpaidInvoices.size();
             java.math.BigDecimal tongNo = java.math.BigDecimal.ZERO;

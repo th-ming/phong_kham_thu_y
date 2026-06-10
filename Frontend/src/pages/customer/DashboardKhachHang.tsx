@@ -1123,7 +1123,7 @@ const DashboardKhachHang: React.FC = () => {
             <button data-ai-id="button-dashboardkhachhang-tppw" className="btn btn-pill" onClick={() => setIsTipsModalOpen(true)} style={{ background: 'rgba(255,255,255,0.15)', color: 'white', marginTop: '24px', width: '100%', border: '1.5px solid rgba(255,255,255,0.3)', fontWeight: 800, backdropFilter: 'blur(10px)' }}>Xem tất cả mẹo</button>
           </div>
 
-          <a href="tel:***REMOVED***-VIETQR_ACCOUNT_NO" className="glass-card hover-lift customer-support-card" style={{ padding: '24px 32px', borderRadius: 'var(--radius-xl)', display: 'flex', alignItems: 'center', gap: '20px', textDecoration: 'none', cursor: 'pointer' }}>
+                    <a data-ai-id="link_customer_dashboard_support_phone" href="tel:***REMOVED***-VIETQR_ACCOUNT_NO" className="glass-card hover-lift customer-support-card" style={{ padding: '24px 32px', borderRadius: 'var(--radius-xl)', display: 'flex', alignItems: 'center', gap: '20px', textDecoration: 'none', cursor: 'pointer' }}>
             <div style={{ width: '56px', height: '56px', background: 'var(--primary-light)', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
               <span className="material-symbols-outlined" style={{ fontSize: '32px' }}>support_agent</span>
             </div>

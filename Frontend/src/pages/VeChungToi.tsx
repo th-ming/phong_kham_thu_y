@@ -183,7 +183,7 @@ const VeChungToi: React.FC = () => {
                     <RevealSection>
                         <h2 style={{ fontSize: '2.5rem', fontWeight: 950, marginBottom: '24px' }}>Bạn Đã Sẵn Sàng Trải Nghiệm Dịch Vụ?</h2>
                         <p style={{ fontSize: '1.1rem', marginBottom: '40px', opacity: 0.9, maxWidth: '600px', margin: '0 auto 40px', lineHeight: 1.6 }}>Hãy để đội ngũ y bác sĩ tại Rexi chăm sóc người bạn nhỏ của bạn một cách chuyên nghiệp và tận tâm nhất.</p>
-                        <a href="/khach-hang/dat-lich-hen" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'white', color: '#0f9d8a', padding: '16px 32px', borderRadius: '50px', textDecoration: 'none', fontWeight: 900, fontSize: '1rem', boxShadow: '0 10px 20px rgba(0,0,0,0.1)', transition: 'transform 0.2s' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>
+                        <a data-ai-id="link_about_booking" href="/khach-hang/dat-lich-hen" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'white', color: '#0f9d8a', padding: '16px 32px', borderRadius: '50px', textDecoration: 'none', fontWeight: 900, fontSize: '1rem', boxShadow: '0 10px 20px rgba(0,0,0,0.1)', transition: 'transform 0.2s' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>
                             <span className="material-symbols-outlined">calendar_today</span> Đặt Lịch Hẹn Ngay
                         </a>
                     </RevealSection>

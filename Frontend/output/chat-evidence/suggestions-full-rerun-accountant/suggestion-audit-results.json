@@ -1,0 +1,131 @@
+[
+  {
+    "role": "Kế toán",
+    "roleKey": "accountant",
+    "mode": "standard",
+    "index": 1,
+    "label": "Đối soát an toàn",
+    "prompt": "Quy trình đối soát hóa đơn và thanh toán nên kiểm tra những điểm nào?",
+    "reply": "Rexi chưa nhận được phản hồi từ hệ thống tư vấn. Tôi chưa thực hiện thao tác nào, bạn thử gửi lại sau vài giây hoặc chọn gợi ý nhanh bên dưới.",
+    "beforeUrl": "http://127.0.0.1:3005/quan-ly/dashboard",
+    "afterUrl": "http://127.0.0.1:3005/quan-ly/dashboard",
+    "screenshot": "Frontend\\output\\chat-evidence\\suggestions-full-rerun-accountant\\accountant-standard-01-doi-soat-an-toan.png",
+    "ok": false,
+    "issues": [
+      "Báo lỗi hệ thống"
+    ]
+  },
+  {
+    "role": "Kế toán",
+    "roleKey": "accountant",
+    "mode": "standard",
+    "index": 2,
+    "label": "Báo cáo tài chính",
+    "prompt": "Một báo cáo doanh thu ngày của phòng khám nên có những mục nào?",
+    "reply": "Rexi chưa nhận được phản hồi từ hệ thống tư vấn. Tôi chưa thực hiện thao tác nào, bạn thử gửi lại sau vài giây hoặc chọn gợi ý nhanh bên dưới.",
+    "beforeUrl": "http://127.0.0.1:3005/quan-ly/dashboard",
+    "afterUrl": "http://127.0.0.1:3005/quan-ly/dashboard",
+    "screenshot": "Frontend\\output\\chat-evidence\\suggestions-full-rerun-accountant\\accountant-standard-02-bao-cao-tai-chinh.png",
+    "ok": false,
+    "issues": [
+      "Báo lỗi hệ thống"
+    ]
+  },
+  {
+    "role": "Kế toán",
+    "roleKey": "accountant",
+    "mode": "standard",
+    "index": 3,
+    "label": "Sai lệch thanh toán",
+    "prompt": "Khi hóa đơn và giao dịch thanh toán lệch nhau thì nên xử lý theo bước nào?",
+    "reply": "Rexi chưa nhận được phản hồi từ hệ thống tư vấn. Tôi chưa thực hiện thao tác nào, bạn thử gửi lại sau vài giây hoặc chọn gợi ý nhanh bên dưới.",
+    "beforeUrl": "http://127.0.0.1:3005/quan-ly/dashboard",
+    "afterUrl": "http://127.0.0.1:3005/quan-ly/dashboard",
+    "screenshot": "Frontend\\output\\chat-evidence\\suggestions-full-rerun-accountant\\accountant-standard-03-sai-lech-thanh-toan.png",
+    "ok": false,
+    "issues": [
+      "Báo lỗi hệ thống"
+    ]
+  },
+  {
+    "role": "Kế toán",
+    "roleKey": "accountant",
+    "mode": "standard",
+    "index": 4,
+    "label": "Xuất Excel",
+    "prompt": "Hướng dẫn xuất file Excel hóa đơn và doanh thu",
+    "reply": "Rexi chưa nhận được phản hồi từ hệ thống tư vấn. Tôi chưa thực hiện thao tác nào, bạn thử gửi lại sau vài giây hoặc chọn gợi ý nhanh bên dưới.",
+    "beforeUrl": "http://127.0.0.1:3005/quan-ly/dashboard",
+    "afterUrl": "http://127.0.0.1:3005/quan-ly/dashboard",
+    "screenshot": "Frontend\\output\\chat-evidence\\suggestions-full-rerun-accountant\\accountant-standard-04-xuat-excel.png",
+    "ok": false,
+    "issues": [
+      "Báo lỗi hệ thống"
+    ]
+  },
+  {
+    "role": "Kế toán",
+    "roleKey": "accountant",
+    "mode": "standard",
+    "index": 5,
+    "label": "Bảo mật hóa đơn",
+    "prompt": "Kế toán cần lưu ý gì khi trao đổi thông tin hóa đơn trong chat?",
+    "reply": "Rexi chưa nhận được phản hồi từ hệ thống tư vấn. Tôi chưa thực hiện thao tác nào, bạn thử gửi lại sau vài giây hoặc chọn gợi ý nhanh bên dưới.",
+    "beforeUrl": "http://127.0.0.1:3005/quan-ly/dashboard",
+    "afterUrl": "http://127.0.0.1:3005/quan-ly/dashboard",
+    "screenshot": "Frontend\\output\\chat-evidence\\suggestions-full-rerun-accountant\\accountant-standard-05-bao-mat-hoa-don.png",
+    "ok": false,
+    "issues": [
+      "Báo lỗi hệ thống",
+      "Câu bảo mật/phân quyền trả lời chưa rõ"
+    ]
+  },
+  {
+    "role": "Kế toán",
+    "roleKey": "accountant",
+    "mode": "standard",
+    "index": 6,
+    "label": "Chăm sóc sau khám",
+    "prompt": "Sau khi bé vừa khám xong cần chăm sóc và theo dõi thế nào?",
+    "reply": "Rexi chưa nhận được phản hồi từ hệ thống tư vấn. Tôi chưa thực hiện thao tác nào, bạn thử gửi lại sau vài giây hoặc chọn gợi ý nhanh bên dưới.",
+    "beforeUrl": "http://127.0.0.1:3005/quan-ly/dashboard",
+    "afterUrl": "http://127.0.0.1:3005/quan-ly/dashboard",
+    "screenshot": "Frontend\\output\\chat-evidence\\suggestions-full-rerun-accountant\\accountant-standard-06-cham-soc-sau-kham.png",
+    "ok": false,
+    "issues": [
+      "Báo lỗi hệ thống"
+    ]
+  },
+  {
+    "role": "Kế toán",
+    "roleKey": "accountant",
+    "mode": "standard",
+    "index": 7,
+    "label": "Dinh dưỡng thú cưng",
+    "prompt": "Tư vấn khẩu phần ăn phù hợp cho chó mèo theo tuổi và cân nặng",
+    "reply": "Rexi chưa nhận được phản hồi từ hệ thống tư vấn. Tôi chưa thực hiện thao tác nào, bạn thử gửi lại sau vài giây hoặc chọn gợi ý nhanh bên dưới.",
+    "beforeUrl": "http://127.0.0.1:3005/quan-ly/dashboard",
+    "afterUrl": "http://127.0.0.1:3005/quan-ly/dashboard",
+    "screenshot": "Frontend\\output\\chat-evidence\\suggestions-full-rerun-accountant\\accountant-standard-07-dinh-duong-thu-cung.png",
+    "ok": false,
+    "issues": [
+      "Báo lỗi hệ thống"
+    ]
+  },
+  {
+    "role": "Kế toán",
+    "roleKey": "accountant",
+    "mode": "agent",
+    "index": 0,
+    "label": "MODE_HARNESS_ERROR",
+    "prompt": "",
+    "reply": "HARNESS_ERROR: fetch failed",
+    "beforeUrl": "",
+    "afterUrl": "",
+    "screenshot": "",
+    "ok": false,
+    "issues": [
+      "Harness lỗi khi chuẩn bị/chuyển mode"
+    ]
+  }
+]

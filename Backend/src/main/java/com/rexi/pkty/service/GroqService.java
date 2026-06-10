@@ -324,9 +324,8 @@ public class GroqService {
                             .header("Authorization", "Bearer " + currentApiKey)
                             .POST(HttpRequest.BodyPublishers.ofString(requestBody, StandardCharsets.UTF_8))
                             .timeout(Duration.ofSeconds(15))
-                            .build();
+                            .build();                    HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
 
-                    HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
                     if (response.statusCode() != 200) {
                         logger.warning("Groq key/model lỗi, thử dự phòng tiếp theo. model=" + candidateModel
                                 + " keyIndex=" + i + " status=" + response.statusCode());
@@ -398,7 +397,7 @@ public class GroqService {
                         .POST(HttpRequest.BodyPublishers.ofString(requestBody, StandardCharsets.UTF_8))
                         .timeout(Duration.ofSeconds(4))
                         .build();
-                HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+                HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
                 if (response.statusCode() != 200) {
                     markKeyFailure(currentApiKey, response.statusCode(), "intent-parse");
                     lastException = new RuntimeException("Groq intent parse error " + response.statusCode());
@@ -558,7 +557,7 @@ public class GroqService {
                         .timeout(Duration.ofSeconds(60))
                         .build();
 
-                HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+                HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
                 if (response.statusCode() != 200) {
                     markKeyFailure(currentApiKey, response.statusCode(), "audio-transcription");
                     lastException = new RuntimeException("Groq audio API Error " + response.statusCode() + ": " + response.body());

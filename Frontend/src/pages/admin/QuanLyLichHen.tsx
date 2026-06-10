@@ -5,6 +5,7 @@ import { Modal, InfoRow } from "@components/CommonUI";
 import { toast } from "@components/Toast";
 import { matchesSearchFields } from "@utils/index";
 import { useAutoRefresh } from "@hooks/useAutoRefresh";
+import useVirtualScroll from "@hooks/useVirtualScroll";
 
 const chuyenNgayISO_SangVN = (dateString: string) => {
   if (!dateString) return "—";
@@ -33,13 +34,13 @@ const QuanLyLichHen: React.FC = () => {
   const [totalServerPages, setTotalServerPages] = useState(1);
   const [isServerPaginated, setIsServerPaginated] = useState(false);
 
-  // Phân trang
+  // Phân trang - Tăng size để Virtual Scroll có ý nghĩa (audit 40-500+ items)
   const [currentPage, setCurrentPage] = useState(1);
-  const ITEMS_PER_PAGE = 10;
+  const ITEMS_PER_PAGE = 200;
 
   const fetchData = React.useCallback(() => {
     if (lichHens.length === 0) setLoading(true);
-    // Truyền page/size để backend có thể phân trang nếu hỗ trợ (tránh lấy toàn bộ 10k+ bản ghi)
+    // Truyền page/size để backend có thể phân trang nếu hỗ trợ
     axiosInstance.get("/api/lich-hen", {
       params: {
         page: currentPage - 1,
@@ -124,7 +125,19 @@ const QuanLyLichHen: React.FC = () => {
   const totalPages = isServerPaginated ? totalServerPages : Math.ceil(rows.length / ITEMS_PER_PAGE);
   const currentRows = isServerPaginated ? rows : rows.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
+  // Virtual Scrolling configuration
+  const VIRTUAL_ITEM_HEIGHT = 80;
+  const VIRTUAL_CONTAINER_HEIGHT = 500;
+  const { visibleItems, containerRef, onScrollHandler, visibleRange, shouldVirtualize } = useVirtualScroll({
+    items: currentRows,
+    itemHeight: VIRTUAL_ITEM_HEIGHT,
+    containerHeight: VIRTUAL_CONTAINER_HEIGHT,
+    visibleCount: 8,
+    threshold: 4
+  });
+
   if (loading && lichHens.length === 0) return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}><div className="dot-pulse"></div></div>;
+
 
   return (
     <div className="animate-fade-in" style={{ position: 'relative' }}>
@@ -369,75 +382,88 @@ const QuanLyLichHen: React.FC = () => {
         </div>
         <div className="table-responsive-wrapper admin-appointment-table">
           <div style={{ minWidth: '800px' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ background: 'var(--gray-50)' }}>
-              <th style={{ padding: '24px 20px', textAlign: 'left', fontSize: '0.75rem', fontWeight: 900, color: 'var(--gray-400)', textTransform: 'uppercase', letterSpacing: '1px' }}>ID</th>
-              <th style={{ padding: '24px 20px', textAlign: 'left', fontSize: '0.75rem', fontWeight: 900, color: 'var(--gray-400)', textTransform: 'uppercase', letterSpacing: '1px' }}>THỜI GIAN</th>
-              <th style={{ padding: '24px 20px', textAlign: 'left', fontSize: '0.75rem', fontWeight: 900, color: 'var(--gray-400)', textTransform: 'uppercase', letterSpacing: '1px' }}>BỆNH NHÂN / CHỦ</th>
-              <th style={{ padding: '24px 20px', textAlign: 'left', fontSize: '0.75rem', fontWeight: 900, color: 'var(--gray-400)', textTransform: 'uppercase', letterSpacing: '1px' }}>LÝ DO / GHI CHÚ</th>
-              <th style={{ padding: '24px 20px', textAlign: 'left', fontSize: '0.75rem', fontWeight: 900, color: 'var(--gray-400)', textTransform: 'uppercase', letterSpacing: '1px' }}>BÁC SĨ PHỤ TRÁCH</th>
-              <th style={{ padding: '24px 20px', textAlign: 'left', fontSize: '0.75rem', fontWeight: 900, color: 'var(--gray-400)', textTransform: 'uppercase', letterSpacing: '1px' }}>TRẠNG THÁI</th>
-              <th style={{ padding: '24px 20px', textAlign: 'center', fontSize: '0.75rem', fontWeight: 900, color: 'var(--gray-400)', textTransform: 'uppercase', letterSpacing: '1px' }}>THAO TÁC</th>
-            </tr>
-          </thead>
-          <tbody>
-            {currentRows.length === 0 ? (
-              <tr>
-                <td className="admin-empty-state" colSpan={7} style={{ padding: '32px 20px', textAlign: 'center', color: 'var(--gray-500)', fontWeight: 700 }}>
-                  Không có lịch hẹn phù hợp.
-                </td>
-              </tr>
-            ) : currentRows.map((l) => (
-              <tr key={l.id_lich_hen} className="table-row" style={{ borderBottom: '1px solid var(--gray-50)', transition: 'all 0.3s ease' }}>
-                <td style={{ padding: '20px', fontWeight: 800, color: 'var(--gray-400)', borderTopLeftRadius: '16px', borderBottomLeftRadius: '16px' }}>#{l.id_lich_hen}</td>
-                <td style={{ padding: '20px' }}>
-                  <div style={{ fontWeight: 900, color: 'var(--ink)' }}>{chuyenNgayISO_SangVN(l.ngay_kham)}</div>
-                  <div style={{ fontSize: '0.85rem', color: 'var(--primary)', fontWeight: 800 }}>{gioRutGon(l.gio_kham)}</div>
-                </td>
-                <td style={{ padding: '20px' }}>
-                  <div style={{ fontWeight: 900, color: 'var(--ink)' }}>{l.ten_thu_cung || "N/A"}</div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 700 }}>{l.ten_khach_hang || "Khách vãng lai"}</div>
-                </td>
-                <td style={{ padding: '20px' }}>
-                  <div style={{ fontWeight: 800, color: 'var(--ink)' }}>{l.ly_do || "Khám tổng quát"}</div>
-                  <div style={{ fontSize: '0.8rem', color: l.ghi_chu?.includes('[CẤP CỨU]') ? 'var(--danger)' : 'var(--gray-500)', fontWeight: 700, maxWidth: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {l.ghi_chu ? l.ghi_chu : "Không có ghi chú"}
-                  </div>
-                </td>
-                <td style={{ padding: '20px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div style={{ width: '32px', height: '32px', background: 'var(--primary-light)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
-                      <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>medical_information</span>
-                    </div>
-                    <span style={{ fontWeight: 800, color: 'var(--ink)' }}>{l.ten_bac_si || "Chưa phân bổ"}</span>
-                  </div>
-                </td>
-                <td style={{ padding: '20px' }}>
-                  <span style={{
-                    padding: '8px 16px', borderRadius: '50px', fontSize: '0.7rem', fontWeight: 900, border: '1px solid transparent',
-                    background: l.trang_thai?.toUpperCase() === 'HOAN_THANH' ? 'var(--primary-light)' : (['DA_HUY', 'KHONG_DEN'].includes(l.trang_thai?.toUpperCase()) ? 'var(--danger-light, rgba(239, 68, 68, 0.15))' : 'var(--warning-light, rgba(245, 158, 11, 0.15))'),
-                    color: l.trang_thai?.toUpperCase() === 'HOAN_THANH' ? 'var(--primary)' : (['DA_HUY', 'KHONG_DEN'].includes(l.trang_thai?.toUpperCase()) ? 'var(--danger, #ef4444)' : 'var(--warning, #d97706)')
-                  }}>
-                    {l.trang_thai?.toUpperCase() || 'CHO_XAC_NHAN'}
-                  </span>
-                </td>
-                <td style={{ padding: '20px', textAlign: 'center', borderTopRightRadius: '16px', borderBottomRightRadius: '16px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
-                    <button data-ai-id="button-quanlylichhen-kp9o" className="btn" aria-label={`Xem chi tiết lịch hẹn ${l.id_lich_hen ? `#${l.id_lich_hen}` : ''}`} title={`Xem lịch hẹn ${l.id_lich_hen ? `#${l.id_lich_hen}` : ''}`} onClick={() => setViewingLichHen(l)} style={{ padding: '10px', background: 'var(--gray-50)', color: 'var(--ink)' }}>
-                      <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>visibility</span>
-                    </button>
-                    <button data-ai-id="button-quanlylichhen-4icp" className="btn" aria-label={`Chỉnh sửa lịch hẹn ${l.id_lich_hen ? `#${l.id_lich_hen}` : ''}`} title={`Chỉnh sửa lịch hẹn ${l.id_lich_hen ? `#${l.id_lich_hen}` : ''}`} onClick={() => setEditingLichHen(l)} style={{ padding: '10px', background: 'var(--primary-light)', color: 'var(--primary)' }}>
-                      <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>edit_square</span>
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+            <div
+              ref={containerRef}
+              onScroll={onScrollHandler}
+              style={shouldVirtualize ? { height: `${VIRTUAL_CONTAINER_HEIGHT}px`, overflowY: 'auto', overflowX: 'hidden' } : {}}
+            >
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead style={{ position: shouldVirtualize ? 'sticky' : undefined, top: shouldVirtualize ? 0 : undefined, zIndex: shouldVirtualize ? 2 : undefined, background: 'var(--gray-50)' }}>
+                  <tr style={{ background: 'var(--gray-50)' }}>
+                    <th style={{ padding: '24px 20px', textAlign: 'left', fontSize: '0.75rem', fontWeight: 900, color: 'var(--gray-400)', textTransform: 'uppercase', letterSpacing: '1px' }}>ID</th>
+                    <th style={{ padding: '24px 20px', textAlign: 'left', fontSize: '0.75rem', fontWeight: 900, color: 'var(--gray-400)', textTransform: 'uppercase', letterSpacing: '1px' }}>THỜI GIAN</th>
+                    <th style={{ padding: '24px 20px', textAlign: 'left', fontSize: '0.75rem', fontWeight: 900, color: 'var(--gray-400)', textTransform: 'uppercase', letterSpacing: '1px' }}>BỆNH NHÂN / CHỦ</th>
+                    <th style={{ padding: '24px 20px', textAlign: 'left', fontSize: '0.75rem', fontWeight: 900, color: 'var(--gray-400)', textTransform: 'uppercase', letterSpacing: '1px' }}>LÝ DO / GHI CHÚ</th>
+                    <th style={{ padding: '24px 20px', textAlign: 'left', fontSize: '0.75rem', fontWeight: 900, color: 'var(--gray-400)', textTransform: 'uppercase', letterSpacing: '1px' }}>BÁC SĨ PHỤ TRÁCH</th>
+                    <th style={{ padding: '24px 20px', textAlign: 'left', fontSize: '0.75rem', fontWeight: 900, color: 'var(--gray-400)', textTransform: 'uppercase', letterSpacing: '1px' }}>TRẠNG THÁI</th>
+                    <th style={{ padding: '24px 20px', textAlign: 'center', fontSize: '0.75rem', fontWeight: 900, color: 'var(--gray-400)', textTransform: 'uppercase', letterSpacing: '1px' }}>THAO TÁC</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {shouldVirtualize && visibleRange.start > 0 && (
+                    <tr style={{ height: `${visibleRange.start * VIRTUAL_ITEM_HEIGHT}px` }} aria-hidden="true"><td colSpan={7} /></tr>
+                  )}
+                  {currentRows.length === 0 ? (
+                    <tr>
+                      <td className="admin-empty-state" colSpan={7} style={{ padding: '32px 20px', textAlign: 'center', color: 'var(--gray-500)', fontWeight: 700 }}>
+                        Không có lịch hẹn phù hợp.
+                      </td>
+                    </tr>
+                  ) : (shouldVirtualize ? visibleItems : currentRows).map((l) => (
+                    <tr key={l.id_lich_hen} className="table-row" style={{ borderBottom: '1px solid var(--gray-50)', transition: 'all 0.3s ease', height: `${VIRTUAL_ITEM_HEIGHT}px` }}>
+                      <td style={{ padding: '20px', fontWeight: 800, color: 'var(--gray-400)', borderTopLeftRadius: '16px', borderBottomLeftRadius: '16px' }}>#{l.id_lich_hen}</td>
+                      <td style={{ padding: '20px' }}>
+                        <div style={{ fontWeight: 900, color: 'var(--ink)' }}>{chuyenNgayISO_SangVN(l.ngay_kham)}</div>
+                        <div style={{ fontSize: '0.85rem', color: 'var(--primary)', fontWeight: 800 }}>{gioRutGon(l.gio_kham)}</div>
+                      </td>
+                      <td style={{ padding: '20px' }}>
+                        <div style={{ fontWeight: 900, color: 'var(--ink)' }}>{l.ten_thu_cung || "N/A"}</div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 700 }}>{l.ten_khach_hang || "Khách vãng lai"}</div>
+                      </td>
+                      <td style={{ padding: '20px' }}>
+                        <div style={{ fontWeight: 800, color: 'var(--ink)' }}>{l.ly_do || "Khám tổng quát"}</div>
+                        <div style={{ fontSize: '0.8rem', color: l.ghi_chu?.includes('[CẤP CỨU]') ? 'var(--danger)' : 'var(--gray-500)', fontWeight: 700, maxWidth: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {l.ghi_chu ? l.ghi_chu : "Không có ghi chú"}
+                        </div>
+                      </td>
+                      <td style={{ padding: '20px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <div style={{ width: '32px', height: '32px', background: 'var(--primary-light)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
+                            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>medical_information</span>
+                          </div>
+                          <span style={{ fontWeight: 800, color: 'var(--ink)' }}>{l.ten_bac_si || "Chưa phân bổ"}</span>
+                        </div>
+                      </td>
+                      <td style={{ padding: '20px' }}>
+                        <span style={{
+                          padding: '8px 16px', borderRadius: '50px', fontSize: '0.7rem', fontWeight: 900, border: '1px solid transparent',
+                          background: l.trang_thai?.toUpperCase() === 'HOAN_THANH' ? 'var(--primary-light)' : (['DA_HUY', 'KHONG_DEN'].includes(l.trang_thai?.toUpperCase()) ? 'var(--danger-light, rgba(239, 68, 68, 0.15))' : 'var(--warning-light, rgba(245, 158, 11, 0.15))'),
+                          color: l.trang_thai?.toUpperCase() === 'HOAN_THANH' ? 'var(--primary)' : (['DA_HUY', 'KHONG_DEN'].includes(l.trang_thai?.toUpperCase()) ? 'var(--danger, #ef4444)' : 'var(--warning, #d97706)')
+                        }}>
+                          {l.trang_thai?.toUpperCase() || 'CHO_XAC_NHAN'}
+                        </span>
+                      </td>
+                      <td style={{ padding: '20px', textAlign: 'center', borderTopRightRadius: '16px', borderBottomRightRadius: '16px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
+                          <button data-ai-id="button-quanlylichhen-kp9o" className="btn" aria-label={`Xem chi tiết lịch hẹn ${l.id_lich_hen ? `#${l.id_lich_hen}` : ''}`} title={`Xem lịch hẹn ${l.id_lich_hen ? `#${l.id_lich_hen}` : ''}`} onClick={() => setViewingLichHen(l)} style={{ padding: '10px', background: 'var(--gray-50)', color: 'var(--ink)' }}>
+                            <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>visibility</span>
+                          </button>
+                          <button data-ai-id="button-quanlylichhen-4icp" className="btn" aria-label={`Chỉnh sửa lịch hẹn ${l.id_lich_hen ? `#${l.id_lich_hen}` : ''}`} title={`Chỉnh sửa lịch hẹn ${l.id_lich_hen ? `#${l.id_lich_hen}` : ''}`} onClick={() => setEditingLichHen(l)} style={{ padding: '10px', background: 'var(--primary-light)', color: 'var(--primary)' }}>
+                            <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>edit_square</span>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {shouldVirtualize && visibleRange.end < currentRows.length && (
+                    <tr style={{ height: `${(currentRows.length - visibleRange.end) * VIRTUAL_ITEM_HEIGHT}px` }} aria-hidden="true"><td colSpan={7} /></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
+
       </div>
 
       {/* BỘ NÚT ĐIỀU HƯỚNG PHÂN TRANG */}

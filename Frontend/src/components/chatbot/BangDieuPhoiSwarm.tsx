@@ -148,6 +148,7 @@ export const BangDieuPhoiSwarm: React.FC<BangDieuPhoiSwarmProps> = ({ data, isDa
                                                 <span style={{ color: isDark ? "#94a3b8" : "#64748b", marginLeft: "6px" }}>({c.petName})</span>
                                             </div>
                                             <button
+                                                data-ai-id={`btn_swarm_preview_${i}`}
                                                 onClick={() => setPreviewIdx(previewIdx === i ? null : i)}
                                                 style={{ background: "transparent", border: "1px solid #3b82f6", color: "#3b82f6", borderRadius: "6px", padding: "2px 8px", fontSize: "0.65rem", cursor: "pointer", fontWeight: 800 }}
                                             >
@@ -167,6 +168,7 @@ export const BangDieuPhoiSwarm: React.FC<BangDieuPhoiSwarmProps> = ({ data, isDa
                             {!isSending && (
                                 <div style={{ display: "flex", gap: "8px", marginTop: "12px" }}>
                                     <button
+                                        data-ai-id="btn_swarm_approve_send"
                                         onClick={handleApproveAndSend}
                                         style={{
                                             flex: 1, padding: "12px",
@@ -185,6 +187,7 @@ export const BangDieuPhoiSwarm: React.FC<BangDieuPhoiSwarmProps> = ({ data, isDa
                                     </button>
 
                                     <button
+                                        data-ai-id="btn_swarm_cancel"
                                         onClick={() => setIsCancelled(true)}
                                         style={{
                                             padding: "12px",

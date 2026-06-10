@@ -3,6 +3,7 @@ package com.rexi.pkty.controller;
 import com.rexi.pkty.entity.ThuCung;
 import com.rexi.pkty.repository.ThuCungRepository;
 import com.rexi.pkty.security.RexiSecurityRoles;
+import com.rexi.pkty.util.DatabaseDialect;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -43,9 +44,10 @@ public class ThuCungController {
             // Dung JdbcTemplate tranh serialization error
             String sql;
             List<Map<String, Object>> allPets;
+            boolean pg = DatabaseDialect.isPostgres(jdbcTemplate);
             if (search != null && !search.trim().isEmpty()) {
                 java.util.List<Object> params = new java.util.ArrayList<>();
-                StringBuilder where = new StringBuilder("WHERE (t.da_xoa IS NULL OR LOWER(CAST(t.da_xoa AS varchar)) IN ('0', 'false'))");
+                StringBuilder where = new StringBuilder("WHERE " + DatabaseDialect.isNotDeleted(pg, "t.da_xoa"));
                 com.rexi.pkty.util.SmartSearchSql.appendTokenSearch(where, params, search,
                         "LOWER(COALESCE(t.ten_thu_cung, '')) LIKE LOWER(?)",
                         "LOWER(COALESCE(t.loai, '')) LIKE LOWER(?)",
@@ -57,7 +59,7 @@ public class ThuCungController {
                       "ORDER BY t.ngay_tao DESC";
                 allPets = jdbcTemplate.queryForList(sql, params.toArray());
             } else {
-                sql = "SELECT * FROM ThuCung WHERE da_xoa IS NULL OR LOWER(CAST(da_xoa AS varchar)) IN ('0', 'false') ORDER BY ngay_tao DESC";
+                sql = "SELECT * FROM ThuCung WHERE " + DatabaseDialect.isNotDeleted(pg, "da_xoa") + " ORDER BY ngay_tao DESC";
                 allPets = jdbcTemplate.queryForList(sql);
             }
 

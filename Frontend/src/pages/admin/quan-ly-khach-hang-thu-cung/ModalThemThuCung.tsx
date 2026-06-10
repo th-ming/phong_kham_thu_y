@@ -63,7 +63,7 @@ export const ModalThemThuCung: React.FC<ModalThemThuCungProps> = ({
               CHỦ SỞ HỮU <span style={{ color: '#ff4d4f' }}>*</span>
             </label>
             <select 
-              data-ai-id="select-quanlykhachhangthucung-nqxg" 
+              data-ai-id="select_pet_owner" 
               required 
               className="btn" 
               style={petSelectStyle} 
@@ -85,7 +85,7 @@ export const ModalThemThuCung: React.FC<ModalThemThuCungProps> = ({
                 TÊN BÉ <span style={{ color: '#ff4d4f' }}>*</span>
               </label>
               <input 
-                data-ai-id="input-quanlykhachhangthucung-ub0z" 
+                data-ai-id="input_pet_name" 
                 required 
                 className="btn" 
                 style={petFieldStyle} 
@@ -96,7 +96,7 @@ export const ModalThemThuCung: React.FC<ModalThemThuCungProps> = ({
             <div style={{ display: 'grid', gap: '8px' }}>
               <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)' }}>LOÀI</label>
               <select 
-                data-ai-id="select-quanlykhachhangthucung-36r6" 
+                data-ai-id="select_pet_species" 
                 className="btn" 
                 style={petSelectStyle} 
                 value={petFormData.loai} 
@@ -113,7 +113,7 @@ export const ModalThemThuCung: React.FC<ModalThemThuCungProps> = ({
             <div style={{ display: 'grid', gap: '8px' }}>
               <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)' }}>GIỐNG</label>
               <input 
-                data-ai-id="input-quanlykhachhangthucung-y0af" 
+                data-ai-id="input_pet_breed" 
                 className="btn" 
                 style={petFieldStyle} 
                 value={petFormData.giong} 
@@ -123,7 +123,7 @@ export const ModalThemThuCung: React.FC<ModalThemThuCungProps> = ({
             <div style={{ display: 'grid', gap: '8px' }}>
               <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)' }}>CÂN NẶNG (KG)</label>
               <input 
-                data-ai-id="input-quanlykhachhangthucung-ccuw" 
+                data-ai-id="input_pet_weight" 
                 type="number" 
                 step="0.1" 
                 className="btn" 
@@ -138,7 +138,7 @@ export const ModalThemThuCung: React.FC<ModalThemThuCungProps> = ({
             <div style={{ display: 'grid', gap: '8px' }}>
               <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)' }}>GIỚI TÍNH</label>
               <select 
-                data-ai-id="select-quanlykhachhangthucung-1av9" 
+                data-ai-id="select_pet_gender" 
                 className="btn" 
                 style={petSelectStyle} 
                 value={petFormData.gioi_tinh} 
@@ -152,7 +152,7 @@ export const ModalThemThuCung: React.FC<ModalThemThuCungProps> = ({
             <div style={{ display: 'grid', gap: '8px' }}>
               <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)' }}>NGÀY SINH</label>
               <input 
-                data-ai-id="input-quanlykhachhangthucung-guzt" 
+                data-ai-id="input_pet_birthdate" 
                 type="date" 
                 className="btn" 
                 style={{ ...petFieldStyle, padding: '14px 12px' }} 
@@ -164,7 +164,7 @@ export const ModalThemThuCung: React.FC<ModalThemThuCungProps> = ({
             <div style={{ display: 'grid', gap: '8px' }}>
               <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)' }}>MÀU SẮC</label>
               <input 
-                data-ai-id="input-quanlykhachhangthucung-h9m1" 
+                data-ai-id="input_pet_color" 
                 className="btn" 
                 style={petFieldStyle} 
                 value={petFormData.mau_sac} 
@@ -175,7 +175,7 @@ export const ModalThemThuCung: React.FC<ModalThemThuCungProps> = ({
 
           <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
             <button 
-              data-ai-id="button-quanlykhachhangthucung-czfa" 
+              data-ai-id="btn_pet_save" 
               type="submit" 
               disabled={isSaving} 
               className="btn btn-primary btn-pill" 
@@ -184,7 +184,7 @@ export const ModalThemThuCung: React.FC<ModalThemThuCungProps> = ({
               {isSaving ? 'Đang lưu...' : (editingPetId ? 'Lưu thay đổi' : 'Đăng ký bé')}
             </button>
             <button 
-              data-ai-id="button-quanlykhachhangthucung-hkxr" 
+              data-ai-id="btn_pet_cancel" 
               type="button" 
               onClick={onClose} 
               className="btn btn-pill" 

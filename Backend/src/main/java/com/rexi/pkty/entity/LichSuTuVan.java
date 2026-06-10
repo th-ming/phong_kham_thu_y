@@ -15,10 +15,10 @@ public class LichSuTuVan {
     private String id_thu_cung;
     private String id_bac_si;
 
-    @Column(columnDefinition = "NVARCHAR(MAX)")
+    @Column
     private String noi_dung_khach;
 
-    @Column(columnDefinition = "NVARCHAR(MAX)")
+    @Column
     private String noi_dung_rexi;
 
     private LocalDateTime ngay_tu_van = LocalDateTime.now();

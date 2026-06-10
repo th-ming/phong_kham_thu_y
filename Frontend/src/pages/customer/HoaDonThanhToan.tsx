@@ -781,7 +781,7 @@ const HoaDonThanhToan: React.FC = () => {
                   {isPayableInvoice(hd) && (
                     <>
                       <button
-                        data-ai-id="button-hoadonthanhtoan-vnpay"
+                        data-ai-id="btn_vnpay"
                         className="btn btn-pill"
                         style={{ padding: '8px 16px', background: 'linear-gradient(135deg, #005baa 0%, #008cd6 100%)', color: 'white', fontWeight: 700, fontSize: '0.85rem' }}
                         onClick={() => handlePaymentVNPay(hd)}
@@ -791,7 +791,7 @@ const HoaDonThanhToan: React.FC = () => {
                         Thanh toán VNPay
                       </button>
                       <button
-                        data-ai-id="button-hoadonthanhtoan-vietqr"
+                        data-ai-id="btn_vietqr"
                         className="btn btn-pill"
                         style={{ padding: '8px 16px', background: 'linear-gradient(135deg, #ea580c 0%, #f97316 100%)', color: 'white', fontWeight: 700, fontSize: '0.85rem' }}
                         onClick={() => handlePaymentVietQR(hd)}

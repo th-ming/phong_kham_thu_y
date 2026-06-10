@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import axiosInstance from "@services/axios";
 import { toast } from "@components/Toast";
 import { isValidPassword, PASSWORD_POLICY_MESSAGE } from "@utils/passwordPolicy";
+import { getApiErrorMessage } from "@utils/apiErrorMessage";
 
 const QuenMatKhau: React.FC = () => {
   const [method, setMethod] = useState<"quick" | "otp">("quick");
@@ -38,7 +39,7 @@ const QuenMatKhau: React.FC = () => {
         setStep(4); // Nhảy thẳng bước đổi pass
       }
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "Thông tin không chính xác!");
+      toast.error(getApiErrorMessage(err, "Thông tin không chính xác!"));
     } finally {
       setLoading(false);
     }
@@ -55,7 +56,7 @@ const QuenMatKhau: React.FC = () => {
       toast.success(`Đã gửi mã OTP tới ${accountInfo.email}. Vui lòng kiểm tra hòm thư (bao gồm cả thư rác/Spam)!`, { duration: 6000 });
       setStep(3); // Sang bước nhập OTP
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "Lỗi gửi mã OTP!");
+      toast.error(getApiErrorMessage(err, "Lỗi gửi mã OTP!"));
     } finally {
       setLoading(false);
     }
@@ -71,7 +72,7 @@ const QuenMatKhau: React.FC = () => {
       toast.success("Xác minh OTP thành công!");
       setStep(4);
     } catch (err: any) {
-      toast.error("Mã OTP không chính xác!");
+      toast.error(getApiErrorMessage(err, "Mã OTP không chính xác!"));
     } finally {
       setLoading(false);
     }
@@ -101,7 +102,7 @@ const QuenMatKhau: React.FC = () => {
       toast.success("Đổi mật khẩu thành công!");
       setTimeout(() => navigate("/dang-nhap"), 2000);
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "Lỗi đổi mật khẩu!");
+      toast.error(getApiErrorMessage(err, "Lỗi đổi mật khẩu!"));
     } finally {
       setLoading(false);
     }

@@ -116,7 +116,7 @@ const LienHe: React.FC = () => {
                                     <span className="material-symbols-outlined" style={{ color: 'var(--primary)', fontSize: '28px' }}>map</span>
                                     <h3 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 900, color: 'var(--ink)' }}>Bản Đồ Chỉ Đường</h3>
                                 </div>
-                                <a href={directionsUrl} target="_blank" rel="noreferrer" className="btn-primary" style={{ padding: '10px 24px', borderRadius: '50px', textDecoration: 'none', fontWeight: 800, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <a data-ai-id="link_contact_directions" href={directionsUrl} target="_blank" rel="noreferrer" className="btn-primary" style={{ padding: '10px 24px', borderRadius: '50px', textDecoration: 'none', fontWeight: 800, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                     <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>navigation</span>
                                     Mở Google Maps
                                 </a>

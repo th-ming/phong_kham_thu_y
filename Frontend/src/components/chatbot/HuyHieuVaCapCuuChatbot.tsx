@@ -113,14 +113,14 @@ export const BangCapCuuChatbot: React.FC<{
                 - **Đường dây nóng Cấp cứu:** Gọi trực tiếp số hotline **0353.374.156**
             </div>
             <div className="emergency-customer-actions">
-                <a href="tel:***REMOVED***-VIETQR_ACCOUNT_NO" className="emergency-customer-action" style={{
+                <a data-ai-id="link_emergency_hotline" href="tel:***REMOVED***-VIETQR_ACCOUNT_NO" className="emergency-customer-action" style={{
                     textDecoration: 'none', background: '#fb7185', color: 'white',
                     borderRadius: '10px', padding: '10px', fontWeight: 800, fontSize: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
                 }}>
                     <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>call</span>
                     GỌI HOTLINE KHẨN
                 </a>
-                <a href="https://www.google.com/maps/search/?api=1&query=Ph%C3%B2ng+kh%C3%A1m+th%C3%BA+y+Rexi+S%E1%BB%91+68+Ng%C3%B5+10+Ng%C3%B4+Xu%C3%A2n+Qu%E1%BA%A3ng+Tr%C3%A2u+Qu%E1%BB%B3+Gia+L%C3%A2m+H%C3%A0+N%E1%BB%99i" target="_blank" rel="noreferrer" className="emergency-customer-action" style={{
+                <a data-ai-id="link_emergency_directions" href="https://www.google.com/maps/search/?api=1&query=Ph%C3%B2ng+kh%C3%A1m+th%C3%BA+y+Rexi+S%E1%BB%91+68+Ng%C3%B5+10+Ng%C3%B4+Xu%C3%A2n+Qu%E1%BA%A3ng+Tr%C3%A2u+Qu%E1%BB%B3+Gia+L%C3%A2m+H%C3%A0+N%E1%BB%99i" target="_blank" rel="noreferrer" className="emergency-customer-action" style={{
                     textDecoration: 'none', background: 'transparent', border: '1.5px solid #fb7185', color: '#fb7185',
                     borderRadius: '10px', padding: '10px', fontWeight: 800, fontSize: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
                 }}>

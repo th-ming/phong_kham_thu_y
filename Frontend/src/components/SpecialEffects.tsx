@@ -316,6 +316,7 @@ const MemeCatCore: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
         }}>
           {isMobile && (
             <button
+              data-ai-id="btn_cat_bubble_close"
               type="button"
               className="cat-bubble-close"
               aria-label="Đóng bong bóng chat mèo chuối"

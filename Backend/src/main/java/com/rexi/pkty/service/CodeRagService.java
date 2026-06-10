@@ -59,7 +59,7 @@ public class CodeRagService {
                 repoRoot.resolve("Backend/src/test/java")
         );
 
-        String normalizedQuery = normalize(query);
+        String normalizedQuery = expandQueryTerms(normalize(query));
         List<String> tokens = queryTokens(normalizedQuery);
         List<String> exactTerms = new ArrayList<>(extractExactTerms(query));
         if (isLoginEndpointQuery(normalizedQuery)) {
@@ -247,6 +247,9 @@ public class CodeRagService {
         if (lower.contains("/controller/") && containsAny(tokens, "api", "endpoint", "controller")) score += 26;
         if (lower.endsWith("/authcontroller.java") && containsAny(tokens, "dang", "nhap", "login", "auth", "xac", "thuc")) score += 120;
         if (lower.endsWith("/agentcontroller.java") && containsAny(tokens, "agent", "react", "tool")) score += 90;
+        if (lower.contains("/components/header.tsx") && containsAny(tokens, "header", "dat", "lich", "booking", "mau", "color", "background")) score += 140;
+        if (lower.contains("/components/chatbot/") && containsAny(tokens, "chatbot", "chat", "bot", "khung", "message", "mau", "color", "background")) score += 120;
+        if (lower.endsWith("/styles/index.css") && containsAny(tokens, "css", "style", "theme", "mau", "color", "background", "primary", "surface")) score += 100;
         if (lower.contains("/service/") && containsAny(tokens, "service", "tool", "agent", "logic", "xu", "ly")) score += 18;
         if (lower.contains("/pages/") && containsAny(tokens, "trang", "page", "man", "hinh", "ui")) score += 18;
         if (fullText.contains("@requestmapping") || fullText.contains("@getmapping") || fullText.contains("@postmapping")) score += containsAny(tokens, "api", "endpoint") ? 18 : 0;
@@ -379,9 +382,9 @@ public class CodeRagService {
 
     private List<String> queryTokens(String normalizedQuery) {
         Set<String> stopWords = Set.of(
-                "cai", "nay", "kia", "cho", "toi", "tui", "minh", "rexi", "agent", "chat", "bot",
+                "cai", "nay", "kia", "cho", "toi", "tui", "minh", "rexi", "agent",
                 "o", "dau", "dong", "code", "file", "nao", "trong", "cua", "la", "va", "thi",
-                "gi", "hoi", "xem", "tim", "kiem", "nhe", "nha", "um"
+                "gi", "hoi", "xem", "tim", "kiem", "nhe", "nha", "um", "muon"
         );
         List<String> tokens = new ArrayList<>();
         for (String token : normalizedQuery.split("\\s+")) {
@@ -402,6 +405,28 @@ public class CodeRagService {
             }
         }
         return terms;
+    }
+
+    private String expandQueryTerms(String normalizedQuery) {
+        String q = Objects.toString(normalizedQuery, "");
+        List<String> extra = new ArrayList<>();
+        if (containsAnyText(q, "mau chu", "doi mau chu", "chinh mau chu")) {
+            extra.addAll(List.of("color", "font", "text", "var", "ink"));
+        }
+        if (containsAnyText(q, "mau nen", "doi mau nen", "chinh mau nen", "nen khung")) {
+            extra.addAll(List.of("background", "backgroundcolor", "surface", "gray", "primary", "var"));
+        }
+        if (containsAnyText(q, "khung chat", "chatbot", "chat bot", "o chat")) {
+            extra.addAll(List.of("chatbot", "chat", "bot", "chatbotcore", "chatbotshell", "message", "className"));
+        }
+        if (containsAnyText(q, "header", "dau trang", "thanh tren")) {
+            extra.addAll(List.of("header", "nav", "logo", "booking", "dat", "lich"));
+        }
+        if (containsAnyText(q, "nut dat lich", "dat lich", "booking")) {
+            extra.addAll(List.of("button", "data-ai-id", "button-header-datlich", "handlebookingredirect", "booking"));
+        }
+        if (extra.isEmpty()) return q;
+        return (q + " " + String.join(" ", extra)).replaceAll("\\s+", " ").trim();
     }
 
     private String sanitizeLine(String line) {
