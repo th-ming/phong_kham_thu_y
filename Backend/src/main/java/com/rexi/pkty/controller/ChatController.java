@@ -1814,6 +1814,75 @@ ChatMessage systemMsg = new ChatMessage();
                 && containsAny(normalizedQuery, "bao nhieu", "may vien", "lieu", "uong", "cho uong", "duoc su dung", "sai cach"));
     }
 
+    private String classifyIntentWithAi(String query) {
+        try {
+            List<ChatMessage> classificationHistory = new ArrayList<>();
+            ChatMessage sysMsg = new ChatMessage();
+            sysMsg.setRole("system");
+            sysMsg.setContent(
+                "Bạn là bộ phận định tuyến cuộc gọi cho phòng khám thú y Rexi. Hãy đọc câu hỏi của người dùng và trả về DUY NHẤT một trong các nhãn sau:\n" +
+                "- DB_DOCTORS: Nếu người dùng thực sự muốn biết danh sách, thông tin, giới thiệu hoặc hỏi có những bác sĩ nào tại phòng khám.\n" +
+                "- DB_SCHEDULE: Hỏi về lịch trực, ca trực cụ thể của bác sĩ nào đó.\n" +
+                "- DB_SERVICES: Hỏi về giá dịch vụ, bảng giá, chi phí khám, xét nghiệm, spa.\n" +
+                "- CLINICAL_QUESTION: Hỏi về triệu chứng bệnh, tư vấn y khoa, cách sơ cứu, dấu hiệu nguy hiểm, ưu tiên khám bệnh.\n" +
+                "- OTHER: Các câu hỏi khác hoặc chào hỏi thông thường.\n\n" +
+                "Quy tắc nghiêm ngặt: CHỈ trả về đúng tên nhãn (ví dụ: DB_DOCTORS hoặc CLINICAL_QUESTION), không được giải thích, không viết thêm từ nào khác."
+            );
+            classificationHistory.add(sysMsg);
+
+            ChatMessage userMsg = new ChatMessage();
+            userMsg.setRole("user");
+            userMsg.setContent(query);
+            classificationHistory.add(userMsg);
+
+            String model = groqService.getAutopilotModelName(); // Llama 8B
+            String intent = groqService.chat(classificationHistory, model).trim().toUpperCase(Locale.ROOT);
+            if (intent.contains("DB_DOCTORS")) return "DB_DOCTORS";
+            if (intent.contains("DB_SCHEDULE")) return "DB_SCHEDULE";
+            if (intent.contains("DB_SERVICES")) return "DB_SERVICES";
+            if (intent.contains("CLINICAL_QUESTION")) return "CLINICAL_QUESTION";
+            return "OTHER";
+        } catch (Exception e) {
+            logger.warning("[AI ROUTER] Không phân loại được bằng AI, fallback về mặc định: " + e.getMessage());
+            return "OTHER";
+        }
+    }
+
+    private ChatRequestPlan planChatRequest(String normalizedQuery, String rawQuery, boolean hasMedia) {
+        if (!hasMedia && isQuickLocalQuery(normalizedQuery)) {
+            return new ChatRequestPlan(ChatRoute.QUICK_LOCAL, false, false, false, false, "local");
+        }
+        if (!hasMedia && isSensitiveDataLookup(normalizedQuery)) {
+            return new ChatRequestPlan(ChatRoute.SENSITIVE_HANDOFF, false, false, false, false, "agent");
+        }
+
+        // AI Intent Classifier check at the routing gate:
+        String aiIntent = "OTHER";
+        boolean mightBeDb = isServicePriceQuery(normalizedQuery) || isScheduleQuery(normalizedQuery) || isDoctorListQuery(normalizedQuery);
+        if (mightBeDb) {
+            aiIntent = classifyIntentWithAi(rawQuery);
+            logger.info("[AI ROUTER] planChatRequest phân loại: " + aiIntent);
+        }
+
+        if (!hasMedia && mightBeDb && !aiIntent.equals("CLINICAL_QUESTION")) {
+            return new ChatRequestPlan(ChatRoute.DB_LOCAL, true, false, false, true, "database");
+        }
+        if (hasMedia) {
+            return new ChatRequestPlan(ChatRoute.MEDIA_AI, false, true, false, true, "gemini");
+        }
+        if (isWebSearchQuery(rawQuery)) {
+            return new ChatRequestPlan(ChatRoute.WEB_AI, false, true, false, true, "web+ai");
+        }
+        if (isAutopilotQuery(normalizedQuery)) {
+            return new ChatRequestPlan(ChatRoute.AUTOPILOT_AI, false, true, false, true, "groq");
+        }
+        if (isMedicalQuery(normalizedQuery) || aiIntent.equals("CLINICAL_QUESTION")) {
+            return new ChatRequestPlan(ChatRoute.MEDICAL_AI, false, true, false, true, "medical");
+        }
+        boolean needsClinicContext = isClinicInfoQuery(normalizedQuery);
+        return new ChatRequestPlan(ChatRoute.CHAT_AI, false, true, true, needsClinicContext, "groq");
+    }
+
     private boolean isShortSimpleQuery(String rawQuery) {
         if (rawQuery == null || rawQuery.isBlank()) return false;
         String trimmed = rawQuery.trim();
@@ -1957,7 +2026,7 @@ ChatMessage systemMsg = new ChatMessage();
                 + "--- HẾT PERSONA CONTEXT ---\n\n";
     }
 
-    private ChatRequestPlan planChatRequest(String normalizedQuery, String rawQuery, boolean hasMedia) {
+    private ChatRequestPlan duplicate_planChatRequest(String normalizedQuery, String rawQuery, boolean hasMedia) {
         if (!hasMedia && isQuickLocalQuery(normalizedQuery)) {
             return new ChatRequestPlan(ChatRoute.QUICK_LOCAL, false, false, false, false, "local");
         }
