@@ -115,11 +115,34 @@ export const useChatbotAttachments = (activeTab: "standard" | "agent") => {
     };
 
     const handlePasteFiles = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
-        const files = Array.from(e.clipboardData?.files || []);
-        const mediaFiles = files.filter(file => file.type.startsWith("image") || (activeTab === "standard" && file.type.startsWith("video")));
-        if (mediaFiles.length === 0) return;
+        const files: File[] = [];
+        const items = Array.from(e.clipboardData?.items || []);
+        
+        for (const item of items) {
+            if (item.kind === "file") {
+                const file = item.getAsFile();
+                if (file) {
+                    const isImage = file.type.startsWith("image/");
+                    const isVideo = file.type.startsWith("video/");
+                    if (isImage || (activeTab === "standard" && isVideo)) {
+                        files.push(file);
+                    }
+                }
+            }
+        }
+
+        // Fallback to clipboardData.files if items check found nothing
+        if (files.length === 0) {
+            const clipFiles = Array.from(e.clipboardData?.files || []);
+            const mediaFiles = clipFiles.filter(file => 
+                file.type.startsWith("image/") || (activeTab === "standard" && file.type.startsWith("video/"))
+            );
+            files.push(...mediaFiles);
+        }
+
+        if (files.length === 0) return;
         e.preventDefault();
-        await processFiles(mediaFiles);
+        await processFiles(files);
     };
 
     const removeSelectedFile = (index: number) => {

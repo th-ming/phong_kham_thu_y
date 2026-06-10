@@ -887,6 +887,22 @@ ChatMessage systemMsg = new ChatMessage();
     private String tryDeterministicChatGuard(String normalizedQuery, String rawQuery, boolean hasMedia) {
         if (hasMedia || normalizedQuery == null || normalizedQuery.isBlank()) return null;
         String q = normalizedQuery;
+        String lowerRaw = rawQuery == null ? "" : rawQuery.toLowerCase(Locale.ROOT);
+
+        // --- PROFANITY FILTER (BỘ LỌC TỪ NGỮ NHẠY CẢM) ---
+        boolean isProfane = containsAny(q, "lon", "loz", "cc", "cl", "dcm", "vkl", "vl", "buoi", "cac", "deo", "con cac", "cai lon", "dit", "du ma", "vai l", "vai c")
+                            || lowerRaw.contains("lồn") 
+                            || lowerRaw.contains("địt") 
+                            || lowerRaw.contains("đụ") 
+                            || lowerRaw.contains("cặc") 
+                            || lowerRaw.contains("buồi") 
+                            || lowerRaw.contains("đéo") 
+                            || lowerRaw.contains("vãi");
+        
+        if (isProfane) {
+            return "Dạ, Rexi là trợ lý y khoa chuyên hỗ trợ chăm sóc sức khỏe thú cưng. Mong anh/chị sử dụng ngôn từ phù hợp để Rexi có thể hỗ trợ tốt nhất ạ. Anh/chị đang cần tư vấn gì cho bé thú cưng nhà mình không?";
+        }
+        // ------------------------------------------------
 
         if (containsAny(q, "dua thoi", "dua thoi no khoe", "khoe lam", "no khoe")
                 && containsAny(q, "sap chet", "cuu")) {
@@ -954,20 +970,16 @@ ChatMessage systemMsg = new ChatMessage();
         if (normalizedQuery == null || normalizedQuery.isBlank()) return false;
         if (isSensitiveDataLookup(normalizedQuery)) return true;
         boolean hasSystemObject = containsAny(normalizedQuery,
-                "khach hang", "khach moi", "hoa don", "lich hen", "benh an", "thu cung",
+                "khach hang", "khach moi", "hoa don", "lich hen", "benh an",
                 "kho thuoc", "ton kho", "tai khoan", "nhan vien", "phan quyen",
-                "dich vu", "excel", "kpi", "vat tu", "noi tru", "xet nghiem",
-                "doanh thu", "bao cao", "thong ke", "du lieu he thong", "trong db", "database", "sql",
-                "bac si", "bsi", "bs", "ca kham", "model", "provider", "cau hinh ai", "api key",
-                "swagger", "openapi", "api docs", "full api", "slot", "lich trong", "khung gio trong",
-                "amoxicillin", "amox", "ton kho");
+                "kpi", "vat tu", "doanh thu", "bao cao", "thong ke", "du lieu he thong",
+                "trong db", "database", "sql", "ca kham", "model", "provider", "cau hinh ai",
+                "api key", "swagger", "openapi", "api docs", "full api", "slot",
+                "lich trong", "khung gio trong");
         boolean asksVerifiedFact = containsAny(normalizedQuery,
-                "kiem tra", "tra cuu", "xem", "dem", "bao nhieu", "so luong",
-                "trang thai", "xu huong", "ti le", "ty le", "hom nay", "ngay mai",
-                "da cap nhat", "da xoa", "da huy", "da gui", "nhieu ca", "it ca",
-                "nhieu nhat", "it nhat", "xoa", "khoa", "mo khoa", "check", "dang dung",
-                "mo dau", "o dau", "tong hop", "phan tich", "doi soat", "tao bao cao",
-                "dich vu nao", "dang duoc dat", "tao doanh thu", "thuc thu", "cho thu",
+                "kiem tra", "tra cuu", "dem", "so luong", "xu huong", "ti le", "ty le",
+                "nhieu ca", "it ca", "nhieu nhat", "it nhat", "kiem tra du lieu",
+                "tong hop", "phan tich", "doi soat", "tao bao cao", "thuc thu", "cho thu",
                 "con cho thu", "cong no", "can xu ly", "xuat excel");
         return hasSystemObject && asksVerifiedFact;
     }
