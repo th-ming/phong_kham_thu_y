@@ -184,7 +184,7 @@ public class HoSoBenhAnController {
             @RequestParam(defaultValue = "20") int size) {
         int offset = page * size;
         String sql = "SELECT dt.id_don_thuoc, dt.id_ho_so_benh_an, tc.ten_thu_cung, " +
-                "t.ten_thuoc, dtct.so_luong, dtct.lieu_dung as cach_dung, dt.ghi_chu, " +
+                "t.ten_thuoc, dtct.so_luong, dtct.lieu_dung as cach_dung, dt.ghi_chu, dt.trang_thai, " +
                 "nv.ho_ten as ten_bac_si, kh.ten_khach_hang " +
                 "FROM DonThuoc dt " +
                 "JOIN DonThuocChiTiet dtct ON dt.id_don_thuoc = dtct.id_don_thuoc " +
@@ -343,7 +343,7 @@ public class HoSoBenhAnController {
             List<Map<String, Object>> chiTiet = (List<Map<String, Object>>) payload.get("chi_tiet");
 
             String idDonThuoc = "DT-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-            String sqlDonThuoc = "INSERT INTO DonThuoc (id_don_thuoc, id_ho_so_benh_an, id_bac_si, ngay_ke_don, ghi_chu) VALUES (?, ?, ?, CURRENT_TIMESTAMP, ?)";
+            String sqlDonThuoc = "INSERT INTO DonThuoc (id_don_thuoc, id_ho_so_benh_an, id_bac_si, ngay_ke_don, ghi_chu, trang_thai) VALUES (?, ?, ?, CURRENT_TIMESTAMP, ?, 'CHUA_XUAT')";
             jdbcTemplate.update(sqlDonThuoc, idDonThuoc, idBenhAn, idBacSi, ghiChu);
 
             String sqlChiTiet = "INSERT INTO DonThuocChiTiet (id_chi_tiet_don_thuoc, id_don_thuoc, id_thuoc, so_luong, lieu_dung) VALUES (?, ?, ?, ?, ?)";
@@ -357,36 +357,6 @@ public class HoSoBenhAnController {
                     throw new RuntimeException("// chk qty > 0");
                 }
 
-                Integer tonKhaDung = jdbcTemplate.queryForObject(
-                        "SELECT COALESCE(SUM(so_luong_ton), 0) FROM LoThuoc WHERE id_thuoc = ? AND so_luong_ton > 0 AND han_su_dung >= ?",
-                        Integer.class, idThuoc, java.sql.Date.valueOf(java.time.LocalDate.now()));
-                if (tonKhaDung == null || tonKhaDung < soLuong) {
-                    throw new RuntimeException("Thuốc có ID " + idThuoc + " không đủ số lượng tồn kho!");
-                }
-
-                int conLaiCanXuat = soLuong;
-                List<Map<String, Object>> loXuat = jdbcTemplate.queryForList(
-                        "SELECT id_lo, so_luong_ton, gia_nhap FROM LoThuoc WHERE id_thuoc = ? AND so_luong_ton > 0 AND han_su_dung >= ? ORDER BY han_su_dung ASC, ngay_nhap ASC",
-                        idThuoc, java.sql.Date.valueOf(java.time.LocalDate.now()));
-                for (Map<String, Object> lo : loXuat) {
-                    if (conLaiCanXuat <= 0) break;
-                    String idLo = String.valueOf(lo.get("id_lo"));
-                    int tonLo = ((Number) lo.get("so_luong_ton")).intValue();
-                    int soXuat = Math.min(conLaiCanXuat, tonLo);
-                    jdbcTemplate.update("UPDATE LoThuoc SET so_luong_ton = so_luong_ton - ?, ngay_cap_nhat_ton_kho = CURRENT_TIMESTAMP WHERE id_lo = ? AND so_luong_ton >= ?",
-                            soXuat, idLo, soXuat);
-                    jdbcTemplate.update(
-                            "INSERT INTO GiaoDichKho (id_giao_dich, id_thuoc, id_lo, loai_giao_dich, so_luong, gia_tri, ngay_giao_dich, id_nhan_vien, ghi_chu) VALUES (?, ?, ?, 'XUAT_DON_THUOC', ?, ?, CURRENT_TIMESTAMP, ?, ?)",
-                            "GDK-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase(),
-                            idThuoc,
-                            idLo,
-                            soXuat,
-                            lo.get("gia_nhap"),
-                            idBacSi,
-                            "Xuất theo đơn " + idDonThuoc);
-                    conLaiCanXuat -= soXuat;
-                }
-
                 jdbcTemplate.update(sqlChiTiet,
                         "DTCT-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase(),
                         idDonThuoc, idThuoc, soLuong, lieuDung);
@@ -395,7 +365,7 @@ public class HoSoBenhAnController {
             auditLogService.logAction("KÊ ĐƠN", "DonThuoc", "Kê đơn thuốc mới cho bệnh án ID " + idBenhAn);
 
             return org.springframework.http.ResponseEntity
-                    .ok(Map.of("message", "Đã kê đơn và trừ tồn kho thành công!"));
+                    .ok(Map.of("message", "Đã kê đơn thành công (Chờ khách quyết định mua thuốc)!"));
         } catch (Exception e) {
             return org.springframework.http.ResponseEntity.status(400)
                     .body(Map.of("message", "Lỗi nghiệp vụ khi kê đơn: " + e.getMessage()));
@@ -435,16 +405,8 @@ public class HoSoBenhAnController {
             String sdt = (String) info.get("sdt");
             String tenKhachHang = (String) info.get("ten_khach_hang");
 
-            String sqlTienThuoc = "SELECT SUM(dtct.so_luong * t.gia_ban) as tong_tien_thuoc " +
-                    "FROM DonThuoc dt " +
-                    "JOIN DonThuocChiTiet dtct ON dt.id_don_thuoc = dtct.id_don_thuoc " +
-                    "JOIN Thuoc t ON dtct.id_thuoc = t.id_thuoc " +
-                    "WHERE dt.id_ho_so_benh_an = ?";
-            java.math.BigDecimal tongTienThuoc = jdbcTemplate.queryForObject(sqlTienThuoc, java.math.BigDecimal.class, idBenhAn);
-            if (tongTienThuoc == null)
-                tongTienThuoc = java.math.BigDecimal.ZERO;
-
-            java.math.BigDecimal tongTien = giaKham.add(tongTienThuoc);
+            // Decoupled: Prescription medicines are no longer billed here automatically.
+            java.math.BigDecimal tongTien = giaKham;
 
             String idHoaDon = "HD-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase();
             String sqlHoaDon = "INSERT INTO HoaDon (id_hoa_don, id_khach_hang, id_nhan_vien, id_lich_hen, ngay_lap, ngay_lap_hoa_don, tong_tien_truoc_giam_gia, tong_tien_sau_giam_gia, tong_tien_ban_dau, tong_giam_gia, tong_tien_cuoi, trang_thai, trang_thai_thanh_toan) "
@@ -458,29 +420,137 @@ public class HoSoBenhAnController {
                         "Tiền khám/dịch vụ",
                         giaKham);
             }
-            List<Map<String, Object>> thuocHoaDon = jdbcTemplate.queryForList(
-                    "SELECT t.ten_thuoc, dtct.so_luong, t.gia_ban FROM DonThuoc dt JOIN DonThuocChiTiet dtct ON dt.id_don_thuoc = dtct.id_don_thuoc JOIN Thuoc t ON dtct.id_thuoc = t.id_thuoc WHERE dt.id_ho_so_benh_an = ?",
-                    idBenhAn);
-            for (Map<String, Object> item : thuocHoaDon) {
-                jdbcTemplate.update("INSERT INTO HoaDonChiTiet (id_chi_tiet_hoa_don, id_hoa_don, ten_muc, loai_muc, so_luong, don_gia) VALUES (?, ?, ?, 'THUOC', ?, ?)",
-                        "HDCT-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase(),
-                        idHoaDon,
-                        item.get("ten_thuoc"),
-                        item.get("so_luong"),
-                        item.get("gia_ban"));
-            }
 
             // Zalo send
             if (sdt != null && !sdt.isEmpty()) {
                 zaloService.sendInvoiceZNS(sdt, tenKhachHang, tongTien);
             }
 
-            auditLogService.logAction("CHỐT HÓA ĐƠN", "HoaDon", "Chốt hóa đơn tự động từ bệnh án ID " + idBenhAn);
+            auditLogService.logAction("CHỐT HÓA ĐƠN", "HoaDon", "Chốt hóa đơn khám bệnh (chưa gồm thuốc) từ bệnh án ID " + idBenhAn);
 
-            return org.springframework.http.ResponseEntity.ok(Map.of("message", "Đã tự động lập hóa đơn thành công!"));
+            return org.springframework.http.ResponseEntity.ok(Map.of("message", "Đã tự động lập hóa đơn dịch vụ khám thành công!"));
         } catch (Exception e) {
             return org.springframework.http.ResponseEntity.status(500)
                     .body(Map.of("message", "Lỗi tạo hóa đơn: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/don-thuoc/{idDonThuoc}/xuat-thuoc")
+    @PreAuthorize(RexiSecurityRoles.CLINICAL_WRITE) // Or a new role for pharmacist/receptionist
+    @Transactional
+    public org.springframework.http.ResponseEntity<?> xuatThuocTheoDon(@PathVariable String idDonThuoc,
+            @RequestBody Map<String, Object> payload) {
+        try {
+            org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+            String currentUser = auth != null ? auth.getName() : "system";
+            String idNhanVien = currentUser; // Ideally fetch the actual staff ID, using username for now as fallback
+
+            // 1. Check Prescription Status
+            String sqlCheck = "SELECT trang_thai, id_ho_so_benh_an, id_bac_si FROM DonThuoc WHERE id_don_thuoc = ?";
+            List<Map<String, Object>> donThuocList = jdbcTemplate.queryForList(sqlCheck, idDonThuoc);
+            if (donThuocList.isEmpty()) {
+                return org.springframework.http.ResponseEntity.status(404).body(Map.of("message", "Không tìm thấy đơn thuốc"));
+            }
+            Map<String, Object> donThuoc = donThuocList.get(0);
+            String trangThai = (String) donThuoc.get("trang_thai");
+            String idHoSoBenhAn = (String) donThuoc.get("id_ho_so_benh_an");
+            String idBacSi = (String) donThuoc.get("id_bac_si");
+
+            if ("DA_XUAT".equalsIgnoreCase(trangThai)) {
+                return org.springframework.http.ResponseEntity.status(400).body(Map.of("message", "Đơn thuốc này đã được xuất và tính tiền trước đó."));
+            }
+
+            // 2. Fetch Prescription Details
+            List<Map<String, Object>> chiTiet = jdbcTemplate.queryForList(
+                    "SELECT id_thuoc, so_luong FROM DonThuocChiTiet WHERE id_don_thuoc = ?", idDonThuoc);
+
+            java.math.BigDecimal tongTienThuoc = java.math.BigDecimal.ZERO;
+
+            // 3. Deduct Inventory & Calculate Total Cost
+            for (Map<String, Object> item : chiTiet) {
+                String idThuoc = String.valueOf(item.get("id_thuoc"));
+                Integer soLuong = ((Number) item.get("so_luong")).intValue();
+
+                // Check total available
+                Integer tonKhaDung = jdbcTemplate.queryForObject(
+                        "SELECT COALESCE(SUM(so_luong_ton), 0) FROM LoThuoc WHERE id_thuoc = ? AND so_luong_ton > 0 AND han_su_dung >= ?",
+                        Integer.class, idThuoc, java.sql.Date.valueOf(java.time.LocalDate.now()));
+                if (tonKhaDung == null || tonKhaDung < soLuong) {
+                    throw new RuntimeException("Thuốc có ID " + idThuoc + " không đủ số lượng tồn kho!");
+                }
+
+                // Get selling price
+                java.math.BigDecimal giaBan = jdbcTemplate.queryForObject("SELECT gia_ban FROM Thuoc WHERE id_thuoc = ?", java.math.BigDecimal.class, idThuoc);
+                if (giaBan == null) giaBan = java.math.BigDecimal.ZERO;
+                tongTienThuoc = tongTienThuoc.add(giaBan.multiply(new java.math.BigDecimal(soLuong)));
+
+                // FIFO Deduction
+                int conLaiCanXuat = soLuong;
+                List<Map<String, Object>> loXuat = jdbcTemplate.queryForList(
+                        "SELECT id_lo, so_luong_ton, gia_nhap FROM LoThuoc WHERE id_thuoc = ? AND so_luong_ton > 0 AND han_su_dung >= ? ORDER BY han_su_dung ASC, ngay_nhap ASC",
+                        idThuoc, java.sql.Date.valueOf(java.time.LocalDate.now()));
+                for (Map<String, Object> lo : loXuat) {
+                    if (conLaiCanXuat <= 0) break;
+                    String idLo = String.valueOf(lo.get("id_lo"));
+                    int tonLo = ((Number) lo.get("so_luong_ton")).intValue();
+                    int soXuat = Math.min(conLaiCanXuat, tonLo);
+                    jdbcTemplate.update("UPDATE LoThuoc SET so_luong_ton = so_luong_ton - ?, ngay_cap_nhat_ton_kho = CURRENT_TIMESTAMP WHERE id_lo = ? AND so_luong_ton >= ?",
+                            soXuat, idLo, soXuat);
+                    jdbcTemplate.update(
+                            "INSERT INTO GiaoDichKho (id_giao_dich, id_thuoc, id_lo, loai_giao_dich, so_luong, gia_tri, ngay_giao_dich, id_nhan_vien, ghi_chu) VALUES (?, ?, ?, 'XUAT_DON_THUOC', ?, ?, CURRENT_TIMESTAMP, ?, ?)",
+                            "GDK-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase(),
+                            idThuoc,
+                            idLo,
+                            soXuat,
+                            lo.get("gia_nhap"),
+                            idNhanVien,
+                            "Xuất theo đơn " + idDonThuoc);
+                    conLaiCanXuat -= soXuat;
+                }
+            }
+
+            // 4. Update Invoice (Find unpaid invoice for this record)
+            String sqlFindInvoice = "SELECT id_hoa_don, id_lich_hen, id_khach_hang FROM HoaDon WHERE id_lich_hen = (SELECT id_lich_hen FROM HoSoBenhAn WHERE id_ho_so_benh_an = ?) AND trang_thai IN ('CHO_THANH_TOAN', 'DANG_THANH_TOAN') ORDER BY ngay_lap DESC " + DatabaseDialect.topN(DatabaseDialect.isPostgres(jdbcTemplate), 1);
+            List<Map<String, Object>> unpaidInvoices = jdbcTemplate.queryForList(sqlFindInvoice, idHoSoBenhAn);
+
+            String targetInvoiceId;
+            if (!unpaidInvoices.isEmpty()) {
+                // Append to existing invoice
+                targetInvoiceId = (String) unpaidInvoices.get(0).get("id_hoa_don");
+                jdbcTemplate.update("UPDATE HoaDon SET tong_tien_truoc_giam_gia = tong_tien_truoc_giam_gia + ?, tong_tien_ban_dau = tong_tien_ban_dau + ?, tong_tien_cuoi = tong_tien_cuoi + ? WHERE id_hoa_don = ?",
+                        tongTienThuoc, tongTienThuoc, tongTienThuoc, targetInvoiceId);
+            } else {
+                // Create new invoice for just the medicine
+                String idKhachHang = jdbcTemplate.queryForObject("SELECT tc.id_khach_hang FROM HoSoBenhAn hs JOIN ThuCung tc ON hs.id_thu_cung = tc.id_thu_cung WHERE hs.id_ho_so_benh_an = ?", String.class, idHoSoBenhAn);
+                String idLichHen = jdbcTemplate.queryForObject("SELECT id_lich_hen FROM HoSoBenhAn WHERE id_ho_so_benh_an = ?", String.class, idHoSoBenhAn);
+                targetInvoiceId = "HD-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+                String sqlHoaDon = "INSERT INTO HoaDon (id_hoa_don, id_khach_hang, id_nhan_vien, id_lich_hen, ngay_lap, ngay_lap_hoa_don, tong_tien_truoc_giam_gia, tong_tien_sau_giam_gia, tong_tien_ban_dau, tong_giam_gia, tong_tien_cuoi, trang_thai, trang_thai_thanh_toan) "
+                        + "VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, ?, ?, 0, ?, 'CHO_THANH_TOAN', 'Chờ thanh toán')";
+                jdbcTemplate.update(sqlHoaDon, targetInvoiceId, idKhachHang, idNhanVien, idLichHen, tongTienThuoc, tongTienThuoc, tongTienThuoc, tongTienThuoc);
+            }
+
+            // Insert HoaDonChiTiet for medicines
+            List<Map<String, Object>> thuocHoaDon = jdbcTemplate.queryForList(
+                    "SELECT t.ten_thuoc, dtct.so_luong, t.gia_ban FROM DonThuocChiTiet dtct JOIN Thuoc t ON dtct.id_thuoc = t.id_thuoc WHERE dtct.id_don_thuoc = ?",
+                    idDonThuoc);
+            for (Map<String, Object> item : thuocHoaDon) {
+                jdbcTemplate.update("INSERT INTO HoaDonChiTiet (id_chi_tiet_hoa_don, id_hoa_don, ten_muc, loai_muc, so_luong, don_gia) VALUES (?, ?, ?, 'THUOC', ?, ?)",
+                        "HDCT-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase(),
+                        targetInvoiceId,
+                        item.get("ten_thuoc"),
+                        item.get("so_luong"),
+                        item.get("gia_ban"));
+            }
+
+            // 5. Update Prescription Status
+            jdbcTemplate.update("UPDATE DonThuoc SET trang_thai = 'DA_XUAT' WHERE id_don_thuoc = ?", idDonThuoc);
+
+            auditLogService.logAction("XUẤT THUỐC", "DonThuoc", "Khách hàng đồng ý mua thuốc, xuất kho đơn thuốc " + idDonThuoc);
+
+            return org.springframework.http.ResponseEntity.ok(Map.of("message", "Đã xuất thuốc, trừ tồn kho và cập nhật hóa đơn thành công!"));
+        } catch (Exception e) {
+            return org.springframework.http.ResponseEntity.status(400)
+                    .body(Map.of("message", "Lỗi nghiệp vụ khi xuất thuốc: " + e.getMessage()));
         }
     }
 }

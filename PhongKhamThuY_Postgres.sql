@@ -344,6 +344,7 @@ CREATE TABLE DonThuoc(
 	id_bac_si varchar(20) NOT NULL,
 	ngay_ke_don TIMESTAMP NULL,
 	ghi_chu TEXT NULL,
+	trang_thai varchar(50) DEFAULT 'CHUA_XUAT' NULL,
 PRIMARY KEY  
 (
 	id_don_thuoc 

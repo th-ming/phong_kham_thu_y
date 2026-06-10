@@ -15,5 +15,6 @@ public class DonThuoc {
     private LocalDateTime ngay_ke_don;
     private String id_bac_si;
     private String ghi_chu;
+    private String trang_thai; // Default: 'CHUA_XUAT'
 }
 

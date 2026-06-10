@@ -1,6 +1,7 @@
 ﻿import React, { useState, useEffect } from "react";
 import axiosInstance from "@services/axios";
 import { Modal } from "@components/CommonUI";
+import { toast } from "@components/Toast";
 import { matchesSearchFields } from "@utils/index";
 import { useAutoRefresh } from "@hooks/useAutoRefresh";
 
@@ -9,11 +10,23 @@ const QuanLyDonThuoc: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [viewingDT, setViewingDT] = useState<any>(null);
   const [searchDonThuoc, setSearchDonThuoc] = useState("");
+  const [isDispensing, setIsDispensing] = useState(false);
 
   const fetchDonThuocs = () => {
-    axiosInstance.get("/api/ho-so-benh-an/don-thuoc")
+    axiosInstance.get("/api/ho-so-benh-an/don-thuoc", { params: { size: 200 } })
       .then(res => {
-        setDonThuocs(res.data);
+        const extractArray = (data: any): any[] => {
+          if (!data) return [];
+          if (Array.isArray(data)) return data;
+          const possibleArrays = [data.data, data.content, data.result, data.items, data.records];
+          for (const arr of possibleArrays) {
+            if (Array.isArray(arr)) return arr;
+            if (arr && typeof arr === 'object' && Array.isArray(arr.content)) return arr.content;
+            if (arr && typeof arr === 'object' && Array.isArray(arr.data)) return arr.data;
+          }
+          return [];
+        };
+        setDonThuocs(extractArray(res.data));
         setLoading(false);
       })
       .catch(err => {
@@ -45,6 +58,21 @@ const QuanLyDonThuoc: React.FC = () => {
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleDispense = async (idDonThuoc: string) => {
+    if (!window.confirm("Xác nhận xuất thuốc này và thêm vào hóa đơn cho khách hàng?")) return;
+    setIsDispensing(true);
+    try {
+      await axiosInstance.post(`/api/ho-so-benh-an/don-thuoc/${idDonThuoc}/xuat-thuoc`, {});
+      toast.success("Đã xuất thuốc và tính tiền thành công!");
+      setViewingDT(null);
+      fetchDonThuocs(); // Refresh list
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Lỗi xuất thuốc!");
+    } finally {
+      setIsDispensing(false);
+    }
   };
 
   if (loading) return (
@@ -234,6 +262,7 @@ const QuanLyDonThuoc: React.FC = () => {
               <th style={{ padding: '20px', fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800 }}>DƯỢC PHẨM</th>
               <th style={{ padding: '20px', fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800, textAlign: 'right' }}>SỐ LƯỢNG</th>
               <th style={{ padding: '20px', fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800 }}>LIỀU DÙNG</th>
+              <th style={{ padding: '20px', fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800 }}>TRẠNG THÁI</th>
               <th style={{ padding: '20px', fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800, textAlign: 'center' }}>XEM</th>
             </tr>
           </thead>
@@ -257,6 +286,15 @@ const QuanLyDonThuoc: React.FC = () => {
                 <td style={{ padding: '20px' }}>
                   <div style={{ fontWeight: 600, fontSize: '0.85rem', maxWidth: '250px' }}>{dt.cach_dung}</div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--gray-400)', fontStyle: 'italic' }}>{dt.ghi_chu}</div>
+                </td>
+                <td style={{ padding: '20px' }}>
+                  <span style={{
+                    padding: '6px 12px', borderRadius: '50px', fontSize: '0.75rem', fontWeight: 800, whiteSpace: 'nowrap',
+                    background: dt.trang_thai?.toUpperCase() === 'DA_XUAT' ? 'var(--primary-light)' : 'var(--warning-light, rgba(245, 158, 11, 0.15))',
+                    color: dt.trang_thai?.toUpperCase() === 'DA_XUAT' ? 'var(--primary)' : 'var(--warning, #d97706)'
+                  }}>
+                    {dt.trang_thai?.toUpperCase() === 'DA_XUAT' ? 'ĐÃ XUẤT THUỐC' : 'CHỜ XUẤT THUỐC'}
+                  </span>
                 </td>
                 <td style={{ padding: '20px', textAlign: 'center' }}>
                   <button data-ai-id="button-quanlydonthuoc-4ivd" className="btn" onClick={() => setViewingDT(dt)} style={{ padding: '8px', background: 'var(--gray-50)', color: 'var(--ink)' }}>
@@ -299,7 +337,16 @@ const QuanLyDonThuoc: React.FC = () => {
              </div>
 
              <div style={{ marginBottom: '32px' }}>
-                <h4 style={{ margin: '0 0 16px 0', fontSize: '1rem', fontWeight: 900, color: 'var(--ink)', borderLeft: '4px solid var(--primary)', paddingLeft: '12px' }}>Chỉ định thuốc</h4>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                   <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 900, color: 'var(--ink)', borderLeft: '4px solid var(--primary)', paddingLeft: '12px' }}>Chỉ định thuốc</h4>
+                   <span style={{
+                     padding: '4px 10px', borderRadius: '50px', fontSize: '0.7rem', fontWeight: 800,
+                     background: viewingDT.trang_thai?.toUpperCase() === 'DA_XUAT' ? 'var(--primary-light)' : 'var(--warning-light, rgba(245, 158, 11, 0.15))',
+                     color: viewingDT.trang_thai?.toUpperCase() === 'DA_XUAT' ? 'var(--primary)' : 'var(--warning, #d97706)'
+                   }}>
+                     {viewingDT.trang_thai?.toUpperCase() === 'DA_XUAT' ? 'ĐÃ XUẤT THUỐC' : 'CHỜ XUẤT THUỐC'}
+                   </span>
+                </div>
                 <div style={{ padding: '20px', border: '1px solid var(--gray-200)', borderRadius: '16px', background: 'var(--surface)' }}>
                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
                       <span style={{ fontWeight: 900, fontSize: '1.1rem', color: 'var(--ink)' }}>{viewingDT.ten_thuoc}</span>
@@ -329,9 +376,15 @@ const QuanLyDonThuoc: React.FC = () => {
 
              <div style={{ marginTop: '40px', display: 'flex', gap: '12px', justifyContent: 'flex-end' }} className="no-print">
                <button data-ai-id="button-quanlydonthuoc-oxr6" className="btn btn-pill" onClick={() => setViewingDT(null)} style={{ background: 'var(--gray-100)' }}>Đóng</button>
-               <button data-ai-id="button-quanlydonthuoc-ojcy" className="btn btn-primary btn-pill" onClick={handlePrint}>
+               {viewingDT.trang_thai !== 'DA_XUAT' && (
+                 <button className="btn btn-primary btn-pill" onClick={() => handleDispense(viewingDT.id_don_thuoc)} disabled={isDispensing} style={{ boxShadow: '0 8px 24px rgba(15, 157, 138, 0.25)' }}>
+                   <span className="material-symbols-outlined">inventory_2</span>
+                   {isDispensing ? 'Đang xuất...' : 'Xuất thuốc & Tính tiền'}
+                 </button>
+               )}
+               <button data-ai-id="button-quanlydonthuoc-ojcy" className="btn btn-outline btn-pill" onClick={handlePrint}>
                   <span className="material-symbols-outlined">print</span>
-                  In đơn thuốc
+                  In đơn
                </button>
             </div>
           </div>

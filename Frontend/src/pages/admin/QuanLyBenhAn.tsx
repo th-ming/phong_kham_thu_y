@@ -166,7 +166,7 @@ const QuanLyBenhAn: React.FC = () => {
 
             await axiosInstance.put(`/api/lich-hen/${selectedLich.id_lich_hen}/status`, { trang_thai: 'HOAN_THANH' });
 
-            toast.success("Đã lưu Bệnh án, Kê đơn & Xuất Hóa đơn thành công!");
+            toast.success("Đã lưu Bệnh án, Kê đơn & Lập Hóa đơn phí khám (Thuốc sẽ xuất sau)!");
             setSelectedLich(null);
             setTrieuChung(""); setChanDoan(""); setDonThuocGhiChu(""); setChiTietDonThuoc([]);
             setLichHens(lichHens.filter(l => l.id_lich_hen !== selectedLich.id_lich_hen));
