@@ -151,7 +151,7 @@ public class HoSoBenhAnController {
         String username = (auth != null) ? auth.getName() : null;
         if (username == null || username.equals("anonymousUser")) {
             return org.springframework.http.ResponseEntity.status(401)
-                    .body(Map.of("message", "chk token"));
+                    .body(Map.of("message", "Phiên đăng nhập không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại."));
         }
 
         // BẢO MẬT IDOR: Check bằng id_vai_tro VT-5 qua DB — nhất quán với toàn hệ thống.
