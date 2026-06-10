@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
 import DOMPurify from "dompurify";
 import { BoTaiSuyNghi, BangQuaTrinhSuyNghi } from "@components/chatbot/BangTrangThaiChatbot";
@@ -571,13 +571,11 @@ export const ChatbotShell: React.FC<ChatbotShellProps> = (props) => {
                         )}
 
                         {/* 4. Đính kèm Files Preview */}
-                        {activeTab === 'standard' && (
-                            <MediaDinhKemChatbot
-                                files={selectedFiles}
-                                isCompressing={isCompressing}
-                                onRemove={removeSelectedFile}
-                            />
-                        )}
+                        <MediaDinhKemChatbot
+                            files={selectedFiles}
+                            isCompressing={isCompressing}
+                            onRemove={removeSelectedFile}
+                        />
 
                         {activeTab === 'agent' && agentLoading && (
                             <div style={{
@@ -605,13 +603,16 @@ export const ChatbotShell: React.FC<ChatbotShellProps> = (props) => {
                             flex: '0 0 auto',
                             minWidth: 0
                         }}>
-                            {/* Nút File Đính kèm (Chỉ cho Tab 1) */}
-                            {activeTab === 'standard' && (
-                                <>
-                                    <input data-ai-id="input-chatbot-jmt6"
-                                        type="file"
-                                        ref={fileInputRef}
-                                        accept="image/*,video/*" multiple style={{ display: 'none' }} onChange={handleFileChange} /> <button data-ai-id="button-chatbot-veod" onClick={() => fileInputRef.current?.click()} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, flexShrink: 0, width: isMobile ? '34px' : '28px', height: isMobile ? '38px' : '28px' }}> <span className="material-symbols-outlined" style={{ fontSize: isMobile ? '25px' : '28px' }}>add_circle</span> </button> </> )} {/* MICROPHONE NHẬN DIỆN GIỌNG NÓI */}
+                            {/* Nút File Đính kèm */}
+                            <input data-ai-id="input-chatbot-jmt6"
+                                type="file"
+                                ref={fileInputRef}
+                                accept="image/*,video/*" multiple style={{ display: 'none' }} onChange={handleFileChange} />
+                            <button data-ai-id="button-chatbot-veod" onClick={() => fileInputRef.current?.click()} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, flexShrink: 0, width: isMobile ? '34px' : '28px', height: isMobile ? '38px' : '28px' }}>
+                                <span className="material-symbols-outlined" style={{ fontSize: isMobile ? '25px' : '28px' }}>add_circle</span>
+                            </button>
+
+                            {/* MICROPHONE NHẬN DIỆN GIỌNG NÓI */}
                             <button data-ai-id="button-chatbot-4mbq"
                                 onClick={toggleListening}
                                 style={{ background: 'none', border: 'none', color: isListening ? (voiceMode === 'hold' ? '#f59e0b' : voiceMode === 'fast' ? '#22c55e' : '#ef4444') : '#94a3b8', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, flex: '0 0 auto', width: isMobile ? '34px' : '32px', height: isMobile ? '38px' : '34px' }}

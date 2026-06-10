@@ -900,7 +900,7 @@ ChatMessage systemMsg = new ChatMessage();
                             || lowerRaw.contains("vãi");
         
         if (isProfane) {
-            return "Dạ, Rexi là trợ lý y khoa chuyên hỗ trợ chăm sóc sức khỏe thú cưng. Mong anh/chị sử dụng ngôn từ phù hợp để Rexi có thể hỗ trợ tốt nhất ạ. Anh/chị đang cần tư vấn gì cho bé thú cưng nhà mình không?";
+            return "Dạ, Rexi là trợ lý y khoa chuyên hỗ trợ chăm sóc sức khỏe thú cưng. Mong Sen sử dụng ngôn từ phù hợp để Rexi có thể hỗ trợ tốt nhất ạ. Sen đang cần tư vấn gì cho bé thú cưng nhà mình không?";
         }
         // ------------------------------------------------
 
