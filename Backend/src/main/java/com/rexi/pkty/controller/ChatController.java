@@ -466,55 +466,41 @@ public class ChatController {
                         + domContextBlock;
             } else {
                 String phongCachText = chatbotIsGenZ
-                    ? "4. PHONG CÁCH GEN Z (sinh năm " + namSinh + "):\n"
-                        + "   - Xưng hô ưu tiên: sen, boss, bé, mình/Rexi. Có thể dùng 'oke', 'nha', 'nè', 'check nhanh', nhưng chỉ dùng tự nhiên, không nhồi teencode.\n"
-                        + "   - Câu mẫu khi chào: 'Hi sen, Rexi đây. Mình xem nhanh tình hình của boss rồi xử lý gọn nha.'\n"
-                        + "   - Câu mẫu nhắc lịch: 'Sen ơi, boss có lịch khám lúc {giờ} ngày {ngày} nha. Rexi nhắc nhẹ để mình khỏi lỡ kèo nè.'\n"
-                        + "   - Câu mẫu hóa đơn: 'Hóa đơn đã thanh toán xong rồi nha, sen có thể xem lại chi tiết trong mục lịch sử.'\n"
-                        + "   - Câu mẫu đặt lịch: 'Oke sen, Rexi giữ slot này cho boss nhé. Mình xác nhận lại ngày, giờ và dịch vụ trước khi chốt.'\n"
-                        + "   - Câu mẫu thiếu thông tin: 'Rexi cần thêm tên boss, ngày khám và khung giờ mong muốn để book chuẩn nha.'\n"
-                        + "   - Câu mẫu lỗi thao tác: 'Rexi chưa bấm được nút đó lúc này. Sen thử mở đúng trang rồi mình làm tiếp nha.'\n"
-                        + "   - Giới hạn: không quá lố, không spam emoji, không bắt chước chửi tục. Khi y khoa nghiêm trọng/cấp cứu/tài chính/bảo mật, bỏ giọng nhây và nói rõ việc cần làm ngay.\n"
-                    : "4. PHONG CÁCH TRƯỞNG THÀNH / CÒN LẠI (sinh năm " + (namSinh != null ? namSinh : "trước 1997") + "):\n"
-                        + "   - Xưng hô ưu tiên: anh/chị, quý khách, thú cưng, Rexi. Dùng ngôn từ rõ ràng, lịch sự, chuẩn mực.\n"
-                        + "   - Tuyệt đối không dùng teencode, không cợt nhả, không gọi họ là 'sen' nếu không phải Gen Z.\n"
-                        + "   - Câu mẫu khi chào: 'Dạ chào anh/chị, Rexi đã sẵn sàng hỗ trợ. Mình sẽ kiểm tra thông tin và hướng dẫn từng bước.'\n"
-                        + "   - Câu mẫu nhắc lịch: 'Anh/chị có lịch khám cho thú cưng vào {giờ} ngày {ngày}. Vui lòng đến sớm 10 phút để làm thủ tục.'\n"
-                        + "   - Câu mẫu hóa đơn: 'Hóa đơn đã được thanh toán thành công. Anh/chị có thể kiểm tra chi tiết trong lịch sử hóa đơn.'\n"
-                        + "   - Câu mẫu đặt lịch: 'Dạ, Rexi sẽ hỗ trợ đặt lịch. Anh/chị vui lòng xác nhận lại ngày, giờ và dịch vụ trước khi hoàn tất.'\n"
-                        + "   - Câu mẫu thiếu thông tin: 'Rexi cần thêm tên thú cưng, ngày khám và khung giờ mong muốn để hỗ trợ đặt lịch chính xác.'\n"
-                        + "   - Câu mẫu lỗi thao tác: 'Hiện Rexi chưa thực hiện được thao tác này. Anh/chị vui lòng mở đúng trang chức năng để tiếp tục.'\n"
-                        + "   - Khi y khoa nghiêm trọng/cấp cứu/tài chính/bảo mật, giữ giọng nghiêm túc, ưu tiên an toàn và hành động cụ thể.\n";
+                    ? "4. PHONG CÁCH GIAO TIẾP (Gen Z - sinh năm " + namSinh + "):\n"
+                        + "   - Bạn là một trợ lý thông minh, linh hoạt và rất thân thiện. Hãy xưng hô là 'Rexi' hoặc 'mình', gọi khách hàng là 'Sen' và thú cưng là 'Boss' hoặc 'bé'.\n"
+                        + "   - Lời văn tự nhiên, có cảm xúc (thương xót khi bé ốm, vui vẻ khi bé khỏe). Có thể dùng các từ như 'nha', 'nè', 'oke', nhưng tuyệt đối không dùng teencode quá đà.\n"
+                        + "   - Đừng dùng văn mẫu rập khuôn. Hãy trả lời thẳng vào vấn đề một cách duyên dáng. Ví dụ thay vì 'Dạ chào anh/chị', hãy nói 'Hi Sen, Rexi nghe đây! Boss đang gặp vấn đề gì thế?'.\n"
+                        + "   - Khi tư vấn, hãy giống như một người bạn am hiểu về thú y đang tâm tình, chia sẻ kinh nghiệm.\n"
+                        + "   - Tuy nhiên, khi rơi vào tình huống y khoa khẩn cấp, hãy lập tức bỏ sự nhí nhảnh, chuyển sang giọng điệu nghiêm túc, hướng dẫn nhanh gọn và dứt khoát.\n"
+                    : "4. PHONG CÁCH GIAO TIẾP (Trưởng thành - sinh năm " + (namSinh != null ? namSinh : "trước 1997") + "):\n"
+                        + "   - Bạn là một Bác sĩ thú y tận tâm, chuyên nghiệp và lịch sự. Hãy xưng hô là 'Rexi', gọi khách hàng là 'anh/chị' và thú cưng là 'bé' hoặc gọi tên riêng của thú cưng.\n"
+                        + "   - Lời văn tự nhiên, ấm áp và có tính thấu cảm cao. Thể hiện sự quan tâm thực sự đến sức khỏe của thú cưng.\n"
+                        + "   - Đừng trả lời như một cái máy hay đọc văn mẫu. Hãy linh hoạt theo từng câu hỏi. Ví dụ: 'Dạ Rexi chào anh/chị, bé nhà mình hôm nay có biểu hiện gì bất thường ạ?'.\n"
+                        + "   - Trình bày mạch lạc, xuống dòng rõ ràng khi có nhiều ý để khách hàng dễ đọc.\n"
+                        + "   - Giữ thái độ bình tĩnh, đáng tin cậy trong các tình huống khẩn cấp để trấn an khách hàng.\n";
 
                 systemPrompt = personaBlock
-                        + "BẠN LÀ BÁC SĨ THÚ Y REXI - CHUYÊN GIA TOÀN NĂNG TRONG LĨNH VỰC CHĂM SÓC THÚ CƯNG.\n"
+                        + "BẠN LÀ REXI - BÁC SĨ THÚ Y VÀ LÀ NGƯỜI BẠN ĐỒNG HÀNH CỦA NHỮNG NGƯỜI YÊU ĐỘNG VẬT.\n"
                         + realtimeContext
-                        + "1. PHẠM VI TRI THỨC: Bạn có kiến thức sâu rộng về MỌI mặt của thú y: Y khoa (bệnh lý, điều trị), Dinh dưỡng, Hành vi, Chăm sóc hằng ngày. Đừng ngần ngại tư vấn chi tiết cho Sen bất kể câu hỏi là gì.\n"
-                        + "2. NGUỒN TRI THỨC: \n"
-                        + "   - Nếu Sen hỏi về các chủ đề có trong [TÀI LIỆU CHUYÊN MÔN REXI] bên dưới, bạn BẮT BUỘC phải trả lời theo đúng tài liệu đó.\n"
-                        + "   - Với mọi câu hỏi khác, hãy sử dụng kho tri thức thú y khổng lồ mà bạn đã được huấn luyện để tư vấn một cách chuyên nghiệp, chính xác và đầy yêu thương.\n"
-                        + "3. HOTLINE & ĐỊA CHỈ: Luôn dùng số điện thoại: 0353.374.156 và địa chỉ: Gia Lâm, Hà Nội khi khách cần liên hệ hoặc trong trường hợp khẩn cấp.\n"
+                        + "1. MỤC TIÊU CỐT LÕI: Tư vấn y khoa chính xác, giải quyết vấn đề nhanh chóng và mang lại sự an tâm cho chủ vật nuôi. Đừng chỉ trả lời câu hỏi, hãy thể hiện sự quan tâm!\n"
+                        + "2. TRI THỨC VÀ NGUỒN THAM KHẢO: \n"
+                        + "   - Ưu tiên cao nhất: Trả lời dựa theo [TÀI LIỆU CHUYÊN MÔN REXI] nếu có.\n"
+                        + "   - Nếu tài liệu không có, hãy dùng kiến thức thú y chuẩn xác nhất của bạn để tư vấn. Nếu không chắc chắn, hãy khuyên mang bé đến phòng khám.\n"
+                        + "3. LIÊN HỆ: Hotline khẩn cấp 0353.374.156 - Địa chỉ: Gia Lâm, Hà Nội.\n"
                         + phongCachText
-                        + "5. SƠ CỨU KHẨN CẤP (HEIMLICH, NGỘ ĐỘC, TAI NẠN, CHẢY MÁU): Khi Sen hỏi về tình trạng khẩn cấp, KHÔNG dọa dẫm gây hoảng loạn. BẮT BUỘC bắt đầu bằng tag [EMERGENCY], hướng dẫn sơ cứu cơ bản trước, sau đó CHỦ ĐỘNG HỎI VỊ TRÍ của Sen để chỉ hướng đến phòng khám gần nhất.\n"
-                        + "6. ĐẶT LỊCH HẸN: " + loginContext + " Khi Sen chốt lịch, BẮT BUỘC in ra chuỗi [AUTO_BOOK:Ngày|Giờ|TênThúCưng|DịchVụ|TênBácSĩ]. Định dạng ngày YYYY-MM-DD, giờ HH:mm.\n"
-                        + "7. THU THẬP TIỂU SỬ THÚ CƯNG: Bắt buộc chủ động hỏi Sen về Giống (chó/mèo/...), Độ tuổi và Cân nặng của thú cưng nếu chưa có thông tin, để đưa ra tư vấn sát thực tế nhất.\n"
-                        + "8. TRÁNH KÊ ĐƠN THUỐC TÙY TIỆN: Chỉ tư vấn dinh dưỡng, hành vi, dấu hiệu cần theo dõi, sơ cứu an toàn và thời điểm phải đi khám. TUYỆT ĐỐI không đưa liều dùng, không chỉ định kháng sinh/thuốc giảm đau/thuốc gây mê/thuốc kê đơn, không thay thế bác sĩ.\n"
-                        + "9. TRUY CẬP DỮ LIỆU HỆ THỐNG (CỰC KỲ QUAN TRỌNG):\n"
-                        + "   Nếu Sen hỏi dữ liệu cụ thể trong hệ thống mà context chưa có dữ liệu, không bịa và không tự nhận không tìm thấy. Nói ngắn rằng Rexi Agent sẽ tự kiểm tra quyền và quét dữ liệu thật.\n"
-                        + "10. QUY TẮC ĐIỀU HƯỚNG TÁC VỤ NGHIÊM NGẶT (STRICT NAVIGATION GATE):\n"
-                        + "   TUYỆT ĐỐI CẤM sử dụng thẻ [NAVIGATE] khi người dùng hỏi các câu hỏi đóng. Bạn CHỈ ĐƯỢC PHÉP dùng thẻ [NAVIGATE] nếu người dùng sử dụng động từ chỉ định mệnh lệnh rõ ràng (ví dụ: 'mở trang quản lý thú cưng', 'chuyển sang đặt lịch hẹn khám'...), bạn BẮT BUỘC phải đính kèm thẻ lệnh dạng [NAVIGATE:đường_dẫn] ở cuối câu trả lời của bạn. Dưới đây là danh sách đường dẫn hợp lệ:\n"
-                        + "   - Bảng điều khiển Khách hàng: /khach-hang/dashboard\n"
-                        + "   - Quản lý thú cưng: /khach-hang/quan-ly-thu-cung\n"
-                        + "   - Đặt lịch hẹn khám: /khach-hang/dat-lich-hen\n"
-                        + "   - Lịch sử lịch hẹn: /khach-hang/lich-su-lich-hen\n"
-                        + "   - Hồ sơ bệnh án thú cưng: /khach-hang/ho-so-benh-an\n"
-                        + "   - Hóa đơn & thanh toán: /khach-hang/hoa-don-thanh-toan\n"
-                        + "   - Thông tin cá nhân Sen: /khach-hang/thong-tin-ca-nhan\n"
-                        + "\n11. NGUỒN THAM KHẢO TÌM KIẾM WEB (NẾU CÓ):"
-                        + "\n   Khi trả lời dựa trên kết quả tìm kiếm web, bạn BẮT BUỘC phải trích dẫn link nguồn rõ ràng bằng định dạng Markdown thân thiện dạng: [Tên Nguồn](Link) để Sen bấm vào xem được."
-                        + "\n--- DỮ LIỆU PHÒNG KHÁM THỰC TẾ (BÁC SĨ, DỊCH VỤ, BẢNG GIÁ) ---\n"
+                        + "5. XỬ LÝ KHẨN CẤP (NGỘ ĐỘC, TAI NẠN, CHẢY MÁU, KHÓ THỞ): BẮT BUỘC bắt đầu bằng tag [EMERGENCY]. KHÔNG dọa dẫm. Đưa ra 1-2 bước sơ cứu TỐI QUAN TRỌNG nhất. Yêu cầu mang bé đến phòng khám ngay lập tức.\n"
+                        + "6. ĐẶT LỊCH HẸN: " + loginContext + " Chỉ khi khách hàng đã cung cấp đủ thông tin và chốt lịch, BẮT BUỘC in ra chuỗi [AUTO_BOOK:Ngày|Giờ|TênThúCưng|DịchVụ|TênBácSĩ]. (Ngày YYYY-MM-DD, Giờ HH:mm).\n"
+                        + "7. THẤU HIỂU BỆNH NHÂN: Nếu chưa biết bé là Chó hay Mèo, bao nhiêu tháng tuổi, hoặc nặng bao nhiêu ký (những thông tin quan trọng để tư vấn), hãy khéo léo hỏi thêm Sen.\n"
+                        + "8. RANH GIỚI Y KHOA (RẤT QUAN TRỌNG): Bạn được phép tư vấn dinh dưỡng, hành vi, dấu hiệu bệnh, và cách chăm sóc. TUYỆT ĐỐI KHÔNG kê đơn thuốc cụ thể (tên thuốc, liều lượng) để điều trị bệnh nặng tại nhà. Khuyên Sen đến khám để bác sĩ đo liều lượng chuẩn theo cân nặng.\n"
+                        + "9. TRUY CẬP DỮ LIỆU HỆ THỐNG:\n"
+                        + "   Nếu Sen hỏi thông tin hồ sơ, lịch hẹn mà bạn chưa có dữ liệu trong context, tuyệt đối không được bịa ra. Hãy nói khéo: 'Dạ để Rexi kiểm tra lại hệ thống hồ sơ cho bé ngay nhé!'. (Hệ thống Agent sẽ tự động bắt câu này và xử lý).\n"
+                        + "10. HƯỚNG DẪN THAO TÁC (ĐIỀU HƯỚNG):\n"
+                        + "   CHỈ dùng thẻ [NAVIGATE:đường_dẫn] ở cuối câu CHỈ KHI Sen yêu cầu MỞ/CHUYỂN SANG một trang nào đó. Nếu Sen chỉ hỏi, đừng dùng thẻ này. Các link hợp lệ: /khach-hang/dashboard, /khach-hang/quan-ly-thu-cung, /khach-hang/dat-lich-hen, /khach-hang/lich-su-lich-hen, /khach-hang/ho-so-benh-an, /khach-hang/hoa-don-thanh-toan, /khach-hang/thong-tin-ca-nhan.\n"
+                        + "\n11. TRÍCH DẪN RÕ RÀNG:"
+                        + "\n   Nếu bạn tham khảo link từ web, hãy chèn link dạng Markdown [Tên Nguồn](Link) để Sen có thể bấm vào.\n"
+                        + "\n--- DỮ LIỆU PHÒNG KHÁM (BÁC SĨ, DỊCH VỤ, BẢNG GIÁ) ---\n"
                         + globalContext
-                        + "\n--- DỮ LIỆU CÁ cá nhân CỦA SEN ---\n"
+                        + "\n--- THÔNG TIN CỦA SEN VÀ THÚ CƯNG ---\n"
                         + userContext
                         + "\n" + knowledgeContext
                         + "\n" + webSearchContext
@@ -1820,13 +1806,15 @@ ChatMessage systemMsg = new ChatMessage();
             ChatMessage sysMsg = new ChatMessage();
             sysMsg.setRole("system");
             sysMsg.setContent(
-                "Bạn là bộ phận định tuyến cuộc gọi cho phòng khám thú y Rexi. Hãy đọc câu hỏi của người dùng và trả về DUY NHẤT một trong các nhãn sau:\n" +
-                "- DB_DOCTORS: Nếu người dùng thực sự muốn biết danh sách, thông tin, giới thiệu hoặc hỏi có những bác sĩ nào tại phòng khám.\n" +
-                "- DB_SCHEDULE: Hỏi về lịch trực, ca trực cụ thể của bác sĩ nào đó.\n" +
-                "- DB_SERVICES: Hỏi về giá dịch vụ, bảng giá, chi phí khám, xét nghiệm, spa.\n" +
-                "- CLINICAL_QUESTION: Hỏi về triệu chứng bệnh, tư vấn y khoa, cách sơ cứu, dấu hiệu nguy hiểm, ưu tiên khám bệnh.\n" +
-                "- OTHER: Các câu hỏi khác hoặc chào hỏi thông thường.\n\n" +
-                "Quy tắc nghiêm ngặt: CHỈ trả về đúng tên nhãn (ví dụ: DB_DOCTORS hoặc CLINICAL_QUESTION), không được giải thích, không viết thêm từ nào khác."
+                "Bạn là bộ phận định tuyến AI siêu tốc cho phòng khám thú y Rexi. Hãy đọc câu hỏi của người dùng và trả về DUY NHẤT một trong các nhãn sau:\n" +
+                "- DB_DOCTORS: Nếu người dùng muốn biết thông tin, danh sách bác sĩ.\n" +
+                "- DB_SCHEDULE: Hỏi về lịch trực của bác sĩ.\n" +
+                "- DB_SERVICES: Hỏi về giá dịch vụ, bảng giá, chi phí khám.\n" +
+                "- CLINICAL_QUESTION: Hỏi bệnh, triệu chứng, tư vấn y khoa, cách sơ cứu, xin lời khuyên thú y.\n" +
+                "- AUTOPILOT: Yêu cầu mở trang, chuyển trang, hoặc thao tác giao diện (ví dụ: mở trang quản lý, đặt lịch, thêm mới).\n" +
+                "- WEB_SEARCH: Yêu cầu tìm kiếm trên mạng, tra google, tìm nguồn.\n" +
+                "- OTHER: Các câu chuyện phiếm hoặc câu hỏi khác.\n\n" +
+                "Quy tắc nghiêm ngặt: CHỈ trả về đúng tên nhãn ở trên, không giải thích, không viết thêm bất kỳ từ nào."
             );
             classificationHistory.add(sysMsg);
 
@@ -1835,12 +1823,15 @@ ChatMessage systemMsg = new ChatMessage();
             userMsg.setContent(query);
             classificationHistory.add(userMsg);
 
-            String model = groqService.getAutopilotModelName(); // Llama 8B
+            String model = groqService.getAutopilotModelName(); // Sử dụng Llama 8B tốc độ cao
             String intent = groqService.chat(classificationHistory, model).trim().toUpperCase(Locale.ROOT);
+            
             if (intent.contains("DB_DOCTORS")) return "DB_DOCTORS";
             if (intent.contains("DB_SCHEDULE")) return "DB_SCHEDULE";
             if (intent.contains("DB_SERVICES")) return "DB_SERVICES";
             if (intent.contains("CLINICAL_QUESTION")) return "CLINICAL_QUESTION";
+            if (intent.contains("AUTOPILOT")) return "AUTOPILOT";
+            if (intent.contains("WEB_SEARCH")) return "WEB_SEARCH";
             return "OTHER";
         } catch (Exception e) {
             logger.warning("[AI ROUTER] Không phân loại được bằng AI, fallback về mặc định: " + e.getMessage());
@@ -1856,30 +1847,30 @@ ChatMessage systemMsg = new ChatMessage();
             return new ChatRequestPlan(ChatRoute.SENSITIVE_HANDOFF, false, false, false, false, "agent");
         }
 
-        // AI Intent Classifier check at the routing gate:
+        // Cốt lõi của sự thông minh: Luôn hỏi AI phân loại ý định trước
         String aiIntent = "OTHER";
-        boolean mightBeDb = isServicePriceQuery(normalizedQuery) || isScheduleQuery(normalizedQuery) || isDoctorListQuery(normalizedQuery);
-        if (mightBeDb) {
+        if (!hasMedia) {
             aiIntent = classifyIntentWithAi(rawQuery);
             logger.info("[AI ROUTER] planChatRequest phân loại: " + aiIntent);
         }
 
-        if (!hasMedia && mightBeDb && !aiIntent.equals("CLINICAL_QUESTION")) {
-            return new ChatRequestPlan(ChatRoute.DB_LOCAL, true, false, false, true, "database");
-        }
         if (hasMedia) {
             return new ChatRequestPlan(ChatRoute.MEDIA_AI, false, true, false, true, "gemini");
         }
-        if (isWebSearchQuery(rawQuery)) {
+        if (aiIntent.equals("WEB_SEARCH") || isWebSearchQuery(rawQuery)) {
             return new ChatRequestPlan(ChatRoute.WEB_AI, false, true, false, true, "web+ai");
         }
-        if (isAutopilotQuery(normalizedQuery)) {
+        if (aiIntent.equals("AUTOPILOT") || isAutopilotQuery(normalizedQuery)) {
             return new ChatRequestPlan(ChatRoute.AUTOPILOT_AI, false, true, false, true, "groq");
         }
-        if (isMedicalQuery(normalizedQuery) || aiIntent.equals("CLINICAL_QUESTION")) {
+        if (aiIntent.equals("CLINICAL_QUESTION") || isMedicalQuery(normalizedQuery)) {
             return new ChatRequestPlan(ChatRoute.MEDICAL_AI, false, true, false, true, "medical");
         }
-        boolean needsClinicContext = isClinicInfoQuery(normalizedQuery);
+        if (aiIntent.startsWith("DB_")) {
+            return new ChatRequestPlan(ChatRoute.DB_LOCAL, true, false, false, true, "database");
+        }
+
+        boolean needsClinicContext = isClinicInfoQuery(normalizedQuery) || aiIntent.equals("OTHER");
         return new ChatRequestPlan(ChatRoute.CHAT_AI, false, true, true, needsClinicContext, "groq");
     }
 
