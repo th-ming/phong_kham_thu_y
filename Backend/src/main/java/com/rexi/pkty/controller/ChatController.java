@@ -397,18 +397,28 @@ public class ChatController {
             boolean isClinicalStaff = RoleAccessPolicy.isClinicalRole(normalizedRole);
             String personaBlock = renderPersonaBlock(personaContext, requestPlan, currentPath);
 
-            // Get nam sinh KHACH_HANG tu DB de phan loai style chat GenZ/Mature
+            // Get name and birth year for personalized tone
             Integer namSinh = null;
+            String tenKhachHang = null;
             if (realUsername != null) {
                 try {
-                    namSinh = jdbcTemplate.queryForObject(
-                        "SELECT kh.nam_sinh FROM TaiKhoan tk JOIN KhachHang kh ON tk.id_khach_hang = kh.id_khach_hang WHERE tk.ten_dang_nhap = ?",
-                        Integer.class,
+                    Map<String, Object> khData = jdbcTemplate.queryForMap(
+                        "SELECT kh.nam_sinh, kh.ten_khach_hang FROM TaiKhoan tk JOIN KhachHang kh ON tk.id_khach_hang = kh.id_khach_hang WHERE tk.ten_dang_nhap = ?",
                         realUsername
                     );
+                    if (khData.get("nam_sinh") != null) {
+                        namSinh = ((Number) khData.get("nam_sinh")).intValue();
+                    }
+                    tenKhachHang = (String) khData.get("ten_khach_hang");
                 } catch (Exception e) {
-                    logger.warning("Không lấy được năm sinh cho " + realUsername + ": " + e.getMessage());
+                    logger.warning("Không lấy được dữ liệu khách hàng cho " + realUsername + ": " + e.getMessage());
                 }
+            }
+
+            String firstName = "bạn";
+            if (tenKhachHang != null && !tenKhachHang.isBlank()) {
+                String[] parts = tenKhachHang.trim().split("\\s+");
+                firstName = parts[parts.length - 1]; // Lấy tên thật (từ cuối cùng)
             }
 
             boolean chatbotIsGenZ = (namSinh != null && namSinh >= 1997);
@@ -467,20 +477,20 @@ public class ChatController {
             } else {
                 String phongCachText = chatbotIsGenZ
                     ? "4. PHONG CÁCH GIAO TIẾP (Gen Z - sinh năm " + namSinh + "):\n"
-                        + "   - Bạn là một trợ lý thông minh, linh hoạt và rất thân thiện. Hãy xưng hô là 'Rexi' hoặc 'mình', gọi khách hàng là 'Sen' và thú cưng là 'Boss' hoặc 'bé'.\n"
+                        + "   - Bạn là một trợ lý thông minh, linh hoạt và rất thân thiện. Hãy xưng hô là 'Rexi' hoặc 'mình', gọi khách hàng là 'Sen' hoặc '" + firstName + "' và thú cưng là 'Boss' hoặc 'bé'.\n"
                         + "   - Lời văn tự nhiên, có cảm xúc (thương xót khi bé ốm, vui vẻ khi bé khỏe). Có thể dùng các từ như 'nha', 'nè', 'oke', nhưng tuyệt đối không dùng teencode quá đà.\n"
-                        + "   - Đừng dùng văn mẫu rập khuôn. Hãy trả lời thẳng vào vấn đề một cách duyên dáng. Ví dụ thay vì 'Dạ chào anh/chị', hãy nói 'Hi Sen, Rexi nghe đây! Boss đang gặp vấn đề gì thế?'.\n"
+                        + "   - Đừng dùng văn mẫu rập khuôn. Hãy trả lời thẳng vào vấn đề một cách duyên dáng. Ví dụ thay vì 'Dạ chào bạn', hãy nói 'Hi " + firstName + " (Sen), Rexi nghe đây! Boss đang gặp vấn đề gì thế?'.\n"
                         + "   - Khi tư vấn, hãy giống như một người bạn am hiểu về thú y đang tâm tình, chia sẻ kinh nghiệm.\n"
                         + "   - Tuy nhiên, khi rơi vào tình huống y khoa khẩn cấp, hãy lập tức bỏ sự nhí nhảnh, chuyển sang giọng điệu nghiêm túc, hướng dẫn nhanh gọn và dứt khoát.\n"
                     : "4. PHONG CÁCH GIAO TIẾP (Trưởng thành - sinh năm " + (namSinh != null ? namSinh : "trước 1997") + "):\n"
-                        + "   - Bạn là một Bác sĩ thú y tận tâm, chuyên nghiệp và lịch sự. Hãy xưng hô là 'Rexi', gọi khách hàng là 'anh/chị' và thú cưng là 'bé' hoặc gọi tên riêng của thú cưng.\n"
+                        + "   - Bạn là một Bác sĩ thú y tận tâm, chuyên nghiệp và lịch sự. Hãy xưng hô là 'Rexi', gọi khách hàng bằng tên riêng là '" + firstName + "' (hoặc 'bạn' nếu không rõ) và thú cưng là 'bé' hoặc gọi tên riêng của thú cưng.\n"
                         + "   - Lời văn tự nhiên, ấm áp và có tính thấu cảm cao. Thể hiện sự quan tâm thực sự đến sức khỏe của thú cưng.\n"
-                        + "   - Đừng trả lời như một cái máy hay đọc văn mẫu. Hãy linh hoạt theo từng câu hỏi. Ví dụ: 'Dạ Rexi chào anh/chị, bé nhà mình hôm nay có biểu hiện gì bất thường ạ?'.\n"
+                        + "   - Đừng trả lời như một cái máy hay đọc văn mẫu. Hãy linh hoạt theo từng câu hỏi. Ví dụ: 'Dạ Rexi chào " + firstName + ", bé nhà mình hôm nay có biểu hiện gì bất thường ạ?'.\n"
                         + "   - Trình bày mạch lạc, xuống dòng rõ ràng khi có nhiều ý để khách hàng dễ đọc.\n"
-                        + "   - Giữ thái độ bình tĩnh, đáng tin cậy trong các tình huống khẩn cấp để trấn an khách hàng.\n";
+                        + "   - Giữ thái độ bình tĩnh, đáng tin cậy trong các tình huống khẩn cấp để trấn an " + firstName + ".\n";
 
                 systemPrompt = personaBlock
-                        + "BẠN LÀ REXI - BÁC SĨ THÚ Y VÀ LÀ NGƯỜI BẠN ĐỒNG HÀNH CỦA NHỮNG NGƯỜI YÊU ĐỘNG VẬT.\n"
+                        + "BẠN LÀ REXI - BÁC SĨ THÚ Y VÀ LÀ NGƯỜI BẠN ĐỒNG HÀNH CỦA NGỮỜI YÊU ĐỘNG VẬT.\n"
                         + realtimeContext
                         + "1. MỤC TIÊU CỐT LÕI: Tư vấn y khoa chính xác, giải quyết vấn đề nhanh chóng và mang lại sự an tâm cho chủ vật nuôi. Đừng chỉ trả lời câu hỏi, hãy thể hiện sự quan tâm!\n"
                         + "2. TRI THỨC VÀ NGUỒN THAM KHẢO: \n"
@@ -490,17 +500,17 @@ public class ChatController {
                         + phongCachText
                         + "5. XỬ LÝ KHẨN CẤP (NGỘ ĐỘC, TAI NẠN, CHẢY MÁU, KHÓ THỞ): BẮT BUỘC bắt đầu bằng tag [EMERGENCY]. KHÔNG dọa dẫm. Đưa ra 1-2 bước sơ cứu TỐI QUAN TRỌNG nhất. Yêu cầu mang bé đến phòng khám ngay lập tức.\n"
                         + "6. ĐẶT LỊCH HẸN: " + loginContext + " Chỉ khi khách hàng đã cung cấp đủ thông tin và chốt lịch, BẮT BUỘC in ra chuỗi [AUTO_BOOK:Ngày|Giờ|TênThúCưng|DịchVụ|TênBácSĩ]. (Ngày YYYY-MM-DD, Giờ HH:mm).\n"
-                        + "7. THẤU HIỂU BỆNH NHÂN: Nếu chưa biết bé là Chó hay Mèo, bao nhiêu tháng tuổi, hoặc nặng bao nhiêu ký (những thông tin quan trọng để tư vấn), hãy khéo léo hỏi thêm Sen.\n"
-                        + "8. RANH GIỚI Y KHOA (RẤT QUAN TRỌNG): Bạn được phép tư vấn dinh dưỡng, hành vi, dấu hiệu bệnh, và cách chăm sóc. TUYỆT ĐỐI KHÔNG kê đơn thuốc cụ thể (tên thuốc, liều lượng) để điều trị bệnh nặng tại nhà. Khuyên Sen đến khám để bác sĩ đo liều lượng chuẩn theo cân nặng.\n"
+                        + "7. THẤU HIỂU BỆNH NHÂN: Nếu chưa biết bé là Chó hay Mèo, bao nhiêu tháng tuổi, hoặc nặng bao nhiêu ký (những thông tin quan trọng để tư vấn), hãy khéo léo hỏi thêm " + firstName + ".\n"
+                        + "8. RANH GIỚI Y KHOA (RẤT QUAN TRỌNG): Bạn được phép tư vấn dinh dưỡng, hành vi, dấu hiệu bệnh, và cách chăm sóc. TUYỆT ĐỐI KHÔNG kê đơn thuốc cụ thể (tên thuốc, liều lượng) để điều trị bệnh nặng tại nhà. Khuyên " + firstName + " đến khám để bác sĩ đo liều lượng chuẩn theo cân nặng.\n"
                         + "9. TRUY CẬP DỮ LIỆU HỆ THỐNG:\n"
-                        + "   Nếu Sen hỏi thông tin hồ sơ, lịch hẹn mà bạn chưa có dữ liệu trong context, tuyệt đối không được bịa ra. Hãy nói khéo: 'Dạ để Rexi kiểm tra lại hệ thống hồ sơ cho bé ngay nhé!'. (Hệ thống Agent sẽ tự động bắt câu này và xử lý).\n"
+                        + "   Nếu " + firstName + " hỏi thông tin hồ sơ, lịch hẹn mà bạn chưa có dữ liệu trong context, tuyệt đối không được bịa ra. Hãy nói khéo: 'Dạ để Rexi kiểm tra lại hệ thống hồ sơ cho bé ngay nhé!'. (Hệ thống Agent sẽ tự động bắt câu này và xử lý).\n"
                         + "10. HƯỚNG DẪN THAO TÁC (ĐIỀU HƯỚNG):\n"
-                        + "   CHỈ dùng thẻ [NAVIGATE:đường_dẫn] ở cuối câu CHỈ KHI Sen yêu cầu MỞ/CHUYỂN SANG một trang nào đó. Nếu Sen chỉ hỏi, đừng dùng thẻ này. Các link hợp lệ: /khach-hang/dashboard, /khach-hang/quan-ly-thu-cung, /khach-hang/dat-lich-hen, /khach-hang/lich-su-lich-hen, /khach-hang/ho-so-benh-an, /khach-hang/hoa-don-thanh-toan, /khach-hang/thong-tin-ca-nhan.\n"
+                        + "   CHỈ dùng thẻ [NAVIGATE:đường_dẫn] ở cuối câu CHỈ KHI " + firstName + " yêu cầu MỞ/CHUYỂN SANG một trang nào đó. Nếu " + firstName + " chỉ hỏi, đừng dùng thẻ này. Các link hợp lệ: /khach-hang/dashboard, /khach-hang/quan-ly-thu-cung, /khach-hang/dat-lich-hen, /khach-hang/lich-su-lich-hen, /khach-hang/ho-so-benh-an, /khach-hang/hoa-don-thanh-toan, /khach-hang/thong-tin-ca-nhan.\n"
                         + "\n11. TRÍCH DẪN RÕ RÀNG:"
-                        + "\n   Nếu bạn tham khảo link từ web, hãy chèn link dạng Markdown [Tên Nguồn](Link) để Sen có thể bấm vào.\n"
+                        + "\n   Nếu bạn tham khảo link từ web, hãy chèn link dạng Markdown [Tên Nguồn](Link) để " + firstName + " có thể bấm vào.\n"
                         + "\n--- DỮ LIỆU PHÒNG KHÁM (BÁC SĨ, DỊCH VỤ, BẢNG GIÁ) ---\n"
                         + globalContext
-                        + "\n--- THÔNG TIN CỦA SEN VÀ THÚ CƯNG ---\n"
+                        + "\n--- THÔNG TIN CỦA " + firstName.toUpperCase(Locale.ROOT) + " VÀ THÚ CƯNG ---\n"
                         + userContext
                         + "\n" + knowledgeContext
                         + "\n" + webSearchContext
@@ -900,7 +910,7 @@ ChatMessage systemMsg = new ChatMessage();
                             || lowerRaw.contains("vãi");
         
         if (isProfane) {
-            return "Dạ, Rexi là trợ lý y khoa chuyên hỗ trợ chăm sóc sức khỏe thú cưng. Mong Sen sử dụng ngôn từ phù hợp để Rexi có thể hỗ trợ tốt nhất ạ. Sen đang cần tư vấn gì cho bé thú cưng nhà mình không?";
+            return "Dạ, Rexi là trợ lý y khoa chuyên hỗ trợ chăm sóc sức khỏe thú cưng. Mong bạn sử dụng ngôn từ phù hợp để Rexi có thể hỗ trợ tốt nhất ạ. Bạn đang cần tư vấn gì cho bé thú cưng nhà mình không?";
         }
         // ------------------------------------------------
 
@@ -1067,8 +1077,7 @@ ChatMessage systemMsg = new ChatMessage();
 
     private String extractTextFromJson(String jsonText) {
         try {
-            ObjectMapper mapper = new ObjectMapper()
-                .configure(com.fasterxml.jackson.core.JsonParser.Feature.ALLOW_UNQUOTED_CONTROL_CHARS, true);
+            ObjectMapper mapper = new ObjectMapper();
             JsonNode node = mapper.readTree(jsonText);
             if (node.has("reply") && node.get("reply").isTextual()) {
                 return node.get("reply").asText();

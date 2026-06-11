@@ -35,8 +35,7 @@ public class ReActAgentService {
     @Autowired private JdbcTemplate jdbcTemplate;
     @Autowired private AgentResponseCache agentResponseCache;
 
-    private final ObjectMapper mapper = new ObjectMapper()
-            .configure(com.fasterxml.jackson.core.JsonParser.Feature.ALLOW_UNQUOTED_CONTROL_CHARS, true);
+    private final ObjectMapper mapper = new ObjectMapper();
 
     public record ReActStep(String type, String content, String toolName, Map<String, Object> toolParams, String observation) {}
 
