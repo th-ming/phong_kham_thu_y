@@ -15,8 +15,8 @@ Write-Host 'Dang xuat CSDL...'
 try {
     mssql-scripter -S 'localhost\SQLEXPRESS' -d 'PhongKhamThuY' --schema-and-data -f $tempSql
     if (Test-Path $tempSql) {
-        Move-Item -Path $tempSql -Destination 'PhongKhamThuY.sql' -Force
-        Write-Host 'Da cap nhat file PhongKhamThuY.sql'
+        Move-Item -Path $tempSql -Destination 'Database/PhongKhamThuY.sql' -Force
+        Write-Host 'Da cap nhat file Database/PhongKhamThuY.sql'
     }
 } catch {
     Write-Host 'Canh bao: mssql-scripter gap loi!'

@@ -57,4 +57,4 @@ def translate_mssql_to_postgres(input_path, output_path):
     print(f"Successfully translated {input_path} to {output_path}")
 
 if __name__ == "__main__":
-    translate_mssql_to_postgres('d:\\QLy Phòng Khám Thú Y\\PhongKhamThuY.sql', 'd:\\QLy Phòng Khám Thú Y\\PhongKhamThuY_Postgres.sql')
+    translate_mssql_to_postgres('d:\\QLy Phòng Khám Thú Y\\Database\\PhongKhamThuY.sql', 'd:\\QLy Phòng Khám Thú Y\\Database\\PhongKhamThuY_Postgres.sql')

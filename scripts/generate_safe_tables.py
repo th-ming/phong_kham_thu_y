@@ -2,7 +2,7 @@ import re
 
 def generate_perfect_tables_only_sql():
     # Đọc file gốc dạng UTF-16
-    with open('d:\\QLy Phòng Khám Thú Y\\PhongKhamThuY.sql', 'r', encoding='utf-16') as f:
+    with open('d:\\QLy Phòng Khám Thú Y\\Database\\PhongKhamThuY.sql', 'r', encoding='utf-16') as f:
         content = f.read()
 
     # Xóa dấu ngoặc vuông MS SQL
@@ -147,7 +147,7 @@ def generate_perfect_tables_only_sql():
     # Đảm bảo cuối file có kết thúc đẹp
     t_sql = t_sql.strip() + ";"
 
-    output_path = 'd:\\QLy Phòng Khám Thú Y\\PhongKhamThuY_Tables_Only.sql'
+    output_path = 'd:\\QLy Phòng Khám Thú Y\\Database\\PhongKhamThuY_Tables_Only.sql'
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(t_sql)
 

@@ -404,11 +404,11 @@ def print_sub(text):
 
 
 def main():
-    content_ss = read_file('PhongKhamThuY.sql')
-    content_pg = read_file('PhongKhamThuY_Postgres.sql')
+    content_ss = read_file('Database/PhongKhamThuY.sql')
+    content_pg = read_file('Database/PhongKhamThuY_Postgres.sql')
 
     print("\n" + "="*80)
-    print("  SO SANH TOAN DIEN: PhongKhamThuY.sql (SQL Server) vs PhongKhamThuY_Postgres.sql (PostgreSQL)")
+    print("  SO SANH TOAN DIEN: Database/PhongKhamThuY.sql (SQL Server) vs Database/PhongKhamThuY_Postgres.sql (PostgreSQL)")
     print("="*80)
 
     # ============================================================

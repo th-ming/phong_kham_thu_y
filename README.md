@@ -24,7 +24,7 @@ Dự án được tổ chức cấu trúc khoa học và dọn dẹp sạch sẽ
 │   └── 📄 VIRTUAL_LIST_REUSE_GUIDE.md # Hướng dẫn tối ưu cuộn ảo danh sách
 ├── 📂 scripts/              # Các script PowerShell tự động hóa vận hành
 ├── 📂 Archived_Resources/    # Nơi lưu trữ an toàn các file log và tài nguyên nháp
-├── 📄 PhongKhamThuY.sql      # Cơ sở dữ liệu Microsoft SQL Server gốc
+├── 📂 Database/             # Cơ sở dữ liệu gốc (SQL Server & Postgres)
 ├── 🐳 docker-compose.yml     # Bộ điều phối container chạy toàn hệ thống
 ├── 🛡️ nginx.conf            # Khiên bảo mật Reverse Proxy & Rate Limiter
 └── 💻 RexiProject.code-workspace # Không gian làm việc tối ưu trên VS Code

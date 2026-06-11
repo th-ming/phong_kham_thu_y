@@ -13,7 +13,7 @@ services:
       - "1433:1433"
     volumes:
       - sqlserver_data:/var/opt/mssql
-      - ./PhongKhamThuY.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./Database/PhongKhamThuY.sql:/docker-entrypoint-initdb.d/init.sql:ro
     networks:
       - rexi_network
     healthcheck:
