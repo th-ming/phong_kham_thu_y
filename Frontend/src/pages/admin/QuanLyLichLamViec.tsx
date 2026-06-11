@@ -390,7 +390,6 @@ const QuanLyLichLamViec: React.FC = () => {
 
     const handleDeleteShift = async (id: number, shiftStaffId: string) => {
         if (!isAdmin && String(shiftStaffId) !== currentStaffId) { toast.error("Bạn không có quyền xóa lịch trực của người khác!"); return; }
-        const shift = schedules.find(s => Number(s.id_lich_lam_viec) === Number(id));
         if (!isAdmin && !canEmployeeManageScheduleNow()) { toast.error(SCHEDULE_REGISTRATION_CLOSED_MESSAGE); return; }
         setConfirmDialog({
             open: true, title: 'Hủy ca trực',
