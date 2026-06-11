@@ -81,9 +81,10 @@ const DangNhapDangKy: React.FC = () => {
           const googleBtnEl = document.getElementById("googleBtn");
           if (googleBtnEl) {
             googleBtnEl.replaceChildren();
+            const btnWidth = window.innerWidth < 450 ? Math.min(320, window.innerWidth - 48) : 350;
             (window as any).google.accounts.id.renderButton(
               googleBtnEl,
-              { theme: "outline", size: "large", shape: "pill", width: 350 }
+              { theme: "outline", size: "large", shape: "pill", width: btnWidth }
             );
           }
         }
@@ -530,17 +531,41 @@ const DangNhapDangKy: React.FC = () => {
         }
 
         @media (max-width: 900px) {
-          .auth-card { grid-template-columns: 1fr; }
+          .auth-card { 
+            grid-template-columns: 1fr; 
+            margin: 0;
+            border-radius: 20px;
+          }
           .auth-sidebar { display: none; }
-          .auth-form-panel { padding: 36px 24px; }
+          .auth-form-panel { padding: 36px 20px; }
           .progress-container { padding: 0 20px; }
           .progress-bar-bg { left: 20px; right: 20px; }
           .progress-bar-fill { left: 20px; }
         }
+        @media (max-width: 600px) {
+          .auth-header {
+            padding: 16px 20px !important;
+            flex-direction: column;
+            gap: 12px;
+            align-items: center;
+          }
+          .auth-form-panel {
+            padding: 24px 16px !important;
+          }
+          .auth-title {
+            font-size: 1.8rem !important;
+          }
+          .auth-container main {
+            padding: 10px 10px !important;
+          }
+          .auth-card {
+            border-radius: 16px !important;
+          }
+        }
       `}</style>
 
       {/* HEADER CỦA */}
-      <header style={{ padding: '30px 60px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative', zIndex: 10 }}>
+      <header className="auth-header" style={{ padding: '30px 60px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative', zIndex: 10 }}>
         <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '15px', textDecoration: 'none' }}>
           <div className="auth-logo-box" style={{ background: 'var(--primary-gradient)', width: '48px', height: '48px', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 10px 25px var(--primary-shadow)' }}>
             <img src="/img/avtpkty.png" alt="Rexi" style={{ width: '70%', filter: 'brightness(0) invert(1)' }} />
@@ -692,7 +717,7 @@ const DangNhapDangKy: React.FC = () => {
                        <input data-ai-id="input-dangnhapdangky-cyre" type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} style={{ width: '18px', height: '18px' }} />
                       Ghi nhớ đăng nhập
                     </label>
-                    <Link to="/quen-mat-khau" style={{ color: '#0d9488', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 800 }}>Quên mật khẩuẩu?</Link>
+                    <Link to="/quen-mat-khau" style={{ color: '#0d9488', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 800 }}>Quên mật khẩu?</Link>
                   </div>
                   <button data-ai-id="button-dangnhapdangky-xgfa" type="submit" disabled={loading} className="btn-auth" style={{ background: loading ? '#94a3b8' : '#0d9488', color: 'white', border: 'none', borderRadius: '50px', padding: '16px', fontWeight: 800, cursor: loading ? 'not-allowed' : 'pointer', marginTop: '10px' }}>{loading ? 'Đang xử lý...' : 'Đăng nhập ngay'}</button>
                 </>
