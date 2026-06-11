@@ -1456,13 +1456,13 @@ export const ChatBotCore: React.FC = () => {
         const elapsedFromLastResult = Date.now() - lastVoiceResultAtRef.current;
 
         if (voiceModeRef.current === "fast") {
-            if (wordCount <= 5 && hasActionVerb && !hasTrailingConnector) return 520;
-            return hasTrailingConnector ? 1050 : 760;
+            if (wordCount <= 5 && hasActionVerb && !hasTrailingConnector) return 500;
+            return hasTrailingConnector ? 850 : 650;
         }
-        if (hasTrailingConnector) return 3200;
-        if (elapsedFromLastResult < 900 && wordCount > 10) return 2600;
-        if (wordCount <= 5 && hasActionVerb) return 1800;
-        return 2400;
+        if (hasTrailingConnector) return 1800;
+        if (elapsedFromLastResult < 900 && wordCount > 10) return 1300;
+        if (wordCount <= 5 && hasActionVerb) return 900;
+        return 1100;
     };
 
     const flushVoiceQueue = () => {

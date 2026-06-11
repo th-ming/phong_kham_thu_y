@@ -28,7 +28,7 @@ const QuanLyHoaDon: React.FC = () => {
     return hoaDons.filter((h) => {
       const status = h.trang_thai?.toLowerCase() === 'da_thanh_toan' ? 'đã quyết toán đã thanh toán đã thu tiền paid' : 'chờ thanh toán chưa thu tiền unpaid';
       return matchesSearchFields(searchHoaDon, [
-        `HD-${h.id_hoa_don}`,
+        h.id_hoa_don?.startsWith('HD-') ? h.id_hoa_don : `HD-${h.id_hoa_don}`,
         h.id_hoa_don,
         h.ten_khach_hang,
         h.ten_thu_cung,
@@ -141,7 +141,7 @@ const QuanLyHoaDon: React.FC = () => {
 
     const headers = ["Mã HĐ", "Khách hàng", "Số điện thoại", "Ngày lập", "Tổng tiền (VNĐ)", "Trạng thái", "Nhân viên lập"];
     const rows = hoaDons.map(h => [
-      `HD-${h.id_hoa_don}`,
+      h.id_hoa_don?.startsWith('HD-') ? h.id_hoa_don : `HD-${h.id_hoa_don}`,
       h.ten_khach_hang || 'Khách vãng lai',
       h.sdt || '',
       h.ngay_lap_hoa_don?.split('T')[0].split('-').reverse().join('/') || "",
@@ -346,7 +346,7 @@ const QuanLyHoaDon: React.FC = () => {
             <article key={h.id_hoa_don} className="invoice-card">
               <div className="invoice-card-top">
                 <div>
-                  <h3>#HD-{h.id_hoa_don} · {h.ten_khach_hang || `KH-${h.id_khach_hang}`}</h3>
+                  <h3>{h.id_hoa_don?.startsWith('HD-') ? `#${h.id_hoa_don}` : `#HD-${h.id_hoa_don}`} · {h.ten_khach_hang || `KH-${h.id_khach_hang}`}</h3>
                   <p>{chuyenNgayISO_SangVN(h.ngay_lap_hoa_don)} · {h.sdt || 'Chưa có SĐT'}</p>
                 </div>
                 <span className="invoice-amount">{formatTienVND(h.tong_tien_cuoi ?? 0)}</span>
@@ -435,7 +435,7 @@ const QuanLyHoaDon: React.FC = () => {
                         >
                           {/* Mã hóa đơn */}
                           <div style={{ fontWeight: 800, color: 'var(--gray-400)' }}>
-                            #HD-{h.id_hoa_don}
+                            {h.id_hoa_don?.startsWith('HD-') ? `#${h.id_hoa_don}` : `#HD-${h.id_hoa_don}`}
                           </div>
 
                           {/* Ngày lập */}
@@ -500,7 +500,7 @@ const QuanLyHoaDon: React.FC = () => {
                 <div style={{ fontSize: '0.8rem', color: 'var(--gray-500)', fontWeight: 600 }}>Hotline: {localStorage.getItem('clinic_phone') || "1900 xxxx"}</div>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--ink)' }}>HÓA ĐƠN #HD-{viewingHD.id_hoa_don}</div>
+                <div style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--ink)' }}>HÓA ĐƠN {viewingHD.id_hoa_don?.startsWith('HD-') ? `#${viewingHD.id_hoa_don}` : `#HD-${viewingHD.id_hoa_don}`}</div>
                 <div style={{ fontSize: '0.85rem', color: 'var(--gray-400)', fontWeight: 700 }}>Ngày: {chuyenNgayISO_SangVN(viewingHD.ngay_lap_hoa_don)}</div>
               </div>
             </div>

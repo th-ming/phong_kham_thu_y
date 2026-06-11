@@ -17,10 +17,10 @@ const sharedClinicalSuggestions: QuickSuggestion[] = [
 
 const standardSuggestionMap: Record<string, QuickSuggestion[]> = {
     customer: [
-        { label: "Cần đi khám không?", prompt: "Những dấu hiệu nào ở thú cưng cần đưa đi khám ngay?", tone: "warning" },
         { label: "Chăm sóc mèo mang thai", prompt: "Cách chăm sóc mèo mang thai an toàn tại nhà?", tone: "success" },
-        { label: "Sau khi khám", prompt: "Sau khi thú cưng vừa khám xong cần theo dõi gì?", tone: "info" },
-        { label: "Ăn uống theo tuổi", prompt: "Tư vấn khẩu phần ăn phù hợp cho chó mèo theo tuổi và cân nặng", tone: "default" },
+        { label: "Hướng dẫn đặt lịch", prompt: "Hướng dẫn tôi cách đặt lịch khám cho thú cưng", tone: "info" },
+        { label: "Thanh toán hóa đơn", prompt: "Hướng dẫn thanh toán hóa đơn online", tone: "warning" },
+        { label: "Theo dõi sức khỏe", prompt: "Cách tự theo dõi sức khỏe cho thú cưng tại nhà", tone: "success" },
         ...sharedClinicalSuggestions,
     ],
     admin: [
@@ -70,13 +70,13 @@ const standardSuggestionMap: Record<string, QuickSuggestion[]> = {
         { label: "Chuẩn bị xét nghiệm", prompt: "Danh sách việc cần chuẩn bị trước khi lấy mẫu xét nghiệm", tone: "warning" },
         { label: "Theo dõi nội trú", prompt: "Các chỉ số cần theo dõi cho thú cưng nội trú", tone: "success" },
         { label: "Vật tư ca trực", prompt: "Y tá nên kiểm tra vật tư gì trước khi bắt đầu ca trực?", tone: "agent" },
-        ...sharedClinicalSuggestions,
+        ...sharedClinicalSuggestions.slice(0, 3),
     ],
     staff: [
         { label: "Dùng hệ thống", prompt: "Nhân viên mới nên dùng các phân hệ phòng khám theo thứ tự nào?", tone: "info" },
         { label: "Tra cứu an toàn", prompt: "Khi nào nhân viên nên chuyển sang Rexi Agent để tra dữ liệu thật?", tone: "success" },
         { label: "Quy trình kho", prompt: "Khi kiểm kho thuốc, nhân viên cần lưu ý những điểm nào?", tone: "warning" },
-        ...sharedClinicalSuggestions,
+        ...sharedClinicalSuggestions.slice(0, 3),
     ],
     guest: [
         { label: "Thông tin bác sĩ", prompt: "Cho tôi biết thông tin bác sĩ của phòng khám", tone: "info" },

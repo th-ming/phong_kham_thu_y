@@ -332,7 +332,7 @@ const BacSiDashboard: React.FC = () => {
                         <h2 style={{ fontSize: '1.2rem', margin: '0 0 16px 0', fontWeight: 800 }}>Hồ sơ gần đây</h2>
                         {myMedicalRecords.map(rec => (
                             <Link key={rec.id_ho_so} to={`/quan-ly/ho-so-benh-an/${rec.id_ho_so}`} style={{ display: 'block', textDecoration: 'none', color: 'inherit', padding: '12px', borderRadius: '12px', transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = 'var(--gray-50)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                                <div style={{ fontWeight: 700 }}>HS-{rec.id_ho_so}: {rec.ten_thu_cung}</div>
+                                <div style={{ fontWeight: 700 }}>{rec.id_ho_so?.startsWith('HS-') ? rec.id_ho_so : `HS-${rec.id_ho_so}`}: {rec.ten_thu_cung}</div>
                                 <div style={{ fontSize: '0.8rem', color: 'var(--gray-400)' }}>Chẩn đoán: {rec.chan_doan}</div>
                             </Link>
                         ))}

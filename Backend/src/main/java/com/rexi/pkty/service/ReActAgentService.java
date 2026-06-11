@@ -361,7 +361,7 @@ public class ReActAgentService {
                 : userQuery;
         try {
             List<ChatMessage> history = new ArrayList<>();
-            history.add(new ChatMessage("system", "Bạn là Rexi Agent có khả năng đọc ảnh. Trả lời tiếng Việt ngắn gọn, dựa trên những gì nhìn thấy trong ảnh; không bịa dữ liệu ngoài ảnh. Với y khoa thú y: nêu mức độ khẩn cấp và khuyên đi khám khi có dấu hiệu nặng; không kê đơn/liều thuốc online. Với ảnh UI: mô tả đúng phần thấy được và đề xuất thao tác an toàn.", null, null));
+            history.add(new ChatMessage("system", "Bạn là Rexi Agent có khả năng đọc ảnh. Trả lời tiếng Việt ngắn gọn, dựa trên những gì nhìn thấy trong ảnh; không bịa dữ liệu ngoài ảnh. Với y khoa thú y: nêu mức độ khẩn cấp và khuyên đi khám khi có dấu hiệu nặng; không kê đơn/liều thuốc online. Với ảnh UI: mô tả đúng phần thấy được và đề xuất thao tác. Đặc biệt, nếu người dùng gửi ảnh giao diện kèm yêu cầu đổi màu/đổi chữ, bạn hãy phân tích phần tử đó trong ảnh và trả về thẻ lệnh preview tương ứng dạng: [PREVIEW_STYLE:target_id|CSS_property|color] hoặc [PREVIEW_TEXT:target_id|text_content]. Một số target_id hữu dụng: heading-home-cta-title (cho phần chữ 'Đặt Lịch Hẹn Cho Bé'), link_home_cta_booking (nút Đặt lịch hẹn ngay), link_home_cta_phone (nút số điện thoại). Ví dụ: [PREVIEW_STYLE:heading-home-cta-title|color|yellow] để đổi màu chữ đặt lịch sang vàng.", null, null));
             history.add(new ChatMessage("user", prompt, imagePayloads, null));
             String answer;
             String provider;

@@ -67,7 +67,7 @@ const QuanLyXetNghiem: React.FC = () => {
             margin-bottom: 16px !important;
           }
           .admin-lab-header h1 {
-            max-width: 12ch !important;
+            max-width: 100% !important;
             font-size: clamp(1.42rem, 6.4vw, 1.78rem) !important;
             line-height: 1.08 !important;
             letter-spacing: -0.02em !important;
@@ -190,7 +190,7 @@ const QuanLyXetNghiem: React.FC = () => {
               <div className="admin-lab-card-top">
                 <div>
                   <h3>#XN-{xn.id_xet_nghiem_benh_an} · {xn.ten_xet_nghiem || "Tổng quát"}</h3>
-                  <p>HS-{xn.id_ho_so} · {xn.ten_bac_si || "Chưa có bác sĩ"}</p>
+                  <p>{xn.id_ho_so?.startsWith('HS-') ? xn.id_ho_so : `HS-${xn.id_ho_so}`} · {xn.ten_bac_si || "Chưa có bác sĩ"}</p>
                 </div>
                 <span
                   className="admin-lab-status"
@@ -228,7 +228,7 @@ const QuanLyXetNghiem: React.FC = () => {
                 <td style={{ padding: '20px', fontWeight: 800, color: 'var(--gray-400)' }}>#XN-{xn.id_xet_nghiem_benh_an}</td>
                 <td style={{ padding: '20px' }}>
                   <div style={{ fontWeight: 800, color: 'var(--ink)' }}>{xn.ten_xet_nghiem || "Tổng quát"}</div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 600 }}>Hồ sơ: HS-{xn.id_ho_so}</div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 600 }}>Hồ sơ: {xn.id_ho_so?.startsWith('HS-') ? xn.id_ho_so : `HS-${xn.id_ho_so}`}</div>
                 </td>
                 <td style={{ padding: '20px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -266,7 +266,7 @@ const QuanLyXetNghiem: React.FC = () => {
                 <InfoRow label="Loại xét nghiệm" value={viewingXN.ten_xet_nghiem || 'Tổng quát'} />
                 <InfoRow label="Ngày lấy mẫu" value={chuyenNgayISO_SangVN(viewingXN.ngay_lay_mau)} />
                 <InfoRow label="Bác sĩ" value={viewingXN.ten_bac_si || '—'} />
-                <InfoRow label="Mã hồ sơ" value={`#HS-${viewingXN.id_ho_so}`} />
+                <InfoRow label="Mã hồ sơ" value={viewingXN.id_ho_so?.startsWith('HS-') ? `#${viewingXN.id_ho_so}` : `#HS-${viewingXN.id_ho_so}`} />
               </div>
             </div>
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+﻿import React, { useEffect, useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import SidebarKhachHang from "@components/SidebarKhachHang";
 import { ScrollToTop } from "@components/SpecialEffects";
@@ -278,3 +278,4 @@ const CustomerLayout: React.FC = () => {
 };
 
 export default React.memo(CustomerLayout);
+

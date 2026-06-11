@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
 import { getUserProfile, normalizeUserRole } from "@utils/index";
 import { toast } from "@components/Toast";
@@ -218,7 +218,7 @@ const PhanCTA: React.FC = () => {
                             </div>
                         </div>
 
-                        <h2 style={{ fontSize: 'clamp(1.8rem, 3.5vw, 2.8rem)', fontWeight: 950, color: 'white', lineHeight: 1.2, letterSpacing: '-1px', marginBottom: '16px' }}>
+                        <h2 data-ai-id="heading-home-cta-title" style={{ fontSize: 'clamp(1.8rem, 3.5vw, 2.8rem)', fontWeight: 950, color: 'white', lineHeight: 1.2, letterSpacing: '-1px', marginBottom: '16px' }}>
                             Đặt Lịch Hẹn Cho Bé<br />
                             <span style={{ color: 'rgba(255,255,255,0.75)', fontStyle: 'italic' }}>Ngay Hôm Nay!</span>
                         </h2>

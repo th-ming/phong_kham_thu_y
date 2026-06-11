@@ -307,14 +307,32 @@ const DashboardKhachHang: React.FC = () => {
     // Tóm tắt Bé Cưng
     let petsSummary = "Chưa có dữ liệu chi tiết";
     if (pets.length > 0) {
-      const dogs = pets.filter(p => String(p.loai_thu_cung || p.giong || '').toLowerCase().includes('chó')).length;
-      const cats = pets.filter(p => String(p.loai_thu_cung || p.giong || '').toLowerCase().includes('mèo')).length;
-      const other = pets.length - dogs - cats;
+      const dogs = pets.filter(p => {
+        const type = String(p.loai || p.loai_thu_cung || p.giong || '').toLowerCase();
+        return type.includes('chó') || type.includes('cho') || type.includes('dog');
+      }).length;
+      const cats = pets.filter(p => {
+        const type = String(p.loai || p.loai_thu_cung || p.giong || '').toLowerCase();
+        return type.includes('mèo') || type.includes('meo') || type.includes('cat');
+      }).length;
+      const otherPets = pets.filter(p => {
+        const type = String(p.loai || p.loai_thu_cung || p.giong || '').toLowerCase();
+        const isDog = type.includes('chó') || type.includes('cho') || type.includes('dog');
+        const isCat = type.includes('mèo') || type.includes('meo') || type.includes('cat');
+        return !isDog && !isCat;
+      });
       
       const parts = [];
       if (dogs > 0) parts.push(`Chó: ${dogs}`);
       if (cats > 0) parts.push(`Mèo: ${cats}`);
-      if (other > 0) parts.push(`Khác: ${other}`);
+      if (otherPets.length > 0) {
+        const types = otherPets.map(p => {
+          const type = p.loai || p.loai_thu_cung || 'Khác';
+          return type.charAt(0).toUpperCase() + type.slice(1).toLowerCase();
+        });
+        const uniqueTypes = [...new Set(types)];
+        parts.push(`${uniqueTypes.join(', ')}: ${otherPets.length}`);
+      }
       
       petsSummary = parts.length > 0 ? `Bao gồm: ${parts.join(', ')}` : `Danh sách: ${pets.slice(0, 3).map(p => p.ten_thu_cung || 'Bé').join(', ')}...`;
     }
@@ -1129,7 +1147,7 @@ const DashboardKhachHang: React.FC = () => {
             </div>
             <div>
               <h4 style={{ margin: 0, fontWeight: 900, color: 'var(--ink)' }}>Hỗ trợ 24/7</h4>
-              <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem', color: 'var(--gray-500)', fontWeight: 700 }}>Cần tư vấn khẩn cấp? Gọi <b style={{ color: 'var(--primary)' }}>0353.374.156</b></p>
+              <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem', color: 'var(--gray-500)', fontWeight: 700, whiteSpace: 'normal', textOverflow: 'clip', overflow: 'visible' }}>Cần tư vấn khẩn cấp? Gọi <b style={{ color: 'var(--primary)' }}>0353.374.156</b></p>
             </div>
           </a>
         </div>

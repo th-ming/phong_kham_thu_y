@@ -1363,7 +1363,7 @@ const CauHinhHeThong: React.FC = () => {
                             </div>
 
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-                                <h3 style={{ fontWeight: 800, margin: 0 }}>Danh sách bản sao lưu</h3>
+                                <h3 style={{ fontWeight: 800, margin: 0, whiteSpace: 'nowrap' }}>Danh sách bản sao lưu</h3>
                                 <button
                                     data-ai-id="button-cauhinhhethong-delete-all-backups"
                                     className="btn btn-outline settings-action-btn"

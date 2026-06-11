@@ -207,7 +207,7 @@ const HoaDonThanhToan: React.FC = () => {
       if (debouncedSearch) {
         if (!matchesSearchFields(debouncedSearch, [
           getInvoiceId(h),
-          `HD-${getInvoiceId(h)}`,
+          getInvoiceId(h)?.startsWith('HD-') ? getInvoiceId(h) : `HD-${getInvoiceId(h)}`,
           getPetName(h),
           getCustomerName(h),
           getInvoiceDate(h),
@@ -239,7 +239,7 @@ const HoaDonThanhToan: React.FC = () => {
     }
     const headers = ["Mã HĐ", "Ngày lập", "Thành tiền", "Trạng thái"];
     const rows = filteredList.map(h => [
-      `HD-${getInvoiceId(h)}`,
+      getInvoiceId(h)?.startsWith('HD-') ? getInvoiceId(h) : `HD-${getInvoiceId(h)}`,
       getInvoiceDate(h)?.split('T')[0] || "",
       getInvoiceTotal(h),
       getInvoiceStatus(h) === 'da_thanh_toan' ? 'Đã thanh toán' : 'Chưa thanh toán'
@@ -750,7 +750,7 @@ const HoaDonThanhToan: React.FC = () => {
                 <KpiIcon name="receipt" size={32} />
               </div>
               <div>
-                <h3 style={{ fontSize: '1.3rem', fontWeight: 900, color: 'var(--ink)', margin: 0 }}>Hóa đơn #HD-{getInvoiceId(hd)}</h3>
+                <h3 style={{ fontSize: '1.3rem', fontWeight: 900, color: 'var(--ink)', margin: 0 }}>Hóa đơn {getInvoiceId(hd)?.startsWith('HD-') ? `#${getInvoiceId(hd)}` : `#HD-${getInvoiceId(hd)}`}</h3>
                 <p style={{ color: 'var(--gray-400)', fontWeight: 700, margin: '4px 0', fontSize: '0.85rem' }}>{chuyenNgayISO_SangVN(getInvoiceDate(hd))} {getPetName(hd) ? `· ${getPetName(hd)}` : ''}</p>
               </div>
             </div>
@@ -857,7 +857,7 @@ const HoaDonThanhToan: React.FC = () => {
                   <div style={{ fontSize: '0.78rem', color: 'var(--gray-450)', fontWeight: 700 }}>Hotline: ***REMOVED***-VIETQR_ACCOUNT_NO</div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: '1.25rem', fontWeight: 950, color: 'var(--ink)', letterSpacing: '-0.5px' }}>HÓA ĐƠN #HD-{getInvoiceId(viewingHD)}</div>
+                  <div style={{ fontSize: '1.25rem', fontWeight: 950, color: 'var(--ink)', letterSpacing: '-0.5px' }}>HÓA ĐƠN {getInvoiceId(viewingHD)?.startsWith('HD-') ? `#${getInvoiceId(viewingHD)}` : `#HD-${getInvoiceId(viewingHD)}`}</div>
                   <div style={{ fontSize: '0.82rem', color: 'var(--gray-400)', fontWeight: 800 }}>Ngày: {chuyenNgayISO_SangVN(getInvoiceDate(viewingHD))}</div>
                 </div>
               </div>

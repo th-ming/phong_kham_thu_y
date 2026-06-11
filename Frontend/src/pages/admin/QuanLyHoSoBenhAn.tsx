@@ -209,7 +209,7 @@ const QuanLyHoSoBenhAn: React.FC = () => {
             <article key={h.id_ho_so} className="admin-record-card">
               <div className="admin-record-card-top">
                 <div>
-                  <h3>#HS-{h.id_ho_so} · {h.ten_thu_cung || "Chưa rõ"}</h3>
+                  <h3>{h.id_ho_so?.startsWith('HS-') ? `#${h.id_ho_so}` : `#HS-${h.id_ho_so}`} · {h.ten_thu_cung || "Chưa rõ"}</h3>
                   <p>{chuyenNgayISO_SangVN(h.ngay_kham)} · {h.ten_bac_si || "Đang chờ bác sĩ"}</p>
                 </div>
                 <span
@@ -260,7 +260,7 @@ const QuanLyHoSoBenhAn: React.FC = () => {
                     </tr>
                   ) : (shouldVirtualize ? visibleItems : currentRows).map((h) => (
                     <tr key={h.id_ho_so} style={{ borderBottom: '1px solid var(--gray-50)', transition: 'all 0.2s', height: `${VIRTUAL_ITEM_HEIGHT}px` }}>
-                      <td style={{ padding: '20px', fontWeight: 800, color: 'var(--gray-400)' }}>#HS-{h.id_ho_so}</td>
+                      <td style={{ padding: '20px', fontWeight: 800, color: 'var(--gray-400)' }}>{h.id_ho_so?.startsWith('HS-') ? `#${h.id_ho_so}` : `#HS-${h.id_ho_so}`}</td>
                       <td style={{ padding: '20px', fontWeight: 700 }}>{chuyenNgayISO_SangVN(h.ngay_kham)}</td>
                       <td style={{ padding: '20px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>

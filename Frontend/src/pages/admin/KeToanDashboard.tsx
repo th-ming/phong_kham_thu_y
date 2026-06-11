@@ -290,7 +290,7 @@ const KeToanDashboard: React.FC = () => {
 
         const headers = ["Mã HĐ", "Khách hàng", "Số điện thoại", "Ngày lập", "Tổng tiền (VNĐ)", "Trạng thái"];
         const rows = filteredInvoices.map(inv => [
-            `HD-${inv.id_hoa_don}`,
+            inv.id_hoa_don?.startsWith('HD-') ? inv.id_hoa_don : `HD-${inv.id_hoa_don}`,
             inv.ten_khach_hang || 'Khách vãng lai',
             inv.sdt || '',
             inv.ngay_lap_hoa_don?.split('T')[0].split('-').reverse().join('/') || "",
@@ -819,7 +819,7 @@ const KeToanDashboard: React.FC = () => {
                             </div>
                             <div style={{ textAlign: 'right' }}>
                                 <div style={{ fontSize: '0.85rem', color: 'var(--gray-500)', fontWeight: 800 }}>MÃ HÓA ĐƠN</div>
-                                <div style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--primary)' }}>#HD-{viewingHD.id_hoa_don}</div>
+                                <div style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--primary)' }}>{viewingHD.id_hoa_don?.startsWith('HD-') ? `#${viewingHD.id_hoa_don}` : `#HD-${viewingHD.id_hoa_don}`}</div>
                                 <div style={{ fontSize: '0.9rem', color: 'var(--gray-500)' }}>{viewingHD.ngay_lap_hoa_don?.split('T')[0].split('-').reverse().join('/') || "---"}</div>
                             </div>
                         </div>

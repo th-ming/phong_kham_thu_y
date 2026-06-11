@@ -116,7 +116,7 @@ const SidebarKhachHang: React.FC = () => {
               </div>
             </div>
             <div style={{ overflow: 'hidden' }}>
-              <p style={{ fontWeight: 950, fontSize: '1rem', color: 'var(--ink)', margin: 0, whiteSpace: 'nowrap', textOverflow: 'ellipsis', letterSpacing: '-0.5px' }}>
+              <p style={{ fontWeight: 950, fontSize: '1rem', color: 'var(--ink)', margin: 0, whiteSpace: 'normal', wordBreak: 'break-word', letterSpacing: '-0.5px' }}>
                 {userDisplayName}
               </p>
               <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: '2px' }}>

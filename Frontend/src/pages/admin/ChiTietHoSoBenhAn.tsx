@@ -111,22 +111,22 @@ const ChiTietHoSoBenhAn: React.FC = () => {
           }
         }
       `}</style>
-      <div style={{ marginBottom: '40px', display: 'flex', alignItems: 'center', gap: '20px' }}>
+      <div className="admin-record-detail-header" style={{ marginBottom: '40px', display: 'flex', alignItems: 'center', gap: '20px' }}>
         <Link to="/quan-ly/ho-so-benh-an" className="btn btn-pill no-print" style={{ background: 'var(--surface)', border: '1px solid var(--gray-200)', padding: '12px' }}>
           <span className="material-symbols-outlined">arrow_back</span>
         </Link>
         <div style={{ flex: 1 }}>
           <h1 style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--ink)', letterSpacing: '-1px' }}>Chi tiết bệnh án</h1>
-          <p style={{ color: 'var(--gray-500)', fontWeight: 600 }}>Mã hồ sơ điện tử: #HS-{id}</p>
+          <p style={{ color: 'var(--gray-500)', fontWeight: 600 }}>Mã hồ sơ điện tử: {id?.startsWith('HS-') ? `#${id}` : `#HS-${id}`}</p>
         </div>
-        <button data-ai-id="button-chitiethosobenhan-o991" className="btn btn-primary btn-pill no-print" onClick={() => window.print()} style={{ padding: '12px 24px' }}>
+        <button data-ai-id="button-chitiethosobenhan-o991" className="btn btn-primary btn-pill no-print admin-record-print-btn" onClick={() => window.print()} style={{ padding: '12px 24px' }}>
           <span className="material-symbols-outlined">print</span> In Bệnh Án
         </button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.2fr', gap: '32px' }}>
-        <div style={{ display: 'grid', gap: '32px' }}>
-          <div className="glass-card" style={{ padding: '40px', borderRadius: 'var(--radius-xl)' }}>
+      <div className="admin-record-detail-grid" style={{ display: 'grid', gridTemplateColumns: '2fr 1.2fr', gap: '32px' }}>
+        <div className="admin-record-detail-stack" style={{ display: 'grid', gap: '32px' }}>
+          <div className="glass-card admin-record-card" style={{ padding: '40px', borderRadius: 'var(--radius-xl)' }}>
             <h3 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '32px', display: 'flex', alignItems: 'center', gap: '12px' }}>
               <span className="material-symbols-outlined" style={{ color: 'var(--primary)' }}>clinical_notes</span>
               Thông tin lâm sàng
@@ -147,12 +147,12 @@ const ChiTietHoSoBenhAn: React.FC = () => {
             </div>
           </div>
 
-          <div className="glass-card" style={{ padding: '40px', borderRadius: 'var(--radius-xl)' }}>
+          <div className="glass-card admin-record-card" style={{ padding: '40px', borderRadius: 'var(--radius-xl)' }}>
             <h3 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '24px' }}>Hướng dẫn chăm sóc</h3>
             <p style={{ color: 'var(--gray-600)', lineHeight: '1.8', fontSize: '1rem' }}>{record.huong_dan_cham_soc || "Không có ghi chú thêm cho chủ nuôi."}</p>
           </div>
 
-          <div className="glass-card" style={{ padding: '40px', borderRadius: 'var(--radius-xl)' }}>
+          <div className="glass-card admin-record-card" style={{ padding: '40px', borderRadius: 'var(--radius-xl)' }}>
             <h3 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '32px', display: 'flex', alignItems: 'center', gap: '12px' }}>
               <span className="material-symbols-outlined" style={{ color: 'var(--primary)' }}>history_edu</span>
               Lịch sử tư vấn (Chatbot & BS)
@@ -188,13 +188,13 @@ const ChiTietHoSoBenhAn: React.FC = () => {
           </div>
         </div>
 
-        <div style={{ display: 'grid', gap: '32px', height: 'fit-content' }}>
-          <div className="glass-card" style={{ padding: '32px', borderRadius: 'var(--radius-xl)', background: 'var(--secondary-gradient)', color: 'white' }}>
+        <div className="admin-record-detail-aside" style={{ display: 'grid', gap: '32px', height: 'fit-content' }}>
+          <div className="glass-card admin-record-card admin-record-patient-card" style={{ padding: '32px', borderRadius: 'var(--radius-xl)', background: 'var(--secondary-gradient)', color: 'white' }}>
             <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '24px' }}>Bệnh nhân & Bác sĩ</h3>
             <div style={{ display: 'grid', gap: '20px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', opacity: 0.8 }}>
                 <span>Thú cưng:</span>
-                <b style={{ color: 'var(--primary)' }}>{record.ten_thu_cung}</b>
+                <b style={{ color: 'var(--primary)' }}>{record.ten_thu_cung || "Chưa cập nhật"}</b>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', opacity: 0.8 }}>
                 <span>Chủ nuôi:</span>
@@ -211,7 +211,7 @@ const ChiTietHoSoBenhAn: React.FC = () => {
             </div>
           </div>
 
-          <div className="responsive-grid-2">
+          <div className="responsive-grid-2 admin-record-vitals-grid">
             <div className="glass-card" style={{ padding: '24px', borderRadius: 'var(--radius-xl)', background: 'var(--primary-gradient)', color: 'white', display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div style={{ width: '48px', height: '48px', background: 'rgba(255,255,255,0.2)', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <span className="material-symbols-outlined" style={{ fontSize: '28px' }}>monitor_weight</span>

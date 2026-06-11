@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800;900&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
+﻿@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800;900&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
 
 /* Tùy chỉnh thanh cuộn (Scrollbar) chuẩn Luxury Premium */
 /* TỐI ƯU: Chỉ hiển thị thanh cuộn này trên thiết bị có chuột (Desktop), để native trên Mobile */
@@ -1953,7 +1953,7 @@ html {
   .admin-main-content {
     width: 100% !important;
     height: 100dvh !important;
-    padding: 18px 12px 230px !important;
+    padding: 18px 12px calc(196px + env(safe-area-inset-bottom, 0px)) !important;
     overflow-x: hidden !important;
   }
 
@@ -2033,7 +2033,7 @@ html {
   .admin-menu-fab {
     position: fixed !important;
     z-index: 1001 !important;
-    bottom: max(88px, env(safe-area-inset-bottom, 0px) + 84px) !important;
+    bottom: calc(78px + env(safe-area-inset-bottom, 0px)) !important;
     left: 18px !important;
     width: 46px !important;
     height: 46px !important;
@@ -2049,7 +2049,7 @@ html {
     position: fixed;
     left: 10px;
     right: 10px;
-    bottom: 10px;
+    bottom: max(8px, env(safe-area-inset-bottom, 0px));
     z-index: 998;
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -2761,7 +2761,7 @@ html {
     height: 42px !important;
     min-height: 42px !important;
     border-radius: 14px !important;
-    padding-inline: 12px !important;
+    padding: 18px 12px 228px !important;
   }
 
   .admin-main-content .admin-inventory-search input {
@@ -3160,7 +3160,7 @@ html {
   .customer-main-content {
     width: 100% !important;
     height: 100dvh !important;
-    padding: 18px 16px 154px !important;
+    padding: 18px 16px calc(210px + env(safe-area-inset-bottom, 0px)) !important;
   }
 
   .customer-sidebar {
@@ -3280,7 +3280,7 @@ html {
 
 @media screen and (max-width: 420px) {
   .admin-main-content {
-    padding: 18px 12px 196px !important;
+    padding: 18px 12px 244px !important;
   }
 
   .admin-mobile-tabbar {
@@ -3297,7 +3297,7 @@ html {
   }
 
   .customer-main-content {
-    padding-inline: 12px !important;
+    padding: 18px 12px 228px !important;
   }
 
   .customer-mobile-tabbar {
