@@ -659,7 +659,15 @@ export const ChatbotShell: React.FC<ChatbotShellProps> = (props) => {
                                         }
                                     }}
                                     onPaste={handlePasteFiles}
-                                    placeholder={activeTab === 'agent' ? (isMobile ? "Yêu cầu" : "Yêu cầu tác vụ cho Agent (e.g. đặt lịch, tra cứu mạng)...") : (isMobile ? "Tin nhắn" : "Nhắn tin cho Bác sĩ Thú y Rexi...")}
+                                    placeholder={
+                                        isClinicStaff || isAdminRoute
+                                            ? (activeTab === 'agent'
+                                                ? (isMobile ? "Nhập yêu cầu..." : "Nhập yêu cầu tác vụ (e.g. tra cứu lịch hẹn, lập hóa đơn)...")
+                                                : (isMobile ? "Nhập yêu cầu..." : "Nhập yêu cầu công việc hoặc tin nhắn cho trợ lý..."))
+                                            : (activeTab === 'agent'
+                                                ? (isMobile ? "Nhập yêu cầu..." : "Nhập yêu cầu của bạn (e.g. đặt lịch hẹn, tìm dịch vụ)...")
+                                                : (isMobile ? "Nhập triệu chứng..." : "Nhập triệu chứng của bé hoặc câu hỏi của bạn..."))
+                                    }
                                     rows={1}
                                     style={{
                                         width: '100%', minWidth: 0, border: '1px solid var(--gray-300)', borderRadius: isMobile ? '16px' : '18px', padding: isMobile ? '9px 14px' : '10px 16px',
