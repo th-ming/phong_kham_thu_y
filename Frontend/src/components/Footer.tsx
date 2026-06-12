@@ -420,8 +420,8 @@ const Footer: React.FC<{ isSimple?: boolean }> = ({ isSimple }) => {
 
                     .footer-cat-media.media-static {
                         left: auto !important;
-                        right: 30% !important;
-                        transform: none !important;
+                        right: 20% !important;
+                        transform: translateX(50%) !important;
                     }
 
                     .footer-cat-media.media-playing {
@@ -442,9 +442,9 @@ const Footer: React.FC<{ isSimple?: boolean }> = ({ isSimple }) => {
                     .footer-cat-bubble-wrap {
                         display: flex !important;
                         left: auto !important;
-                        right: 30% !important;
-                        bottom: 105px !important;
-                        transform: none !important;
+                        right: 20% !important;
+                        bottom: 115px !important;
+                        transform: translateX(50%) !important;
                     }
 
                     .footer-chat-bubble {
