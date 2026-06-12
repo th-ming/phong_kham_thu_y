@@ -27,7 +27,7 @@ const Loi404: React.FC = () => {
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    padding: 80px 24px;
+                    padding: 120px 24px 80px;
                 }
                 .btn-404-primary { 
                     background: var(--primary-gradient);
@@ -35,6 +35,8 @@ const Loi404: React.FC = () => {
                     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
                     display: flex; align-items: center; gap: 12px;
                     padding: 18px 36px; border-radius: 50px; font-weight: 900;
+                    justify-content: center;
+                    white-space: nowrap;
                 }
                 .btn-404-primary:hover { 
                     transform: translateY(-5px); 
@@ -46,6 +48,8 @@ const Loi404: React.FC = () => {
                     display: flex; align-items: center; gap: 12px;
                     padding: 18px 36px; border-radius: 50px; font-weight: 800;
                     backdrop-filter: blur(10px);
+                    justify-content: center;
+                    white-space: nowrap;
                 }
                 .btn-404-secondary:hover {
                     background: var(--gray-50); border-color: var(--primary); transform: translateY(-5px);
@@ -105,32 +109,73 @@ const Loi404: React.FC = () => {
                     color: white;
                     box-shadow: 0 16px 34px rgba(245, 158, 11, 0.32);
                 }
+                .error-actions-row {
+                    display: flex;
+                    gap: 16px;
+                    flex-wrap: wrap;
+                }
                 @media (max-width: 720px) {
                     .error-404-main {
-                        padding: 24px 16px !important;
+                        padding: 100px 16px 40px !important;
                     }
                     .cat-card {
-                        max-width: 280px !important;
-                        border-radius: 34px;
+                        max-width: 260px !important;
+                        border-radius: 28px;
                     }
                     .cat-404-video {
-                        width: min(76%, 220px);
+                        width: min(76%, 190px);
                         bottom: 4%;
                     }
                     .cat-404-question {
-                        width: 44px;
-                        height: 44px;
+                        width: 40px;
+                        height: 40px;
                         top: 9%;
                         right: 12%;
                     }
+                    .cat-404-question span {
+                        font-size: 20px !important;
+                    }
+                    .error-actions-row {
+                        flex-direction: row !important;
+                        flex-wrap: nowrap !important;
+                        gap: 10px !important;
+                    }
+                    .btn-404-primary, .btn-404-secondary {
+                        flex: 1;
+                        padding: 14px 12px !important;
+                        font-size: 0.78rem !important;
+                        gap: 6px !important;
+                        border-radius: 24px !important;
+                    }
+                    .btn-404-primary span, .btn-404-secondary span {
+                        font-size: 16px !important;
+                    }
                 }
             `}</style>
+
+            {/* THANH HEADER ĐỘC LẬP CHO TRANG 404 */}
+            <nav style={{
+                position: 'fixed', top: 0, width: '100%', height: '80px',
+                background: 'var(--glass)', backdropFilter: 'var(--glass-blur)',
+                zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                borderBottom: '1px solid var(--glass-border)'
+            }}>
+                <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', textDecoration: 'none' }}>
+                        <div style={{ width: '40px', height: '40px', background: 'var(--primary)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <img src='/img/avtpkty.png' alt='Rexi Logo' style={{ width: '70%', height: '70%', objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
+                        </div>
+                        <span style={{ fontSize: '1.5rem', fontWeight: 950, color: 'var(--ink)', letterSpacing: '-1px' }}>Rexi</span>
+                    </Link>
+                    <Link to="/" style={{ background: 'none', border: 'none', color: 'var(--gray-500)', fontWeight: 700, cursor: 'pointer', fontSize: '0.9rem', textDecoration: 'none' }}>Trang chủ</Link>
+                </div>
+            </nav>
 
             <main className="error-404-main">
                 <div style={{ maxWidth: '1100px', width: '100%', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '40px', alignItems: 'center' }}>
 
                     {/* KHỐI CON MÈO */}
-                    <div style={{ position: 'relative', width: '100%', aspectRatio: '1', maxWidth: '400px', margin: '0 auto' }} className="cat-card">
+                    <div style={{ position: 'relative', width: '100%', aspectRatio: '1', maxWidth: '380px', margin: '0 auto' }} className="cat-card">
                         <div className="cat-404-number">
                             <span>404</span>
                         </div>
@@ -158,10 +203,10 @@ const Loi404: React.FC = () => {
                             Có vẻ như đường dẫn bạn đang truy cập không chính xác. Ngay cả những bác sĩ giỏi nhất đôi khi cũng lạc đường.
                         </p>
 
-                        <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                        <div className="error-actions-row">
                             <button data-ai-id="button-loi404-zek7" className="btn-404-primary" onClick={() => navigate(-1)}>
                                 <span className="material-symbols-outlined">arrow_back</span>
-                                Quay lại trang trước
+                                Quay lại
                             </button>
                             <button data-ai-id="button-loi404-imjf" className="btn-404-secondary" onClick={() => navigate('/')}>
                                 <span className="material-symbols-outlined">home</span>
