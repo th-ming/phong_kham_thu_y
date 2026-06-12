@@ -93,6 +93,10 @@ const ChiTietDichVu: React.FC = () => {
         .service-detail-step { transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease; }
         .service-detail-step:hover { transform: translateX(10px); border-color: var(--primary) !important; box-shadow: var(--shadow-md) !important; }
         @media (max-width: 768px) {
+          .service-detail-page #chatBtn,
+          .service-detail-page .scroll-to-top-glass {
+            bottom: calc(88px + env(safe-area-inset-bottom, 0px)) !important;
+          }
           .service-detail-main {
             padding: 28px 0 96px !important;
           }

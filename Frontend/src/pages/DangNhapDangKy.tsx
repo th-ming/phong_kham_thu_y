@@ -544,10 +544,25 @@ const DangNhapDangKy: React.FC = () => {
         }
         @media (max-width: 600px) {
           .auth-header {
-            padding: 16px 20px !important;
-            flex-direction: column;
-            gap: 12px;
-            align-items: center;
+            padding: 12px 16px !important;
+            flex-direction: row !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+          }
+          .auth-logo-box {
+            width: 36px !important;
+            height: 36px !important;
+            border-radius: 10px !important;
+          }
+          .auth-logo-title {
+            font-size: 1.4rem !important;
+          }
+          .auth-logo-subtitle {
+            font-size: 0.6rem !important;
+          }
+          .auth-home-link {
+            padding: 8px 16px !important;
+            font-size: 0.8rem !important;
           }
           .auth-form-panel {
             padding: 24px 16px !important;
