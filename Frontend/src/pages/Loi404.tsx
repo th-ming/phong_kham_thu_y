@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContextV2';
 import { TransparentVideo, MemeCat } from '../components/SpecialEffects';
@@ -115,24 +115,6 @@ const Loi404: React.FC = () => {
                     }
                 }
             `}</style>
-
-            <nav style={{
-                position: 'fixed', top: 0, width: '100%', height: '80px',
-                background: 'var(--glass)', backdropFilter: 'var(--glass-blur)',
-                zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                borderBottom: '1px solid var(--glass-border)'
-            }}>
-                <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', textDecoration: 'none' }}>
-                        <div style={{ width: '40px', height: '40px', background: 'var(--primary)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            {/* logo ở trang lỗi 404 */}
-                            <img src='/img/avtpkty.png' alt='Rexi Logo' style={{ width: '70%', height: '70%', objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
-                        </div>
-                        <span style={{ fontSize: '1.5rem', fontWeight: 950, color: 'var(--ink)', letterSpacing: '-1px' }}>Rexi</span>
-                    </Link>
-                    <Link to="/" style={{ background: 'none', border: 'none', color: 'var(--gray-500)', fontWeight: 700, cursor: 'pointer', fontSize: '0.9rem', textDecoration: 'none' }}>Trang chủ</Link>
-                </div>
-            </nav>
 
             <main style={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '100px 24px' }}>
                 <div style={{ maxWidth: '1100px', width: '100%', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '60px', alignItems: 'center' }}>
