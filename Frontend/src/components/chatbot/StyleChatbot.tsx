@@ -220,23 +220,27 @@ export const StyleChatbot: React.FC = () => (
                 height: 46px !important;
             }
             #chatWindow {
-                animation: chatMobileFadeInUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards !important;
-                left: 50% !important;
-                right: auto !important;
-                bottom: max(12px, env(safe-area-inset-bottom, 0px) + 12px) !important;
-                width: min(430px, calc(100vw - 20px)) !important;
-                height: min(680px, calc(var(--rexi-viewport-height, 100dvh) - max(24px, env(safe-area-inset-bottom, 0px) + 24px))) !important;
-                max-height: min(680px, calc(var(--rexi-viewport-height, 100dvh) - max(24px, env(safe-area-inset-bottom, 0px) + 24px))) !important;
-                border-radius: 22px !important;
+                animation: chatMobileSlideUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards !important;
+                left: 0 !important;
+                right: 0 !important;
+                bottom: 0 !important;
+                width: 100vw !important;
+                max-width: 100vw !important;
+                height: min(650px, 80dvh) !important;
+                max-height: min(650px, 80dvh) !important;
+                border-radius: 24px 24px 0 0 !important;
                 overflow: hidden !important;
-                transform: translate(-50%, 0) !important;
                 padding-bottom: env(safe-area-inset-bottom, 0px);
-                box-shadow: 0 16px 42px rgba(2, 132, 199, 0.22) !important;
+                box-shadow: 0 -8px 32px rgba(2, 132, 199, 0.18) !important;
+                border-left: none !important;
+                border-right: none !important;
+                border-bottom: none !important;
             }
             #chatWindow.chat-window-has-mobile-nav {
-                bottom: max(82px, env(safe-area-inset-bottom, 0px) + 76px) !important;
-                height: min(620px, calc(var(--rexi-viewport-height, 100dvh) - max(96px, env(safe-area-inset-bottom, 0px) + 90px))) !important;
-                max-height: min(620px, calc(var(--rexi-viewport-height, 100dvh) - max(96px, env(safe-area-inset-bottom, 0px) + 90px))) !important;
+                bottom: 0 !important;
+                padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)) !important;
+                height: min(650px, 80dvh) !important;
+                max-height: min(650px, 80dvh) !important;
             }
             body:has(#chatWindow) .scroll-to-top-glass {
                 display: none !important;
@@ -284,8 +288,12 @@ export const StyleChatbot: React.FC = () => (
         }
         @media (max-width: 380px) {
             #chatWindow {
-                width: calc(100vw - 14px) !important;
-                border-radius: 18px !important;
+                width: 100vw !important;
+                max-width: 100vw !important;
+                left: 0 !important;
+                right: 0 !important;
+                bottom: 0 !important;
+                border-radius: 20px 20px 0 0 !important;
             }
             .chat-message-scroll {
                 padding: 10px !important;
@@ -373,14 +381,14 @@ export const StyleChatbot: React.FC = () => (
             0% { transform: scaleY(0.35); }
             100% { transform: scaleY(1.35); }
         }
-        @keyframes chatMobileFadeInUp {
+        @keyframes chatMobileSlideUp {
             from {
                 opacity: 0;
-                transform: translate(-50%, 20px);
+                transform: translateY(100%);
             }
             to {
                 opacity: 1;
-                transform: translate(-50%, 0);
+                transform: translateY(0);
             }
         }
     `}</style>

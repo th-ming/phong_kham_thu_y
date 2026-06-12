@@ -34,8 +34,7 @@ async function installMocks(page) {
   });
 }
 
-async function captureCloud() {
-  console.log('Chụp ảnh Cloud (Mobile - Sau khi deploy)...');
+(async () => {
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({
     viewport: { width: 390, height: 844 },
@@ -46,17 +45,24 @@ async function captureCloud() {
   });
   const page = await context.newPage();
   await installMocks(page);
-  
-  // Go to cloud service detail page
-  await page.goto('https://rexi-vet-clinic.vercel.app/dich-vu/kham-lam-sang-tong-quat', { waitUntil: 'networkidle', timeout: 50000 });
-  await page.waitForTimeout(4000);
-  await page.evaluate(() => window.scrollTo(0, 500));
+
+  await page.goto('http://127.0.0.1:3005/dich-vu/kham-lam-sang-tong-quat', { waitUntil: 'networkidle' });
+  await page.waitForTimeout(3000);
+
+  // Click chatbot button
+  await page.locator('#chatBtn').click({ force: true });
   await page.waitForTimeout(2000);
 
-  const cloudPath = path.join(outDir, 'service-detail-cloud.png');
-  await page.screenshot({ path: cloudPath });
-  console.log(`Đã chụp ảnh Cloud Mobile: ${cloudPath}`);
-  await browser.close();
-}
+  // Click the second tab (Rexi Agent)
+  // The tab is: <button> Rexi Agent
+  console.log('Switching to Rexi Agent tab...');
+  await page.getByRole('button', { name: /Rexi Agent/i }).click({ force: true });
+  await page.waitForTimeout(2000);
 
-captureCloud().catch(console.error);
+  // Take screenshot
+  const screenshotPath = path.join(outDir, 'service-detail-chat-agent-mobile.png');
+  await page.screenshot({ path: screenshotPath });
+  console.log('Saved agent tab screenshot to:', screenshotPath);
+
+  await browser.close();
+})();
