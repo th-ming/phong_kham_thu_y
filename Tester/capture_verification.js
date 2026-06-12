@@ -36,42 +36,36 @@ async function installMocks(page) {
 }
 
 async function verifyAll() {
-  console.log('Bắt đầu chụp ảnh xác minh...');
+  console.log('Bắt đầu chụp ảnh xác minh desktop...');
 
-  // 1. Chụp TRANG CHI TIẾT DỊCH VỤ (Xem có bị hỏng gì không)
+  // 1. Chụp TRANG CHI TIẾT DỊCH VỤ - Desktop
   const browser1 = await chromium.launch({ headless: true });
   const context1 = await browser1.newContext({
-    viewport: { width: 390, height: 844 },
-    deviceScaleFactor: 3,
-    isMobile: true,
-    hasTouch: true,
-    userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
+    viewport: { width: 1440, height: 900 },
+    deviceScaleFactor: 2
   });
   const page1 = await context1.newPage();
   await installMocks(page1);
 
-  console.log('Chụp trang dịch vụ hợp lệ...');
+  console.log('Chụp trang dịch vụ hợp lệ (Desktop)...');
   await page1.goto('http://127.0.0.1:3005/dich-vu/kham-lam-sang-tong-quat', { waitUntil: 'networkidle', timeout: 30000 });
   await page1.waitForTimeout(2000);
   await page1.evaluate(() => window.scrollTo(0, 500));
   await page1.waitForTimeout(1000);
-  await page1.screenshot({ path: path.join(outDir, 'service-detail-fixed-mobile.png') });
+  await page1.screenshot({ path: path.join(outDir, 'service-detail-fixed-desktop.png') });
   await browser1.close();
 
-  // 2. Chụp TRANG 404 (Xem có vừa vặn và không có header/footer không)
+  // 2. Chụp TRANG 404 - Desktop
   const browser2 = await chromium.launch({ headless: true });
   const context2 = await browser2.newContext({
-    viewport: { width: 390, height: 844 },
-    deviceScaleFactor: 3,
-    isMobile: true,
-    hasTouch: true,
-    userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
+    viewport: { width: 1440, height: 900 },
+    deviceScaleFactor: 2
   });
   const page2 = await context2.newPage();
-  console.log('Chụp trang 404...');
+  console.log('Chụp trang 404 (Desktop)...');
   await page2.goto('http://127.0.0.1:3005/404', { waitUntil: 'networkidle', timeout: 30000 });
   await page2.waitForTimeout(2000);
-  await page2.screenshot({ path: path.join(outDir, '404-local-mobile-final.png') });
+  await page2.screenshot({ path: path.join(outDir, '404-local-desktop-final.png') });
   await browser2.close();
 
   console.log('Chụp ảnh xác minh hoàn thành!');
