@@ -219,6 +219,7 @@ export const StyleChatbot: React.FC = () => (
                 height: 46px !important;
             }
             #chatWindow {
+                animation: chatMobileFadeInUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards !important;
                 left: 50% !important;
                 right: auto !important;
                 bottom: max(12px, env(safe-area-inset-bottom, 0px) + 12px) !important;
@@ -226,7 +227,7 @@ export const StyleChatbot: React.FC = () => (
                 height: min(680px, calc(var(--rexi-viewport-height, 100dvh) - max(24px, env(safe-area-inset-bottom, 0px) + 24px))) !important;
                 max-height: min(680px, calc(var(--rexi-viewport-height, 100dvh) - max(24px, env(safe-area-inset-bottom, 0px) + 24px))) !important;
                 border-radius: 22px !important;
-                transform: translateX(-50%) !important;
+                transform: translate(-50%, 0) !important;
                 padding-bottom: env(safe-area-inset-bottom, 0px);
                 box-shadow: 0 16px 42px rgba(2, 132, 199, 0.22) !important;
             }
@@ -366,6 +367,16 @@ export const StyleChatbot: React.FC = () => (
         @keyframes waveGrow {
             0% { transform: scaleY(0.35); }
             100% { transform: scaleY(1.35); }
+        }
+        @keyframes chatMobileFadeInUp {
+            from {
+                opacity: 0;
+                transform: translate(-50%, 20px);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, 0);
+            }
         }
     `}</style>
 );
