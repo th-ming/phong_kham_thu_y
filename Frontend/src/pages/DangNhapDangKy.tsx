@@ -561,6 +561,11 @@ const DangNhapDangKy: React.FC = () => {
           .auth-card {
             border-radius: 16px !important;
           }
+          .auth-remember-forgot {
+            flex-direction: column;
+            align-items: flex-start !important;
+            gap: 12px !important;
+          }
         }
       `}</style>
 
@@ -712,7 +717,7 @@ const DangNhapDangKy: React.FC = () => {
                   </div>
                   
                   {/* CHỨC NĂNG GHI NHỚ & QUÊN MẬT KHẨU CỦA ĐÂY */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '8px 0' }}>
+                  <div className="auth-remember-forgot" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '8px 0' }}>
                     <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', margin: 0, textTransform: 'none', color: 'var(--gray-500)', fontSize: '0.9rem' }}>
                        <input data-ai-id="input-dangnhapdangky-cyre" type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} style={{ width: '18px', height: '18px' }} />
                       Ghi nhớ đăng nhập
