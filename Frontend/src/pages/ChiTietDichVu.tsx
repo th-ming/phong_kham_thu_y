@@ -70,6 +70,12 @@ const ChiTietDichVu: React.FC = () => {
     return { icon: "medical_services", img: "/img/avtpkty.png" };
   };
 
+  React.useEffect(() => {
+    if (!loading && !service) {
+      navigate('/404', { replace: true });
+    }
+  }, [loading, service, navigate]);
+
   if (loading) {
     return (
       <div style={{ background: 'var(--background)', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -79,7 +85,7 @@ const ChiTietDichVu: React.FC = () => {
   }
 
   if (!service) {
-    return <Loi404 />;
+    return null;
   }
 
   const assets = getServiceAssets(service.ten_dich_vu);
