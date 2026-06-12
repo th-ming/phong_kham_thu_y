@@ -601,7 +601,9 @@ export const ChatbotShell: React.FC<ChatbotShellProps> = (props) => {
                             padding: isMobile ? '10px 12px max(10px, env(safe-area-inset-bottom, 0px))' : '16px 20px',
                             background: 'var(--surface)', borderTop: '1px solid var(--gray-200)', display: 'flex', alignItems: 'flex-end', gap: isMobile ? '8px' : '12px',
                             flex: '0 0 auto',
-                            minWidth: 0
+                            minWidth: 0,
+                            borderBottomLeftRadius: isMobile ? '20px' : '22px',
+                            borderBottomRightRadius: isMobile ? '20px' : '22px'
                         }}>
                             {/* Nút File Đính kèm */}
                             <input data-ai-id="input-chatbot-jmt6"

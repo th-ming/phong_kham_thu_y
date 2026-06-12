@@ -175,6 +175,7 @@ export const StyleChatbot: React.FC = () => (
         #chatWindow {
             max-width: calc(100vw - 20px);
             contain: layout paint;
+            overflow: hidden !important;
         }
         .chat-message-scroll {
             scrollbar-width: thin;
@@ -227,6 +228,7 @@ export const StyleChatbot: React.FC = () => (
                 height: min(680px, calc(var(--rexi-viewport-height, 100dvh) - max(24px, env(safe-area-inset-bottom, 0px) + 24px))) !important;
                 max-height: min(680px, calc(var(--rexi-viewport-height, 100dvh) - max(24px, env(safe-area-inset-bottom, 0px) + 24px))) !important;
                 border-radius: 22px !important;
+                overflow: hidden !important;
                 transform: translate(-50%, 0) !important;
                 padding-bottom: env(safe-area-inset-bottom, 0px);
                 box-shadow: 0 16px 42px rgba(2, 132, 199, 0.22) !important;

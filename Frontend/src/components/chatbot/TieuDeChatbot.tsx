@@ -11,7 +11,9 @@ export const TieuDeChatbot: React.FC<{
     <div style={{
         background: activeTab === 'agent' ? 'linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)' : 'var(--chat-gradient)',
         padding: isMobile ? '12px 14px' : '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: 'white',
-        transition: 'all 0.4s ease'
+        transition: 'all 0.4s ease',
+        borderTopLeftRadius: isMobile ? '20px' : '22px',
+        borderTopRightRadius: isMobile ? '20px' : '22px'
     }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div style={{ width: '10px', height: '10px', background: '#4ade80', borderRadius: '50%', boxShadow: '0 0 10px #4ade80' }}></div>
