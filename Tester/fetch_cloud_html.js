@@ -1,6 +1,6 @@
 const https = require('https');
 
-https.get('https://rexi-vet-clinic.vercel.app/dich-vu/kham-lam-sang-tong-quat', (res) => {
+https.get(`https://rexi-vet-clinic.vercel.app/dich-vu/kham-lam-sang-tong-quat?t=${Date.now()}`, (res) => {
   let data = '';
   res.on('data', (chunk) => { data += chunk; });
   res.on('end', () => {

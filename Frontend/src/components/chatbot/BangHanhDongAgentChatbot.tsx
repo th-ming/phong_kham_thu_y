@@ -56,9 +56,9 @@ export const BangHanhDongAgentChatbot: React.FC<{
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 <div style={{ fontSize: '0.78rem', color: '#e2e8f0', lineHeight: '1.4' }}>
                     <span style={{ color: '#64748b' }}>$ </span>
-                    {action.type === 'START' && `Đang chuẩn bị thực thi lệnh: ${action.actionType}`}
+                    {action.type === 'START' && `Đang chuẩn bị thực hiện yêu cầu: ${action.actionType}`}
                     {action.type === 'PROGRESS' && (action.message || 'Đang thực hiện...')}
-                    {action.type === 'SUCCESS' && (action.message || 'Thực thi hành động thành công!')}
+                    {action.type === 'SUCCESS' && (action.message || 'Thực hiện hành động thành công!')}
                     {action.type === 'ERROR' && (action.message || 'Hành động thất bại hoặc bị hủy!')}
                 </div>
 
