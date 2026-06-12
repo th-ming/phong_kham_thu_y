@@ -22,6 +22,13 @@ const Loi404: React.FC = () => {
             color: 'var(--ink)'
         }}>
             <style>{`
+                .error-404-main {
+                    flex-grow: 1;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 80px 24px;
+                }
                 .btn-404-primary { 
                     background: var(--primary-gradient);
                     color: white; border: none; cursor: pointer;
@@ -99,28 +106,31 @@ const Loi404: React.FC = () => {
                     box-shadow: 0 16px 34px rgba(245, 158, 11, 0.32);
                 }
                 @media (max-width: 720px) {
+                    .error-404-main {
+                        padding: 24px 16px !important;
+                    }
                     .cat-card {
-                        max-width: 380px !important;
+                        max-width: 280px !important;
                         border-radius: 34px;
                     }
                     .cat-404-video {
-                        width: min(76%, 300px);
+                        width: min(76%, 220px);
                         bottom: 4%;
                     }
                     .cat-404-question {
-                        width: 54px;
-                        height: 54px;
+                        width: 44px;
+                        height: 44px;
                         top: 9%;
                         right: 12%;
                     }
                 }
             `}</style>
 
-            <main style={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '100px 24px' }}>
-                <div style={{ maxWidth: '1100px', width: '100%', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '60px', alignItems: 'center' }}>
+            <main className="error-404-main">
+                <div style={{ maxWidth: '1100px', width: '100%', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '40px', alignItems: 'center' }}>
 
                     {/* KHỐI CON MÈO */}
-                    <div style={{ position: 'relative', width: '100%', aspectRatio: '1', maxWidth: '480px', margin: '0 auto' }} className="cat-card">
+                    <div style={{ position: 'relative', width: '100%', aspectRatio: '1', maxWidth: '400px', margin: '0 auto' }} className="cat-card">
                         <div className="cat-404-number">
                             <span>404</span>
                         </div>
@@ -128,27 +138,27 @@ const Loi404: React.FC = () => {
                         <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>
                             <TransparentVideo src="/img/video_loi_404.mp4" className="cat-404-video" style={{ display: 'block' }} />
                             <div className="cat-404-question">
-                                <span className="material-symbols-outlined" style={{ fontSize: '32px', fontWeight: 900 }}>question_mark</span>
+                                <span className="material-symbols-outlined" style={{ fontSize: '24px', fontWeight: 900 }}>question_mark</span>
                             </div>
                         </div>
                     </div>
 
                     {/* NỘI DUNG */}
                     <div style={{ textAlign: 'left' }}>
-                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 16px', background: 'var(--primary-light)', color: 'var(--primary)', borderRadius: '50px', marginBottom: '24px' }}>
-                            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>error</span>
-                            <span style={{ fontSize: '0.8rem', fontWeight: 900, letterSpacing: '1px', textTransform: 'uppercase' }}>KHÔNG TÌM THẤY TRANG</span>
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 12px', background: 'var(--primary-light)', color: 'var(--primary)', borderRadius: '50px', marginBottom: '16px' }}>
+                            <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>error</span>
+                            <span style={{ fontSize: '0.75rem', fontWeight: 900, letterSpacing: '1px', textTransform: 'uppercase' }}>KHÔNG TÌM THẤY TRANG</span>
                         </div>
 
-                        <h1 style={{ fontSize: '3.5rem', fontWeight: 950, color: 'var(--ink)', lineHeight: 1.1, marginBottom: '24px', letterSpacing: '-2px' }}>
+                        <h1 style={{ fontSize: '2.5rem', fontWeight: 950, color: 'var(--ink)', lineHeight: 1.15, marginBottom: '16px', letterSpacing: '-1.5px' }}>
                             Rất tiếc, trang này đã bị <span style={{ color: 'var(--primary)' }}>lạc</span> trong phòng khám.
                         </h1>
 
-                        <p style={{ fontSize: '1.2rem', color: 'var(--gray-500)', lineHeight: 1.7, maxWidth: '480px', marginBottom: '48px', fontWeight: 500 }}>
+                        <p style={{ fontSize: '1.05rem', color: 'var(--gray-500)', lineHeight: 1.6, maxWidth: '480px', marginBottom: '32px', fontWeight: 500 }}>
                             Có vẻ như đường dẫn bạn đang truy cập không chính xác. Ngay cả những bác sĩ giỏi nhất đôi khi cũng lạc đường.
                         </p>
 
-                        <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
                             <button data-ai-id="button-loi404-zek7" className="btn-404-primary" onClick={() => navigate(-1)}>
                                 <span className="material-symbols-outlined">arrow_back</span>
                                 Quay lại trang trước
@@ -159,12 +169,12 @@ const Loi404: React.FC = () => {
                             </button>
                         </div>
 
-                        <div style={{ marginTop: '60px', display: 'flex', alignItems: 'center', gap: '12px', opacity: 0.8 }}>
-                            <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--gray-100)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <span className="material-symbols-outlined" style={{ fontSize: '20px', color: 'var(--gray-500)' }}>help</span>
+                        <div style={{ marginTop: '40px', display: 'flex', alignItems: 'center', gap: '10px', opacity: 0.8 }}>
+                            <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'var(--gray-100)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <span className="material-symbols-outlined" style={{ fontSize: '18px', color: 'var(--gray-500)' }}>help</span>
                             </div>
-                            <span style={{ fontSize: '0.95rem', color: 'var(--gray-500)', fontWeight: 600 }}>
-                        Cần hỗ trợ tìm kiếm? <a data-ai-id="link_404_support" href="#" style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: 800 }}>Liên hệ Hỗ trợ</a>
+                            <span style={{ fontSize: '0.9rem', color: 'var(--gray-500)', fontWeight: 600 }}>
+                                Cần hỗ trợ tìm kiếm? <a data-ai-id="link_404_support" href="#" style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: 800 }}>Liên hệ Hỗ trợ</a>
                             </span>
                         </div>
                     </div>
