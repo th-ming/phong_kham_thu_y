@@ -415,8 +415,8 @@ const Footer: React.FC<{ isSimple?: boolean }> = ({ isSimple }) => {
 
                     .footer-cat-media {
                         display: flex !important;
-                        left: 35px !important;
-                        right: auto !important;
+                        left: auto !important;
+                        right: 35px !important;
                         bottom: 40px !important;
                         transform: none !important;
                     }
@@ -432,8 +432,8 @@ const Footer: React.FC<{ isSimple?: boolean }> = ({ isSimple }) => {
 
                     .footer-cat-bubble-wrap {
                         display: flex !important;
-                        left: 35px !important;
-                        right: auto !important;
+                        left: auto !important;
+                        right: 35px !important;
                         bottom: 105px !important;
                         transform: none !important;
                     }
