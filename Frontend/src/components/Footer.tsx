@@ -212,7 +212,7 @@ const Footer: React.FC<{ isSimple?: boolean }> = ({ isSimple }) => {
 
             {/* LỚP CHỨA ẢNH/VIDEO */}
             {!isSimple && (
-                <div className="footer-cat-media" style={{
+                <div className={`footer-cat-media ${isMemePlaying ? 'media-playing' : 'media-static'}`} style={{
                     position: 'absolute',
                     bottom: '143px', 
                     left: '50%',
@@ -415,10 +415,19 @@ const Footer: React.FC<{ isSimple?: boolean }> = ({ isSimple }) => {
 
                     .footer-cat-media {
                         display: flex !important;
-                        left: auto !important;
-                        right: 35px !important;
                         bottom: 40px !important;
+                    }
+
+                    .footer-cat-media.media-static {
+                        left: auto !important;
+                        right: 30% !important;
                         transform: none !important;
+                    }
+
+                    .footer-cat-media.media-playing {
+                        left: 50% !important;
+                        right: auto !important;
+                        transform: translateX(-50%) !important;
                     }
 
                     .footer-cat-media img {
@@ -433,7 +442,7 @@ const Footer: React.FC<{ isSimple?: boolean }> = ({ isSimple }) => {
                     .footer-cat-bubble-wrap {
                         display: flex !important;
                         left: auto !important;
-                        right: 35px !important;
+                        right: 30% !important;
                         bottom: 105px !important;
                         transform: none !important;
                     }
