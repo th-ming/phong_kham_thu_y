@@ -236,6 +236,9 @@ export const StyleChatbot: React.FC = () => (
                 height: min(620px, calc(var(--rexi-viewport-height, 100dvh) - max(96px, env(safe-area-inset-bottom, 0px) + 90px))) !important;
                 max-height: min(620px, calc(var(--rexi-viewport-height, 100dvh) - max(96px, env(safe-area-inset-bottom, 0px) + 90px))) !important;
             }
+            body:has(#chatWindow) .scroll-to-top-glass {
+                display: none !important;
+            }
             #chatWindow textarea {
                 font-size: 16px !important;
             }

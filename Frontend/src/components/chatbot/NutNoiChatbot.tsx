@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 
 export const NutNoiChatbot: React.FC<{
     isOpen: boolean;
@@ -7,7 +7,9 @@ export const NutNoiChatbot: React.FC<{
     hasMobileBottomNav: boolean;
     isAdminRoute?: boolean;
     onToggle: () => void;
-}> = ({ isOpen, isMobile, activeTab, hasMobileBottomNav, isAdminRoute = false, onToggle }) => (
+}> = ({ isOpen, isMobile, activeTab, hasMobileBottomNav, isAdminRoute = false, onToggle }) => {
+    if (isOpen && isMobile) return null;
+    return (
     <button
         data-ai-id="button-chatbot-yhoj"
         id="chatBtn"
@@ -34,4 +36,5 @@ export const NutNoiChatbot: React.FC<{
             {isOpen ? 'close' : 'pets'}
         </span>
     </button>
-);
+    );
+};
