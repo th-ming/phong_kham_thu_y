@@ -48,7 +48,7 @@ async function captureCloud() {
   await installMocks(page);
   
   // Go to cloud service detail page
-  await page.goto('https://rexi-vet-clinic.vercel.app/dich-vu/kham-lam-sang-tong-quat', { waitUntil: 'networkidle', timeout: 50000 });
+  await page.goto(`https://rexi-vet-clinic.vercel.app/dich-vu/kham-lam-sang-tong-quat?t=${Date.now()}`, { waitUntil: 'networkidle', timeout: 50000 });
   await page.waitForTimeout(4000);
   await page.evaluate(() => window.scrollTo(0, 500));
   await page.waitForTimeout(2000);

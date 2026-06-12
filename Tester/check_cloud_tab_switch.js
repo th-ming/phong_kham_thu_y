@@ -47,7 +47,7 @@ async function installMocks(page) {
   await installMocks(page);
 
   // Go to live website with cache bypass
-  await page.goto('https://rexi-vet-clinic.vercel.app/dich-vu/kham-lam-sang-tong-quat?bypass=1', { waitUntil: 'networkidle' });
+  await page.goto(`https://rexi-vet-clinic.vercel.app/dich-vu/kham-lam-sang-tong-quat?t=${Date.now()}`, { waitUntil: 'networkidle' });
   await page.waitForTimeout(4000);
 
   // Open chat

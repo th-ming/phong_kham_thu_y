@@ -176,6 +176,7 @@ export const StyleChatbot: React.FC = () => (
             max-width: calc(100vw - 20px);
             contain: layout paint;
             overflow: hidden !important;
+            padding: 0 !important;
         }
         .chat-message-scroll {
             scrollbar-width: thin;
@@ -230,7 +231,7 @@ export const StyleChatbot: React.FC = () => (
                 max-height: min(650px, 80dvh) !important;
                 border-radius: 24px 24px 0 0 !important;
                 overflow: hidden !important;
-                padding-bottom: env(safe-area-inset-bottom, 0px);
+                padding: 0 0 env(safe-area-inset-bottom, 0px) !important;
                 box-shadow: 0 -8px 32px rgba(2, 132, 199, 0.18) !important;
                 border-left: none !important;
                 border-right: none !important;
@@ -238,7 +239,7 @@ export const StyleChatbot: React.FC = () => (
             }
             #chatWindow.chat-window-has-mobile-nav {
                 bottom: 0 !important;
-                padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)) !important;
+                padding: 0 0 calc(76px + env(safe-area-inset-bottom, 0px)) !important;
                 height: min(650px, 80dvh) !important;
                 max-height: min(650px, 80dvh) !important;
             }
