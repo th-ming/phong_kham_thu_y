@@ -415,10 +415,10 @@ const Footer: React.FC<{ isSimple?: boolean }> = ({ isSimple }) => {
 
                     .footer-cat-media {
                         display: flex !important;
-                        left: 50% !important;
+                        left: 35px !important;
                         right: auto !important;
                         bottom: 40px !important;
-                        transform: translateX(-50%) !important;
+                        transform: none !important;
                     }
 
                     .footer-cat-media img {
@@ -432,10 +432,10 @@ const Footer: React.FC<{ isSimple?: boolean }> = ({ isSimple }) => {
 
                     .footer-cat-bubble-wrap {
                         display: flex !important;
-                        left: 50% !important;
+                        left: 35px !important;
                         right: auto !important;
                         bottom: 105px !important;
-                        transform: translateX(-50%) !important;
+                        transform: none !important;
                     }
 
                     .footer-chat-bubble {
