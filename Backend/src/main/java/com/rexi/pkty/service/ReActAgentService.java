@@ -54,13 +54,41 @@ public class ReActAgentService {
 
     public ReActResult run(String userQuery, String username, String userRole, List<String> images) {
         List<ReActStep> steps = new ArrayList<>();
-        String originalUserIntent = extractOriginalUserIntent(userQuery);
+
+        // === Trích xuất context trang từ prefix [TRANG_HIEN_TAI:X][TRANG_TRUOC:Y] ===
+        String currentPage = extractPageTag(userQuery, "TRANG_HIEN_TAI");
+        String previousPage = extractPageTag(userQuery, "TRANG_TRUOC");
+        // Loại bỏ tags khỏi query trước khi xử lý
+        String cleanQuery = userQuery.replaceAll("\\[TRANG_HIEN_TAI:[^\\]]*\\]", "").replaceAll("\\[TRANG_TRUOC:[^\\]]*\\]", "").trim();
+
+        String originalUserIntent = extractOriginalUserIntent(cleanQuery);
         String baseNormalized = normalizeVietnamese(originalUserIntent.trim().toLowerCase());
         String normalizedQuery = normalizeSlangCommand(baseNormalized.replaceAll("[^a-z0-9\\s_/.\\-:/?&=@%#]", " ").replaceAll("\\s+", " ").trim());
         boolean isStaff = isStaffRole(userRole);
 
         if (images != null && !images.isEmpty()) {
             return handleAgentImageAnalysis(originalUserIntent, images, userRole, steps);
+        }
+
+        // === Xử lý "quay về trang trước" / "đang ở trang nào" ===
+        boolean asksBack = containsAny(normalizedQuery, "quay ve trang truoc", "trang truoc", "back", "tro ve", "lui ve", "trang cu", "truoc do");
+        boolean asksCurrentPage = containsAny(normalizedQuery, "trang nay la gi", "trang hien tai", "dang o trang nao", "o trang nao", "trang nao day", "toi dang o");
+
+        if (asksBack) {
+            if (previousPage != null && !previousPage.isBlank()) {
+                String pageName = resolvePageDisplayName(previousPage);
+                return finalResult(steps, "Quay về trang trước cho bạn. [NAVIGATE:" + previousPage + "]");
+            } else {
+                return finalResult(steps, "Rexi chưa ghi nhận trang trước đó. Bạn muốn về trang nào? Ví dụ: dashboard, lịch hẹn, khách hàng...");
+            }
+        }
+        if (asksCurrentPage) {
+            if (currentPage != null && !currentPage.isBlank()) {
+                String pageName = resolvePageDisplayName(currentPage);
+                return finalResult(steps, "Bạn đang ở trang " + pageName + " (" + currentPage + ").");
+            } else {
+                return finalResult(steps, "Rexi chưa nhận được thông tin trang hiện tại từ giao diện.");
+            }
         }
 
         if (isStaff
@@ -2180,6 +2208,39 @@ public class ReActAgentService {
     }
 
     // Bổ sung phương thức trích xuất ý định nguyên bản của người dùng
+    private String extractPageTag(String query, String tagName) {
+        if (query == null) return "";
+        java.util.regex.Matcher m = java.util.regex.Pattern
+            .compile("\\[" + tagName + ":([^\\]]+)\\]")
+            .matcher(query);
+        return m.find() ? m.group(1).trim() : "";
+    }
+
+    private String resolvePageDisplayName(String route) {
+        if (route == null || route.isBlank()) return route;
+        return switch (route) {
+            case "/quan-ly/dashboard" -> "Dashboard quản lý";
+            case "/quan-ly/lich-hen" -> "Lịch hẹn";
+            case "/quan-ly/khach-hang-thu-cung" -> "Khách hàng & Thú cưng";
+            case "/quan-ly/nhan-vien-phan-quyen" -> "Nhân sự & Phân quyền";
+            case "/quan-ly/ho-so-benh-an" -> "Hồ sơ bệnh án";
+            case "/quan-ly/kham-benh" -> "Khám bệnh";
+            case "/quan-ly/don-thuoc" -> "Đơn thuốc";
+            case "/quan-ly/hoa-don" -> "Hoá đơn";
+            case "/quan-ly/bao-cao-thong-ke" -> "Báo cáo thống kê";
+            case "/quan-ly/ke-toan" -> "Kế toán";
+            case "/quan-ly/kho-thuoc" -> "Kho thuốc";
+            case "/quan-ly/lich-lam-viec" -> "Lịch làm việc";
+            case "/quan-ly/dich-vu" -> "Danh mục dịch vụ";
+            case "/quan-ly/cau-hinh" -> "Cấu hình hệ thống";
+            case "/quan-ly/marketing" -> "Marketing";
+            case "/khach-hang/dashboard" -> "Dashboard khách hàng";
+            case "/khach-hang/dat-lich-hen" -> "Đặt lịch hẹn";
+            case "/khach-hang/lich-su-lich-hen" -> "Lịch sử lịch hẹn";
+            default -> route;
+        };
+    }
+
     private String extractOriginalUserIntent(String query) {
         if (query == null) return "";
         String extracted = extractFirstGroup(query, "(?im)^\\s*(?:Yêu cầu người dùng|Yeu cau nguoi dung)\\s*:\\s*(.+?)\\s*$");
@@ -2196,5 +2257,3 @@ public class ReActAgentService {
         return null;
     }
 }
-
-

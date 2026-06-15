@@ -85,6 +85,13 @@ export const ChatBotCore: React.FC = () => {
     const isDark = theme === 'dark';
     const navigate = useNavigate();
     const location = useLocation();
+    // Track trang trước để bot hiểu "quay về trang trước"
+    const previousPageRef = React.useRef<string>("");
+    React.useEffect(() => {
+        return () => {
+            previousPageRef.current = location.pathname;
+        };
+    }, [location.pathname]);
 
     const { isMobile } = useChatbotViewport();
 
@@ -96,6 +103,7 @@ export const ChatBotCore: React.FC = () => {
     const isAdminAccount = normalizedRoleCode === "admin";
     const isCustomerRoute = location.pathname.startsWith("/khach-hang");
     const isAdminRoute = location.pathname.startsWith("/quan-ly");
+    const isHomeRoute = location.pathname === "/";
     const roleDisplayName: Record<string, string> = {
         admin: "Quản trị",
         quan_ly: "Quản lý",
@@ -3795,7 +3803,7 @@ export const ChatBotCore: React.FC = () => {
                         }
                     } catch (err) {
                         try {
-                            const fallback = await axiosInstance.post("/api/agent/react", { query: textToSend }, { timeout: 30000 });
+                            const fallback = await axiosInstance.post("/api/agent/react", { query: textToSend, currentPage: location.pathname, previousPage: previousPageRef.current || "" }, { timeout: 30000 });
                             const fallbackText = normalizeRawAssistantReplyText(fallback.data?.finalAnswer || fallback.data?.reply, "Rexi chưa lấy được lịch hẹn hôm nay từ hệ thống.");
                             const aiReply = { type: "ai", text: fallbackText, provider: fallback.data?.provider, steps: fallback.data?.steps };
                             setAgentMessages(prev => [...prev, aiReply]);
@@ -4564,6 +4572,8 @@ export const ChatBotCore: React.FC = () => {
 
                 response = await axiosInstance.post("/api/agent/react", {
                     query: pageContext,
+                    currentPage: location.pathname,
+                    previousPage: previousPageRef.current || "",
                     ...(images.length > 0 && { images })
                 }, { timeout: 60000 });
             }
@@ -4942,6 +4952,7 @@ export const ChatBotCore: React.FC = () => {
             isVoiceEnabled={isVoiceEnabled}
             lastAgentQuery={lastAgentQuery}
             lastQuery={lastQuery}
+            isHomeRoute={isHomeRoute}
             messages={messages}
             proactiveMessage={proactiveMessage}
             removeSelectedFile={removeSelectedFile}
@@ -4973,3 +4984,8 @@ export const ChatBotCore: React.FC = () => {
             zoomedImage={zoomedImage}
         />
     );};
+
+
+
+
+

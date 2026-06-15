@@ -538,8 +538,17 @@ public class AgentController {
     public ResponseEntity<?> reactAgent(@RequestBody Map<String, Object> body, jakarta.servlet.http.HttpServletRequest request) {
         String query = Objects.toString(body.getOrDefault("query", ""), "").trim();
         List<String> images = extractStringList(body.get("images"));
+        String currentPage = Objects.toString(body.getOrDefault("currentPage", ""), "").trim();
+        String previousPage = Objects.toString(body.getOrDefault("previousPage", ""), "").trim();
         if (query.isEmpty()) {
             return ResponseEntity.badRequest().body(Map.of("error", "Query không được để trống."));
+        }
+        // Đính kèm context trang vào query để agent biết đang ở đâu
+        if (!currentPage.isBlank() || !previousPage.isBlank()) {
+            StringBuilder ctx = new StringBuilder();
+            if (!currentPage.isBlank()) ctx.append("[TRANG_HIEN_TAI:").append(currentPage).append("]");
+            if (!previousPage.isBlank()) ctx.append("[TRANG_TRUOC:").append(previousPage).append("]");
+            query = ctx + " " + query;
         }
 
         // Get user state tu token context
