@@ -303,15 +303,14 @@ public class AuthController {
     }
 
     // Ghi nhận số lần đăng nhập sai của KHACH_HANG hoặc NHAN_VIEN để kích hoạt LOCKOUT chặn dò pass.
-    // Nếu sập bẫy brute-force, hệ thống sẽ tự động gọi securityAlertService báo động đỏ IP phá hoại.
+    // Đã thay đổi: Không chặn vĩnh viễn IP (reportAndBlock) để tránh khóa nhầm cả mạng WiFi phòng khám nếu 1 người quên pass. Chỉ khóa tạm thời (lockoutTime).
     private void handleFailedAttempt(String lockoutKey, String ip, String username) {
         int attempts = loginAttempts.getOrDefault(lockoutKey, 0) + 1;
         loginAttempts.put(lockoutKey, attempts);
         if (attempts >= MAX_ATTEMPTS) {
             lockoutTime.put(lockoutKey, System.currentTimeMillis() + LOCKOUT_DURATION);
-            if (attempts == MAX_ATTEMPTS && securityAlertService != null) {
-                securityAlertService.reportAndBlock(ip, "Brute-force Login", "/api/auth/login", "POST", "Automated Script", 
-                    "User: " + username + " failed " + attempts + " times", "Hệ thống tự động phát hiện và chặn đứng hành vi dò mật khẩu liên tục.");
+            if (attempts == MAX_ATTEMPTS) {
+                logger.warning("[Brute-force Alert] IP " + ip + " nhập sai mật khẩu quá " + MAX_ATTEMPTS + " lần cho user " + username + ". Đã khóa tạm thời " + (LOCKOUT_DURATION / 60000) + " phút.");
             }
         }
     }
