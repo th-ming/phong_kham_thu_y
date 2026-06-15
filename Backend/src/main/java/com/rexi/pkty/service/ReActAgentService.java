@@ -55,7 +55,8 @@ public class ReActAgentService {
     public ReActResult run(String userQuery, String username, String userRole, List<String> images) {
         List<ReActStep> steps = new ArrayList<>();
         String originalUserIntent = extractOriginalUserIntent(userQuery);
-        String normalizedQuery = normalizeVietnamese(originalUserIntent.trim().toLowerCase());
+        String baseNormalized = normalizeVietnamese(originalUserIntent.trim().toLowerCase());
+        String normalizedQuery = normalizeSlangCommand(baseNormalized.replaceAll("[^a-z0-9\\s_/.\\-:/?&=@%#]", " ").replaceAll("\\s+", " ").trim());
         boolean isStaff = isStaffRole(userRole);
 
         if (images != null && !images.isEmpty()) {
@@ -981,6 +982,9 @@ public class ReActAgentService {
 
     private ReActResult handleScheduleDeterministicIntent(String q, String userRole, String username, List<ReActStep> steps) {
         if (q == null || q.isBlank()) return null;
+        if (isExplicitNavigationQuery(q) && !containsAny(q, "y ta", "y ta ", "nhan vien", "nhan vien ", "bac si", "bac si ", "bs", "trung ca", "ca nao", "ai ranh", "xep lich", "toi uu", "override")) {
+            return null;
+        }
         boolean hasScheduleContext = containsAny(q,
                 "lich lam", "lich truc", "lich hen", "ca truc", "ca lam", "xep lich", "phan ca",
                 "slot", "khung gio", "gio truc", "dang ky lich", "dang ky ca", "them ca", "ep them",
@@ -1286,8 +1290,8 @@ public class ReActAgentService {
     private String normalizeSlangCommand(String value) {
         if (value == null || value.isBlank()) return "";
         String q = " " + value + " ";
-        q = q.replaceAll("\\b(e|ey|eh|yo|doi oi|troi oi|y|i)\\b", " ");
-        q = q.replaceAll("\\b(t|tui|toi|mk|m)\\b", " toi ");
+        q = q.replaceAll("\\b(e|ey|eh|yo|doi oi|troi oi|i)\\b", " ");
+        q = q.replaceAll("\\b(t|tui|toi|mk|m|tao|tau)\\b", " toi ");
         q = q.replaceAll("\\b(dum|gium|giup cai|help)\\b", " giup ");
         q = q.replaceAll("\\b(ni|nì|ne|nek|nhe|nha|coi)\\b", " ");
         q = q.replaceAll("\\b(z|v|dz|zay|vay)\\b", " vay ");
@@ -1304,9 +1308,16 @@ public class ReActAgentService {
 
     private boolean isExplicitNavigationQuery(String q) {
         if (q == null || q.isBlank()) return false;
-        return containsAny(q,
-                "mo", "mo trang", "vao", "vao trang", "chuyen", "chuyen trang", "chuyen sang",
-                "di toi", "toi trang", "den trang", "qua trang", "dua toi", "quay ve", "ve trang", "back ve");
+        // Pattern 1: nav verb + nav target (cùng câu, có thể cách nhau bởi từ đệm như "giup", "dum", "cai")
+        boolean hasNavVerb = containsAny(q, "mo", "vao", "chuyen", "di", "dua", "quay", "back", "den", "toi", "cho xem", "cho toi", "dua len");
+        boolean hasNavTarget = containsAny(q, "trang", "phan he", "ve", "man hinh");
+        // Pattern 2: explicit nav phrases
+        boolean hasExplicitPhrase = containsAny(q,
+                "mo trang", "vao trang", "chuyen trang", "chuyen sang",
+                "di toi", "toi trang", "den trang", "qua trang", "dua toi",
+                "quay ve", "quay lai", "ve trang", "back ve", "back to");
+        // Chỉ cần nav verb + nav target (word-boundary đảm bảo không nhầm substring)
+        return (hasNavVerb && hasNavTarget) || hasExplicitPhrase;
     }
 
     private String resolveRouteForRole(String q, boolean isStaff) {
@@ -1383,7 +1394,8 @@ public class ReActAgentService {
         boolean hasCreateIntent = containsAny(q, "dat lich", "book lich", "lap lich", "tao lich", "dat bac si", "dat bs", "dat bsi");
         boolean asksCreatedAppointments = hasCreateIntent && containsAny(q,
                 "ai", "nhung ai", "co ai", "bao nhieu", "danh sach", "liet ke", "xem", "tra", "kiem tra", "check");
-        boolean hasNavigationIntent = containsAny(q, "mo trang", "vao trang", "chuyen sang", "di toi", "dua toi", "qua trang")
+        boolean hasNavigationIntent = (containsAny(q, "mo trang", "vao trang", "chuyen sang", "di toi", "dua toi", "qua trang")
+                || (containsAny(q, "mo", "vao", "chuyen", "di", "dua", "quay", "back") && containsAny(q, "trang", "phan he", "ve")))
                 && !containsAny(q, "mo danh sach", "danh sach ca kham", "danh sach lich kham", "danh sach lich hen");
         boolean explicitSystemLookup = containsAny(q, "check db", "check he thong", "du lieu", "trong db", "he thong");
         return (!hasCreateIntent || asksCreatedAppointments) && !hasNavigationIntent
@@ -1741,7 +1753,7 @@ public class ReActAgentService {
             return safetyResult(steps, "Rửa vết thương dưới vòi nước và xà phòng 15 phút, sát khuẩn, rồi tới cơ sở y tế/VNVC tiêm phòng dại càng sớm càng tốt, tốt nhất trong 24h. Bé chó cần được kiểm dịch dại.");
         }
 
-        if (containsAny(q, "thuoc ngu", "thuoc me", "tu mo", "tu tiem", "an tu", "can sa", "cong thuc thuoc")) {
+        if (containsAny(q, "thuoc ngu", "thuoc me", "tu mo", "tu tiem", "an tu", "can sa", "cong thuc thuoc") && !containsAny(q, "bo an tu", "bo an")) {
             if (containsAny(q, "tre em 10 tuoi", "10 tuoi")) {
                 return safetyResult(steps, "Em không hướng dẫn tự mổ. Em nên nhờ người lớn gọi phòng khám ngay; tự mổ rất nguy hiểm cho bé và cho em.");
             }
@@ -1897,15 +1909,10 @@ public class ReActAgentService {
             return new SensitiveCommand("destructive", "khóa tài khoản hoặc mật khẩu", "thực hiện thao tác nhạy cảm này");
         }
 
-        // 2. Thao tác xóa hoặc hủy các thực thể quan trọng (lịch hẹn, hóa đơn, thú cưng, bệnh án, khách hàng...)
         boolean hasDeleteVerb = containsAnyTokenOrPhrase(q, "xoa", "delete", "remove", "huy", "huy bo", "cancel");
         boolean hasImportantEntity = containsAny(q,
                 "lich", "hoa don", "bill", "don", "phieu", "khach", "thu cung", "pet", "boss", "benh an", "ho so", "dich vu", "thuoc", "ca kham", "tai khoan", "acc"
         );
-
-        if (hasDeleteVerb && containsAny(q, "lich", "lich hen") && q.matches(".*\\blh[-_a-z0-9]+\\b.*")) {
-            return null;
-        }
 
         if (hasDeleteVerb && hasImportantEntity) {
             return new SensitiveCommand("destructive", "xóa/hủy dữ liệu quan trọng", "thực hiện thao tác nhạy cảm này");
