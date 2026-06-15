@@ -534,7 +534,6 @@ public class AgentController {
 
     // ReAct Agent Core (Reason-Act-Observe)
     @PostMapping("/react")
-    @PreAuthorize(RexiSecurityRoles.AUTHENTICATED)
     public ResponseEntity<?> reactAgent(@RequestBody Map<String, Object> body, jakarta.servlet.http.HttpServletRequest request) {
         String query = Objects.toString(body.getOrDefault("query", ""), "").trim();
         List<String> images = extractStringList(body.get("images"));
@@ -654,7 +653,7 @@ public class AgentController {
         if (value == null || value.isBlank()) return "(trống)";
         String compact = value.replaceAll("\\s+", " ").trim();
         if (compact.length() <= maxChars) return compact;
-        return compact.substring(0, Math.max(0, maxChars - 20)) + "... [rut gon]";
+        return compact.substring(0, Math.max(0, maxChars - 20)) + "... [rút gọn]";
     }
 
     private boolean isCurrentUserStaff() {

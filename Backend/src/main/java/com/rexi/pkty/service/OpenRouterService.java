@@ -195,7 +195,7 @@ public class OpenRouterService {
         }
         models.addAll(getStaticFallbackModels(isMedical));
 
-        // Giới hạn tối đa 3 models để request ổn định, tránh provider tự chọn model free kém chất lượng.
+        // OpenRouter gioi han mang 'models' toi da 3 items.
         List<String> list = new ArrayList<>(models);
         if (list.size() > 3) {
             return list.subList(0, 3);
@@ -204,15 +204,11 @@ public class OpenRouterService {
     }
 
     private List<String> getStaticFallbackModels(boolean isMedical) {
-        if (isMedical) {
-            return List.of(
-                    "deepseek/deepseek-chat-v3-0324:free",
-                    "google/gemini-2.0-flash-exp:free"
-            );
-        }
+        // Chon 3 model free tot nhat de toi uu ty le phan hoi
         return List.of(
-                "deepseek/deepseek-chat-v3-0324:free",
-                "google/gemini-2.0-flash-exp:free"
+                "google/gemini-2.0-pro-exp-02-05:free",
+                "google/gemini-2.0-flash-thinking-hs:free",
+                "deepseek/deepseek-r1:free"
         );
     }
 

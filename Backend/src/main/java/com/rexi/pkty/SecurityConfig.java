@@ -73,6 +73,7 @@ public class SecurityConfig {
                     })
                 .requestMatchers(
                     "/api/auth/**", "/api/chat", "/api/chat/**",
+                    "/api/agent/react",
                     "/api/system/send-otp", "/api/system/verify-otp",
                     "/api/payment/**", "/api/lich-hen/gio-ranh", "/api/lich-hen/dat-lich-nhanh",
                     "/api/lich-hen/khach-vang-lai", "/api/dich-vu/**", "/api/bac-si/**",

@@ -71,7 +71,7 @@ public class ReActAgentService {
         }
 
         // === Xử lý "quay về trang trước" / "đang ở trang nào" ===
-        boolean asksBack = containsAny(normalizedQuery, "quay ve trang truoc", "trang truoc", "back", "tro ve", "lui ve", "trang cu", "truoc do");
+        boolean asksBack = containsAny(normalizedQuery, "quay ve trang truoc", "trang truoc", "back", "tro ve", "lui ve", "trang cu", "quay lai trang");
         boolean asksCurrentPage = containsAny(normalizedQuery, "trang nay la gi", "trang hien tai", "dang o trang nao", "o trang nao", "trang nao day", "toi dang o");
 
         if (asksBack) {
@@ -144,7 +144,7 @@ public class ReActAgentService {
             return pendingConfirmationResult;
         }
 
-        ReActResult deterministicIntent = handleDeterministicIntent(normalizedQuery, isStaff, userRole, username, steps);
+        ReActResult deterministicIntent = handleDeterministicIntent(originalUserIntent, normalizedQuery, isStaff, userRole, username, steps);
         if (deterministicIntent != null) {
             try {
                 if (agentResponseCache != null && agentResponseCache.isCacheableIntent(normalizedQuery)) {
@@ -322,7 +322,7 @@ public class ReActAgentService {
         return new ReActResult(fallback, steps);
     }
 
-    private ReActResult handlePreviewUiIntent(String q, String userRole, List<ReActStep> steps) {
+    private ReActResult handlePreviewUiIntent(String originalQuery, String q, String userRole, List<ReActStep> steps) {
         String role = RoleAccessPolicy.normalizeRole(userRole);
         if (!Set.of("admin", "quan_ly").contains(role)) return null;
         if (q == null || q.isBlank()) return null;
@@ -330,10 +330,10 @@ public class ReActAgentService {
             return null;
         }
 
-        boolean previewVerb = containsAny(q, "doi mau", "chinh mau", "sua mau", "cho mau", "to mau", "doi nen", "chinh nen", "doi chu", "chinh chu", "cho chu", "mau chu", "chu mau", "them link", "them duong link", "gan link", "chen link", "xoa link", "go link", "hoan tac", "reset preview", "xoa chinh thu");
+        boolean previewVerb = containsAny(q, "doi mau", "chinh mau", "sua mau", "cho mau", "to mau", "doi nen", "chinh nen", "doi chu", "chinh chu", "cho chu", "mau chu", "chu mau", "them link", "them duong link", "gan link", "chen link", "xoa link", "go link", "hoan tac", "reset preview", "xoa chinh thu", "xoa het", "xoa cac chinh");
         if (!previewVerb) return null;
 
-        if (containsAny(q, "hoan tac", "reset preview", "xoa chinh thu", "xoa het chinh thu")) {
+        if (containsAny(q, "hoan tac", "reset preview", "xoa chinh thu", "xoa het chinh thu") || (containsAny(q, "xoa", "xoa het") && containsAny(q, "chinh thu", "chinh sua", "chinh", "vua roi", "nay gio"))) {
             return finalResult(steps, "Đã hoàn tác các chỉnh thử giao diện. [PREVIEW_RESET:all]");
         }
 
@@ -342,7 +342,7 @@ public class ReActAgentService {
         }
 
         if (containsAny(q, "them link", "them duong link", "gan link", "chen link")) {
-            String url = extractPreviewUrl(q);
+            String url = extractPreviewUrl(originalQuery != null ? originalQuery : q);
             if (url == null) {
                 return finalResult(steps, "Bạn gửi thêm URL cần gắn nhé.");
             }
@@ -361,7 +361,7 @@ public class ReActAgentService {
                 && containsAny(q, " thanh ", " thanh", " la ", " la")
                 && !containsAny(q, "mau chu", "chu mau", "mau xanh", "mau do", "mau vang", "mau hong", "mau den", "mau trang");
         if (asksTextChange) {
-            String text = extractPreviewText(q);
+            String text = extractPreviewText(originalQuery != null ? originalQuery : q);
             if (text == null || text.isBlank()) {
                 return finalResult(steps, "Bạn muốn đổi chữ phần đó thành nội dung gì?");
             }
@@ -444,15 +444,19 @@ public class ReActAgentService {
     }
 
     private String extractPreviewText(String q) {
-        java.util.regex.Matcher matcher = java.util.regex.Pattern.compile("(?:thanh|la)\\s+(.{1,60})$").matcher(q);
+        java.util.regex.Matcher matcher = java.util.regex.Pattern.compile("(?i)(?:thành|thanh|là|la)\\s+(.{1,60})$").matcher(q);
         if (!matcher.find()) return null;
         return matcher.group(1).replaceAll("\\s+", " ").trim();
     }
 
     private String extractPreviewUrl(String q) {
-        java.util.regex.Matcher matcher = java.util.regex.Pattern.compile("\\b(https?://[^\\s<>]+|mailto:[^\\s<>]+|tel:[+0-9][0-9 .-]{5,}|zalo:[^\\s<>]+)\\b", java.util.regex.Pattern.CASE_INSENSITIVE).matcher(q);
+        java.util.regex.Matcher matcher = java.util.regex.Pattern.compile("(?i)\\b(https?://[^\\s<>]+|mailto:[^\\s<>]+|tel:[+0-9][0-9 .-]{5,}|zalo:[^\\s<>]+|[a-zA-Z0-9-]+\\.[a-zA-Z]{2,}(?:/[^\\s<>]*)?)\\b").matcher(q);
         if (!matcher.find()) return null;
-        return matcher.group(1).trim();
+        String url = matcher.group(1).trim();
+        if (url.matches("(?i)^[a-zA-Z0-9-]+\\.[a-zA-Z]{2,}(?:/.*)?$") && !url.toLowerCase(Locale.ROOT).startsWith("http")) {
+            return "https://" + url;
+        }
+        return url;
     }
 
     private String extractPreviewLinkLabel(String q, String url) {
@@ -477,13 +481,13 @@ public class ReActAgentService {
         return out.isEmpty() ? "Link mới" : String.join(" ", out);
     }
 
-    private ReActResult handleDeterministicIntent(String normalizedQuery, boolean isStaff, String userRole, String username, List<ReActStep> steps) {
+    private ReActResult handleDeterministicIntent(String originalQuery, String normalizedQuery, boolean isStaff, String userRole, String username, List<ReActStep> steps) {
         if (normalizedQuery == null || normalizedQuery.isBlank()) {
             return finalResult(steps, "Bạn muốn Rexi hỗ trợ phần nào?");
         }
 
         String q = normalizeSlangCommand(normalizedQuery.replaceAll("[^a-z0-9\\s_/.\\-:/?&=@%#]", " ").replaceAll("\\s+", " ").trim());
-        ReActResult previewUiIntent = handlePreviewUiIntent(q, userRole, steps);
+        ReActResult previewUiIntent = handlePreviewUiIntent(originalQuery, q, userRole, steps);
         if (previewUiIntent != null) return previewUiIntent;
 
         ReActResult uiAction = handleDeterministicUiAction(q, userRole, steps);
@@ -680,8 +684,8 @@ public class ReActAgentService {
             params.put("staff", "Minh");
             params.put("role", "doctor");
             params.put("week", "this");
-            String observation = toolService.executeTool("getStaffSchedule", params, userRole, username);
-            steps.add(new ReActStep("TOOL", "Tra lịch BS Minh để tìm slot còn trống", "getStaffSchedule", params, observation));
+            String observation = toolService.executeTool("tim_lich_lam_bac_si", params, userRole, username);
+            steps.add(new ReActStep("TOOL", "Tra lịch BS Minh để tìm slot còn trống", "tim_lich_lam_bac_si", params, observation));
             return finalResult(steps, observation);
         }
 
@@ -1805,7 +1809,7 @@ public class ReActAgentService {
         if (containsAny(q, "danh sap web", "hacker", "tien chuoc", "btc")) {
             return safetyResult(steps, "Em đã báo IT. Rexi không cấp quyền hay dữ liệu vì đe dọa; nếu là sự cố thật, vui lòng liên hệ bộ phận kỹ thuật/cơ quan chức năng.");
         }
-        if (containsAny(q, "hack", "sql xoa", "xoa het bang", "select from users", "sudo", "dan")) {
+        if (containsAny(q, "hack", "sql xoa", "xoa het bang", "select from users", "sudo", "sql injection", "drop table", "truncate table")) {
             return safetyResult(steps, "Rexi không hỗ trợ hack, tống tiền, prompt injection hoặc câu lệnh nguy hiểm. Nếu anh cần hỗ trợ tài khoản/kỹ thuật hợp lệ, em sẽ chuyển đúng quy trình IT.");
         }
 
@@ -1997,32 +2001,26 @@ public class ReActAgentService {
 
     private ModelResponse callBestAvailableModel(List<ChatMessage> history) throws Exception {
         trimHistoryForModel(history);
+        List<String> providers = List.of("Groq", "Gemini", "OpenRouter");
         Exception lastError = null;
-        try {
-            String response = groqService.chat(history);
-            logger.info("[ReAct] Model phan hoi thanh cong: Groq");
-            return new ModelResponse(response, "Groq");
-        } catch (Exception e) {
-            lastError = e;
-            logger.warning("[ReAct] Groq loi, fallback sang Gemini: " + e.getMessage());
-        }
 
-        try {
-            String response = geminiService.chat(history);
-            logger.info("[ReAct] Model phan hoi thanh cong (Fallback 1): Gemini");
-            return new ModelResponse(response, "Gemini");
-        } catch (Exception e) {
-            lastError = e;
-            logger.warning("[ReAct] Gemini loi, fallback sang OpenRouter: " + e.getMessage());
-        }
-
-        try {
-            String response = openRouterService.chat(history);
-            logger.info("[ReAct] Model phan hoi thanh cong (Fallback 2): OpenRouter");
-            return new ModelResponse(response, "OpenRouter");
-        } catch (Exception e) {
-            lastError = e;
-            logger.warning("[ReAct] OpenRouter loi: " + e.getMessage());
+        for (String provider : providers) {
+            try {
+                String response = switch (provider) {
+                    case "Groq" -> groqService.chat(history);
+                    case "Gemini" -> geminiService.chat(history);
+                    case "OpenRouter" -> openRouterService.chat(history);
+                    default -> throw new IllegalStateException("Unknown provider");
+                };
+                if (response != null && !response.isBlank()) {
+                    logger.info("🔥 [AI SUCCESS] Model phan hoi thanh cong: " + provider);
+                    return new ModelResponse(response, provider);
+                }
+            } catch (Exception e) {
+                lastError = e;
+                logger.warning("⚠️ [AI FALLBACK] " + provider + " loi: " + e.getMessage());
+                logger.info("👉 Dang thu fallback sang nha cung cap tiep theo...");
+            }
         }
 
         throw lastError != null ? lastError : new RuntimeException("Khong co provider AI kha dung.");
@@ -2083,44 +2081,48 @@ public class ReActAgentService {
 
         String medicalRule = switch (normalizedRole) {
             case "bac_si" ->
-                "- Y te: ho tro chuyen sau (phan oan, nhom thuoc, lieu tham khao). Ghi ro la tham khao, quyet dinh cuoi do bac si.\n";
+                "- Y tế: hỗ trợ chuyên sâu (phân đoán, nhóm thuốc, liều tham khảo). Ghi rõ là tham khảo, quyết định cuối do bác sĩ.\n";
             case "y_ta" ->
-                "- Y te: ho tro cham soc, huong dan sau dieu tri. KHONG ke phac do/lieu; chuyen bac si xu ly.\n";
+                "- Y tế: hỗ trợ chăm sóc, hướng dẫn sau điều trị. KHÔNG kê phác đồ/liều; chuyển bác sĩ xử lý.\n";
             default ->
-                "- Y te: KHONG chan doan, KHONG ke thuoc, KHONG neu lieu. Chi so cap an toan va huong dan gap bac si.\n";
+                "- Y tế: KHÔNG chẩn đoán, KHÔNG kê thuốc, KHÔNG nêu liều. Chỉ sơ cấp cứu an toàn và hướng dẫn gặp bác sĩ.\n";
         };
 
         String roleCtx = isStaff
-            ? "Nhan su noi bo - vai tro: " + displayRole + " (" + normalizedRole + "). Ho so cong viec: " + roleWorkProfile + " Huong dan ho tro: " + rolePromptGuidance + " Chi dung tool trong danh sach quyen cua vai tro nay; khong doi xu nhu khach hang."
-            : "Khach hang - username: " + username + ". Chi dung tool khach duoc phep.";
+            ? "Nhân sự nội bộ - vai trò: " + displayRole + " (" + normalizedRole + "). Hồ sơ công việc: " + roleWorkProfile + " Hướng dẫn hỗ trợ: " + rolePromptGuidance + " Chỉ dùng tool trong danh sách quyền của vai trò này; không đối xử như khách hàng."
+            : "Khách hàng - username: " + username + ". Chỉ dùng tool khách được phép.";
 
         return buildAgentIdentityBlock(userRole, isStaff)
             + "\n\n" + toolsSchema
-            + "\n\n=== NGU CANH PHONG KHAM ===\n" + globalCtx
-            + "\n=== THONG TIN NGUOI DUNG ===\n" + userCtx
-            + "\n=== VAI TRO ===\n" + roleCtx
-            + "\n\n=== LUAT HANH DONG (BAT BUOC) ===\n"
-            + "0. REXI AGENT LA CHE DO LAM VIEC: uu tien hanh dong/tool/UI ngay khi du thong tin. Noi it, lam nhieu; khong tu van dai neu co the thao tac hoac tra ket qua truc tiep.\n"
-            + "1. UI ACTION FIRST: neu user yeu cau doi/sua/dien/chon/bam tren man hinh va DOM co data-ai-id phu hop, final_answer = 1 cau ngan + action tags. Khong goi DB tool cho viec sua form thuong.\n"
-            + "2. Format UI duy nhat: [CLICK:id] [FILL:id|value] [SELECT:id|value] [TOGGLE:id] [DELETE:id] [SCROLL:down|small] [NAVIGATE:/path]. Chi dung id co trong DOM.\n"
-            + "3. DATA TOOL: neu can tra cuu/tao/sua du lieu he thong va du thong tin -> goi tool ngay, khong bao truoc.\n"
-            + "4. Thieu 1 truong bat buoc -> hoi duy nhat 1 cau <= 10 tu. Thieu element DOM -> noi ro thieu element nao.\n"
-            + "5. final_answer toi da 1-2 cau hoac 3 dong bullet ngan khi co nhieu y. Khong mo dau, khong tong ket tool data, khong viet phan tich dai.\n"
-            + "6. BAT BUOC hieu ngon ngu tu nhien that: Gen Z, teencode, go sai, khong dau, chen tu dem, noi tuc, viet tat, noi vong, tieng Viet lai Anh. Khong duoc phu thuoc danh sach format co san.\n"
-            + "7. Khi gap cau la, hay suy luan y dinh theo ngu canh + DOM hien tai: 'cai nay/cho nay/nut nay' thuong la element dang hien; 'tang len 2/up 2/set 2' la doi gia tri thanh 2; 'bam/nhan/an/tap' la click; 'chóa/chua/choa/doggo' la cho; 'miu/mew/meow' la meo. Neu van mo ho, hoi lai dung 1 cau ngan thay vi tra null.\n"
-            + "8. Cau hoi trieu chung thu y (oi, bo an, run, nam im, gai, kho tho...) la tu van an toan, KHONG goi tim_thu_cung/tim_khach_hang neu user khong noi ro can tim ho so trong DB.\n"
-            + "9. Tuyet doi khong lo reasoning/noi bo: khong viet <think>, </assistant>, tieng Anh phan tich, hoac giai thich qua trinh suy nghi trong final_answer.\n"
-            + "10. Chuan hoa tool input: loai=Meo/Cho, ngay=YYYY-MM-DD, gio=HH:mm.\n"
-            + "11. Chi goi tim_kiem_web khi user noi ro can len mang/web/tin moi/tai lieu ngoai he thong. CRUD, form, lich hen, kho, hoa don la tool noi bo/UI, khong dung web.\n"
+            + "\n\n=== THÔNG TIN PHÒNG KHÁM REXI ===\n"
+            + "- Hotline cấp cứu: 0353.374.156 (Bác sĩ Minh)\n"
+            + "- Địa chỉ: Ngõ 64 Ngô Xuân Quảng, Trâu Quỳ, Gia Lâm, Hà Nội\n"
+            + "- Giờ mở cửa: 08:00 - 21:00 (Tất cả các ngày trong tuần)\n"
+            + "- Website: https://rexi-clinic.com\n"
+            + "- Facebook: fb.com/rexiclinic\n"
+            + "- Zalo: zalo.me/***REMOVED***-VIETQR_ACCOUNT_NO\n"
+            + "\n=== NGỮ CẢNH PHÒNG KHÁM ===\n" + globalCtx
+            + "\n=== THÔNG TIN NGƯỜI DÙNG ===\n" + userCtx
+            + "\n=== VAI TRÒ ===\n" + roleCtx
+            + "\n\n=== LUẬT HÀNH ĐỘNG (BẮT BUỘC) ===\n"
+            + "0. REXI AGENT LÀ CHẾ ĐỘ LÀM VIỆC: ưu tiên hành động/tool/UI ngay khi đủ thông tin. Nói ít, làm nhiều; không tư vấn dài nếu có thể thao tác hoặc trả kết quả trực tiếp.\n"
+            + "1. UI ACTION FIRST: nếu user yêu cầu đổi/sửa/điền/chọn/bấm trên màn hình và DOM có data-ai-id phù hợp, final_answer = 1 câu ngắn + action tags. Không gọi DB tool cho việc sửa form thường.\n"
+            + "2. Format UI duy nhất: [CLICK:id] [FILL:id|value] [SELECT:id|value] [TOGGLE:id] [DELETE:id] [SCROLL:down|small] [NAVIGATE:/path]. Chỉ dùng id có trong DOM.\n"
+            + "3. DATA TOOL: nếu cần tra cứu/tạo/sửa dữ liệu hệ thống và đủ thông tin -> gọi tool ngay, không báo trước.\n"
+            + "4. Thiếu 1 trường bắt buộc -> hỏi duy nhất 1 câu <= 10 từ. Thiếu element DOM -> nói rõ thiếu element nào.\n"
+            + "5. final_answer tối đa 1-2 câu hoặc 3 dòng bullet ngắn khi có nhiều ý. Không mở đầu, không tổng kết tool data, không viết phân tích dài.\n"
+            + "6. BẮT BUỘC hiểu ngôn ngữ tự nhiên thật: Gen Z, teencode, gõ sai, không dấu, chèn từ đệm, nói tục, viết tắt, nói vòng, tiếng Việt lai Anh. Không được phụ thuộc danh sách format có sẵn.\n"
+            + "7. Khi gặp câu lạ, hãy suy luận ý định theo ngữ cảnh + DOM hiện tại: 'cái này/chỗ này/nút này' thường là element đang hiện; 'tăng lên 2/up 2/set 2' là đổi giá trị thành 2; 'bấm/nhấn/ấn/tap' là click; 'chóa/chúa/chọa/doggo' là chó; 'miu/mew/meow' là mèo. Nếu vẫn mơ hồ, hỏi lại đúng 1 câu ngắn thay vì trả null.\n"
+            + "8. Câu hỏi triệu chứng thú y (ói, bỏ ăn, run, nằm im, gãi, khó thở...) là tư vấn an toàn, KHÔNG gọi tim_thu_cung/tim_khach_hang nếu user không nói rõ cần tìm hồ sơ trong DB.\n"
+            + "9. Tuyệt đối không lộ reasoning/nội bộ: không viết <think>, </assistant>, tiếng Anh phân tích, hoặc giải thích quá trình suy nghĩ trong final_answer.\n"
+            + "10. Chuẩn hóa tool input: loai=Mèo/Chó, ngay=YYYY-MM-DD, gio=HH:mm.\n"
+            + "11. Chỉ gọi tim_kiem_web khi user nói rõ cần lên mạng/web/tin mới/tài liệu ngoài hệ thống. CRUD, form, lịch hẹn, kho, hóa đơn là tool nội bộ/UI, không dùng web.\n"
             + medicalRule
-            + "\n=== SITEMAP ===\n"
-            + "[Khach] / | /bang-gia | /bac-si | /lien-he | /khach-hang/dashboard\n"
-            + "/khach-hang/dat-lich-hen | /khach-hang/lich-su-lich-hen | /khach-hang/quan-ly-thu-cung\n"
-            + "/khach-hang/ho-so-benh-an | /khach-hang/hoa-don-thanh-toan | /khach-hang/thong-tin-ca-nhan\n"
-            + "[QL/NV] /quan-ly/dashboard | /quan-ly/lich-hen | /quan-ly/khach-hang-thu-cung\n"
-            + "/quan-ly/ho-so-benh-an | /quan-ly/kham-benh | /quan-ly/don-thuoc | /quan-ly/hoa-don\n"
-            + "/quan-ly/kho-thuoc | /quan-ly/nhap-kho | /quan-ly/nhan-vien-phan-quyen\n"
-            + "/quan-ly/bao-cao-thong-ke | /quan-ly/ke-toan | /quan-ly/dich-vu | /quan-ly/cau-hinh\n";
+            + "\n=== SITEMAP & ROUTES ===\n"
+            + "- Khách vãng lai/Chung: / (Home) | /gioi-thieu | /lien-he | /bang-gia | /bac-si\n"
+            + "- Khách hàng (đã đăng nhập): /khach-hang/dashboard | /khach-hang/dat-lich-hen | /khach-hang/lich-su-lich-hen | /khach-hang/quan-ly-thu-cung | /khach-hang/ho-so-benh-an | /khach-hang/hoa-don-thanh-toan | /khach-hang/thong-tin-ca-nhan (Profile/Đăng ký)\n"
+            + "- Nhân sự (Staff): /quan-ly/dashboard | /quan-ly/lich-hen | /quan-ly/khach-hang-thu-cung | /quan-ly/ho-so-benh-an | /quan-ly/kham-benh | /quan-ly/don-thuoc | /quan-ly/hoa-don | /quan-ly/bao-cao-thong-ke | /quan-ly/ke-toan | /quan-ly/kho-thuoc | /quan-ly/nhap-kho | /quan-ly/lich-lam-viec (Xếp lịch/Phân ca) | /quan-ly/dich-vu | /quan-ly/nhan-vien-phan-quyen | /quan-ly/cau-hinh (System Settings)\n";
+
     }
 
     private String buildAgentIdentityBlock(String userRole, boolean isStaff) {
@@ -2200,7 +2202,7 @@ public class ReActAgentService {
         if (value == null) return "";
         String compact = value.replaceAll("\\s+", " ").trim();
         if (compact.length() <= maxChars) return compact;
-        return compact.substring(0, Math.max(0, maxChars - 32)) + "... [da rut gon]";
+        return compact.substring(0, Math.max(0, maxChars - 32)) + "... [đã rút gọn]";
     }
 
     private boolean isStaffRole(String userRole) {
@@ -2237,6 +2239,12 @@ public class ReActAgentService {
             case "/khach-hang/dashboard" -> "Dashboard khách hàng";
             case "/khach-hang/dat-lich-hen" -> "Đặt lịch hẹn";
             case "/khach-hang/lich-su-lich-hen" -> "Lịch sử lịch hẹn";
+            case "/" -> "Trang chủ";
+            case "/gioi-thieu" -> "Giới thiệu phòng khám";
+            case "/lien-he" -> "Liên hệ";
+            case "/bang-gia" -> "Bảng giá dịch vụ";
+            case "/khach-hang/dang-nhap" -> "Đăng nhập";
+            case "/khach-hang/thong-tin-ca-nhan" -> "Hồ sơ cá nhân / Đăng ký";
             default -> route;
         };
     }
