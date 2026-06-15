@@ -15,7 +15,7 @@ import java.time.ZoneId;
 import java.util.*;
 import java.util.logging.Logger;
 
-// * * Định nghĩa và thực thi 10 tools thực tế cho ReAct Agent (Level 5). * Mỗi tool là một hành động cụ thể với DB hoặc dịch vụ ngoài.
+// * * ─Éß╗ïnh ngh─⌐a v├á thß╗▒c thi 10 tools thß╗▒c tß║┐ cho ReAct Agent (Level 5). * Mß╗ùi tool l├á mß╗Öt h├ánh ─æß╗Öng cß╗Ñ thß╗â vß╗¢i DB hoß║╖c dß╗ïch vß╗Ñ ngo├ái.
 @Service
 public class AiToolService {
 
@@ -37,9 +37,9 @@ public class AiToolService {
 
     private final ObjectMapper mapper = new ObjectMapper();
 
-    // ─────────────────────────────────────────────
-    // SCHEMA MÔ TẢ TOOLS — inject vào system prompt
-    // ─────────────────────────────────────────────
+    // ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    // SCHEMA M├ö Tß║ó TOOLS ΓÇö inject v├áo system prompt
+    // ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
     public String getToolsSchemaForRole(String userRole) {
         if (RoleAccessPolicy.isCustomerRole(userRole)) {
@@ -51,71 +51,71 @@ public class AiToolService {
     private String getStaffToolsSchemaForRole(String userRole) {
         StringBuilder sb = new StringBuilder();
         sb.append("""
-            Bạn là agent nội bộ phòng khám. CHỈ được gọi các tool trong danh sách dưới đây (theo quyền vai trò).
-            Khi cần thực hiện, trả về JSON: {"tool": "<tên_tool>", "params": {<tham_số>}}
+            Bß║ín l├á agent nß╗Öi bß╗Ö ph├▓ng kh├ím. CHß╗ê ─æ╞░ß╗úc gß╗ìi c├íc tool trong danh s├ích d╞░ß╗¢i ─æ├óy (theo quyß╗ün vai tr├▓).
+            Khi cß║ºn thß╗▒c hiß╗çn, trß║ú vß╗ü JSON: {"tool": "<t├¬n_tool>", "params": {<tham_sß╗æ>}}
             
-            TOOLS ĐƯỢC PHÉP VỚI VAI TRÒ HIỆN TẠI:
+            TOOLS ─É╞»ß╗óC PH├ëP Vß╗ÜI VAI TR├Æ HIß╗åN Tß║áI:
             """);
         appendToolIfAllowed(sb, userRole, "tim_lich_hen_hom_nay",
-            "Lấy danh sách lịch hẹn khám. Có thể lọc theo tên bác sĩ bằng 'tu_khoa_bac_si'. Truyền 'pham_vi'='all' để lấy toàn bộ lịch sử, mặc định chỉ hôm nay.", "{\"pham_vi\": \"hom_nay|all\", \"tu_khoa_bac_si\": \"Minh\"}");
+            "Lß║Ñy danh s├ích lß╗ïch hß║╣n kh├ím. C├│ thß╗â lß╗ìc theo t├¬n b├íc s─⌐ bß║▒ng 'tu_khoa_bac_si'. Truyß╗ün 'pham_vi'='all' ─æß╗â lß║Ñy to├án bß╗Ö lß╗ïch sß╗¡, mß║╖c ─æß╗ïnh chß╗ë h├┤m nay.", "{\"pham_vi\": \"hom_nay|all\", \"tu_khoa_bac_si\": \"Minh\"}");
         appendToolIfAllowed(sb, userRole, "tim_khach_hang",
-            "Tìm khách hàng theo tên, SĐT hoặc Email. Điền 'mới' hoặc để trống để tìm khách hàng đăng ký hôm nay.", "{\"tu_khoa\": \"...\"}");
+            "T├¼m kh├ích h├áng theo t├¬n, S─ÉT hoß║╖c Email. ─Éiß╗ün 'mß╗¢i' hoß║╖c ─æß╗â trß╗æng ─æß╗â t├¼m kh├ích h├áng ─æ─âng k├╜ h├┤m nay.", "{\"tu_khoa\": \"...\"}");
         appendToolIfAllowed(sb, userRole, "tim_thu_cung",
-            "Tìm thú cưng theo tên, loài hoặc ID.", "{\"tu_khoa\": \"...\"}");
+            "T├¼m th├║ c╞░ng theo t├¬n, lo├ái hoß║╖c ID.", "{\"tu_khoa\": \"...\"}");
         appendToolIfAllowed(sb, userRole, "xem_benh_an",
-            "Xem lịch sử bệnh án thú cưng.", "{\"id_thu_cung\": \"...\"}");
+            "Xem lß╗ïch sß╗¡ bß╗çnh ├ín th├║ c╞░ng.", "{\"id_thu_cung\": \"...\"}");
         appendToolIfAllowed(sb, userRole, "tim_lich_trong",
-            "Tìm khung giờ trống theo ngày.", "{\"ngay\": \"YYYY-MM-DD\"}");
+            "T├¼m khung giß╗¥ trß╗æng theo ng├áy.", "{\"ngay\": \"YYYY-MM-DD\"}");
         appendToolIfAllowed(sb, userRole, "dat_lich_hen",
-            "Tạo lịch hẹn mới (phải hỏi xác nhận trước).",
+            "Tß║ío lß╗ïch hß║╣n mß╗¢i (phß║úi hß╗Åi x├íc nhß║¡n tr╞░ß╗¢c).",
             "{\"id_khach_hang\":\"...\",\"id_thu_cung\":\"...\",\"id_bac_si\":\"...\",\"id_dich_vu\":\"...\",\"ngay_kham\":\"YYYY-MM-DD\",\"gio_kham\":\"HH:mm\",\"ghi_chu\":\"...\"}");
         appendToolIfAllowed(sb, userRole, "huy_lich_hen",
-            "Hủy lịch hẹn. Khách hàng chỉ được hủy lịch của chính mình; nội bộ có thể hủy hộ sau khi xác định đúng lịch.",
-            "{\"id_lich_hen\":\"...\",\"tu_khoa_khach\":\"tên/SĐT nếu chưa có mã lịch\",\"thoi_gian\":\"hom_nay|chieu_nay|ngay_mai\"}");
+            "Hß╗ºy lß╗ïch hß║╣n. Kh├ích h├áng chß╗ë ─æ╞░ß╗úc hß╗ºy lß╗ïch cß╗ºa ch├¡nh m├¼nh; nß╗Öi bß╗Ö c├│ thß╗â hß╗ºy hß╗Ö sau khi x├íc ─æß╗ïnh ─æ├║ng lß╗ïch.",
+            "{\"id_lich_hen\":\"...\",\"tu_khoa_khach\":\"t├¬n/S─ÉT nß║┐u ch╞░a c├│ m├ú lß╗ïch\",\"thoi_gian\":\"hom_nay|chieu_nay|ngay_mai\"}");
         appendToolIfAllowed(sb, userRole, "them_thu_cung",
-            "Thêm thú cưng mới. Khách hàng chỉ được thêm cho chính tài khoản đang đăng nhập.",
-            "{\"ten_thu_cung\":\"...\",\"loai\":\"Chó|Mèo|...\",\"giong\":\"...\",\"gioi_tinh\":\"Đực|Cái|Không xác định\",\"mau_sac\":\"...\",\"trong_luong\":\"3.2\",\"ngay_sinh\":\"YYYY-MM-DD\",\"ghi_chu\":\"...\",\"id_khach_hang\":\"chỉ nội bộ mới truyền\"}");
+            "Th├¬m th├║ c╞░ng mß╗¢i. Kh├ích h├áng chß╗ë ─æ╞░ß╗úc th├¬m cho ch├¡nh t├ái khoß║ún ─æang ─æ─âng nhß║¡p.",
+            "{\"ten_thu_cung\":\"...\",\"loai\":\"Ch├│|M├¿o|...\",\"giong\":\"...\",\"gioi_tinh\":\"─Éß╗▒c|C├íi|Kh├┤ng x├íc ─æß╗ïnh\",\"mau_sac\":\"...\",\"trong_luong\":\"3.2\",\"ngay_sinh\":\"YYYY-MM-DD\",\"ghi_chu\":\"...\",\"id_khach_hang\":\"chß╗ë nß╗Öi bß╗Ö mß╗¢i truyß╗ün\"}");
         appendToolIfAllowed(sb, userRole, "cap_nhat_benh_an",
-            "Cập nhật thông tin bệnh án chuyên môn. Chỉ bác sĩ/y tá/quản trị lâm sàng được dùng.",
+            "Cß║¡p nhß║¡t th├┤ng tin bß╗çnh ├ín chuy├¬n m├┤n. Chß╗ë b├íc s─⌐/y t├í/quß║ún trß╗ï l├óm s├áng ─æ╞░ß╗úc d├╣ng.",
             "{\"id_ho_so_benh_an\":\"...\",\"trieu_chung\":\"...\",\"chan_doan\":\"...\",\"phac_do_dieu_tri\":\"...\",\"huong_dan_cham_soc\":\"...\"}");
         String khoThuocDesc = (RoleAccessPolicy.normalizeRole(userRole).equals("bac_si") || RoleAccessPolicy.normalizeRole(userRole).equals("y_ta"))
-            ? "Kiểm tra tồn kho thuốc. Dùng để tra cứu xem thuốc định kê còn không hoặc tham khảo thành phần."
-            : "Kiểm tra tồn kho thuốc. Đây là dữ liệu kho, không tự biến thành chỉ định điều trị vì vai trò không phải lâm sàng.";
+            ? "Kiß╗âm tra tß╗ôn kho thuß╗æc. D├╣ng ─æß╗â tra cß╗⌐u xem thuß╗æc ─æß╗ïnh k├¬ c├▓n kh├┤ng hoß║╖c tham khß║úo th├ánh phß║ºn."
+            : "Kiß╗âm tra tß╗ôn kho thuß╗æc. ─É├óy l├á dß╗» liß╗çu kho, kh├┤ng tß╗▒ biß║┐n th├ánh chß╗ë ─æß╗ïnh ─æiß╗üu trß╗ï v├¼ vai tr├▓ kh├┤ng phß║úi l├óm s├áng.";
         appendToolIfAllowed(sb, userRole, "xem_kho_thuoc", khoThuocDesc, "{\"tu_khoa\": \"\"}");
         appendToolIfAllowed(sb, userRole, "thong_ke_doanh_thu",
-            "Thống kê doanh thu.", "{\"khoang_thoi_gian\": \"hom_nay|tuan_nay|thang_nay\"}");
+            "Thß╗æng k├¬ doanh thu.", "{\"khoang_thoi_gian\": \"hom_nay|tuan_nay|thang_nay\"}");
         appendToolIfAllowed(sb, userRole, "thong_ke_ca_kham_bac_si",
-            "Thống kê số ca khám/lịch hẹn theo bác sĩ. Dùng cho câu hỏi bác sĩ nào nhiều ca nhất, ít ca nhất, tải/bận nhất.",
+            "Thß╗æng k├¬ sß╗æ ca kh├ím/lß╗ïch hß║╣n theo b├íc s─⌐. D├╣ng cho c├óu hß╗Åi b├íc s─⌐ n├áo nhiß╗üu ca nhß║Ñt, ├¡t ca nhß║Ñt, tß║úi/bß║¡n nhß║Ñt.",
             "{\"khoang_thoi_gian\": \"hom_nay|tuan_nay|thang_nay|all\", \"sap_xep\": \"nhieu_nhat|it_nhat\"}");
         appendToolIfAllowed(sb, userRole, "thong_ke_khach_hang_hom_nay",
-            "Đếm khách hàng mới hôm nay và phân tích xu hướng lịch hẹn hôm nay từ dữ liệu hệ thống. Không được tự ước lượng nếu DB thiếu dữ liệu.",
+            "─Éß║┐m kh├ích h├áng mß╗¢i h├┤m nay v├á ph├ón t├¡ch xu h╞░ß╗¢ng lß╗ïch hß║╣n h├┤m nay tß╗½ dß╗» liß╗çu hß╗ç thß╗æng. Kh├┤ng ─æ╞░ß╗úc tß╗▒ ╞░ß╗¢c l╞░ß╗úng nß║┐u DB thiß║┐u dß╗» liß╗çu.",
             "{\"gom_xu_huong\": \"true|false\"}");
         appendToolIfAllowed(sb, userRole, "tim_kiem_web",
-            "Tìm thông tin y khoa trên web.", "{\"query\": \"...\"}");
+            "T├¼m th├┤ng tin y khoa tr├¬n web.", "{\"query\": \"...\"}");
         appendToolIfAllowed(sb, userRole, "gui_email_don_le",
-            "Gửi email (phải hỏi xác nhận trước).", "{\"email\":\"...\",\"tieu_de\":\"...\",\"noi_dung\":\"...\"}");
+            "Gß╗¡i email (phß║úi hß╗Åi x├íc nhß║¡n tr╞░ß╗¢c).", "{\"email\":\"...\",\"tieu_de\":\"...\",\"noi_dung\":\"...\"}");
         appendToolIfAllowed(sb, userRole, "kiem_tra_cau_hinh_ai",
-            "Kiểm tra cấu hình AI (không tiết lộ API key).", "{}");
+            "Kiß╗âm tra cß║Ñu h├¼nh AI (kh├┤ng tiß║┐t lß╗Ö API key).", "{}");
         appendToolIfAllowed(sb, userRole, "kiem_tra_kien_truc_he_thong",
-            "Xem bản đồ mã nguồn, luồng Agent và provider đang dùng ở mức kiến trúc.", "{}");
+            "Xem bß║ún ─æß╗ô m├ú nguß╗ôn, luß╗ông Agent v├á provider ─æang d├╣ng ß╗ƒ mß╗⌐c kiß║┐n tr├║c.", "{}");
         appendToolIfAllowed(sb, userRole, "tra_cuu_ma_nguon",
-            "Tra cứu RAG mã nguồn theo từ khóa. Trả file, route/API, dòng code gần nhất và snippet đã che secret. Dùng khi admin hỏi chức năng nằm ở đâu, trang nào, file nào, dòng nào.",
-            "{\"tu_khoa\":\"trang hóa đơn|nút thêm dịch vụ|api đăng nhập|agent provider|...\"}");
+            "Tra cß╗⌐u RAG m├ú nguß╗ôn theo tß╗½ kh├│a. Trß║ú file, route/API, d├▓ng code gß║ºn nhß║Ñt v├á snippet ─æ├ú che secret. D├╣ng khi admin hß╗Åi chß╗⌐c n─âng nß║▒m ß╗ƒ ─æ├óu, trang n├áo, file n├áo, d├▓ng n├áo.",
+            "{\"tu_khoa\":\"trang h├│a ─æ╞ín|n├║t th├¬m dß╗ïch vß╗Ñ|api ─æ─âng nhß║¡p|agent provider|...\"}");
         appendToolIfAllowed(sb, userRole, "kiem_tra_phan_he",
-            "Xem phân hệ và route hệ thống.", "{}");
+            "Xem ph├ón hß╗ç v├á route hß╗ç thß╗æng.", "{}");
         appendToolIfAllowed(sb, userRole, "xem_hoa_don",
-            "Xem hóa đơn theo trạng thái.", "{\"trang_thai\": \"CHO_THANH_TOAN|DA_THANH_TOAN|all\"}");
+            "Xem h├│a ─æ╞ín theo trß║íng th├íi.", "{\"trang_thai\": \"CHO_THANH_TOAN|DA_THANH_TOAN|all\"}");
         appendToolIfAllowed(sb, userRole, "thao_tac_tai_khoan",
-            "Khóa/mở khóa/xóa mềm tài khoản (bắt buộc xác nhận trước).",
+            "Kh├│a/mß╗ƒ kh├│a/x├│a mß╗üm t├ái khoß║ún (bß║»t buß╗Öc x├íc nhß║¡n tr╞░ß╗¢c).",
             "{\"id_khach_hang\":\"...\",\"hanh_dong\":\"KHOA|XOA|MO_KHOA\",\"xac_nhan\":true}");
         appendToolIfAllowed(sb, userRole, "tim_tai_khoan_bi_khoa",
-            "Danh sách tài khoản bị khóa.", "{}");
+            "Danh s├ích t├ái khoß║ún bß╗ï kh├│a.", "{}");
         appendToolIfAllowed(sb, userRole, "tra_cuu_tai_lieu_y_khoa",
-            "Tra cứu tài liệu VNUA, giáo trình thú y, phác đồ điều trị sếp đã tải lên hệ thống.", "{\"tu_khoa\":\"...\"}");
+            "Tra cß╗⌐u t├ái liß╗çu VNUA, gi├ío tr├¼nh th├║ y, ph├íc ─æß╗ô ─æiß╗üu trß╗ï sß║┐p ─æ├ú tß║úi l├¬n hß╗ç thß╗æng.", "{\"tu_khoa\":\"...\"}");
         sb.append("""
             
-            Khi đủ thông tin: {"final_answer": "<câu trả lời>"}
-            TUYỆT ĐỐI không gọi tool không có trong danh sách trên. Nếu user yêu cầu dữ liệu ngoài quyền, giải thích và hướng dẫn mở đúng phân hệ trên web.
+            Khi ─æß╗º th├┤ng tin: {"final_answer": "<c├óu trß║ú lß╗¥i>"}
+            TUYß╗åT ─Éß╗ÉI kh├┤ng gß╗ìi tool kh├┤ng c├│ trong danh s├ích tr├¬n. Nß║┐u user y├¬u cß║ºu dß╗» liß╗çu ngo├ái quyß╗ün, giß║úi th├¡ch v├á h╞░ß╗¢ng dß║½n mß╗ƒ ─æ├║ng ph├ón hß╗ç tr├¬n web.
             """);
         return sb.toString();
     }
@@ -128,49 +128,49 @@ public class AiToolService {
 
     public String getCustomerToolsSchema() {
         return """
-            Bạn là một agent hỗ trợ khách hàng của phòng khám thú y Rexi.
-            Khách hàng chỉ được dùng các TOOL an toàn sau. Tuyệt đối không truy vấn danh sách khách hàng, tài khoản, bệnh án nội bộ, hóa đơn toàn hệ thống, doanh thu, kho thuốc hay thao tác tài khoản.
-            Khi cần thực hiện một hành động, hãy trả về CHÍNH XÁC định dạng JSON sau (không kèm text khác):
-            {"tool": "<tên_tool>", "params": {<tham_số>}}
+            Bß║ín l├á mß╗Öt agent hß╗ù trß╗ú kh├ích h├áng cß╗ºa ph├▓ng kh├ím th├║ y Rexi.
+            Kh├ích h├áng chß╗ë ─æ╞░ß╗úc d├╣ng c├íc TOOL an to├án sau. Tuyß╗çt ─æß╗æi kh├┤ng truy vß║Ñn danh s├ích kh├ích h├áng, t├ái khoß║ún, bß╗çnh ├ín nß╗Öi bß╗Ö, h├│a ─æ╞ín to├án hß╗ç thß╗æng, doanh thu, kho thuß╗æc hay thao t├íc t├ái khoß║ún.
+            Khi cß║ºn thß╗▒c hiß╗çn mß╗Öt h├ánh ─æß╗Öng, h├úy trß║ú vß╗ü CH├ìNH X├üC ─æß╗ïnh dß║íng JSON sau (kh├┤ng k├¿m text kh├íc):
+            {"tool": "<t├¬n_tool>", "params": {<tham_sß╗æ>}}
 
-            DANH SÁCH TOOLS KHÁCH HÀNG ĐƯỢC DÙNG:
+            DANH S├üCH TOOLS KH├üCH H├ÇNG ─É╞»ß╗óC D├ÖNG:
 
             1. tim_lich_trong
-               Mô tả: Tìm khung giờ trống còn khả dụng để đặt lịch khám theo ngày.
+               M├┤ tß║ú: T├¼m khung giß╗¥ trß╗æng c├▓n khß║ú dß╗Ñng ─æß╗â ─æß║╖t lß╗ïch kh├ím theo ng├áy.
                Params: {"ngay": "YYYY-MM-DD"}
 
             2. huy_lich_hen
-               Mô tả: Hủy lịch hẹn của chính khách hàng đang đăng nhập. Không được hủy lịch của khách khác.
-               Params: {"id_lich_hen": "mã lịch nếu có", "thoi_gian": "hom_nay|chieu_nay|ngay_mai nếu chưa có mã"}
+               M├┤ tß║ú: Hß╗ºy lß╗ïch hß║╣n cß╗ºa ch├¡nh kh├ích h├áng ─æang ─æ─âng nhß║¡p. Kh├┤ng ─æ╞░ß╗úc hß╗ºy lß╗ïch cß╗ºa kh├ích kh├íc.
+               Params: {"id_lich_hen": "m├ú lß╗ïch nß║┐u c├│", "thoi_gian": "hom_nay|chieu_nay|ngay_mai nß║┐u ch╞░a c├│ m├ú"}
 
             3. them_thu_cung
-               Mô tả: Thêm thú cưng cho chính khách hàng đang đăng nhập. Không được truyền ID khách hàng khác.
-               Params: {"ten_thu_cung":"...","loai":"Chó|Mèo|...","giong":"...","gioi_tinh":"Đực|Cái|Không xác định","mau_sac":"...","trong_luong":"3.2","ngay_sinh":"YYYY-MM-DD","ghi_chu":"..."}
+               M├┤ tß║ú: Th├¬m th├║ c╞░ng cho ch├¡nh kh├ích h├áng ─æang ─æ─âng nhß║¡p. Kh├┤ng ─æ╞░ß╗úc truyß╗ün ID kh├ích h├áng kh├íc.
+               Params: {"ten_thu_cung":"...","loai":"Ch├│|M├¿o|...","giong":"...","gioi_tinh":"─Éß╗▒c|C├íi|Kh├┤ng x├íc ─æß╗ïnh","mau_sac":"...","trong_luong":"3.2","ngay_sinh":"YYYY-MM-DD","ghi_chu":"..."}
 
             4. danh_sach_thu_cung_cua_toi
-               Mô tả: Xem danh sách thú cưng của chính khách hàng đang đăng nhập. Không nhận id_khach_hang từ người dùng.
+               M├┤ tß║ú: Xem danh s├ích th├║ c╞░ng cß╗ºa ch├¡nh kh├ích h├áng ─æang ─æ─âng nhß║¡p. Kh├┤ng nhß║¡n id_khach_hang tß╗½ ng╞░ß╗¥i d├╣ng.
                Params: {}
 
             5. tim_kiem_web
-               Mô tả: Tìm kiếm thông tin y khoa, tin tức thú y mới nhất trên internet.
-               Params: {"query": "nội dung cần tìm"}
+               M├┤ tß║ú: T├¼m kiß║┐m th├┤ng tin y khoa, tin tß╗⌐c th├║ y mß╗¢i nhß║Ñt tr├¬n internet.
+               Params: {"query": "nß╗Öi dung cß║ºn t├¼m"}
 
             6. kiem_tra_phan_he
-               Mô tả: Xem danh sách phân hệ, route và quyền truy cập chính trong hệ thống.
-               Params: {} (không cần tham số)
+               M├┤ tß║ú: Xem danh s├ích ph├ón hß╗ç, route v├á quyß╗ün truy cß║¡p ch├¡nh trong hß╗ç thß╗æng.
+               Params: {} (kh├┤ng cß║ºn tham sß╗æ)
 
             7. tra_cuu_tai_lieu_y_khoa
-               Mô tả: Tra cứu tài liệu VNUA/giáo trình thú y đã được Rexi nạp. Khách hàng chỉ được nhận giải thích an toàn, không nhận liều dùng hay chỉ định thuốc kê đơn.
+               M├┤ tß║ú: Tra cß╗⌐u t├ái liß╗çu VNUA/gi├ío tr├¼nh th├║ y ─æ├ú ─æ╞░ß╗úc Rexi nß║íp. Kh├ích h├áng chß╗ë ─æ╞░ß╗úc nhß║¡n giß║úi th├¡ch an to├án, kh├┤ng nhß║¡n liß╗üu d├╣ng hay chß╗ë ─æß╗ïnh thuß╗æc k├¬ ─æ╞ín.
                Params: {"tu_khoa": "..."}
 
-            Khi đã có đủ thông tin để trả lời CUỐI CÙNG (không cần gọi tool thêm),
-            hãy trả về: {"final_answer": "<câu trả lời đầy đủ cho người dùng>"}
+            Khi ─æ├ú c├│ ─æß╗º th├┤ng tin ─æß╗â trß║ú lß╗¥i CUß╗ÉI C├ÖNG (kh├┤ng cß║ºn gß╗ìi tool th├¬m),
+            h├úy trß║ú vß╗ü: {"final_answer": "<c├óu trß║ú lß╗¥i ─æß║ºy ─æß╗º cho ng╞░ß╗¥i d├╣ng>"}
             """;
     }
 
-    // ─────────────────────────────────────────────
-    // DISPATCHER — thực thi tool theo tên
-    // ─────────────────────────────────────────────
+    // ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    // DISPATCHER ΓÇö thß╗▒c thi tool theo t├¬n
+    // ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
     public String executeTool(String toolName, Map<String, Object> params) {
         return executeTool(toolName, params, null);
@@ -182,7 +182,7 @@ public class AiToolService {
 
 
     public String executeTool(String toolName, Map<String, Object> params, String userRole, String username) {
-        logger.info("[TOOL EXEC] Đang chạy tool: " + toolName + " | Params: " + params);
+        logger.info("[TOOL EXEC] ─Éang chß║íy tool: " + toolName + " | Params: " + params);
         if (userRole != null && !RoleAccessPolicy.canUseAgentTool(userRole, toolName)) {
             return RoleAccessPolicy.permissionDeniedMessage(toolName, userRole);
         }
@@ -193,7 +193,7 @@ public class AiToolService {
                 case "tim_thu_cung"          -> toolTimThuCung((String) params.getOrDefault("tu_khoa", ""));
                 case "xem_benh_an"           -> toolXemBenhAn((String) params.getOrDefault("id_thu_cung", ""));
                 case "tim_lich_trong"        -> toolTimLichTrong((String) params.getOrDefault("ngay", LocalDate.now(VN_ZONE).toString()));
-                // Gọi qua proxy self để @Transactional hoạt động (Spring AOP proxy pattern)
+                // Gß╗ìi qua proxy self ─æß╗â @Transactional hoß║ít ─æß╗Öng (Spring AOP proxy pattern)
                 case "dat_lich_hen"          -> self.toolDatLichHen(params);
                 case "huy_lich_hen"          -> toolHuyLichHen(params, userRole, username);
                 case "them_thu_cung"         -> toolThemThuCung(params, userRole, username);
@@ -213,17 +213,27 @@ public class AiToolService {
                 case "thao_tac_tai_khoan"    -> toolThaoTacTaiKhoan(params);
                 case "tim_tai_khoan_bi_khoa"       -> toolTimTaiKhoanBiKhoa();
                 case "tra_cuu_tai_lieu_y_khoa"     -> toolTraCuuTaiLieuYKhoa((String) params.getOrDefault("tu_khoa", ""), userRole);
-                default -> "Lỗi: Tool '" + toolName + "' không tồn tại.";
+                // --- Tools lich lam viec nhan su ---
+                case "getStaffSchedule", "getstaffschedule", "tim_lich_lam_bac_si" -> toolGetStaffSchedule(params);
+                case "getSlotUsage", "getslotusage" -> toolGetSlotUsage(params);
+                case "checkConflict", "checkconflict" -> toolCheckConflict(params);
+                case "findOverlapStaff", "findoverlapstaff" -> toolFindOverlapStaff(params);
+                case "findFreeStaff", "findfreestaff" -> toolFindFreeStaff(params);
+                case "suggestSchedule", "suggestschedule" -> toolSuggestSchedule(params);
+                case "autoSchedule", "autoschedule" -> toolAutoSchedule(params);
+                case "overrideDoctorSlot", "overridedoctorslot" -> toolOverrideDoctorSlot(params);
+
+                default -> "Lß╗ùi: Tool '" + toolName + "' kh├┤ng tß╗ôn tß║íi.";
             };
         } catch (Exception e) {
-            logger.severe("[TOOL ERROR] Tool " + toolName + " thất bại: " + e.getMessage());
-            return "Lỗi khi thực thi tool " + toolName + ": " + e.getMessage();
+            logger.severe("[TOOL ERROR] Tool " + toolName + " thß║Ñt bß║íi: " + e.getMessage());
+            return "Lß╗ùi khi thß╗▒c thi tool " + toolName + ": " + e.getMessage();
         }
     }
 
-    // ─────────────────────────────────────────────
+    // ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
     // IMPLEMENTATIONS
-    // ─────────────────────────────────────────────
+    // ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
     private String toolTimLichHenHomNay(Map<String, Object> params) {
         String phamVi = params != null ? Objects.toString(params.getOrDefault("pham_vi", "hom_nay"), "hom_nay").trim().toLowerCase() : "hom_nay";
@@ -267,18 +277,18 @@ public class AiToolService {
 
         var rows = jdbcTemplate.queryForList(sql.toString(), queryParams.toArray());
         if (rows.isEmpty()) {
-            String scope = isAll ? "trong hệ thống" : phamVi.replace("_", " ");
-            String doctorText = doctorKeyword.isBlank() ? "" : " của bác sĩ khớp '" + doctorKeyword + "'";
-            return "Không tìm thấy lịch hẹn" + (byCreatedDate ? " được đặt" : " khám") + doctorText + " " + scope + ".";
+            String scope = isAll ? "trong hß╗ç thß╗æng" : phamVi.replace("_", " ");
+            String doctorText = doctorKeyword.isBlank() ? "" : " cß╗ºa b├íc s─⌐ khß╗¢p '" + doctorKeyword + "'";
+            return "Kh├┤ng t├¼m thß║Ñy lß╗ïch hß║╣n" + (byCreatedDate ? " ─æ╞░ß╗úc ─æß║╖t" : " kh├ím") + doctorText + " " + scope + ".";
         }
-        String scopeTitle = isAll ? "Lịch hẹn tìm thấy" : "Lịch hẹn " + phamVi.replace("_", " ");
-        if (byCreatedDate) scopeTitle += " theo ngày đặt";
-        if (!doctorKeyword.isBlank()) scopeTitle += " của bác sĩ khớp '" + doctorKeyword + "'";
+        String scopeTitle = isAll ? "Lß╗ïch hß║╣n t├¼m thß║Ñy" : "Lß╗ïch hß║╣n " + phamVi.replace("_", " ");
+        if (byCreatedDate) scopeTitle += " theo ng├áy ─æß║╖t";
+        if (!doctorKeyword.isBlank()) scopeTitle += " cß╗ºa b├íc s─⌐ khß╗¢p '" + doctorKeyword + "'";
         StringBuilder sb = new StringBuilder(scopeTitle + " (" + rows.size() + " ca):\n");
         for (var r : rows) {
             sb.append("- ").append(r.get("ngay_kham")).append(" ").append(r.get("gio_kham")).append(" | ")
-              .append(r.get("ten_khach_hang")).append(" | Bé: ").append(r.get("ten_thu_cung"))
-              .append(" | Dịch vụ: ").append(r.get("ten_dich_vu"))
+              .append(r.get("ten_khach_hang")).append(" | B├⌐: ").append(r.get("ten_thu_cung"))
+              .append(" | Dß╗ïch vß╗Ñ: ").append(r.get("ten_dich_vu"))
               .append(" | BS: ").append(r.get("ten_bac_si"))
               .append(" | TT: ").append(r.get("trang_thai")).append("\n");
         }
@@ -288,13 +298,13 @@ public class AiToolService {
     private String normalizeVietnamese(String input) {
         if (input == null) return "";
         return input
-                .replaceAll("[àáạảãâầấậẩẫăằắặẳẵ]", "a")
-                .replaceAll("[èéẹẻẽêềếệểễ]", "e")
-                .replaceAll("[ìíịỉĩ]", "i")
-                .replaceAll("[òóọỏõôồốộổỗơờớợởỡ]", "o")
-                .replaceAll("[ùúụủũưừứựửữ]", "u")
-                .replaceAll("[ỳýỵỷỹ]", "y")
-                .replaceAll("[đ]", "d");
+                .replaceAll("[├á├íß║íß║ú├ú├óß║ºß║Ñß║¡ß║⌐ß║½─âß║▒ß║»ß║╖ß║│ß║╡]", "a")
+                .replaceAll("[├¿├⌐ß║╣ß║╗ß║╜├¬ß╗üß║┐ß╗çß╗âß╗à]", "e")
+                .replaceAll("[├¼├¡ß╗ïß╗ë─⌐]", "i")
+                .replaceAll("[├▓├│ß╗ìß╗Å├╡├┤ß╗ôß╗æß╗Öß╗òß╗ù╞íß╗¥ß╗¢ß╗úß╗ƒß╗í]", "o")
+                .replaceAll("[├╣├║ß╗Ñß╗º┼⌐╞░ß╗½ß╗⌐ß╗▒ß╗¡ß╗»]", "u")
+                .replaceAll("[ß╗│├╜ß╗╡ß╗╖ß╗╣]", "y")
+                .replaceAll("[─æ]", "d");
     }
 
     private String toolTimKhachHang(String tuKhoa) {
@@ -315,12 +325,12 @@ public class AiToolService {
                          "ORDER BY ngay_tao DESC OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY";
             var matchedRows = jdbcTemplate.queryForList(sql, java.sql.Date.valueOf(today));
             if (matchedRows.isEmpty()) {
-                return "Hôm nay phòng khám chưa ghi nhận khách hàng đăng ký mới nào sếp ơi! 🐾";
+                return "H├┤m nay ph├▓ng kh├ím ch╞░a ghi nhß║¡n kh├ích h├áng ─æ─âng k├╜ mß╗¢i n├áo sß║┐p ╞íi! ≡ƒÉ╛";
             }
-            StringBuilder sb = new StringBuilder("Danh sách khách hàng đăng ký mới hôm nay (" + matchedRows.size() + " người):\n");
+            StringBuilder sb = new StringBuilder("Danh s├ích kh├ích h├áng ─æ─âng k├╜ mß╗¢i h├┤m nay (" + matchedRows.size() + " ng╞░ß╗¥i):\n");
             for (var r : matchedRows) {
-                sb.append("- Tên: ").append(r.get("ten_khach_hang"))
-                  .append(" | SĐT: ").append(r.get("sdt"))
+                sb.append("- T├¬n: ").append(r.get("ten_khach_hang"))
+                  .append(" | S─ÉT: ").append(r.get("sdt"))
                   .append(" | ID: ").append(r.get("id_khach_hang")).append("\n");
             }
             return sb.toString();
@@ -345,17 +355,17 @@ public class AiToolService {
 
         var matchedRows = jdbcTemplate.queryForList(sql.toString(), args.toArray());
 
-        if (matchedRows.isEmpty()) return "Không tìm thấy khách hàng nào với từ khóa: " + tuKhoa;
+        if (matchedRows.isEmpty()) return "Kh├┤ng t├¼m thß║Ñy kh├ích h├áng n├áo vß╗¢i tß╗½ kh├│a: " + tuKhoa;
         
-        StringBuilder sb = new StringBuilder("Kết quả tìm kiếm (hiển thị tối đa 5 người):\n");
+        StringBuilder sb = new StringBuilder("Kß║┐t quß║ú t├¼m kiß║┐m (hiß╗ân thß╗ï tß╗æi ─æa 5 ng╞░ß╗¥i):\n");
         for (int i = 0; i < Math.min(matchedRows.size(), 5); i++) {
             var r = matchedRows.get(i);
-            sb.append("- Tên: ").append(r.get("ten_khach_hang"))
-              .append(" | SĐT: ").append(r.get("sdt"))
+            sb.append("- T├¬n: ").append(r.get("ten_khach_hang"))
+              .append(" | S─ÉT: ").append(r.get("sdt"))
               .append(" | ID: ").append(r.get("id_khach_hang")).append("\n");
         }
         if (matchedRows.size() > 5) {
-            sb.append("... và các người khác (hãy tìm kiếm cụ thể hơn).\n");
+            sb.append("... v├á c├íc ng╞░ß╗¥i kh├íc (h├úy t├¼m kiß║┐m cß╗Ñ thß╗â h╞ín).\n");
         }
         return sb.toString();
     }
@@ -365,21 +375,21 @@ public class AiToolService {
                      "FROM TaiKhoan tk " +
                      "LEFT JOIN KhachHang kh ON tk.id_khach_hang = kh.id_khach_hang " +
                      "LEFT JOIN NhanVien nv ON tk.id_nhan_vien = nv.id_nhan_vien " +
-                     "WHERE tk.trang_thai = 'Đã khóa' OR tk.trang_thai = 'inactive'";
+                     "WHERE tk.trang_thai = '─É├ú kh├│a' OR tk.trang_thai = 'inactive'";
         var rows = jdbcTemplate.queryForList(sql);
-        if (rows.isEmpty()) return "Hiện tại không có tài khoản nào đang bị khóa.";
+        if (rows.isEmpty()) return "Hiß╗çn tß║íi kh├┤ng c├│ t├ái khoß║ún n├áo ─æang bß╗ï kh├│a.";
         
-        StringBuilder sb = new StringBuilder("Danh sách tài khoản đang bị khóa (" + rows.size() + " tài khoản):\n");
+        StringBuilder sb = new StringBuilder("Danh s├ích t├ái khoß║ún ─æang bß╗ï kh├│a (" + rows.size() + " t├ái khoß║ún):\n");
         for (var r : rows) {
             String ten = r.get("ho_ten") != null ? r.get("ho_ten").toString() : 
                          (r.get("ten_khach_hang") != null ? r.get("ten_khach_hang").toString() : "N/A");
             String sdt = r.get("sdt") != null ? r.get("sdt").toString() : "N/A";
-            sb.append("- Tên đăng nhập: ").append(r.get("ten_dang_nhap"))
-              .append(" | ID tài khoản: ").append(r.get("id_tai_khoan"))
-              .append(" | ID khách hàng: ").append(r.get("id_khach_hang") != null ? r.get("id_khach_hang") : "N/A")
-              .append(" | Chủ tài khoản: ").append(ten)
-              .append(" | SĐT: ").append(sdt)
-              .append(" | Trạng thái: ").append(r.get("trang_thai")).append("\n");
+            sb.append("- T├¬n ─æ─âng nhß║¡p: ").append(r.get("ten_dang_nhap"))
+              .append(" | ID t├ái khoß║ún: ").append(r.get("id_tai_khoan"))
+              .append(" | ID kh├ích h├áng: ").append(r.get("id_khach_hang") != null ? r.get("id_khach_hang") : "N/A")
+              .append(" | Chß╗º t├ái khoß║ún: ").append(ten)
+              .append(" | S─ÉT: ").append(sdt)
+              .append(" | Trß║íng th├íi: ").append(r.get("trang_thai")).append("\n");
         }
         return sb.toString();
     }
@@ -394,8 +404,8 @@ public class AiToolService {
         );
 
         StringBuilder sb = new StringBuilder();
-        sb.append("Rexi tra dữ liệu hệ thống ngày ").append(today).append(":\n");
-        sb.append("- Số khách hàng mới hôm nay: ").append(Objects.requireNonNullElse(newCustomerCount, 0)).append(" khách hàng.\n");
+        sb.append("Rexi tra dß╗» liß╗çu hß╗ç thß╗æng ng├áy ").append(today).append(":\n");
+        sb.append("- Sß╗æ kh├ích h├áng mß╗¢i h├┤m nay: ").append(Objects.requireNonNullElse(newCustomerCount, 0)).append(" kh├ích h├áng.\n");
 
         boolean includeTrend = params == null
             || Boolean.parseBoolean(Objects.toString(params.getOrDefault("gom_xu_huong", "true"), "true"));
@@ -412,7 +422,7 @@ public class AiToolService {
         );
 
         if (appointmentRows.isEmpty()) {
-            sb.append("- Xu hướng hôm nay: chưa có lịch hẹn hôm nay trong hệ thống, nên Rexi không tính tỷ lệ xu hướng.");
+            sb.append("- Xu h╞░ß╗¢ng h├┤m nay: ch╞░a c├│ lß╗ïch hß║╣n h├┤m nay trong hß╗ç thß╗æng, n├¬n Rexi kh├┤ng t├¡nh tß╗╖ lß╗ç xu h╞░ß╗¢ng.");
             return sb.toString().trim();
         }
 
@@ -424,41 +434,41 @@ public class AiToolService {
             categories.merge(category, 1, Integer::sum);
         }
 
-        sb.append("- Xu hướng lịch hẹn hôm nay (").append(appointmentRows.size()).append(" lịch hẹn):\n");
+        sb.append("- Xu h╞░ß╗¢ng lß╗ïch hß║╣n h├┤m nay (").append(appointmentRows.size()).append(" lß╗ïch hß║╣n):\n");
         categories.entrySet().stream()
             .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
             .forEach(entry -> {
                 int percent = Math.round((entry.getValue() * 100.0f) / appointmentRows.size());
                 sb.append("  + ").append(percent).append("% ")
                     .append(entry.getKey())
-                    .append(" (").append(entry.getValue()).append(" lịch hẹn)\n");
+                    .append(" (").append(entry.getValue()).append(" lß╗ïch hß║╣n)\n");
             });
-        sb.append("Các tỷ lệ trên chỉ tính từ lịch hẹn có trong DB hôm nay; Rexi không suy đoán ngoài dữ liệu này.");
+        sb.append("C├íc tß╗╖ lß╗ç tr├¬n chß╗ë t├¡nh tß╗½ lß╗ïch hß║╣n c├│ trong DB h├┤m nay; Rexi kh├┤ng suy ─æo├ín ngo├ái dß╗» liß╗çu n├áy.");
         return sb.toString().trim();
     }
 
     private String classifyAppointmentTrend(String text) {
         String q = normalizeVietnamese(Objects.toString(text, "").toLowerCase(Locale.ROOT));
-        if (q.isBlank()) return "chưa rõ lý do khám";
+        if (q.isBlank()) return "ch╞░a r├╡ l├╜ do kh├ím";
         if (containsTrendAny(q, "cap cuu", "chan thuong", "bi thuong", "vet thuong", "gay xuong", "chay mau", "tai nan")) {
-            return "khám do chấn thương/cấp cứu";
+            return "kh├ím do chß║Ñn th╞░╞íng/cß║Ñp cß╗⌐u";
         }
         if (containsTrendAny(q, "tiem", "vacxin", "vaccine", "phong benh", "tiem chung")) {
-            return "tiêm phòng/chăm sóc dự phòng";
+            return "ti├¬m ph├▓ng/ch─âm s├│c dß╗▒ ph├▓ng";
         }
         if (containsTrendAny(q, "dinh duong", "thuc an", "an uong", "tu van")) {
-            return "tư vấn dinh dưỡng/chăm sóc";
+            return "t╞░ vß║Ñn dinh d╞░ß╗íng/ch─âm s├│c";
         }
         if (containsTrendAny(q, "hanh vi", "stress", "lo au", "can pha", "huan luyen")) {
-            return "tư vấn hành vi";
+            return "t╞░ vß║Ñn h├ánh vi";
         }
         if (containsTrendAny(q, "om", "benh", "sot", "non", "oi", "tieu chay", "bo an", "met", "ho", "viem", "ngua", "gai", "da lieu")) {
-            return "khám bệnh/triệu chứng bất thường";
+            return "kh├ím bß╗çnh/triß╗çu chß╗⌐ng bß║Ñt th╞░ß╗¥ng";
         }
         if (containsTrendAny(q, "tong quat", "dinh ky", "kiem tra", "kham suc khoe", "kham da khoa")) {
-            return "khám tổng quát/định kỳ";
+            return "kh├ím tß╗òng qu├ít/─æß╗ïnh kß╗│";
         }
-        return "chưa rõ lý do khám";
+        return "ch╞░a r├╡ l├╜ do kh├ím";
     }
 
     private boolean containsTrendAny(String value, String... terms) {
@@ -469,7 +479,7 @@ public class AiToolService {
     }
 
     private String toolTimThuCung(String tuKhoa) {
-        if (tuKhoa == null || tuKhoa.trim().isEmpty()) return "Vui lòng cung cấp từ khóa tìm kiếm.";
+        if (tuKhoa == null || tuKhoa.trim().isEmpty()) return "Vui l├▓ng cung cß║Ñp tß╗½ kh├│a t├¼m kiß║┐m.";
         
         StringBuilder sql = new StringBuilder(
             "SELECT tc.id_thu_cung, tc.ten_thu_cung, tc.loai, tc.giong, " +
@@ -491,18 +501,18 @@ public class AiToolService {
         sql.append(" OFFSET 0 ROWS FETCH NEXT 20 ROWS ONLY");
         var matchedRows = jdbcTemplate.queryForList(sql.toString(), args.toArray());
 
-        if (matchedRows.isEmpty()) return "Không tìm thấy thú cưng nào với từ khóa: " + tuKhoa;
+        if (matchedRows.isEmpty()) return "Kh├┤ng t├¼m thß║Ñy th├║ c╞░ng n├áo vß╗¢i tß╗½ kh├│a: " + tuKhoa;
         
-        StringBuilder sb = new StringBuilder("Tìm thấy " + matchedRows.size() + " thú cưng (hiển thị tối đa 5):\n");
+        StringBuilder sb = new StringBuilder("T├¼m thß║Ñy " + matchedRows.size() + " th├║ c╞░ng (hiß╗ân thß╗ï tß╗æi ─æa 5):\n");
         int count = 0;
         for (var r : matchedRows) {
             if (count >= 5) break;
             sb.append("- ID: ").append(r.get("id_thu_cung"))
-              .append(" | Tên: ").append(r.get("ten_thu_cung"))
-              .append(" | Loài: ").append(r.get("loai")).append(" - ").append(r.get("giong"))
-              .append(" | ").append(r.get("trong_luong") != null ? r.get("trong_luong") : "chưa rõ").append("kg")
-              .append(" | Sinh: ").append(r.get("ngay_sinh") != null ? r.get("ngay_sinh") : "chưa rõ")
-              .append(" | Chủ: ").append(r.get("ten_khach_hang")).append(" (").append(r.get("sdt")).append(")\n");
+              .append(" | T├¬n: ").append(r.get("ten_thu_cung"))
+              .append(" | Lo├ái: ").append(r.get("loai")).append(" - ").append(r.get("giong"))
+              .append(" | ").append(r.get("trong_luong") != null ? r.get("trong_luong") : "ch╞░a r├╡").append("kg")
+              .append(" | Sinh: ").append(r.get("ngay_sinh") != null ? r.get("ngay_sinh") : "ch╞░a r├╡")
+              .append(" | Chß╗º: ").append(r.get("ten_khach_hang")).append(" (").append(r.get("sdt")).append(")\n");
             count++;
         }
         return sb.toString();
@@ -511,7 +521,7 @@ public class AiToolService {
     private String toolDanhSachThuCungCuaToi(String username) {
         String customerId = resolveCustomerId(null, username);
         if (customerId == null || customerId.isBlank()) {
-            return "Không xác định được tài khoản khách hàng đang đăng nhập.";
+            return "Kh├┤ng x├íc ─æß╗ïnh ─æ╞░ß╗úc t├ái khoß║ún kh├ích h├áng ─æang ─æ─âng nhß║¡p.";
         }
 
         var rows = jdbcTemplate.queryForList(
@@ -522,25 +532,25 @@ public class AiToolService {
         );
 
         if (rows.isEmpty()) {
-            return "Tài khoản của bạn hiện chưa có thú cưng nào trong hệ thống.";
+            return "T├ái khoß║ún cß╗ºa bß║ín hiß╗çn ch╞░a c├│ th├║ c╞░ng n├áo trong hß╗ç thß╗æng.";
         }
 
-        StringBuilder sb = new StringBuilder("Thú cưng của bạn hiện có " + rows.size() + " bé:\n");
+        StringBuilder sb = new StringBuilder("Th├║ c╞░ng cß╗ºa bß║ín hiß╗çn c├│ " + rows.size() + " b├⌐:\n");
         for (var row : rows) {
             sb.append("- ").append(row.get("ten_thu_cung"))
-                .append(" | Loài: ").append(valueOrUnknown(row.get("loai")))
-                .append(" | Giống: ").append(valueOrUnknown(row.get("giong")));
+                .append(" | Lo├ái: ").append(valueOrUnknown(row.get("loai")))
+                .append(" | Giß╗æng: ").append(valueOrUnknown(row.get("giong")));
             Object gioiTinh = row.get("gioi_tinh");
             if (gioiTinh != null && !gioiTinh.toString().isBlank()) {
-                sb.append(" | Giới tính: ").append(gioiTinh);
+                sb.append(" | Giß╗¢i t├¡nh: ").append(gioiTinh);
             }
             Object trongLuong = row.get("trong_luong");
             if (trongLuong != null) {
-                sb.append(" | Cân nặng: ").append(trongLuong).append(" kg");
+                sb.append(" | C├ón nß║╖ng: ").append(trongLuong).append(" kg");
             }
             Object ngaySinh = row.get("ngay_sinh");
             if (ngaySinh != null) {
-                sb.append(" | Ngày sinh: ").append(ngaySinh);
+                sb.append(" | Ng├áy sinh: ").append(ngaySinh);
             }
             sb.append("\n");
         }
@@ -549,7 +559,7 @@ public class AiToolService {
 
     private String valueOrUnknown(Object value) {
         String text = value == null ? "" : value.toString().trim();
-        return text.isBlank() ? "Chưa cập nhật" : text;
+        return text.isBlank() ? "Ch╞░a cß║¡p nhß║¡t" : text;
     }
 
     private String toolXemBenhAn(String idThuCung) {
@@ -559,20 +569,20 @@ public class AiToolService {
                      "LEFT JOIN NhanVien nv ON ba.id_bac_si = nv.id_nhan_vien " +
                      "WHERE ba.id_thu_cung = ? ORDER BY ba.ngay_kham DESC OFFSET 0 ROWS FETCH NEXT 5 ROWS ONLY";
         var rows = jdbcTemplate.queryForList(sql, idThuCung);
-        if (rows.isEmpty()) return "Thú cưng ID " + idThuCung + " chưa có bệnh án nào.";
-        StringBuilder sb = new StringBuilder("Bệnh án gần nhất:\n");
+        if (rows.isEmpty()) return "Th├║ c╞░ng ID " + idThuCung + " ch╞░a c├│ bß╗çnh ├ín n├áo.";
+        StringBuilder sb = new StringBuilder("Bß╗çnh ├ín gß║ºn nhß║Ñt:\n");
         for (var r : rows) {
-            sb.append("- Ngày: ").append(r.get("ngay_kham"))
-              .append(" | Triệu chứng: ").append(r.get("trieu_chung"))
-              .append(" | Chẩn đoán: ").append(r.get("chan_doan"))
-              .append(" | Phác đồ: ").append(r.get("phac_do_dieu_tri"))
+            sb.append("- Ng├áy: ").append(r.get("ngay_kham"))
+              .append(" | Triß╗çu chß╗⌐ng: ").append(r.get("trieu_chung"))
+              .append(" | Chß║⌐n ─æo├ín: ").append(r.get("chan_doan"))
+              .append(" | Ph├íc ─æß╗ô: ").append(r.get("phac_do_dieu_tri"))
               .append(" | BS: ").append(r.get("ten_bac_si")).append("\n");
         }
         return sb.toString();
     }
 
     private String toolTimLichTrong(String ngay) {
-        // Tìm tất cả giờ đã đặt trong ngày đó
+        // T├¼m tß║Ñt cß║ú giß╗¥ ─æ├ú ─æß║╖t trong ng├áy ─æ├│
         String sql = "SELECT gio_kham FROM LichHen WHERE ngay_kham = ? AND trang_thai != 'DA_HUY'";
         var bookedSlots = jdbcTemplate.queryForList(sql, String.class, ngay);
         List<String> allSlots = List.of("08:00","08:30","09:00","09:30","10:00","10:30","11:00","14:00","14:30","15:00","15:30","16:00","16:30","17:00");
@@ -581,8 +591,8 @@ public class AiToolService {
             boolean taken = bookedSlots.stream().anyMatch(b -> b != null && b.startsWith(slot));
             if (!taken) available.add(slot);
         }
-        if (available.isEmpty()) return "Ngày " + ngay + " đã kín lịch. Hãy chọn ngày khác.";
-        return "Ngày " + ngay + " còn " + available.size() + " khung giờ trống: " + String.join(", ", available);
+        if (available.isEmpty()) return "Ng├áy " + ngay + " ─æ├ú k├¡n lß╗ïch. H├úy chß╗ìn ng├áy kh├íc.";
+        return "Ng├áy " + ngay + " c├▓n " + available.size() + " khung giß╗¥ trß╗æng: " + String.join(", ", available);
     }
 
     @Transactional
@@ -596,16 +606,16 @@ public class AiToolService {
             String gioKhamText = Objects.toString(p.get("gio_kham"), "").trim();
             if (idKhachHang.isBlank() || idThuCung.isBlank() || idBacSi.isBlank()
                     || idDichVu.isBlank() || ngayKhamText.isBlank() || gioKhamText.isBlank()) {
-                return "Lỗi đặt lịch: thiếu thông tin bắt buộc gồm khách hàng, thú cưng, bác sĩ, dịch vụ, ngày khám và giờ khám.";
+                return "Lß╗ùi ─æß║╖t lß╗ïch: thiß║┐u th├┤ng tin bß║»t buß╗Öc gß╗ôm kh├ích h├áng, th├║ c╞░ng, b├íc s─⌐, dß╗ïch vß╗Ñ, ng├áy kh├ím v├á giß╗¥ kh├ím.";
             }
             LocalDate ngayKham = LocalDate.parse(ngayKhamText);
             LocalTime gioKham = LocalTime.parse(gioKhamText.length() == 5 ? gioKhamText : gioKhamText.substring(0, 5));
             LocalDate today = LocalDate.now(VN_ZONE);
             if (ngayKham.isBefore(today)) {
-                return "Lỗi đặt lịch: không thể đặt lịch vào ngày trong quá khứ.";
+                return "Lß╗ùi ─æß║╖t lß╗ïch: kh├┤ng thß╗â ─æß║╖t lß╗ïch v├áo ng├áy trong qu├í khß╗⌐.";
             }
             if (ngayKham.equals(today) && gioKham.isBefore(LocalTime.now(VN_ZONE).plusMinutes(30))) {
-                return "Lỗi đặt lịch: giờ khám phải cách thời điểm hiện tại tối thiểu 30 phút.";
+                return "Lß╗ùi ─æß║╖t lß╗ïch: giß╗¥ kh├ím phß║úi c├ích thß╗¥i ─æiß╗âm hiß╗çn tß║íi tß╗æi thiß╗âu 30 ph├║t.";
             }
 
             // Validate all entities exist before proceeding
@@ -623,10 +633,10 @@ public class AiToolService {
                 Integer.class, idDichVu);
 
             // Null-safe validation
-            if (customerExists == null || customerExists == 0) return "Lỗi đặt lịch: không tìm thấy khách hàng hợp lệ.";
-            if (petExists == null || petExists == 0) return "Lỗi đặt lịch: thú cưng không thuộc khách hàng này hoặc đã bị xóa.";
-            if (doctorExists == null || doctorExists == 0) return "Lỗi đặt lịch: không tìm thấy bác sĩ hợp lệ.";
-            if (serviceExists == null || serviceExists == 0) return "Lỗi đặt lịch: không tìm thấy dịch vụ hợp lệ.";
+            if (customerExists == null || customerExists == 0) return "Lß╗ùi ─æß║╖t lß╗ïch: kh├┤ng t├¼m thß║Ñy kh├ích h├áng hß╗úp lß╗ç.";
+            if (petExists == null || petExists == 0) return "Lß╗ùi ─æß║╖t lß╗ïch: th├║ c╞░ng kh├┤ng thuß╗Öc kh├ích h├áng n├áy hoß║╖c ─æ├ú bß╗ï x├│a.";
+            if (doctorExists == null || doctorExists == 0) return "Lß╗ùi ─æß║╖t lß╗ïch: kh├┤ng t├¼m thß║Ñy b├íc s─⌐ hß╗úp lß╗ç.";
+            if (serviceExists == null || serviceExists == 0) return "Lß╗ùi ─æß║╖t lß╗ïch: kh├┤ng t├¼m thß║Ñy dß╗ïch vß╗Ñ hß╗úp lß╗ç.";
 
             Integer thoiLuongMoi = jdbcTemplate.queryForObject(
                 "SELECT thoi_luong_phut FROM DichVu WHERE id_dich_vu = ?",
@@ -641,35 +651,35 @@ public class AiToolService {
                 ? "(EXTRACT(HOUR FROM lh.gio_kham::time) * 60 + EXTRACT(MINUTE FROM lh.gio_kham::time))::int"
                 : "(DATEPART(HOUR, lh.gio_kham) * 60 + DATEPART(MINUTE, lh.gio_kham))";
 
-            // Check duplicate: cùng bác sĩ + khoảng thời gian bị chồng lấn
+            // Check duplicate: c├╣ng b├íc s─⌐ + khoß║úng thß╗¥i gian bß╗ï chß╗ông lß║Ñn
             Integer duplicateDoctorSlot = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM LichHen lh LEFT JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu " +
                 "WHERE lh.ngay_kham = ? AND lh.id_bac_si = ? " +
                 "AND " + busyStartMinute + " < ? " +
                 "AND " + busyStartMinute + " + COALESCE(dv.thoi_luong_phut, 30) > ? " +
-                "AND (lh.trang_thai IS NULL OR lh.trang_thai NOT IN ('Đã hủy', 'DA_HUY', 'da_huy', 'TU_CHOI', 'Hết hạn'))",
+                "AND (lh.trang_thai IS NULL OR lh.trang_thai NOT IN ('─É├ú hß╗ºy', 'DA_HUY', 'da_huy', 'TU_CHOI', 'Hß║┐t hß║ín'))",
                 Integer.class, java.sql.Date.valueOf(ngayKham), idBacSi,
                 gioKetThucMinute, gioKhamMinute);
             if (duplicateDoctorSlot != null && duplicateDoctorSlot > 0) {
-                return "Lỗi đặt lịch: khung giờ này bị trùng thời gian với lịch khám khác của bác sĩ đã chọn. Hãy chọn giờ khác.";
+                return "Lß╗ùi ─æß║╖t lß╗ïch: khung giß╗¥ n├áy bß╗ï tr├╣ng thß╗¥i gian vß╗¢i lß╗ïch kh├ím kh├íc cß╗ºa b├íc s─⌐ ─æ├ú chß╗ìn. H├úy chß╗ìn giß╗¥ kh├íc.";
             }
 
-            // Check duplicate: cùng thú cưng + khoảng thời gian bị chồng lấn
+            // Check duplicate: c├╣ng th├║ c╞░ng + khoß║úng thß╗¥i gian bß╗ï chß╗ông lß║Ñn
             Integer duplicatePetSlot = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM LichHen lh LEFT JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu " +
                 "WHERE lh.ngay_kham = ? AND lh.id_thu_cung = ? " +
                 "AND " + busyStartMinute + " < ? " +
                 "AND " + busyStartMinute + " + COALESCE(dv.thoi_luong_phut, 30) > ? " +
-                "AND (lh.trang_thai IS NULL OR lh.trang_thai NOT IN ('Đã hủy', 'DA_HUY', 'da_huy', 'TU_CHOI', 'Hết hạn'))",
+                "AND (lh.trang_thai IS NULL OR lh.trang_thai NOT IN ('─É├ú hß╗ºy', 'DA_HUY', 'da_huy', 'TU_CHOI', 'Hß║┐t hß║ín'))",
                 Integer.class, java.sql.Date.valueOf(ngayKham), idThuCung,
                 gioKetThucMinute, gioKhamMinute);
             if (duplicatePetSlot != null && duplicatePetSlot > 0) {
-                return "Lỗi đặt lịch: thú cưng này đã có lịch hẹn trùng khoảng thời gian. Vui lòng chọn giờ khác cho bé.";
+                return "Lß╗ùi ─æß║╖t lß╗ïch: th├║ c╞░ng n├áy ─æ├ú c├│ lß╗ïch hß║╣n tr├╣ng khoß║úng thß╗¥i gian. Vui l├▓ng chß╗ìn giß╗¥ kh├íc cho b├⌐.";
             }
 
             String newId = "LH-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
             String lyDo = Objects.toString(p.getOrDefault("ghi_chu", ""), "").trim();
-            if (lyDo.isBlank()) lyDo = "Đặt lịch qua Rexi AI Agent";
+            if (lyDo.isBlank()) lyDo = "─Éß║╖t lß╗ïch qua Rexi AI Agent";
 
             String sql = "INSERT INTO LichHen (id_lich_hen, id_khach_hang, id_thu_cung, id_bac_si, id_dich_vu, ngay_kham, gio_kham, ly_do, trang_thai) " +
                          "VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'CHO_XAC_NHAN')";
@@ -678,9 +688,9 @@ public class AiToolService {
                 idKhachHang, idThuCung, idBacSi,
                 idDichVu, java.sql.Date.valueOf(ngayKham), gioKham.toString(),
                 lyDo);
-            return "✅ Đặt lịch thành công! Mã lịch hẹn: " + newId + " vào " + ngayKham + " lúc " + gioKham;
+            return "Γ£à ─Éß║╖t lß╗ïch th├ánh c├┤ng! M├ú lß╗ïch hß║╣n: " + newId + " v├áo " + ngayKham + " l├║c " + gioKham;
         } catch (Exception e) {
-            return "Lỗi đặt lịch: " + e.getMessage();
+            return "Lß╗ùi ─æß║╖t lß╗ïch: " + e.getMessage();
         }
     }
 
@@ -694,13 +704,13 @@ public class AiToolService {
             String customerId = null;
             if (isCustomer) {
                 if (username == null || username.isBlank()) {
-                    return "Cần đăng nhập tài khoản khách hàng để hủy lịch của chính mình.";
+                    return "Cß║ºn ─æ─âng nhß║¡p t├ái khoß║ún kh├ích h├áng ─æß╗â hß╗ºy lß╗ïch cß╗ºa ch├¡nh m├¼nh.";
                 }
                 List<Map<String, Object>> accounts = jdbcTemplate.queryForList(
                     "SELECT id_khach_hang FROM TaiKhoan WHERE ten_dang_nhap = ? AND id_khach_hang IS NOT NULL",
                     username);
                 if (accounts.isEmpty()) {
-                    return "Không xác định được hồ sơ khách hàng của tài khoản hiện tại, nên chưa thể hủy lịch.";
+                    return "Kh├┤ng x├íc ─æß╗ïnh ─æ╞░ß╗úc hß╗ô s╞í kh├ích h├áng cß╗ºa t├ái khoß║ún hiß╗çn tß║íi, n├¬n ch╞░a thß╗â hß╗ºy lß╗ïch.";
                 }
                 customerId = Objects.toString(accounts.get(0).get("id_khach_hang"), "");
             }
@@ -716,7 +726,7 @@ public class AiToolService {
                     "SELECT lh.id_lich_hen, lh.id_khach_hang, kh.ten_khach_hang, kh.sdt, tc.ten_thu_cung, lh.ngay_kham, lh.gio_kham, lh.trang_thai " +
                     "FROM LichHen lh LEFT JOIN KhachHang kh ON lh.id_khach_hang = kh.id_khach_hang " +
                     "LEFT JOIN ThuCung tc ON lh.id_thu_cung = tc.id_thu_cung " +
-                    "WHERE lh.trang_thai NOT IN ('DA_HUY', 'Đã hủy', 'da_huy', 'TU_CHOI', 'Hết hạn') ");
+                    "WHERE lh.trang_thai NOT IN ('DA_HUY', '─É├ú hß╗ºy', 'da_huy', 'TU_CHOI', 'Hß║┐t hß║ín') ");
                 List<Object> args = new ArrayList<>();
                 if (isCustomer) {
                     sql.append("AND lh.id_khach_hang = ? ");
@@ -726,7 +736,7 @@ public class AiToolService {
                     args.add("%" + tuKhoaKhach + "%");
                     args.add("%" + tuKhoaKhach + "%");
                 } else {
-                    return "Cần mã lịch hẹn hoặc tên/SĐT khách hàng để hủy đúng lịch, tránh hủy nhầm.";
+                    return "Cß║ºn m├ú lß╗ïch hß║╣n hoß║╖c t├¬n/S─ÉT kh├ích h├áng ─æß╗â hß╗ºy ─æ├║ng lß╗ïch, tr├ính hß╗ºy nhß║ºm.";
                 }
                 
                 LocalDate today = LocalDate.now(VN_ZONE);
@@ -745,17 +755,17 @@ public class AiToolService {
             }
 
             if (matches.isEmpty()) {
-                return "Không tìm thấy lịch hẹn phù hợp để hủy. Tôi không tự hủy nếu chưa xác định đúng lịch.";
+                return "Kh├┤ng t├¼m thß║Ñy lß╗ïch hß║╣n ph├╣ hß╗úp ─æß╗â hß╗ºy. T├┤i kh├┤ng tß╗▒ hß╗ºy nß║┐u ch╞░a x├íc ─æß╗ïnh ─æ├║ng lß╗ïch.";
             }
             if (isCustomer) {
                 for (Map<String, Object> row : matches) {
                     if (!Objects.toString(row.get("id_khach_hang"), "").equals(customerId)) {
-                        return "Cảnh báo bảo mật: khách hàng chỉ được hủy lịch của chính mình.";
+                        return "Cß║únh b├ío bß║úo mß║¡t: kh├ích h├áng chß╗ë ─æ╞░ß╗úc hß╗ºy lß╗ïch cß╗ºa ch├¡nh m├¼nh.";
                     }
                 }
             }
             if (matches.size() > 1) {
-                StringBuilder sb = new StringBuilder("Tìm thấy nhiều lịch phù hợp, cần chọn mã lịch để hủy chính xác:\n");
+                StringBuilder sb = new StringBuilder("T├¼m thß║Ñy nhiß╗üu lß╗ïch ph├╣ hß╗úp, cß║ºn chß╗ìn m├ú lß╗ïch ─æß╗â hß╗ºy ch├¡nh x├íc:\n");
                 for (Map<String, Object> row : matches) {
                     sb.append("- ").append(row.get("id_lich_hen"))
                       .append(" | ").append(row.get("ten_khach_hang"))
@@ -772,19 +782,19 @@ public class AiToolService {
                 "SELECT (SELECT COUNT(*) FROM HoSoBenhAn WHERE id_lich_hen = ?) + (SELECT COUNT(*) FROM HoaDon WHERE id_lich_hen = ?)",
                 Integer.class, targetId, targetId);
             if (Objects.requireNonNullElse(usageCount, 0) > 0) {
-                return "Không thể hủy lịch " + targetId + " vì đã có hóa đơn hoặc hồ sơ bệnh án liên kết. Cần quản lý xử lý thủ công.";
+                return "Kh├┤ng thß╗â hß╗ºy lß╗ïch " + targetId + " v├¼ ─æ├ú c├│ h├│a ─æ╞ín hoß║╖c hß╗ô s╞í bß╗çnh ├ín li├¬n kß║┐t. Cß║ºn quß║ún l├╜ xß╗¡ l├╜ thß╗º c├┤ng.";
             }
             jdbcTemplate.update("UPDATE LichHen SET trang_thai = 'DA_HUY' WHERE id_lich_hen = ?", targetId);
-            return "Đã hủy lịch hẹn " + targetId + " cho " + target.get("ten_khach_hang") + " - bé " + target.get("ten_thu_cung") + ".";
+            return "─É├ú hß╗ºy lß╗ïch hß║╣n " + targetId + " cho " + target.get("ten_khach_hang") + " - b├⌐ " + target.get("ten_thu_cung") + ".";
         } catch (Exception e) {
-            return "Lỗi hủy lịch hẹn: " + e.getMessage();
+            return "Lß╗ùi hß╗ºy lß╗ïch hß║╣n: " + e.getMessage();
         }
     }
 
     private String toolCapNhatBenhAn(Map<String, Object> p) {
         String id = Objects.toString(p.getOrDefault("id_ho_so_benh_an", ""), "").trim();
         if (id.isBlank()) {
-            return "Cần id_ho_so_benh_an để cập nhật đúng bệnh án. Tôi không cập nhật theo tên mơ hồ để tránh ghi nhầm hồ sơ.";
+            return "Cß║ºn id_ho_so_benh_an ─æß╗â cß║¡p nhß║¡t ─æ├║ng bß╗çnh ├ín. T├┤i kh├┤ng cß║¡p nhß║¡t theo t├¬n m╞í hß╗ô ─æß╗â tr├ính ghi nhß║ºm hß╗ô s╞í.";
         }
 
         Map<String, String> fields = new LinkedHashMap<>();
@@ -802,7 +812,7 @@ public class AiToolService {
             }
         }
         if (sets.isEmpty()) {
-            return "Cần ít nhất một nội dung chuyên môn để cập nhật bệnh án.";
+            return "Cß║ºn ├¡t nhß║Ñt mß╗Öt nß╗Öi dung chuy├¬n m├┤n ─æß╗â cß║¡p nhß║¡t bß╗çnh ├ín.";
         }
 
         try {
@@ -810,13 +820,13 @@ public class AiToolService {
                 "SELECT COUNT(*) FROM HoSoBenhAn WHERE id_ho_so_benh_an = ?",
                 Integer.class, id);
             if (Objects.requireNonNullElse(exists, 0) == 0) {
-                return "Không tìm thấy bệnh án " + id + ".";
+                return "Kh├┤ng t├¼m thß║Ñy bß╗çnh ├ín " + id + ".";
             }
             args.add(id);
             int rows = jdbcTemplate.update("UPDATE HoSoBenhAn SET " + String.join(", ", sets) + " WHERE id_ho_so_benh_an = ?", args.toArray());
-            return rows > 0 ? "Đã cập nhật bệnh án " + id + ". Nội dung đã ghi theo quyền lâm sàng." : "Không có bệnh án nào được cập nhật.";
+            return rows > 0 ? "─É├ú cß║¡p nhß║¡t bß╗çnh ├ín " + id + ". Nß╗Öi dung ─æ├ú ghi theo quyß╗ün l├óm s├áng." : "Kh├┤ng c├│ bß╗çnh ├ín n├áo ─æ╞░ß╗úc cß║¡p nhß║¡t.";
         } catch (Exception e) {
-            return "Lỗi cập nhật bệnh án: " + e.getMessage();
+            return "Lß╗ùi cß║¡p nhß║¡t bß╗çnh ├ín: " + e.getMessage();
         }
     }
 
@@ -843,7 +853,7 @@ public class AiToolService {
         sql.append(" GROUP BY t.id_thuoc, t.ten_thuoc, t.don_vi, t.gia_ban ");
 
         if (!isSearch) {
-            // Nếu ko có từ khóa, SQL Server tự động sort theo số lượng tồn tăng dần
+            // Nß║┐u ko c├│ tß╗½ kh├│a, SQL Server tß╗▒ ─æß╗Öng sort theo sß╗æ l╞░ß╗úng tß╗ôn t─âng dß║ºn
             sql.append(" ORDER BY COALESCE(SUM(l.so_luong_ton), 0) ASC ");
         } else {
             sql.append(" ORDER BY t.ten_thuoc ASC ");
@@ -852,15 +862,15 @@ public class AiToolService {
 
         var matchedRows = jdbcTemplate.queryForList(sql.toString(), args.toArray());
 
-        if (matchedRows.isEmpty()) return "Không tìm thấy thuốc nào.";
+        if (matchedRows.isEmpty()) return "Kh├┤ng t├¼m thß║Ñy thuß╗æc n├áo.";
         
-        StringBuilder sb = new StringBuilder("Kho thuốc (hiển thị tối đa " + limit + " kết quả):\n");
+        StringBuilder sb = new StringBuilder("Kho thuß╗æc (hiß╗ân thß╗ï tß╗æi ─æa " + limit + " kß║┐t quß║ú):\n");
         int count = 0;
         for (var r : matchedRows) {
             if (count >= limit) break;
             sb.append("- ").append(r.get("ten_thuoc"))
               .append(" | SL: ").append(r.get("so_luong_ton")).append(" ").append(r.get("don_vi"))
-              .append(" | Giá: ").append(r.get("gia_ban")).append("đ")
+              .append(" | Gi├í: ").append(r.get("gia_ban")).append("─æ")
               .append(" | HSD: ").append(r.get("han_su_dung") != null ? r.get("han_su_dung") : "N/A").append("\n");
             count++;
         }
@@ -929,16 +939,16 @@ public class AiToolService {
                 java.math.BigDecimal diff = current.subtract(previous);
                 if (previous.compareTo(java.math.BigDecimal.ZERO) > 0) {
                     java.math.BigDecimal pct = diff.multiply(java.math.BigDecimal.valueOf(100)).divide(previous, 2, java.math.RoundingMode.HALF_UP);
-                    compareText = String.format(" | So với kỳ trước: %s%s VNĐ (%s%s%%)",
+                    compareText = String.format(" | So vß╗¢i kß╗│ tr╞░ß╗¢c: %s%s VN─É (%s%s%%)",
                             diff.signum() >= 0 ? "+" : "", diff.toPlainString(), pct.signum() >= 0 ? "+" : "", pct.toPlainString());
                 } else {
-                    compareText = " | Kỳ trước doanh thu = 0 nên không tính được % tăng/giảm đáng tin cậy";
+                    compareText = " | Kß╗│ tr╞░ß╗¢c doanh thu = 0 n├¬n kh├┤ng t├¡nh ─æ╞░ß╗úc % t─âng/giß║úm ─æ├íng tin cß║¡y";
                 }
             }
-            return String.format("Thống kê %s: %s hóa đơn | Doanh thu: %s VNĐ | TB/hóa đơn: %s VNĐ%s",
+            return String.format("Thß╗æng k├¬ %s: %s h├│a ─æ╞ín | Doanh thu: %s VN─É | TB/h├│a ─æ╞ín: %s VN─É%s",
                 khoang.replace("_", " "), row.get("so_hoa_don"), current.toPlainString(), row.get("trung_binh"), compareText);
         } catch (Exception e) {
-            return "Lỗi thống kê: " + e.getMessage();
+            return "Lß╗ùi thß╗æng k├¬: " + e.getMessage();
         }
     }
 
@@ -949,10 +959,10 @@ public class AiToolService {
 
         LocalDate today = LocalDate.now(VN_ZONE);
         StringBuilder sql = new StringBuilder(
-            "SELECT COALESCE(nv.ho_ten, 'Chưa gán bác sĩ') AS ten_bac_si, " +
+            "SELECT COALESCE(nv.ho_ten, 'Ch╞░a g├ín b├íc s─⌐') AS ten_bac_si, " +
             "COUNT(*) AS tong_ca, " +
-            "SUM(CASE WHEN lh.trang_thai = 'DA_HUY' OR lh.trang_thai = 'Đã hủy' THEN 1 ELSE 0 END) AS so_ca_huy, " +
-            "SUM(CASE WHEN lh.trang_thai IS NULL OR (lh.trang_thai <> 'DA_HUY' AND lh.trang_thai <> 'Đã hủy') THEN 1 ELSE 0 END) AS so_ca_hieu_luc " +
+            "SUM(CASE WHEN lh.trang_thai = 'DA_HUY' OR lh.trang_thai = '─É├ú hß╗ºy' THEN 1 ELSE 0 END) AS so_ca_huy, " +
+            "SUM(CASE WHEN lh.trang_thai IS NULL OR (lh.trang_thai <> 'DA_HUY' AND lh.trang_thai <> '─É├ú hß╗ºy') THEN 1 ELSE 0 END) AS so_ca_hieu_luc " +
             "FROM LichHen lh " +
             "LEFT JOIN NhanVien nv ON lh.id_bac_si = nv.id_nhan_vien " +
             "WHERE lh.id_bac_si IS NOT NULL "
@@ -982,18 +992,18 @@ public class AiToolService {
             default -> khoang = "all";
         }
 
-        // Dùng subquery bọc ngoài để áp TOP sau ORDER BY — SQL Server không cho TOP trực tiếp với GROUP BY alias
-        String innerSql = "SELECT COALESCE(nv.ho_ten, 'Chưa gán bác sĩ') AS ten_bac_si, " +
+        // D├╣ng subquery bß╗ìc ngo├ái ─æß╗â ├íp TOP sau ORDER BY ΓÇö SQL Server kh├┤ng cho TOP trß╗▒c tiß║┐p vß╗¢i GROUP BY alias
+        String innerSql = "SELECT COALESCE(nv.ho_ten, 'Ch╞░a g├ín b├íc s─⌐') AS ten_bac_si, " +
             "COUNT(*) AS tong_ca, " +
-            "SUM(CASE WHEN lh.trang_thai = 'DA_HUY' OR lh.trang_thai = 'Đã hủy' THEN 1 ELSE 0 END) AS so_ca_huy, " +
-            "SUM(CASE WHEN lh.trang_thai IS NULL OR (lh.trang_thai <> 'DA_HUY' AND lh.trang_thai <> 'Đã hủy') THEN 1 ELSE 0 END) AS so_ca_hieu_luc " +
+            "SUM(CASE WHEN lh.trang_thai = 'DA_HUY' OR lh.trang_thai = '─É├ú hß╗ºy' THEN 1 ELSE 0 END) AS so_ca_huy, " +
+            "SUM(CASE WHEN lh.trang_thai IS NULL OR (lh.trang_thai <> 'DA_HUY' AND lh.trang_thai <> '─É├ú hß╗ºy') THEN 1 ELSE 0 END) AS so_ca_hieu_luc " +
             "FROM LichHen lh LEFT JOIN NhanVien nv ON lh.id_bac_si = nv.id_nhan_vien " +
             "WHERE lh.id_bac_si IS NOT NULL ";
-        // Thêm điều kiện thời gian từ sql đã build (chứa WHERE ... AND ...)
-        // Ta chỉ lấy phần WHERE đã append sau "WHERE lh.id_bac_si IS NOT NULL "
+        // Th├¬m ─æiß╗üu kiß╗çn thß╗¥i gian tß╗½ sql ─æ├ú build (chß╗⌐a WHERE ... AND ...)
+        // Ta chß╗ë lß║Ñy phß║ºn WHERE ─æ├ú append sau "WHERE lh.id_bac_si IS NOT NULL "
         String whereExtra = sql.toString().substring(sql.toString().indexOf("WHERE lh.id_bac_si IS NOT NULL ") + "WHERE lh.id_bac_si IS NOT NULL ".length());
         String finalSql = innerSql + whereExtra +
-            "GROUP BY COALESCE(nv.ho_ten, 'Chưa gán bác sĩ') " +
+            "GROUP BY COALESCE(nv.ho_ten, 'Ch╞░a g├ín b├íc s─⌐') " +
             "ORDER BY so_ca_hieu_luc " + (ascending ? "ASC" : "DESC") +
             ", tong_ca " + (ascending ? "ASC" : "DESC") +
             ", ten_bac_si ASC " +
@@ -1002,18 +1012,18 @@ public class AiToolService {
 
         var rows = jdbcTemplate.queryForList(sql.toString(), queryParams.toArray());
         if (rows.isEmpty()) {
-            return "Chưa có dữ liệu ca khám theo bác sĩ cho phạm vi " + khoang.replace("_", " ") + ".";
+            return "Ch╞░a c├│ dß╗» liß╗çu ca kh├ím theo b├íc s─⌐ cho phß║ím vi " + khoang.replace("_", " ") + ".";
         }
 
-        String title = ascending ? "Bác sĩ có ít ca khám nhất" : "Bác sĩ có nhiều ca khám nhất";
+        String title = ascending ? "B├íc s─⌐ c├│ ├¡t ca kh├ím nhß║Ñt" : "B├íc s─⌐ c├│ nhiß╗üu ca kh├ím nhß║Ñt";
         StringBuilder sb = new StringBuilder(title + " (" + khoang.replace("_", " ") + "):\n");
         for (var row : rows) {
             sb.append("- ").append(row.get("ten_bac_si"))
-                .append(": ").append(row.get("so_ca_hieu_luc")).append(" ca hiệu lực")
-                .append(" / ").append(row.get("tong_ca")).append(" tổng ca");
+                .append(": ").append(row.get("so_ca_hieu_luc")).append(" ca hiß╗çu lß╗▒c")
+                .append(" / ").append(row.get("tong_ca")).append(" tß╗òng ca");
             Object canceled = row.get("so_ca_huy");
             if (canceled != null) {
-                sb.append(" | Hủy: ").append(canceled);
+                sb.append(" | Hß╗ºy: ").append(canceled);
             }
             sb.append("\n");
         }
@@ -1022,7 +1032,7 @@ public class AiToolService {
 
     private String toolTimKiemWeb(String query) {
         if (query == null || query.trim().isEmpty()) {
-            return "Vui lòng cung cấp nội dung cần tìm kiếm.";
+            return "Vui l├▓ng cung cß║Ñp nß╗Öi dung cß║ºn t├¼m kiß║┐m.";
         }
 
         return tryDuckDuckGoSearch(query.trim());
@@ -1054,22 +1064,22 @@ public class AiToolService {
             while (snippetMatcher.find() && snippets.size() < 5) {
                 snippets.add(stripHtmlEntities(snippetMatcher.group(1)));
             }
-            StringBuilder result = new StringBuilder("Kết quả web đã chắt lọc cho \"" + query + "\":\n");
+            StringBuilder result = new StringBuilder("Kß║┐t quß║ú web ─æ├ú chß║»t lß╗ìc cho \"" + query + "\":\n");
             int count = 0;
             while (m.find() && count < 3) {
                 String title = stripHtmlEntities(m.group(2));
                 String snippet = count < snippets.size() ? snippets.get(count) : "";
                 result.append(count + 1).append(". ").append(title).append("\n")
-                    .append("   Ý chính: ").append(snippet.isBlank() ? "Nguồn này có thể liên quan nhưng không có đoạn mô tả ngắn." : snippet).append("\n")
-                    .append("   Nguồn: ").append(cleanDuckDuckGoUrl(m.group(1))).append("\n");
+                    .append("   ├¥ ch├¡nh: ").append(snippet.isBlank() ? "Nguß╗ôn n├áy c├│ thß╗â li├¬n quan nh╞░ng kh├┤ng c├│ ─æoß║ín m├┤ tß║ú ngß║»n." : snippet).append("\n")
+                    .append("   Nguß╗ôn: ").append(cleanDuckDuckGoUrl(m.group(1))).append("\n");
                 count++;
             }
             if (count > 0) {
         return result.toString();
             }
-            return "Không tìm thấy kết quả web.";
+            return "Kh├┤ng t├¼m thß║Ñy kß║┐t quß║ú web.";
         } catch (Exception e) {
-            return "Lỗi tìm kiếm web: " + e.getMessage();
+            return "Lß╗ùi t├¼m kiß║┐m web: " + e.getMessage();
         }
     }
 
@@ -1109,9 +1119,9 @@ public class AiToolService {
             String tieuDe = (String) p.get("tieu_de");
             String noiDung = (String) p.get("noi_dung");
             emailService.sendMassEmail(email, tieuDe, noiDung);
-            return "✅ Đã gửi email đến " + email + " thành công!";
+            return "Γ£à ─É├ú gß╗¡i email ─æß║┐n " + email + " th├ánh c├┤ng!";
         } catch (Exception e) {
-            return "Lỗi gửi email: " + e.getMessage();
+            return "Lß╗ùi gß╗¡i email: " + e.getMessage();
         }
     }
 
@@ -1123,60 +1133,60 @@ public class AiToolService {
         for (var row : rows) {
             values.put(String.valueOf(row.get("ten_cau_hinh")), row.get("gia_tri") == null ? "" : String.valueOf(row.get("gia_tri")));
         }
-        return "Trạng thái cấu hình AI:\n"
+        return "Trß║íng th├íi cß║Ñu h├¼nh AI:\n"
             + "- Groq key: " + maskConfigured(values.get("groq_api_key")) + " | model: " + safeValue(values.get("groq_model")) + " | vision: " + safeValue(values.get("groq_vision_model")) + "\n"
             + "- Gemini key: " + maskConfigured(values.get("gemini_api_key")) + " | model: " + safeValue(values.get("gemini_model")) + "\n"
             + "- OpenRouter key: " + maskConfigured(values.get("openrouter_api_key")) + " | model: " + safeValue(values.get("openrouter_model")) + "\n"
-            + "- Action policy: " + (values.getOrDefault("ai_action_policy", "").isBlank() ? "chưa cấu hình" : "đã cấu hình") + "\n"
-            + "Lưu ý: API key được che để bảo mật. Backend đọc trực tiếp các giá trị này từ bảng CauHinhHeThong mỗi lần gọi AI.";
+            + "- Action policy: " + (values.getOrDefault("ai_action_policy", "").isBlank() ? "ch╞░a cß║Ñu h├¼nh" : "─æ├ú cß║Ñu h├¼nh") + "\n"
+            + "L╞░u ├╜: API key ─æ╞░ß╗úc che ─æß╗â bß║úo mß║¡t. Backend ─æß╗ìc trß╗▒c tiß║┐p c├íc gi├í trß╗ï n├áy tß╗½ bß║úng CauHinhHeThong mß╗ùi lß║ºn gß╗ìi AI.";
     }
 
     private String toolKiemTraPhanHe() {
         return """
-            Phân hệ chính đang hoạt động:
-            - Tổng quan quản trị: /quan-ly/dashboard
-            - Báo cáo & Thống kê: /quan-ly/bao-cao-thong-ke
-            - Quản lý lịch hẹn: /quan-ly/lich-hen
-            - Điều hành nhân sự: /quan-ly/lich-lam-viec
-            - Nhân sự & Phân quyền: /quan-ly/nhan-vien-phan-quyen
-            - Khách hàng & Thú cưng: /quan-ly/khach-hang-thu-cung
-            - Danh mục dịch vụ: /quan-ly/dich-vu
-            - Khám bệnh & Kê đơn: /quan-ly/kham-benh
-            - Hồ sơ bệnh án: /quan-ly/ho-so-benh-an
-            - Đơn thuốc: /quan-ly/don-thuoc
-            - Xét nghiệm: /quan-ly/xet-nghiem
-            - Kho tệp y tế: /quan-ly/file-dinh-kem
-            - Kho thuốc: /quan-ly/kho-thuoc
-            - Nhập kho & Kiểm kê: /quan-ly/nhap-kho
-            - Hóa đơn & Thanh toán: /quan-ly/hoa-don
-            - Tài chính - Kế toán: /quan-ly/ke-toan
+            Ph├ón hß╗ç ch├¡nh ─æang hoß║ít ─æß╗Öng:
+            - Tß╗òng quan quß║ún trß╗ï: /quan-ly/dashboard
+            - B├ío c├ío & Thß╗æng k├¬: /quan-ly/bao-cao-thong-ke
+            - Quß║ún l├╜ lß╗ïch hß║╣n: /quan-ly/lich-hen
+            - ─Éiß╗üu h├ánh nh├ón sß╗▒: /quan-ly/lich-lam-viec
+            - Nh├ón sß╗▒ & Ph├ón quyß╗ün: /quan-ly/nhan-vien-phan-quyen
+            - Kh├ích h├áng & Th├║ c╞░ng: /quan-ly/khach-hang-thu-cung
+            - Danh mß╗Ñc dß╗ïch vß╗Ñ: /quan-ly/dich-vu
+            - Kh├ím bß╗çnh & K├¬ ─æ╞ín: /quan-ly/kham-benh
+            - Hß╗ô s╞í bß╗çnh ├ín: /quan-ly/ho-so-benh-an
+            - ─É╞ín thuß╗æc: /quan-ly/don-thuoc
+            - X├⌐t nghiß╗çm: /quan-ly/xet-nghiem
+            - Kho tß╗çp y tß║┐: /quan-ly/file-dinh-kem
+            - Kho thuß╗æc: /quan-ly/kho-thuoc
+            - Nhß║¡p kho & Kiß╗âm k├¬: /quan-ly/nhap-kho
+            - H├│a ─æ╞ín & Thanh to├ín: /quan-ly/hoa-don
+            - T├ái ch├¡nh - Kß║┐ to├ín: /quan-ly/ke-toan
             - Marketing: /quan-ly/marketing
-            - Cấu hình hệ thống: /quan-ly/cau-hinh
-            - Phân hệ chức năng: /quan-ly/chuc-nang
-            - Cổng khách hàng: /khach-hang/dashboard
+            - Cß║Ñu h├¼nh hß╗ç thß╗æng: /quan-ly/cau-hinh
+            - Ph├ón hß╗ç chß╗⌐c n─âng: /quan-ly/chuc-nang
+            - Cß╗òng kh├ích h├áng: /khach-hang/dashboard
             """;
     }
 
     private String toolKiemTraKienTrucHeThong() {
         return """
-            Bản đồ kiến trúc Rexi AI/Agent hiện tại:
-            - Frontend/src/components/ChatBot.tsx: giao diện chat nổi, tab Trợ lý Rexi và Rexi Agent, nhận giọng nói, prewarm AI khi mở chatbot.
-            - Backend/src/main/java/com/rexi/pkty/controller/ChatController.java: API chat thường, phân tuyến yêu cầu nhanh/DB/AI, cấp cứu thú y local triage, persona khách hàng, endpoint /api/chat/prewarm.
-            - Backend/src/main/java/com/rexi/pkty/controller/AgentController.java: API Rexi Agent nội bộ, gồm /api/agent/react, gọi tool trực tiếp và orchestration.
-            - Backend/src/main/java/com/rexi/pkty/service/ReActAgentService.java: vòng lặp ReAct Reason -> Act -> Observe, chọn tool, gọi model theo thứ tự OpenRouter -> Gemini -> Groq.
-            - Backend/src/main/java/com/rexi/pkty/service/AiToolService.java: registry tool và thực thi tool thật với database/email/web/system map.
-            - Backend/src/main/java/com/rexi/pkty/service/CodeRagService.java: RAG mã nguồn động, scan Frontend/src và Backend/src để trả file/dòng/snippet đã che secret.
-            - Backend/src/main/java/com/rexi/pkty/service/GroqService.java: adapter Groq, prewarm, xoay vòng/cooldown API key.
+            Bß║ún ─æß╗ô kiß║┐n tr├║c Rexi AI/Agent hiß╗çn tß║íi:
+            - Frontend/src/components/ChatBot.tsx: giao diß╗çn chat nß╗òi, tab Trß╗ú l├╜ Rexi v├á Rexi Agent, nhß║¡n giß╗ìng n├│i, prewarm AI khi mß╗ƒ chatbot.
+            - Backend/src/main/java/com/rexi/pkty/controller/ChatController.java: API chat th╞░ß╗¥ng, ph├ón tuyß║┐n y├¬u cß║ºu nhanh/DB/AI, cß║Ñp cß╗⌐u th├║ y local triage, persona kh├ích h├áng, endpoint /api/chat/prewarm.
+            - Backend/src/main/java/com/rexi/pkty/controller/AgentController.java: API Rexi Agent nß╗Öi bß╗Ö, gß╗ôm /api/agent/react, gß╗ìi tool trß╗▒c tiß║┐p v├á orchestration.
+            - Backend/src/main/java/com/rexi/pkty/service/ReActAgentService.java: v├▓ng lß║╖p ReAct Reason -> Act -> Observe, chß╗ìn tool, gß╗ìi model theo thß╗⌐ tß╗▒ OpenRouter -> Gemini -> Groq.
+            - Backend/src/main/java/com/rexi/pkty/service/AiToolService.java: registry tool v├á thß╗▒c thi tool thß║¡t vß╗¢i database/email/web/system map.
+            - Backend/src/main/java/com/rexi/pkty/service/CodeRagService.java: RAG m├ú nguß╗ôn ─æß╗Öng, scan Frontend/src v├á Backend/src ─æß╗â trß║ú file/d├▓ng/snippet ─æ├ú che secret.
+            - Backend/src/main/java/com/rexi/pkty/service/GroqService.java: adapter Groq, prewarm, xoay v├▓ng/cooldown API key.
             - Backend/src/main/java/com/rexi/pkty/service/GeminiService.java: adapter Gemini cho fallback model.
-            - Backend/src/main/java/com/rexi/pkty/service/OpenRouterService.java: adapter OpenRouter, provider ưu tiên đầu tiên của ReAct Agent.
-            - Backend/src/main/java/com/rexi/pkty/security/RoleAccessPolicy.java: chặn/mở tool theo vai trò, không cho khách quét dữ liệu nội bộ.
-            - Backend/src/main/java/com/rexi/pkty/security/SecurityConfig.java: cấu hình bảo mật, CORS và filter xác thực.
+            - Backend/src/main/java/com/rexi/pkty/service/OpenRouterService.java: adapter OpenRouter, provider ╞░u ti├¬n ─æß║ºu ti├¬n cß╗ºa ReAct Agent.
+            - Backend/src/main/java/com/rexi/pkty/security/RoleAccessPolicy.java: chß║╖n/mß╗ƒ tool theo vai tr├▓, kh├┤ng cho kh├ích qu├⌐t dß╗» liß╗çu nß╗Öi bß╗Ö.
+            - Backend/src/main/java/com/rexi/pkty/security/SecurityConfig.java: cß║Ñu h├¼nh bß║úo mß║¡t, CORS v├á filter x├íc thß╗▒c.
 
-            Nguyên tắc tự nhận thức của Agent:
-            - Khi admin hỏi chức năng nằm ở file nào/trang nào/dòng nào, phải dùng tool tra_cuu_ma_nguon để đọc RAG mã nguồn động và trả file + dòng gần nhất.
-            - Nếu admin hỏi model/provider/key cấu hình, phải dùng tool kiem_tra_cau_hinh_ai; không bao giờ tiết lộ API key.
-            - Nếu admin hỏi chức năng nào nằm ở đâu, kết hợp bản đồ kiến trúc này với RAG mã nguồn động; không bịa line nếu RAG không tìm thấy.
-            - Nếu yêu cầu thao tác dữ liệu thật, phải dùng tool đúng quyền hoặc hỏi xác nhận khi hành động nhạy cảm.
+            Nguy├¬n tß║»c tß╗▒ nhß║¡n thß╗⌐c cß╗ºa Agent:
+            - Khi admin hß╗Åi chß╗⌐c n─âng nß║▒m ß╗ƒ file n├áo/trang n├áo/d├▓ng n├áo, phß║úi d├╣ng tool tra_cuu_ma_nguon ─æß╗â ─æß╗ìc RAG m├ú nguß╗ôn ─æß╗Öng v├á trß║ú file + d├▓ng gß║ºn nhß║Ñt.
+            - Nß║┐u admin hß╗Åi model/provider/key cß║Ñu h├¼nh, phß║úi d├╣ng tool kiem_tra_cau_hinh_ai; kh├┤ng bao giß╗¥ tiß║┐t lß╗Ö API key.
+            - Nß║┐u admin hß╗Åi chß╗⌐c n─âng n├áo nß║▒m ß╗ƒ ─æ├óu, kß║┐t hß╗úp bß║ún ─æß╗ô kiß║┐n tr├║c n├áy vß╗¢i RAG m├ú nguß╗ôn ─æß╗Öng; kh├┤ng bß╗ïa line nß║┐u RAG kh├┤ng t├¼m thß║Ñy.
+            - Nß║┐u y├¬u cß║ºu thao t├íc dß╗» liß╗çu thß║¡t, phß║úi d├╣ng tool ─æ├║ng quyß╗ün hoß║╖c hß╗Åi x├íc nhß║¡n khi h├ánh ─æß╗Öng nhß║íy cß║úm.
             """;
     }
 
@@ -1194,117 +1204,117 @@ public class AiToolService {
         new SourceIndexEntry(
             "chatbot_voice_ui",
             "ChatBot, voice/micro, context frontend",
-            "chatbot chat bot mic micro voice giọng nói opera speech recognition dom context prewarm tab agent trợ lý nút gửi send input shell core",
+            "chatbot chat bot mic micro voice giß╗ìng n├│i opera speech recognition dom context prewarm tab agent trß╗ú l├╜ n├║t gß╗¡i send input shell core",
             "Frontend/src/components/chatbot/ChatBotCore.tsx; Frontend/src/components/chatbot/ChatbotShell.tsx; Frontend/src/components/ChatBot.tsx; Frontend/src/components/VoiceInput.tsx; Frontend/src/utils/agentPermissions.ts",
             "/api/chat; /api/chat/prewarm; /api/agent/react; /api/agent/tool",
-            "Không có tool DB trực tiếp; frontend quyết định context và gọi Agent/Chat.",
-            "Xử lý UI chat nổi, tab Trợ lý Rexi/Rexi Agent, nhận giọng nói, context trang, streaming/fallback và prewarm."
+            "Kh├┤ng c├│ tool DB trß╗▒c tiß║┐p; frontend quyß║┐t ─æß╗ïnh context v├á gß╗ìi Agent/Chat.",
+            "Xß╗¡ l├╜ UI chat nß╗òi, tab Trß╗ú l├╜ Rexi/Rexi Agent, nhß║¡n giß╗ìng n├│i, context trang, streaming/fallback v├á prewarm."
         ),
         new SourceIndexEntry(
             "standard_chat",
-            "Chat thường khách hàng",
-            "chat thường standard chat khách hàng cấp cứu triage db local groq persona prewarm",
+            "Chat th╞░ß╗¥ng kh├ích h├áng",
+            "chat th╞░ß╗¥ng standard chat kh├ích h├áng cß║Ñp cß╗⌐u triage db local groq persona prewarm",
             "Backend/src/main/java/com/rexi/pkty/controller/ChatController.java; Backend/src/main/java/com/rexi/pkty/service/GroqService.java",
             "/api/chat; /api/chat/stream; /api/chat/prewarm",
             "local_triage; ChatRoute QUICK_LOCAL/DB_LOCAL/MEDICAL_AI/WEB_AI/CHAT_AI",
-            "Chat thường ưu tiên trả lời nhanh/local triage/DB local, chỉ gọi AI khi cần. Không dùng Rexi Agent ReAct."
+            "Chat th╞░ß╗¥ng ╞░u ti├¬n trß║ú lß╗¥i nhanh/local triage/DB local, chß╗ë gß╗ìi AI khi cß║ºn. Kh├┤ng d├╣ng Rexi Agent ReAct."
         ),
         new SourceIndexEntry(
             "react_agent_core",
-            "Rexi Agent ReAct nội bộ",
+            "Rexi Agent ReAct nß╗Öi bß╗Ö",
             "agent re act react reason act observe admin model provider openrouter gemini groq tool",
             "Backend/src/main/java/com/rexi/pkty/controller/AgentController.java; Backend/src/main/java/com/rexi/pkty/service/ReActAgentService.java; Backend/src/main/java/com/rexi/pkty/service/AiToolService.java",
             "/api/agent/react; /api/agent/tool; /api/agent/swarm-orchestration",
-            "Tất cả tool trong AiToolService theo RoleAccessPolicy.",
-            "Vòng lặp Agent chọn tool, quan sát kết quả, rồi trả final_answer. Provider fallback: OpenRouter -> Gemini -> Groq."
+            "Tß║Ñt cß║ú tool trong AiToolService theo RoleAccessPolicy.",
+            "V├▓ng lß║╖p Agent chß╗ìn tool, quan s├ít kß║┐t quß║ú, rß╗ôi trß║ú final_answer. Provider fallback: OpenRouter -> Gemini -> Groq."
         ),
         new SourceIndexEntry(
             "ai_provider_config",
-            "Cấu hình provider/model/API key",
-            "ai provider model api key groq gemini openrouter cấu hình cau hinh prewarm cooldown xoay vòng key hết hạn",
+            "Cß║Ñu h├¼nh provider/model/API key",
+            "ai provider model api key groq gemini openrouter cß║Ñu h├¼nh cau hinh prewarm cooldown xoay v├▓ng key hß║┐t hß║ín",
             "Backend/src/main/java/com/rexi/pkty/service/GroqService.java; Backend/src/main/java/com/rexi/pkty/service/GeminiService.java; Backend/src/main/java/com/rexi/pkty/service/OpenRouterService.java; Backend/src/main/resources/application.properties",
             "/api/chat/prewarm; /api/agent/react",
             "kiem_tra_cau_hinh_ai",
-            "Không bao giờ trả API key. Muốn biết model/provider thực tế phải gọi kiem_tra_cau_hinh_ai, kết quả chỉ che key."
+            "Kh├┤ng bao giß╗¥ trß║ú API key. Muß╗æn biß║┐t model/provider thß╗▒c tß║┐ phß║úi gß╗ìi kiem_tra_cau_hinh_ai, kß║┐t quß║ú chß╗ë che key."
         ),
         new SourceIndexEntry(
             "permissions_security",
-            "Phân quyền, JWT, bảo mật tool",
-            "quyền phân quyền role admin quản lý khách hàng bảo mật jwt security tool permission policy frontend backend",
+            "Ph├ón quyß╗ün, JWT, bß║úo mß║¡t tool",
+            "quyß╗ün ph├ón quyß╗ün role admin quß║ún l├╜ kh├ích h├áng bß║úo mß║¡t jwt security tool permission policy frontend backend",
             "Backend/src/main/java/com/rexi/pkty/security/RoleAccessPolicy.java; Backend/src/main/java/com/rexi/pkty/security/RexiSecurityRoles.java; Backend/src/main/java/com/rexi/pkty/SecurityConfig.java; Backend/src/main/java/com/rexi/pkty/security/JwtFilter.java; Frontend/src/utils/permissions.ts; Frontend/src/utils/agentPermissions.ts",
-            "/api/agent/react; /api/agent/tool; các route /quan-ly/* theo ADMIN_ROUTE_ROLES",
+            "/api/agent/react; /api/agent/tool; c├íc route /quan-ly/* theo ADMIN_ROUTE_ROLES",
             "RoleAccessPolicy.canUseAgentTool; canUseAgentTool frontend",
-            "Backend là nguồn chặn quyền cuối cùng. Tool mã nguồn/cấu hình AI chỉ admin; khách không được xem dữ liệu nội bộ."
+            "Backend l├á nguß╗ôn chß║╖n quyß╗ün cuß╗æi c├╣ng. Tool m├ú nguß╗ôn/cß║Ñu h├¼nh AI chß╗ë admin; kh├ích kh├┤ng ─æ╞░ß╗úc xem dß╗» liß╗çu nß╗Öi bß╗Ö."
         ),
         new SourceIndexEntry(
             "appointment_booking",
-            "Đặt lịch, lịch trống, xác nhận lịch",
-            "đặt lịch lịch hẹn lịch trống bác sĩ dịch vụ khách hàng thú cưng xác nhận booking appointment",
+            "─Éß║╖t lß╗ïch, lß╗ïch trß╗æng, x├íc nhß║¡n lß╗ïch",
+            "─æß║╖t lß╗ïch lß╗ïch hß║╣n lß╗ïch trß╗æng b├íc s─⌐ dß╗ïch vß╗Ñ kh├ích h├áng th├║ c╞░ng x├íc nhß║¡n booking appointment",
             "Backend/src/main/java/com/rexi/pkty/controller/AgentController.java; Backend/src/main/java/com/rexi/pkty/service/AiToolService.java; Frontend/src/pages/customer/DatLichHen.tsx; Frontend/src/pages/admin/QuanLyLichHen.tsx",
             "/api/agent/react; /api/agent/tool; /api/lich-hen; /api/dich-vu; /api/thu-cung",
             "tim_lich_trong; dat_lich_hen; tim_lich_hen_hom_nay; tim_khach_hang; tim_thu_cung",
-            "Hành động tạo lịch phải đủ dữ liệu và nên hỏi xác nhận trước khi đặt."
+            "H├ánh ─æß╗Öng tß║ío lß╗ïch phß║úi ─æß╗º dß╗» liß╗çu v├á n├¬n hß╗Åi x├íc nhß║¡n tr╞░ß╗¢c khi ─æß║╖t."
         ),
         new SourceIndexEntry(
             "customer_pet_records",
-            "Khách hàng, thú cưng, hồ sơ bệnh án",
-            "khách hàng thú cưng bệnh án hồ sơ khám bệnh đơn thuốc xét nghiệm file y tế customer pet record",
+            "Kh├ích h├áng, th├║ c╞░ng, hß╗ô s╞í bß╗çnh ├ín",
+            "kh├ích h├áng th├║ c╞░ng bß╗çnh ├ín hß╗ô s╞í kh├ím bß╗çnh ─æ╞ín thuß╗æc x├⌐t nghiß╗çm file y tß║┐ customer pet record",
             "Backend/src/main/java/com/rexi/pkty/service/AiToolService.java; Frontend/src/pages/admin/QuanLyKhachHangThuCung.tsx; Frontend/src/pages/admin/QuanLyHoSoBenhAn.tsx; Frontend/src/pages/admin/ChiTietHoSoBenhAn.tsx; Frontend/src/pages/customer/HoSoBenhAn.tsx",
             "/api/khach-hang; /api/thu-cung; /api/ho-so-benh-an",
             "tim_khach_hang; tim_thu_cung; xem_benh_an",
-            "Dữ liệu bệnh án là nhạy cảm, chỉ vai trò được cấp quyền mới tra cứu."
+            "Dß╗» liß╗çu bß╗çnh ├ín l├á nhß║íy cß║úm, chß╗ë vai tr├▓ ─æ╞░ß╗úc cß║Ñp quyß╗ün mß╗¢i tra cß╗⌐u."
         ),
         new SourceIndexEntry(
             "invoice_finance_inventory",
-            "Hóa đơn, kế toán, kho thuốc",
-            "hóa đơn thanh toán kế toán doanh thu kho thuốc nhập kho tồn kho thuốc invoice finance inventory",
+            "H├│a ─æ╞ín, kß║┐ to├ín, kho thuß╗æc",
+            "h├│a ─æ╞ín thanh to├ín kß║┐ to├ín doanh thu kho thuß╗æc nhß║¡p kho tß╗ôn kho thuß╗æc invoice finance inventory",
             "Backend/src/main/java/com/rexi/pkty/service/AiToolService.java; Frontend/src/pages/admin/QuanLyHoaDon.tsx; Frontend/src/pages/admin/KeToanDashboard.tsx; Frontend/src/pages/admin/QuanLyKhoThuoc.tsx; Frontend/src/pages/admin/QuanLyNhapKho.tsx",
             "/api/hoa-don; /api/kho; /api/agent/tool",
             "xem_hoa_don; thong_ke_doanh_thu; xem_kho_thuoc",
-            "Tài chính/kho là dữ liệu nội bộ, phải theo role finance/inventory."
+            "T├ái ch├¡nh/kho l├á dß╗» liß╗çu nß╗Öi bß╗Ö, phß║úi theo role finance/inventory."
         ),
         new SourceIndexEntry(
             "account_admin",
-            "Tài khoản, nhân viên, mở khóa/xóa mềm",
-            "tài khoản nhân viên phân quyền mở khóa khóa xóa mềm admin account employee user password",
+            "T├ái khoß║ún, nh├ón vi├¬n, mß╗ƒ kh├│a/x├│a mß╗üm",
+            "t├ái khoß║ún nh├ón vi├¬n ph├ón quyß╗ün mß╗ƒ kh├│a kh├│a x├│a mß╗üm admin account employee user password",
             "Backend/src/main/java/com/rexi/pkty/controller/AdminAccountController.java; Backend/src/main/java/com/rexi/pkty/controller/NhanVienController.java; Backend/src/main/java/com/rexi/pkty/service/AiToolService.java; Frontend/src/pages/admin/QuanLyNhanVienPhanQuyen.tsx",
             "/api/admin/tai-khoan; /api/nhan-vien; /api/agent/tool",
             "tim_tai_khoan_bi_khoa; thao_tac_tai_khoan",
-            "Thao tác tài khoản là nhạy cảm, bắt buộc xác định đúng đối tượng và hỏi xác nhận trước."
+            "Thao t├íc t├ái khoß║ún l├á nhß║íy cß║úm, bß║»t buß╗Öc x├íc ─æß╗ïnh ─æ├║ng ─æß╗æi t╞░ß╗úng v├á hß╗Åi x├íc nhß║¡n tr╞░ß╗¢c."
         ),
         new SourceIndexEntry(
             "marketing_swarm",
-            "Marketing email và Swarm Agent",
-            "marketing email swarm campaign chiến dịch gửi mail khách hàng dataagent creative reviewer",
+            "Marketing email v├á Swarm Agent",
+            "marketing email swarm campaign chiß║┐n dß╗ïch gß╗¡i mail kh├ích h├áng dataagent creative reviewer",
             "Backend/src/main/java/com/rexi/pkty/controller/AgentController.java; Backend/src/main/java/com/rexi/pkty/service/EmailService.java; Frontend/src/pages/admin/QuanLyMarketing.tsx; Frontend/src/components/ChatBot.tsx",
             "/api/agent/swarm-orchestration; /api/agent/bulk-send-email",
             "gui_email_don_le; tim_kiem_web",
-            "Không tạo dữ liệu demo giả khi DB rỗng, tránh gửi nhầm. Gửi email cần duyệt/xác nhận."
+            "Kh├┤ng tß║ío dß╗» liß╗çu demo giß║ú khi DB rß╗ùng, tr├ính gß╗¡i nhß║ºm. Gß╗¡i email cß║ºn duyß╗çt/x├íc nhß║¡n."
         ),
         new SourceIndexEntry(
             "frontend_routes",
-            "Route và màn hình frontend",
-            "route trang frontend sidebar protected route dashboard cấu hình chức năng admin customer",
+            "Route v├á m├án h├¼nh frontend",
+            "route trang frontend sidebar protected route dashboard cß║Ñu h├¼nh chß╗⌐c n─âng admin customer",
             "Frontend/src/App.tsx; Frontend/src/components/ProtectedRoute.tsx; Frontend/src/components/SidebarAdmin.tsx; Frontend/src/components/SidebarKhachHang.tsx; Frontend/src/utils/permissions.ts",
             "/quan-ly/*; /khach-hang/*; /dang-nhap",
             "kiem_tra_phan_he",
-            "Frontend route guard chỉ hỗ trợ UX; backend vẫn phải kiểm quyền khi đọc/sửa dữ liệu."
+            "Frontend route guard chß╗ë hß╗ù trß╗ú UX; backend vß║½n phß║úi kiß╗âm quyß╗ün khi ─æß╗ìc/sß╗¡a dß╗» liß╗çu."
         ),
         new SourceIndexEntry(
             "system_health_errors",
-            "Health, lỗi hệ thống, log, DB",
-            "backend health lỗi sql server sa login database db kết nối compile startup system error",
+            "Health, lß╗ùi hß╗ç thß╗æng, log, DB",
+            "backend health lß╗ùi sql server sa login database db kß║┐t nß╗æi compile startup system error",
             "Backend/src/main/resources/application.properties; Backend/src/main/java/com/rexi/pkty/controller/SystemController.java; Backend/src/main/java/com/rexi/pkty/exception/BoXuLyLoiHeThong.java",
             "/api/system/health",
-            "Không có tool sửa DB config tự động.",
-            "Health 200 nghĩa backend lên. SQL Server login failed là lỗi môi trường/cấu hình DB, không nên để Agent bịa dữ liệu khi DB lỗi."
+            "Kh├┤ng c├│ tool sß╗¡a DB config tß╗▒ ─æß╗Öng.",
+            "Health 200 ngh─⌐a backend l├¬n. SQL Server login failed l├á lß╗ùi m├┤i tr╞░ß╗¥ng/cß║Ñu h├¼nh DB, kh├┤ng n├¬n ─æß╗â Agent bß╗ïa dß╗» liß╗çu khi DB lß╗ùi."
         )
     );
 
     private String toolTraCuuMaNguon(String tuKhoa) {
         String query = normalizeVietnamese(Objects.toString(tuKhoa, "").toLowerCase().trim());
         if (query.isBlank()) {
-            return "Cần từ khóa để tra cứu RAG mã nguồn. Ví dụ: chatbot mic, agent model, phân quyền tool, đặt lịch, hóa đơn, nút thêm dịch vụ, api đăng nhập.";
+            return "Cß║ºn tß╗½ kh├│a ─æß╗â tra cß╗⌐u RAG m├ú nguß╗ôn. V├¡ dß╗Ñ: chatbot mic, agent model, ph├ón quyß╗ün tool, ─æß║╖t lß╗ïch, h├│a ─æ╞ín, n├║t th├¬m dß╗ïch vß╗Ñ, api ─æ─âng nhß║¡p.";
         }
 
         List<Map.Entry<Integer, SourceIndexEntry>> scored = new ArrayList<>();
@@ -1318,32 +1328,32 @@ public class AiToolService {
 
         StringBuilder sb = new StringBuilder();
         if (!scored.isEmpty()) {
-            sb.append("Bản đồ module khớp cho \"").append(tuKhoa).append("\" (tối đa 4 mục):\n");
+            sb.append("Bß║ún ─æß╗ô module khß╗¢p cho \"").append(tuKhoa).append("\" (tß╗æi ─æa 4 mß╗Ñc):\n");
             int limit = Math.min(4, scored.size());
             for (int i = 0; i < limit; i++) {
                 SourceIndexEntry e = scored.get(i).getValue();
                 sb.append("\n").append(i + 1).append(". ").append(e.title()).append(" [").append(e.id()).append("]\n")
                     .append("- Files: ").append(e.files()).append("\n")
                     .append("- Routes/API: ").append(e.routes()).append("\n")
-                    .append("- Tools/liên kết: ").append(e.tools()).append("\n")
-                    .append("- Ghi chú: ").append(e.notes()).append("\n");
+                    .append("- Tools/li├¬n kß║┐t: ").append(e.tools()).append("\n")
+                    .append("- Ghi ch├║: ").append(e.notes()).append("\n");
             }
             sb.append("\n");
         } else {
-            sb.append("Bản đồ module tĩnh chưa có mục khớp. Chuyển sang RAG mã nguồn động.\n\n");
+            sb.append("Bß║ún ─æß╗ô module t─⌐nh ch╞░a c├│ mß╗Ñc khß╗¢p. Chuyß╗ân sang RAG m├ú nguß╗ôn ─æß╗Öng.\n\n");
         }
 
         CodeRagService rag = codeRagService != null ? codeRagService : new CodeRagService();
         try {
             sb.append(rag.search(tuKhoa));
         } catch (Exception ex) {
-            sb.append("RAG mã nguồn động lỗi: ").append(ex.getMessage()).append("\n");
+            sb.append("RAG m├ú nguß╗ôn ─æß╗Öng lß╗ùi: ").append(ex.getMessage()).append("\n");
             if (scored.isEmpty()) {
-                sb.append("Không tìm thấy module khớp trong index mã nguồn whitelist cho từ khóa: ").append(tuKhoa)
-                    .append(". Có thể hỏi rộng hơn theo nhóm: chatbot, agent, provider AI, phân quyền, đặt lịch, khách hàng, bệnh án, hóa đơn, kho, marketing, route frontend, health.");
+                sb.append("Kh├┤ng t├¼m thß║Ñy module khß╗¢p trong index m├ú nguß╗ôn whitelist cho tß╗½ kh├│a: ").append(tuKhoa)
+                    .append(". C├│ thß╗â hß╗Åi rß╗Öng h╞ín theo nh├│m: chatbot, agent, provider AI, ph├ón quyß╗ün, ─æß║╖t lß╗ïch, kh├ích h├áng, bß╗çnh ├ín, h├│a ─æ╞ín, kho, marketing, route frontend, health.");
             }
         }
-        sb.append("\n\nLuật bảo mật: chỉ trả vị trí code, route/API và snippet ngắn đã che secret; không suy đoán API key, mật khẩu, token hay nội dung file nhạy cảm.");
+        sb.append("\n\nLuß║¡t bß║úo mß║¡t: chß╗ë trß║ú vß╗ï tr├¡ code, route/API v├á snippet ngß║»n ─æ├ú che secret; kh├┤ng suy ─æo├ín API key, mß║¡t khß║⌐u, token hay nß╗Öi dung file nhß║íy cß║úm.");
         return sb.toString();
     }
 
@@ -1371,26 +1381,26 @@ public class AiToolService {
             (filter ? "WHERE hd.trang_thai = ? " : "") +
             "ORDER BY hd.ngay_lap_hoa_don DESC OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY";
         var rows = filter ? jdbcTemplate.queryForList(sql, trangThai) : jdbcTemplate.queryForList(sql);
-        if (rows.isEmpty()) return "Không tìm thấy hóa đơn phù hợp.";
-        StringBuilder sb = new StringBuilder("Danh sách hóa đơn (" + rows.size() + " dòng mới nhất):\n");
+        if (rows.isEmpty()) return "Kh├┤ng t├¼m thß║Ñy h├│a ─æ╞ín ph├╣ hß╗úp.";
+        StringBuilder sb = new StringBuilder("Danh s├ích h├│a ─æ╞ín (" + rows.size() + " d├▓ng mß╗¢i nhß║Ñt):\n");
         for (var row : rows) {
             sb.append("- #").append(row.get("id_hoa_don"))
                 .append(" | ").append(row.get("ten_khach_hang"))
-                .append(" | SĐT: ").append(row.get("sdt"))
-                .append(" | Tổng: ").append(row.get("tong_tien_cuoi"))
+                .append(" | S─ÉT: ").append(row.get("sdt"))
+                .append(" | Tß╗òng: ").append(row.get("tong_tien_cuoi"))
                 .append(" | TT: ").append(row.get("trang_thai"))
-                .append(" | Ngày: ").append(row.get("ngay_lap_hoa_don"))
+                .append(" | Ng├áy: ").append(row.get("ngay_lap_hoa_don"))
                 .append("\n");
         }
         return sb.toString();
     }
 
     private String maskConfigured(String value) {
-        return value == null || value.trim().isEmpty() ? "chưa cấu hình" : "đã cấu hình";
+        return value == null || value.trim().isEmpty() ? "ch╞░a cß║Ñu h├¼nh" : "─æ├ú cß║Ñu h├¼nh";
     }
 
     private String safeValue(String value) {
-        return value == null || value.trim().isEmpty() ? "dùng fallback môi trường" : value.trim();
+        return value == null || value.trim().isEmpty() ? "d├╣ng fallback m├┤i tr╞░ß╗¥ng" : value.trim();
     }
 
     private String toolThaoTacTaiKhoan(Map<String, Object> p) {
@@ -1399,32 +1409,32 @@ public class AiToolService {
             String idTaiKhoan = (String) p.get("id_tai_khoan");
             String action = (String) p.get("hanh_dong");
             if ((id == null || id.isBlank()) && (idTaiKhoan == null || idTaiKhoan.isBlank())) {
-                return "Lỗi: Thiếu ID khách hàng hoặc ID tài khoản.";
+                return "Lß╗ùi: Thiß║┐u ID kh├ích h├áng hoß║╖c ID t├ái khoß║ún.";
             }
             if ("XOA".equalsIgnoreCase(action) || "KHOA".equalsIgnoreCase(action)) {
                 if (!isConfirmedAccountAction(p)) {
-                    return "Cần xác nhận rõ trước khi khóa/xóa tài khoản. Gửi thêm tham số xac_nhan=true sau khi admin/quản lý đã xác nhận thao tác.";
+                    return "Cß║ºn x├íc nhß║¡n r├╡ tr╞░ß╗¢c khi kh├│a/x├│a t├ái khoß║ún. Gß╗¡i th├¬m tham sß╗æ xac_nhan=true sau khi admin/quß║ún l├╜ ─æ├ú x├íc nhß║¡n thao t├íc.";
                 }
                 String customerId = resolveCustomerId(id, idTaiKhoan);
-                if (customerId == null || customerId.isBlank()) return "Lỗi: Không tìm thấy khách hàng cần thao tác.";
+                if (customerId == null || customerId.isBlank()) return "Lß╗ùi: Kh├┤ng t├¼m thß║Ñy kh├ích h├áng cß║ºn thao t├íc.";
                 int rows = jdbcTemplate.update("UPDATE KhachHang SET da_xoa = true WHERE id_khach_hang = ?", customerId);
-                jdbcTemplate.update("UPDATE TaiKhoan SET trang_thai = 'Đã khóa' WHERE id_khach_hang = ?", customerId);
-                if (rows > 0) return "✅ Đã " + action.toLowerCase() + " tài khoản khách hàng " + customerId + " thành công.";
-                else return "Lỗi: Không tìm thấy khách hàng ID " + customerId;
+                jdbcTemplate.update("UPDATE TaiKhoan SET trang_thai = '─É├ú kh├│a' WHERE id_khach_hang = ?", customerId);
+                if (rows > 0) return "Γ£à ─É├ú " + action.toLowerCase() + " t├ái khoß║ún kh├ích h├áng " + customerId + " th├ánh c├┤ng.";
+                else return "Lß╗ùi: Kh├┤ng t├¼m thß║Ñy kh├ích h├áng ID " + customerId;
             }
             if ("MO_KHOA".equalsIgnoreCase(action) || "MOKHOA".equalsIgnoreCase(action) || "UNLOCK".equalsIgnoreCase(action)) {
                 String customerId = resolveCustomerId(id, idTaiKhoan);
-                if (customerId == null || customerId.isBlank()) return "Lỗi: Không tìm thấy khách hàng cần mở khóa.";
+                if (customerId == null || customerId.isBlank()) return "Lß╗ùi: Kh├┤ng t├¼m thß║Ñy kh├ích h├áng cß║ºn mß╗ƒ kh├│a.";
                 int customerRows = jdbcTemplate.update("UPDATE KhachHang SET da_xoa = false WHERE id_khach_hang = ?", customerId);
-                int accountRows = jdbcTemplate.update("UPDATE TaiKhoan SET trang_thai = 'Hoạt động' WHERE id_khach_hang = ?", customerId);
+                int accountRows = jdbcTemplate.update("UPDATE TaiKhoan SET trang_thai = 'Hoß║ít ─æß╗Öng' WHERE id_khach_hang = ?", customerId);
                 if (customerRows > 0 || accountRows > 0) {
-                    return "✅ Đã mở khóa tài khoản khách hàng " + customerId + " thành công.";
+                    return "Γ£à ─É├ú mß╗ƒ kh├│a t├ái khoß║ún kh├ích h├áng " + customerId + " th├ánh c├┤ng.";
                 }
-                return "Lỗi: Không tìm thấy tài khoản khách hàng ID " + customerId;
+                return "Lß╗ùi: Kh├┤ng t├¼m thß║Ñy t├ái khoß║ún kh├ích h├áng ID " + customerId;
             }
-            return "Lỗi: Hành động không hợp lệ. Chỉ hỗ trợ KHOA, XOA hoặc MO_KHOA.";
+            return "Lß╗ùi: H├ánh ─æß╗Öng kh├┤ng hß╗úp lß╗ç. Chß╗ë hß╗ù trß╗ú KHOA, XOA hoß║╖c MO_KHOA.";
         } catch (Exception e) {
-            return "Lỗi thao tác tài khoản: " + e.getMessage();
+            return "Lß╗ùi thao t├íc t├ái khoß║ún: " + e.getMessage();
         }
     }
 
@@ -1459,7 +1469,7 @@ public class AiToolService {
     private String toolThemThuCung(Map<String, Object> p, String userRole, String username) {
         String ten = Objects.toString(p.get("ten_thu_cung"), "").trim();
         if (ten.isBlank()) {
-            return "Lỗi: Thiếu tên thú cưng cần thêm.";
+            return "Lß╗ùi: Thiß║┐u t├¬n th├║ c╞░ng cß║ºn th├¬m.";
         }
 
         String role = RoleAccessPolicy.normalizeRole(userRole);
@@ -1467,14 +1477,14 @@ public class AiToolService {
         if (RoleAccessPolicy.isCustomerRole(role) || role.isBlank()) {
             customerId = resolveCustomerId(null, username);
             if (customerId == null || customerId.isBlank()) {
-                return "Lỗi: Không xác định được tài khoản khách hàng đang đăng nhập.";
+                return "Lß╗ùi: Kh├┤ng x├íc ─æß╗ïnh ─æ╞░ß╗úc t├ái khoß║ún kh├ích h├áng ─æang ─æ─âng nhß║¡p.";
             }
         } else if (customerId.isBlank()) {
             customerId = resolveCustomerId(null, username);
         }
 
         if (customerId == null || customerId.isBlank()) {
-            return "Lỗi: Thiếu ID khách hàng để thêm thú cưng.";
+            return "Lß╗ùi: Thiß║┐u ID kh├ích h├áng ─æß╗â th├¬m th├║ c╞░ng.";
         }
 
         Integer ownerExists = jdbcTemplate.queryForObject(
@@ -1483,7 +1493,7 @@ public class AiToolService {
             customerId
         );
         if (ownerExists == null || ownerExists == 0) {
-            return "Lỗi: Không tìm thấy khách hàng " + customerId + ".";
+            return "Lß╗ùi: Kh├┤ng t├¼m thß║Ñy kh├ích h├áng " + customerId + ".";
         }
 
         var existing = jdbcTemplate.queryForList(
@@ -1492,15 +1502,15 @@ public class AiToolService {
             ten
         );
         if (!existing.isEmpty()) {
-            return "Đã có thú cưng " + ten + " trong tài khoản này. ID: " + existing.get(0).get("id_thu_cung") + ".";
+            return "─É├ú c├│ th├║ c╞░ng " + ten + " trong t├ái khoß║ún n├áy. ID: " + existing.get(0).get("id_thu_cung") + ".";
         }
 
         String id = "TC-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-        String loai = Objects.toString(p.getOrDefault("loai", "Chưa xác định"), "Chưa xác định").trim();
+        String loai = Objects.toString(p.getOrDefault("loai", "Ch╞░a x├íc ─æß╗ïnh"), "Ch╞░a x├íc ─æß╗ïnh").trim();
         String giong = Objects.toString(p.getOrDefault("giong", ""), "").trim();
-        String gioiTinh = Objects.toString(p.getOrDefault("gioi_tinh", "Không xác định"), "Không xác định").trim();
+        String gioiTinh = Objects.toString(p.getOrDefault("gioi_tinh", "Kh├┤ng x├íc ─æß╗ïnh"), "Kh├┤ng x├íc ─æß╗ïnh").trim();
         String mauSac = Objects.toString(p.getOrDefault("mau_sac", ""), "").trim();
-        String ghiChu = Objects.toString(p.getOrDefault("ghi_chu", "Thêm bởi Rexi Agent"), "Thêm bởi Rexi Agent").trim();
+        String ghiChu = Objects.toString(p.getOrDefault("ghi_chu", "Th├¬m bß╗ƒi Rexi Agent"), "Th├¬m bß╗ƒi Rexi Agent").trim();
         Double trongLuong = parseDoubleOrNull(p.get("trong_luong"));
         LocalDate ngaySinh = parseDateOrNull(p.get("ngay_sinh"));
 
@@ -1518,7 +1528,7 @@ public class AiToolService {
             trongLuong,
             ghiChu
         );
-        return "Đã thêm thú cưng " + ten + " cho tài khoản " + customerId + ". ID: " + id + ".";
+        return "─É├ú th├¬m th├║ c╞░ng " + ten + " cho t├ái khoß║ún " + customerId + ". ID: " + id + ".";
     }
 
     private Double parseDoubleOrNull(Object value) {
@@ -1548,7 +1558,7 @@ public class AiToolService {
         try {
             boolean isSearch = tuKhoa != null && !tuKhoa.trim().isEmpty();
             
-            // 1. Đọc tài liệu VNUA từ file RAG tĩnh cực kỳ tối ưu.
+            // 1. ─Éß╗ìc t├ái liß╗çu VNUA tß╗½ file RAG t─⌐nh cß╗▒c kß╗│ tß╗æi ╞░u.
             java.nio.file.Path path = java.util.List.of(
                     java.nio.file.Paths.get("uploads/docs/DANH_SACH_TAI_LIEU_VNUA.md"),
                     java.nio.file.Paths.get("../uploads/docs/DANH_SACH_TAI_LIEU_VNUA.md")
@@ -1558,11 +1568,11 @@ public class AiToolService {
                 .orElse(java.nio.file.Paths.get("uploads/docs/DANH_SACH_TAI_LIEU_VNUA.md"));
             if (java.nio.file.Files.exists(path)) {
                 List<String> staticLines = java.nio.file.Files.readAllLines(path, java.nio.charset.StandardCharsets.UTF_8);
-                sb.append("📚 [HỆ THỐNG RAG] Đang truy xuất giáo trình VNUA từ thư viện tĩnh:\n");
+                sb.append("≡ƒôÜ [Hß╗å THß╗ÉNG RAG] ─Éang truy xuß║Ñt gi├ío tr├¼nh VNUA tß╗½ th╞░ viß╗çn t─⌐nh:\n");
 
                 boolean foundInStatic = false;
                 String normalizedSearch = isSearch ? normalizeVietnamese(tuKhoa.toLowerCase()) : "";
-                String currentSubject = "Tài liệu VNUA";
+                String currentSubject = "T├ái liß╗çu VNUA";
                 StringBuilder currentBlock = new StringBuilder();
                 for (String line : staticLines) {
                     if (line.startsWith("## ")) {
@@ -1581,12 +1591,12 @@ public class AiToolService {
                         StringBuilder trimmed = new StringBuilder();
                         int kept = 0;
                         for (String line : lines) {
-                            if (line.startsWith("📚") || line.startsWith("- Môn") || line.startsWith("  - File") || line.startsWith("  - Link mở PDF") || line.startsWith("  - Link ngoài") || line.startsWith("  - Đường dẫn") || line.startsWith("  - Từ khóa")) {
+                            if (line.startsWith("≡ƒôÜ") || line.startsWith("- M├┤n") || line.startsWith("  - File") || line.startsWith("  - Link mß╗ƒ PDF") || line.startsWith("  - Link ngo├ái") || line.startsWith("  - ─É╞░ß╗¥ng dß║½n") || line.startsWith("  - Tß╗½ kh├│a")) {
                                 trimmed.append(line).append("\n");
                                 kept++;
                             }
                             if (kept >= 80) {
-                                trimmed.append("... đã rút gọn danh sách, hãy tìm từ khóa cụ thể hơn nếu cần.\n");
+                                trimmed.append("... ─æ├ú r├║t gß╗ìn danh s├ích, h├úy t├¼m tß╗½ kh├│a cß╗Ñ thß╗â h╞ín nß║┐u cß║ºn.\n");
                                 break;
                             }
                         }
@@ -1596,15 +1606,15 @@ public class AiToolService {
                 }
 
                 if (!foundInStatic && isSearch) {
-                    sb.append("(Không tìm thấy giáo trình VNUA tĩnh nào khớp trực tiếp với từ khóa '").append(tuKhoa).append("')\n");
+                    sb.append("(Kh├┤ng t├¼m thß║Ñy gi├ío tr├¼nh VNUA t─⌐nh n├áo khß╗¢p trß╗▒c tiß║┐p vß╗¢i tß╗½ kh├│a '").append(tuKhoa).append("')\n");
                 }
                 sb.append("\n");
             }
 
-            // 2. Kết hợp truy vấn Database bảng file_dinh_kem (nếu sau này sếp upload thêm file vật lý mới)
+            // 2. Kß║┐t hß╗úp truy vß║Ñn Database bß║úng file_dinh_kem (nß║┐u sau n├áy sß║┐p upload th├¬m file vß║¡t l├╜ mß╗¢i)
             String sql = "SELECT id, ten_file, duong_dan, loai, kich_thuoc " +
                          "FROM file_dinh_kem " +
-                         "WHERE loai = 'Tài liệu' OR ten_file LIKE '%.pdf' OR ten_file LIKE '%.docx'";
+                         "WHERE loai = 'T├ái liß╗çu' OR ten_file LIKE '%.pdf' OR ten_file LIKE '%.docx'";
             
             List<Map<String, Object>> dbRows;
             if (isSearch) {
@@ -1615,26 +1625,26 @@ public class AiToolService {
             }
 
             if (!dbRows.isEmpty()) {
-                sb.append("📂 [TÀI LIỆU TẢI LÊN] Phát hiện ").append(dbRows.size()).append(" tài liệu sếp vừa upload lên hệ thống:\n");
+                sb.append("≡ƒôé [T├ÇI LIß╗åU Tß║óI L├èN] Ph├ít hiß╗çn ").append(dbRows.size()).append(" t├ái liß╗çu sß║┐p vß╗½a upload l├¬n hß╗ç thß╗æng:\n");
                 for (int i = 0; i < Math.min(dbRows.size(), 5); i++) {
                     var r = dbRows.get(i);
                     double sizeMb = (r.get("kich_thuoc") != null) ? ((Long) r.get("kich_thuoc")) / (1024.0 * 1024.0) : 0.0;
                     sb.append(String.format("  - %s | ID: %s | %.2f MB\n", r.get("ten_file"), r.get("id"), sizeMb));
-                    sb.append("    ➔ Mở xem nhanh: ").append(r.get("duong_dan")).append("\n");
+                    sb.append("    Γ₧ö Mß╗ƒ xem nhanh: ").append(r.get("duong_dan")).append("\n");
                 }
                 if (dbRows.size() > 5) {
-                    sb.append("  ... và một số tài liệu tải lên khác.\n");
+                    sb.append("  ... v├á mß╗Öt sß╗æ t├ái liß╗çu tß║úi l├¬n kh├íc.\n");
                 }
             }
 
             if (sb.length() == 0) {
-                return "Không tìm thấy bất kỳ tài liệu y khoa VNUA nào phù hợp với từ khóa: \"" + (isSearch ? tuKhoa : "tất cả") + "\".";
+                return "Kh├┤ng t├¼m thß║Ñy bß║Ñt kß╗│ t├ái liß╗çu y khoa VNUA n├áo ph├╣ hß╗úp vß╗¢i tß╗½ kh├│a: \"" + (isSearch ? tuKhoa : "tß║Ñt cß║ú") + "\".";
             }
 
-            sb.append("\nHướng dẫn cho AI: Hãy đưa ra chẩn đoán dựa trên tài liệu VNUA này và cung cấp đường dẫn Link tải/xem PDF trực tiếp cho sếp bấm mở nhé!");
+            sb.append("\nH╞░ß╗¢ng dß║½n cho AI: H├úy ─æ╞░a ra chß║⌐n ─æo├ín dß╗▒a tr├¬n t├ái liß╗çu VNUA n├áy v├á cung cß║Ñp ─æ╞░ß╗¥ng dß║½n Link tß║úi/xem PDF trß╗▒c tiß║┐p cho sß║┐p bß║Ñm mß╗ƒ nh├⌐!");
             return sb.toString();
         } catch (Exception e) {
-            return "Lỗi khi truy xuất tài liệu y khoa: " + e.getMessage();
+            return "Lß╗ùi khi truy xuß║Ñt t├ái liß╗çu y khoa: " + e.getMessage();
         }
     }
 
@@ -1643,14 +1653,14 @@ public class AiToolService {
         String normalizedBlock = normalizeVietnamese((subject + "\n" + block).toLowerCase());
         if (isSearch && !normalizedBlock.contains(normalizedSearch)) return false;
 
-        sb.append("- Môn [").append(subject).append("]:\n");
+        sb.append("- M├┤n [").append(subject).append("]:\n");
         for (String rawLine : block.split("\\R")) {
             String line = rawLine.trim();
-            if (line.startsWith("- File:") || line.startsWith("- Đường dẫn") || line.startsWith("- Link ngoài") || line.startsWith("- Từ khóa")) {
+            if (line.startsWith("- File:") || line.startsWith("- ─É╞░ß╗¥ng dß║½n") || line.startsWith("- Link ngo├ái") || line.startsWith("- Tß╗½ kh├│a")) {
                 sb.append("  ").append(line).append("\n");
                 if (line.startsWith("- File:")) {
                     String fileName = line.substring("- File:".length()).trim();
-                    sb.append("  - Link mở PDF: ").append(toVnuaPublicPdfUrl(fileName)).append("\n");
+                    sb.append("  - Link mß╗ƒ PDF: ").append(toVnuaPublicPdfUrl(fileName)).append("\n");
                 }
             }
         }
@@ -1664,4 +1674,162 @@ public class AiToolService {
         return "/vnua-docs/" + java.net.URLEncoder.encode(fileName, java.nio.charset.StandardCharsets.UTF_8)
                 .replace("+", "%20");
     }
+
+    // ─── Implementations: Schedule Tools ───────────────────────────────────────
+
+    private String toolGetStaffSchedule(java.util.Map<String, Object> p) {
+        String staff = java.util.Objects.toString(p.getOrDefault("staff",""),"").trim();
+        String week  = java.util.Objects.toString(p.getOrDefault("week","this"),"").trim();
+        java.time.LocalDate today = java.time.LocalDate.now(VN_ZONE);
+        java.time.LocalDate ws = today.with(java.time.DayOfWeek.MONDAY);
+        if ("next".equals(week)) ws = ws.plusWeeks(1);
+        java.time.LocalDate we = ws.plusDays(6);
+        try {
+            java.util.List<Object> qp = new java.util.ArrayList<>();
+            StringBuilder sql = new StringBuilder(
+                "SELECT l.ngay_lam, l.gio_bat_dau, l.gio_ket_thuc, l.ghi_chu, nv.ho_ten " +
+                "FROM LichLamViecNhanVien l JOIN NhanVien nv ON l.id_nhan_vien = nv.id_nhan_vien " +
+                "WHERE l.ngay_lam >= ? AND l.ngay_lam <= ? ");
+            qp.add(java.sql.Date.valueOf(ws)); qp.add(java.sql.Date.valueOf(we));
+            if (!staff.isBlank()) { sql.append("AND LOWER(nv.ho_ten) LIKE LOWER(?) "); qp.add("%" + staff + "%"); }
+            sql.append("ORDER BY l.ngay_lam, l.gio_bat_dau ");
+            sql.append(com.rexi.pkty.util.DatabaseDialect.paginationSql(com.rexi.pkty.util.DatabaseDialect.isPostgres(jdbcTemplate), 20, 0));
+            var rows = jdbcTemplate.queryForList(sql.toString(), qp.toArray());
+            if (rows.isEmpty()) return "Khong tim thay lich lam viec" + (staff.isBlank() ? "" : " cua " + staff) + " tu " + ws + " den " + we + ".";
+            StringBuilder sb = new StringBuilder("Lich lam viec " + (staff.isBlank() ? "toan bo nhan su" : staff) + " (" + ("next".equals(week) ? "tuan sau" : "tuan nay") + " " + ws + " -> " + we + "):\n");
+            for (var r : rows) { sb.append("- ").append(r.get("ngay_lam")).append(" | ").append(r.get("ho_ten")).append(" | ").append(r.get("gio_bat_dau")).append("-").append(r.get("gio_ket_thuc")).append("\n"); }
+            return sb.toString().trim();
+        } catch (Exception e) { return "Loi tra lich lam viec: " + e.getMessage(); }
+    }
+
+    private String toolGetSlotUsage(java.util.Map<String, Object> p) {
+        String dateStr = java.util.Objects.toString(p.getOrDefault("date","today"),"").trim();
+        String timeStr = java.util.Objects.toString(p.getOrDefault("time",""),"").trim();
+        java.time.LocalDate date = "tomorrow".equals(dateStr) ? java.time.LocalDate.now(VN_ZONE).plusDays(1) : java.time.LocalDate.now(VN_ZONE);
+        if (dateStr.matches("\\d{4}-\\d{2}-\\d{2}")) { try { date = java.time.LocalDate.parse(dateStr); } catch (Exception ignored) {} }
+        try {
+            java.util.List<Object> qp = new java.util.ArrayList<>();
+            StringBuilder sql = new StringBuilder("SELECT nv.ho_ten, l.gio_bat_dau, l.gio_ket_thuc FROM LichLamViecNhanVien l JOIN NhanVien nv ON l.id_nhan_vien = nv.id_nhan_vien WHERE CAST(l.ngay_lam AS DATE) = ? ");
+            qp.add(java.sql.Date.valueOf(date));
+            if (!timeStr.isBlank()) { sql.append("AND l.gio_bat_dau <= ? AND l.gio_ket_thuc >= ? "); qp.add(timeStr); qp.add(timeStr); }
+            sql.append(com.rexi.pkty.util.DatabaseDialect.paginationSql(com.rexi.pkty.util.DatabaseDialect.isPostgres(jdbcTemplate), 20, 0));
+            var rows = jdbcTemplate.queryForList(sql.toString(), qp.toArray());
+            if (rows.isEmpty()) return "Chua co nhan su nao dang ky ca" + (timeStr.isBlank() ? "" : " " + timeStr) + " ngay " + date + ".";
+            StringBuilder sb = new StringBuilder("Slot ngay " + date + (timeStr.isBlank() ? "" : " luc " + timeStr) + " (" + rows.size() + " nhan su):\n");
+            for (var r : rows) sb.append("- ").append(r.get("ho_ten")).append(" (").append(r.get("gio_bat_dau")).append("-").append(r.get("gio_ket_thuc")).append(")\n");
+            if (rows.size() >= 3) sb.append("⚠️ Slot da du 3 nhan su. Can quyen quan ly/admin de override.");
+            return sb.toString().trim();
+        } catch (Exception e) { return "Loi kiem tra slot: " + e.getMessage(); }
+    }
+
+    private String toolCheckConflict(java.util.Map<String, Object> p) {
+        String staff = java.util.Objects.toString(p.getOrDefault("staff",""),"").trim();
+        String dateStr = java.util.Objects.toString(p.getOrDefault("date","today"),"").trim();
+        String timeStr = java.util.Objects.toString(p.getOrDefault("time",""),"").trim();
+        java.time.LocalDate date = "tomorrow".equals(dateStr) ? java.time.LocalDate.now(VN_ZONE).plusDays(1) : java.time.LocalDate.now(VN_ZONE);
+        if (dateStr.matches("\\d{4}-\\d{2}-\\d{2}")) { try { date = java.time.LocalDate.parse(dateStr); } catch (Exception ignored) {} }
+        try {
+            java.util.List<Object> qp = new java.util.ArrayList<>();
+            StringBuilder sql = new StringBuilder("SELECT nv.ho_ten, l.ngay_lam, l.gio_bat_dau, l.gio_ket_thuc FROM LichLamViecNhanVien l JOIN NhanVien nv ON l.id_nhan_vien = nv.id_nhan_vien WHERE CAST(l.ngay_lam AS DATE) = ? ");
+            qp.add(java.sql.Date.valueOf(date));
+            if (!staff.isBlank()) { sql.append("AND LOWER(nv.ho_ten) LIKE LOWER(?) "); qp.add("%" + staff + "%"); }
+            if (!timeStr.isBlank()) { sql.append("AND l.gio_bat_dau <= ? AND l.gio_ket_thuc >= ? "); qp.add(timeStr); qp.add(timeStr); }
+            sql.append(com.rexi.pkty.util.DatabaseDialect.paginationSql(com.rexi.pkty.util.DatabaseDialect.isPostgres(jdbcTemplate), 10, 0));
+            var rows = jdbcTemplate.queryForList(sql.toString(), qp.toArray());
+            if (rows.isEmpty()) return "Khong phat hien xung dot lich" + (staff.isBlank() ? "" : " cho " + staff) + " ngay " + date + ".";
+            StringBuilder sb = new StringBuilder("Phat hien " + rows.size() + " ca da dang ky ngay " + date + ":\n");
+            for (var r : rows) sb.append("- ").append(r.get("ho_ten")).append(": ").append(r.get("gio_bat_dau")).append("-").append(r.get("gio_ket_thuc")).append("\n");
+            if (rows.size() >= 3) sb.append("⚠️ Slot full (>=3 nhan su). Can override neu muon them.");
+            return sb.toString().trim();
+        } catch (Exception e) { return "Loi kiem tra xung dot: " + e.getMessage(); }
+    }
+
+    private String toolFindOverlapStaff(java.util.Map<String, Object> p) {
+        String week = java.util.Objects.toString(p.getOrDefault("week","this"),"").trim();
+        java.time.LocalDate ws = java.time.LocalDate.now(VN_ZONE).with(java.time.DayOfWeek.MONDAY);
+        if ("next".equals(week)) ws = ws.plusWeeks(1);
+        java.time.LocalDate we = ws.plusDays(6);
+        try {
+            String sql = "SELECT a.ngay_lam, na.ho_ten AS nhan_su, a.gio_bat_dau AS bat_a, a.gio_ket_thuc AS ket_a, b.gio_bat_dau AS bat_b, b.gio_ket_thuc AS ket_b FROM LichLamViecNhanVien a JOIN LichLamViecNhanVien b ON a.id_nhan_vien = b.id_nhan_vien AND a.ngay_lam = b.ngay_lam AND a.id_lich_lam_viec < b.id_lich_lam_viec AND a.gio_bat_dau < b.gio_ket_thuc AND b.gio_bat_dau < a.gio_ket_thuc JOIN NhanVien na ON a.id_nhan_vien = na.id_nhan_vien WHERE a.ngay_lam >= ? AND a.ngay_lam <= ? ORDER BY a.ngay_lam";
+            var rows = jdbcTemplate.queryForList(sql, java.sql.Date.valueOf(ws), java.sql.Date.valueOf(we));
+            if (rows.isEmpty()) return "Khong phat hien ca trung lich trong " + ("next".equals(week) ? "tuan sau" : "tuan nay") + " (" + ws + " -> " + we + ").";
+            StringBuilder sb = new StringBuilder("Phat hien " + rows.size() + " cap ca trung:\n");
+            for (var r : rows) sb.append("- ").append(r.get("ngay_lam")).append(" | ").append(r.get("nhan_su")).append(" | Ca A: ").append(r.get("bat_a")).append("-").append(r.get("ket_a")).append(" <-> Ca B: ").append(r.get("bat_b")).append("-").append(r.get("ket_b")).append("\n");
+            return sb.toString().trim();
+        } catch (Exception e) { return "Loi tim ca trung: " + e.getMessage(); }
+    }
+
+    private String toolFindFreeStaff(java.util.Map<String, Object> p) {
+        String dateStr = java.util.Objects.toString(p.getOrDefault("date","today"),"").trim();
+        java.time.LocalDate date = "tomorrow".equals(dateStr) ? java.time.LocalDate.now(VN_ZONE).plusDays(1) : java.time.LocalDate.now(VN_ZONE);
+        if (dateStr.matches("\\d{4}-\\d{2}-\\d{2}")) { try { date = java.time.LocalDate.parse(dateStr); } catch (Exception ignored) {} }
+        try {
+            var rows = jdbcTemplate.queryForList("SELECT nv.ho_ten, nv.chuc_vu FROM NhanVien nv WHERE nv.id_nhan_vien NOT IN (SELECT l.id_nhan_vien FROM LichLamViecNhanVien l WHERE CAST(l.ngay_lam AS DATE) = ?) ORDER BY nv.ho_ten", java.sql.Date.valueOf(date));
+            if (rows.isEmpty()) return "Tat ca nhan su deu co lich ngay " + date + ". Khong ai ranh.";
+            StringBuilder sb = new StringBuilder("Nhan su ranh ngay " + date + " (" + rows.size() + " nguoi):\n");
+            for (var r : rows) sb.append("- ").append(r.get("ho_ten")).append(" (").append(r.get("chuc_vu")).append(")\n");
+            return sb.toString().trim();
+        } catch (Exception e) { return "Loi tim nhan su ranh: " + e.getMessage(); }
+    }
+
+    private String toolSuggestSchedule(java.util.Map<String, Object> p) {
+        String staff = java.util.Objects.toString(p.getOrDefault("staff",""),"").trim();
+        String week  = java.util.Objects.toString(p.getOrDefault("week","next"),"").trim();
+        if (staff.isBlank()) return "Thieu ten nhan su de goi y lich. Vui long cung cap ten.";
+        java.time.LocalDate ws = java.time.LocalDate.now(VN_ZONE).with(java.time.DayOfWeek.MONDAY);
+        if (!"this".equals(week)) ws = ws.plusWeeks(1);
+        java.time.LocalDate we = ws.plusDays(6);
+        try {
+            var busy = jdbcTemplate.queryForList("SELECT DISTINCT CAST(l.ngay_lam AS DATE) AS d FROM LichLamViecNhanVien l JOIN NhanVien nv ON l.id_nhan_vien = nv.id_nhan_vien WHERE LOWER(nv.ho_ten) LIKE LOWER(?) AND l.ngay_lam >= ? AND l.ngay_lam <= ?", "%" + staff + "%", java.sql.Date.valueOf(ws), java.sql.Date.valueOf(we));
+            java.util.Set<String> busyDays = new java.util.HashSet<>();
+            for (var r : busy) busyDays.add(java.util.Objects.toString(r.get("d"),""));
+            StringBuilder sb = new StringBuilder("Goi y xep lich cho " + staff + " tuan " + ("this".equals(week) ? "nay" : "sau") + ":\n");
+            boolean any = false;
+            for (java.time.LocalDate d = ws; !d.isAfter(we); d = d.plusDays(1)) {
+                if (d.getDayOfWeek() == java.time.DayOfWeek.SUNDAY) continue;
+                if (!busyDays.contains(d.toString())) { sb.append("✅ ").append(d).append(" (").append(d.getDayOfWeek()).append(") — Ranh, co the xep ca\n"); any = true; }
+            }
+            if (!any) sb.append("⚠️ Tuan nay " + staff + " da kin lich ca tuan.\n");
+            return sb.toString().trim();
+        } catch (Exception e) { return "Loi goi y lich: " + e.getMessage(); }
+    }
+
+    private String toolAutoSchedule(java.util.Map<String, Object> p) {
+        String week = java.util.Objects.toString(p.getOrDefault("week","next"),"").trim();
+        java.time.LocalDate ws = java.time.LocalDate.now(VN_ZONE).with(java.time.DayOfWeek.MONDAY);
+        if (!"this".equals(week)) ws = ws.plusWeeks(1);
+        java.time.LocalDate we = ws.plusDays(6);
+        try {
+            var staff = jdbcTemplate.queryForList("SELECT nv.id_nhan_vien, nv.ho_ten, nv.chuc_vu FROM NhanVien nv ORDER BY nv.ho_ten");
+            var existing = jdbcTemplate.queryForList("SELECT l.id_nhan_vien, CAST(l.ngay_lam AS DATE) AS d FROM LichLamViecNhanVien l WHERE l.ngay_lam >= ? AND l.ngay_lam <= ?", java.sql.Date.valueOf(ws), java.sql.Date.valueOf(we));
+            java.util.Map<String,java.util.Set<String>> busyMap = new java.util.HashMap<>();
+            for (var r : existing) { String sid = java.util.Objects.toString(r.get("id_nhan_vien"),""); busyMap.computeIfAbsent(sid, k -> new java.util.HashSet<>()).add(java.util.Objects.toString(r.get("d"),"")); }
+            StringBuilder sb = new StringBuilder("📋 Goi y lich tu dong tuan " + ("this".equals(week) ? "nay" : "sau") + " (" + ws + " -> " + we + "):\n");
+            for (var s : staff) {
+                String sid = java.util.Objects.toString(s.get("id_nhan_vien"),"");
+                java.util.Set<String> busy = busyMap.getOrDefault(sid, new java.util.HashSet<>());
+                sb.append("\n🔹 ").append(s.get("ho_ten")).append(" (").append(s.get("chuc_vu")).append("):\n");
+                for (java.time.LocalDate d = ws; !d.isAfter(we); d = d.plusDays(1)) {
+                    if (d.getDayOfWeek() == java.time.DayOfWeek.SUNDAY) continue;
+                    sb.append("  ").append(busy.contains(d.toString()) ? "✅" : "⬜").append(" ").append(d).append("\n");
+                }
+            }
+            sb.append("\nℹ️ (✅ da co lich, ⬜ chua xep)");
+            return sb.toString().trim();
+        } catch (Exception e) { return "Loi tu dong xep lich: " + e.getMessage(); }
+    }
+
+    private String toolOverrideDoctorSlot(java.util.Map<String, Object> p) {
+        String staff  = java.util.Objects.toString(p.getOrDefault("staff",""),"").trim();
+        String date   = java.util.Objects.toString(p.getOrDefault("date",""),"").trim();
+        String time   = java.util.Objects.toString(p.getOrDefault("time",""),"").trim();
+        String reason = java.util.Objects.toString(p.getOrDefault("reason","Quan ly yeu cau override"),"").trim();
+        if (staff.isBlank()) return "Override that bai: thieu ten bac si can ep ca.";
+        return String.format(
+            "⚠️ XAC NHAN OVERRIDE:\n- Bac si: %s\n- Ngay: %s\n- Ca: %s\n- Ly do: %s\n" +
+            "Slot da vuot gioi han 3 bac si. Vui long truy cap [/quan-ly/lich-lam-viec] de xac nhan thu cong.",
+            staff, date.isBlank() ? "hom nay" : date, time.isBlank() ? "chua xac dinh" : time, reason);
+    }
+
+
 }
