@@ -164,7 +164,8 @@ public class NhanVienController {
                              "AND (tk.id_vai_tro IN ('VT-BS', 'VT-2', '2') OR UPPER(COALESCE(tk.id_vai_tro, '')) LIKE '%BS%'))) " +
                              "AND l.ngay_lam = ? " +
                              "ORDER BY nv.ho_ten ASC";
-                return jdbcTemplate.queryForList(sql, ngay);
+                java.sql.Date ngaySql = java.sql.Date.valueOf(ngay);
+                return jdbcTemplate.queryForList(sql, ngaySql);
             }
             return nhanVienRepository.findAllBacSi();
         } catch (Exception e) {
