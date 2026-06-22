@@ -1,4 +1,4 @@
-﻿@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800;900&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800;900&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
 
 /* Tùy chỉnh thanh cuộn (Scrollbar) chuẩn Luxury Premium */
 /* TỐI ƯU: Chỉ hiển thị thanh cuộn này trên thiết bị có chuột (Desktop), để native trên Mobile */
@@ -2034,7 +2034,7 @@ html {
     position: fixed !important;
     z-index: 1001 !important;
     bottom: calc(78px + env(safe-area-inset-bottom, 0px)) !important;
-    left: 18px !important;
+    left: 12px !important;
     width: 46px !important;
     height: 46px !important;
     border: 1px solid rgba(255,255,255,0.28) !important;
@@ -3297,7 +3297,7 @@ html {
   }
 
   .customer-main-content {
-    padding: 18px 12px 228px !important;
+    padding: 12px 10px calc(80px + env(safe-area-inset-bottom, 0px)) !important;
   }
 
   .customer-mobile-tabbar {
@@ -3311,6 +3311,44 @@ html {
     min-height: 50px;
     border-radius: 15px;
     font-size: 0.58rem;
+  }
+}
+
+@media screen and (max-width: 768px), screen and (max-height: 500px) {
+  .customer-main-content {
+    padding: 16px 12px calc(90px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+  
+  /* Prevent floating 🐾 chat and ☰ hamburger menu buttons from covering elements */
+  .customer-menu-fab {
+    bottom: max(96px, env(safe-area-inset-bottom, 0px) + 90px) !important;
+    left: clamp(12px, 3.5vw, 20px) !important;
+  }
+
+  #chatBtn:not(.admin-chat-btn) {
+    bottom: clamp(16px, 4vw, 24px) !important;
+    right: clamp(12px, 3.5vw, 20px) !important;
+    width: 38px !important;
+    height: 38px !important;
+  }
+
+  #chatBtn span.material-symbols-outlined {
+    font-size: 20px !important;
+  }
+
+  #chatBtn.has-bottom-nav {
+    bottom: max(96px, env(safe-area-inset-bottom, 0px) + 90px) !important;
+  }
+
+  .scroll-to-top-glass {
+    bottom: clamp(16px, 4vw, 24px) !important;
+    left: clamp(12px, 3.5vw, 20px) !important;
+    width: clamp(38px, 9vw, 45px) !important;
+    height: clamp(38px, 9vw, 45px) !important;
+  }
+
+  .scroll-to-top-glass span {
+    font-size: clamp(20px, 5vw, 24px) !important;
   }
 }
 .responsive-grid-4 {
@@ -3664,4 +3702,9 @@ canvas.banner-pet-video {
   }
 }
 
+@media (min-width: 1025px) {
+  .customer-main-content {
+    padding: 40px !important;
+  }
+}
 
