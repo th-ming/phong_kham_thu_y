@@ -736,6 +736,7 @@ public class LichHenController {
 
         id_nhan_vien = blankToNull(id_nhan_vien);
         id_dich_vu = blankToNull(id_dich_vu);
+        java.sql.Date ngaySql = java.sql.Date.valueOf(ngay);
 
         List<LocalTime> caTrucList = new java.util.ArrayList<>();
         List<Map<String, Object>> existingApps = new java.util.ArrayList<>();
@@ -743,7 +744,7 @@ public class LichHenController {
         if (id_nhan_vien != null) {
             List<Map<String, Object>> gioBacSiMoList = jdbcTemplate.queryForList(
                     "SELECT gio_bat_dau FROM LichLamViecNhanVien WHERE id_nhan_vien = ? AND ngay_lam = ?",
-                    id_nhan_vien, ngay);
+                    id_nhan_vien, ngaySql);
             for (Map<String, Object> map : gioBacSiMoList) {
                 Object obj = map.get("gio_bat_dau");
                 if (obj instanceof java.sql.Time)
@@ -753,16 +754,16 @@ public class LichHenController {
             }
             existingApps = jdbcTemplate.queryForList(
                     "SELECT lh.gio_kham, dv.thoi_luong_phut FROM LichHen lh LEFT JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu WHERE lh.id_bac_si = ? AND lh.ngay_kham = ? AND lh.trang_thai NOT IN ('Đã hủy', 'DA_HUY', 'da_huy', 'TU_CHOI', 'Hết hạn')",
-                    id_nhan_vien, ngay);
+                    id_nhan_vien, ngaySql);
         } else {
             List<Map<String, Object>> allShifts = jdbcTemplate.queryForList(
-                    "SELECT id_nhan_vien, gio_bat_dau FROM LichLamViecNhanVien WHERE ngay_lam = ?", ngay);
+                    "SELECT id_nhan_vien, gio_bat_dau FROM LichLamViecNhanVien WHERE ngay_lam = ?", ngaySql);
 
             List<Map<String, Object>> allBusy = jdbcTemplate.queryForList(
                     "SELECT lh.id_bac_si, lh.gio_kham, dv.thoi_luong_phut " +
                             "FROM LichHen lh LEFT JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu " +
                             "WHERE lh.ngay_kham = ? AND lh.trang_thai NOT IN ('Đã hủy', 'DA_HUY', 'da_huy', 'TU_CHOI', 'Hết hạn')",
-                    ngay);
+                    ngaySql);
 
             Map<String, List<Map<String, Object>>> parsedBusyByDoctor = new java.util.HashMap<>();
             for (Map<String, Object> busy : allBusy) {
