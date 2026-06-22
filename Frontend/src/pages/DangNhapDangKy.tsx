@@ -3,10 +3,30 @@ import { Link, useNavigate } from "react-router-dom";
 import axiosInstance from "@services/axios";
 import BirthYearSelect from "@components/BirthYearSelect";
 import { normalizeUserRole } from "@utils/index";
-import { isValidPassword, PASSWORD_POLICY_MESSAGE } from "@utils/passwordPolicy";
+import { isValidPassword, PASSWORD_POLICY_MESSAGE, PASSWORD_MIN_LENGTH, PASSWORD_MAX_LENGTH } from "@utils/passwordPolicy";
 import { getApiErrorMessage } from "@utils/apiErrorMessage";
 
 const API_URL = `/api/auth`;
+
+const PasswordHint: React.FC<{ password: string; show: boolean }> = ({ password, show }) => {
+  if (!show && !password) return null;
+  const hasLength = password.length >= PASSWORD_MIN_LENGTH && password.length <= PASSWORD_MAX_LENGTH;
+  const hasSpecial = /[!@#$%^&*()_+\-=\{}\[\]|;:'",.<>/?]/.test(password);
+  const items = [
+    { label: `Từ ${PASSWORD_MIN_LENGTH}-${PASSWORD_MAX_LENGTH} ký tự`, ok: hasLength },
+    { label: 'Ít nhất 1 ký tự đặc biệt (!@#$...)', ok: hasSpecial },
+  ];
+  return (
+    <div style={{ display: 'grid', gap: '4px', marginTop: '6px', padding: '10px 14px', background: 'var(--gray-50)', borderRadius: '12px', border: '1px solid var(--gray-100)' }}>
+      {items.map((item, i) => (
+        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.75rem', fontWeight: 700, color: item.ok ? '#059669' : 'var(--gray-400)', transition: 'color 0.2s' }}>
+          <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>{item.ok ? 'check_circle' : 'radio_button_unchecked'}</span>
+          {item.label}
+        </div>
+      ))}
+    </div>
+  );
+};
 
 const DangNhapDangKy: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -14,6 +34,7 @@ const DangNhapDangKy: React.FC = () => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [passwordFocused, setPasswordFocused] = useState(false);
   const navigate = useNavigate();
 
   const [username, setUsername] = useState("");
@@ -343,6 +364,11 @@ const DangNhapDangKy: React.FC = () => {
           min-height: 48px;
           padding-bottom: 20px;
         }
+        .auth-google-shell iframe,
+        .auth-google-shell > div {
+          border-radius: 20px !important;
+          overflow: hidden !important;
+        }
 
         [data-theme='dark'] .auth-container {
           background: var(--background) !important;
@@ -577,9 +603,19 @@ const DangNhapDangKy: React.FC = () => {
             border-radius: 16px !important;
           }
           .auth-remember-forgot {
-            flex-direction: column;
-            align-items: flex-start !important;
+            flex-direction: row;
+            align-items: center !important;
+            justify-content: space-between !important;
             gap: 12px !important;
+            width: 100%;
+            flex-wrap: nowrap;
+          }
+          .auth-remember-forgot label {
+            min-width: 0;
+          }
+          .auth-remember-forgot a {
+            white-space: nowrap;
+            flex-shrink: 0;
           }
         }
       `}</style>
@@ -698,10 +734,13 @@ const DangNhapDangKy: React.FC = () => {
                         <span className="material-symbols-outlined" style={{ color: '#0d9488', opacity: 0.7, fontSize: '18px' }}>person</span>
                         <input data-ai-id="input-dangnhapdangky-0l0l" placeholder="Tên đăng nhập" value={username} onChange={e => setUsername(e.target.value)} required />
                       </div>
-                      <div className="input-group">
-                        <span className="material-symbols-outlined" style={{ color: '#0d9488', opacity: 0.7, fontSize: '18px' }}>lock</span>
-                        <input data-ai-id="input-dangnhapdangky-ond4" type={showPassword ? "text" : "password"} placeholder="Mật khẩu" value={password} onChange={e => setPassword(e.target.value)} required />
-                        <span className="material-symbols-outlined" onClick={() => setShowPassword(!showPassword)} style={{ cursor: 'pointer', color: '#94a3b8', fontSize: '18px' }}>{showPassword ? 'visibility_off' : 'visibility'}</span>
+                      <div>
+                        <div className="input-group">
+                          <span className="material-symbols-outlined" style={{ color: '#0d9488', opacity: 0.7, fontSize: '18px' }}>lock</span>
+                          <input data-ai-id="input-dangnhapdangky-ond4" type={showPassword ? "text" : "password"} placeholder="Mật khẩu" value={password} onChange={e => setPassword(e.target.value)} onFocus={() => setPasswordFocused(true)} onBlur={() => setPasswordFocused(false)} required />
+                          <span className="material-symbols-outlined" onClick={() => setShowPassword(!showPassword)} style={{ cursor: 'pointer', color: '#94a3b8', fontSize: '18px' }}>{showPassword ? 'visibility_off' : 'visibility'}</span>
+                        </div>
+                        <PasswordHint password={password} show={passwordFocused} />
                       </div>
                       <div className="input-group">
                         <span className="material-symbols-outlined" style={{ color: '#0d9488', opacity: 0.7, fontSize: '18px' }}>lock_reset</span>
@@ -725,10 +764,13 @@ const DangNhapDangKy: React.FC = () => {
                     <span className="material-symbols-outlined" style={{ color: '#0d9488', opacity: 0.7 }}>person</span>
                     <input data-ai-id="input-dangnhapdangky-8dku" placeholder="Tên đăng nhập" value={username} onChange={e => setUsername(e.target.value)} required />
                   </div>
-                  <div className="input-group">
-                    <span className="material-symbols-outlined" style={{ color: '#0d9488', opacity: 0.7 }}>lock</span>
-                    <input data-ai-id="input-dangnhapdangky-h1ru" type={showPassword ? "text" : "password"} placeholder="Mật khẩu" value={password} onChange={e => setPassword(e.target.value)} required />
-                    <span className="material-symbols-outlined" onClick={() => setShowPassword(!showPassword)} style={{ cursor: 'pointer', color: '#94a3b8' }}>{showPassword ? 'visibility_off' : 'visibility'}</span>
+                  <div>
+                    <div className="input-group">
+                      <span className="material-symbols-outlined" style={{ color: '#0d9488', opacity: 0.7 }}>lock</span>
+                      <input data-ai-id="input-dangnhapdangky-h1ru" type={showPassword ? "text" : "password"} placeholder="Mật khẩu" value={password} onChange={e => setPassword(e.target.value)} onFocus={() => setPasswordFocused(true)} onBlur={() => setPasswordFocused(false)} required />
+                      <span className="material-symbols-outlined" onClick={() => setShowPassword(!showPassword)} style={{ cursor: 'pointer', color: '#94a3b8' }}>{showPassword ? 'visibility_off' : 'visibility'}</span>
+                    </div>
+                    <PasswordHint password={password} show={passwordFocused} />
                   </div>
                   
                   {/* CHỨC NĂNG GHI NHỚ & QUÊN MẬT KHẨU CỦA ĐÂY */}
@@ -772,3 +814,4 @@ const DangNhapDangKy: React.FC = () => {
 };
 
 export default React.memo(DangNhapDangKy);
+
