@@ -107,6 +107,14 @@ public class NhanVienController {
         return true;
     }
 
+    private boolean isNextWeekDate(java.time.LocalDate targetDate) {
+        java.time.LocalDate today = java.time.LocalDate.now();
+        java.time.LocalDate currentMonday = today.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
+        java.time.LocalDate nextWeekMonday = currentMonday.plusWeeks(1);
+        java.time.LocalDate nextWeekSunday = nextWeekMonday.plusDays(6);
+        return !targetDate.isBefore(nextWeekMonday) && !targetDate.isAfter(nextWeekSunday);
+    }
+
     private boolean canManageNhanVien(String id) {
         org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
                 .getContext().getAuthentication();
@@ -141,7 +149,6 @@ public class NhanVienController {
     }
 
     @GetMapping("/bac-si")
-    @org.springframework.cache.annotation.Cacheable(value = "bacSiCache", key = "#ngay != null ? #ngay : 'all'")
     public List<?> getBacSi(@RequestParam(required = false) String ngay) {
         try {
             if (ngay != null && !ngay.trim().isEmpty()) {
@@ -180,7 +187,6 @@ public class NhanVienController {
     }
 
     @PostMapping("/nhan-vien/lich-lam-viec")
-    @org.springframework.cache.annotation.CacheEvict(value = "bacSiCache", allEntries = true)
     @org.springframework.transaction.annotation.Transactional
     public org.springframework.http.ResponseEntity<?> addLichLamViec(@RequestBody LichLamViecNhanVien lich) {
         try {
@@ -242,8 +248,8 @@ public class NhanVienController {
                 }
             }
 
-            if (!isAdmin && !canEmployeeManageScheduleNow()) {
-                return org.springframework.http.ResponseEntity.status(403).body(Map.of("message", "Nhân viên không thể đăng ký/chỉnh lịch từ 12:00 Thứ 7 đến hết Chủ nhật. Khoảng thời gian này dành cho Admin/Quản lý xếp lại lịch."));
+            if (!isAdmin && !canEmployeeManageScheduleNow() && isNextWeekDate(lich.getNgay_lam())) {
+                return org.springframework.http.ResponseEntity.status(403).body(Map.of("message", "Nhân viên không thể đăng ký/chỉnh lịch tuần tới từ 12:00 Thứ 7 đến hết Chủ nhật. Tuần sau nữa vẫn đăng ký được."));
             }
 
             // Kiểm tra trùng ca (cùng nhân viên, cùng ngày, cùng giờ)
@@ -299,7 +305,6 @@ public class NhanVienController {
     }
 
     @DeleteMapping("/nhan-vien/lich-lam-viec/{id}")
-    @org.springframework.cache.annotation.CacheEvict(value = "bacSiCache", allEntries = true)
     @org.springframework.transaction.annotation.Transactional
     public org.springframework.http.ResponseEntity<?> deleteLichLamViec(@PathVariable Long id) {
         try {
@@ -338,8 +343,8 @@ public class NhanVienController {
                 }
             }
 
-            if (!isAdmin && !canEmployeeManageScheduleNow()) {
-                return org.springframework.http.ResponseEntity.status(403).body(Map.of("message", "Nhân viên không thể đăng ký/chỉnh lịch từ 12:00 Thứ 7 đến hết Chủ nhật. Khoảng thời gian này dành cho Admin/Quản lý xếp lại lịch."));
+            if (!isAdmin && !canEmployeeManageScheduleNow() && isNextWeekDate(lichToXoa.getNgay_lam())) {
+                return org.springframework.http.ResponseEntity.status(403).body(Map.of("message", "Nhân viên không thể đăng ký/chỉnh lịch tuần tới từ 12:00 Thứ 7 đến hết Chủ nhật. Tuần sau nữa vẫn đăng ký được."));
             }
 
             // Nhân viên phải hủy ca trước ít nhất 2 giờ so với giờ bắt đầu ca
@@ -394,7 +399,6 @@ public class NhanVienController {
     }
 
     @PutMapping("/nhan-vien/{id}")
-    @org.springframework.cache.annotation.CacheEvict(value = "bacSiCache", allEntries = true)
     public org.springframework.http.ResponseEntity<?> updateNhanVien(@PathVariable String id,
             @RequestBody NhanVien nv) {
         try {
@@ -438,7 +442,6 @@ public class NhanVienController {
     }
 
     @PostMapping("/nhan-vien")
-    @org.springframework.cache.annotation.CacheEvict(value = "bacSiCache", allEntries = true)
     @PreAuthorize("hasAnyRole('ADMIN', 'QUAN_LY')")
     public org.springframework.http.ResponseEntity<?> addNhanVien(@RequestBody NhanVien nv) {
         try {
@@ -553,7 +556,6 @@ public class NhanVienController {
     }
 
     @DeleteMapping("/nhan-vien/{id}")
-    @org.springframework.cache.annotation.CacheEvict(value = "bacSiCache", allEntries = true)
     public org.springframework.http.ResponseEntity<?> deleteNhanVien(@PathVariable String id) {
         try {
             if (isSelfNhanVien(id)) {
@@ -591,7 +593,6 @@ public class NhanVienController {
     }
 
     @PutMapping("/nhan-vien/{id}/restore")
-    @org.springframework.cache.annotation.CacheEvict(value = "bacSiCache", allEntries = true)
     public org.springframework.http.ResponseEntity<?> restoreNhanVien(@PathVariable String id) {
         try {
             boolean canRestore = getAuthenticatedAccount()
@@ -636,4 +637,6 @@ public class NhanVienController {
 
 
 }
+
+
 
