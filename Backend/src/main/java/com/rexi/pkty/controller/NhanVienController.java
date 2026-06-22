@@ -99,20 +99,43 @@ public class NhanVienController {
                 || role.equals("VT-6");
     }
 
-    private boolean canEmployeeManageScheduleNow() {
+    /**
+     * Kiểm tra nhân viên có được phép sửa/xóa ca trực cho ngày targetDate không.
+     * Quy tắc:
+     *   - Tuần hiện tại: KHÔNG được sửa bất kỳ lúc nào.
+     *   - Thứ 2 → Thứ 6 (và Thứ 7 trước 12h): chỉ được sửa từ tuần sau trở đi.
+     *   - Thứ 7 từ 12h đến hết Chủ nhật: chỉ được sửa từ tuần sau+1 (tức 2 tuần tới) trở đi.
+     * @return true nếu ĐƯỢC PHÉP, false nếu BỊ CHẶN.
+     */
+    private boolean isEmployeeAllowedToEditDate(java.time.LocalDate targetDate) {
         java.time.LocalDateTime now = java.time.LocalDateTime.now();
+        java.time.LocalDate today = now.toLocalDate();
         java.time.DayOfWeek day = now.getDayOfWeek();
-        if (day == java.time.DayOfWeek.SUNDAY) return false;
-        if (day == java.time.DayOfWeek.SATURDAY) return now.toLocalTime().isBefore(java.time.LocalTime.NOON);
-        return true;
-    }
 
-    private boolean isNextWeekDate(java.time.LocalDate targetDate) {
-        java.time.LocalDate today = java.time.LocalDate.now();
-        java.time.LocalDate currentMonday = today.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
-        java.time.LocalDate nextWeekMonday = currentMonday.plusWeeks(1);
-        java.time.LocalDate nextWeekSunday = nextWeekMonday.plusDays(6);
-        return !targetDate.isBefore(nextWeekMonday) && !targetDate.isAfter(nextWeekSunday);
+        // Xác định đầu tuần hiện tại (Thứ 2)
+        java.time.LocalDate currentWeekMonday = today.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
+        java.time.LocalDate currentWeekSunday = currentWeekMonday.plusDays(6);
+
+        // Tuần hiện tại: KHÔNG được sửa
+        if (!targetDate.isBefore(currentWeekMonday) && !targetDate.isAfter(currentWeekSunday)) {
+            return false;
+        }
+
+        // Từ Thứ 7 12h trở đi (và cả Chủ nhật): tuần sau cũng không được sửa
+        boolean isLockoutPeriod = (day == java.time.DayOfWeek.SATURDAY && !now.toLocalTime().isBefore(java.time.LocalTime.NOON))
+                               || (day == java.time.DayOfWeek.SUNDAY);
+
+        if (isLockoutPeriod) {
+            java.time.LocalDate nextWeekMonday = currentWeekMonday.plusWeeks(1);
+            java.time.LocalDate nextWeekSunday = nextWeekMonday.plusDays(6);
+            // Tuần sau cũng bị chặn
+            if (!targetDate.isBefore(nextWeekMonday) && !targetDate.isAfter(nextWeekSunday)) {
+                return false;
+            }
+        }
+
+        // Các trường hợp còn lại (tuần tương lai hợp lệ): cho phép
+        return true;
     }
 
     private boolean canManageNhanVien(String id) {
@@ -249,8 +272,14 @@ public class NhanVienController {
                 }
             }
 
-            if (!isAdmin && !canEmployeeManageScheduleNow() && isNextWeekDate(lich.getNgay_lam())) {
-                return org.springframework.http.ResponseEntity.status(403).body(Map.of("message", "Nhân viên không thể đăng ký/chỉnh lịch tuần tới từ 12:00 Thứ 7 đến hết Chủ nhật. Tuần sau nữa vẫn đăng ký được."));
+            if (!isAdmin && !isEmployeeAllowedToEditDate(lich.getNgay_lam())) {
+                java.time.DayOfWeek nowDay = java.time.LocalDateTime.now().getDayOfWeek();
+                boolean isLockout = (nowDay == java.time.DayOfWeek.SATURDAY && !java.time.LocalDateTime.now().toLocalTime().isBefore(java.time.LocalTime.NOON))
+                                 || (nowDay == java.time.DayOfWeek.SUNDAY);
+                String msg = isLockout
+                    ? "Từ 12:00 Thứ 7 đến hết Chủ nhật, bạn chỉ được đăng ký/chỉnh lịch từ 2 tuần tới trở đi."
+                    : "Bạn chỉ được đăng ký/chỉnh sửa lịch từ tuần sau trở đi, không thể sửa lịch tuần hiện tại.";
+                return org.springframework.http.ResponseEntity.status(403).body(Map.of("message", msg));
             }
 
             // Kiểm tra trùng ca (cùng nhân viên, cùng ngày, cùng giờ)
@@ -344,8 +373,14 @@ public class NhanVienController {
                 }
             }
 
-            if (!isAdmin && !canEmployeeManageScheduleNow() && isNextWeekDate(lichToXoa.getNgay_lam())) {
-                return org.springframework.http.ResponseEntity.status(403).body(Map.of("message", "Nhân viên không thể đăng ký/chỉnh lịch tuần tới từ 12:00 Thứ 7 đến hết Chủ nhật. Tuần sau nữa vẫn đăng ký được."));
+            if (!isAdmin && !isEmployeeAllowedToEditDate(lichToXoa.getNgay_lam())) {
+                java.time.DayOfWeek nowDay = java.time.LocalDateTime.now().getDayOfWeek();
+                boolean isLockout = (nowDay == java.time.DayOfWeek.SATURDAY && !java.time.LocalDateTime.now().toLocalTime().isBefore(java.time.LocalTime.NOON))
+                                 || (nowDay == java.time.DayOfWeek.SUNDAY);
+                String msg = isLockout
+                    ? "Từ 12:00 Thứ 7 đến hết Chủ nhật, bạn chỉ được hủy ca trực từ 2 tuần tới trở đi."
+                    : "Bạn chỉ được hủy ca trực từ tuần sau trở đi, không thể sửa lịch tuần hiện tại.";
+                return org.springframework.http.ResponseEntity.status(403).body(Map.of("message", msg));
             }
 
             // Nhân viên phải hủy ca trước ít nhất 2 giờ so với giờ bắt đầu ca
