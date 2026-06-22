@@ -1,9 +1,10 @@
-﻿import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import SidebarKhachHang from "@components/SidebarKhachHang";
 import { ScrollToTop } from "@components/SpecialEffects";
 import { ChatBot } from "@components/ChatBot";
 import { toast } from "@components/Toast";
+import { toastError } from '@utils/toastHelpers';
 import BirthYearSelect from "@components/BirthYearSelect";
 import axiosInstance from "@services/axios";
 import { getCustomerIdFromProfile, getUserProfile, normalizeUserRole } from "@utils/index";
@@ -70,7 +71,7 @@ const CustomerLayout: React.FC = () => {
       const user = JSON.parse(userStr);
       const role = normalizeUserRole(user);
       if (role !== "khach_hang") {
-        toast.error("Tài khoản nhân sự/quản lý không có quyền sử dụng phân hệ đặt lịch và quản lý của Khách hàng!");
+        toastError("Tài khoản nhân sự/quản lý không có quyền sử dụng phân hệ đặt lịch và quản lý của Khách hàng!");
         navigate("/quan-ly/dashboard", { replace: true });
         return () => {
           isMounted = false;
@@ -101,21 +102,21 @@ const CustomerLayout: React.FC = () => {
     e.preventDefault();
 
     if (!birthYear || isNaN(Number(birthYear))) {
-      toast.error("Vui lòng nhập năm sinh hợp lệ!");
+      toastError("Vui lòng nhập năm sinh hợp lệ!");
       return;
     }
 
     const yearNum = Number(birthYear);
     const currentYear = new Date().getFullYear();
     if (yearNum < 1900 || yearNum > currentYear) {
-      toast.error(`Năm sinh phải nằm trong khoảng từ 1900 đến ${currentYear}!`);
+      toastError(`Năm sinh phải nằm trong khoảng từ 1900 đến ${currentYear}!`);
       return;
     }
 
     const currentUser = getUserProfile();
     const idKhachHang = getCustomerIdFromProfile(currentUser);
     if (!currentUser || !idKhachHang) {
-      toast.error("Không tìm thấy thông tin khách hàng. Vui lòng đăng nhập lại!");
+      toastError("Không tìm thấy thông tin khách hàng. Vui lòng đăng nhập lại!");
       return;
     }
 
@@ -150,7 +151,7 @@ const CustomerLayout: React.FC = () => {
       }
     } catch (err: any) {
       console.error("Lỗi khi lưu năm sinh sau đăng nhập:", err);
-      toast.error(err.response?.data?.message || "Cập nhật năm sinh thất bại. Vui lòng thử lại!");
+      toastError(err, "Cập nhật năm sinh thất bại. Vui lòng thử lại!");
     } finally {
       setSavingBirthYear(false);
     }
