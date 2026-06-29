@@ -1,0 +1,26 @@
+# EditorConfig - Ensures consistent encoding across all editors
+# https://editorconfig.org
+
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{tsx,ts,jsx,js,json,xml,html,css,scss,less}]
+charset = utf-8
+
+[*.{java,properties,yml,yaml,sql}]
+charset = utf-8
+
+[*.md]
+charset = utf-8
+trim_trailing_whitespace = false
+
+[*.{bat,cmd}]
+end_of_line = crlf
+
+[*.ps1]
+end_of_line = crlf

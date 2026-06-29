@@ -6,7 +6,7 @@ import { useAutoRefresh } from "@hooks/useAutoRefresh";
 import useVirtualScroll from "@hooks/useVirtualScroll";
 
 const chuyenNgayISO_SangVN = (dateString: string) => {
-  if (!dateString) return "—";
+  if (!dateString) return "";
   const parts = dateString.split('T')[0].split('-');
   if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
   return dateString;
@@ -276,7 +276,7 @@ const QuanLyHoSoBenhAn: React.FC = () => {
                           <span style={{ fontWeight: 700 }}>{h.ten_bac_si || "Đang chờ"}</span>
                         </div>
                       </td>
-                      <td style={{ padding: '20px', color: 'var(--ink)', fontWeight: 500, maxWidth: '250px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{h.chan_doan || "—"}</td>
+                      <td style={{ padding: '20px', color: 'var(--ink)', fontWeight: 500, maxWidth: '250px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{h.chan_doan || ""}</td>
                       <td style={{ padding: '20px' }}>
                         <span style={{
                           padding: '6px 16px', borderRadius: '50px', fontSize: '0.75rem', fontWeight: 800,

@@ -7,3 +7,21 @@ README.md
 .vscode
 node_modules
 npm-debug.log
+*.log
+Backend/target/
+Backend/backups/
+Backend/logs/
+Backend/uploads/
+Backend/hs_err_pid*.log
+Backend/replay_pid*.log
+Frontend/dist/
+Frontend/dev-dist/
+Tester/
+documentation/
+scripts/
+skills/
+Báo cáo thực tập/
+Báo cáo thực tap/
+report_images/
+uploads/
+.DS_Store

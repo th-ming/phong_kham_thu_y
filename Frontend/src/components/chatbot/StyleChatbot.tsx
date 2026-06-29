@@ -208,17 +208,20 @@ export const StyleChatbot: React.FC = () => (
             overflow-x: auto;
         }
 
-        @media (max-width: 768px) {
+        @media screen and (max-width: 768px), screen and (max-height: 500px) {
             #chatCallout { display: none !important; }
             #chatBtn {
-                right: 16px !important;
-                width: 56px !important;
-                height: 56px !important;
+                right: clamp(12px, 3.5vw, 20px) !important;
+                width: 38px !important;
+                height: 38px !important;
+            }
+            #chatBtn span.material-symbols-outlined {
+                font-size: 20px !important;
             }
             #chatBtn.admin-chat-btn {
-                bottom: max(88px, env(safe-area-inset-bottom, 0px) + 84px) !important;
-                width: 46px !important;
-                height: 46px !important;
+                bottom: calc(78px + env(safe-area-inset-bottom, 0px)) !important;
+                width: 38px !important;
+                height: 38px !important;
             }
             #chatWindow {
                 animation: chatMobileSlideUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards !important;

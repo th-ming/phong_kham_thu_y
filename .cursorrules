@@ -28,3 +28,34 @@ All AI agents working on this codebase MUST strictly follow the "Skill-First Pro
 
 ---
 *Failure to read the relevant skill files prior to starting the coding process is a direct protocol violation.*
+
+---
+
+## 📐 ENCODING TIẾNG VIỆT (UTF-8 RULE)
+
+**[BẮT BUỘC]** Mọi file trong dự án **PHẢI** sử dụng UTF-8 encoding. Tuyệt đối KHÔNG tạo ra mojibake (ký tự tiếng Việt bị lỗi mã hóa).
+
+### Nguyên tắc:
+1. **Mọi file source code** (`.ts`, `.tsx`, `.js`, `.jsx`, `.java`, `.sql`, `.md`, `.json`, `.xml`, `.yml`, `.css`, `.html`) PHẢI được lưu với encoding UTF-8.
+2. **KHÔNG BAO GIỜ** tạo ra các dãy ký tự mojibake như `Ã¡`, `Ã©`, `Ãª`, `Ã´`, `Ã¹`, `Ã½`, `Ä`, `Æ¡`, `Æ°`, `Â°`, `Ã` v.v.
+3. **Nếu viết tiếng Việt**, hãy viết trực tiếp bằng UTF-8 (VD: `ĐÃ XÁC NHẬN`, `HÓA ĐƠN`, `KHÁCH HÀNG`).
+4. **Pre-commit hook** sẽ chặn bất kỳ file nào có mojibake. Nếu bị chặn, chạy:
+   ```bash
+   node scripts/check-vietnamese-encoding.js --fix
+   ```
+5. Kiểm tra encoding bằng script:
+   ```bash
+   npm run check-encoding
+   ```
+
+### Dấu hiệu nhận biết encoding sai:
+- Thấy ký tự `Ã` đứng trước chữ thường/hóa đơn → encoding sai
+- Thấy `Ä` hoặc `Æ¡` hoặc `Æ°` → encoding sai
+- Thấy `Â` đứng trước ký tự đặc biệt → encoding sai
+- Thấy `U+FFFD` (replacement character) → encoding sai
+
+### Cách phòng tránh:
+- Luôn đọc file bằng UTF-8 trước khi edit (dùng `read_files` tool)
+- Luôn ghi file bằng UTF-8 (dùng `str_replace` hoặc `write_file`)
+- Không copy-paste text từ nguồn không rõ encoding
+- Khi tạo nội dung tiếng Việt mới, viết trực tiếp bằng ký tự Unicode đúng (VD: á, â, đ, ê, ô, ơ, ư)

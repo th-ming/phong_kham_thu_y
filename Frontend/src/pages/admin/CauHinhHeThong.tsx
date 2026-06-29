@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axiosInstance from '@services/axios';
 import { toast } from '@components/Toast';
+import { toastError } from '@utils/toastHelpers';
 
 const chuyenNgayGioISO_SangVN = (dateString: string) => {
     if (!dateString) return "—";
@@ -138,7 +139,7 @@ const CauHinhHeThong: React.FC = () => {
             } else {
                 console.warn("VietQR Lookup response:", data);
                 // Fallback nếu code không phải 00 (do số tài khoản không tồn tại)
-                toast.error(data.desc || "Không tìm thấy tên chủ tài khoản");
+                toastError(data.desc || "Không tìm thấy tên chủ tài khoản");
             }
         } catch (error) {
             console.error("Lỗi tra cứu VietQR:", error);
@@ -150,7 +151,7 @@ const CauHinhHeThong: React.FC = () => {
                     custom_account_no: accountNo
                 });
             } catch (err) {}
-            toast.error("Không thể kết nối đến máy chủ xác thực tài khoản!");
+            toastError("Không thể kết nối đến máy chủ xác thực tài khoản!");
         } finally {
             setLookingUpVietQr(false);
         }
@@ -176,7 +177,7 @@ const CauHinhHeThong: React.FC = () => {
                 setAiPolicy(DEFAULT_AI_POLICY);
             }
         } catch (error: any) {
-            toast.error('Lỗi khi tải cấu hình hệ thống: ' + error.message);
+            toastError(error, 'Lỗi khi tải cấu hình hệ thống');
         } finally {
             setLoading(false);
         }
@@ -218,7 +219,7 @@ const CauHinhHeThong: React.FC = () => {
             });
         } catch (error: any) {
             if (activeTab === 'security') {
-                toast.error(error.response?.data?.message || 'Không tải được trạng thái bảo mật');
+                toastError(error, 'Không tải được trạng thái bảo mật');
             }
         } finally {
             setLoadingSecurity(false);
@@ -237,7 +238,7 @@ const CauHinhHeThong: React.FC = () => {
             fetchLogs();
             fetchSecurityState();
         } catch (error: any) {
-            toast.error(error.response?.data?.message || 'Lỗi khi lưu cấu hình');
+            toastError(error, 'Lỗi khi lưu cấu hình');
         } finally {
             setSaving(false);
         }
@@ -245,7 +246,7 @@ const CauHinhHeThong: React.FC = () => {
 
     const handleTestEmail = async () => {
         if (!testEmailTo) {
-            toast.error('Vui lòng nhập email nhận test');
+            toastError('Vui lòng nhập email nhận test');
             return;
         }
         setTestingEmail(true);
@@ -285,7 +286,7 @@ const CauHinhHeThong: React.FC = () => {
             if (res.data?.success) {
                 toast.success(`${provider.name} hoạt động bình thường`);
             } else {
-                toast.error(res.data?.message || `${provider.name} kiểm tra thất bại`);
+                toastError(res.data?.message || `${provider.name} kiểm tra thất bại`);
             }
         } catch (error: any) {
             const result = {
@@ -297,7 +298,7 @@ const CauHinhHeThong: React.FC = () => {
                 technicalMessage: error.message
             };
             setAiTestResults(prev => ({ ...prev, [providerId]: result }));
-            toast.error(result.message);
+            toastError(result.message);
         } finally {
             setTestingAiProvider(null);
         }
@@ -366,7 +367,7 @@ const CauHinhHeThong: React.FC = () => {
             fetchBackups();
             fetchLogs();
         } catch (error: any) {
-            toast.error('Lỗi khi xóa file: ' + (error.response?.data?.message || error.message));
+            toastError(error, 'Lỗi khi xóa file');
         }
     };
 
@@ -382,7 +383,7 @@ const CauHinhHeThong: React.FC = () => {
             toast.success(`✅ Khôi phục thành công từ file: ${filename}`);
             fetchBackups();
         } catch (err: any) {
-            toast.error('Lỗi khi khôi phục: ' + (err.response?.data?.message || err.message));
+            toastError(err, 'Lỗi khi khôi phục');
         } finally {
             setRestoringFile(null);
         }
@@ -400,14 +401,14 @@ const CauHinhHeThong: React.FC = () => {
             );
             const failed = results.filter(result => result.status === 'rejected').length;
             if (failed > 0) {
-                toast.error(`Đã xóa một phần, còn ${failed} bản sao lưu chưa xóa được.`);
+                toastError(`Đã xóa một phần, còn ${failed} bản sao lưu chưa xóa được.`);
             } else {
                 toast.success('Đã xóa tất cả bản sao lưu!');
             }
             fetchBackups();
             fetchLogs();
         } catch (error: any) {
-            toast.error('Lỗi khi xóa tất cả bản sao lưu: ' + (error.response?.data?.message || error.message));
+            toastError(error, 'Lỗi khi xóa tất cả bản sao lưu');
         } finally {
             setDeletingBackups(false);
         }
@@ -429,7 +430,7 @@ const CauHinhHeThong: React.FC = () => {
             fetchSecurityState();
             fetchLogs();
         } catch (error: any) {
-            toast.error(error.response?.data?.message || 'Không gỡ chặn được IP');
+            toastError(error, 'Không gỡ chặn được IP');
         }
     };
 
@@ -452,7 +453,7 @@ const CauHinhHeThong: React.FC = () => {
                 document.body.removeChild(a);
                 URL.revokeObjectURL(objectUrl);
             })
-            .catch(err => toast.error('Lỗi khi tải file: ' + err.message));
+            .catch(err => toastError(err, 'Lỗi khi tải file'));
     };
 
     const handleCreateBackup = async () => {
@@ -466,7 +467,7 @@ const CauHinhHeThong: React.FC = () => {
             fetchBackups();
             fetchLogs();
         } catch (error: any) {
-            toast.error(error.response?.data?.message || 'Lỗi khi sao lưu dữ liệu');
+            toastError(error, 'Lỗi khi sao lưu dữ liệu');
         } finally {
             setBackingUp(false);
         }
@@ -1450,7 +1451,7 @@ const CauHinhHeThong: React.FC = () => {
                                                 toast.success('Đã xóa sạch nhật ký!');
                                                 fetchLogs();
                                             } catch (err: any) {
-                                                toast.error('Lỗi khi xóa nhật ký: ' + err.message);
+                                                toastError(err, 'Lỗi khi xóa nhật ký');
                                             }
                                         }
                                     }}

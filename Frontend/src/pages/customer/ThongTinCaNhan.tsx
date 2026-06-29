@@ -7,6 +7,7 @@ import BirthYearSelect from "@components/BirthYearSelect";
 import { getUserProfile, normalizeUserRole } from "@utils/index";
 import { customerToneCopy, isGenZBirthYear } from "@utils/customerTone";
 import { toast } from "@components/Toast";
+import { toastError } from '@utils/toastHelpers';
 import { isValidPassword, PASSWORD_POLICY_MESSAGE } from "@utils/passwordPolicy";
 import { notifyUserProfileChanged } from "@hooks/useLiveUserProfile";
 
@@ -146,12 +147,12 @@ const ThongTinCaNhan: React.FC = () => {
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      toast.error("Vui lòng chọn đúng file ảnh!");
+      toastError("Vui lòng chọn đúng file ảnh!");
       return;
     }
 
     if (file.size > 2 * 1024 * 1024) {
-      toast.error("Ảnh avatar nên nhỏ hơn 2MB để tải nhanh hơn!");
+      toastError("Ảnh avatar nên nhỏ hơn 2MB để tải nhanh hơn!");
       return;
     }
 
@@ -174,11 +175,11 @@ const ThongTinCaNhan: React.FC = () => {
 
   const handleSavePass = async () => {
     if (passData.newPass !== passData.confirmPass) {
-      toast.error("Mật khẩu xác nhận không khớp!");
+      toastError("Mật khẩu xác nhận không khớp!");
       return;
     }
     if (!isValidPassword(passData.newPass)) {
-      toast.error(PASSWORD_POLICY_MESSAGE);
+      toastError(PASSWORD_POLICY_MESSAGE);
       return;
     }
     try {
@@ -190,7 +191,7 @@ const ThongTinCaNhan: React.FC = () => {
       setShowPasswordModal(false);
       setPassData({ currentPass: "", newPass: "", confirmPass: "" });
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "Đổi mật khẩu thất bại. Vui lòng kiểm tra lại mật khẩu hiện tại.");
+      toastError(err, "Đổi mật khẩu thất bại. Vui lòng kiểm tra lại mật khẩu hiện tại.");
     }
   };
 
@@ -203,13 +204,13 @@ const ThongTinCaNhan: React.FC = () => {
         : (data?.id_nhan_vien || user?.id_nhan_vien || user?.idNhanVien);
 
       if (!userId) {
-        toast.error("Không tìm thấy thông tin tài khoản. Vui lòng đăng nhập lại!");
+        toastError("Không tìm thấy thông tin tài khoản. Vui lòng đăng nhập lại!");
         return;
       }
 
       const tenHienTai = formData.ten_khach_hang || formData.ho_ten || '';
       if (!tenHienTai.trim()) {
-        toast.error("Họ và tên không được để trống!");
+        toastError("Họ và tên không được để trống!");
         return;
       }
 
@@ -251,11 +252,11 @@ const ThongTinCaNhan: React.FC = () => {
         })
         .catch(err => {
           console.error(err);
-          toast.error(err.response?.data?.message || "Cập nhật thất bại. Vui lòng thử lại!");
+          toastError(err, "Cập nhật thất bại. Vui lòng thử lại!");
         });
     } catch (error: any) {
       console.error(error);
-      toast.error(error?.message || "Đã xảy ra lỗi không xác định. Vui lòng thử lại!");
+      toastError(error, "Đã xảy ra lỗi không xác định. Vui lòng thử lại!");
     }
   };
 
@@ -265,7 +266,7 @@ const ThongTinCaNhan: React.FC = () => {
       const user = getUserProfile();
       const userId = data?.id_khach_hang || user?.id_khach_hang || user?.idKhachHang;
       if (!userId) {
-        toast.error("Không tìm thấy thông tin tài khoản. Vui lòng đăng nhập lại!");
+        toastError("Không tìm thấy thông tin tài khoản. Vui lòng đăng nhập lại!");
         return;
       }
       await axiosInstance.delete(`/api/khach-hang/${userId}`);
@@ -273,7 +274,7 @@ const ThongTinCaNhan: React.FC = () => {
       localStorage.clear();
       navigate("/dang-nhap");
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "Lỗi khi xóa tài khoản. Vui lòng thử lại sau.");
+      toastError(err, "Lỗi khi xóa tài khoản. Vui lòng thử lại sau.");
     } finally {
       setIsDeleting(false);
     }
@@ -285,7 +286,7 @@ const ThongTinCaNhan: React.FC = () => {
       const user = getUserProfile();
       const userId = data?.id_khach_hang || data?.idKhachHang || user?.id_khach_hang || user?.idKhachHang;
       if (!userId) {
-        toast.error("Không tìm thấy thông tin tài khoản. Vui lòng đăng nhập lại!");
+        toastError("Không tìm thấy thông tin tài khoản. Vui lòng đăng nhập lại!");
         return;
       }
 
@@ -304,7 +305,7 @@ const ThongTinCaNhan: React.FC = () => {
       toast.success("Cập nhật cài đặt nhận thông báo thành công!");
     } catch (err: any) {
       console.error(err);
-      toast.error(err.response?.data?.message || "Cập nhật cài đặt thất bại, vui lòng thử lại sau!");
+      toastError(err, "Cập nhật cài đặt thất bại, vui lòng thử lại sau!");
     }
   };
 

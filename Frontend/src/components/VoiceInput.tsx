@@ -1,3 +1,4 @@
+import { toastError } from '@utils/toastHelpers';
 import { useState, useRef } from 'react';
 import { toast } from './Toast';
 import axiosInstance from '@services/axios';
@@ -40,17 +41,17 @@ export const VoiceInput = ({ onSend, onTyping: _onTyping }: { onSend: (text: str
               toast.success('🎤 Nhận dạng thành công');
               onSend(response.data.text);
           } else {
-              toast.error('AI không nghe rõ âm thanh.');
+              toastError('AI không nghe rõ âm thanh.');
           }
         } catch (error) {
-            toast.error('Lỗi khi dịch giọng nói.');
+            toastError('Lỗi khi dịch giọng nói.');
         }
       };
 
       mediaRecorder.start();
       setListening(true);
     } catch (error) {
-      toast.error('Không mở được micro.');
+      toastError('Không mở được micro.');
     }
   };
 

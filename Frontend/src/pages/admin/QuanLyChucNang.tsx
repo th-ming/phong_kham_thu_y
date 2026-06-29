@@ -210,8 +210,8 @@ const QuanLyChucNang: React.FC = () => {
                   </div>
                 </td>
                 <td style={{ padding: '20px', color: 'var(--gray-500)', fontWeight: 600, fontSize: '0.85rem', maxWidth: '300px' }}>{cn.mo_ta}</td>
-                <td style={{ padding: '20px', color: 'var(--primary)', fontWeight: 800, fontSize: '0.78rem', fontFamily: 'monospace', maxWidth: '220px', wordBreak: 'break-word' }}>{cn.duong_dan || "—"}</td>
-                <td style={{ padding: '20px', color: 'var(--gray-500)', fontWeight: 800, fontSize: '0.76rem', maxWidth: '260px', wordBreak: 'break-word' }}>{cn.vai_tro || "—"}</td>
+                <td style={{ padding: '20px', color: 'var(--primary)', fontWeight: 800, fontSize: '0.78rem', fontFamily: 'monospace', maxWidth: '220px', wordBreak: 'break-word' }}>{cn.duong_dan || ""}</td>
+                <td style={{ padding: '20px', color: 'var(--gray-500)', fontWeight: 800, fontSize: '0.76rem', maxWidth: '260px', wordBreak: 'break-word' }}>{cn.vai_tro || ""}</td>
                 <td style={{ padding: '20px', textAlign: 'center' }}>
                   <span style={{ color: 'var(--primary)', fontWeight: 900, fontSize: '0.8rem' }}>● HOẠT ĐỘNG</span>
                 </td>
@@ -226,3 +226,4 @@ const QuanLyChucNang: React.FC = () => {
 };
 
 export default React.memo(QuanLyChucNang);
+

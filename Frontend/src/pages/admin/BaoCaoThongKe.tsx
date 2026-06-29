@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useMemo } from "react";
 import axiosInstance from "@services/axios";
 import { toast } from "@components/Toast";
+import { toastError } from '@utils/toastHelpers';
 import { Modal } from "@components/CommonUI";
 import { useAutoRefresh } from "@hooks/useAutoRefresh";
+import useVirtualScroll from "@hooks/useVirtualScroll";
 import KpiIcon from "@components/KpiIcon";
 import { getUserProfile, normalizeUserRole } from "@utils/index";
 import {
@@ -64,6 +66,14 @@ const BaoCaoThongKe: React.FC = () => {
   const [selectedPetType, setSelectedPetType] = useState<string | null>(null);
   const [petDetails, setPetDetails] = useState<any[]>([]);
   const [loadingDetails, setLoadingDetails] = useState(false);
+
+  const { visibleItems: visiblePetDetails, containerRef: petContainerRef, onScrollHandler: onPetScroll, visibleRange: petRange, shouldVirtualize: shouldVirtualizePet } = useVirtualScroll({
+    items: petDetails,
+    itemHeight: 90,
+    containerHeight: 500,
+    visibleCount: 6
+  });
+
   const currentRole = useMemo(() => normalizeUserRole(getUserProfile() || {}), []);
   const canReadMedicalRecords = currentRole !== "ke_toan";
 
@@ -371,7 +381,7 @@ const BaoCaoThongKe: React.FC = () => {
       });
       setPetDetails(filtered);
     } catch (err) {
-      toast.error("Không thể tải danh sách thú cưng!");
+      toastError("Không thể tải danh sách thú cưng. Vui lòng thử lại sau.");
     } finally {
       setLoadingDetails(false);
     }
@@ -430,7 +440,7 @@ const BaoCaoThongKe: React.FC = () => {
       document.body.removeChild(link);
       toast.success("Đã xuất báo cáo tổng hợp phòng khám thành công!");
     } catch (err) {
-      toast.error("Lỗi khi xuất file báo cáo!");
+      toastError("Không thể xuất file báo cáo. Vui lòng thử lại sau.");
     }
   };
 
@@ -928,27 +938,37 @@ const BaoCaoThongKe: React.FC = () => {
         )}
       </Modal>
 
-      {/* MODAL DANH SÁCH THÚ CƯNG TRƯỢT DRILLED-DOWN */}
       <Modal isOpen={!!selectedPetType} onClose={() => setSelectedPetType(null)} title={`Danh sách bé thuộc nhóm: ${selectedPetType}`} maxWidth="600px">
         {loadingDetails ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}><div className="dot-pulse"></div></div>
         ) : (
-          <div style={{ display: 'grid', gap: '16px', maxHeight: '60vh', overflowY: 'auto', padding: '8px' }}>
+          <div 
+            ref={petContainerRef}
+            onScroll={onPetScroll}
+            style={{ display: 'grid', gap: '16px', maxHeight: '500px', overflowY: 'auto', padding: '8px' }}>
             {petDetails.length === 0 ? (
               <p style={{ textAlign: 'center', color: 'var(--gray-400)', padding: '20px', fontWeight: 700 }}>Không tìm thấy thú cưng nào thuộc loài này.</p>
             ) : (
-              petDetails.map((pet, idx) => (
-                <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '20px', background: 'var(--surface)', borderRadius: '20px', border: '1px solid var(--gray-200)' }}>
-                  <div style={{ width: '48px', height: '48px', background: 'var(--primary-light)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
-                    <span className="material-symbols-outlined">pets</span>
+              <>
+                {shouldVirtualizePet && petRange.start > 0 && (
+                  <div style={{ height: petRange.start * 90 }} />
+                )}
+                {(shouldVirtualizePet ? visiblePetDetails : petDetails).map((pet, idx) => (
+                  <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '20px', background: 'var(--surface)', borderRadius: '20px', border: '1px solid var(--gray-200)', height: '90px' }}>
+                    <div style={{ width: '48px', height: '48px', background: 'var(--primary-light)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
+                      <span className="material-symbols-outlined">pets</span>
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 900, color: 'var(--ink)' }}>{pet.ten_thu_cung || pet.TenThuCung}</div>
+                      <div style={{ fontSize: '0.85rem', color: 'var(--gray-500)', fontWeight: 600 }}>{pet.giong || pet.Giong || 'Chưa rõ giống'} • {pet.trong_luong || pet.TrongLuong || '—'} kg</div>
+                    </div>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 800, background: 'var(--gray-100)', color: 'var(--gray-500)', padding: '4px 10px', borderRadius: '8px' }}>{pet.gioi_tinh || '—'}</span>
                   </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 900, color: 'var(--ink)' }}>{pet.ten_thu_cung || pet.TenThuCung}</div>
-                    <div style={{ fontSize: '0.85rem', color: 'var(--gray-500)', fontWeight: 600 }}>{pet.giong || pet.Giong || 'Chưa rõ giống'} • {pet.trong_luong || pet.TrongLuong || '—'} kg</div>
-                  </div>
-                  <span style={{ fontSize: '0.75rem', fontWeight: 800, background: 'var(--gray-100)', color: 'var(--gray-500)', padding: '4px 10px', borderRadius: '8px' }}>{pet.gioi_tinh || '—'}</span>
-                </div>
-              ))
+                ))}
+                {shouldVirtualizePet && petRange.end < petDetails.length && (
+                  <div style={{ height: (petDetails.length - petRange.end) * 90 }} />
+                )}
+              </>
             )}
           </div>
         )}

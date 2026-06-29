@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+﻿import React, { useState, useEffect, useRef } from "react";
 import Lottie from "lottie-react";
 import { useLiveUserProfile } from "@hooks/useLiveUserProfile";
 
@@ -255,8 +255,8 @@ const MemeCatCore: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
   const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1280;
   const edgeGap = isMobile ? 8 : 16;
   const bubbleWidth = Math.min(
-    isMobile ? 132 : 190,
-    Math.max(isMobile ? 104 : 138, pos.size * (isMobile ? 1.42 : 1.52))
+    isMobile ? 88 : 190,
+    Math.max(isMobile ? 78 : 138, pos.size * (isMobile ? 0.96 : 1.52))
   );
   const catCenterX = pos.x + pos.size / 2;
   const bubbleLeft = Math.min(
@@ -293,12 +293,12 @@ const MemeCatCore: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
           boxSizing: 'border-box',
           background: 'var(--surface)',
           backdropFilter: 'blur(12px)',
-          padding: isMobile ? '5px 9px' : '8px 12px',
-          borderRadius: isMobile ? '14px' : '18px',
+          padding: isMobile ? '3px 6px' : '8px 12px',
+          borderRadius: isMobile ? '10px' : '18px',
           border: '1.5px solid var(--primary)',
           color: 'var(--primary)',
           fontWeight: 700,
-          fontSize: isMobile ? '0.72rem' : (message.length > 30 ? '0.78rem' : '0.85rem'),
+          fontSize: isMobile ? '0.58rem' : (message.length > 30 ? '0.78rem' : '0.85rem'),
           WebkitFontSmoothing: 'antialiased',
           MozOsxFontSmoothing: 'grayscale',
           letterSpacing: '0.3px',
@@ -308,10 +308,10 @@ const MemeCatCore: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: '4px',
+          gap: isMobile ? '2px' : '4px',
           textAlign: 'center',
           wordBreak: 'break-word',
-          lineHeight: '1.25',
+          lineHeight: isMobile ? '1.1' : '1.25',
           transform: 'translateZ(0)'
         }}>
           {isMobile && (
@@ -329,7 +329,7 @@ const MemeCatCore: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
               x
             </button>
           )}
-          <span className="material-symbols-outlined" style={{ fontSize: isMobile ? '14px' : '18px', opacity: 0.7 }}>pets</span>
+          {!isMobile && <span className="material-symbols-outlined" style={{ fontSize: '18px', opacity: 0.7 }}>pets</span>}
           {message}
           {bubbleBelowCat ? (
             <div style={{
@@ -906,3 +906,4 @@ export const Typewriter: React.FC<{ words: string[] }> = ({ words }) => {
     }}>{text}</span>
   );
 };
+

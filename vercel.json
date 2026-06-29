@@ -1,0 +1,19 @@
+{
+  "installCommand": "cd Frontend && npm install",
+  "buildCommand": "cd Frontend && npm run build",
+  "outputDirectory": "Frontend/dist",
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "https://phong-kham-thu-y.onrender.com/api/$1"
+    },
+    {
+      "source": "/ws/(.*)",
+      "destination": "https://phong-kham-thu-y.onrender.com/ws/$1"
+    },
+    {
+      "source": "/((?!api/|ws/|assets/|img/|manifest.json|manifest.webmanifest|registerSW.js|rexi_partners_banner.png|robots.txt|service-worker.js|sitemap.xml|sw.js|workbox-9c191d2f.js|logo-192.png|logo-512.png).*)",
+      "destination": "/index.html"
+    }
+  ]
+}

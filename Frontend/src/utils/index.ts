@@ -96,13 +96,14 @@ const isCloseSearchToken = (queryToken: string, fieldToken: string): boolean => 
 export type UserRoleCode = "admin" | "quan_ly" | "bac_si" | "ke_toan" | "tiep_tan" | "y_ta" | "staff" | "khach_hang" | "guest";
 
 export const normalizeUserRole = (user: any): UserRoleCode => {
+  // `chuc_vu` is a descriptive job title, not an account-role source.
+  // Keep canonical account fields in charge so staff profiles do not get misread as clinical users.
   const rawSource = [
     user?.loai_tai_khoan,
     user?.ten_vai_tro,
     user?.id_vai_tro,
     user?.role,
     user?.quyen,
-    user?.chuc_vu
   ].filter(Boolean).join(" ").toLowerCase();
   const source = normalizeSearchText([
     user?.loai_tai_khoan,
@@ -110,7 +111,6 @@ export const normalizeUserRole = (user: any): UserRoleCode => {
     user?.id_vai_tro,
     user?.role,
     user?.quyen,
-    user?.chuc_vu
   ].filter(Boolean).join(" "));
   const compactSource = source.replace(/\s+/g, "");
   const rawCompactSource = rawSource.replace(/[\s_-]+/g, "");

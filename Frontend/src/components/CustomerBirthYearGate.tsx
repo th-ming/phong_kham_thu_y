@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import axiosInstance from "@services/axios";
 import BirthYearSelect from "@components/BirthYearSelect";
 import { toast } from "@components/Toast";
+import { toastError } from '@utils/toastHelpers';
 import { notifyUserProfileChanged } from "@hooks/useLiveUserProfile";
 import { getCustomerIdFromProfile, getUserProfile, normalizeUserRole } from "@utils/index";
 
@@ -70,14 +71,14 @@ const CustomerBirthYearGate: React.FC = () => {
     const currentYear = new Date().getFullYear();
 
     if (!birthYear || !Number.isInteger(yearNum) || yearNum < 1900 || yearNum > currentYear) {
-      toast.error(`Năm sinh phải nằm trong khoảng từ 1900 đến ${currentYear}!`);
+      toastError(`Năm sinh phải nằm trong khoảng từ 1900 đến ${currentYear}!`);
       return;
     }
 
     const currentUser = getUserProfile();
     const idKhachHang = getCustomerIdFromProfile(currentUser);
     if (!currentUser || !idKhachHang) {
-      toast.error("Không tìm thấy thông tin khách hàng. Vui lòng đăng nhập lại!");
+      toastError("Không tìm thấy thông tin khách hàng. Vui lòng đăng nhập lại!");
       return;
     }
 
@@ -103,7 +104,7 @@ const CustomerBirthYearGate: React.FC = () => {
       toast.success("Đã lưu năm sinh và cập nhật trải nghiệm cá nhân.");
     } catch (err: any) {
       console.error("Lỗi lưu năm sinh khách hàng:", err);
-      toast.error(err.response?.data?.message || "Cập nhật năm sinh thất bại. Vui lòng thử lại!");
+      toastError(err, "Cập nhật năm sinh thất bại. Vui lòng thử lại!");
     } finally {
       setSaving(false);
     }

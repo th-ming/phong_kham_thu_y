@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axiosInstance from "@services/axios";
 import { toast } from "@components/Toast";
+import { toastError } from '@utils/toastHelpers';
 import { matchesSearchFields } from "@utils/index";
 import { useAutoRefresh } from "@hooks/useAutoRefresh";
 import { ModalThemKhachHang } from "./quan-ly-khach-hang-thu-cung/ModalThemKhachHang";
@@ -136,7 +137,7 @@ const QuanLyKhachHangThuCung: React.FC = () => {
       }
       const lowerMsg = errorMessage.toLowerCase();
       if (lowerMsg.includes('validation') || lowerMsg.includes('null')) errorMessage = "Thông tin không hợp lệ. Vui lòng điền đủ các trường bắt buộc.";
-      toast.error(errorMessage);
+      toastError(errorMessage);
     } finally {
       setIsSaving(false);
     }
@@ -182,7 +183,7 @@ const QuanLyKhachHangThuCung: React.FC = () => {
       }
       const lowerMsg = errorMessage.toLowerCase();
       if (lowerMsg.includes('validation') || lowerMsg.includes('null')) errorMessage = "Vui lòng kiểm tra lại thông tin, đảm bảo nhập đúng định dạng và đủ các trường bắt buộc.";
-      toast.error(errorMessage);
+      toastError(errorMessage);
     } finally {
       setIsSaving(false);
     }
@@ -205,7 +206,7 @@ const QuanLyKhachHangThuCung: React.FC = () => {
 
   const handleDeletePet = async (id: number) => {
     if (!id) {
-      toast.error("Không tìm thấy mã thú cưng!");
+      toastError("Không tìm thấy mã thú cưng!");
       return;
     }
     if (window.confirm("Bạn có chắc chắn muốn xóa thú cưng này?")) {
@@ -224,7 +225,7 @@ const QuanLyKhachHangThuCung: React.FC = () => {
         if (lowerMsg.includes('constraint') || lowerMsg.includes('foreign key')) {
           errorMessage = "Không thể xóa vì thú cưng này đang có lịch hẹn hoặc hồ sơ bệnh án.";
         }
-        toast.error(errorMessage);
+        toastError(errorMessage);
       }
     }
   };
@@ -242,7 +243,7 @@ const QuanLyKhachHangThuCung: React.FC = () => {
         toast.success("Đã khóa tài khoản khách hàng!");
         fetchData();
       } catch (err: any) {
-        toast.error(err.response?.data?.message || "Lỗi khi khóa tài khoản.");
+        toastError(err, "Lỗi khi khóa tài khoản.");
       }
     }
   };
@@ -254,7 +255,7 @@ const QuanLyKhachHangThuCung: React.FC = () => {
         toast.success("Đã mở khóa tài khoản thành công!");
         fetchData();
       } catch (err: any) {
-        toast.error(err.response?.data?.message || "Lỗi khi mở khóa tài khoản.");
+        toastError(err, "Lỗi khi mở khóa tài khoản.");
       }
     }
   };

@@ -1,4 +1,4 @@
-export const getApiErrorMessage = (err: any, fallback: string): string => {
+﻿export const getApiErrorMessage = (err: any, fallback: string): string => {
   const data = err?.response?.data;
   if (typeof data === "string") {
     const trimmed = data.trim();
@@ -28,7 +28,7 @@ export const getApiErrorMessage = (err: any, fallback: string): string => {
   if (status === 429) return "Bạn thao tác quá nhanh. Vui lòng đợi một chút rồi thử lại.";
   if (status >= 500) return "Backend đang lỗi khi xử lý yêu cầu này. Vui lòng thử lại sau.";
 
-  if (err?.code === "ERR_NETWORK") return "Không kết nối được máy chủ. Vui lòng kiểm tra backend hoặc kết nối mạng.";
+  if (err?.code === "ERR_NETWORK") return "Không kết nối được máy chủ. Vui lòng kiểm tra kết nối mạng hoặc liên hệ đội hỗ trợ Rexi.";
   if (err?.message) return `Lỗi kết nối: ${err.message}`;
   return fallback;
 };

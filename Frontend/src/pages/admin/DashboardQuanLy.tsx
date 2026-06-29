@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useMemo } from "react";
+﻿import React, { useCallback, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import axiosInstance from "@services/axios";
 import { getUserProfile, normalizeUserRole } from "@utils/index";
@@ -476,15 +476,15 @@ const DashboardQuanLy: React.FC = () => {
         {(['admin', 'quan_ly'].includes(userRole)) && (
           <div className="glass-card hover-lift" style={{ padding: '32px', borderRadius: 'var(--radius-xl)' }}>
             <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '24px', color: 'var(--ink)' }}>Tăng trưởng khách hàng (6 tháng)</h3>
-            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '12px', height: '180px', borderBottom: '1px solid var(--gray-100)', paddingBottom: '8px' }}>
+            <div className="customer-growth-chart" style={{ display: 'grid', gridTemplateColumns: 'repeat(6, minmax(0, 1fr))', gap: '12px', alignItems: 'end', height: '180px', borderBottom: '1px solid var(--gray-100)', paddingBottom: '8px' }}>
               {customerGrowthData.map((stat, idx) => {
                 const maxCount = Math.max(...customerGrowthData.map(s => s.count), 1);
                 const heightPct = (stat.count / maxCount) * 100;
                 return (
-                  <div key={idx} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', height: '100%', justifyContent: 'flex-end' }}>
-                    <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--gray-500)' }}>{stat.count}</span>
-                    <div className={stat.count > 0 ? "growth-bar-animate" : ""} style={{ width: '100%', maxWidth: '32px', height: `${heightPct}%`, minHeight: '6px', background: stat.count > 0 ? 'var(--primary)' : 'var(--gray-100)', borderRadius: '6px 6px 0 0', transition: 'height 0.4s ease' }}></div>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--gray-400)', fontWeight: 600 }}>{stat.month}</span>
+                  <div key={idx} style={{ display: 'grid', gridTemplateRows: 'auto 1fr auto', alignItems: 'end', justifyItems: 'center', minWidth: 0, height: '100%' }}>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--gray-500)', lineHeight: 1 }}>{stat.count}</span>
+                    <div className={stat.count > 0 ? "growth-bar-animate" : ""} style={{ width: '100%', maxWidth: '32px', height: `${heightPct}%`, minHeight: '6px', background: stat.count > 0 ? 'var(--primary)' : 'var(--gray-100)', borderRadius: '6px 6px 0 0', transition: 'height 0.4s ease', alignSelf: 'end' }}></div>
+                    <span style={{ fontSize: '0.68rem', color: 'var(--gray-400)', fontWeight: 700, lineHeight: 1.1, textAlign: 'center', wordBreak: 'keep-all' }}>{stat.month}</span>
                   </div>
                 );
               })}

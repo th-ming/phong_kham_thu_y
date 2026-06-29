@@ -1,8 +1,9 @@
-﻿import React, { useEffect, useMemo, useState, useRef } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { useLiveUserProfile } from '@hooks/useLiveUserProfile';
 import { getUserProfile, normalizeUserRole } from '@utils/index';
 
-// * * MÀN HÌNH CHỜ (PRELOADER) "MÈO CHẠY" - ĐÃ SỬA LỖI MÉO VÀ NGƯỢC HƯỚNG * Khắc phục tỉ lệ khung hình và hướng chạy của mèo để trông tự nhiên nhất.
+// * * MÀN HÌNH CHỜ (PRELOADER) "MÈO CHẠY" - ĐÃ SỬA LẠI MÈO VÀ NGƯỢC HƯỚNG
+// Khắc phục tỷ lệ khung hình và hướng chạy của mèo để trông tự nhiên nhất.
 export const Preloader: React.FC = () => {
     const [isVisible, setIsVisible] = useState(() => {
         // Chỉ hiện preloader khi vào trang lần đầu tiên trong phiên làm việc
@@ -25,10 +26,10 @@ export const Preloader: React.FC = () => {
         if (isGenZCustomer) {
             return [
                 "Đang mua pate cho boss...",
-                "Đang rượt lỗi cho sen...",
-                "Chờ xíu, Rexi chỉnh lông đã...",
-                "Đang mài móng chuẩn bị đón sen...",
-                "Đang tìm đồ chơi thất lạc của boss...",
+                "Đang quét lông cho sen...",
+                "Chó xấu, Rexi chỉnh lông đây...",
+                "Đang mời mèo chuẩn bị dẫn sen...",
+                "Đang tìm đồ chơi yêu thích của boss...",
                 "Sắp xong rồi meow meow...",
                 "Đang khởi tạo hệ thống chăm boss..."
             ];
@@ -187,7 +188,7 @@ export const Preloader: React.FC = () => {
                         }}
                     />
 
-                    {/* Vệt bụi mờ dưới chân */}
+                    {/* Vết bẩn mờ dưới chân */}
                     <div 
                         className="preloader-dust"
                         style={{
@@ -264,7 +265,7 @@ export const Preloader: React.FC = () => {
                     50% { transform: scale(1.3); opacity: 0.3; }
                 }
                 
-                // TỐI ƯU HÓA PHÂN TỈ LỆ RESPONSIVE CHO ĐIỆN THOẠI NHỎ (DƯỚI 480PX)
+                /* TỐI ƯU HÓA PHẦN TỶ LỆ RESPONSIVE CHO ĐIỆN THOẠI NHỎ (DƯỚI 480PX) */
                 @media (max-width: 480px) {
                     .preloader-cat-container {
                         height: 110px !important;

@@ -4,8 +4,10 @@ import axiosInstance from "@services/axios";
 import { getUserProfile, matchesSearchFields, normalizeUserRole } from "@utils/index";
 import { Modal } from "@components/CommonUI";
 import { toast } from "@components/Toast";
+import { toastError } from '@utils/toastHelpers';
 import thuocService from "@services/thuocService";
 import { useAutoRefresh } from "@hooks/useAutoRefresh";
+import useVirtualScroll from "@hooks/useVirtualScroll";
 
 const chuyenNgayISO_SangVN = (dateString: string) => {
   if (!dateString) return "—";
@@ -74,6 +76,13 @@ const QuanLyKhoThuoc: React.FC = () => {
       t.trang_thai ? "đang bán active" : "ngừng bán inactive"
     ]));
   }, [thuocs, searchThuoc]);
+
+  const { visibleItems, containerRef, onScrollHandler, visibleRange, shouldVirtualize } = useVirtualScroll({
+    items: filteredThuocs,
+    itemHeight: 80,
+    containerHeight: 600,
+    visibleCount: 8
+  });
 
   if (loading) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
@@ -241,7 +250,7 @@ const QuanLyKhoThuoc: React.FC = () => {
             try {
               // ensure an id is provided (backend requires id_thuoc)
               if (!newThuoc.id_thuoc || !newThuoc.ten_thuoc) {
-                toast.error('Vui lòng nhập `id_thuoc` và `ten_thuoc`.');
+                toastError('Vui lòng nhập `id_thuoc` và `ten_thuoc`.');
                 return;
               }
               const saved = await thuocService.create(newThuoc);
@@ -250,7 +259,7 @@ const QuanLyKhoThuoc: React.FC = () => {
               setIsAddModalOpen(false);
               setNewThuoc({ id_thuoc: '', ten_thuoc: '', ma_thuoc: '', loai_thuoc: '', don_vi: '', gia_ban: 0, cach_dung: '', dang_bao_che: '', thanh_phan: '', trang_thai: true, da_xoa: false });
             } catch (err: any) {
-              toast.error(err?.response?.data || 'Lỗi khi thêm thuốc');
+              toastError(err, 'Lỗi khi thêm thuốc');
             }
           }} style={{ display: 'grid', gap: 12 }}>
             <div>
@@ -303,8 +312,8 @@ const QuanLyKhoThuoc: React.FC = () => {
         <div className="glass-card admin-inventory-list-card inv-card-anim" style={{ padding: '32px', borderRadius: 'var(--radius-xl)', animationDelay: '0.1s' }}>
           <h2 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '24px' }}>Danh mục thuốc</h2>
           <div className="admin-inventory-mobile-list">
-            {filteredThuocs.map((t, idx) => (
-              <article key={t.id_thuoc} className="admin-inventory-mobile-card inv-row-anim" style={{ animationDelay: `${0.12 + idx * 0.06}s` }}>
+            {(shouldVirtualize ? visibleItems : filteredThuocs).map((t, idx) => (
+              <article key={t.id_thuoc} className="admin-inventory-mobile-card inv-row-anim" style={{ animationDelay: `${0.05 + idx * 0.02}s` }}>
                 <div className="admin-inventory-mobile-card-head">
                   <div>
                     <span className="admin-inventory-kicker">{t.ma_thuoc || t.id_thuoc}</span>
@@ -322,10 +331,13 @@ const QuanLyKhoThuoc: React.FC = () => {
             ))}
           </div>
           <div style={{ overflowX: 'auto' }}>
-            <div className="table-responsive-wrapper admin-inventory-desktop-table">
+            <div className="table-responsive-wrapper admin-inventory-desktop-table"
+              ref={containerRef}
+              onScroll={onScrollHandler}
+              style={{ maxHeight: '600px', overflowY: 'auto' }}>
               <div style={{ minWidth: '800px' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead>
+                  <thead style={{ position: 'sticky', top: 0, zIndex: 1, background: 'var(--surface)' }}>
                     <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--gray-100)' }}>
                       <th style={{ padding: '16px 8px', fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800 }}>TÊN THUỐC</th>
                       <th style={{ padding: '16px 8px', fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800 }}>DẠNG</th>
@@ -333,8 +345,11 @@ const QuanLyKhoThuoc: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredThuocs.map((t, idx) => (
-                      <tr key={t.id_thuoc} className="inv-row-anim" style={{ borderBottom: '1px solid var(--gray-50)', animationDelay: `${0.12 + idx * 0.04}s` }}>
+                    {shouldVirtualize && visibleRange.start > 0 && (
+                      <tr style={{ height: visibleRange.start * 80 }}><td colSpan={3} /></tr>
+                    )}
+                    {(shouldVirtualize ? visibleItems : filteredThuocs).map((t, idx) => (
+                      <tr key={t.id_thuoc} className="inv-row-anim" style={{ borderBottom: '1px solid var(--gray-50)', animationDelay: `${0.05 + idx * 0.02}s`, height: '80px' }}>
                         <td style={{ padding: '16px 8px' }}>
                           <div style={{ fontWeight: 800, color: 'var(--ink)' }}>{t.ten_thuoc}</div>
                           <div style={{ fontSize: '0.75rem', color: 'var(--gray-400)', fontWeight: 600 }}>{t.thanh_phan || "Dược chất"}</div>
@@ -353,6 +368,9 @@ const QuanLyKhoThuoc: React.FC = () => {
                         </td>
                       </tr>
                     ))}
+                    {shouldVirtualize && visibleRange.end < filteredThuocs.length && (
+                      <tr style={{ height: (filteredThuocs.length - visibleRange.end) * 80 }}><td colSpan={3} /></tr>
+                    )}
                   </tbody>
                 </table>
               </div>

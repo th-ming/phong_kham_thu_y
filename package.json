@@ -10,6 +10,8 @@
     "playwright": "^1.60.0"
   },
   "dependencies": {
+    "@google/design.md": "^0.3.0",
+    "docx": "^9.7.1",
     "pg": "^8.21.0"
   }
 }

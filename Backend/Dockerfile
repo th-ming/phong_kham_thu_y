@@ -17,11 +17,19 @@ FROM eclipse-temurin:21-jre
 
 WORKDIR /app
 
+# Install wget for healthcheck
+RUN apt-get update && apt-get install -y wget && rm -rf /var/lib/apt/lists/*
+
 # Copy JAR from builder
 COPY --from=builder /app/target/*.jar app.jar
 
-# Create logs directory
-RUN mkdir -p logs
+# Create logs directory and uploads
+RUN mkdir -p logs uploads && \
+    addgroup --system rexi && \
+    adduser --system --ingroup rexi rexi && \
+    chown -R rexi:rexi /app
+
+USER rexi
 
 # Expose port
 EXPOSE 8081

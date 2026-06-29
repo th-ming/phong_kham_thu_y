@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import axiosInstance from '@services/axios';
 import { Modal } from '@components/CommonUI';
 import { toast } from '@components/Toast';
+import { toastError } from '@utils/toastHelpers';
 
 interface ModalProps {
     isOpen: boolean;
@@ -274,12 +275,12 @@ export const ModalTaoLichHenAdmin: React.FC<ModalProps> = ({ isOpen, onClose, on
                                 </p>
                                 <div style={{ display: 'grid', gap: '16px' }}>
                                     <input data-ai-id="input-modaltaolichhenadmin-1jt8" value={newCustomerName} onChange={e => setNewCustomerName(e.target.value)} placeholder="Họ và tên khách hàng" style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid rgba(15, 157, 138, 0.3)', outline: 'none', fontWeight: 600 }} autoFocus />
-                                    <input data-ai-id="input-modaltaolichhenadmin-bplk" value={newPetName} onChange={e => setNewPetName(e.target.value)} placeholder="Tên thú cưng" style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid rgba(15, 157, 138, 0.3)', outline: 'none', fontWeight: 600 }} onKeyDown={e => { if (e.key === 'Enter') { if (newCustomerName && newPetName) { setSelectedCustomer({ ten_khach_hang: newCustomerName }); setStep(2); } else { toast.error("Vui lòng nhập đầy đủ Tên khách và Tên bé nhé!"); } } }} />
+                                    <input data-ai-id="input-modaltaolichhenadmin-bplk" value={newPetName} onChange={e => setNewPetName(e.target.value)} placeholder="Tên thú cưng" style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid rgba(15, 157, 138, 0.3)', outline: 'none', fontWeight: 600 }} onKeyDown={e => { if (e.key === 'Enter') { if (newCustomerName && newPetName) { setSelectedCustomer({ ten_khach_hang: newCustomerName }); setStep(2); } else { toastError("Vui lòng nhập đầy đủ Tên khách và Tên bé nhé!"); } } }} />
                                     <button data-ai-id="button-modaltaolichhenadmin-z04y" onClick={() => {
                                         if (newCustomerName && newPetName) {
                                             setSelectedCustomer({ ten_khach_hang: newCustomerName }); setStep(2);
                                         } else {
-                                            toast.error("Vui lòng nhập đầy đủ Tên khách hàng và Tên thú cưng!");
+                                            toastError("Vui lòng nhập đầy đủ Tên khách hàng và Tên thú cưng!");
                                         }
                                     }} className="btn btn-primary btn-pill" style={{ width: '100%', justifyContent: 'center', padding: '14px' }}>Tiếp tục <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>arrow_forward</span></button>
                                 </div>

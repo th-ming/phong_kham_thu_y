@@ -2,6 +2,7 @@ import React, { useState, useCallback, useMemo, useEffect, useRef } from "react"
 import axiosInstance from "@services/axios";
 import { getCustomerIdFromProfile, getUserProfile, matchesSearchFields } from "@utils/index";
 import { toast } from "@components/Toast";
+import { toastError } from '@utils/toastHelpers';
 import { Skeleton } from "@components/CommonUI";
 import { useAutoRefresh } from "@hooks/useAutoRefresh";
 
@@ -131,27 +132,27 @@ const QuanLyThuCung: React.FC = () => {
     e.preventDefault();
     const user = getUserProfile();
     if (!user) {
-      toast.error("Phiên làm việc hết hạn. Vui lòng đăng nhập lại.");
+      toastError("Phiên làm việc hết hạn. Vui lòng đăng nhập lại.");
       return;
     }
     const idKhachHang = getCustomerIdFromProfile(user);
     if (!idKhachHang) {
-      toast.error("Không xác định được mã khách hàng. Vui lòng đăng nhập lại.");
+      toastError("Không xác định được mã khách hàng. Vui lòng đăng nhập lại.");
       return;
     }
 
     if (!formData.ten_thu_cung.trim()) {
-      toast.error("Vui lòng nhập tên cho bé cưng của bạn nhé!");
+      toastError("Vui lòng nhập tên cho bé cưng của bạn nhé!");
       return;
     }
     if (!formData.loai.trim()) {
-      toast.error("Vui lòng cho biết bé thuộc giống loài nào (VD: Chó, Mèo...)!");
+      toastError("Vui lòng cho biết bé thuộc giống loài nào (VD: Chó, Mèo...)!");
       return;
     }
 
     const trongLuongNum = formData.trong_luong ? parseFloat(formData.trong_luong) : null;
     if (trongLuongNum !== null && trongLuongNum <= 0) {
-      toast.error("Cân nặng của bé phải lớn hơn 0 kg nhé!");
+      toastError("Cân nặng của bé phải lớn hơn 0 kg nhé!");
       return;
     }
 
@@ -198,7 +199,7 @@ const QuanLyThuCung: React.FC = () => {
       if (lowerMsg.includes('validation') || lowerMsg.includes('null')) {
         errorMessage = "Vui lòng kiểm tra lại các trường thông tin bắt buộc và đảm bảo đúng định dạng.";
       }
-      toast.error(errorMessage);
+      toastError(errorMessage);
     } finally {
       setIsSaving(false);
     }
@@ -206,7 +207,7 @@ const QuanLyThuCung: React.FC = () => {
 
   const handleDelete = async (id: string) => {
     if (!id) {
-      toast.error("Lỗi: Không tìm thấy mã thú cưng!");
+      toastError("Lỗi: Không tìm thấy mã thú cưng!");
       return;
     }
     setDeletingId(id);
@@ -232,7 +233,7 @@ const QuanLyThuCung: React.FC = () => {
       if (lowerMsg.includes('constraint') || lowerMsg.includes('foreign key')) {
         errorMessage = "Không thể xóa vì bé đã có lịch hẹn hoặc bệnh án. Bạn hãy kiểm tra lại nhé!";
       }
-      toast.error(errorMessage, { duration: 5000 });
+      toastError(errorMessage, undefined, { duration: 5000 });
     } finally {
       setDeletingId(null);
     }
@@ -243,7 +244,7 @@ const QuanLyThuCung: React.FC = () => {
     if (!file) return;
 
     if (file.size > 2 * 1024 * 1024) {
-      toast.error("Kích thước ảnh quá lớn! Vui lòng chọn ảnh dưới 2MB nhé.");
+      toastError("Kích thước ảnh quá lớn! Vui lòng chọn ảnh dưới 2MB nhé.");
       return;
     }
 
@@ -271,7 +272,7 @@ const QuanLyThuCung: React.FC = () => {
         fetchUserData();
       } catch (err: any) {
         console.error("Lỗi cập nhật ảnh thú cưng:", err);
-        toast.error("Không thể tải lên ảnh lúc này. Bạn thử lại sau nhé!");
+        toastError("Không thể tải lên ảnh lúc này. Bạn thử lại sau nhé!");
       }
     };
     reader.readAsDataURL(file);

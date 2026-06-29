@@ -421,7 +421,12 @@ const QuanLyLichHen: React.FC = () => {
                         <div style={{ fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 700 }}>{l.ten_khach_hang || "Khách vãng lai"}</div>
                       </td>
                       <td style={{ padding: '20px' }}>
-                        <div style={{ fontWeight: 800, color: 'var(--ink)' }}>{l.ly_do || "Khám tổng quát"}</div>
+                        <div style={{ fontWeight: 800, color: 'var(--ink)' }}>{(() => {
+                          if (!l.ly_do) return "Khám tổng quát";
+                          const txt = document.createElement("textarea");
+                          txt.innerHTML = l.ly_do;
+                          return txt.value;
+                        })()}</div>
                         <div style={{ fontSize: '0.8rem', color: l.ghi_chu?.includes('[CẤP CỨU]') ? 'var(--danger)' : 'var(--gray-500)', fontWeight: 700, maxWidth: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           {l.ghi_chu ? l.ghi_chu : "Không có ghi chú"}
                         </div>

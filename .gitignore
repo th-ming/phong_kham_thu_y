@@ -33,10 +33,14 @@ PKTY_Temp.sql
 **/scratch/
 /brain/
 /.agent/
-scratch*.py
-*.local.py
 Backend/src/main/resources/knowledge/*.md
 Backend/src/main/resources/knowledge/vnua_docs/
+
+# 4b. Agent-generated random temp files (short random names, no extension)
+# Files like: f_bkj3h5, _0iqhzc9, abc123_, vs_ojoux (all contain only 'blat')
+/*[a-z0-9]_[a-z0-9][a-z0-9][a-z0-9][a-z0-9]
+/*[a-z0-9][a-z0-9]_[a-z0-9][a-z0-9][a-z0-9]
+/*_[a-z0-9][a-z0-9][a-z0-9][a-z0-9][a-z0-9][a-z0-9][a-z0-9]
 
 # 5. Biến môi trường & Thông tin nhạy cảm
 .env
@@ -58,7 +62,40 @@ test-results/
 **/test-results/
 .tmp/
 Frontend/output/playwright/
+.vercel/
+.playwright-cli/
 
 # 8. Tài nguyên Lưu trữ (Archived Resources)
 Archived_Resources/
+_docx_extract/
+_docx_extract.zip
+
+# 9. Audit/Report markdowns (one-off session docs)
+AUDIT_*.md
+CHATBOT_*_AUDIT*.md
+IMPLEMENTATION_*_CHECKLIST.md
+VIRTUAL_SCROLLING_*.md
+REPORT_RULES.md
+
+# 10. One-off debug/fix/test scripts at root
+*.py
+wipe_data.ps1
+OpenZalo.*
+launch-zalo.*
+run_zalo_*.bat
+test_zalo_*.ps1
+test_agent_live.js
+test_check_*.js
+test_nhapkho_*.js
+fix_codex_config.*
+debug_zalo.*
+send_marketing_email.js
+DOCUMENTATION.md
+
+# 11. Python cache & temp
+__pycache__/
+*.pyc
+*.pyo
+
+
 

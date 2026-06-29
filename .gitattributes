@@ -1,2 +1,42 @@
-/mvnw text eol=lf
+# Ensure text files are always normalized to UTF-8 LF in git
+* text=auto eol=lf
+
+# Source code - always UTF-8
+*.tsx text eol=lf
+*.ts text eol=lf
+*.jsx text eol=lf
+*.js text eol=lf
+*.java text eol=lf
+*.css text eol=lf
+*.html text eol=lf
+*.xml text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.sql text eol=lf
+*.properties text eol=lf
+*.py text eol=lf
+*.sh text eol=lf
+
+# Windows scripts - keep CRLF
+*.bat text eol=crlf
 *.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Binary files - do not modify
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.svg text eol=lf
+*.pdf binary
+*.docx binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+
+# Knowledge base docs
+*.md text eol=lf

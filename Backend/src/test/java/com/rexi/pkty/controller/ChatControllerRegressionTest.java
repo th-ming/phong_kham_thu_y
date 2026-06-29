@@ -66,6 +66,88 @@ class ChatControllerRegressionTest extends BaseControllerTest {
     }
 
     @Test
+    void semanticServicePriceParaphraseRoutesToFastDbWithoutKeywordMatch() throws Exception {
+        when(groqService.parseIntentJson(anyString())).thenReturn("""
+                {"intent":"service_price_lookup","species":"unknown","body_part":"general","symptoms":[],"needs_web_search":false,"urgency":"routine","confidence":0.96}
+                """);
+        when(jdbcTemplate.queryForList(anyString())).thenReturn(List.of(
+                Map.of("ten_dich_vu", "Kiểm tra sức khỏe trước tiêm", "gia", 88000, "thoi_luong_phut", 25),
+                Map.of("ten_dich_vu", "gói kiểm tra tổng quát", "gia", 100000, "thoi_luong_phut", 30),
+                Map.of("ten_dich_vu", "Nha khoa thú cưng", "gia", 320000, "thoi_luong_phut", 45)
+        ));
+
+        ChatMessage message = new ChatMessage("user", "mình muốn hỏi mức thu của gói kiểm tra tổng quát", null, null);
+
+        mockMvc.perform(post("/api/chat")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("history", List.of(message)))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.source").value("fast_db"))
+                .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.containsString("gói kiểm tra tổng quát")))
+                .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.containsString("100,000")))
+                .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("Kiểm tra sức khỏe trước tiêm"))))
+                .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("Nha khoa thú cưng"))));
+
+        verify(groqService).parseIntentJson(anyString());
+        verify(groqService, never()).chat(anyList());
+        verify(openRouterService, never()).chat(anyList());
+
+    }
+
+    @Test
+    void semanticPricingAliasStillRoutesToFastDb() throws Exception {
+        when(groqService.parseIntentJson(anyString())).thenReturn("""
+                {"intent":"pricing","species":"unknown","body_part":"general","symptoms":[],"needs_web_search":false,"urgency":"routine","confidence":0.97}
+                """);
+        when(jdbcTemplate.queryForList(anyString())).thenReturn(List.of(Map.of(
+                "ten_dich_vu", "gói kiểm tra tổng quát",
+                "gia", 100000,
+                "thoi_luong_phut", 30
+        )));
+
+        ChatMessage message = new ChatMessage("user", "mình muốn hỏi mức phí của gói kiểm tra tổng quát", null, null);
+
+        mockMvc.perform(post("/api/chat")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("history", List.of(message)))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.source").value("fast_db"))
+                .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.containsString("gói kiểm tra tổng quát")))
+                .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.containsString("100,000")));
+
+        verify(groqService).parseIntentJson(anyString());
+        verify(groqService, never()).chat(anyList());
+        verify(openRouterService, never()).chat(anyList());
+    }
+
+    @Test
+    void servicePriceQuestionWithExamWordsStillPrefersFastDb() throws Exception {
+        when(groqService.parseIntentJson(anyString())).thenReturn("""
+                {"intent":"service_price_lookup","species":"unknown","body_part":"general","symptoms":[],"needs_web_search":false,"urgency":"routine","confidence":0.96}
+                """);
+        when(jdbcTemplate.queryForList(anyString())).thenReturn(List.of(Map.of(
+                "ten_dich_vu", "Kiểm tra sức khỏe trước tiêm",
+                "gia", 88000,
+                "thoi_luong_phut", 25
+        )));
+
+        ChatMessage message = new ChatMessage("user", "mình muốn hỏi giá dịch vụ kiểm tra sức khỏe trước tiêm", null, null);
+
+        mockMvc.perform(post("/api/chat")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("history", List.of(message)))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.source").value("fast_db"))
+                .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.containsString("Kiểm tra sức khỏe trước tiêm")))
+                .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.containsString("88,000")))
+                .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("khám trước"))));
+
+        verify(groqService).parseIntentJson(anyString());
+        verify(groqService, never()).chat(anyList());
+        verify(openRouterService, never()).chat(anyList());
+    }
+
+    @Test
     void videoTimeoutReturnsSafeVideoFallbackWithoutTextOnlyFallback() throws Exception {
         when(geminiService.chat(anyList())).thenThrow(new RuntimeException("request timed out"));
         ChatMessage message = new ChatMessage(
@@ -368,6 +450,24 @@ class ChatControllerRegressionTest extends BaseControllerTest {
                 .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("mèo mẹ mới đẻ"))));
 
         verify(groqService, never()).chat(anyList());
+        verify(openRouterService, never()).chat(anyList());
+    }
+
+    @Test
+    void examFirstNoMedicineRequestAnswersLocallyWithoutAiProviders() throws Exception {
+        ChatMessage message = new ChatMessage("user", "Để bác sĩ xem bé trước, thuốc tính sau nhé", null, null);
+
+        mockMvc.perform(post("/api/chat")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("history", List.of(message)))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.source").value("local_clinic_guidance"))
+                .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.containsString("khám trước")))
+                .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.containsString("bác sĩ sẽ kiểm tra")));
+
+        verify(geminiService, never()).chat(anyList());
+        verify(groqService, never()).chat(anyList());
+        verify(groqService, never()).parseIntentJson(anyString());
         verify(openRouterService, never()).chat(anyList());
     }
 

@@ -648,6 +648,18 @@ const Header: React.FC<{ hideMenu?: boolean }> = ({ hideMenu }) => {
             border-radius: 12px !important;
           }
         }
+        @media screen and (max-height: 500px) and (orientation: landscape) {
+          header {
+            position: absolute !important;
+          }
+          header > div:first-child,
+          header > div:nth-child(2) {
+            display: none !important;
+          }
+          nav.container {
+            height: 54px !important;
+          }
+        }
         // Tối ưu chống vỡ layout, lệch nút trên màn hình dt cực nhỏ (dưới 380px)
         @media (max-width: 380px) {
           .header-action-group { gap: 8px !important; }

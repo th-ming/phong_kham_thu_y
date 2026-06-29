@@ -462,7 +462,7 @@ const PhanGioiThieu: React.FC = () => {
                     }
                     
                     /* TỐI ƯU GIAO DIỆN DI ĐỘNG PREMIUM (MOBILE RESPONSIVE REDESIGN) */
-                    @media screen and (max-width: 768px) {
+                    @media screen and (max-width: 1024px) {
                         .hero-section {
                             padding: 0 !important;
                             min-height: calc(100svh - 160px) !important;
@@ -670,7 +670,7 @@ const PhanGioiThieu: React.FC = () => {
                             bottom: 10% !important;
                             filter: drop-shadow(0 24px 30px rgba(0, 0, 0, 0.32)) !important;
                         }
-                        @media screen and (min-width: 520px) and (max-width: 768px) {
+                        @media screen and (min-width: 520px) and (max-width: 1024px) {
                             .hero-layout-grid .hero-image-container {
                                 height: 54vh !important;
                                 min-height: 360px !important;

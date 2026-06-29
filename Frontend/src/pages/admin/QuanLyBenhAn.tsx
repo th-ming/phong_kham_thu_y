@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import axiosInstance from "@services/axios";
 import { toast } from "@components/Toast";
+import { toastError } from '@utils/toastHelpers';
 import { matchesSearchFields } from "@utils/index";
 import { useAutoRefresh } from "@hooks/useAutoRefresh";
 
@@ -58,7 +59,7 @@ const QuanLyBenhAn: React.FC = () => {
                 const resThuoc = await axiosInstance.get("/api/kho/thuoc");
                 setThuocs(extractArray(resThuoc.data));
             } catch (err) {
-                toast.error("Lỗi tải dữ liệu bệnh án");
+                toastError("Không thể tải danh sách ca khám và kho thuốc. Vui lòng kiểm tra kết nối mạng và thử lại.");
             } finally {
                 setLoading(false);
             }
@@ -114,21 +115,21 @@ const QuanLyBenhAn: React.FC = () => {
     };
 
     const handleSaveBenhAn = async () => {
-        if (!selectedLich) return toast.error("Vui lòng chọn ca khám!");
-        if (!selectedLich.id_thu_cung) return toast.error("Ca khám này thiếu thông tin thú cưng, chưa thể lưu bệnh án.");
-        if (!selectedLich.id_bac_si) return toast.error("Ca khám này chưa phân công bác sĩ, vui lòng phân công trước khi khám.");
-        if (!chanDoan.trim()) return toast.error("Vui lòng nhập chẩn đoán!");
-        if (chiTietDonThuoc.some(t => !t.id_thuoc)) return toast.error("Vui lòng chọn loại thuốc cho tất cả các dòng kê đơn!");
+        if (!selectedLich) return toastError("Vui lòng chọn ca khám!");
+        if (!selectedLich.id_thu_cung) return toastError("Ca khám này thiếu thông tin thú cưng, chưa thể lưu bệnh án.");
+        if (!selectedLich.id_bac_si) return toastError("Ca khám này chưa phân công bác sĩ, vui lòng phân công trước khi khám.");
+        if (!chanDoan.trim()) return toastError("Vui lòng nhập chẩn đoán!");
+        if (chiTietDonThuoc.some(t => !t.id_thuoc)) return toastError("Vui lòng chọn loại thuốc cho tất cả các dòng kê đơn!");
 
         for (const item of chiTietDonThuoc) {
             const thuocTrongKho = thuocs.find(t => String(t.id_thuoc) === String(item.id_thuoc));
             const soLuongKe = Number(item.so_luong);
             const tonKho = Number(thuocTrongKho?.so_luong_ton || 0);
             if (!Number.isFinite(soLuongKe) || soLuongKe <= 0) {
-                return toast.error("Số lượng thuốc phải lớn hơn 0!");
+                return toastError("Số lượng thuốc phải lớn hơn 0!");
             }
             if (thuocTrongKho && soLuongKe > tonKho) {
-                return toast.error(`Thuốc "${thuocTrongKho.ten_thuoc}" chỉ còn tồn ${thuocTrongKho.so_luong_ton || 0}. Vui lòng giảm số lượng kê đơn!`);
+                return toastError(`Thuốc "${thuocTrongKho.ten_thuoc}" chỉ còn tồn ${thuocTrongKho.so_luong_ton || 0}. Vui lòng giảm số lượng kê đơn!`);
             }
         }
 
@@ -171,7 +172,7 @@ const QuanLyBenhAn: React.FC = () => {
             setTrieuChung(""); setChanDoan(""); setDonThuocGhiChu(""); setChiTietDonThuoc([]);
             setLichHens(lichHens.filter(l => l.id_lich_hen !== selectedLich.id_lich_hen));
         } catch (err: any) {
-            toast.error(err.response?.data?.message || "Lỗi lưu bệnh án!");
+            toastError(err, "Lỗi lưu bệnh án!");
         } finally {
             setIsSaving(false);
         }

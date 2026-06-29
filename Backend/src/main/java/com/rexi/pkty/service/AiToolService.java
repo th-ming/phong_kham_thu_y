@@ -247,7 +247,7 @@ public class AiToolService {
             };
         } catch (Exception e) {
             logger.severe("[TOOL ERROR] Tool " + toolName + " thất bại: " + e.getMessage());
-            return "Lỗi khi thực thi tool " + toolName + ": " + e.getMessage();
+            return "Hệ thống gặp lỗi khi thực thi tool '" + toolName + "'. Vui lòng thử lại hoặc liên hệ quản trị viên.";
         }
     }
 
@@ -710,7 +710,7 @@ public class AiToolService {
                 lyDo);
             return "✅ Đặt lịch thành công! Mã lịch hẹn: " + newId + " vào " + ngayKham + " lúc " + gioKham;
         } catch (Exception e) {
-            return "Lỗi đặt lịch: " + e.getMessage();
+            return "Không thể đặt lịch khám do sự cố hệ thống. Vui lòng thử lại sau.";
         }
     }
 
@@ -807,7 +807,7 @@ public class AiToolService {
             jdbcTemplate.update("UPDATE LichHen SET trang_thai = 'DA_HUY' WHERE id_lich_hen = ?", targetId);
             return "Đã hủy lịch hẹn " + targetId + " cho " + target.get("ten_khach_hang") + " - bé " + target.get("ten_thu_cung") + ".";
         } catch (Exception e) {
-            return "Lỗi hủy lịch hẹn: " + e.getMessage();
+            return "Không thể hủy lịch hẹn do sự cố hệ thống. Vui lòng thử lại sau.";
         }
     }
 
@@ -846,7 +846,7 @@ public class AiToolService {
             int rows = jdbcTemplate.update("UPDATE HoSoBenhAn SET " + String.join(", ", sets) + " WHERE id_ho_so_benh_an = ?", args.toArray());
             return rows > 0 ? "Đã cập nhật bệnh án " + id + ". Nội dung đã ghi theo quyền lâm sàng." : "Không có bệnh án nào được cập nhật.";
         } catch (Exception e) {
-            return "Lỗi cập nhật bệnh án: " + e.getMessage();
+            return "Không thể cập nhật bệnh án do sự cố hệ thống. Vui lòng thử lại sau.";
         }
     }
 
@@ -968,7 +968,7 @@ public class AiToolService {
             return String.format("Thống kê %s: %s hóa đơn | Doanh thu: %s VNĐ | TB/hóa đơn: %s VNĐ%s",
                 khoang.replace("_", " "), row.get("so_hoa_don"), current.toPlainString(), row.get("trung_binh"), compareText);
         } catch (Exception e) {
-            return "Lỗi thống kê: " + e.getMessage();
+            return "Không thể tải dữ liệu thống kê do sự cố hệ thống. Vui lòng thử lại sau.";
         }
     }
 
@@ -1099,7 +1099,7 @@ public class AiToolService {
             }
             return "Không tìm thấy kết quả web.";
         } catch (Exception e) {
-            return "Lỗi tìm kiếm web: " + e.getMessage();
+            return "Không thể tìm kiếm trên web do sự cố kết nối. Vui lòng thử lại sau.";
         }
     }
 
@@ -1141,7 +1141,7 @@ public class AiToolService {
             emailService.sendMassEmail(email, tieuDe, noiDung);
             return "✅ Đã gửi email đến " + email + " thành công!";
         } catch (Exception e) {
-            return "Lỗi gửi email: " + e.getMessage();
+            return "Không thể gửi email do sự cố hệ thống. Vui lòng thử lại sau.";
         }
     }
 
@@ -1454,7 +1454,7 @@ public class AiToolService {
             }
             return "Lỗi: Hành động không hợp lệ. Chỉ hỗ trợ KHOA, XOA hoặc MO_KHOA.";
         } catch (Exception e) {
-            return "Lỗi thao tác tài khoản: " + e.getMessage();
+            return "Không thể thực hiện thao tác tài khoản do sự cố hệ thống. Vui lòng thử lại sau.";
         }
     }
 
@@ -1664,7 +1664,7 @@ public class AiToolService {
             sb.append("\nHướng dẫn cho AI: Hãy đưa ra chẩn đoán dựa trên tài liệu VNUA này và cung cấp đường dẫn Link tải/xem PDF trực tiếp cho sếp bấm mở nhé!");
             return sb.toString();
         } catch (Exception e) {
-            return "Lỗi khi truy xuất tài liệu y khoa: " + e.getMessage();
+            return "Không thể truy xuất tài liệu y khoa do sự cố hệ thống. Vui lòng thử lại sau.";
         }
     }
 
@@ -1719,7 +1719,7 @@ public class AiToolService {
             StringBuilder sb = new StringBuilder("Lịch làm việc " + (staff.isBlank() ? "toàn bộ nhân sự" : staff) + " (" + ("next".equals(week) ? "tuần sau" : "tuần này") + " " + ws + " -> " + we + "):\n");
             for (var r : rows) { sb.append("- ").append(r.get("ngay_lam")).append(" | ").append(r.get("ho_ten")).append(" | ").append(r.get("gio_bat_dau")).append("-").append(r.get("gio_ket_thuc")).append("\n"); }
             return sb.toString().trim();
-        } catch (Exception e) { return "Lỗi tra lịch làm việc: " + e.getMessage(); }
+        } catch (Exception e) { return "Không thể tra cứu lịch làm việc do sự cố hệ thống. Vui lòng thử lại sau."; }
     }
 
     private String toolGetSlotUsage(Map<String, Object> p) {
@@ -1739,7 +1739,7 @@ public class AiToolService {
             for (var r : rows) sb.append("- ").append(r.get("ho_ten")).append(" (").append(r.get("gio_bat_dau")).append("-").append(r.get("gio_ket_thuc")).append(")\n");
             if (rows.size() >= 3) sb.append("⚠️ Slot đã đủ 3 nhân sự. Cần quyền quản lý/admin để override.");
             return sb.toString().trim();
-        } catch (Exception e) { return "Lỗi kiểm tra slot: " + e.getMessage(); }
+        } catch (Exception e) { return "Không thể kiểm tra slot do sự cố hệ thống. Vui lòng thử lại sau."; }
     }
 
     private String toolCheckConflict(Map<String, Object> p) {
@@ -1761,7 +1761,7 @@ public class AiToolService {
             for (var r : rows) sb.append("- ").append(r.get("ho_ten")).append(": ").append(r.get("gio_bat_dau")).append("-").append(r.get("gio_ket_thuc")).append("\n");
             if (rows.size() >= 3) sb.append("⚠️ Slot full (>=3 nhân sự). Cần override nếu muốn thêm.");
             return sb.toString().trim();
-        } catch (Exception e) { return "Lỗi kiểm tra xung đột: " + e.getMessage(); }
+        } catch (Exception e) { return "Không thể kiểm tra xung đột lịch do sự cố hệ thống. Vui lòng thử lại sau."; }
     }
 
     private String toolFindOverlapStaff(Map<String, Object> p) {
@@ -1776,7 +1776,7 @@ public class AiToolService {
             StringBuilder sb = new StringBuilder("Phát hiện " + rows.size() + " cặp ca trùng:\n");
             for (var r : rows) sb.append("- ").append(r.get("ngay_lam")).append(" | ").append(r.get("nhan_su")).append(" | Ca A: ").append(r.get("bat_a")).append("-").append(r.get("ket_a")).append(" <-> Ca B: ").append(r.get("bat_b")).append("-").append(r.get("ket_b")).append("\n");
             return sb.toString().trim();
-        } catch (Exception e) { return "Lỗi tìm ca trùng: " + e.getMessage(); }
+        } catch (Exception e) { return "Không thể tìm ca trùng do sự cố hệ thống. Vui lòng thử lại sau."; }
     }
 
     private String toolFindFreeStaff(Map<String, Object> p) {
@@ -1789,7 +1789,7 @@ public class AiToolService {
             StringBuilder sb = new StringBuilder("Nhân sự rảnh ngày " + date + " (" + rows.size() + " người):\n");
             for (var r : rows) sb.append("- ").append(r.get("ho_ten")).append(" (").append(r.get("chuc_vu")).append(")\n");
             return sb.toString().trim();
-        } catch (Exception e) { return "Lỗi tìm nhân sự rảnh: " + e.getMessage(); }
+        } catch (Exception e) { return "Không thể tìm nhân sự rảnh do sự cố hệ thống. Vui lòng thử lại sau."; }
     }
 
     private String toolSuggestSchedule(Map<String, Object> p) {
@@ -1811,7 +1811,7 @@ public class AiToolService {
             }
             if (!any) sb.append("⚠️ Tuần này " + staff + " đã kín lịch cả tuần.\n");
             return sb.toString().trim();
-        } catch (Exception e) { return "Lỗi gợi ý lịch: " + e.getMessage(); }
+        } catch (Exception e) { return "Không thể gợi ý lịch do sự cố hệ thống. Vui lòng thử lại sau."; }
     }
 
     private String toolAutoSchedule(Map<String, Object> p) {
@@ -1836,7 +1836,7 @@ public class AiToolService {
             }
             sb.append("\nℹ️ (✅ đã có lịch, ⬜ chưa xếp)");
             return sb.toString().trim();
-        } catch (Exception e) { return "Lỗi tự động xếp lịch: " + e.getMessage(); }
+        } catch (Exception e) { return "Không thể tự động xếp lịch do sự cố hệ thống. Vui lòng thử lại sau."; }
     }
 
     private String toolOverrideDoctorSlot(Map<String, Object> p) {

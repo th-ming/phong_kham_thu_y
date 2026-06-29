@@ -4,6 +4,7 @@ import axiosInstance from "@services/axios";
 import { formatTienVND, getCustomerIdFromProfile, getUserProfile, normalizeUserRole } from "@utils/index";
 import { customerToneCopy, isGenZBirthYear } from "@utils/customerTone";
 import { toast } from "@components/Toast";
+import { toastError } from '@utils/toastHelpers';
 import { useAutoRefresh } from "@hooks/useAutoRefresh";
 
 const DatLichHen: React.FC = () => {
@@ -145,7 +146,7 @@ const DatLichHen: React.FC = () => {
             } else if (checkSlotsCount > 15) {
               // Timeout sau 3 giây nếu ko lấy được slot
               clearInterval(checkSlotsInterval);
-      toast.error(isGenZCustomer ? "Không thể tải giờ rảnh tự động. Sen vui lòng chọn giờ thủ công nhé!" : "Không thể tải giờ rảnh tự động. Anh/chị vui lòng chọn giờ thủ công.");
+      toastError(isGenZCustomer ? "Không thể tải giờ rảnh tự động. Sen vui lòng chọn giờ thủ công nhé!" : "Không thể tải giờ rảnh tự động. Anh/chị vui lòng chọn giờ thủ công.");
               setIsAutopilotRunning(false);
             }
           }, 200);
@@ -268,7 +269,7 @@ const DatLichHen: React.FC = () => {
     e?.preventDefault();
 
     if (!isCustomerUser) {
-      toast.error("Tài khoản nội bộ (Admin/Nhân viên) không được phép đặt lịch khám. Vui lòng dùng tài khoản Khách hàng!");
+      toastError("Tài khoản nội bộ (Admin/Nhân viên) không được phép đặt lịch khám. Vui lòng dùng tài khoản Khách hàng!");
       return;
     }
 
@@ -288,7 +289,7 @@ const DatLichHen: React.FC = () => {
     }
 
     if (!selectedPet) {
-      toast.error("Thú cưng đã chọn không còn trong hồ sơ của tài khoản này. Vui lòng tải lại trang!");
+      toastError("Thú cưng đã chọn không còn trong hồ sơ của tài khoản này. Vui lòng tải lại trang!");
       return;
     }
 
@@ -299,7 +300,7 @@ const DatLichHen: React.FC = () => {
     }
 
     if (!selectedService) {
-      toast.error("Dịch vụ đã chọn không còn khả dụng. Vui lòng chọn lại dịch vụ!");
+      toastError("Dịch vụ đã chọn không còn khả dụng. Vui lòng chọn lại dịch vụ!");
       return;
     }
 
@@ -317,7 +318,7 @@ const DatLichHen: React.FC = () => {
 
     setLoading(true);
     if (!idKhachHang) {
-      toast.error("Không tìm thấy thông tin tài khoản. Vui lòng đăng nhập lại!");
+      toastError("Không tìm thấy thông tin tài khoản. Vui lòng đăng nhập lại!");
       setLoading(false);
       return;
     }
@@ -340,7 +341,7 @@ const DatLichHen: React.FC = () => {
       setIdThuCung(""); setIdDichVu(""); setIdBacSi(""); setDate(""); setTime(""); setNote("");
       navigate("/khach-hang/lich-su-lich-hen");
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Đặt lịch không thành công. Vui lòng thử lại sau.");
+      toastError(error, "Đặt lịch không thành công. Vui lòng thử lại sau.");
     } finally {
       setLoading(false);
     }

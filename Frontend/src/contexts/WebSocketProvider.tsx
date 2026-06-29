@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { toast } from '@components/Toast';
+import { toastError } from '@utils/toastHelpers';
 import { kiemTraLaAdmin } from '@utils/permissions';
 
 interface WebSocketContextType {
@@ -45,7 +46,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                         const payload = JSON.parse(message.body);
                         const msg = payload.title ? `${payload.title}: ${payload.content}` : payload.content;
                         if (payload.type === 'error') {
-                            toast.error(msg);
+                            toastError(msg);
                         } else if (payload.type === 'success') {
                             toast.success(msg);
                         } else {
@@ -64,7 +65,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                     const user = JSON.parse(localStorage.getItem('user') || '{}');
                     if (!kiemTraLaAdmin(user)) return;
                     window.dispatchEvent(new CustomEvent('rexi-security-alert', { detail: payload }));
-                    toast.error(payload.message || 'Cảnh báo bảo mật: phát hiện tấn công và đã chặn IP.');
+                    toastError(payload.message || 'Cảnh báo bảo mật: phát hiện tấn công và đã chặn IP.');
                 } catch (e) {
                     console.error('Lỗi parse security alert', e);
                 }
@@ -77,7 +78,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                     const user = JSON.parse(localStorage.getItem('user') || '{}');
                     if (!kiemTraLaAdmin(user)) return;
                     window.dispatchEvent(new CustomEvent('rexi-web-error-alert', { detail: payload }));
-                    toast.error(payload.message ? `Lỗi web: ${payload.message}` : 'Rexi phát hiện lỗi web cần Admin kiểm tra.');
+                    toastError(payload.message || 'Rexi phát hiện lỗi web cần Admin kiểm tra.');
                 } catch (e) {
                     console.error('Lỗi parse web error alert', e);
                 }
@@ -107,7 +108,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         client.onStompError = (frame) => {
             console.error('Broker reported error: ' + frame.headers['message']);
             console.error('Additional details: ' + frame.body);
-            toast.error('Rexi realtime gặp lỗi kết nối. Một số cảnh báo hoặc cập nhật realtime có thể không hiển thị.');
+            toastError('Rexi realtime gặp lỗi kết nối. Một số cảnh báo hoặc cập nhật realtime có thể không hiển thị.');
         };
 
         client.onWebSocketClose = () => {

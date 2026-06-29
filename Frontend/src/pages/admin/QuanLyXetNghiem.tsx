@@ -5,7 +5,7 @@ import { matchesSearchFields } from "@utils/index";
 import { useAutoRefresh } from "@hooks/useAutoRefresh";
 
 const chuyenNgayISO_SangVN = (dateString: string) => {
-  if (!dateString) return "—";
+  if (!dateString) return "";
   const parts = dateString.split('T')[0].split('-');
   if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
   return dateString;
@@ -233,7 +233,7 @@ const QuanLyXetNghiem: React.FC = () => {
                 <td style={{ padding: '20px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <span className="material-symbols-outlined" style={{ fontSize: '18px', color: 'var(--primary)' }}>medical_information</span>
-                    <span style={{ fontWeight: 700 }}>{xn.ten_bac_si || "—"}</span>
+                    <span style={{ fontWeight: 700 }}>{xn.ten_bac_si || ""}</span>
                   </div>
                 </td>
                 <td style={{ padding: '20px', fontWeight: 700 }}>{chuyenNgayISO_SangVN(xn.ngay_lay_mau)}</td>

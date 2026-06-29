@@ -1,9 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import axiosInstance from "@services/axios";
 import { getUserProfile, matchesSearchFields } from "@utils/index";
 import ModalTaoLichHenAdmin from "./ModalTaoLichHenAdmin";
 import { toast } from "@components/Toast";
+import { toastError } from '@utils/toastHelpers';
 import { useAutoRefresh } from "@hooks/useAutoRefresh";
 import KpiIcon from "@components/KpiIcon";
 import { AnimatedNumber } from "@components/CommonUI";
@@ -69,7 +70,7 @@ const TiepTanDashboard: React.FC = () => {
       setLastUpdated(`${String(now.getDate()).padStart(2, "0")}/${String(now.getMonth() + 1).padStart(2, "0")}/${now.getFullYear()} ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:${String(now.getSeconds()).padStart(2, "0")}`);
     } catch (err) {
       console.error("Lỗi tải dữ liệu dashboard tiếp tân:", err);
-      toast.error("Không thể tải dữ liệu dashboard.");
+      toastError("Không thể tải dữ liệu dashboard.");
     } finally {
       setLoading(false);
     }
@@ -151,33 +152,64 @@ const TiepTanDashboard: React.FC = () => {
       await axiosInstance.put(`/api/lich-hen/${id}/status`, { trang_thai: newStatus });
       toast.success("Đã cập nhật trạng thái lịch hẹn!");
       fetchData(false);
-    } catch {
-      toast.error("Lỗi khi cập nhật trạng thái.");
+    } catch (err: any) {
+      const detail = err?.response?.data?.message || err?.message;
+      toastError(detail || "Không thể cập nhật trạng thái lịch hẹn. Vui lòng thử lại.");
     }
   };
 
-  const ReceptionKpiCard = ({ accent, title, value, icon, details, pulse = false }: {
+  const ReceptionKpiCard = ({ accent, title, value, icon, details, pulse = false, to }: {
     accent: string;
     title: string;
     value: React.ReactNode;
     icon: React.ReactNode;
     details: React.ReactNode;
     pulse?: boolean;
-  }) => (
-    <div className="reception-kpi-card glass-card hover-lift" tabIndex={0} style={{ padding: "32px", borderRadius: "32px", border: `1px solid ${accent}25`, background: `linear-gradient(135deg, ${accent}15 0%, var(--surface) 100%)`, minHeight: "190px" }}>
-      <div className="reception-kpi-badge" style={{ color: accent, borderColor: `${accent}35`, background: `${accent}12` }}>
-        <span>Chi tiết</span>
-      </div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
-        <div style={{ width: "60px", height: "60px", borderRadius: "20px", background: `${accent}22`, color: accent, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 8px 20px ${accent}15`, fontSize: "1.55rem", fontWeight: 950 }}>
-          {icon}
+    to?: string;
+  }) => {
+    const cardStyle: React.CSSProperties = {
+      padding: "32px",
+      borderRadius: "32px",
+      border: `1px solid ${accent}25`,
+      background: `linear-gradient(135deg, ${accent}15 0%, var(--surface) 100%)`,
+      minHeight: "190px",
+      position: "relative",
+      display: "block",
+      textDecoration: "none",
+      color: "inherit",
+      cursor: to ? "pointer" : "default"
+    };
+
+    const content = (
+      <>
+        <div className="reception-kpi-badge" style={{ color: accent, borderColor: `${accent}35`, background: `${accent}12` }}>
+          <span>Chi tiết</span>
         </div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+          <div style={{ width: "60px", height: "60px", borderRadius: "20px", background: `${accent}22`, color: accent, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 8px 20px ${accent}15`, fontSize: "1.55rem", fontWeight: 950 }}>
+            {icon}
+          </div>
+        </div>
+        <p style={{ fontSize: "0.8rem", fontWeight: 900, color: "var(--gray-500)", margin: "0 0 8px 0", textTransform: "uppercase", letterSpacing: "1px" }}>{title}</p>
+        <h3 className={pulse ? "pulse-danger-text" : ""} style={{ fontSize: "2rem", fontWeight: 950, color: accent, margin: 0, display: "inline-block", transformOrigin: "left center" }}>{value}</h3>
+        <div className="reception-kpi-popover">{details}</div>
+      </>
+    );
+
+    if (to) {
+      return (
+        <Link to={to} className="reception-kpi-card glass-card hover-lift" style={cardStyle}>
+          {content}
+        </Link>
+      );
+    }
+
+    return (
+      <div className="reception-kpi-card glass-card hover-lift" tabIndex={0} style={cardStyle}>
+        {content}
       </div>
-      <p style={{ fontSize: "0.8rem", fontWeight: 900, color: "var(--gray-500)", margin: "0 0 8px 0", textTransform: "uppercase", letterSpacing: "1px" }}>{title}</p>
-      <h3 className={pulse ? "pulse-danger-text" : ""} style={{ fontSize: "2rem", fontWeight: 950, color: accent, margin: 0, display: "inline-block", transformOrigin: "left center" }}>{value}</h3>
-      <div className="reception-kpi-popover">{details}</div>
-    </div>
-  );
+    );
+  };
 
   if (loading) {
     return <div style={{ display: "flex", justifyContent: "center", padding: "100px" }}><div className="dot-pulse"></div></div>;
@@ -313,10 +345,10 @@ const TiepTanDashboard: React.FC = () => {
       <div className="animate-slide-up stagger-1" style={{ marginBottom: "40px", padding: "clamp(20px, 6vw, 48px)", borderRadius: "var(--radius-xl)", background: "var(--primary-gradient)", color: "white", position: "relative", overflow: "hidden", boxShadow: "var(--shadow-2xl)" }}>
         <div style={{ position: "absolute", top: "-10%", right: "-5%", width: "300px", height: "300px", background: "radial-gradient(circle, var(--primary-light) 0%, transparent 70%)", borderRadius: "50%", pointerEvents: "none" }}></div>
         <h1 style={{ fontSize: "clamp(1.8rem, 6vw, 3rem)", fontWeight: 950, letterSpacing: "-1.5px", position: "relative", zIndex: 1, margin: "0 0 12px 0", display: "flex", alignItems: "center", gap: "15px" }}>
-          <span>Sảnh Chờ <span style={{ color: "#5eead4" }}>Tiếp Tân</span></span>
+          <span>Khu vực làm việc của <span style={{ color: "#5eead4" }}>tiếp tân</span></span>
           <span style={{ filter: "drop-shadow(0 5px 15px rgba(0,0,0,0.2))" }}>🛎️</span>
         </h1>
-        <p style={{ fontWeight: 700, color: "rgba(255,255,255,0.95)", position: "relative", zIndex: 1, margin: 0, fontSize: "clamp(0.95rem, 3vw, 1.2rem)", textShadow: "0 2px 4px rgba(0,0,0,0.1)" }}>Chào mừng, {user.ho_ten || "Lễ tân"}. Quản lý luồng khách hàng và điều phối lịch hẹn hôm nay.</p>
+        <p style={{ fontWeight: 700, color: "rgba(255,255,255,0.95)", position: "relative", zIndex: 1, margin: 0, fontSize: "clamp(0.95rem, 3vw, 1.2rem)", textShadow: "0 2px 4px rgba(0,0,0,0.1)" }}>Chào mừng, {user.ho_ten || "Lễ tân"}. Hôm nay mình cùng điều phối khách, lịch hẹn và hỗ trợ phòng khám thật mượt nhé.</p>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginTop: "16px", position: "relative", zIndex: 1 }}>
           <Link to="/quan-ly/lich-lam-viec" className="btn btn-pill" style={{ background: "rgba(255,255,255,0.18)", color: "white", border: "1px solid rgba(255,255,255,0.28)", fontWeight: 800 }}>
             <span className="material-symbols-outlined">edit_calendar</span>
@@ -337,6 +369,7 @@ const TiepTanDashboard: React.FC = () => {
           title="Tổng lịch hẹn nay"
           value={<><AnimatedNumber value={appointments.length} /> ca</>}
           icon={<KpiIcon name="calendar" />}
+          to="/quan-ly/lich-hen"
           details={
             <div>
               <strong>Tổng quan điều phối</strong>
@@ -351,6 +384,7 @@ const TiepTanDashboard: React.FC = () => {
           title="Chờ xác nhận"
           value={<><AnimatedNumber value={stats.pendingConfirmation} /> ca</>}
           icon={<KpiIcon name="clock" />}
+          to="/quan-ly/lich-hen"
           details={
             <div>
               <strong>Ca cần gọi xác nhận</strong>
@@ -367,6 +401,7 @@ const TiepTanDashboard: React.FC = () => {
           value={<><AnimatedNumber value={stats.pendingPayment} /> hóa đơn</>}
           icon={<KpiIcon name="receipt" />}
           pulse={stats.pendingPayment > 0}
+          to="/quan-ly/hoa-don"
           details={
             <div>
               <strong>Hóa đơn cần thu tiền</strong>
@@ -468,3 +503,4 @@ const TiepTanDashboard: React.FC = () => {
 };
 
 export default TiepTanDashboard;
+

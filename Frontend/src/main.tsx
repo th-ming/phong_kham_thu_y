@@ -4,6 +4,7 @@ import { ThemeProvider } from '@contexts/ThemeContextV2'
 import App from './App'
 import './styles/index.css'
 import { toast } from '@components/Toast'
+import { toastError } from '@utils/toastHelpers';
 import { WebSocketProvider } from './contexts/WebSocketProvider'
 import { installClientErrorReporter, reportAxiosError } from './services/clientErrorReporter'
 import { getApiErrorMessage } from '@utils/apiErrorMessage'
@@ -37,7 +38,7 @@ axios.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 403) {
-      toast.error(getApiErrorMessage(error, "Cảnh báo bảo mật: Bạn không có quyền thực hiện hành động này!"));
+      toastError(error, "Cảnh báo bảo mật: Bạn không có quyền thực hiện hành động này!");
     }
     reportAxiosError(error);
     return Promise.reject(error);

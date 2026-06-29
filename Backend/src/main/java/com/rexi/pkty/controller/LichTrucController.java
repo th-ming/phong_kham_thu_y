@@ -47,6 +47,14 @@ public class LichTrucController {
                 return true;
         }
 
+        private boolean isNextWeekDate(LocalDate targetDate) {
+                LocalDate today = LocalDate.now();
+                LocalDate currentMonday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+                LocalDate nextWeekMonday = currentMonday.plusWeeks(1);
+                LocalDate nextWeekSunday = nextWeekMonday.plusDays(6);
+                return !targetDate.isBefore(nextWeekMonday) && !targetDate.isAfter(nextWeekSunday);
+        }
+
         @GetMapping
         public List<Map<String, Object>> getAllLichTruc() {
                 String sql = "SELECT l.id_lich_lam_viec, l.id_nhan_vien, nv.ho_ten, nv.chuyen_mon as chuc_vu, " +
@@ -77,9 +85,9 @@ public class LichTrucController {
                 LocalDate currentMonday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
                 LocalDate currentSunday = currentMonday.plusDays(6);
 
-                if (!isAdmin && !canEmployeeManageScheduleNow()) {
+                if (!isAdmin && !canEmployeeManageScheduleNow() && isNextWeekDate(ngayLam)) {
                         return ResponseEntity.status(403).body(Map.of("message",
-                                        "Nhân viên không thể đăng ký/chỉnh lịch từ 12:00 Thứ 7 đến hết Chủ nhật. Khoảng thời gian này dành cho Admin/Quản lý xếp lại lịch."));
+                                        "Nhân viên không thể đăng ký/chỉnh lịch tuần tới từ 12:00 Thứ 7 đến hết Chủ nhật. Tuần sau nữa vẫn đăng ký được."));
                 }
 
                 String targetNhanVienId = String.valueOf(payload.get("id_nhan_vien"));
@@ -170,10 +178,10 @@ public class LichTrucController {
                                         : taiKhoanRepository.findByTenDangNhap(username).orElse(null);
                         boolean isAdmin = canManageAnySchedule(auth, tk);
 
-                        if (!isAdmin && !canEmployeeManageScheduleNow()) {
+                        if (!isAdmin && !canEmployeeManageScheduleNow() && isNextWeekDate(ngayLam)) {
                                 return ResponseEntity.status(403).body(
                                                 Map.of("message",
-                                                                "Nhân viên không thể đăng ký/chỉnh lịch từ 12:00 Thứ 7 đến hết Chủ nhật. Khoảng thời gian này dành cho Admin/Quản lý xếp lại lịch."));
+                                                                "Nhân viên không thể đăng ký/chỉnh lịch tuần tới từ 12:00 Thứ 7 đến hết Chủ nhật. Tuần sau nữa vẫn đăng ký được."));
                         }
 
                         if (username == null || username.equals("anonymousUser")) {
@@ -233,3 +241,5 @@ public class LichTrucController {
                 }
         }
 }
+
+

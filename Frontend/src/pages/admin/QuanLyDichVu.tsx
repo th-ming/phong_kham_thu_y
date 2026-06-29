@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import axiosInstance from "@services/axios";
 import { formatTienVND, getUserProfile, matchesSearchFields, normalizeUserRole } from "@utils/index";
 import { toast } from "@components/Toast";
+import { toastError } from '@utils/toastHelpers';
 import { useAutoRefresh } from "@hooks/useAutoRefresh";
 
 interface DichVu {
@@ -47,7 +48,7 @@ const QuanLyDichVu: React.FC = () => {
       setDichVus(rows);
     } catch (err) {
       console.error("Lỗi lấy danh sách dịch vụ:", err);
-      toast.error("Không thể tải danh sách dịch vụ!");
+      toastError("Không thể tải danh sách dịch vụ. Vui lòng thử lại sau.");
     } finally {
       setLoading(false);
     }
@@ -66,7 +67,7 @@ const QuanLyDichVu: React.FC = () => {
   const handleSave = async () => {
     if (!editingId) return;
     if (!formData.ten_dich_vu?.trim()) {
-      toast.error("Vui lòng nhập tên dịch vụ!");
+      toastError("Vui lòng nhập tên dịch vụ!");
       return;
     }
     setIsSaving(true);
@@ -77,7 +78,7 @@ const QuanLyDichVu: React.FC = () => {
       setEditingId(null);
       setFormData({});
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "Lỗi khi cập nhật dịch vụ.");
+      toastError(err, "Lỗi khi cập nhật dịch vụ.");
       console.error(err);
     }
     finally { setIsSaving(false); }
@@ -85,7 +86,7 @@ const QuanLyDichVu: React.FC = () => {
 
   const handleAdd = async () => {
     if (!formData.ten_dich_vu?.trim()) {
-      toast.error("Vui lòng nhập tên dịch vụ!");
+      toastError("Vui lòng nhập tên dịch vụ!");
       return;
     }
     setIsSaving(true);
@@ -95,7 +96,7 @@ const QuanLyDichVu: React.FC = () => {
       fetchDichVus();
       setFormData({});
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "Lỗi khi thêm dịch vụ.");
+      toastError(err, "Lỗi khi thêm dịch vụ.");
       console.error(err);
     }
     finally { setIsSaving(false); }
@@ -109,7 +110,7 @@ const QuanLyDichVu: React.FC = () => {
         toast.success("Đã xóa dịch vụ!");
         fetchDichVus();
       } catch (err: any) {
-        toast.error("Không thể xóa! Dịch vụ này có thể đang được sử dụng trong lịch hẹn hoặc hóa đơn.");
+        toastError("Không thể xóa! Dịch vụ này có thể đang được sử dụng trong lịch hẹn hoặc hóa đơn.");
         console.error(err);
       }
     }

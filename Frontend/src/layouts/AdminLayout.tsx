@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+﻿import React, { useEffect, useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import SidebarAdmin from "@components/SidebarAdmin";
 import { ScrollToTop } from "@components/SpecialEffects";
@@ -77,7 +77,6 @@ const AdminLayout: React.FC = () => {
   }, []);
 
   return (
-    // Đổi minHeight thành height và chặn cuộn tổng thể để Sidebar được ghim cố định
     <div className="admin-shell" style={{ display: "flex", height: "100vh", overflow: "hidden", background: "var(--background)" }}>
       <SidebarAdmin />
       <main className="main-content admin-main-content admin-content-frame" style={{ flex: 1, padding: "40px", overflowY: "auto", position: 'relative' }}>
@@ -107,9 +106,9 @@ const AdminLayout: React.FC = () => {
                 </div>
               </div>
             </div>
-        <button
-          data-ai-id="btn_admin_sidebar_toggle"
-          type="button"
+            <button
+              data-ai-id="btn_admin_sidebar_toggle"
+              type="button"
               onClick={() => setSecurityAlert(null)}
               style={{ border: "1px solid rgba(255,255,255,0.45)", background: "rgba(255,255,255,0.12)", color: "white", borderRadius: 10, padding: "8px 10px", cursor: "pointer", fontWeight: 900 }}
             >
@@ -134,4 +133,3 @@ const AdminLayout: React.FC = () => {
 };
 
 export default React.memo(AdminLayout);
-

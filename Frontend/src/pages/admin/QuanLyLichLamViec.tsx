@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useMemo } from 'react';
+﻿import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import axiosInstance from '@services/axios';
 import { toast } from '@components/Toast';
+import { toastError } from '@utils/toastHelpers';
 import { RevealSection } from '@components/SpecialEffects';
 import { getUserProfile, includesSearch, normalizeSearchText, normalizeUserRole } from '@utils/index';
 import { useAutoRefresh } from '@hooks/useAutoRefresh';
@@ -27,6 +28,57 @@ const canEmployeeManageScheduleNow = () => {
 
 const SCHEDULE_REGISTRATION_CLOSED_MESSAGE = "Nhân viên không thể đăng ký/chỉnh lịch từ 12:00 Thứ 7 đến hết Chủ nhật. Khoảng thời gian này dành cho Admin/Quản lý xếp lại lịch.";
 
+const isEmployeeScheduleEditingLocked = () => {
+    const now = new Date();
+    const day = now.getDay();
+    if (day === 0) return true;
+    if (day === 6) return now.getHours() >= 12;
+    return false;
+};
+
+const getCurrentWeekRange = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const currentMonday = new Date(today);
+    const currentDay = currentMonday.getDay();
+    const diffToMonday = currentDay === 0 ? -6 : 1 - currentDay;
+    currentMonday.setDate(currentMonday.getDate() + diffToMonday);
+
+    const currentWeekSunday = new Date(currentMonday);
+    currentWeekSunday.setDate(currentWeekSunday.getDate() + 6);
+
+    return { currentMonday, currentWeekSunday };
+};
+
+const isCurrentWeekDate = (dateStr: string) => {
+    const target = new Date(`${dateStr}T00:00:00`);
+    if (Number.isNaN(target.getTime())) return false;
+
+    const { currentMonday, currentWeekSunday } = getCurrentWeekRange();
+    return target >= currentMonday && target <= currentWeekSunday;
+};
+
+const isNextWeekDate = (dateStr: string) => {
+    const target = new Date(`${dateStr}T00:00:00`);
+    if (Number.isNaN(target.getTime())) return false;
+
+    const { currentMonday } = getCurrentWeekRange();
+    const nextWeekMonday = new Date(currentMonday);
+    nextWeekMonday.setDate(nextWeekMonday.getDate() + 7);
+    const nextWeekSunday = new Date(nextWeekMonday);
+    nextWeekSunday.setDate(nextWeekSunday.getDate() + 6);
+
+    return target >= nextWeekMonday && target <= nextWeekSunday;
+};
+
+const shouldBlockEmployeeScheduleAction = (dateStr: string) => {
+    if (isCurrentWeekDate(dateStr)) return true;
+    if (isEmployeeScheduleEditingLocked() && isNextWeekDate(dateStr)) return true;
+    return false;
+};
+
+
 const DOCTOR_COLORS = [
     { bg: 'rgba(15, 157, 138, 0.15)', border: '#0f9d8a', text: '#0f9d8a' }, // Teal (Màu chuẩn Rexi)
     { bg: 'rgba(59, 130, 246, 0.15)', border: '#3b82f6', text: '#2563eb' }, // Blue
@@ -39,6 +91,7 @@ const DOCTOR_COLORS = [
 ];
 
 const QuanLyLichLamViec: React.FC = () => {
+
     const user = getUserProfile();
     const userRole = useMemo(() => normalizeUserRole(user), [user]);
 
@@ -104,7 +157,7 @@ const QuanLyLichLamViec: React.FC = () => {
                 }
             }
         } catch (error) {
-            toast.error("Lỗi tải dữ liệu lịch trực");
+            toastError("Không thể tải danh sách nhân viên và lịch trực. Vui lòng thử lại sau.");
         }
     };
 
@@ -230,8 +283,8 @@ const QuanLyLichLamViec: React.FC = () => {
     };
 
     const handleAddShift = (day: any, hour: number) => {
-        if (!isAdmin && !canEmployeeManageScheduleNow()) {
-            toast.error(SCHEDULE_REGISTRATION_CLOSED_MESSAGE);
+        if (!isAdmin && shouldBlockEmployeeScheduleAction(day.dateStr)) {
+            toastError(SCHEDULE_REGISTRATION_CLOSED_MESSAGE);
             return;
         }
         setSelectedSlot({ day, hour });
@@ -242,14 +295,14 @@ const QuanLyLichLamViec: React.FC = () => {
     const confirmAddShift = async () => {
         if (!selectedStaffId || !selectedSlot) return;
         if (!selectedStaffId.trim()) {
-            toast.error("Vui lòng chọn nhân viên trước khi đăng ký ca!");
+            toastError("Vui lòng chọn nhân viên trước khi đăng ký ca!");
             return;
         }
         setIsSubmitting(true);
         try {
             const startStr = `${String(selectedSlot.hour).padStart(2, '0')}:00:00`;
             if (hasDuplicateShift(selectedStaffId, selectedSlot.day.dateStr, startStr)) {
-                toast.error("Nhân viên này đã có ca trực ở khung giờ đó rồi.");
+                toastError("Nhân viên này đã có ca trực ở khung giờ đó rồi.");
                 setIsSubmitting(false);
                 return;
             }
@@ -271,7 +324,7 @@ const QuanLyLichLamViec: React.FC = () => {
             }
         } catch (error: any) {
             console.error('Lỗi đăng ký ca trực:', error.response?.data || error.message);
-            toast.error(error.response?.data?.message || "Lỗi khi đăng ký ca trực. Vui lòng kiểm tra lại dữ liệu.");
+            toastError(error, "Lỗi khi đăng ký ca trực. Vui lòng kiểm tra lại dữ liệu.");
         } finally {
             setIsSubmitting(false);
         }
@@ -306,7 +359,7 @@ const QuanLyLichLamViec: React.FC = () => {
             document.body.removeChild(link);
             toast.success("Đã xuất lịch trực ra file Excel thành công!");
         } catch (err) {
-            toast.error("Lỗi khi xuất file Excel!");
+            toastError("Không thể xuất file Excel. Vui lòng thử lại hoặc liên hệ quản trị viên.");
         }
     };
 
@@ -333,7 +386,7 @@ const QuanLyLichLamViec: React.FC = () => {
                     } catch (error) {}
                 }
                 if (successCount > 0) { toast.success(`Đã sao chép thành công ${successCount} ca trực sang tuần tới!`); fetchData(); }
-                else toast.error("Không thể sao chép ca trực nào (Có thể do trùng lịch ở tuần tới).");
+                else toastError("Không thể sao chép ca trực nào (Có thể do trùng lịch ở tuần tới).");
             }
         });
     };
@@ -364,40 +417,41 @@ const QuanLyLichLamViec: React.FC = () => {
                         } catch (error) { failCount++; }
                     }
                     if (successCount > 0) { toast.success(`Đã sao chép thành công ${successCount} ca trực sang tuần tới!`); if (failCount > 0) toast.info(`Có ${failCount} ca bị trùng hoặc lỗi không thể sao chép.`); fetchData(); }
-                    else toast.error("Không thể sao chép ca trực nào. Có thể tất cả các ca đều đã tồn tại ở tuần tới.");
+                    else toastError("Không thể sao chép ca trực nào. Có thể tất cả các ca đều đã tồn tại ở tuần tới.");
                 } finally { setIsCopying(false); }
             }
         });
     };
 
     const handleMoveShift = async (shift: any, targetDay: any, targetHour: number) => {
-        if (!isAdmin && String(shift.id_nhan_vien) !== currentStaffId) { toast.error("Bạn không có quyền di chuyển lịch trực của người khác!"); return; }
-        if (!isAdmin && !canEmployeeManageScheduleNow()) { toast.error(SCHEDULE_REGISTRATION_CLOSED_MESSAGE); return; }
+        if (!isAdmin && String(shift.id_nhan_vien) !== currentStaffId) { toastError("Bạn không có quyền di chuyển lịch trực của người khác!"); return; }
+        if (!isAdmin && shouldBlockEmployeeScheduleAction(targetDay.dateStr)) { toastError(SCHEDULE_REGISTRATION_CLOSED_MESSAGE); return; }
         const newDateStr = targetDay.dateStr;
         const newTimeStr = `${String(targetHour).padStart(2, '0')}:00:00`;
         const newEndTimeStr = `${String(targetHour + 1).padStart(2, '0')}:00:00`;
         if (shift.ngay_lam === newDateStr && shift.gio_bat_dau?.startsWith(String(targetHour).padStart(2, '0'))) return;
         if (hasDuplicateShiftExcludingId(shift.id_nhan_vien, newDateStr, newTimeStr, shift.id_lich_lam_viec)) {
-            toast.error("Khung giờ này đã có ca trực rồi, không thể chuyển vào chỗ trùng.");
+            toastError("Khung giờ này đã có ca trực rồi, không thể chuyển vào chỗ trùng.");
             return;
         }
         try {
             await axiosInstance.delete(`/api/nhan-vien/lich-lam-viec/${shift.id_lich_lam_viec}`);
             await axiosInstance.post('/api/nhan-vien/lich-lam-viec', { id_nhan_vien: shift.id_nhan_vien, ngay_lam: newDateStr, gio_bat_dau: newTimeStr, gio_ket_thuc: newEndTimeStr, ghi_chu: shift.ghi_chu || "Chuyển lịch trực" });
             toast.success("Đã cập nhật ca trực!"); fetchData();
-        } catch (error: any) { toast.error(error.response?.data?.message || "Lỗi khi chuyển ca trực"); fetchData(); }
+        } catch (error: any) { toastError(error, "Lỗi khi chuyển ca trực"); fetchData(); }
     };
 
     const handleDeleteShift = async (id: number, shiftStaffId: string) => {
-        if (!isAdmin && String(shiftStaffId) !== currentStaffId) { toast.error("Bạn không có quyền xóa lịch trực của người khác!"); return; }
-        if (!isAdmin && !canEmployeeManageScheduleNow()) { toast.error(SCHEDULE_REGISTRATION_CLOSED_MESSAGE); return; }
+        if (!isAdmin && String(shiftStaffId) !== currentStaffId) { toastError("Bạn không có quyền xóa lịch trực của người khác!"); return; }
+        const shiftToDelete = schedules.find(s => String(s.id_lich_lam_viec) === String(id));
+        if (!isAdmin && shiftToDelete?.ngay_lam && shouldBlockEmployeeScheduleAction(shiftToDelete.ngay_lam)) { toastError(SCHEDULE_REGISTRATION_CLOSED_MESSAGE); return; }
         setConfirmDialog({
             open: true, title: 'Hủy ca trực',
             message: 'Bạn có chắc chắn muốn hủy ca trực này không?',
             onConfirm: async () => {
                 setConfirmDialog(prev => ({ ...prev, open: false }));
                 try { await axiosInstance.delete(`/api/nhan-vien/lich-lam-viec/${id}`); toast.success("Đã hủy ca trực"); fetchData(); }
-                catch (error: any) { toast.error(error.response?.data?.message || "Lỗi khi hủy ca trực"); }
+                catch (error: any) { toastError(error, "Lỗi khi hủy ca trực"); }
             }
         });
     };
@@ -690,74 +744,44 @@ const QuanLyLichLamViec: React.FC = () => {
                     .admin-schedule-filters select {
                         min-height: 50px !important;
                     }
-                    .schedule-scroll-wrap {
+                    .schedule-mobile-list {
                         display: none !important;
                     }
-                    .schedule-mobile-list {
-                        display: grid !important;
-                        gap: 10px;
-                        padding: 10px;
+                    .schedule-scroll-wrap {
+                        display: block !important;
+                        max-height: none !important;
+                        overflow: auto !important;
                     }
-                    .schedule-mobile-day {
-                        display: grid;
-                        gap: 8px;
-                        padding: 12px;
-                        border-radius: 18px;
-                        background: var(--surface);
-                        border: 1px solid var(--gray-100);
+                    .schedule-grid {
+                        min-width: 940px;
+                        grid-template-columns: 64px repeat(7, minmax(128px, 1fr));
                     }
-                    .schedule-mobile-day h3 {
-                        margin: 0;
-                        color: var(--ink);
-                        font-size: 0.95rem;
-                        line-height: 1.22;
-                        font-weight: 950;
+                    .schedule-slot-cell {
+                        min-height: 104px !important;
+                        padding: 4px !important;
                     }
-                    .schedule-mobile-shift {
-                        display: grid;
-                        grid-template-columns: auto minmax(0, 1fr);
-                        gap: 9px;
-                        align-items: center;
-                        padding: 9px;
-                        border-radius: 14px;
-                        background: var(--background);
-                        border: 1px solid var(--gray-100);
+                    .schedule-header-grid > div {
+                        padding: 12px 6px !important;
                     }
-                    .schedule-mobile-time {
-                        min-width: 72px;
-                        padding: 7px 8px;
-                        border-radius: 12px;
-                        background: var(--primary-light);
-                        color: var(--primary);
-                        text-align: center;
-                        font-size: 0.68rem;
-                        line-height: 1.1;
-                        font-weight: 950;
+                    .slot-shift-list {
+                        max-height: 76px !important;
                     }
-                    .schedule-mobile-shift h4 {
-                        margin: 0;
-                        color: var(--ink);
-                        font-size: 0.82rem;
-                        line-height: 1.22;
-                        font-weight: 950;
-                        overflow: hidden;
-                        text-overflow: ellipsis;
-                        white-space: nowrap;
+                    .shift-card {
+                        padding: 8px !important;
+                        border-radius: 12px !important;
                     }
-                    .schedule-mobile-shift p {
-                        margin: 3px 0 0;
-                        color: var(--gray-500);
-                        font-size: 0.68rem;
-                        line-height: 1.3;
-                        font-weight: 700;
+                    .shift-main-text {
+                        font-size: 0.72rem !important;
                     }
-                    .schedule-mobile-empty {
-                        padding: 12px;
-                        border-radius: 14px;
-                        background: var(--background);
-                        color: var(--gray-500);
-                        font-size: 0.74rem;
-                        font-weight: 800;
+                    .shift-sub-text {
+                        font-size: 0.6rem !important;
+                    }
+                    .slot-add-btn {
+                        bottom: 4px !important;
+                        right: 4px !important;
+                    }
+                    .staff-hours-rail {
+                        padding-bottom: 4px !important;
                     }
                 }
             `}</style>
@@ -1028,7 +1052,7 @@ const QuanLyLichLamViec: React.FC = () => {
                                                 today.setHours(0, 0, 0, 0);
                                                 const cellDate = new Date(`${day.dateStr}T00:00:00`);
                                                 const isPastDay = cellDate < today;
-                                                const isLockedSlot = isPastDay || (!isAdmin && !canEmployeeManageScheduleNow());
+                                                const isLockedSlot = isPastDay || (!isAdmin && shouldBlockEmployeeScheduleAction(day.dateStr));
 
                                                 const shiftsInSlot = visibleSchedules.filter(s => {
                                                     return s.ngay_lam === day.dateStr && parseInt(s.gio_bat_dau?.split(':')[0]) === hour;
@@ -1370,6 +1394,17 @@ const QuanLyLichLamViec: React.FC = () => {
             )}
         </div>
     );
-};
 
+};
 export default QuanLyLichLamViec;
+
+
+
+
+
+
+
+
+
+
+

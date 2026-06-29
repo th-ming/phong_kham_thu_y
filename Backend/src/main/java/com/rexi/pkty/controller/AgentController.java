@@ -48,7 +48,7 @@ public class AgentController {
 
     private final com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
 
-    // Auto get goi y cham soc active KHACH_HANG (retention & upsell)
+    // Goi y cham soc chu dong cho khach hang (retention & upsell)
     @GetMapping("/retention-reminders")
     public ResponseEntity<?> getRetentionReminders() {
         try {
@@ -88,34 +88,31 @@ public class AgentController {
             List<Map<String, Object>> reminders = new ArrayList<>();
 
             for (Map<String, Object> pet : pets) {
-                // check loai pet tu DB
                 String loai = pet.get("loai") != null ? pet.get("loai").toString().toLowerCase().trim() : "";
-                String tenThuCung = pet.get("ten_thu_cung") != null ? pet.get("ten_thu_cung").toString() : "Bé";
+                String tenThuCung = pet.get("ten_thu_cung") != null ? pet.get("ten_thu_cung").toString() : "Be";
                 
                 Map<String, Object> reminder = new HashMap<>(pet);
 
-                // phan loai loai pet
-                boolean laMeo = loai.contains("mèo") || loai.contains("meo") || loai.contains("cat") || loai.equals("mèo");
-                boolean lacho = loai.contains("chó") || loai.contains("cho") || loai.contains("dog") || loai.equals("chó");
+                boolean laMeo = loai.contains("meo") || loai.contains("cat");
+                boolean laCho = loai.contains("cho") || loai.contains("dog");
 
                 if (laMeo) {
                     reminder.put("type", "TRIET_SAN");
-                    reminder.put("message", "🐱 Sếp ơi! Bé mèo " + tenThuCung + " đã đến tuổi vàng để thực hiện triệt sản — giúp bảo vệ đường tiết niệu và kéo dài tuổi thọ cho bé. Rexi đã tìm thấy lịch trống phù hợp. Sếp có muốn chốt lịch ngay không ạ? ✨");
+                    reminder.put("message", "Chào Sen! Bé " + tenThuCung + " đã đến tuổi triệt sản. Rexi đề nghị đặt lịch triệt sản sớm để đảm bảo sức khỏe cho bé. Sen có muốn đặt lịch không?");
                     reminder.put("service_id", "DV-003");
                     reminder.put("suggested_date", java.time.LocalDate.now().plusDays(3).toString());
                     reminder.put("suggested_time", "09:00");
                     reminder.put("doctor_id", "NV-002");
-                } else if (lacho) {
+                } else if (laCho) {
                     reminder.put("type", "TIEM_PHONG");
-                    reminder.put("message", "🐶 Sếp ơi! Bé cún " + tenThuCung + " đã đến kỳ tiêm nhắc mũi Vắc xin dại & 5-in-1 để duy trì kháng thể bảo vệ. Rexi đã chuẩn bị lịch tiêm vào sáng mai. Sếp muốn Rexi chốt lịch luôn không ạ? 💉✨");
+                    reminder.put("message", "Chào Sen! Bé " + tenThuCung + " cần tiêm phòng uốn ván và 5-in-1 để duy trì sức khỏe. Rexi đã chuẩn bị lịch tiêm. Sen muốn đặt lịch không?");
                     reminder.put("service_id", "DV-002");
                     reminder.put("suggested_date", java.time.LocalDate.now().plusDays(1).toString());
                     reminder.put("suggested_time", "10:00");
                     reminder.put("doctor_id", "NV-003");
                 } else {
-                    // Khac (chim, tho...) -> kham dinh ky
                     reminder.put("type", "KHAM_DINH_KY");
-                    reminder.put("message", "🐾 Sếp ơi! Bé " + tenThuCung + " nhà mình đã đến kỳ khám sức khỏe định kỳ để đảm bảo bé luôn khỏe mạnh. Sếp có muốn Rexi đặt lịch khám nhanh không ạ? 🏥✨");
+                    reminder.put("message", "Chào Sen! Bé " + tenThuCung + " nên khám định kỳ để đảm bảo sức khỏe tốt nhất. Sen có muốn đặt lịch khám không?");
                     reminder.put("service_id", "DV-001");
                     reminder.put("suggested_date", java.time.LocalDate.now().plusDays(2).toString());
                     reminder.put("suggested_time", "08:30");
@@ -126,8 +123,8 @@ public class AgentController {
 
             return ResponseEntity.ok(reminders);
         } catch (Exception e) {
-            logger.severe("Lỗi quét dữ liệu gợi ý chăm sóc chủ động: " + e.getMessage());
-            return ResponseEntity.status(500).body(Map.of("message", "Lỗi hệ thống khi quét dữ liệu gợi ý chăm sóc."));
+            logger.severe("Loi khi quet du lieu goi y cham soc: " + e.getMessage());
+            return ResponseEntity.status(500).body(Map.of("message", "Loi he thong khi quet du lieu goi y cham soc."));
         }
     }
 
@@ -136,39 +133,33 @@ public class AgentController {
     @PreAuthorize(RexiSecurityRoles.MARKETING)
     public ResponseEntity<?> handleSwarmOrchestration(@RequestBody Map<String, String> payload) {
         String query = payload.get("query") != null ? payload.get("query") : "";
-        logger.info("[SWARM] Tiếp nhận yêu cầu điều phối đa Agent Swarm: " + query);
+        logger.info("[SWARM] Tiep nhan yeu cau dieu phoi da Agent Swarm: " + query);
 
         try {
             // B1: Swarm Orchestrator phan viec
-            String step1Agent = "🤖 Rexi Orchestrator";
-            String step1Action = "Phân tích yêu cầu chiến dịch và phân nhỏ công việc cho các Agent phụ tá ngầm";
-            String step1Output = "Đã tiếp nhận yêu cầu từ sếp: \"" + query + "\"\n" +
-                    "Bắt đầu bẻ nhỏ công việc thành các JSON Tasks:\n" +
-                    "1. Giao DataAgent: Phân tích ý định tìm kiếm, chuyển đổi sang khung truy vấn an toàn và thọc database lấy danh sách chủ nuôi.\n" +
-                    "2. Giao CreativeAgent: Tiếp nhận kết quả từ DataAgent, lên kịch bản viết email tri ân/nhắc lịch cá nhân hóa.\n" +
-                    "3. Giao ReviewAgent: Kiểm tra chéo toàn bộ dữ liệu, loại bỏ lỗi chính tả và các placeholder lỗi trước khi hiển thị.";
+            String step1Agent = "Rexi Orchestrator";
+            String step1Action = "Phan tich yeu cau chien dich va phan nhiem cong viec cho cac Agent phu trach";
+            String step1Output = "Da tiep nhan yeu cau tu sp: \"" + query + "\"\n" +
+                    "Bat dau phan nhiem cong viec thanh cac JSON Tasks:\n" +
+                    "1. Giao DataAgent: Phan tch va tim kiem, chuyen doi sang khung truy van an toan va truy xuat database.\n" +
+                    "2. Giao CreativeAgent: Tiep nhan ket qua tu DataAgent, len kich ban viet email tri an/nhac lich ca nhan hoa.\n" +
+                    "3. Giao ReviewAgent: Kiem tra toan bo du lieu, loai bo loi chinh ta.";
 
             // B2: Data Agent -> Hybrid Text-to-Safe-Query
-            String step2Agent = "📊 Data Analyst Agent";
-            String step2Action = "Dịch ý định ngôn ngữ tự nhiên sang bộ lọc tham số an toàn (Hybrid Text-to-Safe-Query)";
+            String step2Agent = "Data Analyst Agent";
+            String step2Action = "Dich yeu cau sang bo loc tham so an toan (Hybrid Text-to-Safe-Query)";
             
-            // Get JSON param tu Gemini
-            String dataPrompt = "Bạn là DataAgent - chuyên gia phân tích dữ liệu của phòng khám thú y Rexi.\n" +
-                    "Nhiệm vụ của bạn là đọc yêu cầu tìm kiếm của người dùng và trích xuất thành tham số tìm kiếm an toàn dạng JSON.\n" +
-                    "Bạn chỉ được chọn một trong các kiểu tìm kiếm (searchType) sau:\n" +
-                    "- `PET_NAME`: Nếu người dùng tìm theo tên thú cưng (Ví dụ: <ten_be_cung>)\n" +
-                    "- `PET_BREED`: Nếu người dùng tìm theo giống thú cưng (Ví dụ: <giong_thu_cung>)\n" +
-                    "- `PET_TYPE`: Nếu người dùng tìm theo loài thú cưng (Ví dụ: Chó, Mèo, Chim)\n" +
-                    "- `CUSTOMER_NAME`: Nếu người dùng tìm theo tên chủ nuôi (Ví dụ: <ten_chu_nuoi>)\n" +
-                    "- `CUSTOMER_EMAIL`: Nếu người dùng tìm theo email khách hàng (Ví dụ: <email_khach_hang>)\n" +
-                    "- `ALL`: Nếu người dùng muốn lọc tất cả hoặc không có điều kiện cụ thể.\n\n" +
-                    "Yêu cầu của người dùng: \"" + query + "\"\n\n" +
-                    "Hãy trích xuất từ khóa tìm kiếm chính xác (keyword) và kiểu tìm kiếm (searchType).\n" +
-                    "CHỈ TRẢ VỀ RÕ RÀNG 1 KHỐI JSON DUY NHẤT KHÔNG CÓ BẤT KỲ ĐOẠN CHỮ HOẶC KÝ TỰ MARKDOWN NÀO KHÁC. Ví dụ:\n" +
-                    "{\n" +
-                    "  \"searchType\": \"PET_NAME\",\n" +
-                    "  \"keyword\": \"<tu_khoa>\"\n" +
-                    "}";
+            String dataPrompt = "Ban la DataAgent - chuyen gia phan tich du lieu cua phong kham thu y Rexi.\n" +
+                    "Nhiem vu cua ban la trich xuat tham so tim kiem an toan dung JSON tu yeu cau cua nguoi dung.\n" +
+                    "Ban chi duoc chon mot trong cac kieu tim kiem (searchType) sau:\n" +
+                    "- `PET_NAME`: Neu nguoi dung tim theo ten thu cung\n" +
+                    "- `PET_BREED`: Neu nguoi dung tim theo giong thu cung\n" +
+                    "- `PET_TYPE`: Neu nguoi dung tim theo loai thu cung\n" +
+                    "- `CUSTOMER_NAME`: Neu nguoi dung tim theo ten chu nuoi\n" +
+                    "- `CUSTOMER_EMAIL`: Neu nguoi dung tim theo email khach hang\n" +
+                    "- `ALL`: Neu nguoi dung muon loc tat ca.\n\n" +
+                    "Yeu cau cua nguoi dung: \"" + query + "\"\n\n" +
+                    "Chi tra ve JSON duy nhat khong co ky tu markdown nao khac.";
 
             List<ChatMessage> dataHistory = new ArrayList<>();
             ChatMessage dataSysMsg = new ChatMessage();
@@ -187,7 +178,6 @@ public class AgentController {
 
             try {
                 dataLlmResponse = geminiService.chat(dataHistory);
-                // Parse JSON block neu co
                 if (dataLlmResponse.contains("```")) {
                     int startIdx = dataLlmResponse.indexOf("{");
                     int endIdx = dataLlmResponse.lastIndexOf("}");
@@ -200,8 +190,8 @@ public class AgentController {
                 searchType = jsonNode.path("searchType").asText("ALL");
                 keyword = jsonNode.path("keyword").asText("");
             } catch (Exception e) {
-                logger.warning("Không thể phân tích phản hồi JSON từ DataAgent: " + e.getMessage());
-                return ResponseEntity.ok(Map.of("reply", "Không phân tích được bộ lọc dữ liệu thật từ yêu cầu. Rexi đã dừng tác vụ để tránh tự đoán dữ liệu."));
+                logger.warning("Khong the phan tich phan hoi JSON tu DataAgent: " + e.getMessage());
+                return ResponseEntity.ok(Map.of("reply", "Khong phan tich duoc bo loc du lieu tu yeu cau. Rexi dung tac vu mac dinh."));
             }
 
             // Query an toan, chan SQLi
@@ -255,17 +245,15 @@ public class AgentController {
                 dbResults = jdbcTemplate.queryForList(sqlExecuted);
             }
 
-            // Dung db empty -> ko inject demo gia
             if (dbResults.isEmpty()) {
-                logger.warning("[SWARM] Không tìm thấy dữ liệu khách hàng phù hợp trong DB. Trả về kết quả rỗng.");
+                logger.warning("[SWARM] Khong tim thay du lieu khach hang ph hop trong DB. Tra ve ket qua rong.");
             }
 
-            String step2Output = "BỘ LỌC DỮ LIỆU ĐƯỢC DỊCH THÀNH CÔNG:\n" +
-                    "- Kiểu lọc: " + searchType + "\n" +
-                    "- Từ khóa tìm kiếm: \"" + keyword + "\"\n" +
-                    "- SQL truy vấn an toàn: " + sqlExecuted.replace("?", "'" + keyword + "'") + "\n" +
-                    "- Kết quả truy xuất: Tìm thấy " + dbResults.size() + " chủ nuôi phù hợp trong hệ thống" +
-                    (dbResults.isEmpty() ? ". Không có email nào được tạo để tránh gửi nhầm." : ".");
+            String step2Output = "BO LOC DU LIEU DA DICH THANH CONG:\n" +
+                    "- Kieu loc: " + searchType + "\n" +
+                    "- Tu khoa tim kiem: \"" + keyword + "\"\n" +
+                    "- Ket qua truy xuat: Tim thay " + dbResults.size() + " chu nui ph hop trong he thong" +
+                    (dbResults.isEmpty() ? ". Khong co email nao duoc tao de tranh gui nham." : ".");
 
             if (dbResults.isEmpty()) {
                 Map<String, Object> swarmData = new HashMap<>();
@@ -275,33 +263,33 @@ public class AgentController {
                 steps.add(Map.of("agent", step1Agent, "action", step1Action, "output", step1Output));
                 steps.add(Map.of("agent", step2Agent, "action", step2Action, "output", step2Output));
                 steps.add(Map.of(
-                    "agent", "✍️ Copywriter Agent",
-                    "action", "Bỏ qua soạn email vì không có người nhận hợp lệ",
-                    "output", "Không tìm thấy khách hàng hoặc thú cưng phù hợp với bộ lọc. Hệ thống không tạo email nháp và không cho phép gửi hàng loạt khi danh sách người nhận rỗng."
+                    "agent", "Copywriter Agent",
+                    "action", "Bo qua soan email vi khong co nguoi nhan phu hop",
+                    "output", "Khong tim thay khach hang hoac thu cung ph hop voi bo loc. He thong khong tao email nhep va khong cho phep gui hang lot khi danh sach nguoi nhan rong."
                 ));
                 steps.add(Map.of(
-                    "agent", "🛡️ Reviewer Agent",
-                    "action", "Kiểm tra an toàn trước khi gửi",
-                    "output", "Đạt yêu cầu an toàn: không có dữ liệu người nhận nên chiến dịch được dừng lại, tránh gửi nhầm."
+                    "agent", "Reviewer Agent",
+                    "action", "Kiem tra an toan truoc khi gui",
+                    "output", "Danh gia an toan: khong co du lieu nguoi nhan nen chien dich bi dung lai, tranh gui nham."
                 ));
                 swarmData.put("steps", steps);
-                swarmData.put("finalReply", "Không tìm thấy khách hàng hoặc thú cưng phù hợp với yêu cầu. Rexi đã dừng chiến dịch và không tạo email gửi hàng loạt để tránh gửi nhầm.");
+                swarmData.put("finalReply", "Khong tim thay khach hang hoac thu cung ph hop voi yeu cau. Rexi dung chien dich va khong tao email gui hang lot de tranh gui nham.");
                 swarmData.put("contacts", List.of());
 
                 String swarmPayload = "[SWARM_ORCHESTRATION:" + objectMapper.writeValueAsString(swarmData) + "]";
                 return ResponseEntity.ok(Map.of("reply", swarmPayload));
             }
 
-            // Bước 3: ✍️ COPYWRITER AGENT lên kịch bản viết email cá nhân hóa
-            String step3Agent = "✍️ Copywriter Agent";
-            String step3Action = "Soạn thảo kịch bản email/tin nhắn cá nhân hóa hàng loạt dựa trên thông tin chủ nuôi và boss cưng";
+            // Buoc 3: Copywriter Agent len kich ban viet email ca nhan hoa
+            String step3Agent = "Copywriter Agent";
+            String step3Action = "Soan thao kich ban email/tin nhan ca nhan hoa hang lot dua tren thong tin chu nui va boss";
             
-            String creativePrompt = "Bạn là CopywriterAgent - chuyên gia truyền thông sáng tạo của phòng khám thú y Rexi.\n" +
-                    "Nhiệm vụ của bạn là viết một email nhắc lịch tái khám, tặng voucher hoặc tri ân cực kỳ dễ thương, tinh tế và ấm áp.\n" +
-                    "Hãy dùng từ 'Sen' để gọi chủ nuôi, và 'Boss' hoặc 'Bé' để gọi thú cưng.\n" +
-                    "Hãy chèn các thẻ cá nhân hóa là [Tên Khách Hàng] và [Tên Thú Cưng] chính xác vào email để hệ thống tự điền hàng loạt.\n" +
-                    "Yêu cầu nội dung của sếp: \"" + query + "\"\n" +
-                    "Hãy trả về nội dung email hoàn chỉnh, ngắn gọn, có tiêu đề email rõ ràng.";
+            String creativePrompt = "Ban la CopywriterAgent - chuyen gia truyen thong sang tao cua phong kham thu y Rexi.\n" +
+                    "Nhiem vu cua ban la viet mot email nhac lich ti kham, tang voucher hoac tri an cac ky dieu dac biet.\n" +
+                    "Hay dung tu 'Sen' de gui chu nui, va 'Boss' hoac 'Be' de gui thu cung.\n" +
+                    "Hay danh dau cac thong tin ca nhan hoa la [Ten Khach Hang] va [Ten Thu Chung] chinh xac.\n" +
+                    "Yeu cau noi dung tu sp: \"" + query + "\"\n" +
+                    "Hay tra ve noi dung email hoan chinh, ngan gon, co tieu de email ro rang.";
 
             List<ChatMessage> creativeHistory = new ArrayList<>();
             ChatMessage creativeSysMsg = new ChatMessage();
@@ -311,29 +299,29 @@ public class AgentController {
             
             ChatMessage creativeUserMsg = new ChatMessage();
             creativeUserMsg.setRole("user");
-            creativeUserMsg.setContent("Viết email dựa trên yêu cầu của sếp.");
+            creativeUserMsg.setContent("Viet email dua tren yeu cau cua sp.");
             creativeHistory.add(creativeUserMsg);
 
             String draftedEmail = "";
             try {
                 draftedEmail = geminiService.chat(creativeHistory);
             } catch (Exception e) {
-                return ResponseEntity.ok(Map.of("reply", "Không soạn được email từ dữ liệu thật ở lượt này. Rexi đã dừng tác vụ, không dùng email mẫu."));
+                return ResponseEntity.ok(Map.of("reply", "Khong soan duoc email tu du lieu that o luot nay. Rexi dung tac vu mac dinh."));
             }
 
-            String step3Output = "THƯ MARKETING CÁ NHÂN HÓA ĐÃ ĐƯỢC SOẠN THÀNH CÔNG TỪ DỮ LIỆU TRUY VẤN:\n\n" + draftedEmail;
+            String step3Output = "NOI DUNG MARKETING CA NHAN HOA DA SOAN THANH CONG:\n\n" + draftedEmail;
 
-            // B4: Reviewer Agent check check email nhap
-            String step4Agent = "🛡️ Reviewer Agent";
-            String step4Action = "Kiểm tra chéo nội dung thư, phát hiện lỗi chính tả, xác thực thẻ cá nhân hóa";
+            // B4: Reviewer Agent check email nhap
+            String step4Agent = "Reviewer Agent";
+            String step4Action = "Kiem tra noi dung, phat hien loi chinh ta, xac thuc thong tin ca nhan hoa";
             
-            String reviewPrompt = "Bạn là ReviewerAgent - chuyên gia kiểm duyệt nội dung của phòng khám thú y Rexi.\n" +
-                    "Hãy đọc email nháp dưới đây và kiểm tra xem:\n" +
-                    "1. Email có chứa ngôn từ thô tục, tiêu cực không?\n" +
-                    "2. Các thẻ cá nhân hóa [Tên Khách Hàng], [Tên Thú Cưng] có được sử dụng đúng chuẩn không?\n" +
-                    "3. Có lỗi chính tả tiếng Việt nghiêm trọng nào không?\n\n" +
-                    "Email nháp: \n\"\"\"\n" + draftedEmail + "\n\"\"\"\n\n" +
-                    "Hãy đưa ra đánh giá ngắn gọn (tối đa 2-3 dòng) xác nhận email đạt chuẩn bảo mật và chuyên nghiệp.";
+            String reviewPrompt = "Ban la ReviewerAgent - chuyen gia kiem duyet noi dung cua phong kham thu y Rexi.\n" +
+                    "Hay doc email nhap di va kiem tra xem:\n" +
+                    "1. Email co chua ngan tu thong tuc, tieu cuc khong?\n" +
+                    "2. Cac thong tin ca nhan hoa [Ten Khach Hang], [Ten Thu Chung] co dung chuan khong?\n" +
+                    "3. Co loi chinh ta tieng Viet nghiem trong nao khong?\n\n" +
+                    "Email nhap: \n\"\"\"\n" + draftedEmail + "\n\"\"\"\n\n" +
+                    "Hay danh gia ngan gon (toi da 2-3 dong) xac nhan email dat chuan bao mat va chuyen nghiep.";
 
             List<ChatMessage> reviewHistory = new ArrayList<>();
             ChatMessage reviewSysMsg = new ChatMessage();
@@ -343,29 +331,29 @@ public class AgentController {
             
             ChatMessage reviewUserMsg = new ChatMessage();
             reviewUserMsg.setRole("user");
-            reviewUserMsg.setContent("Đánh giá email nháp.");
+            reviewUserMsg.setContent("Danh gia email nhap.");
             reviewHistory.add(reviewUserMsg);
 
             String reviewOutput = "";
             try {
                 reviewOutput = geminiService.chat(reviewHistory);
             } catch (Exception e) {
-                reviewOutput = "Xác nhận sơ bộ: Email nháp đạt các tiêu chí kiểm tra hiện tại. Không phát hiện từ khóa tiêu cực rõ ràng; các thẻ cá nhân hóa [Tên Khách Hàng] và [Tên Thú Cưng] đã được bố trí.";
+                reviewOutput = "Xac nhan so bo: Email nhap dat cac tieu chi kiem tra hien tai.";
             }
 
-            String step4Output = "KẾT QUẢ KIỂM TRA CHÉO (CROSS-AGENT REVIEW):\n" + reviewOutput;
+            String step4Output = "KET QUA KIEM TRA (CROSS-AGENT REVIEW):\n" + reviewOutput;
 
             // Replace placeholder gui mail that
             List<Map<String, String>> contacts = new ArrayList<>();
             for (Map<String, Object> record : dbResults) {
-                String khName = record.get("ten_khach_hang") != null ? record.get("ten_khach_hang").toString() : "Khách hàng";
+                String khName = record.get("ten_khach_hang") != null ? record.get("ten_khach_hang").toString() : "Khach hang";
                 String khEmail = record.get("email") != null ? record.get("email").toString() : "";
                 String khPhone = record.get("sdt") != null ? record.get("sdt").toString() : "";
-                String petName = record.get("ten_thu_cung") != null ? record.get("ten_thu_cung").toString() : "Bé";
+                String petName = record.get("ten_thu_cung") != null ? record.get("ten_thu_cung").toString() : "Be";
                 
                 String personalizedMail = draftedEmail
-                        .replace("[Tên Khách Hàng]", khName)
-                        .replace("[Tên Thú Cưng]", petName);
+                        .replace("[Ten Khach Hang]", khName)
+                        .replace("[Ten Thu Chung]", petName);
 
                 Map<String, String> contact = new HashMap<>();
                 contact.put("name", khName);
@@ -376,7 +364,7 @@ public class AgentController {
                 contacts.add(contact);
             }
 
-            // Gói toàn bộ dữ liệu phản hồi
+            // Tra toan bo du lieu phan hoi
             Map<String, Object> swarmData = new HashMap<>();
             swarmData.put("orchestratorPrompt", query);
             
@@ -387,8 +375,8 @@ public class AgentController {
             steps.add(Map.of("agent", step4Agent, "action", step4Action, "output", step4Output));
             swarmData.put("steps", steps);
 
-            String finalReply = "Tổ đội đa Agent Swarm đã hoàn thành xuất sắc chiến dịch ngầm! DataAgent đã thọc database an toàn và tìm thấy " + 
-                    dbResults.size() + " khách hàng phù hợp. CreativeAgent đã viết xong thư tri ân cá nhân hóa cho từng Sen. Sếp hãy kiểm tra danh sách xem trước và bấm [Phê Duyệt & Gửi Đồng Loạt] ngay bên dưới để gửi đi nhé! 💌✨";
+            String finalReply = "Tat ca Agent Swarm da hoan thanh xuat sac chien dich ngam! DataAgent truy xuat database an toan va tim thay " + 
+                    dbResults.size() + " khach hang ph hop. CreativeAgent da viet xong thuong chuong ca nhan hoa cho tung Sen. Sp hay kiem tra danh sach truoc va bam [Phe Duyet & Gui Hang Lot] ngay ben duoi de gui ngay!";
             swarmData.put("finalReply", finalReply);
             swarmData.put("contacts", contacts);
 
@@ -396,9 +384,9 @@ public class AgentController {
             return ResponseEntity.ok(Map.of("reply", swarmPayload));
 
         } catch (Exception e) {
-            logger.severe("Lỗi Swarm Orchestration: " + e.getMessage());
+            logger.severe("Loi Swarm Orchestration: " + e.getMessage());
             e.printStackTrace();
-            return ResponseEntity.status(500).body(Map.of("reply", "Sen ơi! Có lỗi xíu khi chạy Swarm Agent ngầm: " + e.getMessage()));
+            return ResponseEntity.status(500).body(Map.of("reply", "Xin loi sp! Da xay ra su co khi xu ly chien dich. Vui long thu lai sau hoac lien he quan tri vien."));
         }
     }
 
@@ -409,12 +397,12 @@ public class AgentController {
         try {
             @SuppressWarnings("unchecked")
             List<Map<String, Object>> contacts = (List<Map<String, Object>>) request.get("contacts");
-            String campaignName = request.getOrDefault("campaignName", "Chiến dịch Marketing Rexi").toString();
+            String campaignName = request.getOrDefault("campaignName", "Chien dich Marketing Rexi").toString();
 
             if (contacts == null || contacts.isEmpty()) {
                 return ResponseEntity.badRequest().body(Map.of(
                     "success", false,
-                    "error", "Không có contacts nào để gửi email!"
+                    "error", "Khong co contacts nao de gui email!"
                 ));
             }
 
@@ -430,9 +418,9 @@ public class AgentController {
                 if (!email.isEmpty() && mailSender != null) {
                     expectedSendCount++;
                     validContacts.add(contact);
-                    logEntries.add(String.format("⏳ %s (%s) - Đã đưa vào hàng đợi gửi", name, email));
+                    logEntries.add(String.format(" %s (%s) - Da vao hang doi gui", name, email));
                 } else {
-                    logEntries.add(String.format("✅ %s (%s) - Lưu nháp/Gửi SMS", name, email.isEmpty() ? "Qua SĐT: " + phone : email));
+                    logEntries.add(String.format(" %s (%s) - Luu nhap/Gui SMS", name, email.isEmpty() ? "So DT: " + phone : email));
                 }
             }
 
@@ -448,15 +436,13 @@ public class AgentController {
                             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
                             helper.setTo(email);
                             helper.setSubject("Rexi Vet - " + campaignName);
-                            // Convert \n -> <br/>
                             helper.setText(emailContent.replace("\n", "<br/>"), true); 
                             mailSender.send(message);
                             
-                            logger.info(String.format("[BACKGROUND EMAIL] Đã gửi thành công tới: %s", email));
-                            // Delay tranh spam IP ban
+                            logger.info(String.format("[BACKGROUND EMAIL] Da gui thanh cong toi: %s", email));
                             Thread.sleep(500);
                         } catch (Exception e) {
-                            logger.warning(String.format("[BACKGROUND EMAIL] Không thể gửi tới %s: %s", contact.get("email"), e.getMessage()));
+                            logger.warning(String.format("[BACKGROUND EMAIL] Khong the gui toi %s: %s", contact.get("email"), e.getMessage()));
                         }
                     }
                 });
@@ -469,17 +455,17 @@ public class AgentController {
             result.put("campaign", campaignName);
             result.put("log", logEntries);
             result.put("message", String.format(
-                "Đã đưa %d/%d email vào hàng đợi gửi ngầm trong chiến dịch \"%s\" ✨",
+                "Da gui %d/%d email vao hang doi gui ngam trong chien dich \"%s\"",
                 expectedSendCount, contacts.size(), campaignName
             ));
 
             return ResponseEntity.ok(result);
 
         } catch (Exception e) {
-            logger.severe("Lỗi bulk send email: " + e.getMessage());
+            logger.severe("Loi bulk send email: " + e.getMessage());
             return ResponseEntity.internalServerError().body(Map.of(
                 "success", false,
-                "error", e.getMessage()
+                "error", "Khong the gui email do su co he thong. Vui long thu lai sau."
             ));
         }
     }
@@ -490,7 +476,7 @@ public class AgentController {
     public ResponseEntity<?> runDirectTool(@RequestBody Map<String, Object> body) {
         String toolName = body.getOrDefault("tool", "").toString().trim();
         if (toolName.isEmpty()) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Tool không được để trống."));
+            return ResponseEntity.badRequest().body(Map.of("error", "Tool khong duoc de trong."));
         }
 
         org.springframework.security.core.Authentication auth =
@@ -501,10 +487,9 @@ public class AgentController {
             userRole = auth.getAuthorities().stream()
                 .findFirst().map(g -> g.getAuthority().replace("ROLE_", "")).orElse("");
         }
-        boolean isStaff = RoleAccessPolicy.isInternalStaffRole(userRole);
 
         if (!authenticated) {
-            return ResponseEntity.status(401).body(Map.of("error", "Cần đăng nhập để dùng tool Agent."));
+            return ResponseEntity.status(401).body(Map.of("error", "Can dang nhap de dung tool Agent."));
         }
         if (!RoleAccessPolicy.canUseAgentTool(userRole, toolName)) {
             return ResponseEntity.status(403).body(Map.of(
@@ -525,9 +510,9 @@ public class AgentController {
                 "params", params
             ));
         } catch (Exception e) {
-            logger.severe("[DIRECT TOOL] Lỗi: " + e.getMessage());
+            logger.severe("[DIRECT TOOL] Loi: " + e.getMessage());
             return ResponseEntity.internalServerError().body(Map.of(
-                "error", "Lỗi chạy tool trực tiếp: " + e.getMessage()
+                "error", "Loi chay tool truc tiep: " + e.getMessage()
             ));
         }
     }
@@ -540,9 +525,8 @@ public class AgentController {
         String currentPage = Objects.toString(body.getOrDefault("currentPage", ""), "").trim();
         String previousPage = Objects.toString(body.getOrDefault("previousPage", ""), "").trim();
         if (query.isEmpty()) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Query không được để trống."));
+            return ResponseEntity.badRequest().body(Map.of("error", "Query khong duoc de trong."));
         }
-        // Đính kèm context trang vào query để agent biết đang ở đâu
         if (!currentPage.isBlank() || !previousPage.isBlank()) {
             StringBuilder ctx = new StringBuilder();
             if (!currentPage.isBlank()) ctx.append("[TRANG_HIEN_TAI:").append(currentPage).append("]");
@@ -550,7 +534,6 @@ public class AgentController {
             query = ctx + " " + query;
         }
 
-        // Get user state tu token context
         org.springframework.security.core.Authentication auth =
             org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
         String username = (auth != null && !auth.getName().equals("anonymousUser")) ? auth.getName() : null;
@@ -561,12 +544,11 @@ public class AgentController {
         }
 
         try {
-            logger.info("[ReAct] Yêu cầu từ [" + username + "]: " + query);
+            logger.info("[ReAct] Yeu cau tu [" + username + "]: " + query);
             com.rexi.pkty.service.ReActAgentService.ReActResult result = reactAgentService.run(query, username, userRole, images);
             boolean adminDebugAllowed = RoleAccessPolicy.normalizeRole(userRole).equals("admin");
             String finalAnswer = adminDebugAllowed ? result.finalAnswer() : stripNonAdminTechnicalIds(result.finalAnswer());
 
-            // Parse steps sang format FE
             List<Map<String, Object>> stepsData = new java.util.ArrayList<>();
             for (var step : result.steps()) {
                 Map<String, Object> s = new java.util.LinkedHashMap<>();
@@ -588,9 +570,9 @@ public class AgentController {
                 "provider", result.provider()
             ));
         } catch (Exception e) {
-            logger.severe("[ReAct] Lỗi: " + e.getMessage());
-            saveAgentChatLog(username, query, "Lỗi ReAct Agent: " + e.getMessage(), "System", List.of());
-            return ResponseEntity.internalServerError().body(Map.of("error", "Lỗi ReAct Agent: " + e.getMessage()));
+            logger.severe("[ReAct] Loi: " + e.getMessage());
+            saveAgentChatLog(username, query, "Loi ReAct Agent: " + e.getMessage(), "System", List.of());
+            return ResponseEntity.internalServerError().body(Map.of("error", "Loi ReAct Agent: " + e.getMessage()));
         }
     }
 
@@ -619,7 +601,7 @@ public class AgentController {
             .replaceAll("[ \\t]{2,}", " ")
             .replaceAll("\\n{3,}", "\n\n")
             .trim();
-        return cleaned.isBlank() ? "Tôi chưa đủ dữ liệu để trả lời trực tiếp. Bạn gửi thêm tên thú cưng hoặc mã lịch hẹn để Rexi kiểm tra đúng thông tin." : cleaned;
+        return cleaned.isBlank() ? "Tai chua co du lieu de tra loi truc tiep. Ban gui them ten thu cung hoac ma lich hen de Rexi kiem tra chinh xac hon." : cleaned;
     }
 
     private void saveAgentChatLog(String username, String query, String answer, String provider, List<Map<String, Object>> steps) {
@@ -645,15 +627,15 @@ public class AgentController {
                     .build();
             nhatKyChatRepository.save(log);
         } catch (Exception ex) {
-            logger.warning("[ReAct] Không thể ghi NhatKyChat: " + ex.getMessage());
+            logger.warning("[ReAct] Khong the ghi NhatKyChat: " + ex.getMessage());
         }
     }
 
     private String compactForLog(String value, int maxChars) {
-        if (value == null || value.isBlank()) return "(trống)";
+        if (value == null || value.isBlank()) return "(trong)";
         String compact = value.replaceAll("\\s+", " ").trim();
         if (compact.length() <= maxChars) return compact;
-        return compact.substring(0, Math.max(0, maxChars - 20)) + "... [rút gọn]";
+        return compact.substring(0, Math.max(0, maxChars - 20)) + "... [rut gon]";
     }
 
     private boolean isCurrentUserStaff() {
@@ -689,9 +671,9 @@ public class AgentController {
                     + "; usedMedicalTool=" + usedMedicalTool
                     + "; query=" + compactForAudit(query)
                     + "; answerPreview=" + compactForAudit(answer);
-            auditLogService.logActionWithUsername(username == null ? "Hệ thống" : username, "AI_MEDICAL_AGENT_ADVICE", "ReActAgent", detail);
+            auditLogService.logActionWithUsername(username == null ? "He thong" : username, "AI_MEDICAL_AGENT_ADVICE", "ReActAgent", detail);
         } catch (Exception ex) {
-            logger.warning("[ReAct] Không thể ghi audit y khoa AI: " + ex.getMessage());
+            logger.warning("[ReAct] Khong the ghi audit y khoa AI: " + ex.getMessage());
         }
     }
 
@@ -707,7 +689,7 @@ public class AgentController {
         if (value == null) return "";
         String normalized = java.text.Normalizer.normalize(value.toLowerCase(Locale.ROOT), java.text.Normalizer.Form.NFD)
                 .replaceAll("\\p{M}", "")
-                .replace("đ", "d");
+                .replace("\u0111", "d");
         return normalized.replaceAll("[^a-z0-9\\s]", " ").replaceAll("\\s+", " ").trim();
     }
 

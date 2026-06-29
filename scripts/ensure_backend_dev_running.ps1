@@ -1,11 +1,18 @@
-# Khởi động backend dev (watcher + DevTools) nền nếu chưa chạy — gọi từ Cursor hook / session.
+# Khoi dong backend dev (watcher + DevTools) nen neu chua chay — goi tu Cursor hook / session.
+
+# UTF-8 ENCODING - dam bao tieng Viet hien thi dung
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+[Console]::InputEncoding = [System.Text.Encoding]::UTF8
+$OutputEncoding = [System.Text.Encoding]::UTF8
+chcp 65001 | Out-Null
+
 $ErrorActionPreference = 'SilentlyContinue'
 $RepoRoot = if ($PSScriptRoot -match 'scripts$') { Split-Path $PSScriptRoot -Parent } else { $PSScriptRoot }
 
-$pidFile = Join-Path $RepoRoot '.cursor\backend-dev-runner.pid'
-$logDir = Join-Path $RepoRoot 'Backend\logs'
+$pidFile = Join-Path $RepoRoot '.cursor\\backend-dev-runner.pid'
+$logDir = Join-Path $RepoRoot 'Backend\\logs'
 $logFile = Join-Path $logDir 'backend-dev-runner.log'
-$startScript = Join-Path $RepoRoot 'scripts\start_backend_dev.ps1'
+$startScript = Join-Path $RepoRoot 'scripts\\start_backend_dev.ps1'
 
 $cursorDir = Join-Path $RepoRoot '.cursor'
 if (-not (Test-Path $cursorDir)) {

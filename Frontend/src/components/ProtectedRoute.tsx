@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { toast } from '@components/Toast';
+import { toastError } from '@utils/toastHelpers';
 import { normalizeUserRole } from '@utils/index';
 
 interface ProtectedRouteProps {
@@ -11,7 +12,7 @@ interface ProtectedRouteProps {
 const RedirectWithToast: React.FC<{ to: string; message: string }> = ({ to, message }) => {
     const [ready, setReady] = useState(false);
     useEffect(() => {
-        toast.error(message);
+        toastError(message);
         setReady(true);
     }, [message]);
 

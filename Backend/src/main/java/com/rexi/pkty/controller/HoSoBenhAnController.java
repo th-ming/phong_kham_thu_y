@@ -354,7 +354,7 @@ public class HoSoBenhAnController {
                 String lieuDung = (String) item.get("lieu_dung");
 
                 if (soLuong == null || soLuong <= 0) {
-                    throw new RuntimeException("// chk qty > 0");
+                    throw new IllegalArgumentException("Số lượng thuốc kê đơn phải lớn hơn 0. Vui lòng kiểm tra lại đơn thuốc.");
                 }
 
                 jdbcTemplate.update(sqlChiTiet,

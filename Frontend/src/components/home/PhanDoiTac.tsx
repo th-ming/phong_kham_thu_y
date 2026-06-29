@@ -357,7 +357,7 @@ const PhanDoiTac: React.FC = () => {
                         width: max-content;
                         gap: 12px;
                         padding: 2px 18px 10px 2px;
-                        animation: partnerMarqueeMobile 18s linear infinite;
+                        animation: partnerMarqueeMobile 22s linear infinite;
                     }
                     .partner-marquee-track:hover,
                     .partner-marquee-track:active {

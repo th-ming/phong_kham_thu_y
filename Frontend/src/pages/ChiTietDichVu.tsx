@@ -98,7 +98,7 @@ const ChiTietDichVu: React.FC = () => {
         .service-detail-image-wrap:hover .service-detail-hero-img { transform: scale(1.025); }
         .service-detail-step { transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease; }
         .service-detail-step:hover { transform: translateX(10px); border-color: var(--primary) !important; box-shadow: var(--shadow-md) !important; }
-        @media (max-width: 768px) {
+        @media screen and (max-width: 768px), screen and (max-height: 500px) {
           #chatBtn,
           .scroll-to-top-glass {
             bottom: calc(88px + env(safe-area-inset-bottom, 0px)) !important;

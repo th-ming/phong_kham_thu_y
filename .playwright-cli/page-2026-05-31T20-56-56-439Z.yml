@@ -1,7 +1,0 @@
-- generic [ref=e303]:
-  - generic [ref=e304]: ⚠️
-  - heading "Đã xảy ra lỗi hệ thống" [level=2] [ref=e305]
-  - paragraph [ref=e306]: customerPets.map is not a function
-  - generic [ref=e307]:
-    - button "Thử lại" [ref=e308] [cursor=pointer]
-    - button "Về trang chủ" [ref=e309] [cursor=pointer]

@@ -13,7 +13,6 @@ services:
       - "1433:1433"
     volumes:
       - sqlserver_data:/var/opt/mssql
-      - ./Database/PhongKhamThuY.sql:/docker-entrypoint-initdb.d/init.sql:ro
     networks:
       - rexi_network
     healthcheck:
@@ -22,6 +21,30 @@ services:
       timeout: 3s
       retries: 10
       start_period: 10s
+
+  # SQL Server Auto-Initialization
+  sqlserver-init:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: rexi_sqlserver_init
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    volumes:
+      - ./Database/PhongKhamThuY.sql:/init.sql:ro
+    environment:
+      SA_PASSWORD: "${DB_PASSWORD:123456}"
+    user: root
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        echo "Starting database initialization..."
+        sleep 5
+        /opt/mssql-tools/bin/sqlcmd -S sqlserver -U sa -P "$$SA_PASSWORD" -C -Q "IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = N'PhongKhamThuY') CREATE DATABASE PhongKhamThuY;"
+        /opt/mssql-tools/bin/sqlcmd -S sqlserver -U sa -P "$$SA_PASSWORD" -C -d PhongKhamThuY -i /init.sql
+        echo "Database initialization completed successfully!"
+    networks:
+      - rexi_network
 
   # Java Spring Boot Backend
   backend:
@@ -40,6 +63,7 @@ services:
       # Cấu hình Redis cho Caching khi chạy trên Docker
       SPRING_DATA_REDIS_HOST: "redis"
       SPRING_DATA_REDIS_PORT: "6379"
+      OPENROUTER_API_KEY: "${OPENROUTER_API_KEY}"
       CORS_ALLOWED_ORIGINS: "${CORS_ALLOWED_ORIGINS:-http://localhost,http://localhost:3000}"
       MAIL_USERNAME: "${MAIL_USERNAME}"
       MAIL_PASSWORD: "${MAIL_PASSWORD}"
@@ -54,8 +78,8 @@ services:
     # ports:
     #   - "8081:8081" # BẢO MẬT: Ẩn port Backend, bắt buộc đi qua NGINX
     depends_on:
-      sqlserver:
-        condition: service_healthy
+      sqlserver-init:
+        condition: service_completed_successfully
     volumes:
       - backend_logs:/app/logs
     networks:
@@ -73,7 +97,7 @@ services:
           cpus: '1.0'
           memory: 1500M
     healthcheck:
-      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8081/api/lich-hen/count" ]
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8081/api/system/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -112,8 +136,9 @@ services:
   redis:
     image: redis:alpine
     container_name: rexi_redis
-    ports:
-      - "6379:6379"
+    # BAO MAT: An port Redis, chi truy cap noi bo Docker network
+    # ports:
+    #   - "6379:6379"
     networks:
       - rexi_network
     restart: always

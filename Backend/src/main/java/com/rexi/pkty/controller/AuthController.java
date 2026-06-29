@@ -926,7 +926,7 @@ public class AuthController {
                 Map<String, Object> response = new java.util.HashMap<>();
                 response.put("user", user);
                 response.put("mat_khau_tam_thoi", tempPassword);
-                response.put("message", "Tao nhanh thanh cong!");
+                response.put("message", "Tạo nhanh thành công!");
                 return ResponseEntity.ok(response);
             }
 

@@ -15,19 +15,21 @@ const PasswordHint: React.FC<{ password: string; show: boolean }> = ({ password,
   const items = [
     { label: `Từ ${PASSWORD_MIN_LENGTH}-${PASSWORD_MAX_LENGTH} ký tự`, ok: hasLength },
     { label: 'Ít nhất 1 ký tự đặc biệt (!@#$...)', ok: hasSpecial },
-  ];
+  ].filter(item => !item.ok);
+
+  if (items.length === 0) return null;
+
   return (
     <div style={{ display: 'grid', gap: '4px', marginTop: '6px', padding: '10px 14px', background: 'var(--gray-50)', borderRadius: '12px', border: '1px solid var(--gray-100)' }}>
       {items.map((item, i) => (
-        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.75rem', fontWeight: 700, color: item.ok ? '#059669' : 'var(--gray-400)', transition: 'color 0.2s' }}>
-          <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>{item.ok ? 'check_circle' : 'radio_button_unchecked'}</span>
+        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.75rem', fontWeight: 700, color: '#dc2626', transition: 'color 0.2s' }}>
+          <span className="material-symbols-outlined" style={{ fontSize: '16px', color: '#dc2626' }}>error</span>
           {item.label}
         </div>
       ))}
     </div>
   );
 };
-
 const DangNhapDangKy: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);

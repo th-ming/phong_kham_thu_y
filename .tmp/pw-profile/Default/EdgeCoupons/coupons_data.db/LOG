@@ -1,6 +1,0 @@
-2026/06/01-10:32:19.290 45f4 Reusing MANIFEST D:\QLy Phòng Khám Thú Y\.tmp\pw-profile\Default\EdgeCoupons/coupons_data.db/MANIFEST-000001
-2026/06/01-10:32:19.571 45f4 Recovering log #49
-2026/06/01-10:32:19.581 45f4 Reusing old log D:\QLy Phòng Khám Thú Y\.tmp\pw-profile\Default\EdgeCoupons/coupons_data.db/000049.log 
-2026/06/01-10:32:21.038 790c Level-0 table #53: started
-2026/06/01-10:32:21.046 790c Level-0 table #53: 682740 bytes OK
-2026/06/01-10:32:21.050 790c Delete type=0 #49

@@ -359,10 +359,10 @@ public class GroqService {
 
         String systemPrompt = """
                 Bạn là bộ hiểu ý định cho chatbot thú y Rexi. Không trả lời người dùng.
-                Đọc câu tiếng Việt tự nhiên, teen code, viết sai chính tả, nói tục, viết không dấu.
+                Đọc câu tiếng Việt tự nhiên, teen code, viết sai chính tả, nói lái, viết không dấu.
                 Trả về DUY NHẤT JSON hợp lệ, không markdown:
                 {
-                  "intent": "vet_advice|web_search|booking|clinic_info|smalltalk|unknown",
+                  "intent": "exam_before_medication|doctor_list|schedule_lookup|service_price_lookup|appointment_action|clinic_info|vet_advice|web_search|smalltalk|unknown",
                   "species": "dog|cat|pet|unknown",
                   "body_part": "eye|skin|digestive|respiratory|general|unknown",
                   "symptoms": ["..."],
@@ -370,7 +370,20 @@ public class GroqService {
                   "urgency": "emergency|same_day|routine|unknown",
                   "confidence": 0.0
                 }
-                Ưu tiên hiểu nghĩa, không phụ thuộc từ khóa. Nếu người dùng đòi sợt/search/tài liệu/nguồn thì needs_web_search=true.
+                Ý nghĩa từng intent:
+                - exam_before_medication: muốn khám/đánh giá trước, thuốc tính sau, không muốn chốt thuốc ngay.
+                - doctor_list: hỏi danh sách, thông tin hoặc bác sĩ nào đang làm việc.
+                - schedule_lookup: hỏi lịch trực, giờ làm, hôm nay/ngày mai ai khám.
+                - service_price_lookup: hỏi giá, chi phí, bảng giá dịch vụ.
+                - appointment_action: muốn đặt, đổi, hủy hoặc điều phối lịch hẹn.
+                - clinic_info: hỏi địa chỉ, hotline, giờ mở cửa, giới thiệu phòng khám, dịch vụ/phân hệ.
+                - vet_advice: hỏi bệnh, triệu chứng, sơ cứu, chẩn đoán, điều trị, chăm sóc y khoa.
+                - web_search: muốn tìm kiếm trên web, nguồn ngoài, tài liệu, tra cứu internet.
+                - smalltalk: chào hỏi, cảm ơn, nói chuyện phi vụ thể.
+                - unknown: không rõ ý định.
+                Ưu tiên hiểu nghĩa, không phụ thuộc từ khóa. Nếu người dùng đòi search/tài liệu/nguồn thì needs_web_search=true.
+                Nếu nhiều intent, chọn intent có tính hành động rõ nhất.
+                confidence là mức tự tin từ 0.0 đến 1.0; nếu rất mơ hồ thì để thấp.
                 """;
 
         List<Map<String, Object>> messages = List.of(

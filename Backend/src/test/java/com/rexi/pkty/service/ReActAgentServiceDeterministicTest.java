@@ -31,7 +31,7 @@ class ReActAgentServiceDeterministicTest {
     @Test
     void slangAppointmentNavigationReturnsNavigateTag() {
         var result = service.run("ê mở dùm t cái trang lịch hẹn coi hôm nay có gì", "admin", "ADMIN");
-
+        System.out.println("DEBUG SLANG NAV: " + result.finalAnswer());
         assertTrue(result.finalAnswer().contains("[NAVIGATE:/quan-ly/lich-hen]"));
     }
 
@@ -43,7 +43,7 @@ class ReActAgentServiceDeterministicTest {
                 Trang hiện tại: Dashboard (/quan-ly/dashboard)
                 Bối cảnh giao diện hiện tại: button hóa đơn, button kho thuốc
                 """, "admin", "ADMIN");
-
+        System.out.println("DEBUG EXTRACT NAV: " + result.finalAnswer());
         assertFalse(result.finalAnswer().equalsIgnoreCase("null"));
         assertTrue(result.finalAnswer().contains("[NAVIGATE:/quan-ly/lich-hen]"));
     }
@@ -208,6 +208,9 @@ class ReActAgentServiceDeterministicTest {
         var vomiting = service.run("boss t ói 2 lần r có cần qua khám hong", "admin", "ADMIN");
         var notEating = service.run("miu nhà tui bỏ ăn từ sáng h phải làm j", "admin", "ADMIN");
 
+        System.out.println("VOMITING: " + vomiting.finalAnswer());
+        System.out.println("NOT EATING: " + notEating.finalAnswer());
+
         assertTrue(vomiting.finalAnswer().contains("nôn/bỏ ăn"));
         assertTrue(notEating.finalAnswer().contains("nôn/bỏ ăn"));
     }
@@ -265,6 +268,8 @@ class ReActAgentServiceDeterministicTest {
         assertTrue(q244.finalAnswer().contains("14h"));
 
         var q245 = agent.run("điều hướng vào trang xếp lịch rồi xem y tá Mai tuần này trực ca nào", "admin", "ADMIN");
+        System.out.println("Q245 FINAL: " + q245.finalAnswer());
+        System.out.println("Q245 STEPS: " + q245.steps());
         assertTrue(q245.finalAnswer().contains("[NAVIGATE:/quan-ly/lich-lam-viec]"));
         assertTrue(q245.steps().stream().anyMatch(step -> "getStaffSchedule".equals(step.toolName())));
 

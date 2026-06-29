@@ -165,7 +165,7 @@ public class ChatController {
         }
     }
 
-    @PostMapping
+    @PostMapping(produces = "application/json;charset=UTF-8")
     public Object chat(
             @RequestBody JsonNode requestBody,
             HttpServletRequest request,
@@ -176,7 +176,7 @@ public class ChatController {
         List<ChatMessage> history = payload.history != null
                 ? new ArrayList<>(payload.history)
                 : new ArrayList<>();
-        // Rate limit chong spam chat
+        // Rate limit chống spam chat
         String clientIp = request.getRemoteAddr();
         org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
                 .getContext().getAuthentication();
@@ -221,12 +221,12 @@ public class ChatController {
                 return Map.of("reply", welcomeMessage);
             }
 
-            // Max 40 tin nhan gan nhat de tiet kiem token
+            // Max 40 tin nhắn gần nhất để tiết kiệm token
             if (history.size() > 40) {
                 history = new ArrayList<>(history.subList(history.size() - 40, history.size()));
             }
 
-            // Lay cu phap chat cuoi
+            // Lấy cú pháp chat cuối
             ChatMessage lastMsg = history.get(history.size() - 1);
             String userQuery = lastMsg.getContent() != null ? lastMsg.getContent() : "";
             String normalizedUserQuery = normalizeNoisyVietnameseForIntent(userQuery);
@@ -335,7 +335,7 @@ public class ChatController {
             boolean autopilotRequested = requestPlan.route() == ChatRoute.AUTOPILOT_AI;
             boolean clinicContextNeeded = requestPlan.needsClinicContext();
 
-            // Smart context filter truoc khi goi LLM
+            // Smart context filter trước khi gọi LLM
             String userContext = (realUsername != null && clinicContextNeeded)
                     ? aiMemoryService.getUserContext(realUsername)
                     : "";
@@ -382,7 +382,7 @@ public class ChatController {
                     : "\n--- BỐI CẢNH GIAO DIỆN TỐI GIẢN ---\n"
                     + "Người dùng hiện đang ở màn hình: " + currentPath + ". Chỉ hướng dẫn bằng lời, trừ khi người dùng yêu cầu thao tác giao diện rõ ràng.\n";
 
-            // Check auth state de chan AUTO_BOOK
+            // Check auth state để chặn AUTO_BOOK
             boolean isLoggedIn = (realUsername != null);
             String loginContext = isLoggedIn 
                 ? "Sen hiện ĐÃ ĐĂNG NHẬP với tài khoản: " + realUsername + ". Bạn CÓ QUYỀN đặt lịch khám ngay cho Sen."
@@ -549,11 +549,11 @@ ChatMessage systemMsg = new ChatMessage();
             // Check tu khoa y te
             boolean isMedicalQuery = isMedicalQuery(normalizedQuery);
 
-            // Chan streaming neu co media hoac la cau y te
+            // Chặn streaming nếu có media hoặc là câu y tế
             if (acceptHeader != null && acceptHeader.contains("text/event-stream") && !hasMedia && !isMedicalQuery) {
                 org.springframework.web.servlet.mvc.method.annotation.SseEmitter emitter = new org.springframework.web.servlet.mvc.method.annotation.SseEmitter(-1L);
                 try {
-                    // Stream luong chat qua Groq
+                    // Stream luồng chat qua Groq
                     if (autopilotRequested) {
                         groqService.streamChat(history, emitter, groqService.getAutopilotModelName());
                     } else {
@@ -637,10 +637,10 @@ ChatMessage systemMsg = new ChatMessage();
                 logger.warning("[ChatController] Cache put lỗi (ignored): " + cacheEx.getMessage());
             }
 
-            // HtmlEscape tranh XSS injection
+            // HtmlEscape tránh XSS injection
             String safeUserQuery = org.springframework.web.util.HtmlUtils.htmlEscape(userQuery);
 
-            // Luu lich su chat vao DB tu van
+            // Lưu lịch sử chat vào DB tư vấn
             try {
                 String customerId = aiMemoryService.getCurrentCustomerId();
                 if (customerId != null) {

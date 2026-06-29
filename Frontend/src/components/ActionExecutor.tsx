@@ -1,6 +1,7 @@
 import { toast } from './Toast';
 import { confirmAction } from './ConfirmModal';
 import { isSensitiveAction } from '../utils/agentCommandParser';
+import { toastError } from '../utils/toastHelpers';
 
 const escapeCssIdent = (value: string) => {
   const css = (window as any).CSS;
@@ -474,7 +475,7 @@ export const executeAction = async (tag: string, skipConfirm: boolean = false) =
   } catch (e) {
     console.error('Error executing AI action', e);
     const detail = e instanceof Error ? e.message : '';
-    toast.error(detail ? `Lỗi AI thực thi hành động: ${detail}` : 'Có lỗi xảy ra khi AI thực thi hành động!');
+    toastError(detail || 'Có lỗi xảy ra khi AI thực thi hành động!');
     window.dispatchEvent(new CustomEvent('agent-action', {
       detail: { type: 'ERROR', tag: tag, message: 'Có lỗi hệ thống xảy ra!' }
     }));

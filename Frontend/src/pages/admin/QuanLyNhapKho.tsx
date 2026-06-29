@@ -2,6 +2,7 @@
 import axiosInstance from "@services/axios";
 import { Modal } from "@components/CommonUI";
 import { toast } from "@components/Toast";
+import { toastError } from '@utils/toastHelpers';
 import { matchesSearchFields } from "@utils/index";
 import { useAutoRefresh } from "@hooks/useAutoRefresh";
 
@@ -82,12 +83,12 @@ const QuanLyNhapKho: React.FC = () => {
     };
 
     if (isDateBeforeToday(formData.han_su_dung)) {
-      toast.error("Hạn sử dụng không được đặt trong quá khứ!");
+      toastError("Hạn sử dụng không được đặt trong quá khứ!");
       return;
     }
 
     if (formData.so_luong_nhap <= 0) {
-      toast.error("Số lượng nhập kho phải lớn hơn 0!");
+      toastError("Số lượng nhập kho phải lớn hơn 0!");
       return;
     }
     try {
@@ -99,7 +100,7 @@ const QuanLyNhapKho: React.FC = () => {
       setFormData({ ...formData, so_lo: "", han_su_dung: "", so_luong_nhap: 0, gia_nhap: 0 });
       fetchData();
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "Lỗi khi tạo phiếu nhập.");
+      toastError(err, "Lỗi khi tạo phiếu nhập.");
     }
   };
 
