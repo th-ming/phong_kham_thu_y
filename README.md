@@ -74,11 +74,10 @@ Hệ thống quản lý phòng khám thú y toàn diện REXI được xây dự
 ├── Tester/                     # 16 kịch bản kiểm thử E2E (Playwright)
 ├── Database/                   # SQL Server & Postgres scripts
 ├── scripts/                    # PowerShell tự động hóa
-├── documentation/              # Báo cáo, tài liệu
+├── Documentation/              # Báo cáo, tài liệu
 ├── skills/                     # Codebuff AI skills
 ├── docker-compose.yml          # Bộ điều phối container
 ├── nginx.conf                  # Reverse Proxy & Rate Limiter
-├── start-backend.bat           # Script khởi chạy nhanh
 └── RexiProject.code-workspace  # Không gian làm việc VS Code
 ```
 
@@ -103,7 +102,7 @@ cd phong_kham_thu_y
 cd Backend && mvnw.cmd spring-boot:run
 
 #    - Hoặc dùng script (tự động cấu hình env):
-.\start-backend.bat
+.\scripts\start_backend_dev.ps1
 
 #    - Chế độ tiết kiệm RAM (512MB):
 .\scripts\start_backend_low_ram.ps1
@@ -190,7 +189,6 @@ File `.env` (Backend) - các biến quan trọng:
 
 | Script | Mô Tả |
 |--------|-------|
-| `start-backend.bat` | Khởi chạy backend nhanh với cấu hình sẵn |
 | `scripts/start_backend_dev.ps1` | Chế độ dev: auto-restart khi sửa code |
 | `scripts/start_backend_low_ram.ps1` | Chế độ tiết kiệm RAM (512MB) |
 | `scripts/start_backend_supabase_low_ram.ps1` | Kết nối Supabase + tiết kiệm RAM |

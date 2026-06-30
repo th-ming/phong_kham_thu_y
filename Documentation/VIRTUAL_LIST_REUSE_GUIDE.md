@@ -1,5 +1,5 @@
 # 🚀 HƯỚNG DẪN TÁI SỬ DỤNG CÔNG NGHỆ DANH SÁCH ẢO (VIRTUAL LIST)
-> **Tác giả:** Rexi AI & Sếp
+> **Tác giả:** Rexi AI & THM
 > **Mục tiêu:** Giúp sếp dễ dàng copy-paste và áp dụng giải pháp cuộn danh sách hàng chục ngàn dòng siêu mượt (60 FPS, không tốn RAM) vào bất kỳ dự án React/Vite/Next.js nào sau này trong vòng 1 phút!
 
 ---
@@ -18,7 +18,7 @@ interface VirtualScrollListProps<T> {
   visibleHeight: number; // Chiều cao tối đa của khung hiển thị (ví dụ: 400)
   className?: string; // Tên class CSS tùy chọn
   style?: React.CSSProperties; // Style tùy chọn cho container ngoài
-  
+
   // Hàm chỉ định cách render giao diện của mỗi dòng
   renderRow: (item: T, globalIndex: number, style: React.CSSProperties) => React.ReactNode;
 }
@@ -65,7 +65,7 @@ export function VirtualScrollList<T>({
         <div style={{ height: `${totalHeight}px`, position: "relative", width: "100%" }}>
           {visibleItems.map((item, idx) => {
             const globalIndex = startIndex + idx;
-            
+
             // Định vị dòng bằng Absolute Positioning
             const rowStyle: React.CSSProperties = {
               position: "absolute",
@@ -112,22 +112,22 @@ const MyNewPage: React.FC = () => {
   return (
     <div style={{ maxWidth: "600px", margin: "50px auto", padding: "20px" }}>
       <h2>Danh sách thành viên ({usersList.length} người)</h2>
-      
+
       {/* KHAI BÁO VIRTUAL LIST SIÊU NHANH */}
       <VirtualScrollList
         items={usersList}
         rowHeight={60} // Mỗi dòng cao 60px
         visibleHeight={300} // Cả khung cuộn cao 300px (hiển thị 5 dòng cùng lúc)
         style={{ border: "1px solid #e2e8f0", borderRadius: "12px", background: "#fff" }}
-        
+
         // Cách vẽ giao diện của mỗi dòng
         renderRow={(user, globalIndex, rowStyle) => (
-          <div 
-            key={user.id} 
-            style={{ 
-              ...rowStyle, 
-              display: "flex", 
-              alignItems: "center", 
+          <div
+            key={user.id}
+            style={{
+              ...rowStyle,
+              display: "flex",
+              alignItems: "center",
               justifyContent: "space-between",
               padding: "0 16px",
               borderBottom: "1px solid #f1f5f9"
