@@ -1,7 +1,7 @@
 import React, { useCallback, useMemo, useRef, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axiosInstance from "@services/axios";
-import { getUserProfile, decodeHtmlEntities } from "@utils/index";
+import { getUserProfile, decodeHtmlEntities, fixVietnameseEncoding } from "@utils/index";
 import { customerToneCopy, isGenZBirthYear } from "@utils/customerTone";
 import { toast } from "@components/Toast";
 import { useAutoRefresh } from "@hooks/useAutoRefresh";
@@ -60,7 +60,7 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({ item, thuCungs, onCan
             <span className="material-symbols-outlined" style={{ fontSize: '28px' }}>event_available</span>
           </div>
           <div>
-            <h3 style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--ink)', margin: 0 }}>{decodeHtmlEntities(item.ly_do || "Khám định kỳ")}</h3>
+            <h3 style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--ink)', margin: 0 }}>{fixVietnameseEncoding(decodeHtmlEntities(item.ly_do || "Khám định kỳ"))}</h3>
             <p style={{ color: 'var(--gray-400)', fontWeight: 700, margin: '2px 0', fontSize: '0.8rem' }}>
               Bệnh nhân: <b style={{ color: 'var(--ink)' }}>{getPetName(item, thuCungs)}</b>
             </p>

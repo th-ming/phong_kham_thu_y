@@ -26,7 +26,11 @@ public final class RexiSecurityRoles {
 
     /** Khách hàng & tra cứu CRM */
     public static final String CUSTOMER_PET_READ =
-            "hasAnyRole('ADMIN', 'QUAN_LY', 'TIEP_TAN', 'BAC_SI', 'Y_TA')";
+            "hasAnyRole('ADMIN', 'QUAN_LY', 'TIEP_TAN', 'BAC_SI', 'Y_TA', 'CUSTOMER')";
+
+    /** Ghi pet: thêm / sửa / xóa — chặn khách hàng tự ý sửa pet người khác */
+    public static final String CUSTOMER_PET_WRITE =
+            "hasAnyRole('ADMIN', 'QUAN_LY', 'BAC_SI', 'Y_TA', 'TIEP_TAN', 'CUSTOMER')";
 
     /** Lịch hẹn nội bộ (danh sách / hôm nay) */
     public static final String APPOINTMENT_READ =
