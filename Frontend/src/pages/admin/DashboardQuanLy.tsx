@@ -1,7 +1,7 @@
-import React, { useCallback, useState, useMemo, useEffect } from "react";
+﻿import React, { useCallback, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import axiosInstance from "@services/axios";
-import { getUserProfile, normalizeUserRole, fixVietnameseEncoding } from "@utils/index";
+import { getUserProfile, normalizeUserRole } from "@utils/index";
 import KeToanDashboard from "./KeToanDashboard";
 import BacSiDashboard from "./BacSiDashboard";
 import TiepTanDashboard from "./TiepTanDashboard";
@@ -211,18 +211,6 @@ const DashboardQuanLy: React.FC = () => {
 
   useAutoRefresh(fetchData);
 
-  useEffect(() => {
-    const handleRealtimeUpdate = () => {
-      fetchData();
-    };
-    window.addEventListener("rexi-appointments-changed", handleRealtimeUpdate);
-    window.addEventListener("rexi-data-changed", handleRealtimeUpdate);
-    return () => {
-      window.removeEventListener("rexi-appointments-changed", handleRealtimeUpdate);
-      window.removeEventListener("rexi-data-changed", handleRealtimeUpdate);
-    };
-  }, [fetchData]);
-
   const stats = useMemo(() => {
     const allStats: Array<{
       label: string;
@@ -412,196 +400,38 @@ const DashboardQuanLy: React.FC = () => {
       <CanhBaoThuoc />
 
       <div className="stagger-2 admin-dashboard-kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '32px', marginBottom: '40px' }}>
-        {stats.map((item, i) => {
-          const sparkline = item.label === "Khách Hàng" ? "M0,35 Q15,40 30,22 T60,38 T90,12 T100,28" :
-                            item.label === "Lịch Hẹn Nay" ? "M0,30 Q15,20 30,35 T60,20 T90,28 T100,8" :
-                            item.label === "Doanh Thu" ? "M0,42 Q15,35 30,12 T60,28 T90,6 T100,2" :
-                            item.label === "Kho Thuốc" ? "M0,28 Q15,32 30,15 T60,30 T90,10 T100,25" : undefined;
-          
-          const toPath = item.label === "Khách Hàng" ? "/quan-ly/khach-hang-thu-cung" :
-                         item.label === "Lịch Hẹn Nay" ? "/quan-ly/lich-hen" :
-                         item.label === "Doanh Thu" ? "/quan-ly/hoa-don" :
-                         item.label === "Kho Thuốc" ? "/quan-ly/kho-thuoc" : undefined;
-
-          const cardStyle: React.CSSProperties = {
-            padding: '28px', 
-            borderRadius: '28px', 
-            border: `1px solid ${item.color}25`, 
-            background: `linear-gradient(135deg, var(--surface) 0%, rgba(255, 255, 255, 0.03) 100%)`, 
-            backdropFilter: 'blur(16px)',
-            minHeight: '175px',
-            boxShadow: `0 15px 35px -12px ${item.color}20, var(--shadow-md)`,
-            position: 'relative',
-            transition: 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease, border-color 0.3s ease',
-            overflow: 'hidden',
-            willChange: 'transform, box-shadow',
-            display: 'block',
-            color: 'inherit',
-            cursor: 'default'
-          };
-
-          // Rich summary content for the hover popover
-          const getRichSummary = () => {
-            if (item.label === "Khách Hàng") {
-              return (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <div>👥 <strong>Tổng số:</strong> {customerCount} khách</div>
-                  <div>📈 <strong>Hôm nay:</strong> +{kpiCompare.customers.today} mới</div>
-                  <div>📉 <strong>Hôm qua:</strong> +{kpiCompare.customers.yesterday} khách</div>
-                </div>
-              );
-            }
-            if (item.label === "Lịch Hẹn Nay") {
-              return (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <div>📅 <strong>Lịch hẹn hôm nay:</strong> {appointments.length} ca</div>
-                  <div>⏱️ <strong>So với hôm qua:</strong> {kpiCompare.appointments.today} vs {kpiCompare.appointments.yesterday}</div>
-                </div>
-              );
-            }
-            if (item.label === "Doanh Thu") {
-              return (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <div>💰 <strong>Hôm nay:</strong> {formatTienVND(kpiCompare.revenue.today)}</div>
-                  <div>📊 <strong>Hôm qua:</strong> {formatTienVND(kpiCompare.revenue.yesterday)}</div>
-                </div>
-              );
-            }
-            if (item.label === "Kho Thuốc") {
-              return (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <div>⚠️ <strong>Cảnh báo tồn thấp:</strong> {inventoryAlerts.length} thuốc</div>
-                  {inventoryAlerts.length > 0 && (
-                    <div style={{ fontSize: '0.72rem', color: 'var(--gray-400)', marginTop: '4px' }}>
-                      📋 {inventoryAlerts.slice(0, 2).map(a => a.ten_thuoc).join(', ')}
-                      {inventoryAlerts.length > 2 ? '...' : ''}
-                    </div>
-                  )}
-                </div>
-              );
-            }
-            return item.trend.comparisonText;
-          };
-
-          return (
-            <div key={i} className="glass-card hover-lift kpi-card" style={cardStyle}>
-              {/* Background glowing orb */}
-              <div style={{
-                position: 'absolute',
-                top: '-40px',
-                right: '-40px',
-                width: '150px',
-                height: '150px',
-                background: `radial-gradient(circle, ${item.color}22 0%, transparent 70%)`,
-                borderRadius: '50%',
-                pointerEvents: 'none',
-                zIndex: 0
-              }} />
-
-              {sparkline && (
-                <svg style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', height: '60px', pointerEvents: 'none', opacity: 0.28, zIndex: 0 }} viewBox="0 0 100 50" preserveAspectRatio="none">
-                  <defs>
-                    <linearGradient id={`gradient-${item.color.replace('#', '')}`} x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={item.color} stopOpacity="0.45" />
-                      <stop offset="100%" stopColor={item.color} stopOpacity="0" />
-                    </linearGradient>
-                  </defs>
-                  <path d={`${sparkline} L100,50 L0,50 Z`} fill={`url(#gradient-${item.color.replace('#', '')})`} />
-                  <path d={sparkline} fill="none" stroke={item.color} strokeWidth="2.5" strokeLinecap="round" />
-                </svg>
-              )}
-
-              {/* kpi-trend-badge button placed absolutely at top-right for hover target */}
-              <button
-                data-ai-id={`button-dashboardquanly-kpi-trend-${i}`}
-                type="button"
-                className={`kpi-trend-badge ${item.trend.tone}`}
-                style={{ 
-                  position: 'absolute',
-                  top: '28px',
-                  right: '28px',
-                  fontSize: '0.72rem', 
-                  fontWeight: 900, 
-                  padding: '5px 10px', 
-                  borderRadius: '999px',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  border: '1px solid rgba(0,0,0,0.03)',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
-                  cursor: 'help',
-                  background: 'var(--surface)',
-                  zIndex: 2,
-                  outline: 'none'
-                }}
-              >
-                {item.trend.tone === 'up' && '▲'}
-                {item.trend.tone === 'down' && '▼'}
-                {item.trend.text}
-              </button>
-
-              {/* popover placed immediately after badge for CSS sibling hover to work */}
-              <div className="kpi-trend-popover" style={{ top: '68px', right: '28px', width: '220px' }}>
-                <div className="kpi-popover-title" style={{ borderBottom: '1px solid var(--gray-100)', paddingBottom: '6px', marginBottom: '8px' }}>Tóm tắt {item.label}</div>
-                <div className="kpi-popover-value" style={{ fontSize: '0.8rem', fontWeight: 700, lineHeight: 1.4 }}>
-                  {getRichSummary()}
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', position: 'relative', zIndex: 1 }}>
-                <div style={{ 
-                  width: '52px', 
-                  height: '52px', 
-                  borderRadius: '18px', 
-                  background: `linear-gradient(135deg, ${item.color}25 0%, ${item.color}05 100%)`, 
-                  color: item.color, 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center', 
-                  boxShadow: `0 8px 24px ${item.color}15`, 
-                  border: `1px solid ${item.color}30`,
-                  fontSize: '1.5rem', 
-                  fontWeight: 900 
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}>
-                    <span className="material-symbols-outlined" style={{ fontSize: '26px' }}>{item.icon}</span>
-                  </div>
-                </div>
-              </div>
-              
-              <div style={{ position: 'relative', zIndex: 1, marginBottom: '16px' }}>
-                <p style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--gray-400)', margin: '0 0 6px 0', textTransform: 'uppercase', letterSpacing: '1px' }}>{item.label}</p>
-                <h3 style={{ fontSize: '2rem', fontWeight: 950, color: 'var(--ink)', margin: 0, letterSpacing: '-0.5px' }}>
-                  <AnimatedNumber value={item.value} />
-                </h3>
-              </div>
-              
-              <div style={{ 
-                borderTop: '1px dashed var(--gray-200)', 
-                paddingTop: '12px', 
-                fontSize: '0.8rem', 
-                color: 'var(--gray-500)',
-                lineHeight: '1.5',
-                position: 'relative',
-                zIndex: 1,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                fontWeight: 600
-              }} className="kpi-mini-details">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span className="material-symbols-outlined" style={{ fontSize: '15px', color: item.color }}>info</span>
-                  <span>{item.caption}</span>
-                </div>
-                {toPath && (
-                  <Link to={toPath} style={{ color: item.color, display: 'inline-flex', alignItems: 'center', gap: '4px', textDecoration: 'none', fontWeight: 800, zIndex: 3 }}>
-                    Chi tiết <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>arrow_forward</span>
-                  </Link>
-                )}
+        {stats.map((item, i) => (
+          <div key={i} className="glass-card hover-lift kpi-card" style={{ padding: '32px', borderRadius: '32px', border: `1px solid ${item.color}25`, background: `linear-gradient(135deg, ${item.color}15 0%, var(--surface) 100%)`, minHeight: '190px' }}>
+            <button
+              data-ai-id={`button-dashboardquanly-kpi-trend-${i}`}
+              type="button"
+              className={`kpi-trend-badge ${item.trend.tone}`}
+              aria-label={`Chi tiết tăng trưởng ${item.label}`}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
+                {item.trend.tone === 'up' ? 'trending_up' : item.trend.tone === 'down' ? 'trending_down' : 'trending_flat'}
+              </span>
+              <span>{item.trend.text}</span>
+            </button>
+            <div className="kpi-trend-popover">
+              <div className="kpi-popover-title">{item.label}</div>
+              <div className="kpi-popover-value">
+                {item.trend.comparisonText}
+                <br />
+                {item.caption}
               </div>
             </div>
-          );
-        })}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+              <div style={{ background: `${item.color}22`, color: item.color, width: '60px', height: '60px', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 8px 20px ${item.color}15` }}>
+                <span className="material-symbols-outlined" style={{ fontSize: '30px' }}>{item.icon}</span>
+              </div>
+            </div>
+            <p style={{ fontSize: '0.8rem', fontWeight: 900, color: 'var(--gray-500)', margin: '0 0 8px 0', textTransform: 'uppercase', letterSpacing: '1px' }}>{item.label}</p>
+            <h3 style={{ fontSize: '2rem', fontWeight: 950, color: item.color, margin: 0, textShadow: `0 2px 10px ${item.color}10` }}>
+              <AnimatedNumber value={item.value} />
+            </h3>
+          </div>
+        ))}
       </div>
 
       <div className="stagger-3 admin-dashboard-content-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 400px), 1fr))', gap: '24px' }}>
@@ -627,8 +457,8 @@ const DashboardQuanLy: React.FC = () => {
                   {appointments.map((app, i) => (
                     <tr key={i} className="table-row" style={{ borderBottom: '1px solid var(--gray-200)', transition: 'all 0.2s' }}>
                       <td style={{ padding: '16px 8px', fontWeight: 800, color: 'var(--ink)' }}>{app.gio_kham?.substring(0, 5)}</td>
-                      <td style={{ padding: '16px 8px', fontWeight: 700, color: 'var(--ink)' }}>{fixVietnameseEncoding(app.ten_thu_cung)} <span style={{ display: 'block', fontSize: '0.8rem', fontWeight: 500, color: 'var(--gray-400)' }}>{fixVietnameseEncoding(app.ten_khach_hang)}</span></td>
-                      <td style={{ padding: '16px 8px' }}><span style={{ background: 'var(--primary-light)', color: 'var(--primary)', padding: '4px 12px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700 }}>{fixVietnameseEncoding(app.ten_bac_si) || 'Chưa xếp'}</span></td>
+                      <td style={{ padding: '16px 8px', fontWeight: 700, color: 'var(--ink)' }}>{app.ten_thu_cung} <span style={{ display: 'block', fontSize: '0.8rem', fontWeight: 500, color: 'var(--gray-400)' }}>{app.ten_khach_hang}</span></td>
+                      <td style={{ padding: '16px 8px' }}><span style={{ background: 'var(--primary-light)', color: 'var(--primary)', padding: '4px 12px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700 }}>{app.ten_bac_si || 'Chưa xếp'}</span></td>
                       <td style={{ padding: '16px 8px' }}>
                         <span style={{ color: getStatusColor(app.trang_thai), fontWeight: 800, fontSize: '0.8rem' }}>
                           ● {app.trang_thai?.toUpperCase()}

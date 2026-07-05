@@ -34,37 +34,22 @@ public class JwtUtil {
     @Value("${jwt.refreshExpiration:2592000000}")
     private long refreshExpiration;
 
-    // Startup validation: kiểm tra JWT_SECRET đã được cấu hình chưa
-    @jakarta.annotation.PostConstruct
-    public void validateJwtSecret() {
-        if (secretKey == null || secretKey.isBlank()) {
-            throw new IllegalStateException(
-                "JWT_SECRET chưa được cấu hình! Vui lòng set env var JWT_SECRET trước khi khởi động app.");
-        }
-        if (secretKey.getBytes().length < 32) {
-            throw new IllegalStateException(
-                "JWT_SECRET phải có ít nhất 32 bytes! Giá trị hiện tại quá ngắn.");
-        }
-        logger.info("JWT_SECRET đã được cấu hình đúng (length=" + secretKey.length() + " chars).");
-    }
-
     // Lấy khóa ký (min 32 bytes an toàn)
     private Key getSigningKey() {
         if (secretKey == null || secretKey.isBlank()) {
-            throw new IllegalStateException("JWT_SECRET chưa được cấu hình.");
+            throw new IllegalStateException("JWT_SECRET chua duoc cau hinh.");
         }
         byte[] keyBytes = secretKey.getBytes();
         if (keyBytes.length < 32) {
-            throw new IllegalStateException("JWT_SECRET phải có ít nhất 32 bytes.");
+            throw new IllegalStateException("JWT_SECRET phai co it nhat 32 bytes.");
         }
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
-    /** Tạo Token kèm Role và last_password_change */
-    public String generateToken(String username, String role, long lastPasswordChangeEpoch) {
+    /** Tạo Token kèm Role */
+    public String generateToken(String username, String role) {
         Map<String, Object> claims = new HashMap<>();
-        claims.put("role", role);
-        claims.put("lpc", lastPasswordChangeEpoch); // last_password_change epoch millis
+        claims.put("role", role); // Set role vào payload
         return createToken(claims, username);
     }
 
@@ -111,12 +96,6 @@ public class JwtUtil {
         return extractAllClaims(token).get("role", String.class);
     }
 
-    /** Get last_password_change epoch millis từ Token */
-    public long extractLastPasswordChange(String token) {
-        Object lpc = extractAllClaims(token).get("lpc");
-        return lpc != null ? ((Number) lpc).longValue() : 0L;
-    }
-
     // Get ngày hết hạn
     public Date extractExpiration(String token) {
         return extractClaim(token, Claims::getExpiration);
@@ -136,7 +115,7 @@ public class JwtUtil {
                 .getBody();
     }
 
-    // Kiểm tra đã hết hạn chưa
+    // Check expired ko
     private Boolean isTokenExpired(String token) {
         return extractExpiration(token).before(new Date());
     }

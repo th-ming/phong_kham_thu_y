@@ -1,4 +1,4 @@
-﻿import { test, expect } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 
 const FRONTEND_PORT = 3005;
 const BASE_URL = `http://localhost:${FRONTEND_PORT}`;
@@ -8,8 +8,8 @@ test.describe('Kiểm tra Chatbot AI - Tính năng Khẩn cấp, Bảo mật & �
     test.beforeEach(async ({ page }) => {
         // 1. Vào trang Đăng nhập hệ thống để lấy phiên đăng nhập trước khi dùng Chatbot
         await page.goto(`${BASE_URL}/dang-nhap`);
-        await page.getByPlaceholder('Tên đăng nhập').fill('khachhang');
-        await page.getByPlaceholder('Mật khẩu').fill('khachhang@rexi.com');
+        await page.getByPlaceholder('Tên đăng nhập').fill('testcustomer2');
+        await page.getByPlaceholder('Mật khẩu').fill('Password123!');
         await page.getByRole('button', { name: 'Đăng nhập ngay' }).click();
         
         // 2. Chờ điều hướng vào Trang tổng quan khách hàng thành công

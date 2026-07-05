@@ -107,7 +107,6 @@ public class HoSoBenhAnController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize(RexiSecurityRoles.CLINICAL_READ)
     public org.springframework.http.ResponseEntity<?> getHoSoById(@PathVariable String id) {
         String sql = "SELECT hs.id_ho_so_benh_an as id_ho_so, hs.ngay_kham, hs.trieu_chung, hs.chan_doan, hs.phac_do_dieu_tri, hs.huong_dan_cham_soc, "
                 + "hs.nhiet_do, hs.can_nang, hs.trang_thai_ho_so, "
@@ -146,7 +145,6 @@ public class HoSoBenhAnController {
     }
 
     @GetMapping("/khach/{id}")
-    @PreAuthorize(RexiSecurityRoles.CLINICAL_READ)
     public org.springframework.http.ResponseEntity<?> getHoSoByKhachHang(@PathVariable String id) {
         org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
                 .getContext().getAuthentication();
@@ -221,13 +219,9 @@ public class HoSoBenhAnController {
     }
 
     @PostMapping("/xet-nghiem/manual")
-    @PreAuthorize(RexiSecurityRoles.CLINICAL_WRITE)
+    @PreAuthorize(RexiSecurityRoles.AUTHENTICATED)
     @Transactional
     public org.springframework.http.ResponseEntity<?> taoXetNghiemThuCong(@RequestBody Map<String, Object> payload) {
-        if (!hasMedicalPermission()) {
-            return org.springframework.http.ResponseEntity.status(403)
-                    .body(Map.of("message", "Cảnh báo bảo mật: Chỉ ADMIN / Quản lý / Bác sĩ / Y tá được tạo xét nghiệm thủ công!"));
-        }
         try {
             String idHoSo = String.valueOf(payload.get("id_ho_so"));
             String tenDanhMuc = String.valueOf(payload.getOrDefault("ten_danh_muc", "Xét nghiệm thủ công"));
@@ -340,7 +334,7 @@ public class HoSoBenhAnController {
     // Ke don thuoc & Update ton kho (Transactional)
     @PostMapping("/{idBenhAn}/don-thuoc")
     @PreAuthorize(RexiSecurityRoles.CLINICAL_WRITE)
-    @Transactional(rollbackFor = Exception.class)
+    @Transactional
     public org.springframework.http.ResponseEntity<?> keDonThuoc(@PathVariable String idBenhAn,
             @RequestBody Map<String, Object> payload) {
         try {
@@ -373,13 +367,13 @@ public class HoSoBenhAnController {
             return org.springframework.http.ResponseEntity
                     .ok(Map.of("message", "Đã kê đơn thành công (Chờ khách quyết định mua thuốc)!"));
         } catch (Exception e) {
-            throw new RuntimeException("Lỗi nghiệp vụ khi kê đơn: " + e.getMessage(), e);
+            return org.springframework.http.ResponseEntity.status(400)
+                    .body(Map.of("message", "Lỗi nghiệp vụ khi kê đơn: " + e.getMessage()));
         }
     }
 
     @PostMapping("/{idBenhAn}/chot-hoa-don")
-    @PreAuthorize("hasAnyRole('ADMIN', 'QUAN_LY', 'KE_TOAN', 'BAC_SI', 'Y_TA')")
-    @Transactional(rollbackFor = Exception.class)
+    @Transactional
     public org.springframework.http.ResponseEntity<?> chotHoaDonTien(@PathVariable String idBenhAn,
             @RequestBody Map<String, Object> payload) {
         try {
@@ -388,10 +382,10 @@ public class HoSoBenhAnController {
             Integer existingInvoiceCount = jdbcTemplate.queryForObject(
                     "SELECT COUNT(*) FROM HoaDon WHERE id_lich_hen = ?",
                     Integer.class, idLichHen);
-            // Kiểm tra trùng hóa đơn
+            // chk dupl hd
             if (existingInvoiceCount != null && existingInvoiceCount > 0) {
                 return org.springframework.http.ResponseEntity.status(409)
-                        .body(Map.of("message", "Hóa đơn đã tồn tại"));
+                        .body(Map.of("message", "// chk da ton tai"));
             }
 
             String sqlInfo = "SELECT lh.id_khach_hang, lh.id_bac_si, dv.gia as gia_kham, kh.sdt, kh.ten_khach_hang " +
@@ -406,8 +400,7 @@ public class HoSoBenhAnController {
             Map<String, Object> info = infoList.get(0);
             String idKhachHang = String.valueOf(info.get("id_khach_hang"));
             String idBacSi = String.valueOf(info.get("id_bac_si"));
-            java.math.BigDecimal giaKham = info.get("gia_kham") != null
-                    ? new java.math.BigDecimal(info.get("gia_kham").toString())
+            java.math.BigDecimal giaKham = info.get("gia_kham") != null ? (java.math.BigDecimal) info.get("gia_kham")
                     : java.math.BigDecimal.ZERO;
             String sdt = (String) info.get("sdt");
             String tenKhachHang = (String) info.get("ten_khach_hang");
@@ -421,11 +414,10 @@ public class HoSoBenhAnController {
             jdbcTemplate.update(sqlHoaDon, idHoaDon, idKhachHang, idBacSi, idLichHen, tongTien, tongTien, tongTien, tongTien);
 
             if (giaKham.compareTo(java.math.BigDecimal.ZERO) > 0) {
-                jdbcTemplate.update("INSERT INTO HoaDonChiTiet (id_chi_tiet_hoa_don, id_hoa_don, ten_muc, loai_muc, so_luong, don_gia, thanh_tien) VALUES (?, ?, ?, 'DICH_VU', 1, ?, ?)",
+                jdbcTemplate.update("INSERT INTO HoaDonChiTiet (id_chi_tiet_hoa_don, id_hoa_don, ten_muc, loai_muc, so_luong, don_gia) VALUES (?, ?, ?, 'DICH_VU', 1, ?)",
                         "HDCT-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase(),
                         idHoaDon,
                         "Tiền khám/dịch vụ",
-                        giaKham,
                         giaKham);
             }
 
@@ -438,13 +430,14 @@ public class HoSoBenhAnController {
 
             return org.springframework.http.ResponseEntity.ok(Map.of("message", "Đã tự động lập hóa đơn dịch vụ khám thành công!"));
         } catch (Exception e) {
-            throw new RuntimeException("Lỗi tạo hóa đơn: " + e.getMessage(), e);
+            return org.springframework.http.ResponseEntity.status(500)
+                    .body(Map.of("message", "Lỗi tạo hóa đơn: " + e.getMessage()));
         }
     }
 
     @PostMapping("/don-thuoc/{idDonThuoc}/xuat-thuoc")
-    @PreAuthorize(RexiSecurityRoles.CLINICAL_WRITE)
-    @Transactional(rollbackFor = Exception.class)
+    @PreAuthorize(RexiSecurityRoles.CLINICAL_WRITE) // Or a new role for pharmacist/receptionist
+    @Transactional
     public org.springframework.http.ResponseEntity<?> xuatThuocTheoDon(@PathVariable String idDonThuoc,
             @RequestBody Map<String, Object> payload) {
         try {
@@ -524,8 +517,8 @@ public class HoSoBenhAnController {
             if (!unpaidInvoices.isEmpty()) {
                 // Append to existing invoice
                 targetInvoiceId = (String) unpaidInvoices.get(0).get("id_hoa_don");
-                jdbcTemplate.update("UPDATE HoaDon SET tong_tien_truoc_giam_gia = tong_tien_truoc_giam_gia + ?, tong_tien_sau_giam_gia = tong_tien_sau_giam_gia + ?, tong_tien_ban_dau = tong_tien_ban_dau + ?, tong_tien_cuoi = tong_tien_cuoi + ? WHERE id_hoa_don = ?",
-                        tongTienThuoc, tongTienThuoc, tongTienThuoc, tongTienThuoc, targetInvoiceId);
+                jdbcTemplate.update("UPDATE HoaDon SET tong_tien_truoc_giam_gia = tong_tien_truoc_giam_gia + ?, tong_tien_ban_dau = tong_tien_ban_dau + ?, tong_tien_cuoi = tong_tien_cuoi + ? WHERE id_hoa_don = ?",
+                        tongTienThuoc, tongTienThuoc, tongTienThuoc, targetInvoiceId);
             } else {
                 // Create new invoice for just the medicine
                 String idKhachHang = jdbcTemplate.queryForObject("SELECT tc.id_khach_hang FROM HoSoBenhAn hs JOIN ThuCung tc ON hs.id_thu_cung = tc.id_thu_cung WHERE hs.id_ho_so_benh_an = ?", String.class, idHoSoBenhAn);
@@ -541,16 +534,12 @@ public class HoSoBenhAnController {
                     "SELECT t.ten_thuoc, dtct.so_luong, t.gia_ban FROM DonThuocChiTiet dtct JOIN Thuoc t ON dtct.id_thuoc = t.id_thuoc WHERE dtct.id_don_thuoc = ?",
                     idDonThuoc);
             for (Map<String, Object> item : thuocHoaDon) {
-                java.math.BigDecimal donGia = new java.math.BigDecimal(item.get("gia_ban").toString());
-                int soLuong = ((Number) item.get("so_luong")).intValue();
-                java.math.BigDecimal thanhTien = donGia.multiply(new java.math.BigDecimal(soLuong));
-                jdbcTemplate.update("INSERT INTO HoaDonChiTiet (id_chi_tiet_hoa_don, id_hoa_don, ten_muc, loai_muc, so_luong, don_gia, thanh_tien) VALUES (?, ?, ?, 'THUOC', ?, ?, ?)",
+                jdbcTemplate.update("INSERT INTO HoaDonChiTiet (id_chi_tiet_hoa_don, id_hoa_don, ten_muc, loai_muc, so_luong, don_gia) VALUES (?, ?, ?, 'THUOC', ?, ?)",
                         "HDCT-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase(),
                         targetInvoiceId,
                         item.get("ten_thuoc"),
-                        soLuong,
-                        donGia,
-                        thanhTien);
+                        item.get("so_luong"),
+                        item.get("gia_ban"));
             }
 
             // 5. Update Prescription Status

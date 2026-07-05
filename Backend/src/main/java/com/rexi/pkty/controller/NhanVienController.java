@@ -2,7 +2,6 @@ package com.rexi.pkty.controller;
 
 import com.rexi.pkty.entity.LichLamViecNhanVien;
 import com.rexi.pkty.entity.NhanVien;
-import com.rexi.pkty.entity.TaiKhoan;
 import com.rexi.pkty.repository.LichLamViecNhanVienRepository;
 import com.rexi.pkty.repository.NhanVienRepository;
 import com.rexi.pkty.repository.TaiKhoanRepository;
@@ -158,7 +157,6 @@ public class NhanVienController {
     }
 
     @GetMapping("/nhan-vien")
-    @PreAuthorize("hasAnyRole('ADMIN', 'QUAN_LY', 'KE_TOAN', 'BAC_SI', 'Y_TA', 'TIEP_TAN')")
     public List<NhanVien> getAllNhanVien(@RequestParam(defaultValue = "false") boolean includeDeleted) {
         boolean canViewDeleted = includeDeleted && getAuthenticatedAccount()
                 .map(tk -> {
@@ -612,20 +610,14 @@ public class NhanVienController {
                 nv.setTrang_thai("INACTIVE");
                 nv.setNgay_nghi_viec(java.time.LocalDate.now());
                 nhanVienRepository.save(nv);
-                // FIX: findByIdNhanVien trả về List, lấy phần tử đầu tiên
-                TaiKhoan tkToLock = null;
-                if (nv.getId_tai_khoan() != null && !nv.getId_tai_khoan().isEmpty()) {
-                    tkToLock = taiKhoanRepository.findById(nv.getId_tai_khoan()).orElse(null);
-                } else {
-                    List<com.rexi.pkty.entity.TaiKhoan> listTk = taiKhoanRepository.findByIdNhanVien(id);
-                    if (!listTk.isEmpty()) {
-                        tkToLock = listTk.get(0);
-                    }
-                }
-                if (tkToLock != null) {
-                    tkToLock.setTrang_thai("inactive");
-                    taiKhoanRepository.save(tkToLock);
-                }
+                Optional<com.rexi.pkty.entity.TaiKhoan> tkToLock =
+                        nv.getId_tai_khoan() != null && !nv.getId_tai_khoan().isEmpty()
+                                ? taiKhoanRepository.findById(nv.getId_tai_khoan())
+                                : taiKhoanRepository.findByIdNhanVien(id);
+                tkToLock.ifPresent(tk -> {
+                    tk.setTrang_thai("inactive");
+                    taiKhoanRepository.save(tk);
+                });
                 return org.springframework.http.ResponseEntity.ok(Map.of("message", "Đã xóa nhân viên thành công!"));
             }
             return org.springframework.http.ResponseEntity.status(404)
@@ -663,20 +655,14 @@ public class NhanVienController {
             nv.setNgay_nghi_viec(null);
             nhanVienRepository.save(nv);
 
-            // FIX: findByIdNhanVien trả về List, lấy phần tử đầu tiên
-            TaiKhoan tkToUnlock = null;
-            if (nv.getId_tai_khoan() != null && !nv.getId_tai_khoan().isEmpty()) {
-                tkToUnlock = taiKhoanRepository.findById(nv.getId_tai_khoan()).orElse(null);
-            } else {
-                List<com.rexi.pkty.entity.TaiKhoan> listTk = taiKhoanRepository.findByIdNhanVien(id);
-                if (!listTk.isEmpty()) {
-                    tkToUnlock = listTk.get(0);
-                }
-            }
-            if (tkToUnlock != null) {
-                tkToUnlock.setTrang_thai("active");
-                taiKhoanRepository.save(tkToUnlock);
-            }
+            Optional<com.rexi.pkty.entity.TaiKhoan> tkToUnlock =
+                    nv.getId_tai_khoan() != null && !nv.getId_tai_khoan().isEmpty()
+                            ? taiKhoanRepository.findById(nv.getId_tai_khoan())
+                            : taiKhoanRepository.findByIdNhanVien(id);
+            tkToUnlock.ifPresent(tk -> {
+                tk.setTrang_thai("active");
+                taiKhoanRepository.save(tk);
+            });
 
             return org.springframework.http.ResponseEntity.ok(Map.of("message", "Đã phục hồi nhân viên và mở khóa tài khoản liên kết."));
         } catch (Exception e) {

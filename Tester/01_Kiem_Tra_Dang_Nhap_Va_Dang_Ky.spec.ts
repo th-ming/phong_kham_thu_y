@@ -1,4 +1,4 @@
-﻿import { test, expect } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 
 // Thay đổi PORT tùy theo config Frontend hiện tại (3000, 3001 hoặc 5173)
 const FRONTEND_PORT = 3005;

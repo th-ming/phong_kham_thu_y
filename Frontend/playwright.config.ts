@@ -13,15 +13,11 @@ import { defineConfig, devices } from '@playwright/test';
  */
 export default defineConfig({
   testDir: '../Tester',
-  /* IMPORTANT: fullyParallel MUST be false and workers MUST be 1.
-   * Reason: Backend AuthController has brute-force lockout (5 failed attempts → 15 min lock).
-   * When tests run in parallel, multiple login attempts hit the same account simultaneously,
-   * triggering the lockout and causing ALL subsequent tests to fail with timeout.
-   * Root cause documented: 2026-07-02 in Documentation/DEBUG_GUIDE.md */
-  fullyParallel: false,
+  /* Run tests in files in parallel */
+  fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: 1,
+  workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
   use: {
     trace: 'on-first-retry',

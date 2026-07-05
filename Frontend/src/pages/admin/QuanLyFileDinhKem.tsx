@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import axiosInstance from "@services/axios";
 import { Modal } from "@components/CommonUI";
 import { toast } from "@components/Toast";
-import { matchesSearchFields, fixVietnameseEncoding } from "@utils/index";
+import { matchesSearchFields } from "@utils/index";
 import { useAutoRefresh } from "@hooks/useAutoRefresh";
 
 interface FileDinhKem {
@@ -22,15 +22,14 @@ const QuanLyFileDinhKem: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Dùng baseURL từ axios instance để đảm bảo nhất quán với mọi môi trường (dev, Vercel, production)
-  const API_BASE_URL = axiosInstance.defaults.baseURL || '';
+  const API_BASE_URL = (import.meta as any).env.VITE_API_URL || "http://localhost:8081";
 
   const filteredFiles = React.useMemo(() => {
     if (!searchQuery.trim()) return files;
     return files.filter(f => matchesSearchFields(searchQuery, [
       f.id,
       f.ten_file,
-      fixVietnameseEncoding(f.loai),
+      f.loai,
       f.duong_dan,
       f.kich_thuoc,
       f.ngay_upload
@@ -198,11 +197,11 @@ const QuanLyFileDinhKem: React.FC = () => {
               <div key={file.id} className="glass-card" style={{ padding: '24px', borderRadius: 'var(--radius-lg)', display: 'flex', alignItems: 'center', gap: '20px' }}>
                 <div style={{ width: '56px', height: '56px', background: 'var(--primary-light)', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
                   <span className="material-symbols-outlined" style={{ fontSize: '32px' }}>
-                    {fixVietnameseEncoding(file.loai)?.toLowerCase().includes('hình ảnh') ? 'image' : 'description'}
+                    {file.loai?.toLowerCase().includes('hình ảnh') ? 'image' : 'description'}
                   </span>
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--ink)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fixVietnameseEncoding(file.ten_file)}</h3>
+                  <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--ink)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.ten_file}</h3>
                   <p style={{ fontSize: '0.75rem', color: 'var(--gray-400)', fontWeight: 700, margin: '4px 0' }}>{formatSize(file.kich_thuoc)} · {file.ngay_upload?.split('T')[0]}</p>
                 </div>
                                         <a data-ai-id={`link_file_view_${file.id}`} href={`${API_BASE_URL}${file.duong_dan}`} target="_blank" rel="noreferrer" className="btn" style={{ padding: '8px', background: 'var(--gray-50)', color: 'var(--ink)' }}>
@@ -227,10 +226,10 @@ const QuanLyFileDinhKem: React.FC = () => {
               <tbody>
                 {filteredFiles.map((file) => (
                   <tr key={file.id} style={{ borderBottom: '1px solid var(--gray-50)', transition: 'all 0.2s' }}>
-                    <td style={{ padding: '20px', fontWeight: 800, color: 'var(--ink)' }}>{fixVietnameseEncoding(file.ten_file)}</td>
+                    <td style={{ padding: '20px', fontWeight: 800, color: 'var(--ink)' }}>{file.ten_file}</td>
                     <td style={{ padding: '20px' }}>
                       <span style={{ padding: '4px 10px', borderRadius: '6px', background: 'var(--gray-100)', fontSize: '0.75rem', fontWeight: 800, color: 'var(--ink)' }}>
-                        {fixVietnameseEncoding(file.loai)}
+                        {file.loai}
                       </span>
                     </td>
                     <td style={{ padding: '20px', textAlign: 'right', fontWeight: 700 }}>{formatSize(file.kich_thuoc)}</td>

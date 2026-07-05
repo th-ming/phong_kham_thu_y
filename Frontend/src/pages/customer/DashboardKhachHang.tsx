@@ -4,7 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import axiosInstance from "@services/axios";
 import { AnimatedNumber, Modal, Skeleton } from "@components/CommonUI";
 import BirthYearSelect from "@components/BirthYearSelect";
-import { decodeHtmlEntities, getUserProfile, fixVietnameseEncoding } from "@utils/index";
+import { decodeHtmlEntities, getUserProfile } from "@utils/index";
 import { customerToneCopy, isGenZBirthYear } from "@utils/customerTone";
 import { useAutoRefresh } from "@hooks/useAutoRefresh";
 import { toast } from "@components/Toast";
@@ -629,15 +629,6 @@ const DashboardKhachHang: React.FC = () => {
             background: rgba(255,255,255,0.28);
           }
 
-          .customer-dashboard-hero .header-title {
-            font-size: clamp(1.25rem, 6vw, 1.62rem) !important;
-            line-height: 1.15 !important;
-            letter-spacing: -0.5px !important;
-            white-space: normal !important;
-            word-break: break-word !important;
-            max-width: 100% !important;
-          }
-
           .customer-dashboard-hero-content {
             align-items: flex-start !important;
             gap: 14px !important;
@@ -895,11 +886,11 @@ const DashboardKhachHang: React.FC = () => {
         }
         
         [data-theme='dark'] .customer-dashboard-hero {
-          --hero-bg-start: #0e4f5c;
-          --hero-bg-mid: #0e7490;
-          --hero-bg-end: #083344;
-          --hero-shadow-color: rgba(6, 182, 212, 0.2);
-          --hero-glow: rgba(34, 211, 238, 0.12);
+          --hero-bg-start: #064e3b;
+          --hero-bg-mid: #022c22;
+          --hero-bg-end: #0f172a;
+          --hero-shadow-color: rgba(6, 78, 59, 0.35);
+          --hero-glow: rgba(16, 185, 129, 0.1);
         }
       `}</style>
       <div className="stagger-1 customer-dashboard-hero" style={{ marginBottom: '40px', padding: '48px', borderRadius: 'var(--radius-xl)', background: 'linear-gradient(135deg, var(--hero-bg-start) 0%, var(--hero-bg-mid) 50%, var(--hero-bg-end) 100%)', color: 'white', position: 'relative', overflow: 'hidden', boxShadow: '0 15px 35px var(--hero-shadow-color)' }}>
@@ -1041,8 +1032,8 @@ const DashboardKhachHang: React.FC = () => {
                     )}
                     <span style={{ display: p.hinh_anh ? 'none' : 'inline' }}>{avatarChar}</span>
                   </div>
-                  <div style={{ fontWeight: 900, color: 'var(--ink)', fontSize: '0.95rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{fixVietnameseEncoding(p.ten_thu_cung)}</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--gray-400)', fontWeight: 800, marginTop: '4px' }}>{fixVietnameseEncoding(p.giong || p.loai)}</div>
+                  <div style={{ fontWeight: 900, color: 'var(--ink)', fontSize: '0.95rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.ten_thu_cung}</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--gray-400)', fontWeight: 800, marginTop: '4px' }}>{p.giong || p.loai}</div>
                 </div>
               );
             })}
@@ -1079,8 +1070,8 @@ const DashboardKhachHang: React.FC = () => {
                       <span className="material-symbols-outlined">calendar_today</span>
                     </div>
                     <div>
-                      <p style={{ fontWeight: 850, color: 'var(--ink)', margin: 0 }}>{fixVietnameseEncoding(decodeHtmlEntities(app.ly_do || app.lyDo || 'Khám tổng quát'))}</p>
-                      <p style={{ fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 700, margin: '2px 0 0 0' }}>Dành cho: <b style={{ color: 'var(--primary)' }}>{fixVietnameseEncoding(pets.find(p => p.id_thu_cung === app.id_thu_cung)?.ten_thu_cung) || 'Thú cưng'}</b></p>
+                      <p style={{ fontWeight: 850, color: 'var(--ink)', margin: 0 }}>{decodeHtmlEntities(app.ly_do || app.lyDo || 'Khám tổng quát')}</p>
+                      <p style={{ fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 700, margin: '2px 0 0 0' }}>Dành cho: <b style={{ color: 'var(--primary)' }}>{pets.find(p => p.id_thu_cung === app.id_thu_cung)?.ten_thu_cung || 'Thú cưng'}</b></p>
                     </div>
                   </div>
                   <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>

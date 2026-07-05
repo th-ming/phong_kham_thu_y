@@ -23,8 +23,8 @@ test('Chụp ảnh màn hình đặt lịch hẹn online trên cloud', async ({ 
     await page.waitForTimeout(3000);
 
     console.log('2. Điền thông tin đăng nhập...');
-    await page.getByPlaceholder('Tên đăng nhập').fill('khachhang');
-    await page.getByPlaceholder('Mật khẩu').fill('khachhang@rexi.com');
+    await page.getByPlaceholder('Tên đăng nhập').fill('testcustomer2');
+    await page.getByPlaceholder('Mật khẩu').fill('Password123!');
     
     console.log('3. Bấm đăng nhập...');
     await page.getByRole('button', { name: 'Đăng nhập ngay' }).click();

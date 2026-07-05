@@ -80,16 +80,6 @@ const QuanLyNhanVienPhanQuyen: React.FC = () => {
     fetchAccounts();
   }, { runImmediately: false });
 
-  useEffect(() => {
-    const handleRealtimeUpdate = () => {
-      if (showModal || showAccountModal) return;
-      fetchNhanViens();
-      fetchAccounts();
-    };
-    window.addEventListener("rexi-data-changed", handleRealtimeUpdate);
-    return () => window.removeEventListener("rexi-data-changed", handleRealtimeUpdate);
-  }, [showModal, showAccountModal]);
-
   const handleOpenEdit = (nv: any) => {
     setEditingId(nv.id_nhan_vien);
     setFormData({

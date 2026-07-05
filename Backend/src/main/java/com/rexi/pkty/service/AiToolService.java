@@ -113,11 +113,7 @@ public class AiToolService {
         appendToolIfAllowed(sb, userRole, "tra_cuu_tai_lieu_y_khoa",
             "Tra cứu tài liệu VNUA, giáo trình thú y, phác đồ điều trị sếp đã tải lên hệ thống.", "{\"tu_khoa\":\"...\"}");
 
-        // --- Schedule & Roster Tools (LỊCH LÀM VIỆC NHÂN VIÊN - PHÂN BIỆT VỚI LỊCH HẸN KHÁM) ---
-        // QUAN TRỌNG: Các tool dưới đây là lịch làm việc/phân ca nhân sự (work schedule/roster).
-        // KHÔNG dùng cho lịch hẹn khám bệnh (appointment booking). Lịch hẹn khám dùng: tim_lich_hen_hom_nay, dat_lich_hen, huy_lich_hen.
-        // User nói "lịch làm việc", "lịch trực", "ca trực", "phân ca", "xếp lịch" -> dùng tool dưới đây.
-        // User nói "lịch hẹn", "lịch khám", "đặt lịch khám", "booking" -> dùng tim_lich_hen_hom_nay / dat_lich_hen.
+        // --- Schedule & Roster Tools ---
         appendToolIfAllowed(sb, userRole, "getStaffSchedule",
             "Tra cứu lịch làm việc của nhân sự theo tuần. 'week' có thể là 'this' hoặc 'next'.", "{\"staff\":\"tên nhân viên\", \"week\":\"this|next\"}");
         appendToolIfAllowed(sb, userRole, "getSlotUsage",
@@ -1429,7 +1425,6 @@ public class AiToolService {
 
     private String toolThaoTacTaiKhoan(Map<String, Object> p) {
         try {
-            boolean pg = com.rexi.pkty.util.DatabaseDialect.isPostgres(jdbcTemplate);
             String id = (String) p.get("id_khach_hang");
             String idTaiKhoan = (String) p.get("id_tai_khoan");
             String action = (String) p.get("hanh_dong");
@@ -1442,7 +1437,7 @@ public class AiToolService {
                 }
                 String customerId = resolveCustomerId(id, idTaiKhoan);
                 if (customerId == null || customerId.isBlank()) return "Lỗi: Không tìm thấy khách hàng cần thao tác.";
-                int rows = jdbcTemplate.update("UPDATE KhachHang SET da_xoa = " + (pg ? "true" : "1") + " WHERE id_khach_hang = ?", customerId);
+                int rows = jdbcTemplate.update("UPDATE KhachHang SET da_xoa = true WHERE id_khach_hang = ?", customerId);
                 jdbcTemplate.update("UPDATE TaiKhoan SET trang_thai = 'Đã khóa' WHERE id_khach_hang = ?", customerId);
                 if (rows > 0) return "✅ Đã " + action.toLowerCase() + " tài khoản khách hàng " + customerId + " thành công.";
                 else return "Lỗi: Không tìm thấy khách hàng ID " + customerId;
@@ -1450,7 +1445,7 @@ public class AiToolService {
             if ("MO_KHOA".equalsIgnoreCase(action) || "MOKHOA".equalsIgnoreCase(action) || "UNLOCK".equalsIgnoreCase(action)) {
                 String customerId = resolveCustomerId(id, idTaiKhoan);
                 if (customerId == null || customerId.isBlank()) return "Lỗi: Không tìm thấy khách hàng cần mở khóa.";
-                int customerRows = jdbcTemplate.update("UPDATE KhachHang SET da_xoa = " + (pg ? "false" : "0") + " WHERE id_khach_hang = ?", customerId);
+                int customerRows = jdbcTemplate.update("UPDATE KhachHang SET da_xoa = false WHERE id_khach_hang = ?", customerId);
                 int accountRows = jdbcTemplate.update("UPDATE TaiKhoan SET trang_thai = 'Hoạt động' WHERE id_khach_hang = ?", customerId);
                 if (customerRows > 0 || accountRows > 0) {
                     return "✅ Đã mở khóa tài khoản khách hàng " + customerId + " thành công.";

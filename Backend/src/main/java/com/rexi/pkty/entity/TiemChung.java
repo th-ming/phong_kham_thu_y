@@ -9,7 +9,6 @@ import java.time.LocalDate;
 @Data
 public class TiemChung {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id_tiem_chung;
 
     private String id_thu_cung;

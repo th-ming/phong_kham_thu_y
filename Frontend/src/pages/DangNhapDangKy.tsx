@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axiosInstance from "@services/axios";
 import BirthYearSelect from "@components/BirthYearSelect";
@@ -48,10 +48,6 @@ const DangNhapDangKy: React.FC = () => {
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [birthYear, setBirthYear] = useState("");
-
-  const fullnameRef = useRef<HTMLInputElement>(null);
-  const emailRef = useRef<HTMLInputElement>(null);
-  const phoneRef = useRef<HTMLInputElement>(null);
 
   const GOOGLE_CLIENT_ID = "334761445329-iog83fgqrdlo0iavo68pkv17modc85du.apps.googleusercontent.com";
 
@@ -156,22 +152,8 @@ const DangNhapDangKy: React.FC = () => {
   const handleNextStep = (e: React.MouseEvent) => {
     e.preventDefault();
     setError("");
-    if (!fullname) {
-      setError("Vui lòng nhập họ tên!");
-      fullnameRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-      fullnameRef.current?.focus();
-      return;
-    }
-    if (!email) {
-      setError("Vui lòng nhập email!");
-      emailRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-      emailRef.current?.focus();
-      return;
-    }
-    if (!phone) {
-      setError("Vui lòng nhập số điện thoại!");
-      phoneRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-      phoneRef.current?.focus();
+    if (!fullname || !email || !phone || !address || !birthYear) {
+      setError("Vui lòng nhập đầy đủ các trường thông tin cá nhân!");
       return;
     }
     const birthYearNum = Number(birthYear);
@@ -209,24 +191,8 @@ const DangNhapDangKy: React.FC = () => {
     if (!isLogin) {
       if (step === 1) {
         // Nếu người dùng nhấn Enter và tự động submit khi đang ở bước 1
-        if (!fullname) {
-          setError("Vui lòng nhập họ tên!");
-          fullnameRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-          fullnameRef.current?.focus();
-          setLoading(false);
-          return;
-        }
-        if (!email) {
-          setError("Vui lòng nhập email!");
-          emailRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-          emailRef.current?.focus();
-          setLoading(false);
-          return;
-        }
-        if (!phone) {
-          setError("Vui lòng nhập số điện thoại!");
-          phoneRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-          phoneRef.current?.focus();
+        if (!fullname || !email || !phone || !address || !birthYear) {
+          setError("Vui lòng nhập đầy đủ các trường thông tin cá nhân!");
           setLoading(false);
           return;
         }
@@ -701,7 +667,7 @@ const DangNhapDangKy: React.FC = () => {
               </p>
             </div>
 
-            {error && <div style={{ background: '#fef2f2', border: '1px solid #fee2e2', color: '#b91c1c', padding: '14px', borderRadius: '16px', marginBottom: '24px', fontSize: '0.85rem', fontWeight: 700, whiteSpace: 'pre-line' }}>{error}</div>}
+            {error && <div style={{ background: '#fef2f2', border: '1px solid #fee2e2', color: '#b91c1c', padding: '14px', borderRadius: '16px', marginBottom: '24px', fontSize: '0.85rem', fontWeight: 700 }}>{error}</div>}
             {success && <div style={{ background: '#f0fdf4', border: '1px solid #dcfce7', color: '#15803d', padding: '14px', borderRadius: '16px', marginBottom: '24px', fontSize: '0.85rem', fontWeight: 700 }}>{success}</div>}
 
             {!isLogin && (
@@ -726,26 +692,17 @@ const DangNhapDangKy: React.FC = () => {
                 <div className="animate-slide-in" key={`step-${step}`}>
                   {step === 1 ? (
                     <div style={{ display: 'grid', gap: '12px' }}>
-                      <div>
-                        <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--gray-500)', marginBottom: '4px', display: 'block', paddingLeft: '2px' }}>Họ và tên <span style={{ color: '#ff4d4f' }}>*</span></label>
-                        <div className="input-group">
-                          <span className="material-symbols-outlined" style={{ color: '#0d9488', opacity: 0.7, fontSize: '18px' }}>badge</span>
-                          <input ref={fullnameRef} data-ai-id="input-dangnhapdangky-wgtk" placeholder="Nguyễn Văn A" value={fullname} onChange={e => setFullname(e.target.value)} required />
-                        </div>
+                      <div className="input-group">
+                        <span className="material-symbols-outlined" style={{ color: '#0d9488', opacity: 0.7, fontSize: '18px' }}>badge</span>
+                        <input data-ai-id="input-dangnhapdangky-wgtk" placeholder="Họ và tên" value={fullname} onChange={e => setFullname(e.target.value)} required />
                       </div>
-                      <div>
-                        <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--gray-500)', marginBottom: '4px', display: 'block', paddingLeft: '2px' }}>Email <span style={{ color: '#ff4d4f' }}>*</span></label>
-                        <div className="input-group">
-                          <span className="material-symbols-outlined" style={{ color: '#0d9488', opacity: 0.7, fontSize: '18px' }}>mail</span>
-                          <input ref={emailRef} data-ai-id="input-dangnhapdangky-mw60" type="email" placeholder="example@email.com" value={email} onChange={e => setEmail(e.target.value)} required />
-                        </div>
+                      <div className="input-group">
+                        <span className="material-symbols-outlined" style={{ color: '#0d9488', opacity: 0.7, fontSize: '18px' }}>mail</span>
+                        <input data-ai-id="input-dangnhapdangky-mw60" type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} required />
                       </div>
-                      <div>
-                        <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--gray-500)', marginBottom: '4px', display: 'block', paddingLeft: '2px' }}>Số điện thoại <span style={{ color: '#ff4d4f' }}>*</span></label>
-                        <div className="input-group">
-                          <span className="material-symbols-outlined" style={{ color: '#0d9488', opacity: 0.7, fontSize: '18px' }}>phone</span>
-                          <input ref={phoneRef} data-ai-id="input-dangnhapdangky-v63p" placeholder="0912345678" value={phone} onChange={e => handlePhoneChange(e.target.value)} required />
-                        </div>
+                      <div className="input-group">
+                        <span className="material-symbols-outlined" style={{ color: '#0d9488', opacity: 0.7, fontSize: '18px' }}>phone</span>
+                        <input data-ai-id="input-dangnhapdangky-v63p" placeholder="Số điện thoại" value={phone} onChange={e => handlePhoneChange(e.target.value)} required />
                       </div>
                       <div className="input-group">
                         <span className="material-symbols-outlined" style={{ color: '#0d9488', opacity: 0.7, fontSize: '18px' }}>location_on</span>

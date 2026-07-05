@@ -11,7 +11,7 @@ import java.util.Map;
 @Repository
 public interface HoSoBenhAnRepository extends JpaRepository<HoSoBenhAn, String> {
 
-    // Lấy kết quả xét nghiệm từ BenhAn_XetNghiem
+    // Get ket qua XN tu BenhAn_XetNghiem
     @Query(value = "SELECT bx.*, COALESCE(l.ten_xet_nghiem, bx.id_loai_xet_nghiem) AS ten_xet_nghiem FROM BenhAn_XetNghiem bx " +
                    "LEFT JOIN LoaiXetNghiem l ON bx.id_loai_xet_nghiem = CAST(l.id_loai_xet_nghiem AS varchar) " +
                    "WHERE bx.id_ho_so = :hosoId", nativeQuery = true)

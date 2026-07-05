@@ -58,14 +58,6 @@ const QuanLyKhoThuoc: React.FC = () => {
 
   useAutoRefresh(fetchData, { runImmediately: false });
 
-  useEffect(() => {
-    const handleRealtimeUpdate = () => {
-      fetchData();
-    };
-    window.addEventListener("rexi-data-changed", handleRealtimeUpdate);
-    return () => window.removeEventListener("rexi-data-changed", handleRealtimeUpdate);
-  }, []);
-
   const user = getUserProfile();
   const userRole = normalizeUserRole(user);
   const canManageInventory = userRole === 'admin' || userRole === 'quan_ly' || userRole === 'ke_toan';
@@ -347,15 +339,14 @@ const QuanLyKhoThuoc: React.FC = () => {
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead style={{ position: 'sticky', top: 0, zIndex: 1, background: 'var(--surface)' }}>
                     <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--gray-100)' }}>
-                       <th style={{ padding: '16px 8px', fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800 }}>TÊN THUỐC</th>
-                       <th style={{ padding: '16px 8px', fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800 }}>DẠNG</th>
-                       <th style={{ padding: '16px 8px', fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800, textAlign: 'right' }}>TỒN KHO</th>
-                       <th style={{ padding: '16px 8px', fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800, textAlign: 'right' }}>GIÁ BÁN</th>
-                     </tr>
+                      <th style={{ padding: '16px 8px', fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800 }}>TÊN THUỐC</th>
+                      <th style={{ padding: '16px 8px', fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800 }}>DẠNG</th>
+                      <th style={{ padding: '16px 8px', fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 800, textAlign: 'right' }}>GIÁ BÁN</th>
+                    </tr>
                   </thead>
                   <tbody>
                     {shouldVirtualize && visibleRange.start > 0 && (
-                      <tr style={{ height: visibleRange.start * 80 }}><td colSpan={4} /></tr>
+                      <tr style={{ height: visibleRange.start * 80 }}><td colSpan={3} /></tr>
                     )}
                     {(shouldVirtualize ? visibleItems : filteredThuocs).map((t, idx) => (
                       <tr key={t.id_thuoc} className="inv-row-anim" style={{ borderBottom: '1px solid var(--gray-50)', animationDelay: `${0.05 + idx * 0.02}s`, height: '80px' }}>
@@ -372,24 +363,13 @@ const QuanLyKhoThuoc: React.FC = () => {
                             <span style={{ color: 'var(--gray-450)', fontWeight: 600 }}>—</span>
                           )}
                         </td>
-                        <td style={{ padding: '16px 8px', textAlign: 'right' }}>
-                          <span style={{
-                            fontWeight: 900,
-                            color: (t.so_luong_ton ?? 0) <= 0 ? '#ef4444'
-                              : (t.so_luong_ton ?? 0) < 10 ? '#f59e0b'
-                              : 'var(--ink)'
-                          }}>
-                            {t.so_luong_ton ?? 0}
-                          </span>
-                          <div style={{ fontSize: '0.7rem', color: 'var(--gray-400)', fontWeight: 600 }}>{t.don_vi || ''}</div>
-                        </td>
                         <td style={{ padding: '16px 8px', textAlign: 'right', fontWeight: 900, color: 'var(--primary)' }}>
                           {t.gia_ban?.toLocaleString('vi-VN')} đ
                         </td>
                       </tr>
                     ))}
                     {shouldVirtualize && visibleRange.end < filteredThuocs.length && (
-                      <tr style={{ height: (filteredThuocs.length - visibleRange.end) * 80 }}><td colSpan={4} /></tr>
+                      <tr style={{ height: (filteredThuocs.length - visibleRange.end) * 80 }}><td colSpan={3} /></tr>
                     )}
                   </tbody>
                 </table>
@@ -401,33 +381,24 @@ const QuanLyKhoThuoc: React.FC = () => {
         <div className="glass-card admin-inventory-side-card inv-card-anim" style={{ padding: '32px', borderRadius: 'var(--radius-xl)', background: 'var(--surface)', color: 'var(--ink)', border: '1px solid var(--gray-200)', animationDelay: '0.18s' }}>
           <h2 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '24px', color: 'var(--ink)' }}>Lô thuốc & Hạn dùng</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {loThuocs.map((l, idx) => {
-              const thuoc = thuocs.find(t => t.id_thuoc === l.id_thuoc);
-              return (
-                <div key={l.id_lo} className="inv-lot-anim" style={{ background: 'var(--primary-light)', padding: '16px', borderRadius: '16px', border: '1px solid var(--primary-border, rgba(15, 157, 138, 0.18))', animationDelay: `${0.2 + idx * 0.07}s`, transition: 'transform 0.2s, box-shadow 0.2s', cursor: 'default' }}>
-                  {/* Hiển thị tên thuốc của lô */}
-                  <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--primary)', marginBottom: '6px' }}>
-                    {thuoc?.ten_thuoc || l.id_thuoc}
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                    <span style={{ fontWeight: 800, color: 'var(--ink)' }}>Lô: {l.so_lo}</span>
-                    <span style={{
-                      fontSize: '0.7rem', fontWeight: 800, padding: '4px 10px', borderRadius: '50px',
-                      background: (l.so_luong_ton ?? 0) <= 0 ? '#ef4444'
-                        : (l.so_luong_ton ?? 0) < 10 ? '#f59e0b'
-                        : 'var(--primary)',
-                      color: '#fff'
-                    }}>
-                      TỒN: {l.so_luong_ton}
-                    </span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: 'var(--gray-500)', fontWeight: 650 }}>
-                    <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>event</span>
-                    Hạn dùng: {chuyenNgayISO_SangVN(l.han_su_dung)}
-                  </div>
+            {loThuocs.map((l, idx) => (
+              <div key={l.id_lo} className="inv-lot-anim" style={{ background: 'var(--primary-light)', padding: '16px', borderRadius: '16px', border: '1px solid var(--primary-border, rgba(15, 157, 138, 0.18))', animationDelay: `${0.2 + idx * 0.07}s`, transition: 'transform 0.2s, box-shadow 0.2s', cursor: 'default' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <span style={{ fontWeight: 800, color: 'var(--ink)' }}>Lô: {l.so_lo}</span>
+                  <span style={{
+                    fontSize: '0.7rem', fontWeight: 800, padding: '4px 10px', borderRadius: '50px',
+                    background: l.so_luong_ton < 10 ? 'var(--danger)' : 'var(--primary)',
+                    color: '#fff'
+                  }}>
+                    TỒN: {l.so_luong_ton}
+                  </span>
                 </div>
-              );
-            })}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: 'var(--gray-500)', fontWeight: 650 }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>event</span>
+                  Hạn dùng: {chuyenNgayISO_SangVN(l.han_su_dung)}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>

@@ -2,7 +2,7 @@
 # Usage: powershell -ExecutionPolicy Bypass -File QuickHealthCheck.ps1
 
 param(
-    [string]$BackendPort = 8081,
+    [string]$BackendPort = 8080,
     [string]$BackendUrl = "http://localhost:$BackendPort"
 )
 
@@ -17,11 +17,11 @@ $Results = @{
 Write-Host "`n[CHECK] Backend Health Status"
 Write-Host "========================================"
 
-# Check HTTP connectivity (use /api/system/health — root URL returns 403 from Spring Security)
+# Check HTTP connectivity
 Write-Host "  [1/4] HTTP connectivity...", -NoNewline
 $Stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
 try {
-    $Response = Invoke-WebRequest -Uri "$BackendUrl/api/system/health" -Method GET -TimeoutSec 5 -ErrorAction Stop
+    $Response = Invoke-WebRequest -Uri $BackendUrl -Method GET -TimeoutSec 5 -ErrorAction Stop
     $Stopwatch.Stop()
     $Results.Connectivity = $true
     $Results.HttpStatus = $Response.StatusCode
@@ -37,7 +37,7 @@ catch {
 # Check Java Process
 Write-Host "  [2/4] Java process status...", -NoNewline
 $JavaProcess = Get-Process -Name "java" -ErrorAction SilentlyContinue | Where-Object {
-    $_.CommandLine -like "*PktyApplication*" -or $_.CommandLine -like "*spring-boot*" -or $_.CommandLine -like "*pkty*.jar" -or $_.CommandLine -like "*target*jar*"
+    $_.CommandLine -like "*PktyApplication*" -or $_.CommandLine -like "*spring-boot*"
 }
 if ($JavaProcess) {
     Write-Host " OK [PID $($JavaProcess.Id)]" -ForegroundColor Green
@@ -49,7 +49,7 @@ if ($JavaProcess) {
 # Check Health Endpoint
 Write-Host "  [3/4] Health endpoint...", -NoNewline
 try {
-    $HealthResponse = Invoke-RestMethod -Uri "$BackendUrl/api/system/health" -TimeoutSec 5 -ErrorAction Stop
+    $HealthResponse = Invoke-RestMethod -Uri "$BackendUrl/api/v1/health" -TimeoutSec 5 -ErrorAction Stop
     Write-Host " OK" -ForegroundColor Green
     $Results.Health = $true
 }

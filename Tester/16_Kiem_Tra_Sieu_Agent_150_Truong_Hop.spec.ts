@@ -8,8 +8,8 @@ const BASE_URL = `https://rexi-vet-clinic.vercel.app`;
 async function loginAsCustomer(page: any) {
   await page.goto(`${BASE_URL}/dang-nhap`, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await expect(page.getByPlaceholder('Tên đăng nhập')).toBeVisible({ timeout: 15000 });
-  await page.getByPlaceholder('Tên đăng nhập').fill('khachhang');
-  await page.getByPlaceholder('Mật khẩu').fill('khachhang@rexi.com');
+  await page.getByPlaceholder('Tên đăng nhập').fill('***REMOVED***');
+  await page.getByPlaceholder('Mật khẩu').fill('***REMOVED***');
   await page.getByRole('button', { name: 'Đăng nhập ngay' }).click();
   await page.waitForURL(/.*\/khach-hang\/dashboard/, { timeout: 30000 });
 }

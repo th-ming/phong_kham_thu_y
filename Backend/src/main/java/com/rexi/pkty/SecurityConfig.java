@@ -61,7 +61,6 @@ public class SecurityConfig {
                 )
             )
             .authorizeHttpRequests(auth -> auth
-                .dispatcherTypeMatchers(jakarta.servlet.DispatcherType.ASYNC).permitAll()
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/system/health", "/api/system/public-cau-hinh").permitAll()
                 .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/system/newsletter").permitAll()
                 .requestMatchers("/public/audit/**").hasRole("ADMIN")

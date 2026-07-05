@@ -247,9 +247,9 @@ const PhanCTA: React.FC = () => {
                                 <span className="material-symbols-outlined cta-btn-icon" style={{ fontSize: '20px' }}>calendar_month</span>
                                 <span>Đặt lịch hẹn ngay</span>
                             </a>
-                        <a data-ai-id="link_home_cta_phone" href="tel:***REMOVED***-VIETQR_ACCOUNT_NO" className="cta-btn-outline" style={{ background: 'transparent', color: 'white', padding: '14px 32px', borderRadius: '50px', fontWeight: 800, textDecoration: 'none', fontSize: '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', border: '2px solid rgba(255,255,255,0.4)', transition: 'all 0.3s' }}>
+                        <a data-ai-id="link_home_cta_phone" href="tel:02412345678" className="cta-btn-outline" style={{ background: 'transparent', color: 'white', padding: '14px 32px', borderRadius: '50px', fontWeight: 800, textDecoration: 'none', fontSize: '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', border: '2px solid rgba(255,255,255,0.4)', transition: 'all 0.3s' }}>
                                 <span className="material-symbols-outlined cta-btn-icon" style={{ fontSize: '18px' }}>call</span>
-                                <span>0353 374 156</span>
+                                <span>024 1234 5678</span>
                             </a>
                         </div>
                     </div>

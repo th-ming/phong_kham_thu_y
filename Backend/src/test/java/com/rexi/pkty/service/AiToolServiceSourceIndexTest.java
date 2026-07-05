@@ -75,9 +75,9 @@ class AiToolServiceSourceIndexTest {
 
         assertTrue(reply.contains("Độ chắc chắn: CAO"), reply);
         assertTrue(reply.contains("Frontend/src/components/chatbot/ChatbotShell.tsx"), reply);
-        assertTrue(reply.contains("Dòng 700") || reply.contains("Dòng 701") || reply.contains("Dòng 743") || reply.contains("Dòng 744"), reply);
+        assertTrue(reply.contains("Dòng 700") || reply.contains("Dòng 701"), reply);
         assertTrue(reply.contains("button-chatbot-5x21"), reply);
-        assertTrue(reply.contains("Dòng 704") || reply.contains("Dòng 705") || reply.contains("Dòng 747") || reply.contains("Dòng 748"), reply);
+        assertTrue(reply.contains("Dòng 704") || reply.contains("Dòng 705"), reply);
         assertTrue(reply.contains("background:"), reply);
         assertFalse(reply.contains("sk-"));
         assertFalse(reply.toLowerCase().contains("bearer "));

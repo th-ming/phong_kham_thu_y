@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useMemo, useEffect } from "react";
+﻿import React, { useCallback, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import axiosInstance from "@services/axios";
 import { getUserProfile } from "@utils/index";
@@ -76,16 +76,6 @@ const BacSiDashboard: React.FC = () => {
     }, [currentUserId]);
 
     useAutoRefresh(fetchData);
-
-    // Lắng nghe sự kiện realtime khi có lịch hẹn mới/thay đổi trạng thái
-    // (WebSocket gửi qua /topic/appointments -> WebSocketProvider dispatch ra đây)
-    useEffect(() => {
-        const handleAppointmentChanged = () => {
-            fetchData();
-        };
-        window.addEventListener('rexi-appointments-changed', handleAppointmentChanged);
-        return () => window.removeEventListener('rexi-appointments-changed', handleAppointmentChanged);
-    }, [fetchData]);
 
     const waitingPatients = myAppointments.filter(a => a.trang_thai?.toUpperCase() === 'DA_XAC_NHAN').length;
     const completedPatients = myAppointments.filter(a => a.trang_thai?.toUpperCase() === 'HOAN_THANH').length;

@@ -71,16 +71,9 @@ public class JwtFilter extends OncePerRequestFilter {
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             if (jwtUtil.validateToken(jwt, username)) {
 
-                // Kiểm tra token có bị revoked (đổi mật khẩu, khóa tk) không
+                // Kiểm tra token có bị revoked (đổi mật khẩu, khóa tk) ko
                 if (isTokenRevoked(jwt)) {
                     logger.warning("Token đã bị thu hồi cho: " + username);
-                    chain.doFilter(request, response);
-                    return;
-                }
-
-                // Kiểm tra token có bị vô hiệu hóa do đổi/reset password không
-                if (!isTokenStillValid(jwt, username)) {
-                    logger.warning("Token bị vô hiệu hóa do mật khẩu đã thay đổi: " + username);
                     chain.doFilter(request, response);
                     return;
                 }
@@ -110,7 +103,7 @@ public class JwtFilter extends OncePerRequestFilter {
             }
         }
 
-        // Chuyển sang filter tiếp theo
+        // Pass sang filter tiếp theo
         chain.doFilter(request, response);
     }
 
@@ -127,38 +120,6 @@ public class JwtFilter extends OncePerRequestFilter {
             return false;
         }
         return true;
-    }
-
-    /**
-     * Kiểm tra token có còn hợp lệ sau khi đổi/reset password không.
-     * So sánh last_password_change trong token với giá trị hiện tại trong DB.
-     */
-    private final ConcurrentHashMap<String, Long> lpcCache = new ConcurrentHashMap<>();
-    private static final long LPC_CACHE_TTL_MS = 30_000L;
-
-    private boolean isTokenStillValid(String token, String username) {
-        try {
-            long tokenLpc = jwtUtil.extractLastPasswordChange(token);
-            if (tokenLpc == 0) return true; // Token cũ không có claim này → cho qua
-
-            Long cachedLpc = lpcCache.get(username);
-            if (cachedLpc == null || System.currentTimeMillis() - cachedLpc > LPC_CACHE_TTL_MS) {
-                Long dbLpc = jdbcTemplate.queryForObject(
-                    "SELECT last_password_change FROM TaiKhoan WHERE ten_dang_nhap = ?",
-                    Long.class, username
-                );
-                if (dbLpc != null) {
-                    cachedLpc = dbLpc;
-                    lpcCache.put(username, cachedLpc);
-                }
-            }
-
-            if (cachedLpc == null) return true; // Không có trong DB → cho qua
-            return tokenLpc >= cachedLpc; // Token phải được tạo SAU lần đổi password gần nhất
-        } catch (Exception e) {
-            logger.warning("Lỗi kiểm tra last_password_change: " + e.getMessage());
-            return true; // DB lỗi → cho qua (fail-open cho availability)
-        }
     }
 
     /**
@@ -188,9 +149,9 @@ public class JwtFilter extends OncePerRequestFilter {
             }
             return active;
         } catch (Exception e) {
-            // Nếu DB lỗi, TỪ CHỐI truy cập để đảm bảo bảo mật (fail-closed)
-            logger.severe("Không thể kiểm tra trạng thái tài khoản (DB DOWN?): " + e.getMessage());
-            return false;
+            // Nếu DB lỗi, cho phép truy cập để tránh chặn nhầm (fail open)
+            logger.warning("Không thể kiểm tra trạng thái tài khoản: " + e.getMessage());
+            return true;
         }
     }
 }

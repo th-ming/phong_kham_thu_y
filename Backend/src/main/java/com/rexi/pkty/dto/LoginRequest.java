@@ -4,7 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
-// DTO yêu cầu đăng nhập, đã validate
+// Req login DTO, validate ok
 @Data
 public class LoginRequest {
     

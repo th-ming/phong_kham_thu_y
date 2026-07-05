@@ -35,12 +35,12 @@ public class SchedulingService {
                     "AND trang_thai IN ('CHO_XAC_NHAN', 'DA_XAC_NHAN')";
             int rows = jdbcTemplate.update(sql, java.sql.Date.valueOf(today));
             if (rows > 0) {
-                logger.info("Auto-expire: Đã tự động chuyển " + rows + " lịch hẹn quá hạn sang KHONG_DEN.");
+                logger.info("Auto-expire: Da tu dong chuyen " + rows + " lich hen qua han sang KHONG_DEN.");
             } else {
-                logger.info("Auto-expire: Không có lịch hẹn quá hạn nào còn xử lý hôm nay.");
+                logger.info("Auto-expire: Khong co lich hen qua han nao con xu ly hom nay.");
             }
         } catch (Exception e) {
-            logger.severe("Lỗi khi tự động expire lịch hẹn: " + e.getMessage());
+            logger.severe("Loi khi tu dong expire lich hen: " + e.getMessage());
         }
     }
 
@@ -63,19 +63,19 @@ public class SchedulingService {
             for (Map<String, Object> app : apps) {
                 if (app.get("email") != null && !app.get("email").toString().isEmpty()) {
                     String toEmail = app.get("email").toString();
-                    String tenKhachHang = app.get("ten_khach_hang") != null ? app.get("ten_khach_hang").toString() : "Khách hàng";
-                    String tenThuCung = app.get("ten_thu_cung") != null ? app.get("ten_thu_cung").toString() : "Thú cưng";
-                    String tenBacSi = app.get("ten_bac_si") != null ? app.get("ten_bac_si").toString() : "Bác sĩ Rexi";
-                    String tenDichVu = app.get("ten_dich_vu") != null ? app.get("ten_dich_vu").toString() : "Dịch vụ Thú y";
+                    String tenKhachHang = app.get("ten_khach_hang") != null ? app.get("ten_khach_hang").toString() : "Khach hang";
+                    String tenThuCung = app.get("ten_thu_cung") != null ? app.get("ten_thu_cung").toString() : "Thu cung";
+                    String tenBacSi = app.get("ten_bac_si") != null ? app.get("ten_bac_si").toString() : "Bac si Rexi";
+                    String tenDichVu = app.get("ten_dich_vu") != null ? app.get("ten_dich_vu").toString() : "Dich vu Thu y";
                     String gioKham = app.get("gio_kham").toString();
 
                     emailService.sendReminderEmail(toEmail, tenKhachHang, tenThuCung, tenBacSi, tomorrow.toString(), gioKham, tenDichVu);
                     count++;
                 }
             }
-            logger.info("Nhắc nhở lịch hẹn: Đã gửi " + count + "/" + apps.size() + " email cho ngày " + tomorrow);
+            logger.info("Nhac nho lich hen: Da gui " + count + "/" + apps.size() + " email cho ngay " + tomorrow);
         } catch (Exception e) {
-            logger.severe("Lỗi khi gửi email nhắc nhở: " + e.getMessage());
+            logger.severe("Loi khi gui email nhac nho: " + e.getMessage());
         }
     }
 
@@ -108,7 +108,7 @@ public class SchedulingService {
 
                 String email = row.get("email") != null ? row.get("email").toString() : null;
                 if (email != null && !email.isEmpty()) {
-                    String tenKhach = row.get("ten_khach_hang") != null ? row.get("ten_khach_hang").toString() : "Khách hàng";
+                    String tenKhach = row.get("ten_khach_hang") != null ? row.get("ten_khach_hang").toString() : "Khach hang";
                     String idHoaDon = row.get("id_hoa_don").toString();
 
                     emailService.sendDebtReminderEmail(email, tenKhach, idHoaDon, amount);
@@ -117,13 +117,13 @@ public class SchedulingService {
             }
 
             if (soLuong > 0) {
-                logger.info("CHAT CÔNG NỢ CUỐI NGÀY: Có " + soLuong + " hóa đơn chưa thu. Tổng nợ: "
-                        + tongNo + " VND. Đã gửi " + mailSentCount + " email nhắc nợ.");
+                logger.info("CHAT CONG NO CUOI NGAY: Co " + soLuong + " hoa don chua thu. Tong no: "
+                        + tongNo + " VND. Da gui " + mailSentCount + " email nhac no.");
             } else {
-                logger.info("CHAT CÔNG NỢ CUỐI NGÀY: Tuyệt vời! Tất cả hóa đơn hôm nay đã thanh toán.");
+                logger.info("CHAT CONG NO CUOI NGAY: Tuyet voi! Tat ca hoa don hom nay da thanh toan.");
             }
         } catch (Exception e) {
-            logger.severe("Lỗi khi chat công nợ cuối ngày: " + e.getMessage());
+            logger.severe("Loi khi chat cong no cuoi ngay: " + e.getMessage());
         }
     }
 
@@ -135,9 +135,9 @@ public class SchedulingService {
                     ? "CALL sp_TaoThongBaoTiemChung()"
                     : "EXEC dbo.sp_TaoThongBaoTiemChung";
             jdbcTemplate.execute(sql);
-            logger.info("NHẮC NHỊM TIÊM CHỦNG: Đã thực thi thủ tục sp_TaoThongBaoTiemChung() thành công.");
+            logger.info("NHAC NH TIEM CHUNG: Da thuc thi thu tuc sp_TaoThongBaoTiemChung() thanh cong.");
         } catch (Exception e) {
-            logger.severe("NHẮC NHỊM TIÊM CHỦNG: Lỗi khi chạy tự động nhắc lịch tiêm phòng: " + e.getMessage());
+            logger.severe("NHAC NH TIEM CHUNG: Loi khi chay tu dong nhac lich tiem phong: " + e.getMessage());
         }
     }
 }

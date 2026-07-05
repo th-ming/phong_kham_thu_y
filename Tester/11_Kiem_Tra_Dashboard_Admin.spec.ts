@@ -26,8 +26,8 @@ test.describe('Kiểm thử Trang Bảng điều khiển Admin (Dashboard)', () 
             await expect(page.locator('main p').filter({ hasText: new RegExp(`^${label}$`, 'i') }).first()).toBeVisible();
         }
 
-        // 3. Kiểm tra bảng "Lịch hẹn hôm nay" (scope h3 để tránh strict mode vì popover cũng chứa text này)
-        await expect(page.locator('h3').filter({ hasText: 'Lịch hẹn hôm nay' })).toBeVisible();
+        // 3. Kiểm tra bảng "Lịch hẹn hôm nay"
+        await expect(page.getByText('Lịch hẹn hôm nay')).toBeVisible();
         await expect(page.locator('table')).toBeVisible();
 
         // Kiểm tra các cột trong bảng

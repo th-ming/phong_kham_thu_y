@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import axiosInstance from "@services/axios";
 import { toast } from "@components/Toast";
 import { toastError } from '@utils/toastHelpers';
-import { matchesSearchFields, fixVietnameseEncoding } from "@utils/index";
+import { matchesSearchFields } from "@utils/index";
 import { useAutoRefresh } from "@hooks/useAutoRefresh";
 
 const getTodayLocalISO = () => {
@@ -73,20 +73,6 @@ const QuanLyBenhAn: React.FC = () => {
         if (selectedLich || trieuChung || chanDoan || chiTietDonThuoc.length > 0) return;
         return fetchData();
     }, { runImmediately: false });
-
-    useEffect(() => {
-        const handleRealtimeUpdate = () => {
-            // Không tự động reload khi bác sĩ đang viết dở bệnh án để tránh mất dữ liệu nhập
-            if (selectedLich || trieuChung || chanDoan || chiTietDonThuoc.length > 0) return;
-            fetchData();
-        };
-        window.addEventListener("rexi-appointments-changed", handleRealtimeUpdate);
-        window.addEventListener("rexi-data-changed", handleRealtimeUpdate);
-        return () => {
-            window.removeEventListener("rexi-appointments-changed", handleRealtimeUpdate);
-            window.removeEventListener("rexi-data-changed", handleRealtimeUpdate);
-        };
-    }, [selectedLich, trieuChung, chanDoan, chiTietDonThuoc]);
 
     const filteredLichHens = useMemo(() => {
         return lichHens.filter(l => matchesSearchFields(appointmentSearch, [
@@ -241,7 +227,7 @@ const QuanLyBenhAn: React.FC = () => {
                         <option value="">-- Chọn bệnh nhân đang chờ --</option>
                         {filteredLichHens.map(l => (
                             <option key={l.id_lich_hen} value={l.id_lich_hen}>
-                                {getTimeShort(l.gio_kham)} - Bé {fixVietnameseEncoding(l.ten_thu_cung) || "Chưa rõ"} - {fixVietnameseEncoding(l.ten_khach_hang) || "Khách vãng lai"}
+                                {getTimeShort(l.gio_kham)} - Bé {l.ten_thu_cung || "Chưa rõ"} - {l.ten_khach_hang || "Khách vãng lai"}
                             </option>
                         ))}
                     </select>
@@ -263,10 +249,10 @@ const QuanLyBenhAn: React.FC = () => {
                             {[
                                 ['Thời gian', `${getDateOnly(selectedLich.ngay_kham)} ${getTimeShort(selectedLich.gio_kham)}`],
                                 ['Trạng thái', getStatusLabel(selectedLich.trang_thai)],
-                                ['Thú cưng', fixVietnameseEncoding(selectedLich.ten_thu_cung) || `TC-${selectedLich.id_thu_cung || '—'}`],
-                                ['Chủ nuôi', fixVietnameseEncoding(selectedLich.ten_khach_hang) || 'Khách vãng lai'],
-                                ['Bác sĩ', fixVietnameseEncoding(selectedLich.ten_bac_si) || 'Chưa phân công'],
-                                ['Dịch vụ', fixVietnameseEncoding(selectedLich.ten_dich_vu || selectedLich.ly_do) || 'Khám bệnh']
+                                ['Thú cưng', selectedLich.ten_thu_cung || `TC-${selectedLich.id_thu_cung || '—'}`],
+                                ['Chủ nuôi', selectedLich.ten_khach_hang || 'Khách vãng lai'],
+                                ['Bác sĩ', selectedLich.ten_bac_si || 'Chưa phân công'],
+                                ['Dịch vụ', selectedLich.ten_dich_vu || selectedLich.ly_do || 'Khám bệnh']
                             ].map(([label, value]) => (
                                 <div key={label} style={{ background: 'var(--gray-50)', borderRadius: '12px', padding: '12px' }}>
                                     <div style={{ color: 'var(--gray-400)', fontSize: '0.72rem', fontWeight: 900, textTransform: 'uppercase', marginBottom: '4px' }}>{label}</div>

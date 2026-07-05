@@ -85,17 +85,16 @@
 			"skillPath": "skills/design-md/SKILL.md",
 			"computedHash": "local-dev"
 		},
-
-		"browser-use": {
-			"source": "browser-use/browser-use",
-			"sourceType": "github",
-			"skillPath": "skills/open-source/SKILL.md",
+		"docx-automation": {
+			"source": "local",
+			"sourceType": "local",
+			"skillPath": "docx-automation/SKILL.md",
 			"computedHash": "local-dev"
 		},
-		"codebase": {
-			"source": "hzy9738/codebase-skill",
-			"sourceType": "github",
-			"skillPath": "skill/SKILL.md",
+		"presentation-builder": {
+			"source": "local",
+			"sourceType": "local",
+			"skillPath": "presentation-builder/SKILL.md",
 			"computedHash": "local-dev"
 		}
 	}

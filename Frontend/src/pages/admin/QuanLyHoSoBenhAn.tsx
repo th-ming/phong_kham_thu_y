@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import axiosInstance from "@services/axios";
-import { matchesSearchFields, fixVietnameseEncoding } from "@utils/index";
+import { matchesSearchFields } from "@utils/index";
 import { useAutoRefresh } from "@hooks/useAutoRefresh";
 import useVirtualScroll from "@hooks/useVirtualScroll";
 
@@ -55,14 +55,6 @@ const QuanLyHoSoBenhAn: React.FC = () => {
 
 
   useAutoRefresh(fetchData, { runImmediately: false });
-
-  useEffect(() => {
-    const handleRealtimeUpdate = () => {
-      fetchData();
-    };
-    window.addEventListener("rexi-data-changed", handleRealtimeUpdate);
-    return () => window.removeEventListener("rexi-data-changed", handleRealtimeUpdate);
-  }, [fetchData]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -217,8 +209,8 @@ const QuanLyHoSoBenhAn: React.FC = () => {
             <article key={h.id_ho_so} className="admin-record-card">
               <div className="admin-record-card-top">
                 <div>
-                  <h3>{h.id_ho_so?.startsWith('HS-') ? `#${h.id_ho_so}` : `#HS-${h.id_ho_so}`} · {fixVietnameseEncoding(h.ten_thu_cung) || "Chưa rõ"}</h3>
-                  <p>{chuyenNgayISO_SangVN(h.ngay_kham)} · {fixVietnameseEncoding(h.ten_bac_si) || "Đang chờ bác sĩ"}</p>
+                  <h3>{h.id_ho_so?.startsWith('HS-') ? `#${h.id_ho_so}` : `#HS-${h.id_ho_so}`} · {h.ten_thu_cung || "Chưa rõ"}</h3>
+                  <p>{chuyenNgayISO_SangVN(h.ngay_kham)} · {h.ten_bac_si || "Đang chờ bác sĩ"}</p>
                 </div>
                 <span
                   className="admin-record-status"
@@ -230,7 +222,7 @@ const QuanLyHoSoBenhAn: React.FC = () => {
                   {h.trang_thai_ho_so?.toUpperCase() || 'LƯU NHÁP'}
                 </span>
               </div>
-              <p>{fixVietnameseEncoding(h.chan_doan) || "Chưa có chẩn đoán"}</p>
+              <p>{h.chan_doan || "Chưa có chẩn đoán"}</p>
               <Link to={`/quan-ly/chi-tiet-benh-an/${h.id_ho_so}`} className="btn" style={{ background: 'var(--primary-light)', color: 'var(--primary)', display: 'inline-flex' }}>
                 <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>visibility</span>
               </Link>
@@ -275,16 +267,16 @@ const QuanLyHoSoBenhAn: React.FC = () => {
                           <div style={{ width: '32px', height: '32px', background: 'var(--primary-light)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
                             <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>pets</span>
                           </div>
-                          <span style={{ fontWeight: 800, color: 'var(--ink)' }}>{fixVietnameseEncoding(h.ten_thu_cung) || "Chưa rõ"}</span>
+                          <span style={{ fontWeight: 800, color: 'var(--ink)' }}>{h.ten_thu_cung || "Chưa rõ"}</span>
                         </div>
                       </td>
                       <td style={{ padding: '20px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <span className="material-symbols-outlined" style={{ fontSize: '18px', color: 'var(--primary)' }}>medical_information</span>
-                          <span style={{ fontWeight: 700 }}>{fixVietnameseEncoding(h.ten_bac_si) || "Đang chờ"}</span>
+                          <span style={{ fontWeight: 700 }}>{h.ten_bac_si || "Đang chờ"}</span>
                         </div>
                       </td>
-                      <td style={{ padding: '20px', color: 'var(--ink)', fontWeight: 500, maxWidth: '250px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{fixVietnameseEncoding(h.chan_doan) || " "}</td>
+                      <td style={{ padding: '20px', color: 'var(--ink)', fontWeight: 500, maxWidth: '250px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{h.chan_doan || ""}</td>
                       <td style={{ padding: '20px' }}>
                         <span style={{
                           padding: '6px 16px', borderRadius: '50px', fontSize: '0.75rem', fontWeight: 800,

@@ -11,17 +11,17 @@ public class VNPayConfig {
         List<String> fieldNames = new ArrayList<>(fields.keySet());
         Collections.sort(fieldNames);
         StringBuilder sb = new StringBuilder();
-        boolean first = true;
-        for (String fieldName : fieldNames) {
+        Iterator<String> itr = fieldNames.iterator();
+        while (itr.hasNext()) {
+            String fieldName = itr.next();
             String fieldValue = fields.get(fieldName);
             if ((fieldValue != null) && (fieldValue.length() > 0)) {
-                if (!first) {
-                    sb.append("&");
-                }
                 sb.append(fieldName);
                 sb.append("=");
                 sb.append(fieldValue);
-                first = false;
+            }
+            if (itr.hasNext()) {
+                sb.append("&");
             }
         }
         return hmacSHA512(secretKey, sb.toString());
@@ -33,7 +33,7 @@ public class VNPayConfig {
                 throw new NullPointerException();
             }
             final Mac hmac512 = Mac.getInstance("HmacSHA512");
-            byte[] hmacKeyBytes = key.getBytes(StandardCharsets.UTF_8);
+            byte[] hmacKeyBytes = key.getBytes();
             final SecretKeySpec secretKey = new SecretKeySpec(hmacKeyBytes, "HmacSHA512");
             hmac512.init(secretKey);
             byte[] dataBytes = data.getBytes(StandardCharsets.UTF_8);
@@ -44,7 +44,7 @@ public class VNPayConfig {
             }
             return sb.toString();
         } catch (Exception ex) {
-            throw new RuntimeException("VNPay HMAC error: " + ex.getMessage(), ex);
+            return "";
         }
     }
 }

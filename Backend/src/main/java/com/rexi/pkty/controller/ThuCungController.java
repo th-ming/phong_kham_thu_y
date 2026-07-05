@@ -80,13 +80,12 @@ public class ThuCungController {
     }
 
     @GetMapping("/khach/{idKhachHang}")
-    @PreAuthorize(RexiSecurityRoles.CUSTOMER_PET_READ)
     public ResponseEntity<?> getThuCungByKhachHang(
             @PathVariable String idKhachHang,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "999") int size) {
         try {
-            // Kiểm tra IDOR khi xem chi tiết thú cưng
+            // Chk IDOR get pet detail
             org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
                     .getContext().getAuthentication();
             String username = (auth != null) ? auth.getName() : null;
@@ -125,14 +124,13 @@ public class ThuCungController {
     }
  
     @PutMapping("/{id}")
-    @PreAuthorize(RexiSecurityRoles.CUSTOMER_PET_WRITE)
     public ResponseEntity<Object> updateThuCung(@PathVariable String id, @RequestBody ThuCung nv) {
         try {
             Optional<ThuCung> optional = thuCungRepository.findById(id);
             if (optional.isPresent()) {
                 ThuCung tc = optional.get();
  
-                // Kiểm tra IDOR khi cập nhật thú cưng
+                // Chk IDOR update pet
                 org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
                         .getContext().getAuthentication();
                 String username = (auth != null) ? auth.getName() : null;
@@ -170,14 +168,13 @@ public class ThuCungController {
     }
  
     @PostMapping
-    @PreAuthorize(RexiSecurityRoles.CUSTOMER_PET_WRITE)
     public ResponseEntity<Object> addThuCung(@RequestBody ThuCung thuCung) {
         try {
             if (thuCung.getId_khach_hang() == null) {
                 return ResponseEntity.badRequest().body(Map.of("message", "Lỗi: Thiếu ID Khách hàng!"));
             }
  
-            // Kiểm tra IDOR khi thêm thú cưng
+            // Chk IDOR add pet
             org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
                     .getContext().getAuthentication();
             String username = (auth != null) ? auth.getName() : null;
@@ -216,7 +213,7 @@ public class ThuCungController {
     }
 
     @PostMapping("/{id}/tiem-chung")
-    @PreAuthorize(RexiSecurityRoles.CUSTOMER_PET_WRITE)
+    @PreAuthorize(RexiSecurityRoles.AUTHENTICATED)
     public ResponseEntity<?> addTiemChung(@PathVariable String id, @RequestBody Map<String, Object> payload) {
         try {
             if (!thuCungRepository.existsById(id)) {
@@ -246,16 +243,15 @@ public class ThuCungController {
         }
     }
  
-@DeleteMapping({ "/{id}", "/delete/{id}" })
-    @PreAuthorize(RexiSecurityRoles.CUSTOMER_PET_WRITE)
+    @DeleteMapping({ "/{id}", "/delete/{id}" })
     public ResponseEntity<Object> deleteThuCung(@PathVariable String id) {
         try {
             Optional<ThuCung> optional = thuCungRepository.findById(id);
-
+ 
             if (optional.isPresent()) {
                 ThuCung tc = optional.get();
-
-                // Kiểm tra quyền xóa thú cưng
+ 
+                // Chk IDOR delete pet
                 org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
                         .getContext().getAuthentication();
                 String username = (auth != null) ? auth.getName() : null;
@@ -268,13 +264,7 @@ public class ThuCungController {
                         }
                     }
                 }
-
-                // chặn xóa tc còn lịch hẹn / bệnh án / tiêm chủng — không cho mất dữ liệu
-                if (hasBusinessData(tc.getId_thu_cung())) {
-                    return ResponseEntity.status(409).body(Map.of(
-                        "message", "Không thể xóa thú cưng \"" + tc.getTen_thu_cung() + "\" vì còn lịch sử khám chữa / tiêm chủng. Vui lòng hủy (soft-delete) hoặc xóa các dữ liệu liên quan trước."));
-                }
-
+ 
                 thuCungRepository.delete(tc);
                 auditLogService.logAction("XÓA CỨNG", "ThuCung", "Xoa cung thu cung: " + tc.getTen_thu_cung());
                 return ResponseEntity.ok(Map.of("message", "Da xoa cung thu cung"));

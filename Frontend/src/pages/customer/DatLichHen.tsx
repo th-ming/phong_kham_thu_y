@@ -22,7 +22,6 @@ const DatLichHen: React.FC = () => {
   const [time, setTime] = useState("");
   const [note, setNote] = useState("");
   const [loadingSlots, setLoadingSlots] = useState(false);
-  const abortControllerRef = useRef<AbortController | null>(null);
   const [loading, setLoading] = useState(false);
   const [serviceScrollHintOpacity, setServiceScrollHintOpacity] = useState(1);
 
@@ -193,25 +192,16 @@ const DatLichHen: React.FC = () => {
   }, [date]);
 
   useEffect(() => {
-    // Hủy request cũ nếu có (tránh race condition khi đổi bác sĩ/ngày/dịch vụ nhanh)
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-
     if (date && idDichVu) {
-      abortControllerRef.current = new AbortController();
       setLoadingSlots(true);
       const params = new URLSearchParams({ ngay: date, id_dich_vu: idDichVu });
       if (idBacSi) params.set("id_nhan_vien", idBacSi);
-      axiosInstance.get(`/api/lich-hen/gio-ranh?${params.toString()}`, {
-        signal: abortControllerRef.current.signal
-      })
+      axiosInstance.get(`/api/lich-hen/gio-ranh?${params.toString()}`)
         .then(res => {
-          // Backend đã lọc giờ quá theo timezone VN, nhưng lọc thêm phía FE cho chắc
           const now = new Date();
           const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
           const isToday = date === todayStr;
-          let slots: string[] = res.data;
+          let slots = res.data;
 
           if (isToday) {
             slots = slots.filter((slot: string) => {
@@ -220,20 +210,15 @@ const DatLichHen: React.FC = () => {
             });
           }
           setAvailableSlots(slots);
-          // Dùng functional update để tránh stale closure với giá trị time cũ
-          setTime(prev => (prev && !slots.some((slot: string) => slot.startsWith(prev)) ? "" : prev));
+          if (time && !slots.some((slot: string) => slot.startsWith(time))) setTime("");
         })
         .catch(err => {
-          // Bỏ qua lỗi do request bị hủy chủ động (AbortController)
-          if (err?.name === 'CanceledError' || err?.code === 'ERR_CANCELED') return;
           console.error("Lỗi lấy giờ rảnh:", err);
           setAvailableSlots([]);
         })
         .finally(() => setLoadingSlots(false));
     } else {
-      // Xóa slots và giờ đã chọn khi mất điều kiện (hủy dịch vụ hoặc ngày)
       setAvailableSlots([]);
-      setTime("");
     }
   }, [idBacSi, date, idDichVu]);
 
@@ -728,7 +713,7 @@ const DatLichHen: React.FC = () => {
                   type="date" 
                   value={date} 
                   onChange={e => setDate(e.target.value)} 
-                  min={new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split("T")[0]} 
+                  min={new Date().toISOString().split("T")[0]} 
                   style={{ width: '100%', boxSizing: 'border-box', padding: '16px 20px', borderRadius: '16px', border: '1.5px solid var(--gray-200)', background: 'var(--surface)', color: 'var(--ink)', fontWeight: 750, fontSize: '1rem', outline: 'none', transition: 'all 0.3s', boxShadow: 'var(--shadow-sm)' }}
                   onFocus={e => {
                     e.target.style.borderColor = 'var(--primary)';
@@ -765,15 +750,9 @@ const DatLichHen: React.FC = () => {
 
           <div style={{ display: 'grid', gap: '16px' }}>
             <label style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--gray-400)', letterSpacing: '1px', textTransform: 'uppercase' }}>4. CHỌN KHUNG GIỜ <span style={{ color: '#ff4d4f' }}>*</span></label>
-            {!idDichVu ? (
-              <div style={{ padding: '32px 24px', background: 'rgba(245, 158, 11, 0.04)', borderRadius: '24px', border: '1px dashed var(--accent)', color: 'var(--accent)', textAlign: 'center', fontWeight: 800, fontSize: '0.95rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
-                <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>info</span>
-                Vui lòng chọn <strong style={{ margin: '0 4px' }}>Dịch vụ (Bước 2)</strong> trước để xem giờ trống.
-              </div>
-            ) : !date ? (
-              <div style={{ padding: '32px 24px', background: 'rgba(34, 211, 238, 0.02)', borderRadius: '24px', border: '1px dashed var(--gray-200)', color: 'var(--gray-450)', textAlign: 'center', fontWeight: 800, fontSize: '0.95rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
-                <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>calendar_today</span>
-                Vui lòng chọn <strong style={{ margin: '0 4px' }}>Ngày khám</strong> để xem giờ trống.
+            {!date || !idDichVu ? (
+              <div style={{ padding: '32px 24px', background: 'rgba(34, 211, 238, 0.02)', borderRadius: '24px', border: '1px dashed var(--gray-200)', color: 'var(--gray-450)', textAlign: 'center', fontWeight: 800, fontSize: '0.95rem' }}>
+                Vui lòng chọn Dịch vụ và Ngày để xem các ca trống.
               </div>
             ) : loadingSlots ? (
               <div style={{ display: 'flex', justifyContent: 'center', padding: '30px' }}><div className="dot-pulse"></div></div>

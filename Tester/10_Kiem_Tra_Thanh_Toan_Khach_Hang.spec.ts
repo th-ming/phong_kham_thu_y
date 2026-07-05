@@ -17,14 +17,13 @@ test.describe('Kiểm thử chức năng: Cổng Khách hàng - Hóa đơn & Vie
     test('TC01: Giao diện Hóa đơn khách hàng và bộ lọc trạng thái', async ({ page }) => {
         // 1. Điều hướng sang trang Hóa đơn & Thanh toán trong cổng khách hàng
         await page.goto(`${BASE_URL}/khach-hang/hoa-don-thanh-toan`);
-        await expect(page.getByRole('heading', { name: /Hóa đơn.*Thanh toán|Bill.*thanh toán/i })).toBeVisible();
+        await expect(page.getByRole('heading', { name: 'Hóa đơn & Thanh toán' })).toBeVisible();
 
         // 2. Kiểm tra sự hiện diện của các khối thống kê chi tiêu
-        //    DOM text is mixed case ("Tổng hóa đơn"), CSS textTransform makes it uppercase visually
-        await expect(page.locator('.customer-kpi-card').nth(0)).toBeVisible();
-        await expect(page.locator('.customer-kpi-card').nth(1)).toBeVisible();
-        await expect(page.locator('.customer-kpi-card').nth(2)).toBeVisible();
-        await expect(page.locator('.customer-kpi-card').nth(3)).toBeVisible();
+        await expect(page.getByText('TỔNG HÓA ĐƠN', { exact: true })).toBeVisible();
+        await expect(page.getByText('ĐÃ THANH TOÁN', { exact: true })).toBeVisible();
+        await expect(page.getByText('ĐANG CHỜ', { exact: true })).toBeVisible();
+        await expect(page.getByText('TỔNG CHI TIÊU', { exact: true })).toBeVisible();
 
         // 3. Kiểm tra thanh tìm kiếm và bộ lọc hóa đơn
         const filterSelect = page.locator('select').first();

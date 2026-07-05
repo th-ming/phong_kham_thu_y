@@ -10,7 +10,7 @@ import java.util.Map;
 @Repository
 public interface NhanVienRepository extends JpaRepository<NhanVien, String> {
 
-    // Lấy danh sách bác sĩ - JPQL đa cơ sở dữ liệu (hoạt động trên cả SQL Server và PostgreSQL)
+    // Get ds BS - JPQL cross-database (works on both SQL Server & PostgreSQL)
     @Query("SELECT nv FROM NhanVien nv WHERE (nv.da_xoa IS NULL OR nv.da_xoa = false) " +
             "AND (LOWER(COALESCE(nv.chuyen_mon, '')) LIKE '%bác sĩ%' " +
             "OR LOWER(COALESCE(nv.chuyen_mon, '')) LIKE '%bac si%' " +

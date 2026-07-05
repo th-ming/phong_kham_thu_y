@@ -82,14 +82,6 @@ const QuanLyHoaDon: React.FC = () => {
 
   useAutoRefresh(fetchHoaDons, { runImmediately: false });
 
-  useEffect(() => {
-    const handleRealtimeUpdate = () => {
-      fetchHoaDons();
-    };
-    window.addEventListener("rexi-data-changed", handleRealtimeUpdate);
-    return () => window.removeEventListener("rexi-data-changed", handleRealtimeUpdate);
-  }, []);
-
   const handleConfirmPayment = async (id: number) => {
     if (!window.confirm(`Xác nhận đã nhận đủ tiền cho hóa đơn #HD-${id}?`)) return;
     try {

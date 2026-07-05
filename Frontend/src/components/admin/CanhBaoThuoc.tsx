@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axiosInstance from '../../services/axios';
-import { useNavigate } from 'react-router-dom';
 
 const CanhBaoThuoc: React.FC = () => {
-    const navigate = useNavigate();
     const [thuocHetHan, setThuocHetHan] = useState<any[]>([]);
 
     useEffect(() => {

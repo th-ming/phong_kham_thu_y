@@ -3,7 +3,6 @@ import axiosInstance from "@services/axios";
 import { toast } from "@components/Toast";
 import { toastError } from '@utils/toastHelpers';
 import { Modal } from "@components/CommonUI";
-import { fixVietnameseEncoding } from "@utils/index";
 import { useAutoRefresh } from "@hooks/useAutoRefresh";
 import useVirtualScroll from "@hooks/useVirtualScroll";
 import KpiIcon from "@components/KpiIcon";
@@ -154,8 +153,7 @@ const BaoCaoThongKe: React.FC = () => {
   const getRecordDate = (item: any) => {
     const raw = item?.ngay_kham || item?.NgayKham || item?.ngay_tao || item?.NgayTao;
     if (!raw) return "";
-    const d = new Date(raw);
-    return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+    return new Date(raw).toISOString().slice(0, 10);
   };
   const getDoctorName = (item: any) => item?.TenBacSi || item?.ten_bac_si || item?.ho_ten || item?.HoTen || "";
   const getServiceName = (item: any) => item?.TenDichVu || item?.ten_dich_vu || "";
@@ -163,10 +161,6 @@ const BaoCaoThongKe: React.FC = () => {
 
   const latestRevenueCompare = useMemo(() => {
     const list = [...dailyRevenueData]
-      .filter(d => {
-        const raw = d.Ngay || d.ngay;
-        return raw && !isNaN(new Date(raw).getTime());
-      })
       .sort((a, b) => new Date(a.Ngay || a.ngay).getTime() - new Date(b.Ngay || b.ngay).getTime());
     const current = getRevenueValue(list[list.length - 1]);
     const previous = getRevenueValue(list[list.length - 2]);
@@ -235,16 +229,11 @@ const BaoCaoThongKe: React.FC = () => {
 
   // Lọc và sắp xếp để đảm bảo biểu đồ chỉ lấy đúng 7 ngày gần nhất theo thứ tự tăng dần
   const sortedDailyData = useMemo(() => {
-    return [...dailyRevenueData]
-      .filter(d => {
-        const raw = d.Ngay || d.ngay;
-        return raw && !isNaN(new Date(raw).getTime());
-      })
-      .sort((a, b) => {
-        const dateA = new Date(a.Ngay || a.ngay).getTime();
-        const dateB = new Date(b.Ngay || b.ngay).getTime();
-        return dateA - dateB;
-      }).slice(-7);
+    return [...dailyRevenueData].sort((a, b) => {
+      const dateA = new Date(a.Ngay || a.ngay).getTime();
+      const dateB = new Date(b.Ngay || b.ngay).getTime();
+      return dateA - dateB;
+    }).slice(-7);
   }, [dailyRevenueData]);
 
   // Chart Options & Data
@@ -266,14 +255,9 @@ const BaoCaoThongKe: React.FC = () => {
           label: (context: any) => {
             let label = context.dataset.label || '';
             if (label) label += ': ';
-            // Doughnut chart dùng context.parsed (số), Bar/Line dùng context.parsed.y
-            let val: number;
-            if (typeof context.parsed === 'number') {
-              val = context.parsed;
-            } else if (context.parsed !== null && typeof context.parsed === 'object') {
-              val = context.chart.options.indexAxis === 'y' ? (context.parsed.x ?? 0) : (context.parsed.y ?? 0);
-            } else {
-              val = 0;
+            let val = context.parsed;
+            if (typeof val === 'object' && val !== null) {
+              val = context.chart.options.indexAxis === 'y' ? context.parsed.x : context.parsed.y;
             }
             if (context.chart.config.type === 'doughnut') {
               label += `${val} bé`;
@@ -322,9 +306,7 @@ const BaoCaoThongKe: React.FC = () => {
 
   const dailyChartData = {
     labels: sortedDailyData.map(d => {
-      const raw = d.Ngay || d.ngay;
-      const date = raw ? new Date(raw) : null;
-      if (!date || isNaN(date.getTime())) return 'N/A';
+      const date = new Date(d.Ngay || d.ngay);
       return `${date.getDate()}/${date.getMonth() + 1}`;
     }),
     datasets: [{
@@ -452,7 +434,7 @@ const BaoCaoThongKe: React.FC = () => {
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
-      link.setAttribute("download", `Rexi_BaoCaoTongHop_${new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]}.csv`);
+      link.setAttribute("download", `Rexi_BaoCaoTongHop_${new Date().toISOString().split('T')[0]}.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -906,7 +888,7 @@ const BaoCaoThongKe: React.FC = () => {
             </div>
             {topDoctorProfile?.gioi_thieu && (
               <div style={{ padding: '14px 16px', borderRadius: '14px', background: 'var(--primary-light)', color: 'var(--ink)', fontWeight: 800, lineHeight: 1.55 }}>
-                {fixVietnameseEncoding(topDoctorProfile.gioi_thieu)}
+                {topDoctorProfile.gioi_thieu}
               </div>
             )}
             <div style={{ display: 'grid', gap: '10px', maxHeight: '220px', overflowY: 'auto' }}>
@@ -915,10 +897,10 @@ const BaoCaoThongKe: React.FC = () => {
               ) : topDoctorRecords.map((record, idx) => (
                 <div key={idx} style={{ padding: '14px 16px', border: '1px solid var(--gray-200)', borderRadius: '14px', background: 'var(--surface)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', marginBottom: '6px' }}>
-                    <b style={{ color: 'var(--ink)' }}>{fixVietnameseEncoding(record.ten_thu_cung || record.TenThuCung) || "Bệnh án"}</b>
+                    <b style={{ color: 'var(--ink)' }}>{record.ten_thu_cung || record.TenThuCung || "Bệnh án"}</b>
                     <span style={{ color: 'var(--gray-400)', fontWeight: 800 }}>{record.ngay_kham ? new Date(record.ngay_kham).toLocaleDateString('vi-VN') : "—"}</span>
                   </div>
-                  <div style={{ color: 'var(--gray-500)', fontWeight: 700 }}>{fixVietnameseEncoding(record.chan_doan || record.ChanDoan || record.trieu_chung) || "Chưa có chẩn đoán"}</div>
+                  <div style={{ color: 'var(--gray-500)', fontWeight: 700 }}>{record.chan_doan || record.ChanDoan || record.trieu_chung || "Chưa có chẩn đoán"}</div>
                 </div>
               ))}
             </div>
@@ -930,7 +912,7 @@ const BaoCaoThongKe: React.FC = () => {
             <div className="kpi-detail-grid">
               <div className="kpi-detail-tile">
                 <div className="kpi-detail-label">Tên dịch vụ</div>
-                <div className="kpi-detail-value">{topService ? fixVietnameseEncoding(getServiceName(topService)) : "Chưa có"}</div>
+                <div className="kpi-detail-value">{topService ? getServiceName(topService) : "Chưa có"}</div>
               </div>
               <div className="kpi-detail-tile">
                 <div className="kpi-detail-label">Giá niêm yết</div>
@@ -950,7 +932,7 @@ const BaoCaoThongKe: React.FC = () => {
               </div>
             </div>
             <div style={{ padding: '14px 16px', borderRadius: '14px', background: 'var(--surface)', border: '1px solid var(--gray-200)', color: 'var(--gray-500)', fontWeight: 800, lineHeight: 1.55 }}>
-              {fixVietnameseEncoding(topServiceProfile?.mo_ta) || "Dịch vụ này chưa có mô tả chi tiết trong danh mục dịch vụ."}
+              {topServiceProfile?.mo_ta || "Dịch vụ này chưa có mô tả chi tiết trong danh mục dịch vụ."}
             </div>
           </div>
         )}
@@ -977,10 +959,10 @@ const BaoCaoThongKe: React.FC = () => {
                       <span className="material-symbols-outlined">pets</span>
                     </div>
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 900, color: 'var(--ink)' }}>{fixVietnameseEncoding(pet.ten_thu_cung || pet.TenThuCung)}</div>
-                      <div style={{ fontSize: '0.85rem', color: 'var(--gray-500)', fontWeight: 600 }}>{fixVietnameseEncoding(pet.giong || pet.Giong) || 'Chưa rõ giống'} • {pet.trong_luong || pet.TrongLuong || '—'} kg</div>
+                      <div style={{ fontWeight: 900, color: 'var(--ink)' }}>{pet.ten_thu_cung || pet.TenThuCung}</div>
+                      <div style={{ fontSize: '0.85rem', color: 'var(--gray-500)', fontWeight: 600 }}>{pet.giong || pet.Giong || 'Chưa rõ giống'} • {pet.trong_luong || pet.TrongLuong || '—'} kg</div>
                     </div>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 800, background: 'var(--gray-100)', color: 'var(--gray-500)', padding: '4px 10px', borderRadius: '8px' }}>{fixVietnameseEncoding(pet.gioi_tinh) || '—'}</span>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 800, background: 'var(--gray-100)', color: 'var(--gray-500)', padding: '4px 10px', borderRadius: '8px' }}>{pet.gioi_tinh || '—'}</span>
                   </div>
                 ))}
                 {shouldVirtualizePet && petRange.end < petDetails.length && (

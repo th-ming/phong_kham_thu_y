@@ -42,7 +42,7 @@ public class LichHenControllerTest extends BaseControllerTest {
         when(jdbcTemplate.queryForObject(anyString(), eq(Integer.class), (Object) any()))
                 .thenReturn(30);
 
-        // Mô phỏng kiểm tra số lượng chủ sở hữu thú cưng
+        // Chk pet owner count mock
         when(jdbcTemplate.queryForObject(org.mockito.ArgumentMatchers.contains("SELECT COUNT(*) FROM ThuCung"), eq(Integer.class), eq("TC-001"), eq("KH-001")))
                 .thenReturn(1);
 

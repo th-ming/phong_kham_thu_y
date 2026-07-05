@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import axiosInstance from "@services/axios";
 import { Modal } from "@components/CommonUI";
 import { toast } from "@components/Toast";
@@ -23,7 +23,7 @@ const QuanLyNhapKho: React.FC = () => {
   const [formData, setFormData] = useState({
     id_thuoc: "",
     so_lo: "",
-    ngay_nhap: new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0],
+    ngay_nhap: new Date().toISOString().split('T')[0],
     han_su_dung: "",
     so_luong_nhap: 0,
     gia_nhap: 0
@@ -50,14 +50,6 @@ const QuanLyNhapKho: React.FC = () => {
   }, []);
 
   useAutoRefresh(fetchData, { runImmediately: false });
-
-  useEffect(() => {
-    const handleRealtimeUpdate = () => {
-      fetchData();
-    };
-    window.addEventListener("rexi-data-changed", handleRealtimeUpdate);
-    return () => window.removeEventListener("rexi-data-changed", handleRealtimeUpdate);
-  }, []);
 
   const filteredLoThuocs = React.useMemo(() => {
     if (!searchLo.trim()) return loThuocs;

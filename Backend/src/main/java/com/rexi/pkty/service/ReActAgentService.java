@@ -1018,7 +1018,7 @@ public class ReActAgentService {
             return null;
         }
         boolean hasScheduleContext = containsAny(q,
-                "lich lam", "lich truc", "ca truc", "ca lam", "xep lich", "phan ca",
+                "lich lam", "lich truc", "lich hen", "ca truc", "ca lam", "xep lich", "phan ca",
                 "slot", "khung gio", "gio truc", "dang ky lich", "dang ky ca", "them ca", "ep them",
                 "truc roi", "truc ca", "ranh");
         hasScheduleContext = hasScheduleContext || (containsAny(q, "ca nao", "nhung ca", "full 3", "3 bs")
@@ -1409,12 +1409,8 @@ public class ReActAgentService {
         boolean hasSymptom = containsAny(q,
                 "oi", "non", "bo an", "khong an", "an it", "gai", "ngua", "run", "nam im", "met",
                 "cuu", "cap cuu", "co giat", "kho tho", "chay mau", "tieu chay", "di ngoai",
-                "nhay", "can", "dau", "sot", "loet", "sung", "li bi", "yeu",
-                "ra mau", "ho ra mau", "ho", "sua", "om", "chet", "vac", "bieng an",
-                "uong nhieu", "so nuoc", "buon", "di vong", "long xu", "ru lung",
-                "so mui", "chat nho", "met moi", "khong chiu an", "bong chay", "di ngoai ra mau",
-                "bat thuong", "khong khoe", "om yeu", "khong chiu choi", "nam l");
-        boolean asksAdvice = containsAny(q, "lam sao", "lam gi", "co sao", "on ap", "can qua kham", "hong", "khong", "cuu", "bi", "bi sao", "bi gi", "mac benh gi")
+                "nhay", "can", "dau", "sot", "loet", "sung", "li bi", "yeu");
+        boolean asksAdvice = containsAny(q, "lam sao", "lam gi", "co sao", "on ap", "can qua kham", "hong", "khong", "cuu")
                 || !containsAny(q, "tim ho so", "tra ho so", "ma benh an", "id");
         return hasPet && hasSymptom && asksAdvice;
     }
@@ -1425,13 +1421,7 @@ public class ReActAgentService {
         boolean hasLookupVerb = containsAny(q,
                 "tim", "tra", "tra cuu", "kiem tra", "xem", "liet ke", "danh sach", "mo danh sach", "co lich", "dang co", "hom nay co", "check db", "check he thong");
         boolean hasAppointmentContext = containsAny(q,
-                "lich kham", "lich hen", "ca kham", "lich cua bac si", "lich bac si");
-        boolean hasScheduleContextOverlap = containsAny(q,
-                "lich lam viec", "lich lam vc", "ca lam viec", "ca truc", "lich truc",
-                "xep lich", "phan ca", "dang ky ca", "dang ky lich", "them ca");
-        if (hasScheduleContextOverlap && !containsAny(q, "lich kham", "lich hen", "ca kham", "dat lich kham", "book lich kham", "dat lich hen")) {
-            return false;
-        }
+                "lich kham", "lich hen", "ca kham", "ca lam", "ca truc", "lich lam", "lich truc", "lam viec", "lich cua bac si", "lich bac si");
         boolean hasDoctorContext = containsAny(q, "bac si", "bsi", "bs ");
         boolean hasCreateIntent = containsAny(q, "dat lich", "book lich", "lap lich", "tao lich", "dat bac si", "dat bs", "dat bsi");
         boolean asksCreatedAppointments = hasCreateIntent && containsAny(q,
@@ -1532,23 +1522,23 @@ public class ReActAgentService {
         if (containsAny(q, "bao cho", "bao chó", "ba chó", "ngo doc", "dien giat", "xe tong", "gay chan", "lòi ruột", "loi ruot")) {
             return "Đây là tình huống khẩn cấp! Giữ bé nằm yên, không tự ý cho uống thuốc hoặc sơ cứu không đúng cách. Gọi ngay hotline 0353.374.156 hoặc đưa bé tới phòng khám gần nhất. Chú ý: với ngộ độc, KHÔNG gây nôn nếu bé đã co giật hoặc hôn mê.";
         }
-        if (containsAny(q, "kho tho", "co giat", "nam im", "li bi", "chay mau", "cuu", "run", "ra mau", "ho ra mau", "di ngoai ra mau")) {
-            return "Đây có thể là dấu hiệu khẩn cấp. Giữ bé nằm yên, không tự cho uống thuốc, gọi phòng khám hoặc đưa bé đi khám ngay. Bé đang có dấu hiệu xuất huyết, cần được bác sĩ thăm khám trực tiếp sớm nhất.";
+        if (containsAny(q, "kho tho", "co giat", "nam im", "li bi", "chay mau", "cuu", "run")) {
+            return "Đây có thể là dấu hiệu khẩn cấp. Giữ bé nằm yên, không tự cho uống thuốc, gọi phòng khám hoặc đưa bé đi khám ngay.";
         }
         if (containsAny(q, "gai", "ngua")) {
             return "Gãi nhiều có thể do ký sinh trùng, dị ứng hoặc viêm da. Tạm tránh tắm/thuốc lạ, kiểm tra da có đỏ/rụng lông không và đặt lịch khám nếu kéo dài.";
         }
-        if (q.matches(".*\\b(oi|non)\\b.*") || containsAny(q, "bo an", "khong an", "bieng an")) {
+        if (q.matches(".*\\b(oi|non)\\b.*") || containsAny(q, "bo an", "khong an")) {
             return "Bé nôn/bỏ ăn cần theo dõi sát. Cho nước sạch, không ép ăn hay tự dùng thuốc; nếu lặp lại, lừ đừ hoặc quá 12-24 giờ thì nên đưa đi khám.";
         }
         // Parvo, FIP, FIV, FelV
         if (containsAny(q, "parvo", "fip", "fiv", "felv", "bach cau")) {
             return "Đây là bệnh nghiêm trọng, tỉ lệ tử vong cao nếu không điều trị kịp thời. Cần cách ly ngay lập tức và đưa bé tới phòng khám để xét nghiệm và điều trị tích cực.";
         }
-        if (containsAny(q, "xanax", "thuoc lac", "paracetamol", "socola", "thuoc ngu", "thuoc nguoi")) {
+        if (containsAny(q, "xanax", "thuoc lac", "paracetamol", "socola", "thuoc ngu")) {
             return "Đây là tình huống nguy hiểm. TUYỆT ĐỐI KHÔNG tự ý dùng thuốc người cho thú cưng. Gọi hotline 0353.374.156 hoặc đưa bé tới phòng khám ngay lập tức.";
         }
-        return "Tôi hiểu bé đang có biểu hiện bất thường. Theo dõi nhịp thở, ăn uống, vận động; nếu nặng lên hoặc bạn không chắc, nên đưa bé đi khám. Nếu có dấu hiệu ra máu, khó thở, co giật hoặc bỏ ăn kéo dài, hãy đưa bé đến phòng khám ngay.";
+        return "Tôi hiểu bé đang có biểu hiện bất thường. Theo dõi nhịp thở, ăn uống, vận động; nếu nặng lên hoặc bạn không chắc, nên đưa bé đi khám.";
     }
 
     private ReActResult finalResult(List<ReActStep> steps, String answer) {
@@ -2122,7 +2112,6 @@ public class ReActAgentService {
             + "4. Thiếu 1 trường bắt buộc -> hỏi duy nhất 1 câu <= 10 từ. Thiếu element DOM -> nói rõ thiếu element nào.\n"
             + "5. final_answer tối đa 1-2 câu hoặc 3 dòng bullet ngắn khi có nhiều ý. Không mở đầu, không tổng kết tool data, không viết phân tích dài.\n"
             + "6. BẮT BUỘC hiểu ngôn ngữ tự nhiên thật: Gen Z, teencode, gõ sai, không dấu, chèn từ đệm, nói tục, viết tắt, nói vòng, tiếng Việt lai Anh. Không được phụ thuộc danh sách format có sẵn.\n"
-            + "6.5. KHI ADMIN HOI CHUC NANG NAM O FILE NAO, DONG NAO, ROUTE NAO, CAI NAY O DAU, CHINH CAI NAY — PHAI GOI TOOL tra_cuu_ma_nguon NGAY LAP TUC. KHONG DUOC tu tra loi ma khong goi tool. Neu tra loi khong co file/dong cu the thi bi cho la bia.\n"
             + "7. Khi gặp câu lạ, hãy suy luận ý định theo ngữ cảnh + DOM hiện tại: 'cái này/chỗ này/nút này' thường là element đang hiện; 'tăng lên 2/up 2/set 2' là đổi giá trị thành 2; 'bấm/nhấn/ấn/tap' là click; 'chóa/chúa/chọa/doggo' là chó; 'miu/mew/meow' là mèo. Nếu vẫn mơ hồ, hỏi lại đúng 1 câu ngắn thay vì trả null.\n"
             + "8. Câu hỏi triệu chứng thú y (ói, bỏ ăn, run, nằm im, gãi, khó thở...) là tư vấn an toàn, KHÔNG gọi tim_thu_cung/tim_khach_hang nếu user không nói rõ cần tìm hồ sơ trong DB.\n"
             + "9. Tuyệt đối không lộ reasoning/nội bộ: không viết <think>, </assistant>, tiếng Anh phân tích, hoặc giải thích quá trình suy nghĩ trong final_answer.\n"
@@ -2153,41 +2142,26 @@ public class ReActAgentService {
     private boolean isAdminCodeLookupQuery(String normalizedQuery, String userRole) {
         if (!RoleAccessPolicy.normalizeRole(userRole).equals("admin")) return false;
         if (normalizedQuery == null || normalizedQuery.isBlank()) return false;
-        // asksLocation: admin hoi vi tri file/dong/route — mo rong nhieu pattern hon
         boolean asksLocation = containsAny(normalizedQuery,
                 "o dau", "nam dau", "file nao", "dong nao", "line nao", "line nhiu", "trang nao", "route nao",
                 "api nao", "endpoint nao", "component nao", "controller nao", "service nao",
                 "ham nao", "function nao", "data ai id", "data-ai-id", "button-chatbot", "input-chatbot",
-                "sua file nao", "sua code", "sua o dau", "chinh o dau", "chinh code", "doan nao", "doan code nao", "sua doan code", "cho nao",
-                "nam o dau", "o file nao", "dong bao nhieu", "line bao nhieu",
-                "file path", "so dong", "vi tri code", "vi tri file",
-                "huong dan sua", "huong dan cach sua", "chi cach sua", "chi ro file");
-        // codeContext: admin hoi ve code/file/component — mo rong them
+                "sua file nao", "sua code", "sua o dau", "chinh o dau", "chinh code", "doan nao", "doan code nao", "sua doan code", "cho nao");
         boolean codeContext = containsAny(normalizedQuery,
                 "code", "source", "ma nguon", "file", "dong", "line", "route",
                 "api", "endpoint", "component", "controller", "service", "tsx", "java",
                 "button", "nut", "form", "input", "frontend", "backend",
-                "css", "style", "mau chu", "mau nen", "doi mau", "chinh mau", "sua mau", "background", "color", "header", "chatbot", "khung chat",
-                "scroll", "lockout", "brute", "auth", "backup", "restore", "database",
-                "chatbotcore", "chatbotshell", "sidebar", "dashboard",
-                "agent", "provider", "react", "config", "setting",
-                
-                "huong dan", "chi ro", "chi tiet");
+                "css", "style", "mau chu", "mau nen", "doi mau", "chinh mau", "sua mau", "background", "color", "header", "chatbot", "khung chat");
         return asksLocation && codeContext;
     }
 
     private boolean hasCodeLineEvidence(String observation) {
         if (observation == null || observation.isBlank()) return false;
         String normalized = normalizeVietnamese(observation.toLowerCase(Locale.ROOT));
-        // Chấp nhận cả RAG động (có dòng code) VÀ static SOURCE_INDEX (có file path + routes)
-        boolean hasRagLines = normalized.contains("rag ma nguon dong")
+        return normalized.contains("rag ma nguon dong")
                 && (normalized.contains("- dong ") || normalized.contains("\n- dong "))
                 && (normalized.contains(".tsx") || normalized.contains(".ts") || normalized.contains(".java")
                     || normalized.contains(".css") || normalized.contains(".properties") || normalized.contains(".xml"));
-        boolean hasStaticIndex = normalized.contains("ban do module")
-                || (normalized.contains("files:") && normalized.contains("routes/api:"))
-                || (normalized.contains("files:") && normalized.contains("tools/"));
-        return hasRagLines || hasStaticIndex;
     }
 
     private String compactToolsSchemaForQuery(String schema, String userQuery) {

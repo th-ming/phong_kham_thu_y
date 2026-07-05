@@ -12,10 +12,10 @@ import java.util.Optional;
 public interface TaiKhoanRepository extends JpaRepository<TaiKhoan, String> {
     
     @Query("SELECT t FROM TaiKhoan t WHERE t.id_khach_hang = :idKhachHang")
-    List<TaiKhoan> findByIdKhachHang(@Param("idKhachHang") String idKhachHang);
+    java.util.Optional<TaiKhoan> findByIdKhachHang(@Param("idKhachHang") String idKhachHang);
 
     @Query("SELECT t FROM TaiKhoan t WHERE t.id_nhan_vien = :idNhanVien")
-    List<TaiKhoan> findByIdNhanVien(@Param("idNhanVien") String idNhanVien);
+    java.util.Optional<TaiKhoan> findByIdNhanVien(@Param("idNhanVien") String idNhanVien);
 
     
     // Tìm user theo tên đăng nhập
@@ -32,7 +32,7 @@ public interface TaiKhoanRepository extends JpaRepository<TaiKhoan, String> {
 
     @org.springframework.data.jpa.repository.Modifying
     @org.springframework.transaction.annotation.Transactional
-    @Query(value = "UPDATE TaiKhoan SET mat_khau = '[ENCRYPTED]', mat_khau_hash = :hashedPass, last_password_change = CURRENT_TIMESTAMP WHERE ten_dang_nhap = :username", nativeQuery = true)
+    @Query(value = "UPDATE TaiKhoan SET mat_khau = '[ENCRYPTED]', mat_khau_hash = :hashedPass WHERE ten_dang_nhap = :username", nativeQuery = true)
     void changePassword(@Param("username") String username, @Param("hashedPass") String hashedPass);
 }
 

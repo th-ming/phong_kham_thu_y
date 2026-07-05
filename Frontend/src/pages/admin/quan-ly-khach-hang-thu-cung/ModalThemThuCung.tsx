@@ -158,7 +158,7 @@ export const ModalThemThuCung: React.FC<ModalThemThuCungProps> = ({
                 style={{ ...petFieldStyle, padding: '14px 12px' }} 
                 value={petFormData.ngay_sinh} 
                 onChange={e => setPetFormData({ ...petFormData, ngay_sinh: e.target.value })} 
-                max={new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split("T")[0]} 
+                max={new Date().toISOString().split("T")[0]} 
               />
             </div>
             <div style={{ display: 'grid', gap: '8px' }}>

@@ -41,14 +41,6 @@ public class FileDinhKemController {
     @Autowired
     private com.rexi.pkty.service.AuditLogService auditLogService;
 
-    // Fix lỗi encoding tiếng Việt
-    private com.rexi.pkty.entity.FileDinhKem fixFileEncoding(com.rexi.pkty.entity.FileDinhKem file) {
-        if (file == null) return null;
-        file.setLoai(com.rexi.pkty.util.VietnameseTextFixer.fix(file.getLoai()));
-        file.setTenFile(com.rexi.pkty.util.VietnameseTextFixer.fix(file.getTenFile()));
-        return file;
-    }
-
     // Check quyền thao tác file
     private boolean hasPermission() {
         org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
@@ -67,10 +59,8 @@ public class FileDinhKemController {
                     .body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền xem tài liệu của hệ thống!"));
         }
         try {
-            // Trả list file từ DB + fix lỗi encoding tiếng Việt
-            List<com.rexi.pkty.entity.FileDinhKem> files = fileDinhKemRepository.findAll();
-            files.forEach(this::fixFileEncoding);
-            return ResponseEntity.ok(files);
+            // Trả list file từ DB
+            return ResponseEntity.ok(fileDinhKemRepository.findAll());
         } catch (Exception e) {
             logger.severe("Lỗi khi liệt kê danh sách file: " + e.getMessage());
             return ResponseEntity.status(500).body(Map.of("message", "Lỗi đọc danh sách file: " + e.getMessage()));

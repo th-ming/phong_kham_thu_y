@@ -20,10 +20,10 @@ public class KhachHang {
     private String hinh_anh;
     private Boolean da_xoa;
 
-    // Kiểm tra đăng ký nhận email marketing
+    // Chk opt-in nhan email marketing
     private Boolean nhan_email;
 
-    // Kiểm tra đăng ký nhận thông báo SMS
+    // Chk opt-in nhan sms notifications
     private Boolean nhan_sms;
 
     private Integer nam_sinh;

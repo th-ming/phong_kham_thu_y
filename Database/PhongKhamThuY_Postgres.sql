@@ -914,7 +914,7 @@ SELECT
     COUNT(id_hoa_don) AS SoHoaDon,
     SUM(tong_tien_cuoi) AS TongDoanhThu
 FROM HoaDon
-WHERE UPPER(TRIM(trang_thai)) = 'DA_THANH_TOAN'
+WHERE trang_thai = 'da_thanh_toan'
 GROUP BY EXTRACT(YEAR FROM ngay_lap), EXTRACT(MONTH FROM ngay_lap);
 
 CREATE OR REPLACE VIEW v_ThongKe_BacSi AS
@@ -922,10 +922,10 @@ SELECT
     nv.ho_ten AS TenBacSi,
     COUNT(lh.id_lich_hen) AS SoLichHen,
     COUNT(DISTINCT lh.id_thu_cung) AS SoHoSo,
-    COALESCE(SUM(CASE WHEN UPPER(TRIM(hd.trang_thai)) = 'DA_THANH_TOAN' THEN hd.tong_tien_cuoi ELSE 0 END), 0) AS TongDoanhThu
+    SUM(COALESCE(hd.tong_tien_cuoi, 0)) AS TongDoanhThu
 FROM NhanVien nv
 LEFT JOIN LichHen lh ON nv.id_nhan_vien = lh.id_bac_si
-LEFT JOIN HoaDon hd ON lh.id_lich_hen = hd.id_lich_hen
+LEFT JOIN HoaDon hd ON lh.id_lich_hen = hd.id_lich_hen AND hd.trang_thai = 'da_thanh_toan'
 WHERE nv.chuyen_mon ILIKE '%Bác sĩ%' OR nv.id_nhan_vien ILIKE 'BS-%'
 GROUP BY nv.ho_ten;
 
@@ -935,7 +935,7 @@ SELECT
     EXTRACT(YEAR FROM ngay_lap)::INT AS Nam, 
     SUM(tong_tien_cuoi) AS TongDoanhThu
 FROM HoaDon
-WHERE UPPER(TRIM(trang_thai)) = 'DA_THANH_TOAN'
+WHERE trang_thai_thanh_toan = 'Đã thanh toán'
 GROUP BY EXTRACT(MONTH FROM ngay_lap), EXTRACT(YEAR FROM ngay_lap);
 
 CREATE OR REPLACE VIEW v_ThuocSapHetHan AS
