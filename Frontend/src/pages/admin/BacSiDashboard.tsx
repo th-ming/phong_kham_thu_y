@@ -84,15 +84,13 @@ const BacSiDashboard: React.FC = () => {
         .filter(a => !['HOAN_THANH', 'DA_HUY', 'KHONG_DEN'].includes(String(a.trang_thai || '').toUpperCase()))
         .sort((a, b) => String(a.gio_kham || '').localeCompare(String(b.gio_kham || '')))[0];
 
-    const ClinicalKpiCard = ({ accent, title, value, icon, details, pulse = false, badgeText, badgeTone = 'neutral', sparkline, to }: {
+    const ClinicalKpiCard = ({ accent, title, value, icon, details, pulse = false, sparkline, to }: {
         accent: string;
         title: string;
         value: React.ReactNode;
         icon: React.ReactNode;
         details: React.ReactNode;
         pulse?: boolean;
-        badgeText?: string;
-        badgeTone?: 'up' | 'down' | 'neutral';
         sparkline?: string;
         to?: string;
     }) => {
@@ -129,6 +127,9 @@ const BacSiDashboard: React.FC = () => {
                     </svg>
                 )}
 
+                <div className="clinical-kpi-badge" style={{ color: accent, borderColor: `${accent}35`, background: `${accent}12` }}>
+                    <span>Chi tiết</span>
+                </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', position: 'relative', zIndex: 1 }}>
                     <div style={{ 
                         width: '48px', 
@@ -147,22 +148,6 @@ const BacSiDashboard: React.FC = () => {
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        {badgeText && (
-                            <span className={`kpi-trend-badge ${badgeTone}`} style={{ 
-                                fontSize: '0.68rem', 
-                                fontWeight: 900, 
-                                padding: '4px 8px', 
-                                borderRadius: '999px',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '4px',
-                                border: '1px solid rgba(0,0,0,0.05)'
-                            }}>
-                                {badgeTone === 'up' && '▲'}
-                                {badgeTone === 'down' && '▼'}
-                                {badgeText}
-                            </span>
-                        )}
                         {pulse && (
                             <span style={{ display: 'flex', position: 'relative', width: '8px', height: '8px' }}>
                                 <span style={{ animation: 'ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite', position: 'absolute', display: 'inline-flex', height: '100%', width: '100%', borderRadius: '50%', background: accent, opacity: 0.75 }}></span>
@@ -177,15 +162,8 @@ const BacSiDashboard: React.FC = () => {
                     <h3 style={{ fontSize: '1.8rem', fontWeight: 950, color: 'var(--ink)', margin: '0 0 12px 0', display: 'inline-block' }}>{value}</h3>
                 </div>
                 
-                <div style={{ 
-                    borderTop: '1px solid var(--gray-100)', 
-                    paddingTop: '10px', 
-                    fontSize: '0.8rem', 
-                    color: 'var(--gray-500)',
-                    lineHeight: '1.4',
-                    position: 'relative',
-                    zIndex: 1
-                }} className="kpi-mini-details">
+                <div className="clinical-kpi-popover">
+                    <strong>Chi tiết</strong>
                     {details}
                 </div>
             </>
@@ -217,11 +195,55 @@ const BacSiDashboard: React.FC = () => {
                 @keyframes slideUpFade { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
                 .clinical-kpi-card { animation: slideUpFade 0.45s cubic-bezier(.22,.68,0,1.2) both; transition: transform 0.28s cubic-bezier(.22,.68,0,1.2), box-shadow 0.28s ease, border-color 0.28s ease, filter 0.28s ease; position: relative; }
                 .clinical-kpi-card::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(255,255,255,0.36) 0%, rgba(255,255,255,0) 45%); opacity: 0; transition: opacity 0.28s ease; pointer-events: none; z-index: 0; }
-                .clinical-kpi-card:hover { transform: translateY(-8px) scale(1.01); box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12); filter: saturate(1.05); }
+                .clinical-kpi-card:hover { transform: translateY(-8px) scale(1.01); box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12); filter: saturate(1.05); z-index: 120; }
                 .clinical-kpi-card:hover::before { opacity: 1; }
                 .clinical-kpi-card:hover > div:first-child > div { transform: translateY(-2px) scale(1.06); box-shadow: 0 12px 26px rgba(15, 23, 42, 0.12); }
-                .clinical-kpi-card:hover .kpi-mini-details { opacity: 1; transform: translateY(0); }
-                .kpi-mini-details { transition: opacity 0.28s ease, transform 0.28s ease; opacity: 0.82; transform: translateY(6px); }
+                .clinical-kpi-badge {
+                    position: absolute;
+                    top: 18px;
+                    right: 18px;
+                    display: inline-flex;
+                    align-items: center;
+                    padding: 5px 10px;
+                    border-radius: 999px;
+                    border: 1px solid;
+                    font-size: 0.68rem;
+                    font-weight: 950;
+                    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+                    z-index: 2;
+                }
+                .clinical-kpi-card:hover .clinical-kpi-popover,
+                .clinical-kpi-card:focus .clinical-kpi-popover {
+                    opacity: 1;
+                    transform: translateY(0);
+                    pointer-events: auto;
+                }
+                .clinical-kpi-popover {
+                    position: absolute;
+                    left: 18px;
+                    right: 18px;
+                    top: 80px;
+                    z-index: 90;
+                    padding: 16px;
+                    border-radius: 16px;
+                    border: 1px solid rgba(59, 130, 246, 0.25);
+                    background: var(--surface);
+                    color: var(--ink);
+                    box-shadow: 0 24px 56px rgba(15, 23, 42, 0.22);
+                    opacity: 0;
+                    transform: translateY(-6px);
+                    pointer-events: none;
+                    transition: opacity 0.18s ease, transform 0.18s ease;
+                    font-size: 0.86rem;
+                    line-height: 1.45;
+                }
+                .clinical-kpi-popover strong {
+                    display: block;
+                    margin-bottom: 8px;
+                    color: var(--primary);
+                    font-size: 0.92rem;
+                    font-weight: 950;
+                }
                 .timeline-card { animation: slideUpFade 0.35s cubic-bezier(.22,.68,0,1.2) both; transition: all 0.25s ease; }
                 .timeline-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); border-color: var(--primary-light); }
                 .quick-btn { transition: all 0.2s ease; border: 1px solid transparent; }
@@ -328,7 +350,7 @@ const BacSiDashboard: React.FC = () => {
                         font-weight: 900 !important;
                         margin-bottom: 6px !important;
                     }
-                    .clinical-kpi-card .kpi-mini-details {
+                    .clinical-kpi-card .clinical-kpi-popover {
                         display: none !important;
                     }
 
@@ -448,8 +470,6 @@ const BacSiDashboard: React.FC = () => {
                     title="Ca khám trong ngày"
                     value={<><AnimatedNumber value={myAppointments.length} /> ca</>}
                     icon={<KpiIcon name="calendar" />}
-                    badgeText="Hôm nay"
-                    badgeTone="neutral"
                     sparkline="M0,30 Q15,20 30,35 T60,20 T90,28 T100,8"
                     to="/quan-ly/kham-benh"
                     details={
@@ -465,8 +485,6 @@ const BacSiDashboard: React.FC = () => {
                     value={<><AnimatedNumber value={waitingPatients} /> bé</>}
                     icon={<KpiIcon name="clock" />}
                     pulse={waitingPatients > 0}
-                    badgeText={waitingPatients > 0 ? "Ưu tiên" : "Ổn định"}
-                    badgeTone={waitingPatients > 0 ? "down" : "up"}
                     sparkline="M0,35 Q15,40 30,22 T60,38 T90,12 T100,28"
                     to="/quan-ly/kham-benh"
                     details={
@@ -484,8 +502,6 @@ const BacSiDashboard: React.FC = () => {
                     title="Ca khám hoàn thành"
                     value={<><AnimatedNumber value={completedPatients} /> ca</>}
                     icon={<KpiIcon name="check" />}
-                    badgeText={myAppointments.length ? `${Math.round((completedPatients / myAppointments.length) * 100)}%` : "0%"}
-                    badgeTone="up"
                     sparkline="M0,42 Q15,35 30,12 T60,28 T90,6 T100,2"
                     to="/quan-ly/ho-so-benh-an"
                     details={
