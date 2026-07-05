@@ -26,17 +26,17 @@ test.describe('Kiểm thử chức năng: Quản lý Danh mục Dịch vụ & Kh
         // 3. Nhập dữ liệu dịch vụ mới
         const ts = Date.now();
         const tenDichVu = `Siêu âm màu 4D ${ts}`;
-        await page.locator('[data-ai-id="input-quanlydichvu-9ned"]').fill(tenDichVu); // Tên dịch vụ
-        await page.locator('[data-ai-id="input-quanlydichvu-mv4q"]').fill('180000'); // Giá niêm yết
-        await page.locator('[data-ai-id="input-quanlydichvu-q3n9"]').fill('30');     // Thời lượng phút
+        await page.locator('[data-ai-id="input_service_name"]').fill(tenDichVu); // Tên dịch vụ
+        await page.locator('[data-ai-id="input_service_price"]').fill('180000'); // Giá niêm yết
+        await page.locator('[data-ai-id="input_service_duration"]').fill('30');     // Thời lượng phút
         await page.locator('textarea').fill('Siêu âm thai kiểm tra và đếm số thai cho thú cưng bằng công nghệ 4D VIP.');
 
         // 4. Lưu thông tin
-        await page.locator('[data-ai-id="button-quanlydichvu-zqdb"]').click();
+        await page.locator('[data-ai-id="btn_service_save"]').click();
 
-        // 5. xn thêm thành công và tìm thấy trong bảng
+        // 5. xn thêm thành công và tìm thấy trong bảng (scope desktop table để tránh strict mode)
         await expect(page.getByText('Thêm dịch vụ mới thành công!')).toBeVisible({ timeout: 10000 });
-        await expect(page.getByText(tenDichVu)).toBeVisible();
+        await expect(page.locator('table').filter({ hasText: tenDichVu })).toBeVisible();
 
         // 6. Nhấp sửa dịch vụ vừa tạo
         const editBtn = page.locator(`tr:has-text("${tenDichVu}")`).locator('button').first();
@@ -44,8 +44,8 @@ test.describe('Kiểm thử chức năng: Quản lý Danh mục Dịch vụ & Kh
         await expect(page.getByText('Cập nhật dịch vụ')).toBeVisible();
 
         // 7. Thay đổi giá niêm yết lên 200,000đ
-        await page.locator('[data-ai-id="input-quanlydichvu-mv4q"]').fill('200000');
-        await page.locator('[data-ai-id="button-quanlydichvu-zqdb"]').click();
+        await page.locator('[data-ai-id="input_service_price"]').fill('200000');
+        await page.locator('[data-ai-id="btn_service_save"]').click();
         await expect(page.getByText('Đã cập nhật dịch vụ thành công!')).toBeVisible({ timeout: 10000 });
         await expect(page.locator(`tr:has-text("${tenDichVu}")`)).toContainText('200.000 ₫');
 
@@ -60,11 +60,12 @@ test.describe('Kiểm thử chức năng: Quản lý Danh mục Dịch vụ & Kh
         await page.goto(`${BASE_URL}/quan-ly/kho-thuoc`);
         await expect(page.getByText('Quản lý Kho thuốc')).toBeVisible();
 
-        // 2. Kiểm tra cột hiển thị của danh mục thuốc
+        // 2. Kiểm tra cột hiển thị của danh mục thuốc (scope desktop table để tránh strict mode)
         await expect(page.getByText('Danh mục thuốc')).toBeVisible();
-        await expect(page.getByText('TÊN THUỐC')).toBeVisible();
-        await expect(page.getByText('DẠNG')).toBeVisible();
-        await expect(page.getByText('GIÁ BÁN')).toBeVisible();
+        const inventoryTable = page.locator('.admin-inventory-desktop-table table');
+        await expect(inventoryTable.getByText('TÊN THUỐC')).toBeVisible();
+        await expect(inventoryTable.getByText('DẠNG')).toBeVisible();
+        await expect(inventoryTable.getByText('GIÁ BÁN')).toBeVisible();
 
         // 3. Kiểm tra cột lô thuốc
         await expect(page.getByText('Lô thuốc & Hạn dùng')).toBeVisible();

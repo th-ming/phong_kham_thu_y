@@ -727,7 +727,7 @@ public class SystemController {
         ResponseEntity<?> rateLimitResponse = checkOtpSendRateLimit(rateKey);
         if (rateLimitResponse != null) return rateLimitResponse;
         
-        // Chk email exist in db
+        // Kiểm tra email tồn tại trong cơ sở dữ liệu
         String sql = "SELECT COUNT(*) FROM (SELECT email FROM KhachHang WHERE LOWER(email) = LOWER(?) UNION SELECT email FROM NhanVien WHERE LOWER(email) = LOWER(?)) AS tbl";
         Integer count = jdbcTemplate.queryForObject(sql, Integer.class, email, email);
         if (count == null || count == 0) {

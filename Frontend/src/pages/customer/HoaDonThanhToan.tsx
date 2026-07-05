@@ -104,6 +104,7 @@ const HoaDonThanhToan: React.FC = () => {
   const [totalServerPages, setTotalServerPages] = useState(1);
   const [isServerPaginated, setIsServerPaginated] = useState(false);
   const hasLoadedRef = useRef(false);
+  const [invoiceStats, setInvoiceStats] = useState<{ tong: number; da_thanh_toan: number; chua_thanh_toan: number; tong_tien_da_tra: number } | null>(null);
 
   // Phân trang
   const [currentPage, setCurrentPage] = useState(1);
@@ -169,7 +170,34 @@ const HoaDonThanhToan: React.FC = () => {
     fetchInvoices();
   }, [fetchInvoices]);
 
+  // Fetch tong stats hoa don (khong phan trang)
+  useEffect(() => {
+    const user = getUserProfile();
+    if (!user) return;
+    const userId = getCustomerId(user);
+    if (!userId) return;
+    axiosInstance.get(`/api/hoa-don/khach/${userId}/stats`)
+      .then(res => setInvoiceStats(res.data))
+      .catch(() => {});
+  }, [refreshTrigger]);
+
   useAutoRefresh(fetchInvoices, { runImmediately: false });
+
+  useEffect(() => {
+    const handleRealtimeUpdate = () => {
+      fetchInvoices();
+      // Reload stats hóa đơn nữa
+      const user = getUserProfile();
+      if (!user) return;
+      const userId = getCustomerId(user);
+      if (!userId) return;
+      axiosInstance.get(`/api/hoa-don/khach/${userId}/stats`)
+        .then(res => setInvoiceStats(res.data))
+        .catch(() => {});
+    };
+    window.addEventListener("rexi-data-changed", handleRealtimeUpdate);
+    return () => window.removeEventListener("rexi-data-changed", handleRealtimeUpdate);
+  }, [fetchInvoices]);
 
   useEffect(() => {
     if (!printAfterDetailsLoad || !viewingHD || loadingDetails || loadingPayments) return;
@@ -224,6 +252,14 @@ const HoaDonThanhToan: React.FC = () => {
   const currentRows = isServerPaginated ? filteredList : filteredList.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
   const stats = useMemo(() => {
+    if (invoiceStats) {
+      return {
+        total: Number(invoiceStats.tong) || 0,
+        paidCount: Number(invoiceStats.da_thanh_toan) || 0,
+        unpaidCount: Number(invoiceStats.chua_thanh_toan) || 0,
+        totalPaid: Number(invoiceStats.tong_tien_da_tra) || 0
+      };
+    }
     const paid = hoaDons.filter(h => (h.trang_thai || h.trangThai)?.toLowerCase() === "da_thanh_toan");
     return {
       total: hoaDons.length,
@@ -231,7 +267,7 @@ const HoaDonThanhToan: React.FC = () => {
       unpaidCount: hoaDons.filter(h => isPayableInvoice(h)).length,
       totalPaid: paid.reduce((s, h) => s + getInvoiceTotal(h), 0)
     };
-  }, [hoaDons]);
+  }, [hoaDons, invoiceStats]);
 
   const handleExportExcel = () => {
     if (filteredList.length === 0) {
@@ -537,6 +573,29 @@ const HoaDonThanhToan: React.FC = () => {
           }
           .customer-invoice-list {
             gap: 14px !important;
+          }
+          .customer-kpi-popover {
+            position: fixed !important;
+            top: 50% !important;
+            left: 20px !important;
+            right: 20px !important;
+            width: auto !important;
+            height: fit-content !important;
+            z-index: 999999 !important;
+            background: var(--surface) !important;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3) !important;
+            border-radius: 24px !important;
+            padding: 24px !important;
+            transform: translateY(-50%) !important;
+            transition: opacity 0.25s ease !important;
+            pointer-events: none;
+            white-space: normal !important;
+            border: 2px solid var(--primary-light) !important;
+          }
+          .customer-kpi-card:hover .customer-kpi-popover,
+          .customer-kpi-card:focus .customer-kpi-popover {
+            opacity: 1 !important;
+            pointer-events: auto !important;
           }
           .customer-invoice-row {
             display: grid !important;

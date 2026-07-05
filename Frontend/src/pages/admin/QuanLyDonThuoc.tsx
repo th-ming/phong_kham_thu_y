@@ -1,8 +1,8 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import axiosInstance from "@services/axios";
 import { Modal } from "@components/CommonUI";
 import { toast } from "@components/Toast";
-import { matchesSearchFields } from "@utils/index";
+import { matchesSearchFields, fixVietnameseEncoding } from "@utils/index";
 import { useAutoRefresh } from "@hooks/useAutoRefresh";
 
 const QuanLyDonThuoc: React.FC = () => {
@@ -40,6 +40,14 @@ const QuanLyDonThuoc: React.FC = () => {
   }, []);
 
   useAutoRefresh(fetchDonThuocs, { runImmediately: false });
+
+  useEffect(() => {
+    const handleRealtimeUpdate = () => {
+      fetchDonThuocs();
+    };
+    window.addEventListener("rexi-data-changed", handleRealtimeUpdate);
+    return () => window.removeEventListener("rexi-data-changed", handleRealtimeUpdate);
+  }, []);
 
   const filteredDonThuocs = React.useMemo(() => {
     if (!searchDonThuoc.trim()) return donThuocs;
@@ -240,12 +248,12 @@ const QuanLyDonThuoc: React.FC = () => {
               <div className="admin-prescription-card-top">
                 <div>
                   <h3>#DT-{dt.id_don_thuoc} · {dt.ten_thuoc || 'Thuốc chưa cập nhật'}</h3>
-                  <p>{dt.ten_thu_cung || 'Bệnh nhân chưa cập nhật'} · HS-{dt.id_ho_so_benh_an}</p>
+                  <p>{fixVietnameseEncoding(dt.ten_thu_cung) || dt.ten_thu_cung || 'Bệnh nhân chưa cập nhật'} · HS-{dt.id_ho_so_benh_an}</p>
                 </div>
                 <span className="admin-prescription-qty">SL {dt.so_luong || '—'}</span>
               </div>
               <p>{dt.cach_dung || 'Chưa có hướng dẫn dùng'}</p>
-              {dt.ghi_chu && <p>{dt.ghi_chu}</p>}
+              {dt.ghi_chu && <p>{fixVietnameseEncoding(dt.ghi_chu) || dt.ghi_chu}</p>}
               <button data-ai-id="button-quanlydonthuoc-mobile-view" className="btn" onClick={() => setViewingDT(dt)} style={{ background: 'var(--gray-50)', color: 'var(--ink)' }}>
                 <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>description</span>
               </button>
@@ -271,7 +279,7 @@ const QuanLyDonThuoc: React.FC = () => {
               <tr key={dt.id_don_thuoc} style={{ borderBottom: '1px solid var(--gray-50)', transition: 'all 0.2s' }}>
                 <td style={{ padding: '20px', fontWeight: 800, color: 'var(--gray-400)' }}>#DT-{dt.id_don_thuoc}</td>
                 <td style={{ padding: '20px' }}>
-                  <div style={{ fontWeight: 800, color: 'var(--ink)' }}>{dt.ten_thu_cung || "—"}</div>
+                  <div style={{ fontWeight: 800, color: 'var(--ink)' }}>{fixVietnameseEncoding(dt.ten_thu_cung) || dt.ten_thu_cung || "—"}</div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--gray-400)', fontWeight: 600 }}>Hồ sơ: #HS-{dt.id_ho_so_benh_an}</div>
                 </td>
                 <td style={{ padding: '20px' }}>
@@ -285,7 +293,7 @@ const QuanLyDonThuoc: React.FC = () => {
                 <td style={{ padding: '20px', textAlign: 'right', fontWeight: 900, color: 'var(--ink)' }}>{dt.so_luong}</td>
                 <td style={{ padding: '20px' }}>
                   <div style={{ fontWeight: 600, fontSize: '0.85rem', maxWidth: '250px' }}>{dt.cach_dung}</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--gray-400)', fontStyle: 'italic' }}>{dt.ghi_chu}</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--gray-400)', fontStyle: 'italic' }}>{fixVietnameseEncoding(dt.ghi_chu) || dt.ghi_chu}</div>
                 </td>
                 <td style={{ padding: '20px' }}>
                   <span style={{
@@ -327,7 +335,7 @@ const QuanLyDonThuoc: React.FC = () => {
                 <div className="responsive-grid-2">
                    <div>
                       <div style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--gray-400)', letterSpacing: '1px', marginBottom: '4px' }}>BỆNH NHÂN</div>
-                      <div style={{ fontWeight: 900, color: 'var(--ink)' }}>{viewingDT.ten_thu_cung || 'N/A'}</div>
+                      <div style={{ fontWeight: 900, color: 'var(--ink)' }}>{fixVietnameseEncoding(viewingDT.ten_thu_cung) || viewingDT.ten_thu_cung || 'N/A'}</div>
                    </div>
                    <div>
                       <div style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--gray-400)', letterSpacing: '1px', marginBottom: '4px' }}>CHỦ NUÔI</div>
@@ -349,7 +357,7 @@ const QuanLyDonThuoc: React.FC = () => {
                 </div>
                 <div style={{ padding: '20px', border: '1px solid var(--gray-200)', borderRadius: '16px', background: 'var(--surface)' }}>
                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                      <span style={{ fontWeight: 900, fontSize: '1.1rem', color: 'var(--ink)' }}>{viewingDT.ten_thuoc}</span>
+                      <span style={{ fontWeight: 900, fontSize: '1.1rem', color: 'var(--ink)' }}>{viewingDT.ten_thu_cung}</span>
                       <span style={{ fontWeight: 800, color: 'var(--ink)' }}>SL: {viewingDT.so_luong}</span>
                    </div>
                    <div style={{ color: 'var(--ink)', fontWeight: 700, fontSize: '0.95rem', marginBottom: '12px' }}>
@@ -357,7 +365,7 @@ const QuanLyDonThuoc: React.FC = () => {
                    </div>
                    {viewingDT.ghi_chu && (
                      <div style={{ fontSize: '0.85rem', color: 'var(--gray-500)', fontStyle: 'italic', background: 'var(--background)', border: '1px solid var(--gray-100)', padding: '12px', borderRadius: '12px' }}>
-                        Ghi chú: {viewingDT.ghi_chu}
+                        Ghi chú: {fixVietnameseEncoding(viewingDT.ghi_chu) || viewingDT.ghi_chu}
                      </div>
                    )}
                 </div>

@@ -1,40 +1,67 @@
-# 🛠️ Rexi Debug & Management Guide
+# DEBUG GUIDE — Rexi Veterinary System
 
-> "Lưu vào đây để sau này làm cho chuẩn - Bí kíp từ Sếp"
+## 🔴 Issue: Playwright Tests Fail with Login Timeout
 
-## 1. Kiểm tra lỗi nhanh (Frontend)
-- Nhấn **F12** trong trình duyệt Chrome.
-- Chuyển sang tab **Console**.
-- Di chuột vào các dòng lỗi đỏ, nhấn vào biểu tượng **bóng đèn (Gemini)** để xem gợi ý cách sửa từ AI tích hợp sẵn của Google.
-- Nếu dữ liệu không hiện lên: Kiểm tra ngay xem API có trả về lỗi 404 hoặc 500 không.
+### Ngày phát hiện: 2026-07-02
 
-## 2. Xử lý lỗi kết nối Backend
-- Nếu lỗi xuất hiện hàng loạt hoặc không tải được dữ liệu, khả năng cao là **Backend chưa chạy** hoặc đang bị treo.
-- **Phát triển (tự restart khi sửa code Backend):**
-    ```powershell
-    npm run backend:dev
-    ```
-    Mỗi lần lưu file trong `Backend/src` → tự `compile` → backend restart (Spring DevTools). Không cần tắt Java thủ công.
-- **Cách khắc phục khi treo / lỗi nặng:**
-    1. Tắt hoàn toàn các tiến trình Java đang chạy (`taskkill /F /IM java.exe`).
-    2. Chạy lệnh làm sạch và khởi động lại: `cd Backend` rồi `.\mvnw.cmd clean spring-boot:run`.
-    3. Đợi cho đến khi thấy dòng chữ `Started PktyApplication in ... seconds` thì mới bắt đầu thao tác trên trình duyệt.
-- **Chạy local không auto-restart:** `npm run backend` hoặc `scripts/run_rexi_backend.ps1`.
+### Triệu chứng:
+- Gần hết Playwright test cases fail với lỗi `page.waitForURL: Timeout 15000ms exceeded`
+- Test cố gắng login admin → click "Đăng nhập ngay" → nhưng KHÔNG redirect sang `/quan-ly/dashboard`
+- Một số test pass (TC03 Google button, TC05 OTP, TC06 Quick verify) vì KHÔNG cần login
 
-## 3. Quản lý Hệ thống (Admin)
-- **Sao lưu dữ liệu:** Truy cập trang Cấu hình, nhấn "Sao lưu ngay" và nhớ bấm **"Đồng ý" (OK)** trên bảng xác nhận.
-- **Nhật ký hoạt động:** 
-    - Xem dòng lịch sử ở bên phải để biết ai đã làm gì. 
-    - **Xóa từng dòng:** Nhấn vào biểu tượng thùng rác ở cuối mỗi dòng để xóa bản ghi đó (cần xác nhận).
-    - **Xóa sạch:** Nhấn "Xóa nhật ký" ở góc trên để xóa toàn bộ (cần xác nhận).
-- **Cấu hình:** Lưu các thông số kỹ thuật và đợi thông báo "Thành công".
+### Root Cause:
+**Brute-force lockout trong `AuthController.java`** khi chạy Playwright tests song song.
 
-## 4. Tiết kiệm Token cho AI (RTK - Rust Token Killer)
-- Tôi đã cài đặt **rtk** để giúp bạn tiết kiệm token khi chat với AI.
-- **Cách dùng:** Thêm `rtk` trước các lệnh chạy.
-- **Frontend:** Chạy `npm run dev:rtk` (thay vì `npm run dev`).
-- **Backend:** Chạy `rtk .\mvnw.cmd spring-boot:run`.
-- **Lưu ý:** Nếu lệnh `rtk` không nhận, hãy **khởi động lại Terminal** hoặc IDE để cập nhật đường dẫn hệ thống.
+**Cơ chế:**
+1. `AuthController.java` có biến static `loginAttempts` và `lockoutTime` (ConcurrentHashMap, lưu trong RAM)
+2. `MAX_ATTEMPTS = 5` — sau 5 lần nhập sai pass → khóa tạm thời `LOCKOUT_DURATION = 15 phút`
+3. Key lockout = `username + "-" + clientIp` (VD: `admin-127.0.0.1`)
+4. `Frontend/playwright.config.ts` có `fullyParallel: true` → nhiều test chạy **đồng thời**
+5. Nhiều test cùng nhập `admin`/`admin@rexi.com` (hoặc sai pass) 1 lúc → Backend đếm nhiều lần → trigger lockout
+6. Tất cả test sau đều fail vì admin bị khóa 15 phút
+
+### Bằng chứng:
+- Browser test login `admin/admin@rexi.com` → **PASS** (chạy riêng lẻ)
+- SQL query xác nhận `admin` tồn tại trong DB, active, BCrypt hash ✅
+- Playwright test chạy `--workers=1` (chạy tuần tự) → **PASS** trong 6.5s
+
+### Cách fix (ĐÃ LÀM):
+```typescript
+// Frontend/playwright.config.ts
+fullyParallel: false,  // KHÔNG được parallel
+workers: 1,            // LUÔN chạy tuần tự
+```
+
+### Bài học:
+1. **Luôn chạy Playwright tests tuần tự** (workers=1) vì Backend có brute-force lockout
+2. Nếu muốn chạy parallel, phải tắt lockout trong AuthController cho test environment
+3. Account `admin/admin@rexi.com` là tài khoản test chung → tránh chạy nhiều test cùng lúc login account này
 
 ---
-*Lưu ý: Không sửa code linh tinh khi chưa hiểu rõ nguyên nhân. Ưu tiên Reset hệ thống trước khi can thiệp sâu vào mã nguồn.*
+
+## 🔴 Issue: Chatbot Test 150 Kịch bản timeout
+
+### Triệu chứng:
+- Test 16 (`16_Kiem_Tra_Sieu_Agent_150_Truong_Hop.spec.ts`) timeout 15 phút
+
+### Root Cause:
+- Test có ~150 cases, mỗi case mock API + wait 3s = ~7.5 phút lý thuyết
+- Nhưng browser context load lại trang + open chatbot mỗi case → cộng thêm thời gian
+- Playwright timeout config quá thấp cho số lượng case lớn
+
+### Cách fix:
+- Tăng timeout trong config: `timeout: 180000` (3 phút/case) hoặc chia nhỏ thành nhiều file
+
+---
+
+## 🟡 Issue: Test 17 (Guest Chatbot) fail
+
+### Triệu chứng:
+- `locator.fill: Test timeout of 60000ms exceeded` tại `textarea[placeholder*="Lệnh"]`
+
+### Root Cause:
+- Placeholder text trong chatbot Agent tab có thể thay đổi
+- Test hardcode `placeholder*="Lệnh"` nhưng UI thực tế dùng placeholder khác
+
+### Cách fix:
+- Cập nhật selector trong test để khớp với placeholder thực tế

@@ -38,6 +38,9 @@ public class TaiKhoan {
     @Column(name = "welcome_email_sent")
     private Boolean welcome_email_sent;
 
+    @Column(name = "last_password_change")
+    private LocalDateTime last_password_change;
+
     @ManyToOne
     @JoinColumn(name = "id_khach_hang", insertable = false, updatable = false)
     private KhachHang khach_hang;

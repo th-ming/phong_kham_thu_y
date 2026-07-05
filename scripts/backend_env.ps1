@@ -42,7 +42,7 @@ if ($detectedJavaHome) {
     $env:JAVA_HOME = $detectedJavaHome
 }
 
-$env:DB_URL = 'jdbc:sqlserver://localhost\\SQLEXPRESS;databaseName=PhongKhamThuY;encrypt=true;trustServerCertificate=true'
+$env:DB_URL = 'jdbc:sqlserver://127.0.0.1:1433;databaseName=PhongKhamThuY;encrypt=true;trustServerCertificate=true'
 $env:DB_USERNAME = 'sa'
 $env:DB_PASSWORD = '123456'
 $env:JWT_SECRET = 'your_super_secret_key_change_this_in_production_immediately'

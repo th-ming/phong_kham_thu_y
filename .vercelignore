@@ -1,0 +1,25 @@
+# Vercel deploy only needs Frontend/
+# Exclude everything else to stay under 100MB limit
+
+Backend/
+Database/
+Tester/
+Documentation/
+Báo cáo thực tập/
+scripts/
+.git/
+.github/
+agents/
+.cursor/
+.agents/
+node_modules/
+*.md
+*.bat
+*.ps1
+*.code-workspace
+docker-compose.yml
+render.yaml
+opencode.json
+RexiProject.code-workspace
+.DS_Store
+Thumbs.db

@@ -1,6 +1,7 @@
 # Di chuyen vao thu muc du an
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-Set-Location 'd:\QLy Phòng Khám Thú Y'
+$RepoRoot = Split-Path $PSScriptRoot -Parent
+Set-Location $RepoRoot
 
 Write-Host 'Dang chuan bi cap nhat toan bo he thong... [BACKUP MODE]'
 
@@ -9,8 +10,7 @@ if (Test-Path 'IntegrationServices') {
     Remove-Item -Path 'IntegrationServices' -Recurse -Force -ErrorAction SilentlyContinue
 }
 
-# Xuat CSDL ra file tam de tranh loi tieng Viet cua mssql-scripter
-$tempSql = 'd:\PKTY_Temp.sql'
+# Xuat CSDL ra file tam de tranh loi tieng Viet cua mssql-scripter    $tempSql = Join-Path $RepoRoot 'PKTY_Temp.sql'
 Write-Host 'Dang xuat CSDL...'
 try {
     mssql-scripter -S 'localhost\SQLEXPRESS' -d 'PhongKhamThuY' --schema-and-data -f $tempSql

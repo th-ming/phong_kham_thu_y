@@ -1,4 +1,4 @@
-﻿import React, { lazy, Suspense, useEffect, useState } from "react";
+import React, { lazy, Suspense, useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import ErrorBoundary from "@components/ErrorBoundary";
 import PublicLayout from "@layouts/PublicLayout";
@@ -94,26 +94,89 @@ const SystemTitle: React.FC = () => {
   return null;
 };
 
-// * * Xử lý lỗi tập trung bằng Error Boundary * Tự động hiển thị chỉ báo khi các trang đang tải
-const ScrollToTopOnNavigate: React.FC = () => {
+// * * Scroll Restoration and Navigation Handler — F5-proof
+// Saves scroll on scroll + beforeunload; restores after document fully loaded.
+const ScrollRestorationAndNavigation: React.FC = () => {
   const location = useLocation();
-  const isFirstRender = React.useRef(true);
-  
+  const lastPathname = React.useRef(location.pathname);
+
+  // 1. Save scroll position on every scroll
   useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
+    const key = `rexi_scroll_${location.pathname}`;
+    const handleScroll = () => {
+      if (window.scrollY > 0) {
+        sessionStorage.setItem(key, window.scrollY.toString());
+      }
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [location.pathname]);
+
+  // 2. Backup save on beforeunload — guarantees position is captured before F5
+  useEffect(() => {
+    const key = `rexi_scroll_${location.pathname}`;
+    const handleBeforeUnload = () => {
+      if (window.scrollY > 0) {
+        sessionStorage.setItem(key, window.scrollY.toString());
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [location.pathname]);
+
+  // 3. Handle mount (F5 reload) and navigation
+  useEffect(() => {
+    // Case A: Pathname changed → scroll to top (user navigated)
+    if (lastPathname.current !== location.pathname) {
+      lastPathname.current = location.pathname;
+      window.scrollTo(0, 0);
+      sessionStorage.removeItem(`rexi_scroll_${location.pathname}`);
       return;
     }
-    window.scrollTo(0, 0);
+
+    // Case B: Same pathname (F5 reload) → restore scroll position
+    const savedScroll = sessionStorage.getItem(`rexi_scroll_${location.pathname}`);
+    const hash = window.location.hash;
+    if (!savedScroll && !hash) return;
+
+    let cancelled = false;
+
+    const doRestore = () => {
+      if (cancelled) return;
+      if (hash) {
+        const el = document.querySelector(hash);
+        if (el) {
+          el.scrollIntoView({ behavior: "instant" });
+          return;
+        }
+      }
+      if (savedScroll) {
+        const y = parseInt(savedScroll, 10);
+        if (!isNaN(y) && y > 0) {
+          window.scrollTo({ top: y, behavior: "instant" });
+        }
+      }
+    };
+
+    // If the page is already fully loaded (warm cache), restore after a short paint cycle
+    if (document.readyState === "complete") {
+      const t = setTimeout(() => requestAnimationFrame(doRestore), 300);
+      return () => { cancelled = true; clearTimeout(t); };
+    }
+
+    // Otherwise wait for the load event, then restore after paint
+    const onLoad = () => requestAnimationFrame(doRestore);
+    window.addEventListener("load", onLoad, { once: true });
+    return () => { cancelled = true; window.removeEventListener("load", onLoad); };
   }, [location.pathname]);
-  
+
   return null;
 };
 
 const App: React.FC = () => {
   return (
     <BrowserRouter>
-      <ScrollToTopOnNavigate />
+      <ScrollRestorationAndNavigation />
       <ErrorBoundary>
         <SystemTitle />
         <ToastContainer />

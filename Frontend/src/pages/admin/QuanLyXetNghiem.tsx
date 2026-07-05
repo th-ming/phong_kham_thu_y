@@ -35,6 +35,14 @@ const QuanLyXetNghiem: React.FC = () => {
 
   useAutoRefresh(fetchXetNghiems, { runImmediately: false });
 
+  useEffect(() => {
+    const handleRealtimeUpdate = () => {
+      fetchXetNghiems();
+    };
+    window.addEventListener("rexi-data-changed", handleRealtimeUpdate);
+    return () => window.removeEventListener("rexi-data-changed", handleRealtimeUpdate);
+  }, []);
+
   const filteredXetNghiems = React.useMemo(() => {
     if (!searchXetNghiem.trim()) return xetNghiems;
     return xetNghiems.filter(xn => matchesSearchFields(searchXetNghiem, [

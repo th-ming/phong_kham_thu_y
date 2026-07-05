@@ -89,6 +89,8 @@ public class DatabaseBackupService {
 
     // Khôi phục CSDL từ file .bak có sẵn trong thư mục backups/
     // Bảo vệ: chỉ nhận filename thuần (không cho phép path traversal)
+    // FIX: Dùng JDBC connection riêng đến master DB để tránh SQL Server error 3102
+    //      (không thể restore database khi đang kết nối vào chính nó)
     public void restoreDatabase(String filename) throws Exception {
         // Chặn path traversal: chỉ cho phép tên file không có ký tự phân cách đường dẫn
         if (filename == null || filename.contains("..") || filename.contains("/") || filename.contains("\\")) {
@@ -112,21 +114,49 @@ public class DatabaseBackupService {
         String dbName = jdbcTemplate.queryForObject("SELECT DB_NAME()", String.class);
         String absolutePath = backupFile.getAbsolutePath();
 
-        // Đặt DB về single-user mode để tránh conflict, sau đó restore, rồi trả lại multi-user
-        String sqlSingleUser = "ALTER DATABASE [" + dbName + "] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;";
-        String sqlRestore = "RESTORE DATABASE [" + dbName + "] FROM DISK = '" + absolutePath + "' WITH REPLACE;";
-        String sqlMultiUser = "ALTER DATABASE [" + dbName + "] SET MULTI_USER;";
+        logger.info("Kết nối đến master DB để thực hiện restore...");
 
-        try {
-            jdbcTemplate.execute(sqlSingleUser);
-            jdbcTemplate.execute(sqlRestore);
-        } finally {
-            // Luôn trả lại multi-user dù restore thành công hay thất bại
-            try {
-                jdbcTemplate.execute(sqlMultiUser);
+        // Dùng try-with-resources để đảm bảo connection tự đóng
+        try (java.sql.Connection conn = jdbcTemplate.getDataSource().getConnection();
+             java.sql.Statement stmt = conn.createStatement()) {
+
+            // Switch sang master DB trên connection hiện tại
+            stmt.execute("USE [master]");
+
+            // Đặt DB về single-user mode để tránh conflict
+            stmt.execute("ALTER DATABASE [" + dbName + "] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;");
+            logger.info("Đã đặt DB vào SINGLE_USER mode.");
+
+            // Thực hiện restore
+            stmt.execute("RESTORE DATABASE [" + dbName + "] FROM DISK = '" + absolutePath.replace("'", "''") + "' WITH REPLACE;");
+            logger.info("Restore thành công!");
+
+            // Trả lại multi-user
+            stmt.execute("ALTER DATABASE [" + dbName + "] SET MULTI_USER;");
+            logger.info("Đã trả DB về MULTI_USER mode.");
+
+        } catch (Exception e) {
+            // Cố gắng trả lại multi-user nếu có lỗi
+            try (java.sql.Connection conn = jdbcTemplate.getDataSource().getConnection();
+                 java.sql.Statement stmt = conn.createStatement()) {
+                stmt.execute("USE [master]");
+                stmt.execute("ALTER DATABASE [" + dbName + "] SET MULTI_USER;");
             } catch (Exception ignored) {
-                // Nếu restore thất bại hoàn toàn DB có thể không khả dụng — log lại
                 logger.severe("⚠️ Không thể đặt lại MULTI_USER sau khi restore. DB có thể cần khởi động lại.");
+            }
+            throw e;
+        } finally {
+            // Luôn invalidate HikariCP connection pool sau restore (thành công hay thất bại)
+            // Tránh connection cũ sau khi DB đã thay đổi
+            try {
+                if (jdbcTemplate.getDataSource() instanceof com.zaxxer.hikari.HikariDataSource hikari) {
+                    var pool = hikari.getHikariPoolMXBean();
+                    if (pool != null) {
+                        pool.softEvictConnections();
+                        logger.info("Đã invalidate HikariCP connection pool sau restore.");
+                    }
+                }
+            } catch (Exception ignored) {
             }
         }
 

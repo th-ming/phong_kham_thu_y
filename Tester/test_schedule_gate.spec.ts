@@ -27,7 +27,7 @@ test("Kiem tra gioi han sua lich lam viec nhan vien tren cloud", async ({ reques
     // Dang nhap lay token
     console.log("[1] Dang nhap...");
     const loginRes = await request.post(BASE_URL + "/api/auth/login", {
-        data: { tenDangNhap: "teststaff", matKhau: "Password123!" },
+        data: { tenDangNhap: "tieptan", matKhau: "tieptan@rexi.com" },
     });
     let token: string | null = null;
     let staffId: string | null = null;
@@ -37,15 +37,15 @@ test("Kiem tra gioi han sua lich lam viec nhan vien tren cloud", async ({ reques
         staffId = body.idNhanVien || body.id_nhan_vien || null;
         console.log("Dang nhap OK, staffId=" + staffId);
     } else {
-        // fallback: dung testcustomer2
+        // fallback: dung khachhang
         const r2 = await request.post(BASE_URL + "/api/auth/login", {
-            data: { tenDangNhap: "testcustomer2", matKhau: "Password123!" },
+            data: { tenDangNhap: "khachhang", matKhau: "khachhang@rexi.com" },
         });
         if (r2.ok()) {
             const body = await r2.json();
             token = body.token || body.accessToken || null;
             staffId = body.idNhanVien || body.id_nhan_vien || null;
-            console.log("Dang nhap testcustomer2 OK, staffId=" + staffId);
+            console.log("Dang nhap khachhang OK, staffId=" + staffId);
         }
     }
     expect(token).toBeTruthy();
@@ -74,10 +74,10 @@ test("Kiem tra gioi han sua lich lam viec nhan vien tren cloud", async ({ reques
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto(FRONTEND_URL + "/dang-nhap", { waitUntil: "load", timeout: 60000 });
     await page.waitForTimeout(2000);
-    try { await page.getByPlaceholder("Ten dang nhap").fill("teststaff"); } catch {}
-    try { await page.getByPlaceholder("Ten dang nhap").fill("teststaff"); } catch {}
-    await page.locator("input[placeholder*='ng nh']").first().fill("teststaff").catch(() => {});
-    await page.locator("input[type='password']").first().fill("Password123!").catch(() => {});
+    try { await page.getByPlaceholder("Ten dang nhap").fill("tieptan"); } catch {}
+    try { await page.getByPlaceholder("Ten dang nhap").fill("tieptan"); } catch {}
+    await page.locator("input[placeholder*='ng nh']").first().fill("tieptan").catch(() => {});
+    await page.locator("input[type='password']").first().fill("tieptan@rexi.com").catch(() => {});
     await page.locator("button[type='submit'], button:has-text('ng nh')").first().click().catch(() => {});
     await page.waitForTimeout(3000);
     await page.goto(FRONTEND_URL + "/quan-ly/lich-lam-viec", { waitUntil: "networkidle", timeout: 30000 });

@@ -3,7 +3,7 @@ package com.rexi.pkty.dto;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 
-// Req register DTO, validate ok
+// DTO yêu cầu đăng ký, đã validate
 @Data
 public class RegisterRequest {
     

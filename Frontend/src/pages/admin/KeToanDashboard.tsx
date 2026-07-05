@@ -30,6 +30,8 @@ ChartJS.register(
     Filler
 );
 
+const toLocalDateKey = (date: Date) => new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+
 const KeToanDashboard: React.FC = () => {
     const [invoices, setInvoices] = useState<any[]>([]);
     const [revenueData, setRevenueData] = useState<any[]>([]);
@@ -103,7 +105,7 @@ const KeToanDashboard: React.FC = () => {
 
     // Tính toán số liệu tổng quan
     const stats = useMemo(() => {
-        const todayStr = new Date().toISOString().split('T')[0];
+        const todayStr = toLocalDateKey(new Date());
 
         const paidInvoices = invoices.filter(inv => inv.trang_thai?.toUpperCase() === 'DA_THANH_TOAN');
         const unpaidInvoices = invoices.filter(inv => inv.trang_thai?.toUpperCase() === 'CHO_THANH_TOAN');
@@ -123,13 +125,13 @@ const KeToanDashboard: React.FC = () => {
         const toDateKey = (value: any) => {
             if (!value) return "";
             const date = new Date(value);
-            return Number.isNaN(date.getTime()) ? String(value).slice(0, 10) : date.toISOString().slice(0, 10);
+            return Number.isNaN(date.getTime()) ? String(value).slice(0, 10) : toLocalDateKey(date);
         };
         const today = new Date();
-        const todayKey = today.toISOString().slice(0, 10);
+        const todayKey = toLocalDateKey(today);
         const yesterday = new Date(today);
         yesterday.setDate(today.getDate() - 1);
-        const yesterdayKey = yesterday.toISOString().slice(0, 10);
+        const yesterdayKey = toLocalDateKey(yesterday);
 
         const paidInvoices = invoices.filter(inv => inv.trang_thai?.toUpperCase() === 'DA_THANH_TOAN');
         const unpaidInvoices = invoices.filter(inv => inv.trang_thai?.toUpperCase() === 'CHO_THANH_TOAN');
@@ -178,7 +180,7 @@ const KeToanDashboard: React.FC = () => {
         const rawDate = item?.Ngay || item?.ngay;
         if (!rawDate) return "";
         const date = new Date(rawDate);
-        return Number.isNaN(date.getTime()) ? String(rawDate).slice(0, 10) : date.toISOString().slice(0, 10);
+        return Number.isNaN(date.getTime()) ? String(rawDate).slice(0, 10) : toLocalDateKey(date);
     };
 
     // Chuẩn bị dữ liệu cho biểu đồ Chart.js
@@ -197,7 +199,7 @@ const KeToanDashboard: React.FC = () => {
         for (let i = 6; i >= 0; i--) {
             const d = new Date();
             d.setDate(d.getDate() - i);
-            const dateKey = d.toISOString().slice(0, 10);
+            const dateKey = toLocalDateKey(d);
             labels.push(`${d.getDate()}/${d.getMonth() + 1}`);
             data.push(revenueByDate.get(dateKey) || 0);
         }
@@ -312,7 +314,7 @@ const KeToanDashboard: React.FC = () => {
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
-        link.download = `DanhSachHoaDon_Ketoan_${new Date().toISOString().split('T')[0]}.csv`;
+        link.download = `DanhSachHoaDon_Ketoan_${new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]}.csv`;
         link.click();
         toast.success("Đã xuất danh sách hóa đơn ra file Excel!");
     };

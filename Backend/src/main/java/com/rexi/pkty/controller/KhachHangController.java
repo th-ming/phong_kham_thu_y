@@ -77,17 +77,52 @@ public class KhachHangController {
     }
 
     // Search khách hàng qua name/sđt/email/địa chỉ/mã KH.
+    // Nếu query trông giống SĐT -> chuẩn hóa cả query & DB (bỏ mọi ký tự không phải số),
+    // rồi so sánh chính xác (9+ chữ số) hoặc tìm một phần (4-8 chữ số) để tránh trả nhiều kết quả sai.
     @GetMapping("/search")
     @PreAuthorize(RexiSecurityRoles.CUSTOMER_PET_READ)
     public ResponseEntity<?> searchBySdt(@RequestParam String sdt) {
+        String trimmed = sdt.trim();
+
+        // Chuẩn hóa: loại bỏ tất cả ký tự không phải số (khoảng trắng, gạch ngang, dấu chấm, +84...)
+        String digitsOnly = trimmed.replaceAll("\\D", "");
+        // Bỏ tiền tố quốc tế 84 để về đầu số 0 (ví dụ: +84916123456 -> 0916123456)
+        if (digitsOnly.startsWith("84") && digitsOnly.length() == 11) {
+            digitsOnly = "0" + digitsOnly.substring(2);
+        }
+
+        final String normalizedQuery = digitsOnly;
+        // Xác định đây có phải là truy vấn số điện thoại không
+        final boolean isExactPhone = normalizedQuery.length() >= 9; // Tìm chính xác
+        final boolean isPartialPhone = normalizedQuery.length() >= 4 && normalizedQuery.length() < 9; // Tìm một phần
+
         return ResponseEntity.ok(khachHangRepository.findAll().stream()
                 .filter(kh -> kh.getDa_xoa() == null || !kh.getDa_xoa())
-                .filter(kh -> com.rexi.pkty.util.SmartSearchSql.matchesFields(sdt,
-                        kh.getId_khach_hang(),
-                        kh.getTen_khach_hang(),
-                        kh.getSdt(),
-                        kh.getEmail(),
-                        kh.getDia_chi()))
+                .filter(kh -> {
+                    if (isExactPhone) {
+                        // Chuẩn hóa SĐT trong DB tương tự
+                        String dbDigits = (kh.getSdt() == null ? "" : kh.getSdt().replaceAll("\\D", ""));
+                        if (dbDigits.startsWith("84") && dbDigits.length() == 11) {
+                            dbDigits = "0" + dbDigits.substring(2);
+                        }
+                        // So sánh chính xác (bỏ số 0 đầu để khớp cả 2 dạng)
+                        return normalizedQuery.equals(dbDigits)
+                                || normalizedQuery.equals(dbDigits.replaceFirst("^0", ""))
+                                || normalizedQuery.replaceFirst("^0", "").equals(dbDigits.replaceFirst("^0", ""));
+                    }
+                    if (isPartialPhone) {
+                        // Chỉ tìm trong cột SĐT, không lan sang tên/địa chỉ
+                        String dbDigits = (kh.getSdt() == null ? "" : kh.getSdt().replaceAll("\\D", ""));
+                        return dbDigits.contains(normalizedQuery);
+                    }
+                    // Không phải số điện thoại -> tìm rộng theo tên, email, địa chỉ...
+                    return com.rexi.pkty.util.SmartSearchSql.matchesFields(sdt,
+                            kh.getId_khach_hang(),
+                            kh.getTen_khach_hang(),
+                            kh.getSdt(),
+                            kh.getEmail(),
+                            kh.getDia_chi());
+                })
                 .limit(20)
                 .toList());
     }
@@ -116,7 +151,7 @@ public class KhachHangController {
     // Get 1 khách hàng theo ID
     @GetMapping("/{id}")
     public ResponseEntity<?> getById(@PathVariable String id) {
-        // Chặn IDOR: KHACH_HANG ko được xem profile người khác
+        // Chặn IDOR: KHACH_HANG ko được xem thông tin cá nhân người khác
         org.springframework.security.core.Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String username = (auth != null) ? auth.getName() : null;
         if (username != null && !username.equals("anonymousUser")) {
@@ -256,9 +291,9 @@ public class KhachHangController {
 
             // BẢO MẬT: Khóa luôn tài khoản đăng nhập để ngăn chặn việc khách hàng dùng mật
             // khẩu cũ đăng nhập lại
-            Optional<TaiKhoan> tkToLock = taiKhoanRepository.findByIdKhachHang(id);
-            if (tkToLock.isPresent()) {
-                TaiKhoan tkLocked = tkToLock.get();
+            List<TaiKhoan> listTkToLock = taiKhoanRepository.findByIdKhachHang(id);
+            if (!listTkToLock.isEmpty()) {
+                TaiKhoan tkLocked = listTkToLock.get(0);
                 tkLocked.setTrang_thai("Đã khóa");
                 taiKhoanRepository.save(tkLocked);
             }
@@ -296,9 +331,9 @@ public class KhachHangController {
             });
 
             // Mở khóa quyền đăng nhập
-            Optional<TaiKhoan> tkToUnlock = taiKhoanRepository.findByIdKhachHang(id);
-            if (tkToUnlock.isPresent()) {
-                TaiKhoan tkUnlocked = tkToUnlock.get();
+            List<TaiKhoan> listTkToUnlock = taiKhoanRepository.findByIdKhachHang(id);
+            if (!listTkToUnlock.isEmpty()) {
+                TaiKhoan tkUnlocked = listTkToUnlock.get(0);
                 tkUnlocked.setTrang_thai("Hoạt động");
                 taiKhoanRepository.save(tkUnlocked);
             }

@@ -1099,14 +1099,13 @@ export const ChatBotCore: React.FC = () => {
         return () => window.removeEventListener('agent-action', handleAgentAction);
     }, []);
 
-    // Cuộn xuống khi có tin nhắn mới
+    // Cuộn xuống khi có tin nhắn mới (chỉ cuộn hộp chat, không cuộn cửa sổ trình duyệt)
     useEffect(() => {
         const timer = setTimeout(() => {
-            if (activeTab === 'standard') {
-                standardEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-            } else {
-                agentEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-            }
+            const containers = document.querySelectorAll('.chat-message-scroll');
+            containers.forEach(c => {
+                c.scrollTo({ top: c.scrollHeight, behavior: "smooth" });
+            });
         }, 100);
         return () => clearTimeout(timer);
     }, [messages, agentMessages, loading, agentLoading, activeTab]);

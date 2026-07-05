@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import axiosInstance from "@services/axios";
-import { getCustomerIdFromProfile, getUserProfile, matchesSearchFields } from "@utils/index";
+import { getCustomerIdFromProfile, getUserProfile, matchesSearchFields, fixVietnameseEncoding } from "@utils/index";
 import { toast } from "@components/Toast";
 import { toastError } from '@utils/toastHelpers';
 import { Skeleton } from "@components/CommonUI";
@@ -98,6 +98,14 @@ const QuanLyThuCung: React.FC = () => {
 
   useAutoRefresh(fetchUserData, { intervalMs: AUTO_REFRESH_MS });
 
+  useEffect(() => {
+    const handleRealtimeUpdate = () => {
+      fetchUserData();
+    };
+    window.addEventListener("rexi-data-changed", handleRealtimeUpdate);
+    return () => window.removeEventListener("rexi-data-changed", handleRealtimeUpdate);
+  }, [fetchUserData]);
+
   const handleOpenForm = (pet: any = null) => {
     if (pet) {
       setEditingPet(pet);
@@ -161,7 +169,7 @@ const QuanLyThuCung: React.FC = () => {
       id_khach_hang: idKhachHang,
       trong_luong: trongLuongNum || 0,
       can_nang: trongLuongNum || 0,
-      giong_loai: formData.loai,
+      giong_loai: formData.giong,
       tuoi: 0,
       ...(editingPet && { 
         id_thu_cung: editingPet.id_thu_cung,
@@ -606,7 +614,7 @@ const QuanLyThuCung: React.FC = () => {
               <input data-ai-id="input-quanlythucung-nrh9" type="number" step="0.1" min="0.1" value={formData.trong_luong} onChange={e => setFormData({ ...formData, trong_luong: e.target.value })} placeholder="Ví dụ: 5.5" />
             </div>
             <div style={{ display: 'grid', gap: '8px' }}>
-              <label>GIỚI TÍNH</label>
+              <label>GIỚI TÍNH <span style={{ color: '#ff4d4f' }}>*</span></label>
               <select data-ai-id="select-quanlythucung-ewxq" required value={formData.gioi_tinh} onChange={e => setFormData({ ...formData, gioi_tinh: e.target.value })}>
                 <option value="Đực">Đực</option>
                 <option value="Cái">Cái</option>
@@ -615,7 +623,7 @@ const QuanLyThuCung: React.FC = () => {
             </div>
             <div style={{ display: 'grid', gap: '8px' }}>
               <label>NGÀY SINH</label>
-              <input data-ai-id="input-quanlythucung-u4k6" type="date" value={formData.ngay_sinh} max={new Date().toISOString().split("T")[0]} onChange={e => setFormData({ ...formData, ngay_sinh: e.target.value })} />
+              <input data-ai-id="input-quanlythucung-u4k6" type="date" value={formData.ngay_sinh} max={new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split("T")[0]} onChange={e => setFormData({ ...formData, ngay_sinh: e.target.value })} />
             </div>
             <div style={{ display: 'grid', gap: '8px' }}>
               <label>MÀU SẮC</label>
@@ -741,7 +749,7 @@ const QuanLyThuCung: React.FC = () => {
                     />
                   </div>
                   <div className="customer-pet-title-block">
-                    <h3 style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--ink)', margin: 0 }}>{pet.ten_thu_cung}</h3>
+                    <h3 style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--ink)', margin: 0 }}>{fixVietnameseEncoding(pet.ten_thu_cung)}</h3>
                     <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
                       <span className="customer-pet-type-badge" style={{
                         fontSize: '0.7rem',
@@ -750,7 +758,7 @@ const QuanLyThuCung: React.FC = () => {
                         color: isCat ? '#e11d48' : isDog ? '#059669' : 'var(--gray-500)',
                         padding: '4px 10px',
                         borderRadius: '8px'
-                      }}>{pet.loai?.toUpperCase()}</span>
+                      }}>{fixVietnameseEncoding(pet.loai)?.toUpperCase()}</span>
                     </div>
                   </div>
                 </div>
@@ -758,15 +766,15 @@ const QuanLyThuCung: React.FC = () => {
               <div className="responsive-grid-2">
                 <div>
                   <p style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '4px' }}>GIỚI TÍNH</p>
-                  <p style={{ fontWeight: 800, margin: 0, color: 'var(--ink)' }}>{pet.gioi_tinh || '—'}</p>
+                  <p style={{ fontWeight: 800, margin: 0, color: 'var(--ink)' }}>{fixVietnameseEncoding(pet.gioi_tinh) || '—'}</p>
                 </div>
                 <div>
                   <p style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '4px' }}>MÀU SẮC</p>
-                  <p style={{ fontWeight: 800, margin: 0, color: 'var(--ink)' }}>{pet.mau_sac || '—'}</p>
+                  <p style={{ fontWeight: 800, margin: 0, color: 'var(--ink)' }}>{fixVietnameseEncoding(pet.mau_sac) || '—'}</p>
                 </div>
                 <div>
                   <p style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '4px' }}>GIỐNG</p>
-                  <p style={{ fontWeight: 800, margin: 0, color: 'var(--ink)' }}>{pet.giong || '—'}</p>
+                  <p style={{ fontWeight: 800, margin: 0, color: 'var(--ink)' }}>{fixVietnameseEncoding(pet.giong) || '—'}</p>
                 </div>
                 <div>
                   <p style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '4px' }}>CÂN NẶNG</p>

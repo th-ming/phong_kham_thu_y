@@ -139,6 +139,14 @@ const QuanLyKhachHangThuCung: React.FC = () => {
 
   useAutoRefresh(fetchData, { runImmediately: false });
 
+  useEffect(() => {
+    const handleRealtimeUpdate = () => {
+      fetchData();
+    };
+    window.addEventListener("rexi-data-changed", handleRealtimeUpdate);
+    return () => window.removeEventListener("rexi-data-changed", handleRealtimeUpdate);
+  }, [currentPage, searchThuCung]);
+
   // Bẫy nghiệp vụ đăng ký nhanh dành riêng cho TIEP_TAN hoặc ADMIN nhập lẹ khi khách đưa chó mèo tới phòng khám gấp.
   // API register-simple ở backend sẽ tự bóc sđt làm tên đăng nhập và tự hash pass ngẫu nhiên.
   // Nhớ reset sạch form kể cả nam_sinh để tránh lưu đè nhầm thông tin cho ca tiếp theo.

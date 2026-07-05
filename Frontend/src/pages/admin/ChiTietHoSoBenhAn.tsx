@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import axiosInstance from "@services/axios";
 import { Skeleton } from "@components/CommonUI";
 import { useAutoRefresh } from "@hooks/useAutoRefresh";
+import { fixVietnameseEncoding } from "@utils/index";
 
 const ChiTietHoSoBenhAn: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -134,11 +135,11 @@ const ChiTietHoSoBenhAn: React.FC = () => {
             <div className="responsive-grid-2">
               <div>
                 <label style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gray-400)' }}>TRIỆU CHỨNG</label>
-                <p style={{ marginTop: '12px', fontWeight: 700, fontSize: '1.1rem', color: 'var(--ink)' }}>{record.trieu_chung || "Không ghi nhận"}</p>
+                <p style={{ marginTop: '12px', fontWeight: 700, fontSize: '1.1rem', color: 'var(--ink)' }}>{fixVietnameseEncoding(record.trieu_chung) || "Không ghi nhận"}</p>
               </div>
               <div>
                 <label style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gray-400)' }}>CHẨN ĐOÁN XÁC ĐỊNH</label>
-                <p style={{ marginTop: '12px', fontWeight: 900, fontSize: '1.1rem', color: 'var(--danger)' }}>{record.chan_doan || "Chưa có chẩn đoán"}</p>
+                <p style={{ marginTop: '12px', fontWeight: 900, fontSize: '1.1rem', color: 'var(--danger)' }}>{fixVietnameseEncoding(record.chan_doan) || "Chưa có chẩn đoán"}</p>
               </div>
               <div style={{ gridColumn: '1 / -1', borderTop: '1px solid var(--gray-50)', paddingTop: '24px' }}>
                 <label style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gray-400)' }}>PHÁC ĐỒ ĐIỀU TRỊ</label>
@@ -169,15 +170,15 @@ const ChiTietHoSoBenhAn: React.FC = () => {
                     }}>
                       <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: 'var(--primary)' }}></div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                        <span style={{ fontWeight: 900, color: 'var(--ink)' }}>Hỏi về: {c.cau_hoi || c.noi_dung_khach || "Câu hỏi"}</span>
+                        <span style={{ fontWeight: 900, color: 'var(--ink)' }}>Hỏi về: {fixVietnameseEncoding(c.cau_hoi || c.noi_dung_khach) || "Câu hỏi"}</span>
                         <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)' }}>{(c.ngay_tu_van || c.ngay_tao)?.split('T')[0].split('-').reverse().join('/') || "---"}</span>
                       </div>
                       <div style={{ fontSize: '0.9rem', color: 'var(--gray-600)', lineHeight: '1.6' }}>
-                        <b style={{ color: 'var(--primary)' }}>💡 Phản hồi:</b> {c.tra_loi || c.noi_dung_rexi || ""}
+                        <b style={{ color: 'var(--primary)' }}>💡 Phản hồi:</b> {fixVietnameseEncoding(c.tra_loi || c.noi_dung_rexi) || ""}
                       </div>
                       {c.ghi_chu && (
                         <div style={{ marginTop: '12px', padding: '10px', background: 'var(--warning-light, rgba(245, 158, 11, 0.15))', borderRadius: '10px', fontSize: '0.8rem', color: 'var(--warning, #d97706)', fontWeight: 600 }}>
-                          📌 Ghi chú BS: {c.ghi_chu}
+                          📌 Ghi chú BS: {fixVietnameseEncoding(c.ghi_chu)}
                         </div>
                       )}
                     </div>
@@ -194,7 +195,7 @@ const ChiTietHoSoBenhAn: React.FC = () => {
             <div style={{ display: 'grid', gap: '20px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', opacity: 0.8 }}>
                 <span>Thú cưng:</span>
-                <b style={{ color: 'var(--primary)' }}>{record.ten_thu_cung || "Chưa cập nhật"}</b>
+                <b style={{ color: 'var(--primary)' }}>{fixVietnameseEncoding(record.ten_thu_cung) || "Chưa cập nhật"}</b>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', opacity: 0.8 }}>
                 <span>Chủ nuôi:</span>

@@ -42,7 +42,7 @@ public class FinanceController {
             return true;
         }
 
-        // Fallback: Check qua DB nếu authority ko khớp
+        // Fallback: Kiểm tra qua DB nếu quyền không khớp
         try {
             com.rexi.pkty.entity.TaiKhoan tk = taiKhoanRepository.findByTenDangNhap(auth.getName()).orElse(null);
             if (tk == null || tk.getId_vai_tro() == null)
@@ -61,14 +61,15 @@ public class FinanceController {
         }
     }
 
-    // Lập hóa đơn mới qua SP
+    // Lập hóa đơn mới qua store procedure
     @PostMapping("/hoa-don")
+    @PreAuthorize(RexiSecurityRoles.INVOICE_WRITE)
     public ResponseEntity<?> addInvoice(@RequestBody HoaDon hd) {
+        // Vai trò STAFF cũng được phép lập hóa đơn — INVOICE_WRITE không bao gồm role này nên cần kiểm tra riêng
         org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
                 .getContext().getAuthentication();
         String role = (auth != null) ? auth.getAuthorities().toString().toUpperCase() : "";
 
-        // Chặn KHACH_HANG tự tạo hóa đơn ảo
         if (!role.contains("ADMIN") && !role.contains("QUAN_LY") && !role.contains("KETOAN") && !role.contains("KE_TOAN")
                 && !role.contains("STAFF") && !role.contains("TIEP_TAN")) {
             return ResponseEntity.status(403)
@@ -96,15 +97,17 @@ public class FinanceController {
                 }
             }
 
-            java.math.BigDecimal before = hd.getTong_tien_truoc_giam_gia() != null ? hd.getTong_tien_truoc_giam_gia() : java.math.BigDecimal.ZERO;
-            java.math.BigDecimal discount = hd.getTong_giam_gia() != null ? hd.getTong_giam_gia() : java.math.BigDecimal.ZERO;
+            java.math.BigDecimal before = hd.getTong_tien_truoc_giam_gia() != null ? hd.getTong_tien_truoc_giam_gia().max(java.math.BigDecimal.ZERO) : java.math.BigDecimal.ZERO;
+            java.math.BigDecimal discount = hd.getTong_giam_gia() != null ? hd.getTong_giam_gia().max(java.math.BigDecimal.ZERO) : java.math.BigDecimal.ZERO;
             java.math.BigDecimal taxRate = hd.getThue_suat() != null ? hd.getThue_suat() : java.math.BigDecimal.ZERO;
             java.math.BigDecimal afterDiscount = before.subtract(discount).max(java.math.BigDecimal.ZERO);
-            java.math.BigDecimal tax = afterDiscount.multiply(taxRate).divide(new java.math.BigDecimal("100"));
+            java.math.BigDecimal tax = afterDiscount.multiply(taxRate).divide(new java.math.BigDecimal("100"), 2, java.math.RoundingMode.HALF_UP);
 
+            hd.setTong_tien_truoc_giam_gia(before);
+            hd.setTong_giam_gia(discount);
             hd.setTong_tien_ban_dau(before);
             hd.setTong_tien_sau_giam_gia(afterDiscount);
-            hd.setTong_tien_cuoi(hd.getTong_tien_cuoi() != null ? hd.getTong_tien_cuoi() : afterDiscount.add(tax));
+            hd.setTong_tien_cuoi(afterDiscount.add(tax));
             hd.setThue_phai_nop(tax);
             if (hd.getTrang_thai() == null) hd.setTrang_thai("CHO_THANH_TOAN");
             if (hd.getTrang_thai_thanh_toan() == null) hd.setTrang_thai_thanh_toan("Chờ thanh toán");
@@ -129,6 +132,7 @@ public class FinanceController {
 
     // Get list hóa đơn theo id khách hàng
     @GetMapping("/hoa-don/khach/{id}")
+    @PreAuthorize(RexiSecurityRoles.INVOICE_READ)
     public ResponseEntity<?> getInvoicesByCustomerId(@PathVariable String id) {
         try {
             // Chặn IDOR: KHACH_HANG ko được xem hóa đơn người khác
@@ -153,6 +157,31 @@ public class FinanceController {
         }
     }
 
+    // Thong ke hoa don theo khach hang (tong, da thanh toan, chua thanh toan, tong tien da tra)
+    @GetMapping("/hoa-don/khach/{id}/stats")
+    @PreAuthorize(RexiSecurityRoles.INVOICE_READ)
+    public ResponseEntity<?> getInvoiceStats(@PathVariable String id) {
+        try {
+            org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
+                    .getContext().getAuthentication();
+            String username = (auth != null) ? auth.getName() : null;
+            if (username == null || username.equals("anonymousUser")) {
+                return ResponseEntity.status(401).body(Map.of("message", "Cảnh báo bảo mật: Yêu cầu không có Token xác thực hợp lệ!"));
+            }
+            com.rexi.pkty.entity.TaiKhoan tk = taiKhoanRepository.findByTenDangNhap(username).orElse(null);
+            if (tk != null && tk.getId_vai_tro() != null && tk.getId_vai_tro().equals("VT-5")) {
+                if (!tk.getId_khach_hang().equals(id)) {
+                    return ResponseEntity.status(403).body(Map.of("message", "Cảnh báo bảo mật: Bạn không có quyền xem thống kê hóa đơn của người khác!"));
+                }
+            }
+
+            Map<String, Object> stats = hoaDonRepository.getInvoiceStatsByCustomerId(id);
+            return ResponseEntity.ok(stats);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("message", "Lỗi thống kê hóa đơn: " + e.getMessage()));
+        }
+    }
+
     // Get all hóa đơn (ADMIN)
     @GetMapping("/hoa-don")
     @PreAuthorize(RexiSecurityRoles.INVOICE_READ)
@@ -167,6 +196,7 @@ public class FinanceController {
 
     // Chi tiết hóa đơn (Tiền Khám + Tiền Thuốc)
     @GetMapping("/hoa-don/{id}/chi-tiet")
+    @PreAuthorize(RexiSecurityRoles.INVOICE_READ)
     public ResponseEntity<?> getInvoiceDetails(@PathVariable String id) {
         try {
             // Chặn IDOR: KHACH_HANG ko được xem chi tiết hóa đơn người khác
@@ -186,29 +216,10 @@ public class FinanceController {
                 }
             }
 
-            // Lấy phí khám dịch vụ
-            String sqlDv = "SELECT dv.ten_dich_vu as ten_muc, 1 as so_luong, dv.gia as don_gia, dv.gia as thanh_tien " +
-                    "FROM HoaDon hd " +
-                    "JOIN LichHen lh ON hd.id_lich_hen = lh.id_lich_hen " +
-                    "JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu " +
-                    "WHERE hd.id_hoa_don = ?";
-            List<Map<String, Object>> dichVu = jdbcTemplate.queryForList(sqlDv, id);
-
-            // Lấy phí mua thuốc
-            String sqlThuoc = "SELECT t.ten_thuoc as ten_muc, dtct.so_luong, t.gia_ban as don_gia, (dtct.so_luong * t.gia_ban) as thanh_tien "
-                    +
-                    "FROM HoaDon hd " +
-                    "JOIN HoSoBenhAn hs ON hd.id_lich_hen = hs.id_lich_hen " +
-                    "JOIN DonThuoc dt ON hs.id_ho_so_benh_an = dt.id_ho_so_benh_an " +
-                    "JOIN DonThuocChiTiet dtct ON dt.id_don_thuoc = dtct.id_don_thuoc " +
-                    "JOIN Thuoc t ON dtct.id_thuoc = t.id_thuoc " +
-                    "WHERE hd.id_hoa_don = ?";
-            List<Map<String, Object>> thuoc = jdbcTemplate.queryForList(sqlThuoc, id);
-
-            // Merge list trả về cho KE_TOAN
-            List<Map<String, Object>> chiTiet = new java.util.ArrayList<>();
-            chiTiet.addAll(dichVu);
-            chiTiet.addAll(thuoc);
+            // Doc chi tiet tu HoaDonChiTiet (snapshot) - compute thanh_tien = don_gia * so_luong
+            String sqlChiTiet = "SELECT ten_muc, so_luong, don_gia, (don_gia * COALESCE(so_luong, 1)) as thanh_tien, loai_muc " +
+                    "FROM HoaDonChiTiet WHERE id_hoa_don = ? ORDER BY loai_muc, ten_muc";
+            List<Map<String, Object>> chiTiet = jdbcTemplate.queryForList(sqlChiTiet, id);
 
             return ResponseEntity.ok(chiTiet);
         } catch (Exception e) {
@@ -218,6 +229,7 @@ public class FinanceController {
 
     // Lấy lịch sử thanh toán của hóa đơn
     @GetMapping("/hoa-don/{id}/thanh-toan")
+    @PreAuthorize(RexiSecurityRoles.INVOICE_READ)
     public ResponseEntity<?> getInvoicePaymentHistory(@PathVariable String id) {
         try {
             org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
@@ -301,6 +313,14 @@ public class FinanceController {
                 }
             }
 
+            // Validate: chỉ cho phép chuyển ĐẾN DA_THANH_TOAN từ CHO_THANH_TOAN hoặc DANG_THANH_TOAN
+            if ("DA_THANH_TOAN".equalsIgnoreCase(status) && currentStatus != null
+                    && !"CHO_THANH_TOAN".equalsIgnoreCase(currentStatus)
+                    && !"DANG_THANH_TOAN".equalsIgnoreCase(currentStatus)) {
+                return ResponseEntity.status(400).body(Map.of("message",
+                        "Chỉ xác nhận thanh toán từ trạng thái 'Chờ thanh toán' hoặc 'Đang thanh toán'. Trạng thái hiện tại: " + currentStatus));
+            }
+
             int updated = jdbcTemplate.update("UPDATE HoaDon SET trang_thai = ? WHERE id_hoa_don = ?", status, id);
             if (updated > 0 && "DA_THANH_TOAN".equals(status) && !"DA_THANH_TOAN".equalsIgnoreCase(currentStatus)) {
                 // Ghi nhận dòng tiền mặt vào log thanh toán
@@ -378,18 +398,26 @@ public class FinanceController {
         }
     }
 
-    // Báo cáo doanh thu tháng (từ View)
+    // Báo cáo doanh thu tháng - dùng JdbcTemplate trực tiếp, không phụ thuộc view (view chỉ có trên PostgreSQL)
     @GetMapping("/bao-cao/doanh-thu-thang")
     @PreAuthorize(RexiSecurityRoles.FINANCE_READ)
     public ResponseEntity<?> getDoanhThuThang() {
         try {
-            String sql = DatabaseDialect.isPostgres(jdbcTemplate)
-                    ? "SELECT EXTRACT(YEAR FROM ngay_lap_hoa_don)::int AS Nam, EXTRACT(MONTH FROM ngay_lap_hoa_don)::int AS Thang, SUM(tong_tien_cuoi) AS TongDoanhThu "
+            boolean pg = DatabaseDialect.isPostgres(jdbcTemplate);
+            // FIX TIMEZONE: Convert UTC → VN (UTC+7) trước khi extract year/month
+            String sql = pg
+                    ? "SELECT EXTRACT(YEAR FROM (ngay_lap_hoa_don AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Ho_Chi_Minh'))::int AS Nam, "
+                            + "EXTRACT(MONTH FROM (ngay_lap_hoa_don AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Ho_Chi_Minh'))::int AS Thang, "
+                            + "SUM(tong_tien_cuoi) AS TongDoanhThu "
                             + "FROM HoaDon WHERE UPPER(TRIM(trang_thai)) = 'DA_THANH_TOAN' "
-                            + "GROUP BY EXTRACT(YEAR FROM ngay_lap_hoa_don)::int, EXTRACT(MONTH FROM ngay_lap_hoa_don)::int ORDER BY Nam DESC, Thang DESC"
-                    : "SELECT YEAR(ngay_lap_hoa_don) AS Nam, MONTH(ngay_lap_hoa_don) AS Thang, SUM(tong_tien_cuoi) AS TongDoanhThu "
+                            + "GROUP BY EXTRACT(YEAR FROM (ngay_lap_hoa_don AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Ho_Chi_Minh'))::int, "
+                            + "EXTRACT(MONTH FROM (ngay_lap_hoa_don AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Ho_Chi_Minh'))::int "
+                            + "ORDER BY Nam DESC, Thang DESC"
+                    : "SELECT YEAR(DATEADD(HOUR, 7, ngay_lap_hoa_don)) AS Nam, MONTH(DATEADD(HOUR, 7, ngay_lap_hoa_don)) AS Thang, "
+                            + "SUM(tong_tien_cuoi) AS TongDoanhThu "
                             + "FROM HoaDon WHERE UPPER(TRIM(trang_thai)) = 'DA_THANH_TOAN' "
-                            + "GROUP BY YEAR(ngay_lap_hoa_don), MONTH(ngay_lap_hoa_don) ORDER BY Nam DESC, Thang DESC";
+                            + "GROUP BY YEAR(DATEADD(HOUR, 7, ngay_lap_hoa_don)), MONTH(DATEADD(HOUR, 7, ngay_lap_hoa_don)) "
+                            + "ORDER BY Nam DESC, Thang DESC";
             return ResponseEntity.ok(jdbcTemplate.queryForList(sql));
         } catch (Exception e) {
             return ResponseEntity.status(500)
@@ -417,15 +445,26 @@ public class FinanceController {
         }
     }
 
-    // Thống kê bác sĩ (từ View)
+    // Thống kê bác sĩ - dùng JdbcTemplate để hoàn toàn cross-DB, không phụ thuộc view
     @GetMapping("/bao-cao/thong-ke-bac-si")
     @PreAuthorize(RexiSecurityRoles.FINANCE_READ)
     public ResponseEntity<?> getThongKeBacSi() {
         try {
-            return ResponseEntity.ok(hoaDonRepository.getThongKeBacSi());
+            // Lọc bác sĩ qua id LIKE 'BS-%' để tránh collation issue tiếng Việt trên SQL Server
+            String sql = "SELECT nv.ho_ten AS TenBacSi, " +
+                    "COUNT(lh.id_lich_hen) AS SoLichHen, " +
+                    "COUNT(DISTINCT lh.id_thu_cung) AS SoHoSo, " +
+                    "COALESCE(SUM(CASE WHEN UPPER(TRIM(hd.trang_thai)) = 'DA_THANH_TOAN' THEN hd.tong_tien_cuoi ELSE 0 END), 0) AS TongDoanhThu " +
+                    "FROM NhanVien nv " +
+                    "LEFT JOIN LichHen lh ON nv.id_nhan_vien = lh.id_bac_si " +
+                    "LEFT JOIN HoaDon hd ON lh.id_lich_hen = hd.id_lich_hen " +
+                    "WHERE nv.id_nhan_vien LIKE 'BS-%' " +
+                    "GROUP BY nv.ho_ten " +
+                    "ORDER BY SoHoSo DESC";
+            return ResponseEntity.ok(jdbcTemplate.queryForList(sql));
         } catch (Exception e) {
             return ResponseEntity.status(500)
-                    .body(Map.of("message", "Lỗi truy xuất thống kê bác sĩ: " + e.getMessage()));
+                    .body(Map.of("message", "Lỗi trưy xuất thống kê bác sĩ: " + e.getMessage()));
         }
     }
 
@@ -454,13 +493,17 @@ public class FinanceController {
     }
 
     private List<Map<String, Object>> getDoanhThuTheoNgayRows() {
+        // FIX TIMEZONE: Convert UTC → VN (UTC+7) trước khi group by ngày
         String sql = DatabaseDialect.isPostgres(jdbcTemplate)
-                ? "SELECT ngay_lap_hoa_don::date as Ngay, SUM(tong_tien_cuoi) as TongDoanhThu FROM HoaDon "
-                        + "WHERE UPPER(TRIM(trang_thai)) = 'DA_THANH_TOAN' AND ngay_lap_hoa_don >= CURRENT_DATE - 6 "
-                        + "GROUP BY ngay_lap_hoa_don::date ORDER BY Ngay ASC"
-                : "SELECT CAST(ngay_lap_hoa_don AS date) as Ngay, SUM(tong_tien_cuoi) as TongDoanhThu FROM HoaDon "
-                        + "WHERE UPPER(TRIM(trang_thai)) = 'DA_THANH_TOAN' AND ngay_lap_hoa_don >= " + DatabaseDialect.currentDateMinusDays(DatabaseDialect.isPostgres(jdbcTemplate), 6) + " "
-                        + "GROUP BY CAST(ngay_lap_hoa_don AS date) ORDER BY Ngay ASC";
+                ? "SELECT (ngay_lap_hoa_don AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Ho_Chi_Minh')::date as Ngay, "
+                        + "SUM(tong_tien_cuoi) as TongDoanhThu FROM HoaDon "
+                        + "WHERE UPPER(TRIM(trang_thai)) = 'DA_THANH_TOAN' "
+                        + "AND (ngay_lap_hoa_don AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Ho_Chi_Minh')::date >= (NOW() AT TIME ZONE 'Asia/Ho_Chi_Minh')::date - 6 "
+                        + "GROUP BY (ngay_lap_hoa_don AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Ho_Chi_Minh')::date ORDER BY Ngay ASC"
+                : "SELECT CAST(DATEADD(HOUR, 7, ngay_lap_hoa_don) AS date) as Ngay, SUM(tong_tien_cuoi) as TongDoanhThu FROM HoaDon "
+                        + "WHERE UPPER(TRIM(trang_thai)) = 'DA_THANH_TOAN' "
+                        + "AND CAST(DATEADD(HOUR, 7, ngay_lap_hoa_don) AS date) >= DATEADD(day, -6, CAST(DATEADD(HOUR, 7, GETDATE()) AS date)) "
+                        + "GROUP BY CAST(DATEADD(HOUR, 7, ngay_lap_hoa_don) AS date) ORDER BY Ngay ASC";
         return jdbcTemplate.queryForList(sql);
     }
 

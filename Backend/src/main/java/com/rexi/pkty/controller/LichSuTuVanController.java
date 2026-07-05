@@ -25,7 +25,7 @@ public class LichSuTuVanController {
 
     @GetMapping("/thu-cung/{id}")
     public ResponseEntity<?> getByThuCung(@PathVariable String id) {
-        // Chk IDOR chat khach hang khac
+        // Kiểm tra IDOR: tránh khách hàng khác xem lịch sử tư vấn
         org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
                 .getContext().getAuthentication();
         String username = (auth != null) ? auth.getName() : null;
@@ -49,7 +49,7 @@ public class LichSuTuVanController {
 
     @PostMapping
     public ResponseEntity<?> save(@RequestBody LichSuTuVan tuVan) {
-        // Chk block spam rác API
+        // Chặn spam rác API
         return ResponseEntity.status(403).body(Map.of("message", "API nội bộ, không cho phép truy cập trực tiếp!"));
     }
 }

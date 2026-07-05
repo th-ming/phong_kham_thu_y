@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axiosInstance from "@services/axios";
 import { useAutoRefresh } from "@hooks/useAutoRefresh";
+import { fixVietnameseEncoding } from "@utils/index";
 
 const QuanLyChucNang: React.FC = () => {
   const [chucNangs, setChucNangs] = useState<any[]>([]);
@@ -168,8 +169,8 @@ const QuanLyChucNang: React.FC = () => {
             <article key={cn.id_chuc_nang} className="admin-feature-card">
               <div className="admin-feature-card-top">
                 <div>
-                  <h3>{cn.ten_chuc_nang}</h3>
-                  <p>{cn.mo_ta || 'Chưa có mô tả'}</p>
+                  <h3>{fixVietnameseEncoding(cn.ten_chuc_nang)}</h3>
+                  <p>{fixVietnameseEncoding(cn.mo_ta) || 'Chưa có mô tả'}</p>
                 </div>
                 <span className="admin-feature-code">{cn.ma_chuc_nang}</span>
               </div>
@@ -206,10 +207,10 @@ const QuanLyChucNang: React.FC = () => {
                     <div style={{ width: '32px', height: '32px', background: 'var(--primary-light)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
                       <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>{getIcon(cn.ma_chuc_nang || "")}</span>
                     </div>
-                    <span style={{ fontWeight: 800, color: 'var(--ink)' }}>{cn.ten_chuc_nang}</span>
+                    <span style={{ fontWeight: 800, color: 'var(--ink)' }}>{fixVietnameseEncoding(cn.ten_chuc_nang)}</span>
                   </div>
                 </td>
-                <td style={{ padding: '20px', color: 'var(--gray-500)', fontWeight: 600, fontSize: '0.85rem', maxWidth: '300px' }}>{cn.mo_ta}</td>
+                <td style={{ padding: '20px', color: 'var(--gray-500)', fontWeight: 600, fontSize: '0.85rem', maxWidth: '300px' }}>{fixVietnameseEncoding(cn.mo_ta)}</td>
                 <td style={{ padding: '20px', color: 'var(--primary)', fontWeight: 800, fontSize: '0.78rem', fontFamily: 'monospace', maxWidth: '220px', wordBreak: 'break-word' }}>{cn.duong_dan || ""}</td>
                 <td style={{ padding: '20px', color: 'var(--gray-500)', fontWeight: 800, fontSize: '0.76rem', maxWidth: '260px', wordBreak: 'break-word' }}>{cn.vai_tro || ""}</td>
                 <td style={{ padding: '20px', textAlign: 'center' }}>

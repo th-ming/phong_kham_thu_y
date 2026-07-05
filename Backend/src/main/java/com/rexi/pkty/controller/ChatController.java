@@ -165,11 +165,30 @@ public class ChatController {
         }
     }
 
-    @PostMapping(produces = "application/json;charset=UTF-8")
+    @PostMapping(produces = {"application/json;charset=UTF-8", "text/event-stream"})
     public Object chat(
             @RequestBody JsonNode requestBody,
             HttpServletRequest request,
             @RequestHeader(value = "Accept", defaultValue = "application/json") String acceptHeader) {
+        Object response = chatInternal(requestBody, request, acceptHeader);
+        if (acceptHeader != null && acceptHeader.contains("text/event-stream") && response instanceof Map) {
+            org.springframework.web.servlet.mvc.method.annotation.SseEmitter emitter = new org.springframework.web.servlet.mvc.method.annotation.SseEmitter(-1L);
+            try {
+                emitter.send(org.springframework.web.servlet.mvc.method.annotation.SseEmitter.event()
+                        .data(response, org.springframework.http.MediaType.APPLICATION_JSON));
+                emitter.complete();
+            } catch (Exception e) {
+                emitter.completeWithError(e);
+            }
+            return emitter;
+        }
+        return response;
+    }
+
+    private Object chatInternal(
+            JsonNode requestBody,
+            HttpServletRequest request,
+            String acceptHeader) {
 
         ChatPayload payload = parseChatPayload(requestBody);
         // ArrayList mutable 100% de tranh unsupported exception
@@ -327,7 +346,10 @@ public class ChatController {
 
             if (requestPlan.route() == ChatRoute.DB_LOCAL) {
                 String fastDbReply = tryFastDbReply(normalizedUserQuery, userQuery);
-                return Map.of("reply", fastDbReply, "source", "fast_db");
+                if (fastDbReply != null) {
+                    return Map.of("reply", fastDbReply, "source", "fast_db");
+                }
+                requestPlan = new ChatRequestPlan(ChatRoute.CHAT_AI, false, true, true, true, "groq-fallback");
             }
 
             boolean medicalQuery = requestPlan.route() == ChatRoute.MEDICAL_AI;
@@ -808,7 +830,7 @@ ChatMessage systemMsg = new ChatMessage();
 
         if ((claimedSystemLookup || claimedCompletedAction) && !privilegedRoute && !hasControlTag) {
             if (claimedSystemLookup || isInternalDataQuestion(normalizedQuery)) {
-                return "Tôi chưa kiểm tra dữ liệu hệ thống trong lượt này nên sẽ không tự đưa số liệu/kết quả. Hãy chuyển sang Rexi Agent hoặc yêu cầu tra cứu cụ thể để hệ thống kiểm quyền và đọc DB thật.";
+                return "Tính năng tra cứu số liệu hệ thống chỉ dành cho tài khoản nội bộ có quyền. Bạn vui lòng đăng nhập bằng tài khoản nhân viên/Quản lý/Admin, hoặc liên hệ lễ tân để được hỗ trợ kiểm tra doanh thu/thống kê.";
             }
             return "Tôi chưa thực hiện thao tác nào trên hệ thống trong lượt này. Nếu bạn muốn Rexi thao tác thật, hãy ra lệnh rõ trong tab Rexi Agent để hệ thống kiểm quyền, kiểm DOM/tool và xác nhận trước khi làm.";
         }
@@ -2090,7 +2112,7 @@ ChatMessage systemMsg = new ChatMessage();
             logger.warning("[FAST_DB] Không thể trả lời nhanh bằng DB: " + e.getMessage());
             return "Dữ liệu hệ thống hiện chưa sẵn sàng để tra cứu chính xác. Tôi sẽ không đoán bừa phần này; bạn kiểm tra lại kết nối SQL Server hoặc thử lại sau ít giây.";
         }
-        return "Tôi chưa tìm thấy dữ liệu khớp rõ trong hệ thống. Bạn nhập cụ thể hơn tên dịch vụ, bác sĩ, lịch trực hoặc chuyển sang Rexi Agent để quét dữ liệu sâu hơn.";
+        return null;
     }
 
     private String buildSensitiveDataHandoffReply() {

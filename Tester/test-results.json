@@ -1,0 +1,377 @@
+{
+  "config": {
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "D:\\QLy Phòng Khám Thú Y\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "19_Kiem_Tra_Hoa_Don_va_Don_Thuoc.spec.ts",
+      "--grep",
+      "TC02|TC03|TC04|TC05"
+    ],
+    "configFile": "D:\\QLy Phòng Khám Thú Y\\Tester\\playwright.config.ts",
+    "rootDir": "D:/QLy Phòng Khám Thú Y/Tester",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "D:/QLy Phòng Khám Thú Y/Tester/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "D:/QLy Phòng Khám Thú Y/Tester",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.spec.ts"
+        ],
+        "timeout": 90000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "test-results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.61.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "19_Kiem_Tra_Hoa_Don_va_Don_Thuoc.spec.ts",
+      "file": "19_Kiem_Tra_Hoa_Don_va_Don_Thuoc.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "ADMIN: Quan ly Hoa Don + Thanh toan E2E",
+          "file": "19_Kiem_Tra_Hoa_Don_va_Don_Thuoc.spec.ts",
+          "line": 9,
+          "column": 6,
+          "specs": [
+            {
+              "title": "TC02: Loc hoa don theo trang thai",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4930,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-03T21:18:46.858Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b1a774e310dfd5aaafdb-8698f63e8190ec509006",
+              "file": "19_Kiem_Tra_Hoa_Don_va_Don_Thuoc.spec.ts",
+              "line": 27,
+              "column": 7
+            },
+            {
+              "title": "TC03: Xem chi tiet hoa don — modal opens",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4538,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-03T21:18:51.989Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b1a774e310dfd5aaafdb-4ed11e92012ed3e47768",
+              "file": "19_Kiem_Tra_Hoa_Don_va_Don_Thuoc.spec.ts",
+              "line": 37,
+              "column": 7
+            },
+            {
+              "title": "TC04: In hoa don — click print",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4469,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-03T21:18:56.592Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b1a774e310dfd5aaafdb-5e1ac0c933cb0f428299",
+              "file": "19_Kiem_Tra_Hoa_Don_va_Don_Thuoc.spec.ts",
+              "line": 48,
+              "column": 7
+            },
+            {
+              "title": "TC05: Xuat Excel hoa don — verify button",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4495,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-03T21:19:01.129Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b1a774e310dfd5aaafdb-f05aefdfa0f5d986e526",
+              "file": "19_Kiem_Tra_Hoa_Don_va_Don_Thuoc.spec.ts",
+              "line": 57,
+              "column": 7
+            }
+          ]
+        },
+        {
+          "title": "ADMIN: Quan ly Don Thuoc — CRUD",
+          "file": "19_Kiem_Tra_Hoa_Don_va_Don_Thuoc.spec.ts",
+          "line": 87,
+          "column": 6,
+          "specs": [
+            {
+              "title": "TC02: Xem chi tiet don thuoc",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4500,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-03T21:19:05.703Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b1a774e310dfd5aaafdb-c4e183e40282a17c8d84",
+              "file": "19_Kiem_Tra_Hoa_Don_va_Don_Thuoc.spec.ts",
+              "line": 101,
+              "column": 7
+            },
+            {
+              "title": "TC03: Loc don thuoc theo trang thai",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5814,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-03T21:19:10.264Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b1a774e310dfd5aaafdb-c8349cbcaec19b38cfd3",
+              "file": "19_Kiem_Tra_Hoa_Don_va_Don_Thuoc.spec.ts",
+              "line": 111,
+              "column": 7
+            },
+            {
+              "title": "TC04: Tim kiem don thuoc",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3452,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-03T21:19:16.119Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b1a774e310dfd5aaafdb-7f4bf22479b4f19d273f",
+              "file": "19_Kiem_Tra_Hoa_Don_va_Don_Thuoc.spec.ts",
+              "line": 120,
+              "column": 7
+            },
+            {
+              "title": "TC05: Xuat don thuoc PDF — verify button",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3805,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-03T21:19:19.619Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b1a774e310dfd5aaafdb-218927e2e96339ef2cbb",
+              "file": "19_Kiem_Tra_Hoa_Don_va_Don_Thuoc.spec.ts",
+              "line": 129,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-07-03T21:18:46.144Z",
+    "duration": 37649.994,
+    "expected": 8,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

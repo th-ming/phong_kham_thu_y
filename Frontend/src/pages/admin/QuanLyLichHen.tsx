@@ -3,7 +3,7 @@ import axiosInstance from "@services/axios";
 import ModalTaoLichHenAdmin from "./ModalTaoLichHenAdmin";
 import { Modal, InfoRow } from "@components/CommonUI";
 import { toast } from "@components/Toast";
-import { matchesSearchFields } from "@utils/index";
+import { matchesSearchFields, fixVietnameseEncoding } from "@utils/index";
 import { useAutoRefresh } from "@hooks/useAutoRefresh";
 import useVirtualScroll from "@hooks/useVirtualScroll";
 
@@ -358,7 +358,7 @@ const QuanLyLichHen: React.FC = () => {
             <article key={l.id_lich_hen} className="admin-appointment-mobile-card">
               <div className="admin-appointment-mobile-top">
                 <div>
-                  <h3>{l.ten_thu_cung || "Bệnh nhân chưa cập nhật"}</h3>
+                  <h3>{fixVietnameseEncoding(l.ten_thu_cung) || "Bệnh nhân chưa cập nhật"}</h3>
                   <p>{l.ten_khach_hang || "Khách vãng lai"} · #{l.id_lich_hen}</p>
                 </div>
                 <span className="admin-appointment-mobile-time">{gioRutGon(l.gio_kham)}</span>
@@ -366,8 +366,8 @@ const QuanLyLichHen: React.FC = () => {
               <span className="admin-appointment-mobile-status">{l.trang_thai?.toUpperCase() || 'CHO_XAC_NHAN'}</span>
               <div className="admin-appointment-mobile-meta">
                 <span><strong>{chuyenNgayISO_SangVN(l.ngay_kham)}</strong> · {l.ten_bac_si || "Chưa phân bổ"}</span>
-                <span>{l.ly_do || "Khám tổng quát"}</span>
-                {l.ghi_chu && <span>{l.ghi_chu}</span>}
+                <span>{fixVietnameseEncoding(l.ly_do) || "Khám tổng quát"}</span>
+                {l.ghi_chu && <span>{fixVietnameseEncoding(l.ghi_chu)}</span>}
               </div>
               <div className="admin-appointment-mobile-actions">
                 <button data-ai-id="button-quanlylichhen-mobile-view" className="btn" onClick={() => setViewingLichHen(l)} style={{ background: 'var(--gray-50)', color: 'var(--ink)' }}>
@@ -417,7 +417,7 @@ const QuanLyLichHen: React.FC = () => {
                         <div style={{ fontSize: '0.85rem', color: 'var(--primary)', fontWeight: 800 }}>{gioRutGon(l.gio_kham)}</div>
                       </td>
                       <td style={{ padding: '20px' }}>
-                        <div style={{ fontWeight: 900, color: 'var(--ink)' }}>{l.ten_thu_cung || "N/A"}</div>
+                        <div style={{ fontWeight: 900, color: 'var(--ink)' }}>{fixVietnameseEncoding(l.ten_thu_cung) || "N/A"}</div>
                         <div style={{ fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 700 }}>{l.ten_khach_hang || "Khách vãng lai"}</div>
                       </td>
                       <td style={{ padding: '20px' }}>
@@ -425,10 +425,10 @@ const QuanLyLichHen: React.FC = () => {
                           if (!l.ly_do) return "Khám tổng quát";
                           const txt = document.createElement("textarea");
                           txt.innerHTML = l.ly_do;
-                          return txt.value;
+                          return fixVietnameseEncoding(txt.value) || txt.value;
                         })()}</div>
                         <div style={{ fontSize: '0.8rem', color: l.ghi_chu?.includes('[CẤP CỨU]') ? 'var(--danger)' : 'var(--gray-500)', fontWeight: 700, maxWidth: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {l.ghi_chu ? l.ghi_chu : "Không có ghi chú"}
+                          {l.ghi_chu ? fixVietnameseEncoding(l.ghi_chu) || l.ghi_chu : "Không có ghi chú"}
                         </div>
                       </td>
                       <td style={{ padding: '20px' }}>
@@ -531,8 +531,8 @@ const QuanLyLichHen: React.FC = () => {
                 <h4 style={{ margin: '0 0 16px 0', fontSize: '0.9rem', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <span className="material-symbols-outlined" style={{ color: 'var(--primary)' }}>pets</span> Thông tin thú cưng
                 </h4>
-                <InfoRow label="Tên bé" value={viewingLichHen.ten_thu_cung || 'N/A'} />
-                <InfoRow label="Giống loài" value={viewingLichHen.giong_loai || 'Chưa rõ'} />
+                <InfoRow label="Tên bé" value={fixVietnameseEncoding(viewingLichHen.ten_thu_cung) || viewingLichHen.ten_thu_cung || 'N/A'} />
+                <InfoRow label="Giống loài" value={fixVietnameseEncoding(viewingLichHen.giong_loai) || viewingLichHen.giong_loai || 'Chưa rõ'} />
               </div>
             </div>
 
@@ -540,13 +540,13 @@ const QuanLyLichHen: React.FC = () => {
               <h4 style={{ margin: '0 0 16px 0', fontSize: '0.9rem', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span className="material-symbols-outlined" style={{ color: 'var(--primary)' }}>medical_services</span> Nội dung khám
               </h4>
-              <InfoRow label="Lý do khám" value={viewingLichHen.ly_do} />
+              <InfoRow label="Lý do khám" value={fixVietnameseEncoding(viewingLichHen.ly_do) || viewingLichHen.ly_do} />
               <InfoRow label="Thời gian" value={`${chuyenNgayISO_SangVN(viewingLichHen.ngay_kham)} - ${gioRutGon(viewingLichHen.gio_kham)}`} />
               <InfoRow label="Bác sĩ" value={viewingLichHen.ten_bac_si || 'Chưa phân bổ'} />
               <div style={{ marginTop: '16px', padding: '16px', background: 'var(--gray-50)', borderRadius: '16px' }}>
                 <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '8px' }}>GHI CHÚ CHI TIẾT</div>
                 <p style={{ margin: 0, fontSize: '0.9rem', color: viewingLichHen.ghi_chu?.includes('[CẤP CỨU]') ? 'var(--danger)' : 'var(--ink)', fontWeight: 700 }}>
-                  {viewingLichHen.ghi_chu || 'Không có ghi chú thêm.'}
+                  {fixVietnameseEncoding(viewingLichHen.ghi_chu) || viewingLichHen.ghi_chu || 'Không có ghi chú thêm.'}
                 </p>
               </div>
             </div>

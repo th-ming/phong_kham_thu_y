@@ -113,7 +113,7 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({ item, thuCungs, onCan
               <p style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '4px' }}>DỊCH VỤ</p>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700 }}>
                 <span className="material-symbols-outlined" style={{ fontSize: '18px', color: 'var(--primary)' }}>vaccines</span>
-                {decodeHtmlEntities(item.ten_dich_vu || item.tenDichVu || "Khám tổng quát")}
+                {fixVietnameseEncoding(decodeHtmlEntities(item.ten_dich_vu || item.tenDichVu || "Khám tổng quát"))}
               </div>
             </div>
           </div>

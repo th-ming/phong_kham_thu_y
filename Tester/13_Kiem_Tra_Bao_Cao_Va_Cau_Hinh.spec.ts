@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+﻿import { test, expect } from '@playwright/test';
 
 // ──────────────────────────────────────────────────────────
 // config chung
@@ -176,7 +176,7 @@ test.describe('Kiểm thử E2E: Trang Cấu hình & Quản trị Hệ thống',
         await page.getByRole('button', { name: TEN_TAB.ai }).click();
 
         // xn tiêu đề h2 Ma trận phân quyền hiển thị (dùng heading để tránh strict mode)
-        await expect(page.getByRole('heading', { name: /Ma trận phân quyền tác vụ AI/i })).toBeVisible({ timeout: 8000 });
+        await expect(page.getByRole('heading', { name: /Ma trận.*Thao tác.*AI/i })).toBeVisible({ timeout: 8000 });
 
         // xn ít nhất 1 checkbox phân quyền trong bảng
         const checkboxes = page.locator('input[type="checkbox"]');

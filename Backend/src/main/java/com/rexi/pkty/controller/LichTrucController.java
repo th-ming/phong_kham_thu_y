@@ -135,7 +135,7 @@ public class LichTrucController {
                 Integer isDoctor = jdbcTemplate.queryForObject(roleCheckSql, Integer.class, targetNhanVienId);
                 
                 if (isDoctor != null && isDoctor > 0) {
-                    // Dem so BS truc cung gio cung ngay
+                    // Đếm số BS trực cùng giờ cùng ngày
                     String countSql = "SELECT COUNT(DISTINCT l.id_nhan_vien) FROM LichLamViecNhanVien l " +
                                       "JOIN NhanVien n ON l.id_nhan_vien = n.id_nhan_vien " +
                         "WHERE l.ngay_lam = ? AND CAST(l.gio_bat_dau AS time) = CAST(? AS time) " +

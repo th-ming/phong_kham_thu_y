@@ -19,11 +19,12 @@ test.describe('Kiểm thử chức năng: Quản lý Lịch trực & Phân bổ 
         await page.goto(`${BASE_URL}/quan-ly/lich-lam-viec`);
         await expect(page.getByRole('heading', { name: 'Điều Hành Nhân Sự' })).toBeVisible();
 
-        // 2. Kiểm tra hiển thị các ngày trong tuần
-        await expect(page.getByText('Thứ 2')).toBeVisible();
-        await expect(page.getByText('Thứ 3')).toBeVisible();
-        await expect(page.getByText('Thứ 7')).toBeVisible();
-        await expect(page.getByText('Chủ Nhật')).toBeVisible();
+        // 2. Kiểm tra hiển thị các ngày trong tuần (scope vào header grid để tránh match mobile list)
+        const headerGrid = page.locator('.schedule-header-grid');
+        await expect(headerGrid.getByText('Thứ 2', { exact: true })).toBeVisible();
+        await expect(headerGrid.getByText('Thứ 3', { exact: true })).toBeVisible();
+        await expect(headerGrid.getByText('Thứ 7', { exact: true })).toBeVisible();
+        await expect(headerGrid.getByText('Chủ Nhật', { exact: true })).toBeVisible();
 
         // 3. Kiểm tra các bộ lọc nhân viên theo chức vụ
         const roleSelect = page.locator('select').first();

@@ -104,7 +104,7 @@ public class LichHenController {
 
             if (lichHen.getId_khach_hang() == null || lichHen.getId_khach_hang().isEmpty()) {
                 throw new RuntimeException(
-                        "Tài khoản nội bộ (Admin/Nhân viên) vui lòng chọn khách hàng để đặt lịch. Nếu sếp là khách hàng, vui lòng dùng tài khoản Khách hàng!");
+                        "Tài khoản nội bộ (Admin/Nhân viên) vui lòng chọn khách hàng để đặt lịch. Nếu bạn là khách hàng, vui lòng dùng tài khoản Khách hàng!");
             }
 
             if (lichHen.getNgay_kham() == null) {
@@ -171,46 +171,58 @@ public class LichHenController {
                         ? "(EXTRACT(HOUR FROM h.gio_kham::time) * 60 + EXTRACT(MINUTE FROM h.gio_kham::time))::int"
                         : "(DATEPART(HOUR, h.gio_kham) * 60 + DATEPART(MINUTE, h.gio_kham))";
                 String findDocQuery = "SELECT l.id_nhan_vien FROM LichLamViecNhanVien l " +
-                        "WHERE l.ngay_lam = ? AND l.gio_bat_dau = CAST(? AS time) " +
+                        "JOIN NhanVien nv ON l.id_nhan_vien = nv.id_nhan_vien " +
+                        "WHERE l.ngay_lam = ? AND l.gio_bat_dau <= CAST(? AS time) AND l.gio_ket_thuc > CAST(? AS time) " +
+                        "AND " + DatabaseDialect.isNotDeleted(pg, "nv.da_xoa") + " " +
+                        "AND (LOWER(COALESCE(nv.chuyen_mon, '')) LIKE '%bác sĩ%' " +
+                        "  OR LOWER(COALESCE(nv.chuyen_mon, '')) LIKE '%bac si%' " +
+                        "  OR LOWER(COALESCE(nv.chuyen_mon, '')) LIKE '%doctor%' " +
+                        "  OR EXISTS (SELECT 1 FROM TaiKhoan tk WHERE tk.id_nhan_vien = nv.id_nhan_vien " +
+                        "    AND (tk.id_vai_tro IN ('VT-BS', 'VT-2', '2') OR UPPER(COALESCE(tk.id_vai_tro, '')) LIKE '%BS%'))) " +
                         "AND NOT EXISTS (SELECT 1 FROM LichHen h " +
                         "  LEFT JOIN DichVu d ON h.id_dich_vu = d.id_dich_vu " +
                         "  WHERE h.id_bac_si = l.id_nhan_vien AND h.ngay_kham = l.ngay_lam " +
                         "  AND " + busyStartMinute + " < ? " +
                         "  AND " + busyStartMinute + " + COALESCE(d.thoi_luong_phut, 30) > ? " +
                         "  AND h.trang_thai NOT IN ('Đã hủy', 'DA_HUY', 'da_huy', 'TU_CHOI', 'Hết hạn')" +
-                        ") " + DatabaseDialect.topN(DatabaseDialect.isPostgres(jdbcTemplate), 1);
+                        ") ORDER BY l.id_nhan_vien " + DatabaseDialect.topN(pg, 1);
                 try {
                     String autoDocId = jdbcTemplate.queryForObject(findDocQuery, String.class,
-                            lichHen.getNgay_kham(), newStart, newEndMinute, newStartMinute);
+                            lichHen.getNgay_kham(), java.sql.Time.valueOf(newStart), java.sql.Time.valueOf(newStart), newEndMinute, newStartMinute);
                     lichHen.setId_bac_si(autoDocId);
                 } catch (Exception e) {
+                    logger.severe("Lỗi tìm bác sĩ tự động: " + e.getMessage());
                     throw new RuntimeException(
                             "Rất tiếc! Không còn bác sĩ nào rảnh vào khung giờ này sếp ơi. Sếp chọn giờ khác nhé! 🐾");
                 }
             }
 
-            int requiredSlots = (int) Math.ceil(thoiLuongMoi / 30.0);
+            // Kiểm tra bác sĩ có ca làm việc bao phủ toàn bộ thời lượng dịch vụ không
+            // Dùng gio_ket_thuc để kiểm tra đúng — tránh lỗi khi 1 row = 1 ca dài (vd 8:00-17:00)
             List<Map<String, Object>> gioBacSiMoList = jdbcTemplate.queryForList(
-                    "SELECT gio_bat_dau FROM LichLamViecNhanVien WHERE id_nhan_vien = ? AND ngay_lam = ?",
+                    "SELECT gio_bat_dau, gio_ket_thuc FROM LichLamViecNhanVien WHERE id_nhan_vien = ? AND ngay_lam = ?",
                     lichHen.getId_bac_si(), lichHen.getNgay_kham());
 
-            List<LocalTime> caTrucList = new java.util.ArrayList<>();
+            // Kiểm tra toàn bộ thời gian dịch vụ (newStart → newEnd) có nằm trong ít nhất 1 ca làm việc không
+            boolean shiftCoversService = false;
             for (Map<String, Object> map : gioBacSiMoList) {
-                Object obj = map.get("gio_bat_dau");
-                if (obj instanceof java.sql.Time) {
-                    caTrucList.add(((java.sql.Time) obj).toLocalTime());
-                } else if (obj != null) {
-                    String[] p = obj.toString().split(":");
-                    caTrucList.add(LocalTime.of(Integer.parseInt(p[0]), Integer.parseInt(p[1])));
+                Object bdObj = map.get("gio_bat_dau");
+                Object ktObj = map.get("gio_ket_thuc");
+                LocalTime batDau = null, ketThuc = null;
+                if (bdObj instanceof java.sql.Time) batDau = ((java.sql.Time) bdObj).toLocalTime();
+                else if (bdObj != null) { String[] p = bdObj.toString().split(":"); batDau = LocalTime.of(Integer.parseInt(p[0]), Integer.parseInt(p[1])); }
+                if (ktObj instanceof java.sql.Time) ketThuc = ((java.sql.Time) ktObj).toLocalTime();
+                else if (ktObj != null) { String[] p = ktObj.toString().split(":"); ketThuc = LocalTime.of(Integer.parseInt(p[0]), Integer.parseInt(p[1])); }
+                // Ca làm việc phải bắt đầu <= newStart VÀ kết thúc >= newEnd
+                if (batDau != null && !batDau.isAfter(newStart) && (ketThuc == null || !ketThuc.isBefore(newEnd))) {
+                    shiftCoversService = true;
+                    break;
                 }
             }
 
-            for (int i = 0; i < requiredSlots; i++) {
-                LocalTime requiredSlot = newStart.plusMinutes((long) i * 30);
-                if (!caTrucList.contains(requiredSlot)) {
-                    throw new RuntimeException("Dịch vụ này cần " + thoiLuongMoi
-                            + " phút nhưng bác sĩ chưa mở đủ ca trực liên tiếp. Vui lòng chọn giờ sớm hơn hoặc khung giờ khác!");
-                }
+            if (!shiftCoversService) {
+                throw new RuntimeException("Dịch vụ này cần " + thoiLuongMoi
+                        + " phút nhưng bác sĩ chưa mở đủ ca trực liên tiếp. Vui lòng chọn giờ sớm hơn hoặc khung giờ khác!");
             }
 
             boolean isConflict = false;
@@ -244,7 +256,7 @@ public class LichHenController {
                         + " phút) với một khách hàng khác. Vui lòng chọn khung giờ rộng hơn nhé!");
             }
 
-            // Ktra xem bé cưng bị trùng lịch hẹn khác cùng giờ ko
+            // Ktra xem bé cưng bị trùng lịch hẹn khác cùng giờ không
             boolean isPetConflict = false;
             if (lichHen.getId_thu_cung() != null && !lichHen.getId_thu_cung().isEmpty()) {
                 List<Map<String, Object>> existingPetApps = jdbcTemplate.queryForList(
@@ -301,35 +313,34 @@ public class LichHenController {
             LichHen saved = lichHenRepository.save(lichHen);
             broadcastLichHenChanged("created", saved);
 
-            if (isInternal) {
-                try {
-                    String emailQuery = "SELECT kh.email, kh.ten_khach_hang, tc.ten_thu_cung, nv.ho_ten as ten_bac_si, dv.ten_dich_vu " +
-                            "FROM KhachHang kh " +
-                            "LEFT JOIN ThuCung tc ON tc.id_thu_cung = ? " +
-                            "LEFT JOIN NhanVien nv ON nv.id_nhan_vien = ? " +
-                            "LEFT JOIN DichVu dv ON dv.id_dich_vu = ? " +
-                            "WHERE kh.id_khach_hang = ?";
-                    List<Map<String, Object>> info = jdbcTemplate.queryForList(emailQuery,
-                            saved.getId_thu_cung(), saved.getId_bac_si(), saved.getId_dich_vu(), saved.getId_khach_hang());
+            // Gửi email xác nhận cho CẢ customer VÀ internal user
+            try {
+                String emailQuery = "SELECT kh.email, kh.ten_khach_hang, tc.ten_thu_cung, nv.ho_ten as ten_bac_si, dv.ten_dich_vu " +
+                        "FROM KhachHang kh " +
+                        "LEFT JOIN ThuCung tc ON tc.id_thu_cung = ? " +
+                        "LEFT JOIN NhanVien nv ON nv.id_nhan_vien = ? " +
+                        "LEFT JOIN DichVu dv ON dv.id_dich_vu = ? " +
+                        "WHERE kh.id_khach_hang = ?";
+                List<Map<String, Object>> info = jdbcTemplate.queryForList(emailQuery,
+                        saved.getId_thu_cung(), saved.getId_bac_si(), saved.getId_dich_vu(), saved.getId_khach_hang());
 
-                    if (!info.isEmpty() && info.get(0).get("email") != null && !info.get(0).get("email").toString().isEmpty()) {
-                        String toEmail = info.get(0).get("email").toString();
-                        String tenKhachHang = info.get(0).get("ten_khach_hang") != null
-                                ? info.get(0).get("ten_khach_hang").toString()
-                                : "Khách hàng";
-                        String tenThuCung = info.get(0).get("ten_thu_cung") != null ? info.get(0).get("ten_thu_cung").toString()
-                                : "Thú cưng";
-                        String tenBacSi = info.get(0).get("ten_bac_si") != null ? info.get(0).get("ten_bac_si").toString()
-                                : "Bác sĩ Rexi";
-                        String tenDichVu = info.get(0).get("ten_dich_vu") != null ? info.get(0).get("ten_dich_vu").toString()
-                                : "Dịch vụ Thú y";
+                if (!info.isEmpty() && info.get(0).get("email") != null && !info.get(0).get("email").toString().isEmpty()) {
+                    String toEmail = info.get(0).get("email").toString();
+                    String tenKhachHang = info.get(0).get("ten_khach_hang") != null
+                            ? info.get(0).get("ten_khach_hang").toString()
+                            : "Khách hàng";
+                    String tenThuCung = info.get(0).get("ten_thu_cung") != null ? info.get(0).get("ten_thu_cung").toString()
+                            : "Thú cưng";
+                    String tenBacSi = info.get(0).get("ten_bac_si") != null ? info.get(0).get("ten_bac_si").toString()
+                            : "Bác sĩ Rexi";
+                    String tenDichVu = info.get(0).get("ten_dich_vu") != null ? info.get(0).get("ten_dich_vu").toString()
+                            : "Dịch vụ Thú y";
 
-                        emailService.sendBookingConfirmation(toEmail, tenKhachHang, tenThuCung, tenBacSi,
-                                saved.getNgay_kham().toString(), saved.getGio_kham().toString(), tenDichVu);
-                    }
-                } catch (Exception e) {
-                    logger.severe("Lỗi gửi email confirmation: " + e.getMessage());
+                    emailService.sendBookingConfirmation(toEmail, tenKhachHang, tenThuCung, tenBacSi,
+                            saved.getNgay_kham().toString(), saved.getGio_kham().toString(), tenDichVu);
                 }
+            } catch (Exception e) {
+                logger.severe("Lỗi gửi email confirmation: " + e.getMessage());
             }
             return ResponseEntity.ok(saved);
         } catch (Exception e) {
@@ -357,8 +368,35 @@ public class LichHenController {
             @SuppressWarnings("unchecked")
             Map<String, Object> lh = (Map<String, Object>) payload.get("lich_hen");
 
+            if (kh == null || tc == null || lh == null) {
+                return ResponseEntity.badRequest().body(Map.of("message", "Dữ liệu không hợp lệ: thiếu thông tin khách hàng, thú cưng hoặc lịch hẹn"));
+            }
+
             String sdt = kh.get("sdt");
             String email = kh.get("email");
+
+            // Validate required fields
+            if (sdt == null || sdt.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("message", "Số điện thoại không được để trống"));
+            }
+            if (lh.get("ngay_kham") == null || lh.get("ngay_kham").toString().isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("message", "Ngày khám không được để trống"));
+            }
+            if (lh.get("gio_kham") == null || lh.get("gio_kham").toString().isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("message", "Giờ khám không được để trống"));
+            }
+            if (lh.get("id_dich_vu") == null || lh.get("id_dich_vu").toString().isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("message", "Dịch vụ không được để trống"));
+            }
+            if (lh.get("id_bac_si") == null || lh.get("id_bac_si").toString().isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("message", "Bác sĩ không được để trống"));
+            }
+
+            // Validate date not in the past
+            java.time.LocalDate ngayKham = java.time.LocalDate.parse(lh.get("ngay_kham").toString());
+            if (ngayKham.isBefore(java.time.LocalDate.now())) {
+                return ResponseEntity.badRequest().body(Map.of("message", "Không thể đặt lịch cho ngày trong quá khứ"));
+            }
 
             List<Map<String, Object>> existingKh = jdbcTemplate
                     .queryForList("SELECT id_khach_hang FROM KhachHang WHERE sdt = ?", sdt);
@@ -384,10 +422,24 @@ public class LichHenController {
                 idKhachHang = existingKh.get(0).get("id_khach_hang").toString();
             }
 
-            String idThuCung = "TC-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-            jdbcTemplate.update(
-                    "INSERT INTO ThuCung (id_thu_cung, id_khach_hang, ten_thu_cung, loai, giong) VALUES (?, ?, ?, 'Chưa xác định', 'Chưa xác định')",
-                    idThuCung, idKhachHang, tc.get("ten_thu_cung"));
+            String idThuCung;
+            String tenThuCung = tc.get("ten_thu_cung") != null ? tc.get("ten_thu_cung").toString().trim() : null;
+            if (tenThuCung == null || tenThuCung.isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("message", "Tên thú cung không được để trống"));
+            }
+
+            // Check if pet already exists for this customer
+            List<Map<String, Object>> existingPet = jdbcTemplate.queryForList(
+                    "SELECT id_thu_cung FROM ThuCung WHERE id_khach_hang = ? AND ten_thu_cung = ? AND (da_xoa = 0 OR da_xoa IS NULL)",
+                    idKhachHang, tenThuCung);
+            if (!existingPet.isEmpty()) {
+                idThuCung = existingPet.get(0).get("id_thu_cung").toString();
+            } else {
+                idThuCung = "TC-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+                jdbcTemplate.update(
+                        "INSERT INTO ThuCung (id_thu_cung, id_khach_hang, ten_thu_cung, loai, giong) VALUES (?, ?, ?, 'Chưa xác định', 'Chưa xác định')",
+                        idThuCung, idKhachHang, tenThuCung);
+            }
 
             LichHen lichHen = new LichHen();
             lichHen.setId_lich_hen(newAppointmentId());
@@ -405,6 +457,48 @@ public class LichHenController {
             lichHen.setGhi_chu_noi_bo(lh.get("ghi_chu") != null ? lh.get("ghi_chu").toString() : null);
             lichHen.setTrang_thai("CHO_XAC_NHAN");
             lichHen.setNgay_tao(LocalDateTime.now());
+
+            // Overlap check for doctor
+            String idBacSi = lichHen.getId_bac_si();
+            if (idBacSi != null && !idBacSi.isEmpty()) {
+                Integer thoiLuong = 30;
+                try {
+                    List<Map<String, Object>> dvRows = jdbcTemplate.queryForList(
+                            "SELECT thoi_luong_phut FROM DichVu WHERE id_dich_vu = ?", lichHen.getId_dich_vu());
+                    if (!dvRows.isEmpty() && dvRows.get(0).get("thoi_luong_phut") != null) {
+                        thoiLuong = ((Number) dvRows.get(0).get("thoi_luong_phut")).intValue();
+                    }
+                } catch (Exception ignored) {}
+
+                LocalTime newStart = lichHen.getGio_kham();
+                LocalTime newEnd = newStart.plusMinutes(thoiLuong);
+                int newStartMin = newStart.getHour() * 60 + newStart.getMinute();
+                int newEndMin = newEnd.getHour() * 60 + newEnd.getMinute();
+
+                List<Map<String, Object>> conflicts = jdbcTemplate.queryForList(
+                        "SELECT lh.gio_kham, dv.thoi_luong_phut FROM LichHen lh " +
+                        "LEFT JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu " +
+                        "WHERE lh.id_bac_si = ? AND lh.ngay_kham = ? " +
+                        "AND lh.trang_thai NOT IN ('Đã hủy', 'DA_HUY', 'da_huy', 'TU_CHOI', 'Hết hạn')",
+                        idBacSi, lichHen.getNgay_kham());
+
+                for (Map<String, Object> row : conflicts) {
+                    Object gioObj = row.get("gio_kham");
+                    LocalTime existStart;
+                    if (gioObj instanceof java.sql.Time) {
+                        existStart = ((java.sql.Time) gioObj).toLocalTime();
+                    } else {
+                        String[] parts = gioObj.toString().split(":");
+                        existStart = java.time.LocalTime.of(Integer.parseInt(parts[0]), Integer.parseInt(parts[1]));
+                    }
+                    Integer dur = row.get("thoi_luong_phut") != null ? ((Number) row.get("thoi_luong_phut")).intValue() : 30;
+                    LocalTime existEnd = existStart.plusMinutes(dur);
+                    if (newStart.isBefore(existEnd) && newEnd.isAfter(existStart)) {
+                        return ResponseEntity.badRequest().body(Map.of("message",
+                                "Bác sĩ đã có lịch khám trùng giờ này. Vui lòng chọn khung giờ khác!"));
+                    }
+                }
+            }
 
             LichHen saved = lichHenRepository.save(lichHen);
             broadcastLichHenChanged("quick-created", saved);
@@ -477,7 +571,7 @@ public class LichHenController {
             }
         }
 
-        // Backup lay tat ca neu ko page size
+        // Dự phòng: lấy tất cả nếu không có page size
         String sql = baseSelect + where + " ORDER BY lh.ngay_kham DESC, lh.gio_kham DESC";
         java.util.List<Map<String, Object>> all = jdbcTemplate.queryForList(sql, params.toArray());
         return ResponseEntity.ok(all);
@@ -666,7 +760,27 @@ public class LichHenController {
 
         String status = body.get("trang_thai");
         if (status != null) {
-            lh.setTrang_thai(status.toUpperCase());
+            status = status.toUpperCase();
+
+            // Validate status transitions — không cho phép quay lại trạng thái đã qua
+            if (!isCustomer) {
+                String currentStatus = lh.getTrang_thai();
+                java.util.Map<String, java.util.Set<String>> allowedTransitions = java.util.Map.of(
+                    "CHO_XAC_NHAN", java.util.Set.of("DA_XAC_NHAN", "DA_HUY", "TU_CHOI", "KHONG_DEN"),
+                    "DA_XAC_NHAN", java.util.Set.of("DANG_KHAM", "DA_HUY", "KHONG_DEN"),
+                    "DANG_KHAM", java.util.Set.of("HOAN_THANH", "DA_HUY"),
+                    "HOAN_THANH", java.util.Set.of(),
+                    "DA_HUY", java.util.Set.of(),
+                    "KHONG_DEN", java.util.Set.of()
+                );
+                java.util.Set<String> allowed = allowedTransitions.getOrDefault(currentStatus, java.util.Set.of());
+                if (!allowed.contains(status) && !status.equals(currentStatus)) {
+                    return ResponseEntity.status(400).body(Map.of("message",
+                        "Không thể chuyển từ trạng thái '" + currentStatus + "' sang '" + status + "'"));
+                }
+            }
+
+            lh.setTrang_thai(status);
             if (body.containsKey("ghi_chu_noi_bo") && !isCustomer) {
                 lh.setGhi_chu_noi_bo(org.springframework.web.util.HtmlUtils.htmlEscape(body.get("ghi_chu_noi_bo")));
             }
@@ -728,6 +842,20 @@ public class LichHenController {
         return ResponseEntity.status(404).body(Map.of("message", "Không tìm thấy lịch hẹn"));
     }
 
+    // Helper: expand shift windows (gio_bat_dau → gio_ket_thuc) thành các slot 30 phút
+    private List<LocalTime> expandShiftToSlots(LocalTime batDau, LocalTime ketThuc) {
+        List<LocalTime> slots = new java.util.ArrayList<>();
+        if (batDau == null) return slots;
+        // Nếu không có gio_ket_thuc, coi ca làm việc chỉ có 1 slot 30 phút
+        LocalTime end = (ketThuc != null) ? ketThuc : batDau.plusMinutes(30);
+        LocalTime cur = batDau;
+        while (cur.isBefore(end)) {
+            slots.add(cur);
+            cur = cur.plusMinutes(30);
+        }
+        return slots;
+    }
+
     @GetMapping("/gio-ranh")
     public List<String> getGioRanh(
             @RequestParam(required = false) String id_nhan_vien,
@@ -742,22 +870,62 @@ public class LichHenController {
         List<Map<String, Object>> existingApps = new java.util.ArrayList<>();
 
         if (id_nhan_vien != null) {
+            // Lấy ca làm việc của bác sĩ cụ thể — bao gồm gio_ket_thuc để expand đủ slot
             List<Map<String, Object>> gioBacSiMoList = jdbcTemplate.queryForList(
-                    "SELECT gio_bat_dau FROM LichLamViecNhanVien WHERE id_nhan_vien = ? AND ngay_lam = ?",
+                    "SELECT gio_bat_dau, gio_ket_thuc FROM LichLamViecNhanVien WHERE id_nhan_vien = ? AND ngay_lam = ?",
                     id_nhan_vien, ngaySql);
             for (Map<String, Object> map : gioBacSiMoList) {
-                Object obj = map.get("gio_bat_dau");
-                if (obj instanceof java.sql.Time)
-                    caTrucList.add(((java.sql.Time) obj).toLocalTime());
-                else if (obj != null)
-                    caTrucList.add(LocalTime.parse(obj.toString()));
+                Object bdObj = map.get("gio_bat_dau");
+                Object ktObj = map.get("gio_ket_thuc");
+                LocalTime batDau = null, ketThuc = null;
+                if (bdObj instanceof java.sql.Time) batDau = ((java.sql.Time) bdObj).toLocalTime();
+                else if (bdObj != null) batDau = LocalTime.parse(bdObj.toString());
+                if (ktObj instanceof java.sql.Time) ketThuc = ((java.sql.Time) ktObj).toLocalTime();
+                else if (ktObj != null) ketThuc = LocalTime.parse(ktObj.toString());
+                // Expand ca làm việc thành từng slot 30 phút
+                for (LocalTime slot : expandShiftToSlots(batDau, ketThuc)) {
+                    if (!caTrucList.contains(slot)) caTrucList.add(slot);
+                }
             }
             existingApps = jdbcTemplate.queryForList(
                     "SELECT lh.gio_kham, dv.thoi_luong_phut FROM LichHen lh LEFT JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu WHERE lh.id_bac_si = ? AND lh.ngay_kham = ? AND lh.trang_thai NOT IN ('Đã hủy', 'DA_HUY', 'da_huy', 'TU_CHOI', 'Hết hạn')",
                     id_nhan_vien, ngaySql);
+            
+            // Lọc bỏ giờ bận
+            List<LocalTime[]> busyIntervals = new java.util.ArrayList<>();
+            for (Map<String, Object> app : existingApps) {
+                Object gkObj = app.get("gio_kham");
+                if (gkObj != null) {
+                    LocalTime bStart;
+                    if (gkObj instanceof java.sql.Time) bStart = ((java.sql.Time) gkObj).toLocalTime();
+                    else bStart = LocalTime.parse(gkObj.toString());
+                    int duration = app.get("thoi_luong_phut") != null ? ((Number) app.get("thoi_luong_phut")).intValue() : 30;
+                    LocalTime bEnd = bStart.plusMinutes(duration);
+                    busyIntervals.add(new LocalTime[]{bStart, bEnd});
+                }
+            }
+            caTrucList.removeIf(slot -> {
+                for (LocalTime[] interval : busyIntervals) {
+                    if (!slot.isBefore(interval[0]) && slot.isBefore(interval[1])) {
+                        return true;
+                    }
+                }
+                return false;
+            });
         } else {
+            boolean pg = DatabaseDialect.isPostgres(jdbcTemplate);
+            // Lấy cả gio_ket_thuc để expand đủ slot 30 phút cho từng ca
             List<Map<String, Object>> allShifts = jdbcTemplate.queryForList(
-                    "SELECT id_nhan_vien, gio_bat_dau FROM LichLamViecNhanVien WHERE ngay_lam = ?", ngaySql);
+                    "SELECT l.id_nhan_vien, l.gio_bat_dau, l.gio_ket_thuc FROM LichLamViecNhanVien l " +
+                    "JOIN NhanVien nv ON l.id_nhan_vien = nv.id_nhan_vien " +
+                    "WHERE l.ngay_lam = ? " +
+                    "AND " + DatabaseDialect.isNotDeleted(pg, "nv.da_xoa") + " " +
+                    "AND (LOWER(COALESCE(nv.chuyen_mon, '')) LIKE '%bác sĩ%' " +
+                    "  OR LOWER(COALESCE(nv.chuyen_mon, '')) LIKE '%bac si%' " +
+                    "  OR LOWER(COALESCE(nv.chuyen_mon, '')) LIKE '%doctor%' " +
+                    "  OR EXISTS (SELECT 1 FROM TaiKhoan tk WHERE tk.id_nhan_vien = nv.id_nhan_vien " +
+                    "    AND (tk.id_vai_tro IN ('VT-BS', 'VT-2', '2') OR UPPER(COALESCE(tk.id_vai_tro, '')) LIKE '%BS%')))",
+                    ngaySql);
 
             List<Map<String, Object>> allBusy = jdbcTemplate.queryForList(
                     "SELECT lh.id_bac_si, lh.gio_kham, dv.thoi_luong_phut " +
@@ -791,29 +959,30 @@ public class LichHenController {
             Map<String, List<LocalTime>> doctorFreeSlots = new java.util.HashMap<>();
             for (Map<String, Object> shift : allShifts) {
                 String docId = String.valueOf(shift.get("id_nhan_vien"));
-                LocalTime time = null;
-                Object obj = shift.get("gio_bat_dau");
-                if (obj instanceof java.sql.Time)
-                    time = ((java.sql.Time) obj).toLocalTime();
-                else if (obj != null)
-                    time = LocalTime.parse(obj.toString());
+                Object bdObj = shift.get("gio_bat_dau");
+                Object ktObj = shift.get("gio_ket_thuc");
+                LocalTime batDau = null, ketThuc = null;
+                if (bdObj instanceof java.sql.Time) batDau = ((java.sql.Time) bdObj).toLocalTime();
+                else if (bdObj != null) batDau = LocalTime.parse(bdObj.toString());
+                if (ktObj instanceof java.sql.Time) ketThuc = ((java.sql.Time) ktObj).toLocalTime();
+                else if (ktObj != null) ketThuc = LocalTime.parse(ktObj.toString());
 
-                if (time != null) {
+                // Expand ca làm việc thành từng slot 30 phút, lọc bỏ slot bận
+                for (LocalTime slotTime : expandShiftToSlots(batDau, ketThuc)) {
                     boolean isBusy = false;
                     List<Map<String, Object>> docBusyList = parsedBusyByDoctor.get(docId);
                     if (docBusyList != null) {
                         for (Map<String, Object> busy : docBusyList) {
                             LocalTime bStart = (LocalTime) busy.get("parsed_start");
                             LocalTime bEnd = (LocalTime) busy.get("parsed_end");
-
-                            if (!time.isBefore(bStart) && time.isBefore(bEnd)) {
+                            if (!slotTime.isBefore(bStart) && slotTime.isBefore(bEnd)) {
                                 isBusy = true;
                                 break;
                             }
                         }
                     }
                     if (!isBusy) {
-                        doctorFreeSlots.computeIfAbsent(docId, k -> new java.util.ArrayList<>()).add(time);
+                        doctorFreeSlots.computeIfAbsent(docId, k -> new java.util.ArrayList<>()).add(slotTime);
                     }
                 }
             }
@@ -826,6 +995,13 @@ public class LichHenController {
             }
 
             java.util.Collections.sort(caTrucList);
+
+            // Neu la ngay hom nay, loai bo cac khung gio da qua
+            java.time.LocalTime nowVn = java.time.LocalTime.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"));
+            if (ngaySql.toLocalDate().isEqual(java.time.LocalDate.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh")))) {
+                caTrucList.removeIf(t -> !t.isAfter(nowVn));
+            }
+
             List<String> finalGioRanh = new java.util.ArrayList<>();
 
             Integer thoiLuong = 30;
@@ -896,6 +1072,12 @@ public class LichHenController {
                 app.put("parsed_start", existingStart);
                 app.put("parsed_end", existingEnd);
             }
+        }
+
+        // Neu la ngay hom nay, loai bo cac khung gio da qua
+        java.time.LocalTime nowVn2 = java.time.LocalTime.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"));
+        if (ngaySql.toLocalDate().isEqual(java.time.LocalDate.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh")))) {
+            caTrucList.removeIf(t -> !t.isAfter(nowVn2));
         }
 
         List<String> gioRanh = new java.util.ArrayList<>();

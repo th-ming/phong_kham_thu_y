@@ -2,7 +2,7 @@ import React, { useCallback, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { MemeCat, ScrollToTop, RevealSection } from "@components/SpecialEffects";
 import axiosInstance from "@services/axios";
-import { formatTienVND, getUserProfile, normalizeUserRole } from "@utils/index";
+import { formatTienVND, getUserProfile, normalizeUserRole, fixVietnameseEncoding } from "@utils/index";
 import { toast } from "@components/Toast";
 import { useTheme } from "../contexts/ThemeContextV2";
 import { useAutoRefresh } from "@hooks/useAutoRefresh";
@@ -166,7 +166,7 @@ const BangGiaDichVu: React.FC = () => {
                                         <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '20px' }}>
                                             {cat.items.map((item) => (
                                                 <li key={item.id_dich_vu} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', color: 'var(--ink)' }}>
-                                                    <span style={{ fontSize: '1.05rem', color: 'var(--gray-500)', fontWeight: 600, minWidth: 0 }}>{item.ten_dich_vu}</span>
+                                                    <span style={{ fontSize: '1.05rem', color: 'var(--gray-500)', fontWeight: 600, minWidth: 0 }}>{fixVietnameseEncoding(item.ten_dich_vu)}</span>
                                                     <span style={{ fontSize: '1.1rem', fontWeight: 900, color: '#0f9d8a', whiteSpace: 'nowrap' }}>{item.gia > 0 ? formatTienVND(item.gia) : "Liên hệ"}</span>
                                                 </li>
                                             ))}
@@ -187,7 +187,7 @@ const BangGiaDichVu: React.FC = () => {
                                         <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '20px' }}>
                                             {otherServices.map((item) => (
                                                 <li key={item.id_dich_vu} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', color: 'var(--ink)' }}>
-                                                    <span style={{ fontSize: '1.05rem', color: 'var(--gray-500)', fontWeight: 600, minWidth: 0 }}>{item.ten_dich_vu}</span>
+                                                    <span style={{ fontSize: '1.05rem', color: 'var(--gray-500)', fontWeight: 600, minWidth: 0 }}>{fixVietnameseEncoding(item.ten_dich_vu)}</span>
                                                     <span style={{ fontSize: '1.1rem', fontWeight: 900, color: '#0f9d8a', whiteSpace: 'nowrap' }}>{item.gia > 0 ? formatTienVND(item.gia) : "Liên hệ"}</span>
                                                 </li>
                                             ))}

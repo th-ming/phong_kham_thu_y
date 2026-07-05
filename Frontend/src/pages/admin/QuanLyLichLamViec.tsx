@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import axiosInstance from '@services/axios';
 import { toast } from '@components/Toast';
@@ -165,6 +165,15 @@ const QuanLyLichLamViec: React.FC = () => {
         if (showAddModal || selectedSlot || draggedShift || isCopying) return;
         return fetchData();
     }, { runImmediately: false });
+
+    useEffect(() => {
+        const handleRealtimeUpdate = () => {
+            if (showAddModal || selectedSlot || draggedShift || isCopying) return;
+            fetchData();
+        };
+        window.addEventListener("rexi-data-changed", handleRealtimeUpdate);
+        return () => window.removeEventListener("rexi-data-changed", handleRealtimeUpdate);
+    }, [showAddModal, selectedSlot, draggedShift, isCopying]);
 
     // Tính toán ngày trong tuần dựa trên weekOffset
     const weekDates = useMemo(() => {
@@ -752,33 +761,79 @@ const QuanLyLichLamViec: React.FC = () => {
                         max-height: none !important;
                         overflow: auto !important;
                     }
+                }
+                    .schedule-mobile-list {
+                        display: none !important;
+                    }
+                    .schedule-scroll-wrap {
+                        display: block !important;
+                        max-height: 600px !important;
+                        overflow: auto !important;
+                    }
+                }
+                @media screen and (max-width: 768px) {
+                    .schedule-mobile-list {
+                        display: none !important;
+                    }
+                    .schedule-scroll-wrap {
+                        display: block !important;
+                        max-height: 520px !important;
+                        overflow: auto !important;
+                        -webkit-overflow-scrolling: touch;
+                    }
                     .schedule-grid {
-                        min-width: 940px;
-                        grid-template-columns: 64px repeat(7, minmax(128px, 1fr));
+                        min-width: 720px !important;
+                        grid-template-columns: 50px repeat(7, minmax(90px, 1fr)) !important;
                     }
                     .schedule-slot-cell {
-                        min-height: 104px !important;
-                        padding: 4px !important;
+                        min-height: 90px !important;
+                        padding: 3px !important;
                     }
                     .schedule-header-grid > div {
-                        padding: 12px 6px !important;
+                        padding: 8px 4px !important;
+                    }
+                    .schedule-header-grid div[style*="fontWeight: 900"] {
+                        font-size: 0.75rem !important;
+                    }
+                    .schedule-header-grid div[style*="color: var(--gray-400)"] {
+                        font-size: 0.65rem !important;
+                        margin-top: 2px !important;
                     }
                     .slot-shift-list {
-                        max-height: 76px !important;
+                        max-height: 64px !important;
+                        gap: 3px !important;
                     }
                     .shift-card {
-                        padding: 8px !important;
-                        border-radius: 12px !important;
+                        padding: 4px 6px !important;
+                        border-radius: 6px !important;
                     }
                     .shift-main-text {
-                        font-size: 0.72rem !important;
+                        font-size: 0.62rem !important;
+                        font-weight: 800 !important;
                     }
                     .shift-sub-text {
-                        font-size: 0.6rem !important;
+                        font-size: 0.55rem !important;
                     }
                     .slot-add-btn {
+                        position: absolute !important;
                         bottom: 4px !important;
                         right: 4px !important;
+                        opacity: 0.85 !important;
+                        transform: translateY(0) !important;
+                        color: var(--primary) !important;
+                        display: flex !important;
+                        align-items: center !important;
+                        justify-content: center !important;
+                        background: rgba(20, 184, 166, 0.08) !important;
+                        width: 20px !important;
+                        height: 20px !important;
+                        border-radius: 50% !important;
+                    }
+                    .slot-add-btn span {
+                        font-size: 14px !important;
+                    }
+                    .slot-summary {
+                        font-size: 0.6rem !important;
                     }
                     .staff-hours-rail {
                         padding-bottom: 4px !important;

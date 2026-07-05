@@ -4,7 +4,7 @@ import axiosInstance from "@services/axios";
 import { useNavigate } from "react-router-dom";
 import { Modal } from "@components/CommonUI";
 import BirthYearSelect from "@components/BirthYearSelect";
-import { getUserProfile, normalizeUserRole } from "@utils/index";
+import { getUserProfile, normalizeUserRole, fixVietnameseEncoding } from "@utils/index";
 import { customerToneCopy, isGenZBirthYear } from "@utils/customerTone";
 import { toast } from "@components/Toast";
 import { toastError } from '@utils/toastHelpers';
@@ -581,7 +581,7 @@ const ThongTinCaNhan: React.FC = () => {
                 {isEditing ? (
                   <textarea data-ai-id="textarea-thongtincanhan-diachi" className="form-input" name="dia_chi" value={formData.dia_chi || ''} onChange={handleChange} rows={3} style={{ width: '100%', background: 'var(--gray-50)', color: 'var(--ink)' }} />
                 ) : (
-                  <div style={{ fontWeight: 700, color: 'var(--ink)', lineHeight: '1.6' }}>{data?.dia_chi || "Chưa cập nhật địa chỉ"}</div>
+                  <div style={{ fontWeight: 700, color: 'var(--ink)', lineHeight: '1.6' }}>{fixVietnameseEncoding(data?.dia_chi) || "Chưa cập nhật địa chỉ"}</div>
                 )}
               </div>
             </div>

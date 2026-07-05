@@ -15,7 +15,7 @@
       const messages = data.errors
         .map((item: any) => typeof item === "string" ? item : item?.message || item?.defaultMessage)
         .filter((message: any) => typeof message === "string" && message.trim());
-      if (messages.length > 0) return messages.join("; ");
+      if (messages.length > 0) return messages.join("\n");
     }
   }
 
@@ -26,7 +26,7 @@
   if (status === 404) return "Không tìm thấy dữ liệu phù hợp. Vui lòng kiểm tra lại thông tin.";
   if (status === 409) return "Thông tin bị trùng hoặc xung đột với dữ liệu đã có.";
   if (status === 429) return "Bạn thao tác quá nhanh. Vui lòng đợi một chút rồi thử lại.";
-  if (status >= 500) return "Backend đang lỗi khi xử lý yêu cầu này. Vui lòng thử lại sau.";
+  if (status >= 500) return "Máy chủ đang gặp sự cố. Vui lòng thử lại sau.";
 
   if (err?.code === "ERR_NETWORK") return "Không kết nối được máy chủ. Vui lòng kiểm tra kết nối mạng hoặc liên hệ đội hỗ trợ Rexi.";
   if (err?.message) return `Lỗi kết nối: ${err.message}`;

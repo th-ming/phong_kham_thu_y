@@ -201,7 +201,7 @@ public class PaymentController {
             vnp_Params.put("vnp_Amount", String.valueOf(amount));
             vnp_Params.put("vnp_CurrCode", "VND");
             vnp_Params.put("vnp_TxnRef", vnp_TxnRef);
-            vnp_Params.put("vnp_OrderInfo", "Thanh toan hoa don Rexi Vet HD" + idHoaDon);
+            vnp_Params.put("vnp_OrderInfo", "Thanh toán hóa đơn Rexi Vet HD" + idHoaDon);
             vnp_Params.put("vnp_OrderType", orderType);
             vnp_Params.put("vnp_Locale", "vn");
             vnp_Params.put("vnp_ReturnUrl", getVnpReturnUrl());
@@ -226,7 +226,7 @@ public class PaymentController {
     }
 
     @GetMapping("/vnpay/return")
-    @org.springframework.transaction.annotation.Transactional
+    @org.springframework.transaction.annotation.Transactional(rollbackFor = Exception.class)
     public ResponseEntity<?> paymentReturn(@RequestParam Map<String, String> queryParams) {
         try {
             String vnp_SecureHash = queryParams.get("vnp_SecureHash");
@@ -241,14 +241,14 @@ public class PaymentController {
                     java.math.BigDecimal amountPaid = new java.math.BigDecimal(queryParams.get("vnp_Amount"))
                             .divide(new java.math.BigDecimal(100));
 
-                    // Check amount trả có khớp/đủ với hóa đơn ko
+                    // Kiểm tra số tiền trả có khớp/đủ với hóa đơn không
                     java.math.BigDecimal amountExpected = jdbcTemplate.queryForObject(
                         "SELECT tong_tien_cuoi FROM HoaDon WHERE id_hoa_don = ?", 
                         java.math.BigDecimal.class, idHoaDon);
 
                     if (amountExpected == null || amountPaid.compareTo(amountExpected) < 0) {
                         return ResponseEntity.status(400).body(Map.of(
-                            "message", "Cảnh báo bảo mật: Số tiền thanh toán không khớp với hóa đơn!",
+                            "message", "Số tiền thanh toán không khớp với hóa đơn!",
                             "success", false));
                     }
 
@@ -271,7 +271,8 @@ public class PaymentController {
             }
             return ResponseEntity.status(400).body(Map.of("message", "Chữ ký sai!", "success", false));
         } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of("message", "Đã xảy ra lỗi hệ thống khi xử lý phản hồi thanh toán.", "success", false));
+            logger.severe("Lỗi xử lý VNPay return: " + e.getMessage());
+            throw new RuntimeException("Lỗi xử lý thanh toán VNPay", e);
         }
     }
 
@@ -328,12 +329,19 @@ public class PaymentController {
             if (invoice == null) {
                 return ResponseEntity.status(404).body(Map.of("message", "Không tìm thấy hóa đơn."));
             }
-            java.math.BigDecimal amountFromDb = (java.math.BigDecimal) invoice.get("tong_tien_cuoi");
+            java.math.BigDecimal amountFromDb = null;
+            Object tongTienObj = invoice.get("tong_tien_cuoi");
+            if (tongTienObj instanceof java.math.BigDecimal) {
+                amountFromDb = (java.math.BigDecimal) tongTienObj;
+            } else if (tongTienObj != null) {
+                amountFromDb = new java.math.BigDecimal(tongTienObj.toString());
+            }
+            
             ResponseEntity<?> payableError = validatePayableInvoice(idHoaDon, amountFromDb);
             if (payableError != null) {
                 return payableError;
             }
-            String amount = amountFromDb.toPlainString();
+            String amount = amountFromDb != null ? amountFromDb.toPlainString() : "0";
 
 
             // Nội dung ck mẫu: REXI HD123
@@ -356,12 +364,12 @@ public class PaymentController {
 
     // Webhook VietQR tự động gạch nợ (PayOS / SePay / Casso)
     @PostMapping("/vietqr/webhook")
-    @org.springframework.transaction.annotation.Transactional // Bọc transaction để tránh ghi trùng khi ngân hàng gọi webhook đồng thời
+    @org.springframework.transaction.annotation.Transactional(rollbackFor = Exception.class)
     public ResponseEntity<?> vietqrWebhook(
             @RequestBody Map<String, Object> payload,
             @RequestHeader(value = "X-Webhook-Secret", required = false) String receivedSecret) {
         try {
-            // Check secret từ SePay/Casso (Unauthorized nếu sai)
+            // Check secret tu SePay/Casso (Unauthorized neu sai)
             if (webhookSecret == null || webhookSecret.isBlank()
                     || receivedSecret == null || !receivedSecret.equals(webhookSecret)) {
                 logger.warning("Webhook bị từ chối: Sai hoặc thiếu X-Webhook-Secret!");
@@ -370,20 +378,19 @@ public class PaymentController {
 
             logger.info("Nhận Webhook hợp lệ: " + payload);
 
-            // Parse content ck linh hoạt (PayOS / SePay / Casso)
+            // Parse content ck linh hoat (PayOS / SePay / Casso)
             String content = "";
             java.math.BigDecimal soTien = java.math.BigDecimal.ZERO;
 
-            if (payload.containsKey("data")) { // Cấu trúc PayOS
+            if (payload.containsKey("data")) {
                 Map<String, Object> data = (Map<String, Object>) payload.get("data");
                 content = String.valueOf(data.getOrDefault("description", ""));
                 if (data.get("amount") != null) {
                     soTien = new java.math.BigDecimal(data.get("amount").toString());
                 }
-            } else { // Cấu trúc SePay / Casso
+            } else {
                 content = payload.containsKey("content") ? String.valueOf(payload.get("content"))
                         : String.valueOf(payload.getOrDefault("transactionContent", ""));
-                // FIX LỖI: Lấy số tiền thật thay vì hardcode 0
                 Object amt = payload.containsKey("transferAmount") ? payload.get("transferAmount")
                         : payload.getOrDefault("amount", "0");
                 if (amt != null) soTien = new java.math.BigDecimal(amt.toString());
@@ -395,7 +402,6 @@ public class PaymentController {
 
             content = content.toUpperCase();
 
-            // Regex tìm ID hóa đơn: REXI HD123, REXI 123...
             java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("REXI\\s*(HD-?[A-Z0-9]+|[0-9]+)");
             java.util.regex.Matcher matcher = pattern.matcher(content);
 
@@ -410,7 +416,6 @@ public class PaymentController {
                         idHoaDon);
 
                 if (updated > 0) {
-                    // FIX LỖI: Ghi số tiền thật vào lịch sử thay vì hardcode 0
                     final java.math.BigDecimal finalSoTien = soTien;
                     jdbcTemplate.update(
                             "INSERT INTO ThanhToan (id_thanh_toan, id_hoa_don, ngay_tra_tien, so_tien, phuong_thuc, ghi_chu) VALUES (?, ?, CURRENT_TIMESTAMP, ?, 'VietQR', 'Thanh toán VietQR thành công')",
@@ -422,7 +427,7 @@ public class PaymentController {
             return ResponseEntity.ok(Map.of("success", true));
         } catch (Exception e) {
             logger.severe("Lỗi xử lý Webhook: " + e.getMessage());
-            return ResponseEntity.status(500).body(Map.of("success", false));
+            throw new RuntimeException("Lỗi xử lý Webhook VietQR", e);
         }
     }
 }

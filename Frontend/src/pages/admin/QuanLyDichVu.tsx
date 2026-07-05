@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import axiosInstance from "@services/axios";
-import { formatTienVND, getUserProfile, matchesSearchFields, normalizeUserRole } from "@utils/index";
+import { formatTienVND, getUserProfile, matchesSearchFields, normalizeUserRole, fixVietnameseEncoding } from "@utils/index";
 import { toast } from "@components/Toast";
 import { toastError } from '@utils/toastHelpers';
 import { useAutoRefresh } from "@hooks/useAutoRefresh";
@@ -55,6 +55,14 @@ const QuanLyDichVu: React.FC = () => {
   };
 
   useAutoRefresh(fetchDichVus, { runImmediately: false });
+
+  useEffect(() => {
+    const handleRealtimeUpdate = () => {
+      fetchDichVus();
+    };
+    window.addEventListener("rexi-data-changed", handleRealtimeUpdate);
+    return () => window.removeEventListener("rexi-data-changed", handleRealtimeUpdate);
+  }, []);
 
   const handleEdit = (dichVu: DichVu) => {
     setEditingId(dichVu.id_dich_vu);
@@ -350,8 +358,8 @@ const QuanLyDichVu: React.FC = () => {
             <article key={dv.id_dich_vu} className="admin-service-card">
               <div className="admin-service-card-top">
                 <div>
-                  <h3>{dv.ten_dich_vu}</h3>
-                  {dv.mo_ta && <p>{dv.mo_ta}</p>}
+                  <h3>{fixVietnameseEncoding(dv.ten_dich_vu)}</h3>
+                  {dv.mo_ta && <p>{fixVietnameseEncoding(dv.mo_ta)}</p>}
                 </div>
                 <span className="admin-service-price">{formatTienVND(dv.gia)}</span>
               </div>
@@ -389,8 +397,8 @@ const QuanLyDichVu: React.FC = () => {
                       <span className="material-symbols-outlined">medical_information</span>
                     </div>
                     <div>
-                      <div style={{ fontWeight: 800, color: 'var(--ink)' }}>{dv.ten_dich_vu}</div>
-                      <div style={{ fontSize: '0.8rem', color: 'var(--gray-500)', fontWeight: 600, maxWidth: '400px', marginTop: '4px' }}>{dv.mo_ta}</div>
+                      <div style={{ fontWeight: 800, color: 'var(--ink)' }}>{fixVietnameseEncoding(dv.ten_dich_vu)}</div>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--gray-500)', fontWeight: 600, maxWidth: '400px', marginTop: '4px' }}>{fixVietnameseEncoding(dv.mo_ta)}</div>
                     </div>
                   </div>
                 </td>

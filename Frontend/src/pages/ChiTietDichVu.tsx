@@ -2,7 +2,7 @@ import React, { useCallback, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { MemeCat, ScrollToTop } from "@components/SpecialEffects";
 import axiosInstance from "@services/axios";
-import { formatTienVND, generateSlug, getUserProfile, normalizeUserRole } from "@utils/index";
+import { formatTienVND, generateSlug, getUserProfile, normalizeUserRole, fixVietnameseEncoding } from "@utils/index";
 import { toast } from "@components/Toast";
 import { useAutoRefresh } from "@hooks/useAutoRefresh";
 import Loi404 from "@pages/Loi404";
@@ -288,7 +288,7 @@ const ChiTietDichVu: React.FC = () => {
           <div className="service-detail-crumb" style={{ display: 'flex', gap: '12px', alignItems: 'center', color: 'var(--gray-400)', fontSize: '0.85rem', marginBottom: '60px', fontWeight: 700, letterSpacing: '1px' }}>
             <Link to="/" style={{ color: 'inherit', textDecoration: 'none' }}>TRANG CHỦ</Link>
             <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>chevron_right</span>
-            <span style={{ color: 'var(--primary)' }}>{service.ten_dich_vu.toUpperCase()}</span>
+            <span style={{ color: 'var(--primary)' }}>{fixVietnameseEncoding(service.ten_dich_vu)?.toUpperCase()}</span>
           </div>
 
           <div className="service-detail-layout" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '80px', alignItems: 'start' }}>
@@ -306,10 +306,10 @@ const ChiTietDichVu: React.FC = () => {
                 <span className="material-symbols-outlined" style={{ fontSize: '40px' }}>{assets.icon}</span>
               </div>
               <h1 className="service-detail-title" style={{ fontSize: 'clamp(2.5rem, 5vw, 4rem)', fontWeight: 950, color: 'var(--ink)', letterSpacing: '-2px', lineHeight: 1.1, marginBottom: '32px' }}>
-                {service.ten_dich_vu}
+                {fixVietnameseEncoding(service.ten_dich_vu)}
               </h1>
 
-              <p className="service-detail-description" style={{ fontSize: '1.25rem', color: 'var(--gray-500)', fontWeight: 600, lineHeight: 1.7, marginBottom: '56px' }}>{service.mo_ta || "Dịch vụ chăm sóc thú cưng chuyên nghiệp tại hệ thống phòng khám Rexi Vet."}</p>
+              <p className="service-detail-description" style={{ fontSize: '1.25rem', color: 'var(--gray-500)', fontWeight: 600, lineHeight: 1.7, marginBottom: '56px' }}>{fixVietnameseEncoding(service.mo_ta) || "Dịch vụ chăm sóc thú cưng chuyên nghiệp tại hệ thống phòng khám Rexi Vet."}</p>
 
               <div className="service-detail-process" style={{ borderTop: '1px solid var(--gray-200)', paddingTop: '56px', marginTop: '56px' }}>
                 <h3 style={{ fontSize: '1.8rem', fontWeight: 900, marginBottom: '32px', color: 'var(--ink)' }}>Quy trình chuẩn y khoa</h3>
