@@ -276,22 +276,27 @@ const decodeMojibake = (str: string): string => {
 export const fixVietnameseEncoding = (text: string | null | undefined): string => {
   if (!text) return '';
   
-  // Nếu phát hiện ký tự Mojibake đặc trưng (ví dụ chứa các cụm Ã, áº, Ä‘, á»)
   let result = text;
-  if (/[\u00C0-\u00FF]/.test(result) && (result.includes('Ã') || result.includes('Ä') || result.includes('á'))) {
+
+  // Ký tự tiếng Việt đặc thù (đ, ă, ơ, ư, Đ, Ă, Ơ, Ư và các tổ hợp dấu U+1E00-U+1EFF)
+  // KHÔNG BAO GIỜ xuất hiện trong Mojibake (Windows-1252 chỉ có U+0000-U+01FF thông thường)
+  const isValidUnicode = /[\u0102\u0103\u0110\u0111\u01A0\u01A1\u01AF\u01B0\u1E00-\u1EFF]/.test(result);
+
+  // Chuỗi Mojibake đặc trưng: Ã + byte tiếp theo (Ã¡=á, Ã =à,...), Ä' (=đ), á» (=ọ,ộ,...)
+  const hasMojibake = !isValidUnicode && /Ã[\u0080-\u00BF]|Ä['\u2018\u2019]|á»|á¹|á¸/.test(result);
+
+  if (hasMojibake) {
     try {
-      // Decode chuỗi Mojibake
       const decoded = decodeURIComponent(escape(result));
       if (decoded && decoded !== result) {
         result = decoded;
       }
     } catch (e) {
-      // Fallback thủ công nếu escape thất bại
       result = decodeMojibake(result);
     }
   }
 
-  // Chạy thêm bộ mapping dấu chấm hỏi cũ
+  // Chạy thêm bộ mapping dấu chấm hỏi cũ (Ki?m tra → Kiểm tra)
   for (const [wrong, correct] of Object.entries(VIETNAMESE_ENCODING_FIXES)) {
     while (result.includes(wrong)) {
       result = result.replace(wrong, correct);

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import axiosInstance from "@services/axios";
 import { toast } from "@components/Toast";
 import { toastError } from '@utils/toastHelpers';
-import { matchesSearchFields } from "@utils/index";
+import { matchesSearchFields, fixVietnameseEncoding } from "@utils/index";
 import { useAutoRefresh } from "@hooks/useAutoRefresh";
 import { ModalThemKhachHang } from "./quan-ly-khach-hang-thu-cung/ModalThemKhachHang";
 import { ModalThemThuCung } from "./quan-ly-khach-hang-thu-cung/ModalThemThuCung";
@@ -57,6 +57,33 @@ const QuanLyKhachHangThuCung: React.FC = () => {
 
   const filteredKhachHang = React.useMemo(() => {
     return khachHang.filter((kh) => {
+      const q = searchKhachHang.trim();
+      // Chuẩn hóa: loại bỏ mọi ký tự không phải số để nhận dạng SĐT đúng
+      // dù nhập "0916 123 456", "0916-123-456" hay "0916123456" đều được xử lý giống nhau
+      const digitsOnly = q.replace(/\D/g, '');
+      let normalizedDigits = digitsOnly;
+      // Bỏ tiền tố quốc tế 84 (VD: +84916... -> 0916...)
+      if (normalizedDigits.startsWith('84') && normalizedDigits.length === 11) {
+        normalizedDigits = '0' + normalizedDigits.slice(2);
+      }
+      const isExactPhone = normalizedDigits.length >= 9;
+      const isPartialPhone = normalizedDigits.length >= 4 && normalizedDigits.length < 9;
+
+      if (isExactPhone) {
+        const dbDigits = (kh.sdt || '').replace(/\D/g, '');
+        const dbNorm = dbDigits.startsWith('84') && dbDigits.length === 11
+          ? '0' + dbDigits.slice(2)
+          : dbDigits;
+        // So sánh chính xác, bỏ qua số 0 đầu để khớp cả 2 định dạng
+        return normalizedDigits === dbNorm
+          || normalizedDigits.replace(/^0/, '') === dbNorm.replace(/^0/, '');
+      }
+      if (isPartialPhone) {
+        // Tìm một phần trong SĐT, không lan sang tên/địa chỉ
+        const dbDigits = (kh.sdt || '').replace(/\D/g, '');
+        return dbDigits.includes(normalizedDigits);
+      }
+      // Không phải số điện thoại -> tìm rộng theo tên, email, địa chỉ...
       return matchesSearchFields(searchKhachHang, [
         kh.id_khach_hang,
         kh.ten_khach_hang,
@@ -604,17 +631,17 @@ const QuanLyKhachHangThuCung: React.FC = () => {
             <article key={t.id_thu_cung} className="admin-pet-card">
               <div className="admin-pet-card-top">
                 <div>
-                  <h3>{t.ten_thu_cung || 'Chưa có tên'}</h3>
+                  <h3>{fixVietnameseEncoding(t.ten_thu_cung) || 'Chưa có tên'}</h3>
                   <p>Chủ: {getTenKhachHang(t.id_khach_hang)}</p>
                 </div>
                 <span className="admin-pet-meta-chip">#{t.id_thu_cung}</span>
               </div>
               <div className="admin-pet-meta">
                 <span className="admin-pet-meta-chip">{t.loai || 'Chưa rõ loài'}</span>
-                <span className="admin-pet-meta-chip">{t.giong || 'Chưa rõ giống'}</span>
+                <span className="admin-pet-meta-chip">{fixVietnameseEncoding(t.giong) || 'Chưa rõ giống'}</span>
                 <span className="admin-pet-meta-chip">{t.trong_luong ?? '—'} kg</span>
               </div>
-              <p>{t.gioi_tinh || 'Chưa rõ giới tính'} · {t.mau_sac || 'Không rõ màu'}{t.ngay_sinh ? ` · Sinh ${new Date(t.ngay_sinh).getFullYear()}` : ''}</p>
+              <p>{fixVietnameseEncoding(t.gioi_tinh) || 'Chưa rõ giới tính'} · {fixVietnameseEncoding(t.mau_sac) || 'Không rõ màu'}{t.ngay_sinh ? ` · Sinh ${new Date(t.ngay_sinh).getFullYear()}` : ''}</p>
               <div className="admin-pet-actions">
                 <button data-ai-id="button-quanlykhachhangthucung-mobile-edit-pet" className="btn" onClick={() => handleEditPetClick(t)} style={{ background: 'var(--primary-light)', color: 'var(--primary)' }}>
                   <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>edit</span>
@@ -653,13 +680,13 @@ const QuanLyKhachHangThuCung: React.FC = () => {
                     <div style={{ width: '40px', height: '40px', background: 'var(--primary-light)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
                       <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>pets</span>
                     </div>
-                    <span style={{ fontWeight: 800, color: 'var(--ink)' }}>{t.ten_thu_cung}</span>
+                    <span style={{ fontWeight: 800, color: 'var(--ink)' }}>{fixVietnameseEncoding(t.ten_thu_cung)}</span>
                   </div>
                 </td>
                 <td style={{ padding: '20px' }}>
-                  <div style={{ fontWeight: 700 }}>{t.loai || '—'} - {t.giong || '—'}</div>
+                  <div style={{ fontWeight: 700 }}>{fixVietnameseEncoding(t.loai) || '—'} - {fixVietnameseEncoding(t.giong) || '—'}</div>
                   <div style={{ fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 600 }}>
-                    {t.gioi_tinh || 'Chưa rõ GT'} • {t.mau_sac || 'Không rõ màu'}
+                    {fixVietnameseEncoding(t.gioi_tinh) || 'Chưa rõ GT'} • {fixVietnameseEncoding(t.mau_sac) || 'Không rõ màu'}
                   </div>
                 </td>
                 <td style={{ padding: '20px' }}>
