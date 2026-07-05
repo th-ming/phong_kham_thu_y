@@ -108,7 +108,7 @@ const KeToanDashboard: React.FC = () => {
         const paidInvoices = invoices.filter(inv => inv.trang_thai?.toUpperCase() === 'DA_THANH_TOAN');
         const unpaidInvoices = invoices.filter(inv => inv.trang_thai?.toUpperCase() === 'CHO_THANH_TOAN');
 
-        const todayRevenue = revenueData.find((d: any) => d.Ngay?.startsWith(todayStr))?.TongDoanhThu || 0;
+        const todayRevenue = revenueData.find((d: any) => (d.Ngay || d.ngay || "")?.startsWith(todayStr))?.TongDoanhThu || revenueData.find((d: any) => (d.Ngay || d.ngay || "")?.startsWith(todayStr))?.tongdoanhthu || 0;
         const totalUnpaid = unpaidInvoices.reduce((sum, inv) => sum + (inv.tong_tien_cuoi || 0), 0);
 
         return {
@@ -135,7 +135,7 @@ const KeToanDashboard: React.FC = () => {
         const unpaidInvoices = invoices.filter(inv => inv.trang_thai?.toUpperCase() === 'CHO_THANH_TOAN');
         const paidToday = paidInvoices.filter(inv => toDateKey(inv.ngay_lap_hoa_don) === todayKey);
         const paidYesterday = paidInvoices.filter(inv => toDateKey(inv.ngay_lap_hoa_don) === yesterdayKey);
-        const yesterdayRevenue = revenueData.find((d: any) => (d.Ngay || d.ngay || "").startsWith(yesterdayKey))?.TongDoanhThu
+        const yesterdayRevenue = revenueData.find((d: any) => (d.Ngay || d.ngay || "").startsWith(yesterdayKey))?.TongDoanhThu || revenueData.find((d: any) => (d.Ngay || d.ngay || "").startsWith(yesterdayKey))?.tongdoanhthu
             || paidYesterday.reduce((sum, inv) => sum + (Number(inv.tong_tien_cuoi) || 0), 0);
         const diff = stats.todayRevenue - yesterdayRevenue;
         const diffPct = yesterdayRevenue > 0 ? (diff / yesterdayRevenue) * 100 : null;
@@ -190,7 +190,7 @@ const KeToanDashboard: React.FC = () => {
         (revenueData || []).forEach((item: any) => {
             const dateKey = getRevenueDateKey(item);
             if (!dateKey) return;
-            const revenue = Number(item.TongDoanhThu || item.doanh_thu || item.tong_doanh_thu || 0);
+            const revenue = Number(item.TongDoanhThu || item.tongdoanhthu || item.doanhthu || item.doanh_thu || item.tong_doanh_thu || 0);
             revenueByDate.set(dateKey, (revenueByDate.get(dateKey) || 0) + revenue);
         });
 

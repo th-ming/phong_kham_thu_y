@@ -108,7 +108,7 @@ const BaoCaoThongKe: React.FC = () => {
         const extractArray = (data: any): any[] => {
           if (!data) return [];
           if (Array.isArray(data)) return data;
-          const possibleArrays = [data.data, data.content, data.result, data.items, data.records];
+          const possibleArrays = [data.value, data.data, data.content, data.result, data.items, data.records];
           for (const arr of possibleArrays) {
             if (Array.isArray(arr)) return arr;
             if (arr && typeof arr === 'object' && Array.isArray(arr.content)) return arr.content;
@@ -142,21 +142,21 @@ const BaoCaoThongKe: React.FC = () => {
   useAutoRefresh(fetchData, { runImmediately: false });
 
   const totalRevenue = useMemo(() => {
-    const directTotal = financeSummary?.TongDoanhThu ?? financeSummary?.tongDoanhThu ?? financeSummary?.tong_doanh_thu;
+    const directTotal = financeSummary?.TongDoanhThu ?? financeSummary?.tongDoanhThu ?? financeSummary?.tongdoanhthu ?? financeSummary?.tong_doanh_thu;
     if (directTotal !== undefined && directTotal !== null) return Number(directTotal) || 0;
-    return revenueData.reduce((sum, d) => sum + (d.TongDoanhThu || d.doanh_thu || d.tong_doanh_thu || 0), 0);
+    return revenueData.reduce((sum, d) => sum + (d.TongDoanhThu || d.TongDoanhThu || d.doanhthu || d.doanh_thu || d.tong_doanh_thu || 0), 0);
   }, [financeSummary, revenueData]);
-  const totalApps = useMemo(() => doctorStats.reduce((sum, d) => sum + (d.SoHoSo || d.so_ho_so || 0), 0), [doctorStats]);
+  const totalApps = useMemo(() => doctorStats.reduce((sum, d) => sum + (d.SoHoSo || d.sohoso || d.so_ho_so || 0), 0), [doctorStats]);
 
   const formatMoney = (value: number) => `${Number(value || 0).toLocaleString('vi-VN')} đ`;
-  const getRevenueValue = (item: any) => Number(item?.TongDoanhThu || item?.doanh_thu || item?.tong_doanh_thu || 0);
+  const getRevenueValue = (item: any) => Number(item?.TongDoanhThu || item?.tongdoanhthu || item?.doanhthu || item?.doanh_thu || item?.tong_doanh_thu || 0);
   const getRecordDate = (item: any) => {
     const raw = item?.ngay_kham || item?.NgayKham || item?.ngay_tao || item?.NgayTao;
     if (!raw) return "";
     return new Date(raw).toISOString().slice(0, 10);
   };
-  const getDoctorName = (item: any) => item?.TenBacSi || item?.ten_bac_si || item?.ho_ten || item?.HoTen || "";
-  const getServiceName = (item: any) => item?.TenDichVu || item?.ten_dich_vu || "";
+  const getDoctorName = (item: any) => item?.TenBacSi || item?.tenbacsi || item?.ten_bac_si || item?.ho_ten || item?.HoTen || "";
+  const getServiceName = (item: any) => item?.TenDichVu || item?.tendichvu || item?.ten_dich_vu || "";
   const normalizeText = (value: any) => String(value || "").trim().toLowerCase();
 
   const latestRevenueCompare = useMemo(() => {
@@ -196,7 +196,7 @@ const BaoCaoThongKe: React.FC = () => {
   // bs có hiệu suất cao nhất (nhiều ca hoàn thành nhất)
   const topDoctor = useMemo(() => {
     if (doctorStats.length === 0) return null;
-    return [...doctorStats].sort((a, b) => (b.SoHoSo || b.so_ho_so || 0) - (a.SoHoSo || a.so_ho_so || 0))[0];
+    return [...doctorStats].sort((a, b) => (b.SoHoSo || b.sohoso || b.so_ho_so || 0) - (a.SoHoSo || a.sohoso || a.so_ho_so || 0))[0];
   }, [doctorStats]);
 
   const topDoctorProfile = useMemo(() => {
@@ -218,7 +218,7 @@ const BaoCaoThongKe: React.FC = () => {
   // Dịch vụ phổ biến mang lại doanh thu cao nhất
   const topService = useMemo(() => {
     if (serviceStats.length === 0) return null;
-    return [...serviceStats].sort((a, b) => (b.DoanhThu || b.doanh_thu || b.tong_doanh_thu || 0) - (a.DoanhThu || a.doanh_thu || a.tong_doanh_thu || 0))[0];
+    return [...serviceStats].sort((a, b) => (b.DoanhThu || b.doanhthu || b.doanh_thu || b.tong_doanh_thu || 0) - (a.DoanhThu || a.doanhthu || a.doanh_thu || a.tong_doanh_thu || 0))[0];
   }, [serviceStats]);
 
   const topServiceProfile = useMemo(() => {
@@ -290,7 +290,7 @@ const BaoCaoThongKe: React.FC = () => {
     labels: revenueData.map(d => `T${d.Thang || d.thang}`),
     datasets: [{
       label: 'Doanh thu',
-      data: revenueData.map(d => (d.TongDoanhThu || d.doanh_thu || d.tong_doanh_thu || 0)),
+      data: revenueData.map(d => (d.TongDoanhThu || d.tongdoanhthu || d.doanhthu || d.doanh_thu || d.tong_doanh_thu || 0)),
       backgroundColor: (context: any) => {
         const ctx = context.chart.ctx;
         const gradient = ctx.createLinearGradient(0, 0, 0, 400);
@@ -311,7 +311,7 @@ const BaoCaoThongKe: React.FC = () => {
     }),
     datasets: [{
       label: 'Doanh thu',
-      data: sortedDailyData.map(d => (d.TongDoanhThu || d.doanh_thu || d.tong_doanh_thu || 0)),
+      data: sortedDailyData.map(d => (d.TongDoanhThu || d.tongdoanhthu || d.doanhthu || d.doanh_thu || d.tong_doanh_thu || 0)),
       backgroundColor: 'rgba(245, 158, 11, 0.8)',
       borderRadius: 8,
       hoverBackgroundColor: '#f59e0b',
@@ -333,16 +333,16 @@ const BaoCaoThongKe: React.FC = () => {
   const serviceChartItems = useMemo(() => {
     if (serviceStats.length > 0) return serviceStats;
     return allServices.map(service => ({
-      TenDichVu: service.ten_dich_vu || service.TenDichVu,
+      TenDichVu: service.tendichvu || service.ten_dich_vu || service.TenDichVu,
       DoanhThu: 0
     }));
   }, [allServices, serviceStats]);
 
   const serviceChartData = {
-    labels: serviceChartItems.map(s => s.TenDichVu || s.ten_dich_vu),
+    labels: serviceChartItems.map(s => s.TenDichVu || s.tendichvu || s.ten_dich_vu),
     datasets: [{
       label: 'Doanh thu',
-      data: serviceChartItems.map(s => (s.DoanhThu || s.doanh_thu || s.tong_doanh_thu || 0)),
+      data: serviceChartItems.map(s => (s.DoanhThu || s.doanhthu || s.doanh_thu || s.tong_doanh_thu || 0)),
       backgroundColor: (context: any) => {
         const chart = context.chart;
         const { ctx, chartArea } = chart;
@@ -401,20 +401,20 @@ const BaoCaoThongKe: React.FC = () => {
       csvContent += "=== BÁO CÁO TỔNG HỢP VẬN HÀNH PHÒNG KHÁM THÚ Y REXI ===\n";
       csvContent += `Tổng doanh thu tích lũy,${totalRevenue} đ\n`;
       csvContent += `Tổng số ca khám điều trị,${totalApps} ca\n`;
-      csvContent += `Bác sĩ tích cực nhất,${topDoctor ? (topDoctor.TenBacSi || topDoctor.ten_bac_si) : "Chưa có"}\n`;
-      csvContent += `Dịch vụ đắt khách nhất,${topService ? (topService.TenDichVu || topService.ten_dich_vu) : "Chưa có"}\n\n`;
+      csvContent += `Bác sĩ tích cực nhất,${topDoctor ? (topDoctor.TenBacSi || topDoctor.tenbacsi || topDoctor.ten_bac_si) : "Chưa có"}\n`;
+      csvContent += `Dịch vụ đắt khách nhất,${topService ? (topService.TenDichVu || topService.tendichvu || topService.ten_dich_vu) : "Chưa có"}\n\n`;
 
       // 2. DOANH THU 12 THÁNG
       csvContent += "1. XU HƯỚNG DOANH THU CÁC THÁNG\nTháng,Năm,Doanh thu (VNĐ)\n";
       revenueData.forEach(item => {
-        csvContent += `${item.Thang || item.thang},${item.Nam || item.nam},${item.TongDoanhThu || item.doanh_thu || 0}\n`;
+        csvContent += `${item.Thang || item.thang},${item.Nam || item.nam},${item.TongDoanhThu || item.tongdoanhthu || item.doanh_thu || 0}\n`;
       });
       csvContent += "\n";
 
       // 3. HIỆU SUẤT CA KHÁM BÁC SĨ
       csvContent += "2. XẾP HẠNG HIỆU SUẤT BÁC SĨ ĐIỀU TRỊ\nBác sĩ,Số ca khám hoàn thành\n";
       doctorStats.forEach(item => {
-        csvContent += `"${sanitizeCSV(item.TenBacSi || item.ten_bac_si)}",${item.SoHoSo || item.so_ho_so || 0}\n`;
+        csvContent += `"${sanitizeCSV(item.TenBacSi || item.tenbacsi || item.ten_bac_si)}",${item.SoHoSo || item.sohoso || item.so_ho_so || 0}\n`;
       });
       csvContent += "\n";
 
@@ -428,7 +428,7 @@ const BaoCaoThongKe: React.FC = () => {
       // 5. DOANH THU THEO CÁC MỤC DỊCH VỤ
       csvContent += "4. DOANH THU CHI TIẾT THEO MỤC DỊCH VỤ Y TẾ\nTên dịch vụ y tế,Doanh thu (VNĐ)\n";
       serviceStats.forEach(item => {
-        csvContent += `"${sanitizeCSV(item.TenDichVu || item.ten_dich_vu)}",${item.DoanhThu || item.doanh_thu || item.tong_doanh_thu || 0}\n`;
+        csvContent += `"${sanitizeCSV(item.TenDichVu || item.tendichvu || item.ten_dich_vu)}",${item.DoanhThu || item.doanhthu || item.doanh_thu || item.tong_doanh_thu || 0}\n`;
       });
 
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -614,10 +614,10 @@ const BaoCaoThongKe: React.FC = () => {
             <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gray-500)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>BÁC SĨ TÍCH CỰC</span>
           </div>
           <h3 style={{ fontSize: '1.3rem', fontWeight: 900, color: 'var(--ink)', margin: 0, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
-            {topDoctor ? (topDoctor.TenBacSi || topDoctor.ten_bac_si) : 'Chưa có'}
+            {topDoctor ? (topDoctor.TenBacSi || topDoctor.tenbacsi || topDoctor.ten_bac_si) : 'Chưa có'}
           </h3>
           <span style={{ fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 700 }}>
-            {topDoctor ? `${topDoctor.SoHoSo || topDoctor.so_ho_so || 0} ca hoàn thành` : '—'}
+            {topDoctor ? `${topDoctor.SoHoSo || topDoctor.sohoso || topDoctor.so_ho_so || 0} ca hoàn thành` : '—'}
           </span>
           <div className="kpi-hover-detail">
             <b>Thông tin:</b> {topDoctorProfile ? `${topDoctorProfile.so_dien_thoai || topDoctorProfile.sdt || "chưa có SĐT"} • ${topDoctorProfile.email || "chưa có email"}` : "Bấm để xem ca hoàn thành và hồ sơ liên quan."}
@@ -630,10 +630,10 @@ const BaoCaoThongKe: React.FC = () => {
             <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gray-500)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>DỊCH VỤ HÀNG ĐẦU</span>
           </div>
           <h3 style={{ fontSize: '1.3rem', fontWeight: 900, color: 'var(--ink)', margin: 0, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
-            {topService ? (topService.TenDichVu || topService.ten_dich_vu) : 'Chưa có'}
+            {topService ? (topService.TenDichVu || topService.tendichvu || topService.ten_dich_vu) : 'Chưa có'}
           </h3>
           <span style={{ fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 700 }}>
-            {topService ? `${((topService.DoanhThu || topService.doanh_thu || 0) / 1000000).toFixed(1)} Tr VNĐ` : '—'}
+            {topService ? `${((topService.DoanhThu || topService.doanhthu || topService.doanh_thu || 0) / 1000000).toFixed(1)} Tr VNĐ` : '—'}
           </span>
           <div className="kpi-hover-detail">
             <b>Thông tin:</b> {topServiceProfile ? `${formatMoney(Number(topServiceProfile.gia || 0))} • ${topServiceProfile.thoi_luong_phut || "—"} phút` : "Bấm để xem tên, giá, trạng thái và doanh thu."}
@@ -715,13 +715,13 @@ const BaoCaoThongKe: React.FC = () => {
           <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '24px', color: 'var(--ink)' }}>Hiệu suất đội ngũ</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {doctorStats.map((doc, idx) => {
-              const maxApps = Math.max(...doctorStats.map(d => d.SoHoSo || d.so_ho_so || 0));
-              const width = maxApps === 0 ? 0 : ((doc.SoHoSo || doc.so_ho_so || 0) / maxApps) * 100;
+              const maxApps = Math.max(...doctorStats.map(d => d.SoHoSo || d.sohoso || d.so_ho_so || 0));
+              const width = maxApps === 0 ? 0 : ((doc.SoHoSo || doc.sohoso || doc.so_ho_so || 0) / maxApps) * 100;
               return (
                 <div key={idx}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                    <span style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--ink)' }}>{doc.TenBacSi || doc.ten_bac_si}</span>
-                    <span style={{ fontWeight: 900, color: 'var(--primary)' }}>{doc.SoHoSo || doc.so_ho_so || 0} ca</span>
+                    <span style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--ink)' }}>{doc.TenBacSi || doc.tenbacsi || doc.ten_bac_si}</span>
+                    <span style={{ fontWeight: 900, color: 'var(--primary)' }}>{doc.SoHoSo || doc.sohoso || doc.so_ho_so || 0} ca</span>
                   </div>
                   <div style={{ height: '8px', background: 'var(--gray-100)', borderRadius: '10px', overflow: 'hidden' }}>
                     <div style={{ width: `${width}%`, height: '100%', background: 'var(--primary-gradient)', borderRadius: '10px', animation: 'growBar 0.8s cubic-bezier(.22,.68,0,1.2) both', animationDelay: `${idx * 0.1}s` }}></div>
@@ -851,7 +851,7 @@ const BaoCaoThongKe: React.FC = () => {
               {doctorStats.map((doc, idx) => (
                 <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', gap: '16px', padding: '14px 16px', border: '1px solid var(--gray-200)', borderRadius: '14px', background: 'var(--surface)' }}>
                   <span style={{ fontWeight: 900, color: 'var(--ink)' }}>{getDoctorName(doc)}</span>
-                  <span style={{ fontWeight: 950, color: '#3b82f6' }}>{doc.SoHoSo || doc.so_ho_so || 0} ca</span>
+                  <span style={{ fontWeight: 950, color: '#3b82f6' }}>{doc.SoHoSo || doc.sohoso || doc.so_ho_so || 0} ca</span>
                 </div>
               ))}
             </div>
@@ -883,7 +883,7 @@ const BaoCaoThongKe: React.FC = () => {
               </div>
               <div className="kpi-detail-tile">
                 <div className="kpi-detail-label">Ca hoàn thành</div>
-                <div className="kpi-detail-value">{topDoctor ? (topDoctor.SoHoSo || topDoctor.so_ho_so || 0) : 0} ca</div>
+                <div className="kpi-detail-value">{topDoctor ? (topDoctor.SoHoSo || topDoctor.sohoso || topDoctor.so_ho_so || 0) : 0} ca</div>
               </div>
             </div>
             {topDoctorProfile?.gioi_thieu && (
@@ -928,7 +928,7 @@ const BaoCaoThongKe: React.FC = () => {
               </div>
               <div className="kpi-detail-tile">
                 <div className="kpi-detail-label">Doanh thu ghi nhận</div>
-                <div className="kpi-detail-value">{formatMoney(topService?.DoanhThu || topService?.doanh_thu || topService?.tong_doanh_thu || 0)}</div>
+                <div className="kpi-detail-value">{formatMoney(topService?.DoanhThu || topService?.doanhthu || topService?.doanh_thu || topService?.tong_doanh_thu || 0)}</div>
               </div>
             </div>
             <div style={{ padding: '14px 16px', borderRadius: '14px', background: 'var(--surface)', border: '1px solid var(--gray-200)', color: 'var(--gray-500)', fontWeight: 800, lineHeight: 1.55 }}>
