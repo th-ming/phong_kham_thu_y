@@ -423,7 +423,7 @@ const BacSiDashboard: React.FC = () => {
                 background: 'linear-gradient(135deg, var(--primary) 0%, #0d9488 100%)', 
                 color: 'white', 
                 position: 'relative', 
-                overflow: 'hidden', 
+            overflow: 'visible',
                 boxShadow: 'var(--shadow-xl)',
                 border: '1px solid rgba(255, 255, 255, 0.1)'
             }}>
