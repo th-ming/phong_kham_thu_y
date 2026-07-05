@@ -246,9 +246,36 @@ const VIETNAMESE_ENCODING_FIXES: Record<string, string> = {
   '?Y': 'Ỷ', '?Ý': 'Ý', '?Ỳ': 'Ỳ', '?Ỹ': 'Ỹ', '?Ỵ': 'Ỵ',
 };
 
+// Hàm bổ trợ decode Mojibake khi chữ UTF-8 bị ép hiển thị dưới dạng Windows-1252 / ISO-8859-1
+const decodeMojibake = (str: string): string => {
+  try {
+    // Chuyển chuỗi về mảng bytes gốc và parse lại theo UTF-8
+    const bytes = new Uint8Array(str.split('').map(c => c.charCodeAt(0)));
+    return new TextDecoder('utf-8').decode(bytes);
+  } catch (e) {
+    return str;
+  }
+};
+
 export const fixVietnameseEncoding = (text: string | null | undefined): string => {
   if (!text) return '';
+  
+  // Nếu phát hiện ký tự Mojibake đặc trưng (ví dụ chứa các cụm Ã, áº, Ä‘, á»)
   let result = text;
+  if (/[\u00C0-\u00FF]/.test(result) && (result.includes('Ã') || result.includes('Ä') || result.includes('á'))) {
+    try {
+      // Decode chuỗi Mojibake
+      const decoded = decodeURIComponent(escape(result));
+      if (decoded && decoded !== result) {
+        result = decoded;
+      }
+    } catch (e) {
+      // Fallback thủ công nếu escape thất bại
+      result = decodeMojibake(result);
+    }
+  }
+
+  // Chạy thêm bộ mapping dấu chấm hỏi cũ
   for (const [wrong, correct] of Object.entries(VIETNAMESE_ENCODING_FIXES)) {
     while (result.includes(wrong)) {
       result = result.replace(wrong, correct);
@@ -256,6 +283,7 @@ export const fixVietnameseEncoding = (text: string | null | undefined): string =
   }
   return result;
 };
+
 
 // * * Tạo Slug chuẩn SEO từ tên dịch vụ * Loại bỏ dấu, ký tự đặc biệt và khoảng trắng
 export const generateSlug = (str: string): string => {
