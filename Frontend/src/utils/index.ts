@@ -250,21 +250,22 @@ const VIETNAMESE_ENCODING_FIXES: Record<string, string> = {
 const decodeMojibake = (str: string): string => {
   try {
     // Map các ký tự unicode Unicode thay thế đặc thù của Windows-1252 về byte đúng (0-255)
-    const win1252Map: Record<number, number> = {
-      0x20AC: 128, 0x201A: 130, 0x0192: 131, 0x201E: 132, 0x2026: 133, 0x2020: 134, 0x2021: 135,
-      0x02C6: 136, 0x2030: 137, 
+    // Map các ký tự unicode Unicode thay thế đặc thù của Windows-1252 về byte đúng (0-255)
+    const win1252Map = new Map<number, number>([
+      [0x20AC, 128], [0x201A, 130], [0x0192, 131], [0x201E, 132], [0x2026, 133], [0x2020, 134], [0x2021, 135],
+      [0x02C6, 136], [0x2030, 137], 
       // Thập phân:
-      8216: 145, 8217: 146, 8220: 147, 8221: 148, 8249: 139, 8250: 155, 2122: 153, 8482: 153,
-      8222: 132, 8230: 133, 8224: 134, 8225: 135, 710: 136, 8240: 137, 352: 138, 338: 140,
-      381: 142, 732: 152, 353: 154, 339: 156, 382: 158, 376: 159,
-      0x2022: 149, 0x2013: 150, 0x2014: 151
-    };
-
+      [8216, 145], [8217, 146], [8220, 147], [8221, 148], [8249, 139], [8250, 155], [2122, 153], [8482, 153],
+      [8222, 132], [8230, 133], [8224, 134], [8225, 135], [710, 136], [8240, 137], [352, 138], [338, 140],
+      [381, 142], [732, 152], [353, 154], [339, 156], [382, 158], [376, 159],
+      [0x2022, 149], [0x2013, 150], [0x2014, 151]
+    ]);
 
     const bytes = new Uint8Array(Array.from(str).map(c => {
       const code = c.charCodeAt(0);
-      return win1252Map[code] || (code <= 255 ? code : 63);
+      return win1252Map.get(code) || (code <= 255 ? code : 63);
     }));
+
     return new TextDecoder('utf-8').decode(bytes);
   } catch (e) {
     return str;
