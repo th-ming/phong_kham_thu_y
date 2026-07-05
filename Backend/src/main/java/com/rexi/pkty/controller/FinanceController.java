@@ -383,13 +383,20 @@ public class FinanceController {
     @PreAuthorize(RexiSecurityRoles.FINANCE_READ)
     public ResponseEntity<?> getDoanhThuThang() {
         try {
+            // FIX TIMEZONE: Convert UTC → VN (UTC+7) trước khi extract year/month
             String sql = DatabaseDialect.isPostgres(jdbcTemplate)
-                    ? "SELECT EXTRACT(YEAR FROM ngay_lap_hoa_don)::int AS Nam, EXTRACT(MONTH FROM ngay_lap_hoa_don)::int AS Thang, SUM(tong_tien_cuoi) AS TongDoanhThu "
+                    ? "SELECT EXTRACT(YEAR FROM (ngay_lap_hoa_don AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Ho_Chi_Minh'))::int AS Nam, "
+                            + "EXTRACT(MONTH FROM (ngay_lap_hoa_don AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Ho_Chi_Minh'))::int AS Thang, "
+                            + "SUM(tong_tien_cuoi) AS TongDoanhThu "
                             + "FROM HoaDon WHERE UPPER(TRIM(trang_thai)) = 'DA_THANH_TOAN' "
-                            + "GROUP BY EXTRACT(YEAR FROM ngay_lap_hoa_don)::int, EXTRACT(MONTH FROM ngay_lap_hoa_don)::int ORDER BY Nam DESC, Thang DESC"
-                    : "SELECT YEAR(ngay_lap_hoa_don) AS Nam, MONTH(ngay_lap_hoa_don) AS Thang, SUM(tong_tien_cuoi) AS TongDoanhThu "
+                            + "GROUP BY EXTRACT(YEAR FROM (ngay_lap_hoa_don AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Ho_Chi_Minh'))::int, "
+                            + "EXTRACT(MONTH FROM (ngay_lap_hoa_don AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Ho_Chi_Minh'))::int "
+                            + "ORDER BY Nam DESC, Thang DESC"
+                    : "SELECT YEAR(DATEADD(HOUR, 7, ngay_lap_hoa_don)) AS Nam, MONTH(DATEADD(HOUR, 7, ngay_lap_hoa_don)) AS Thang, "
+                            + "SUM(tong_tien_cuoi) AS TongDoanhThu "
                             + "FROM HoaDon WHERE UPPER(TRIM(trang_thai)) = 'DA_THANH_TOAN' "
-                            + "GROUP BY YEAR(ngay_lap_hoa_don), MONTH(ngay_lap_hoa_don) ORDER BY Nam DESC, Thang DESC";
+                            + "GROUP BY YEAR(DATEADD(HOUR, 7, ngay_lap_hoa_don)), MONTH(DATEADD(HOUR, 7, ngay_lap_hoa_don)) "
+                            + "ORDER BY Nam DESC, Thang DESC";
             return ResponseEntity.ok(jdbcTemplate.queryForList(sql));
         } catch (Exception e) {
             return ResponseEntity.status(500)
@@ -454,13 +461,17 @@ public class FinanceController {
     }
 
     private List<Map<String, Object>> getDoanhThuTheoNgayRows() {
+        // FIX TIMEZONE: Convert UTC → VN (UTC+7) trước khi group by ngày
         String sql = DatabaseDialect.isPostgres(jdbcTemplate)
-                ? "SELECT ngay_lap_hoa_don::date as Ngay, SUM(tong_tien_cuoi) as TongDoanhThu FROM HoaDon "
-                        + "WHERE UPPER(TRIM(trang_thai)) = 'DA_THANH_TOAN' AND ngay_lap_hoa_don >= CURRENT_DATE - 6 "
-                        + "GROUP BY ngay_lap_hoa_don::date ORDER BY Ngay ASC"
-                : "SELECT CAST(ngay_lap_hoa_don AS date) as Ngay, SUM(tong_tien_cuoi) as TongDoanhThu FROM HoaDon "
-                        + "WHERE UPPER(TRIM(trang_thai)) = 'DA_THANH_TOAN' AND ngay_lap_hoa_don >= " + DatabaseDialect.currentDateMinusDays(DatabaseDialect.isPostgres(jdbcTemplate), 6) + " "
-                        + "GROUP BY CAST(ngay_lap_hoa_don AS date) ORDER BY Ngay ASC";
+                ? "SELECT (ngay_lap_hoa_don AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Ho_Chi_Minh')::date as Ngay, "
+                        + "SUM(tong_tien_cuoi) as TongDoanhThu FROM HoaDon "
+                        + "WHERE UPPER(TRIM(trang_thai)) = 'DA_THANH_TOAN' "
+                        + "AND (ngay_lap_hoa_don AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Ho_Chi_Minh')::date >= (NOW() AT TIME ZONE 'Asia/Ho_Chi_Minh')::date - 6 "
+                        + "GROUP BY (ngay_lap_hoa_don AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Ho_Chi_Minh')::date ORDER BY Ngay ASC"
+                : "SELECT CAST(DATEADD(HOUR, 7, ngay_lap_hoa_don) AS date) as Ngay, SUM(tong_tien_cuoi) as TongDoanhThu FROM HoaDon "
+                        + "WHERE UPPER(TRIM(trang_thai)) = 'DA_THANH_TOAN' "
+                        + "AND CAST(DATEADD(HOUR, 7, ngay_lap_hoa_don) AS date) >= DATEADD(day, -6, CAST(DATEADD(HOUR, 7, GETDATE()) AS date)) "
+                        + "GROUP BY CAST(DATEADD(HOUR, 7, ngay_lap_hoa_don) AS date) ORDER BY Ngay ASC";
         return jdbcTemplate.queryForList(sql);
     }
 
