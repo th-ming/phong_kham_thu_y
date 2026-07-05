@@ -249,13 +249,23 @@ const VIETNAMESE_ENCODING_FIXES: Record<string, string> = {
 // Hàm bổ trợ decode Mojibake khi chữ UTF-8 bị ép hiển thị dưới dạng Windows-1252 / ISO-8859-1
 const decodeMojibake = (str: string): string => {
   try {
-    // Chuyển chuỗi về mảng bytes gốc và parse lại theo UTF-8
-    const bytes = new Uint8Array(str.split('').map(c => c.charCodeAt(0)));
+    // Map các ký tự unicode Unicode thay thế đặc thù của Windows-1252 về byte đúng (0-255)
+    const win1252Map: Record<number, number> = {
+      0x20AC: 128, 0x201A: 130, 0x0192: 131, 0x201E: 132, 0x2026: 133, 0x2020: 134, 0x2021: 135,
+      0x02C6: 136, 0x2030: 137, 0x0160: 138, 0x2039: 139, 0x0152: 140, 0x017D: 142,
+      0x2018: 145, 0x2019: 146, 0x201C: 147, 0x201D: 148, 0x2022: 149, 0x2013: 150, 0x2014: 151,
+      0x02DC: 152, 0x2122: 153, 0x0161: 154, 0x203A: 155, 0x0153: 156, 0x017E: 158, 0x0178: 159
+    };
+    const bytes = new Uint8Array(Array.from(str).map(c => {
+      const code = c.charCodeAt(0);
+      return win1252Map[code] || (code <= 255 ? code : 63);
+    }));
     return new TextDecoder('utf-8').decode(bytes);
   } catch (e) {
     return str;
   }
 };
+
 
 export const fixVietnameseEncoding = (text: string | null | undefined): string => {
   if (!text) return '';
