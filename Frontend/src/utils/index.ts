@@ -228,6 +228,35 @@ export const getCustomerIdFromProfile = (user: any): string | undefined => {
   return id;
 };
 
+// Fix lỗi encoding tiếng Việt phổ biến: "Hình ?nh" → "Hình ảnh"
+const VIETNAMESE_ENCODING_FIXES: Record<string, string> = {
+  '?a': 'ả', '?á': 'á', '?à': 'à', '?ã': 'ã', '?ạ': 'ạ',
+  '?ă': 'ă', '?â': 'â', '?đ': 'đ',
+  '?e': 'ẻ', '?é': 'é', '?è': 'è', '?ẽ': 'ẽ', '?ẹ': 'ẹ', '?ê': 'ê',
+  '?i': 'ỉ', '?í': 'í', '?ì': 'ì', '?ĩ': 'ĩ', '?ị': 'ị',
+  '?o': 'ỏ', '?ó': 'ó', '?ò': 'ò', '?õ': 'õ', '?ọ': 'ọ', '?ô': 'ô', '?ơ': 'ơ',
+  '?u': 'ủ', '?ú': 'ú', '?ù': 'ù', '?ũ': 'ũ', '?ụ': 'ụ', '?ư': 'ư',
+  '?y': 'ỷ', '?ý': 'ý', '?ỳ': 'ỳ', '?ỹ': 'ỹ', '?ỵ': 'ỵ',
+  '?A': 'Ả', '?Á': 'Á', '?À': 'À', '?Ã': 'Ã', '?Ạ': 'Ạ',
+  '?Ă': 'Ă', '?Â': 'Â', '?Đ': 'Đ',
+  '?E': 'Ẻ', '?É': 'É', '?È': 'È', '?Ẽ': 'Ẽ', '?Ẹ': 'Ẹ', '?Ê': 'Ê',
+  '?I': 'Ỉ', '?Í': 'Í', '?Ì': 'Ì', '?Ĩ': 'Ĩ', '?Ị': 'Ị',
+  '?O': 'Ỏ', '?Ó': 'Ó', '?Ò': 'Ò', '?Õ': 'Õ', '?Ọ': 'Ọ', '?Ô': 'Ô', '?Ơ': 'Ơ',
+  '?U': 'Ủ', '?Ú': 'Ú', '?Ù': 'Ù', '?Ũ': 'Ũ', '?Ụ': 'Ụ', '?Ư': 'Ư',
+  '?Y': 'Ỷ', '?Ý': 'Ý', '?Ỳ': 'Ỳ', '?Ỹ': 'Ỹ', '?Ỵ': 'Ỵ',
+};
+
+export const fixVietnameseEncoding = (text: string | null | undefined): string => {
+  if (!text) return '';
+  let result = text;
+  for (const [wrong, correct] of Object.entries(VIETNAMESE_ENCODING_FIXES)) {
+    while (result.includes(wrong)) {
+      result = result.replace(wrong, correct);
+    }
+  }
+  return result;
+};
+
 // * * Tạo Slug chuẩn SEO từ tên dịch vụ * Loại bỏ dấu, ký tự đặc biệt và khoảng trắng
 export const generateSlug = (str: string): string => {
   if (!str) return "";
