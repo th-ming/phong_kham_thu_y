@@ -181,7 +181,7 @@ public class LichHenController {
                         ") " + DatabaseDialect.topN(DatabaseDialect.isPostgres(jdbcTemplate), 1);
                 try {
                     String autoDocId = jdbcTemplate.queryForObject(findDocQuery, String.class,
-                            lichHen.getNgay_kham(), newStart, newEnd, newEndMinute, newStartMinute);
+                            java.sql.Date.valueOf(lichHen.getNgay_kham()), newStart, newEnd, newEndMinute, newStartMinute);
                     lichHen.setId_bac_si(autoDocId);
                 } catch (Exception e) {
                     throw new RuntimeException(
@@ -192,7 +192,7 @@ public class LichHenController {
             int requiredSlots = (int) Math.ceil(thoiLuongMoi / 30.0);
             List<Map<String, Object>> gioBacSiMoList = jdbcTemplate.queryForList(
                     "SELECT gio_bat_dau, gio_ket_thuc FROM LichLamViecNhanVien WHERE id_nhan_vien = ? AND ngay_lam = ?",
-                    lichHen.getId_bac_si(), lichHen.getNgay_kham());
+                    lichHen.getId_bac_si(), java.sql.Date.valueOf(lichHen.getNgay_kham()));
 
             List<LocalTime> caTrucList = new java.util.ArrayList<>();
             for (Map<String, Object> map : gioBacSiMoList) {
