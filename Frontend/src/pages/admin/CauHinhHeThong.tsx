@@ -73,6 +73,8 @@ const CauHinhHeThong: React.FC = () => {
 
     // Trạng thái ẩn/hiện mật khẩu ứng dụng SMTP
     const [showMailPassword, setShowMailPassword] = useState(false);
+    // Trạng thái ẩn/hiện API Key Brevo
+    const [showBrevoApiKey, setShowBrevoApiKey] = useState(false);
     // Trạng thái ẩn/hiện chuỗi bí mật VNPay
     const [showVnpaySecret, setShowVnpaySecret] = useState(false);
     // Trạng thái ẩn/hiện API Key của VietQR
@@ -1076,6 +1078,47 @@ const CauHinhHeThong: React.FC = () => {
                                             </span>
                                         </button>
                                     </div>
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, color: 'var(--gray-600)' }}>Mã Brevo API Key (Bypass Cloud Firewall)</label>
+                                    <div style={{ position: 'relative' }}>
+                                        <input
+                                            data-ai-id="input-cauhinhhethong-brevo-api-key"
+                                            type={showBrevoApiKey ? "text" : "password"}
+                                            className="form-input"
+                                            style={{ paddingRight: '48px', width: '100%' }}
+                                            value={configs.brevo_api_key || ''}
+                                            onChange={e => setConfigs({...configs, brevo_api_key: e.target.value})}
+                                            placeholder="api-key-xxxx-xxxx-xxxx"
+                                        />
+                                        <button
+                                            data-ai-id="btn_toggle_brevo_api_key"
+                                            type="button"
+                                            onClick={() => setShowBrevoApiKey(!showBrevoApiKey)}
+                                            style={{
+                                                position: 'absolute',
+                                                right: '12px',
+                                                top: '50%',
+                                                transform: 'translateY(-50%)',
+                                                background: 'none',
+                                                border: 'none',
+                                                cursor: 'pointer',
+                                                color: 'var(--gray-400)',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                padding: '4px'
+                                            }}
+                                            title={showBrevoApiKey ? "Ẩn khóa" : "Hiện khóa"}
+                                        >
+                                            <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>
+                                                {showBrevoApiKey ? 'visibility_off' : 'visibility'}
+                                            </span>
+                                        </button>
+                                    </div>
+                                    <span style={{ fontSize: '0.8rem', color: 'var(--gray-500)', marginTop: '4px', display: 'block' }}>
+                                        Khi điền API Key, hệ thống trên Cloud sẽ tự động gửi thư qua HTTPS API thay cho SMTP cổng 587 bị nhà mạng chặn.
+                                    </span>
                                 </div>
                             </div>
                         </div>

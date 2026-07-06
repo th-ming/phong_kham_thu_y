@@ -507,6 +507,42 @@ public class SystemController {
         String username = payload.get("mail_username");
         String password = payload.get("mail_password");
         String toEmail = payload.get("toEmail");
+        String brevoApiKey = payload.get("brevo_api_key");
+
+        if (brevoApiKey != null && !brevoApiKey.trim().isEmpty()) {
+            if (toEmail == null || toEmail.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("message", "Vui lòng nhập Email nhận test."));
+            }
+            try {
+                org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate();
+                org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+                headers.setContentType(org.springframework.http.MediaType.APPLICATION_JSON);
+                headers.setAccept(java.util.List.of(org.springframework.http.MediaType.APPLICATION_JSON));
+                headers.set("api-key", brevoApiKey.trim());
+
+                String senderEmail = username != null ? username.trim() : "rexivetsys@gmail.com";
+                Map<String, Object> sender = Map.of("name", "Rexi Vet Clinic", "email", senderEmail);
+                Map<String, Object> to = Map.of("email", toEmail.trim(), "name", toEmail.trim());
+                Map<String, Object> body = Map.of(
+                    "sender", sender,
+                    "to", java.util.List.of(to),
+                    "subject", "🐾 Thử nghiệm Kết nối Brevo API - Rexi Vet",
+                    "textContent", "Xin chào sếp,\n\nĐây là email kiểm tra kết nối hệ thống Brevo API từ trang quản trị Rexi Vet.\n\nKết nối Brevo API đã HOẠT ĐỘNG HOÀN HẢO qua HTTPS! 🎉🐾"
+                );
+
+                org.springframework.http.HttpEntity<Map<String, Object>> entity = new org.springframework.http.HttpEntity<>(body, headers);
+                org.springframework.http.ResponseEntity<String> response = restTemplate.postForEntity("https://api.brevo.com/v3/smtp/email", entity, String.class);
+                
+                if (response.getStatusCode().is2xxSuccessful()) {
+                    return ResponseEntity.ok(Map.of("success", true, "message", "Gửi email thử nghiệm qua Brevo API thành công! Vui lòng kiểm tra " + toEmail));
+                } else {
+                    return ResponseEntity.status(500).body(Map.of("success", false, "message", "Kết nối Brevo thất bại: " + response.getBody()));
+                }
+            } catch (Exception e) {
+                logger.severe("Lỗi kết nối test Brevo API: " + e.getMessage());
+                return ResponseEntity.status(500).body(Map.of("success", false, "message", "Kết nối Brevo API thất bại: " + e.getMessage()));
+            }
+        }
 
         if (host == null || host.trim().isEmpty() ||
             username == null || username.trim().isEmpty() ||

@@ -13,6 +13,13 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import java.util.Map;
+import java.util.List;
 
 // * * DỊCH VỤ EMAIL HỆ THỐNG - REXI VET * - Xử lý gửi các loại email: xn đặt lịch, Nhắc hẹn, Marketing... * - Chạy bất đồng bộ (Async) để ko làm chậm trải nghiệm người dùng
 @Service
@@ -79,46 +86,110 @@ public class EmailService {
         return mailSender;
     }
 
+    private boolean sendViaBrevoApi(String toEmail, String recipientName, String subject, String content, boolean isHtml) {
+        try {
+            String apiKey = null;
+            try {
+                apiKey = jdbcTemplate.queryForObject("SELECT gia_tri FROM CauHinhHeThong WHERE ten_cau_hinh = 'brevo_api_key'", String.class);
+            } catch (Exception e) {
+                // Ignore database miss, check system properties / env
+            }
+            if (apiKey == null || apiKey.trim().isEmpty()) {
+                apiKey = System.getProperty("BREVO_API_KEY");
+            }
+            if (apiKey == null || apiKey.trim().isEmpty()) {
+                apiKey = System.getenv("BREVO_API_KEY");
+            }
+            
+            if (apiKey == null || apiKey.trim().isEmpty()) {
+                return false; // No Brevo key, fallback to SMTP
+            }
+
+            RestTemplate restTemplate = new RestTemplate();
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+            headers.set("api-key", apiKey.trim());
+
+            String senderEmail = "rexivetsys@gmail.com";
+            try {
+                String dbSender = jdbcTemplate.queryForObject("SELECT gia_tri FROM CauHinhHeThong WHERE ten_cau_hinh = 'mail_username'", String.class);
+                if (dbSender != null && !dbSender.trim().isEmpty()) {
+                    senderEmail = dbSender.trim();
+                }
+            } catch (Exception e) {}
+
+            Map<String, Object> sender = Map.of("name", "Rexi Vet Clinic", "email", senderEmail);
+            Map<String, Object> to = Map.of("email", toEmail, "name", recipientName != null ? recipientName : toEmail);
+            
+            Map<String, Object> body = Map.of(
+                "sender", sender,
+                "to", List.of(to),
+                "subject", subject,
+                isHtml ? "htmlContent" : "textContent", content
+            );
+
+            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
+            ResponseEntity<String> response = restTemplate.postForEntity("https://api.brevo.com/v3/smtp/email", entity, String.class);
+            
+            if (response.getStatusCode().is2xxSuccessful()) {
+                logger.info("Successfully sent email via Brevo API to: " + toEmail);
+                return true;
+            } else {
+                logger.severe("Failed to send email via Brevo API: " + response.getBody());
+            }
+        } catch (Exception e) {
+            logger.severe("Error sending email via Brevo API: " + e.getMessage());
+        }
+        return false;
+    }
+
+    private boolean sendEmailHelper(String toEmail, String recipientName, String subject, String content, boolean isHtml) {
+        // Try Brevo HTTP API first if key exists
+        if (sendViaBrevoApi(toEmail, recipientName, subject, content, isHtml)) {
+            return true;
+        }
+        
+        // Fallback to SMTP
+        JavaMailSender sender = getDynamicMailSender();
+        if (sender == null) return false;
+        try {
+            if (isHtml) {
+                MimeMessage message = sender.createMimeMessage();
+                MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+                helper.setTo(toEmail);
+                helper.setSubject(subject);
+                helper.setText(content, true);
+                sender.send(message);
+            } else {
+                SimpleMailMessage message = new SimpleMailMessage();
+                message.setTo(toEmail);
+                message.setSubject(subject);
+                message.setText(content);
+                sender.send(message);
+            }
+            logger.info("Email sent successfully via SMTP to: " + toEmail);
+            return true;
+        } catch (Exception e) {
+            logger.severe("SMTP email send failed: " + e.getMessage());
+            return false;
+        }
+    }
+
     // * * Gửi email xn khi khách hàng đặt lịch thành công
     public void sendBookingConfirmation(String toEmail, String customerName, String petName, String doctorName,
             String date, String time, String serviceName) {
-        JavaMailSender sender = getDynamicMailSender();
-        if (sender == null) return;
         CompletableFuture.runAsync(() -> {
-            try {
-                SimpleMailMessage message = new SimpleMailMessage();
-                message.setTo(toEmail);
-                message.setSubject("🐾 Xác nhận Đặt lịch thành công - Rexi Vet");
-                String text = "Xin chào " + customerName + ",\n\nBé [" + petName + "] đã có lịch hẹn vào lúc " + time
-                        + " ngày " + date + ".\n\nCảm ơn bạn đã tin tưởng Rexi Vet! 🐾";
-                message.setText(text);
-                sender.send(message);
-            } catch (Exception e) {
-                logger.severe("Lỗi gửi mail xác nhận: " + e.getMessage());
-            }
+            String text = "Xin chào " + customerName + ",\n\nBé [" + petName + "] đã có lịch hẹn vào lúc " + time
+                    + " ngày " + date + ".\n\nCảm ơn bạn đã tin tưởng Rexi Vet! 🐾";
+            sendEmailHelper(toEmail, customerName, "🐾 Xác nhận Đặt lịch thành công - Rexi Vet", text, false);
         });
     }
 
     // * * Gửi email chào mừng khi đăng nhập lần đầu (Thiết kế Premium HTML)
     public void sendWelcomeEmailHTML(String toEmail, String customerName) {
-        JavaMailSender sender = getDynamicMailSender();
-        if (sender == null) return;
         CompletableFuture.runAsync(() -> {
-            try {
-                MimeMessage message = sender.createMimeMessage();
-                MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-                
-                helper.setTo(toEmail);
-                helper.setSubject("🐾 Chào mừng bạn đến với Gia đình Rexi Vet!");
-                
-                String htmlContent = getWelcomeTemplate(customerName);
-                helper.setText(htmlContent, true);
-                
-                sender.send(message);
-                logger.info("Đã gửi mail chào mừng tới: " + toEmail);
-            } catch (Exception e) {
-                logger.severe("Lỗi gửi mail chào mừng: " + e.getMessage());
-            }
+            sendEmailHelper(toEmail, customerName, "🐾 Chào mừng bạn đến với Gia đình Rexi Vet!", getWelcomeTemplate(customerName), true);
         });
     }
 
@@ -165,130 +236,64 @@ public class EmailService {
 
     // * * Gửi email OTP lấy lại mật khẩu
     public boolean sendOtpEmail(String toEmail, String otp) {
-        JavaMailSender sender = getDynamicMailSender();
-        if (sender == null) return false;
-        try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setTo(toEmail);
-            message.setSubject("🔒 Mã xác minh OTP - Rexi Vet");
-            String text = "Xin chào,\n\nMã OTP để đặt lại mật khẩu của bạn là: " + otp + "\n" +
-                    "Mã này sẽ hết hạn sau 5 phút. Vui lòng không chia sẻ mã này cho bất kỳ ai!\n\nCảm ơn bạn! 🐾";
-            message.setText(text);
-            sender.send(message);
-            logger.info("Đã gửi OTP tới: " + toEmail);
-            return true;
-        } catch (Exception e) {
-            logger.severe("Lỗi gửi mail OTP: " + e.getMessage());
-            return false;
-        }
+        String text = "Xin chào,\n\nMã OTP để đặt lại mật khẩu của bạn là: " + otp + "\n" +
+                "Mã này sẽ hết hạn sau 5 phút. Vui lòng không chia sẻ mã này cho bất kỳ ai!\n\nCảm ơn bạn! 🐾";
+        return sendEmailHelper(toEmail, "Khách hàng", "🔒 Mã xác minh OTP - Rexi Vet", text, false);
     }
 
     // * * Gửi email nhắc hẹn cho khách hàng
     public void sendReminderEmail(String toEmail, String customerName, String petName, String doctorName,
             String date, String time, String serviceName) {
-        JavaMailSender sender = getDynamicMailSender();
-        if (sender == null) return;
         CompletableFuture.runAsync(() -> {
-            try {
-                SimpleMailMessage message = new SimpleMailMessage();
-                message.setTo(toEmail);
-                message.setSubject("🔔 Nhắc hẹn: Lịch khám tại Rexi Vet vào ngày mai");
-                String text = "Xin chào " + customerName + ",\n\nĐừng quên lịch hẹn của bé [" + petName + "] vào lúc "
-                        + time + " ngày " + date + " nhé!\n\nChúng tôi rất mong được đón tiếp bé! 🐾";
-                message.setText(text);
-                sender.send(message);
-            } catch (Exception e) {
-                logger.severe("Lỗi gửi mail nhắc hẹn: " + e.getMessage());
-            }
+            String text = "Xin chào " + customerName + ",\n\nĐừng quên lịch hẹn của bé [" + petName + "] vào lúc "
+                    + time + " ngày " + date + " nhé!\n\nChúng tôi rất mong được đón tiếp bé! 🐾";
+            sendEmailHelper(toEmail, customerName, "🔔 Nhắc hẹn: Lịch khám tại Rexi Vet vào ngày mai", text, false);
         });
     }
 
     // * * Gửi mật khẩu cho tài khoản mới được tạo bởi nhân viên
     public void sendPasswordEmail(String toEmail, String customerName, String password) {
-        JavaMailSender sender = getDynamicMailSender();
-        if (sender == null) return;
         CompletableFuture.runAsync(() -> {
-            try {
-                SimpleMailMessage message = new SimpleMailMessage();
-                message.setTo(toEmail);
-                message.setSubject("🔑 Thông tin tài khoản đăng nhập - Rexi Vet");
-                String text = "Xin chào " + customerName + ",\n\nTài khoản của bạn đã được tạo thành công.\n" +
-                        "Tài khoản: " + toEmail + "\n" +
-                        "Mật khẩu: " + password + "\n\nVui lòng đăng nhập và đổi mật khẩu sớm nhất có thể. 🐾";
-                message.setText(text);
-                sender.send(message);
-            } catch (Exception e) {
-                logger.severe("Lỗi gửi mail password: " + e.getMessage());
-            }
+            String text = "Xin chào " + customerName + ",\n\nTài khoản của bạn đã được tạo thành công.\n" +
+                    "Tài khoản: " + toEmail + "\n" +
+                    "Mật khẩu: " + password + "\n\nVui lòng đăng nhập và đổi mật khẩu sớm nhất có thể. 🐾";
+            sendEmailHelper(toEmail, customerName, "🔑 Thông tin tài khoản đăng nhập - Rexi Vet", text, false);
         });
     }
 
     // * * Gửi email nhắc nợ cho khách hàng còn hóa đơn chưa thanh toán
     public void sendDebtReminderEmail(String toEmail, String customerName, String invoiceId, java.math.BigDecimal amount) {
-        JavaMailSender sender = getDynamicMailSender();
-        if (sender == null) return;
         CompletableFuture.runAsync(() -> {
-            try {
-                SimpleMailMessage message = new SimpleMailMessage();
-                message.setTo(toEmail);
-                message.setSubject("💸 Thông báo: Nhắc thanh toán hóa đơn - Rexi Vet");
-                String text = "Xin chào " + customerName + ",\n\nBạn còn hóa đơn [" + invoiceId + "] chưa thanh toán với số tiền là: " 
-                        + String.format("%,.0f VNĐ", amount) + ".\n\nVui lòng hoàn tất thanh toán sớm để bé cưng tiếp tục được hưởng dịch vụ tốt nhất nhé! 🐾";
-                message.setText(text);
-                sender.send(message);
-            } catch (Exception e) {
-                logger.severe("Lỗi gửi mail nhắc nợ: " + e.getMessage());
-            }
+            String text = "Xin chào " + customerName + ",\n\nBạn còn hóa đơn [" + invoiceId + "] chưa thanh toán với số tiền là: " 
+                    + String.format("%,.0f VNĐ", amount) + ".\n\nVui lòng hoàn tất thanh toán sớm để bé cưng tiếp tục được hưởng dịch vụ tốt nhất nhé! 🐾";
+            sendEmailHelper(toEmail, customerName, "💸 Thông báo: Nhắc thanh toán hóa đơn - Rexi Vet", text, false);
         });
     }
+
     // * * Gửi email Marketing / Mass email — chạy qua executor có giới hạn để tránh OOM và IP bị blacklist
     public void sendMassEmail(String toEmail, String subject, String htmlContent) {
-        JavaMailSender sender = getDynamicMailSender();
-        if (sender == null) return;
         MASS_EMAIL_EXECUTOR.submit(() -> {
-            try {
-                MimeMessage message = sender.createMimeMessage();
-                MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-                helper.setTo(toEmail);
-                helper.setSubject(subject);
-                // Chuyển \n thành <br> để hỗ trợ xuống dòng trong HTML
-                String formattedContent = htmlContent.replace("\n", "<br>");
-                helper.setText(formattedContent, true);
-                sender.send(message);
-                logger.info("✅ Gửi mass email thành công tới: " + toEmail);
-            } catch (Exception e) {
-                logger.severe("❌ Lỗi gửi mass mail cho " + toEmail + ": " + e.getMessage());
-            }
+            String formattedContent = htmlContent.replace("\n", "<br>");
+            sendEmailHelper(toEmail, "", subject, formattedContent, true);
         });
     }
 
     public void sendSecurityAlertEmail(String toEmail, java.util.Map<String, Object> alert) {
-        JavaMailSender sender = getDynamicMailSender();
-        if (sender == null) return;
         CompletableFuture.runAsync(() -> {
-            try {
-                SimpleMailMessage message = new SimpleMailMessage();
-                message.setTo(toEmail);
-                message.setSubject("🚨 Rexi Security Alert - IP đã bị chặn tự động");
-                message.setText(
-                        "Rexi Security phát hiện hành vi tấn công và đã tự động chặn IP.\n\n" +
-                        "IP: " + alert.getOrDefault("ip", "") + "\n" +
-                        "Vị trí suy đoán: " + alert.getOrDefault("locationHint", "") + "\n" +
-                        "Hình thức: " + alert.getOrDefault("attackType", "") + "\n" +
-                        "Method/Path: " + alert.getOrDefault("method", "") + " " + alert.getOrDefault("path", "") + "\n" +
-                        "User-Agent: " + alert.getOrDefault("userAgent", "") + "\n" +
-                        "Bằng chứng: " + alert.getOrDefault("evidence", "") + "\n" +
-                        "Thời gian: " + alert.getOrDefault("detectedAt", "") + "\n\n" +
-                        "Mức độ: " + alert.getOrDefault("severity", "") + "\n" +
-                        "Phân tích: " + alert.getOrDefault("riskSummary", "") + "\n" +
-                        "Hướng xử lý: " + alert.getOrDefault("recommendedActions", "") + "\n" +
-                        "Quyết định đề xuất: " + alert.getOrDefault("adminDecision", "") + "\n\n" +
-                        "IP này chỉ được gỡ chặn khi Admin xóa khỏi danh sách chặn trong hệ thống."
-                );
-                sender.send(message);
-            } catch (Exception e) {
-                logger.severe("Lỗi gửi mail cảnh báo bảo mật: " + e.getMessage());
-            }
+            String text = "Rexi Security phát hiện hành vi tấn công và đã tự động chặn IP.\n\n" +
+                    "IP: " + alert.getOrDefault("ip", "") + "\n" +
+                    "Vị trí suy đoán: " + alert.getOrDefault("locationHint", "") + "\n" +
+                    "Hình thức: " + alert.getOrDefault("attackType", "") + "\n" +
+                    "Method/Path: " + alert.getOrDefault("method", "") + " " + alert.getOrDefault("path", "") + "\n" +
+                    "User-Agent: " + alert.getOrDefault("userAgent", "") + "\n" +
+                    "Bằng chứng: " + alert.getOrDefault("evidence", "") + "\n" +
+                    "Thời gian: " + alert.getOrDefault("detectedAt", "") + "\n\n" +
+                    "Mức độ: " + alert.getOrDefault("severity", "") + "\n" +
+                    "Phân tích: " + alert.getOrDefault("riskSummary", "") + "\n" +
+                    "Hướng xử lý: " + alert.getOrDefault("recommendedActions", "") + "\n" +
+                    "Quyết định đề xuất: " + alert.getOrDefault("adminDecision", "") + "\n\n" +
+                    "IP này chỉ được gỡ chặn khi Admin xóa khỏi danh sách chặn trong hệ thống.";
+            sendEmailHelper(toEmail, "Admin", "🚨 Rexi Security Alert - IP đã bị chặn tự động", text, false);
         });
     }
 }
