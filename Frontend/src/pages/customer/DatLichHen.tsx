@@ -19,6 +19,8 @@ const DatLichHen: React.FC = () => {
   const [idBacSi, setIdBacSi] = useState(searchParams.get("id_bac_si") || "");
   const [date, setDate] = useState("");
   const [availableSlots, setAvailableSlots] = useState<string[]>([]);
+  const [generalSlots, setGeneralSlots] = useState<string[]>([]);
+  const [loadingGeneralSlots, setLoadingGeneralSlots] = useState(false);
   const [time, setTime] = useState("");
   const [note, setNote] = useState("");
   const [loadingSlots, setLoadingSlots] = useState(false);
@@ -221,6 +223,24 @@ const DatLichHen: React.FC = () => {
       setAvailableSlots([]);
     }
   }, [idBacSi, date, idDichVu]);
+
+  useEffect(() => {
+    if (date && idDichVu && idBacSi && availableSlots.length === 0) {
+      setLoadingGeneralSlots(true);
+      const params = new URLSearchParams({ ngay: date, id_dich_vu: idDichVu });
+      axiosInstance.get(`/api/lich-hen/gio-ranh?${params.toString()}`)
+        .then(res => {
+          setGeneralSlots(res.data);
+        })
+        .catch(err => {
+          console.error("Lỗi lấy giờ rảnh chung:", err);
+          setGeneralSlots([]);
+        })
+        .finally(() => setLoadingGeneralSlots(false));
+    } else {
+      setGeneralSlots([]);
+    }
+  }, [idBacSi, date, idDichVu, availableSlots.length]);
 
   const dv = useMemo(() => services.find(d => String(d.id_dich_vu) === idDichVu), [idDichVu, services]);
   const selectedPrice = dv ? (dv.gia > 0 ? `Từ ${formatTienVND(dv.gia)}` : "Theo thực tế") : "—";
@@ -796,8 +816,49 @@ const DatLichHen: React.FC = () => {
                 })}
               </div>
             ) : (
-              <div style={{ padding: '32px 24px', background: 'rgba(239, 68, 68, 0.04)', borderRadius: '24px', border: '1px dashed #ef4444', color: '#ef4444', textAlign: 'center', fontWeight: 800 }}>
-                Rất tiếc! Đã hết lịch trống cho ngày này hoặc dịch vụ bạn chọn yêu cầu thời gian dài hơn các ca trống còn lại. Hãy thử chọn ngày/bác sĩ khác nhé!
+              <div style={{ padding: '28px 24px', background: 'rgba(239, 68, 68, 0.04)', borderRadius: '24px', border: '1px dashed #ef4444', color: '#ef4444' }}>
+                <p style={{ fontWeight: 800, margin: 0, textAlign: 'center' }}>
+                  Rất tiếc! Đã hết lịch trống cho ngày này hoặc dịch vụ bạn chọn yêu cầu thời gian dài hơn các ca trống còn lại. Hãy thử chọn ngày/bác sĩ khác nhé!
+                </p>
+                {idBacSi && generalSlots.length > 0 && (
+                  <div style={{ marginTop: '20px', padding: '18px', background: 'rgba(34, 211, 238, 0.06)', borderRadius: '20px', border: '1px solid rgba(34, 211, 238, 0.25)', color: 'var(--ink)' }}>
+                    <p style={{ fontWeight: 900, fontSize: '0.9rem', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary)' }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: '20px', verticalAlign: 'middle' }}>lightbulb</span>
+                      Gợi ý đặt lịch linh hoạt từ Rexi:
+                    </p>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--gray-500)', marginBottom: '14px', fontWeight: 650, lineHeight: '1.5' }}>
+                      Bác sĩ bạn chọn hiện tại đã kín lịch, nhưng vẫn còn bác sĩ khác đang sẵn sàng phục vụ dịch vụ này vào các khung giờ: 
+                      <strong style={{ color: 'var(--primary)', marginLeft: '6px' }}>
+                        {generalSlots.slice(0, 5).map(s => s.substring(0, 5)).join(', ')}
+                        {generalSlots.length > 5 ? '...' : ''}
+                      </strong>.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setIdBacSi("")}
+                      style={{
+                        padding: '10px 18px',
+                        background: 'var(--primary)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '14px',
+                        fontWeight: 900,
+                        fontSize: '0.85rem',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        transition: 'all 0.2s',
+                        boxShadow: '0 4px 12px rgba(34, 211, 238, 0.2)'
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.opacity = '0.9'}
+                      onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>shuffle</span>
+                      Đặt lịch với Bác sĩ bất kỳ
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
