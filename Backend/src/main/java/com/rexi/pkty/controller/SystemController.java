@@ -524,10 +524,17 @@ public class SystemController {
 
             java.util.Properties props = impl.getJavaMailProperties();
             props.put("mail.smtp.auth", "true");
-            props.put("mail.smtp.starttls.enable", "true");
             props.put("mail.transport.protocol", "smtp");
             props.put("mail.smtp.timeout", "5000");
             props.put("mail.smtp.connectiontimeout", "5000");
+
+            if ("465".equals(portStr != null ? portStr.trim() : "")) {
+                props.put("mail.smtp.ssl.enable", "true");
+                props.put("mail.smtp.socketFactory.port", "465");
+                props.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
+            } else {
+                props.put("mail.smtp.starttls.enable", "true");
+            }
 
             org.springframework.mail.SimpleMailMessage message = new org.springframework.mail.SimpleMailMessage();
             message.setTo(toEmail.trim());
