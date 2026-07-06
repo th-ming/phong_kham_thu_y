@@ -90,7 +90,7 @@ public class SecurityAlertService {
     }
 
     public boolean isBlocked(String ip) {
-        return getBlockedIps().contains(normalizeIp(ip));
+        return false;
     }
 
     public List<String> getBlockedIps() {

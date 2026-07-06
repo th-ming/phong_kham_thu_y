@@ -39,10 +39,13 @@ public class RateLimitFilter extends OncePerRequestFilter {
         boolean localhost = "127.0.0.1".equals(ip) || "0:0:0:0:0:0:0:1".equals(ip);
         long currentTime = System.currentTimeMillis();
 
+        // Bỏ qua chặn IP bảo mật để tránh chặn nhầm người dùng
+        /*
         if (securityAlertService != null && securityAlertService.isBlocked(ip)) {
             writeBlockedResponse(response, "Truy cập bị từ chối: IP của bạn đang nằm trong danh sách chặn bảo mật.");
             return;
         }
+        */
 
         // Check Blacklist IP từ DB (1 phút load 1 lần tránh chậm DB)
         if (currentTime - lastCheckTime > 60000) {
@@ -62,10 +65,12 @@ public class RateLimitFilter extends OncePerRequestFilter {
             lastCheckTime = currentTime;
         }
 
+        /*
         if (blockedIps.contains(ip)) {
             writeBlockedResponse(response, "Truy cập bị từ chối: Địa chỉ IP của bạn đã bị đưa vào danh sách đen (Blacklist)!");
             return;
         }
+        */
 
         if (localhost) {
             // Localhost trong blacklist vẫn chặn, nhưng skip rate limit để tiện dev
@@ -73,6 +78,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
             return;
         }
 
+        // Không tự động chặn IP khi phát hiện AttackSignal (vẫn cho đi qua)
+        /*
         AttackSignal attackSignal = detectAttack(request);
         if (attackSignal != null) {
             if (securityAlertService != null) {
@@ -91,6 +98,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
             writeBlockedResponse(response, "Cảnh báo bảo mật: Phát hiện hành vi tấn công. IP đã bị chặn cho tới khi Admin gỡ.");
             return;
         }
+        */
 
         requestTimestamps.compute(rateKey, (key, timestamp) -> {
             if (timestamp == null || (currentTime - timestamp) > 60000) {
