@@ -29,12 +29,12 @@ public class EmailServiceTest {
 
     @Test
     public void testSendWelcomeEmail() {
-        // Th gi mail cho mng thc t
-        System.out.println("--- BT U TEST GI MAIL THT ---");
-        emailService.sendWelcomeEmailHTML("thuyvan09818@gmail.com", "Khch hng Thy Vn");
-        System.out.println("---  GI LNH GI MAIL (ASYNCHRONOUS) ---");
+        // Thử gửi mail cho mạng thực tế
+        System.out.println("--- BẮT ĐẦU TEST GỬI MAIL THẬT ---");
+        emailService.sendWelcomeEmailHTML("thuyvan09818@gmail.com", "Khách hàng Thúy Vân");
+        System.out.println("---   GỬI LỆNH GỬI MAIL (ASYNCHRONOUS) ---");
         
-        // i mt cht  log li hin ra nu c
+        // Đợi một chút để log lại hiện ra nếu có
         try { Thread.sleep(5000); } catch (InterruptedException e) {}
     }
 }

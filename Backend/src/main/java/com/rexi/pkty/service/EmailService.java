@@ -176,24 +176,72 @@ public class EmailService {
         }
     }
 
+    private boolean isYoungCustomer(String toEmail) {
+        try {
+            Integer namSinh = jdbcTemplate.queryForObject(
+                "SELECT nam_sinh FROM KhachHang WHERE email = ? AND da_xoa = 0", 
+                new Object[]{toEmail}, 
+                Integer.class
+            );
+            if (namSinh != null && namSinh >= 1995) {
+                return true;
+            }
+        } catch (Exception e) {
+            // Mặc định là false (khách lớn) để giữ thái độ chuyên nghiệp, lịch sự
+        }
+        return false;
+    }
+
     // * * Gửi email xn khi khách hàng đặt lịch thành công
     public void sendBookingConfirmation(String toEmail, String customerName, String petName, String doctorName,
             String date, String time, String serviceName) {
         CompletableFuture.runAsync(() -> {
-            String text = "Xin chào " + customerName + ",\n\nBé [" + petName + "] đã có lịch hẹn vào lúc " + time
-                    + " ngày " + date + ".\n\nCảm ơn bạn đã tin tưởng Rexi Vet! 🐾";
-            sendEmailHelper(toEmail, customerName, "🐾 Xác nhận Đặt lịch thành công - Rexi Vet", text, false);
+            boolean young = isYoungCustomer(toEmail);
+            String subject = young ? "🐾 Đặt lịch thành công rồi Sen ơi! - Rexi Vet" : "🐾 Xác nhận Đặt lịch thành công - Rexi Vet";
+            String text;
+            if (young) {
+                text = "Xin chào Sen " + customerName + ",\n\n" +
+                       "Lịch hẹn của Boss [" + petName + "] tại Rexi Vet đã đặt thành công rồi nhé! 🐾\n" +
+                       "⏰ Thời gian: " + time + " ngày " + date + "\n" +
+                       "🩺 Bác sĩ phụ trách: " + doctorName + "\n" +
+                       "💼 Dịch vụ: " + serviceName + "\n\n" +
+                       "Sen nhớ chuẩn bị lên đồ đưa Boss đến gặp chúng mình đúng giờ nha! 🐾";
+            } else {
+                text = "Kính gửi Quý khách " + customerName + ",\n\n" +
+                       "Phòng khám thú y Rexi Vet xin xác nhận đặt lịch hẹn khám thành công cho thú cưng [" + petName + "]:\n" +
+                       "- Thời gian: " + time + " ngày " + date + "\n" +
+                       "- Bác sĩ khám: " + doctorName + "\n" +
+                       "- Dịch vụ đăng ký: " + serviceName + "\n\n" +
+                       "Kính mong Quý khách đưa thú cưng đến đúng giờ hẹn để phòng khám phục vụ chu đáo nhất. Cảm ơn Quý khách! 🐾";
+            }
+            sendEmailHelper(toEmail, customerName, subject, text, false);
         });
     }
 
     // * * Gửi email chào mừng khi đăng nhập lần đầu (Thiết kế Premium HTML)
     public void sendWelcomeEmailHTML(String toEmail, String customerName) {
         CompletableFuture.runAsync(() -> {
-            sendEmailHelper(toEmail, customerName, "🐾 Chào mừng bạn đến với Gia đình Rexi Vet!", getWelcomeTemplate(customerName), true);
+            boolean young = isYoungCustomer(toEmail);
+            String subject = young ? "🐾 Chào mừng Sen đã gia nhập vũ trụ Rexi Vet!" : "🐾 Chào mừng bạn đến với Gia đình Rexi Vet!";
+            sendEmailHelper(toEmail, customerName, subject, getWelcomeTemplate(customerName, young), true);
         });
     }
 
-    private String getWelcomeTemplate(String customerName) {
+    private String getWelcomeTemplate(String customerName, boolean young) {
+        String welcomeTitle = young ? "Chào mừng Sen đến với Rexi Vet! 🐾" : "Chào mừng đến với Rexi Vet!";
+        String contentHtml;
+        if (young) {
+            contentHtml = "<p>Xin chào Sen <span class='highlight'>" + customerName + "</span>,</p>" +
+               "<p>Chào mừng Sen và Hoàng thượng đã gia nhập cộng đồng siêu yêu thú cưng của <strong>Rexi Vet</strong>. 🐾</p>" +
+               "<p>Chúng mình mang đến dịch vụ y khoa chuẩn quốc tế kết hợp cùng tình yêu thương vô bờ bến. Boss nhà Sen sẽ được tụi mình chăm sóc, chiều chuộng như chính con đẻ luôn nha!</p>" +
+               "<a href='" + frontendUrl("/khach-hang/dat-lich-hen") + "' class='cta-button'>ĐẶT LỊCH KHÁM CHO BOSS NGAY</a>";
+        } else {
+            contentHtml = "<p>Kính chào Quý khách <span class='highlight'>" + customerName + "</span>,</p>" +
+               "<p>Cảm ơn Quý khách đã tin tưởng gia nhập cộng đồng chăm sóc sức khỏe thú cưng của <strong>Rexi Vet</strong>.</p>" +
+               "<p>Chúng tôi cam kết mang lại dịch vụ y khoa chất lượng quốc tế và sự tận tâm tốt nhất cho thú cưng của gia đình Quý khách. Thú cưng sẽ được chúng tôi chăm sóc chu đáo, an toàn và chuyên nghiệp nhất.</p>" +
+               "<a href='" + frontendUrl("/khach-hang/dat-lich-hen") + "' class='cta-button'>ĐẶT LỊCH HẸN KHÁM NGAY</a>";
+        }
+
         return "<!DOCTYPE html>" +
                "<html>" +
                "<head>" +
@@ -210,15 +258,12 @@ public class EmailService {
                "</head>" +
                "<body>" +
                "  <div class='container'>" +
-               "    <div class='header'><h1>Chào mừng đến với Rexi Vet!</h1></div>" +
+               "    <div class='header'><h1>" + welcomeTitle + "</h1></div>" +
                "    <div class='content'>" +
-               "      <p>Xin chào <span class='highlight'>" + customerName + "</span>,</p>" +
-               "      <p>Chào mừng bạn đã gia nhập cộng đồng yêu thú cưng của <strong>Rexi Vet</strong>.</p>" +
-               "      <p>Chúng tôi mang đến tiêu chuẩn y khoa quốc tế kết hợp cùng tình yêu thương vô bờ bến. Bé cưng của bạn sẽ được chăm sóc như chính gia đình chúng tôi.</p>" +
-               "      <a href='" + frontendUrl("/khach-hang/dat-lich-hen") + "' class='cta-button'>ĐẶT LỊCH KHÁM NGAY</a>" +
+               contentHtml +
                "    </div>" +
                "    <div class='footer'>" +
-               "      <p>Phòng Khám Thú Y Rexi - Đường dây cấp cứu 24/7: 0353 374 156</p>" +
+               "      <p>Phòng Khám Thú Y Rexi - Đường dây nóng: 0353 374 156</p>" +
                "      <p>© 2026 Rexi Vet Clinic. All rights reserved.</p>" +
                "    </div>" +
                "  </div>" +
@@ -245,28 +290,66 @@ public class EmailService {
     public void sendReminderEmail(String toEmail, String customerName, String petName, String doctorName,
             String date, String time, String serviceName) {
         CompletableFuture.runAsync(() -> {
-            String text = "Xin chào " + customerName + ",\n\nĐừng quên lịch hẹn của bé [" + petName + "] vào lúc "
-                    + time + " ngày " + date + " nhé!\n\nChúng tôi rất mong được đón tiếp bé! 🐾";
-            sendEmailHelper(toEmail, customerName, "🔔 Nhắc hẹn: Lịch khám tại Rexi Vet vào ngày mai", text, false);
+            boolean young = isYoungCustomer(toEmail);
+            String subject = young ? "🔔 Nhắc lịch hẹn: Mai đưa Boss đi khám nha Sen!" : "🔔 Nhắc hẹn: Lịch khám tại Rexi Vet vào ngày mai";
+            String text;
+            if (young) {
+                text = "Sen " + customerName + " ơi, đừng quên lịch hẹn ngày mai của Boss [" + petName + "] nha!\n" +
+                       "⏰ Thời gian: " + time + " ngày " + date + "\n" +
+                       "🩺 Bác sĩ phụ trách: " + doctorName + "\n" +
+                       "💼 Dịch vụ: " + serviceName + "\n\n" +
+                       "Bác sĩ ở Rexi Vet đang mong chờ đón tiếp Hoàng thượng nhà Sen lắm đó! 🐾";
+            } else {
+                text = "Kính gửi Quý khách " + customerName + ",\n\n" +
+                       "Phòng khám Rexi Vet xin nhắc lịch hẹn khám ngày mai của thú cưng [" + petName + "]:\n" +
+                       "- Thời gian: " + time + " ngày " + date + "\n" +
+                       "- Bác sĩ phụ trách: " + doctorName + "\n" +
+                       "- Dịch vụ đăng ký: " + serviceName + "\n\n" +
+                       "Kính mong Quý khách sắp xếp đưa thú cưng đến đúng giờ. Rất hân hạnh được đón tiếp Quý khách! 🐾";
+            }
+            sendEmailHelper(toEmail, customerName, subject, text, false);
         });
     }
 
     // * * Gửi mật khẩu cho tài khoản mới được tạo bởi nhân viên
     public void sendPasswordEmail(String toEmail, String customerName, String password) {
         CompletableFuture.runAsync(() -> {
-            String text = "Xin chào " + customerName + ",\n\nTài khoản của bạn đã được tạo thành công.\n" +
-                    "Tài khoản: " + toEmail + "\n" +
-                    "Mật khẩu: " + password + "\n\nVui lòng đăng nhập và đổi mật khẩu sớm nhất có thể. 🐾";
-            sendEmailHelper(toEmail, customerName, "🔑 Thông tin tài khoản đăng nhập - Rexi Vet", text, false);
+            boolean young = isYoungCustomer(toEmail);
+            String subject = "🔑 Thông tin tài khoản đăng nhập - Rexi Vet";
+            String text;
+            if (young) {
+                text = "Xin chào Sen " + customerName + ",\n\n" +
+                       "Tài khoản của Sen trên Rexi Vet đã được tạo thành công rồi nha!\n" +
+                       "📧 Tên đăng nhập: " + toEmail + "\n" +
+                       "🔑 Mật khẩu: " + password + "\n\n" +
+                       "Sen đăng nhập và nhớ đổi mật khẩu sớm nhất để bảo mật tài khoản cho cả Sen và Boss nhé! 🐾";
+            } else {
+                text = "Kính gửi Quý khách " + customerName + ",\n\n" +
+                       "Tài khoản của Quý khách tại hệ thống Rexi Vet đã được tạo thành công.\n" +
+                       "- Tên đăng nhập: " + toEmail + "\n" +
+                       "- Mật khẩu: " + password + "\n\n" +
+                       "Vui lòng đăng nhập và tiến hành đổi mật khẩu sớm để bảo mật thông tin hồ sơ thú cưng. Cảm ơn Quý khách! 🐾";
+            }
+            sendEmailHelper(toEmail, customerName, subject, text, false);
         });
     }
 
     // * * Gửi email nhắc nợ cho khách hàng còn hóa đơn chưa thanh toán
     public void sendDebtReminderEmail(String toEmail, String customerName, String invoiceId, java.math.BigDecimal amount) {
         CompletableFuture.runAsync(() -> {
-            String text = "Xin chào " + customerName + ",\n\nBạn còn hóa đơn [" + invoiceId + "] chưa thanh toán với số tiền là: " 
-                    + String.format("%,.0f VNĐ", amount) + ".\n\nVui lòng hoàn tất thanh toán sớm để bé cưng tiếp tục được hưởng dịch vụ tốt nhất nhé! 🐾";
-            sendEmailHelper(toEmail, customerName, "💸 Thông báo: Nhắc thanh toán hóa đơn - Rexi Vet", text, false);
+            boolean young = isYoungCustomer(toEmail);
+            String subject = young ? "💸 Cốc cốc! Hóa đơn của Boss chưa thanh toán nè Sen ơi" : "💸 Thông báo: Nhắc thanh toán hóa đơn - Rexi Vet";
+            String text;
+            if (young) {
+                text = "Sen " + customerName + " ơi,\n\n" +
+                       "Hoàng thượng nhà mình còn hóa đơn [" + invoiceId + "] chưa thanh toán với số tiền là: " + String.format("%,.0f VNĐ", amount) + ".\n\n" +
+                       "Sen nhớ hoàn tất sớm để Boss có kinh phí ăn hạt, pate ngon và tiếp tục hưởng dịch vụ xịn nhất nha! Thương Sen! 🐾💸";
+            } else {
+                text = "Kính gửi Quý khách " + customerName + ",\n\n" +
+                       "Hệ thống ghi nhận hóa đơn mã số [" + invoiceId + "] của thú cưng chưa được hoàn tất thanh toán với số tiền là: " + String.format("%,.0f VNĐ", amount) + ".\n\n" +
+                       "Kính mong Quý khách hoàn tất thanh toán sớm để chúng tôi tiếp tục phục vụ thú cưng với chất lượng tốt nhất. Cảm ơn Quý khách! 🐾";
+            }
+            sendEmailHelper(toEmail, customerName, subject, text, false);
         });
     }
 
