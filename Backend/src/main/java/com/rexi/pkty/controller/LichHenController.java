@@ -743,21 +743,42 @@ public class LichHenController {
 
         if (id_nhan_vien != null) {
             List<Map<String, Object>> gioBacSiMoList = jdbcTemplate.queryForList(
-                    "SELECT gio_bat_dau FROM LichLamViecNhanVien WHERE id_nhan_vien = ? AND ngay_lam = ?",
+                    "SELECT gio_bat_dau, gio_ket_thuc FROM LichLamViecNhanVien WHERE id_nhan_vien = ? AND ngay_lam = ?",
                     id_nhan_vien, ngaySql);
             for (Map<String, Object> map : gioBacSiMoList) {
-                Object obj = map.get("gio_bat_dau");
-                if (obj instanceof java.sql.Time)
-                    caTrucList.add(((java.sql.Time) obj).toLocalTime());
-                else if (obj != null)
-                    caTrucList.add(LocalTime.parse(obj.toString()));
+                LocalTime start = null;
+                LocalTime end = null;
+                Object startObj = map.get("gio_bat_dau");
+                Object endObj = map.get("gio_ket_thuc");
+                
+                if (startObj instanceof java.sql.Time) {
+                    start = ((java.sql.Time) startObj).toLocalTime();
+                } else if (startObj != null) {
+                    start = LocalTime.parse(startObj.toString());
+                }
+                
+                if (endObj instanceof java.sql.Time) {
+                    end = ((java.sql.Time) endObj).toLocalTime();
+                } else if (endObj != null) {
+                    end = LocalTime.parse(endObj.toString());
+                }
+                
+                if (start != null && end != null) {
+                    LocalTime t = start;
+                    while (t.isBefore(end)) {
+                        if (!caTrucList.contains(t)) caTrucList.add(t);
+                        t = t.plusMinutes(30);
+                    }
+                } else if (start != null) {
+                    if (!caTrucList.contains(start)) caTrucList.add(start);
+                }
             }
             existingApps = jdbcTemplate.queryForList(
                     "SELECT lh.gio_kham, dv.thoi_luong_phut FROM LichHen lh LEFT JOIN DichVu dv ON lh.id_dich_vu = dv.id_dich_vu WHERE lh.id_bac_si = ? AND lh.ngay_kham = ? AND lh.trang_thai NOT IN ('Đã hủy', 'DA_HUY', 'da_huy', 'TU_CHOI', 'Hết hạn')",
                     id_nhan_vien, ngaySql);
         } else {
             List<Map<String, Object>> allShifts = jdbcTemplate.queryForList(
-                    "SELECT id_nhan_vien, gio_bat_dau FROM LichLamViecNhanVien WHERE ngay_lam = ?", ngaySql);
+                    "SELECT id_nhan_vien, gio_bat_dau, gio_ket_thuc FROM LichLamViecNhanVien WHERE ngay_lam = ?", ngaySql);
 
             List<Map<String, Object>> allBusy = jdbcTemplate.queryForList(
                     "SELECT lh.id_bac_si, lh.gio_kham, dv.thoi_luong_phut " +
@@ -791,14 +812,35 @@ public class LichHenController {
             Map<String, List<LocalTime>> doctorFreeSlots = new java.util.HashMap<>();
             for (Map<String, Object> shift : allShifts) {
                 String docId = String.valueOf(shift.get("id_nhan_vien"));
-                LocalTime time = null;
-                Object obj = shift.get("gio_bat_dau");
-                if (obj instanceof java.sql.Time)
-                    time = ((java.sql.Time) obj).toLocalTime();
-                else if (obj != null)
-                    time = LocalTime.parse(obj.toString());
+                LocalTime start = null;
+                LocalTime end = null;
+                Object startObj = shift.get("gio_bat_dau");
+                Object endObj = shift.get("gio_ket_thuc");
+                
+                if (startObj instanceof java.sql.Time) {
+                    start = ((java.sql.Time) startObj).toLocalTime();
+                } else if (startObj != null) {
+                    start = LocalTime.parse(startObj.toString());
+                }
+                
+                if (endObj instanceof java.sql.Time) {
+                    end = ((java.sql.Time) endObj).toLocalTime();
+                } else if (endObj != null) {
+                    end = LocalTime.parse(endObj.toString());
+                }
+                
+                List<LocalTime> doctorSlotsToTest = new java.util.ArrayList<>();
+                if (start != null && end != null) {
+                    LocalTime t = start;
+                    while (t.isBefore(end)) {
+                        doctorSlotsToTest.add(t);
+                        t = t.plusMinutes(30);
+                    }
+                } else if (start != null) {
+                    doctorSlotsToTest.add(start);
+                }
 
-                if (time != null) {
+                for (LocalTime time : doctorSlotsToTest) {
                     boolean isBusy = false;
                     List<Map<String, Object>> docBusyList = parsedBusyByDoctor.get(docId);
                     if (docBusyList != null) {
