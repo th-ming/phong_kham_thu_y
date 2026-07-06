@@ -144,6 +144,7 @@ public class ThuCungController {
                     }
                 }
  
+                tc.setId_khach_hang(nv.getId_khach_hang());
                 tc.setTen_thu_cung(nv.getTen_thu_cung());
                 tc.setLoai(nv.getLoai());
                 tc.setGiong(nv.getGiong());
@@ -153,6 +154,9 @@ public class ThuCungController {
                 tc.setTrong_luong(nv.getTrong_luong());
                 tc.setGhi_chu(nv.getGhi_chu());
                 tc.setHinh_anh(nv.getHinh_anh());
+                if (nv.getDa_xoa() != null) {
+                    tc.setDa_xoa(nv.getDa_xoa());
+                }
                 tc.setNgay_cap_nhat(java.time.LocalDateTime.now());
  
                 ThuCung saved = thuCungRepository.save(tc);
