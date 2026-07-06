@@ -171,7 +171,7 @@ public class LichHenController {
                         ? "(EXTRACT(HOUR FROM h.gio_kham::time) * 60 + EXTRACT(MINUTE FROM h.gio_kham::time))::int"
                         : "(DATEPART(HOUR, h.gio_kham) * 60 + DATEPART(MINUTE, h.gio_kham))";
                 String findDocQuery = "SELECT l.id_nhan_vien FROM LichLamViecNhanVien l " +
-                        "WHERE l.ngay_lam = ? AND l.gio_bat_dau = CAST(? AS time) " +
+                        "WHERE l.ngay_lam = ? AND l.gio_bat_dau <= CAST(? AS time) AND l.gio_ket_thuc >= CAST(? AS time) " +
                         "AND NOT EXISTS (SELECT 1 FROM LichHen h " +
                         "  LEFT JOIN DichVu d ON h.id_dich_vu = d.id_dich_vu " +
                         "  WHERE h.id_bac_si = l.id_nhan_vien AND h.ngay_kham = l.ngay_lam " +
@@ -181,7 +181,7 @@ public class LichHenController {
                         ") " + DatabaseDialect.topN(DatabaseDialect.isPostgres(jdbcTemplate), 1);
                 try {
                     String autoDocId = jdbcTemplate.queryForObject(findDocQuery, String.class,
-                            lichHen.getNgay_kham(), newStart, newEndMinute, newStartMinute);
+                            lichHen.getNgay_kham(), newStart, newEnd, newEndMinute, newStartMinute);
                     lichHen.setId_bac_si(autoDocId);
                 } catch (Exception e) {
                     throw new RuntimeException(
@@ -191,17 +191,36 @@ public class LichHenController {
 
             int requiredSlots = (int) Math.ceil(thoiLuongMoi / 30.0);
             List<Map<String, Object>> gioBacSiMoList = jdbcTemplate.queryForList(
-                    "SELECT gio_bat_dau FROM LichLamViecNhanVien WHERE id_nhan_vien = ? AND ngay_lam = ?",
+                    "SELECT gio_bat_dau, gio_ket_thuc FROM LichLamViecNhanVien WHERE id_nhan_vien = ? AND ngay_lam = ?",
                     lichHen.getId_bac_si(), lichHen.getNgay_kham());
 
             List<LocalTime> caTrucList = new java.util.ArrayList<>();
             for (Map<String, Object> map : gioBacSiMoList) {
-                Object obj = map.get("gio_bat_dau");
-                if (obj instanceof java.sql.Time) {
-                    caTrucList.add(((java.sql.Time) obj).toLocalTime());
-                } else if (obj != null) {
-                    String[] p = obj.toString().split(":");
-                    caTrucList.add(LocalTime.of(Integer.parseInt(p[0]), Integer.parseInt(p[1])));
+                LocalTime start = null;
+                LocalTime end = null;
+                Object startObj = map.get("gio_bat_dau");
+                Object endObj = map.get("gio_ket_thuc");
+                
+                if (startObj instanceof java.sql.Time) {
+                    start = ((java.sql.Time) startObj).toLocalTime();
+                } else if (startObj != null) {
+                    start = LocalTime.parse(startObj.toString());
+                }
+                
+                if (endObj instanceof java.sql.Time) {
+                    end = ((java.sql.Time) endObj).toLocalTime();
+                } else if (endObj != null) {
+                    end = LocalTime.parse(endObj.toString());
+                }
+                
+                if (start != null && end != null) {
+                    LocalTime t = start;
+                    while (t.isBefore(end)) {
+                        if (!caTrucList.contains(t)) caTrucList.add(t);
+                        t = t.plusMinutes(30);
+                    }
+                } else if (start != null) {
+                    if (!caTrucList.contains(start)) caTrucList.add(start);
                 }
             }
 
