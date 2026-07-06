@@ -1,11 +1,28 @@
 package com.rexi.pkty.service;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import io.github.cdimascio.dotenv.Dotenv;
 
 @SpringBootTest
 public class EmailServiceTest {
+
+    @BeforeAll
+    public static void setup() {
+        try {
+            Dotenv dotenv = Dotenv.configure()
+                .directory("./")
+                .ignoreIfMissing()
+                .load();
+            dotenv.entries().forEach(entry -> {
+                System.setProperty(entry.getKey(), entry.getValue());
+            });
+        } catch (Exception e) {
+            System.err.println("Could not load .env file: " + e.getMessage());
+        }
+    }
 
     @Autowired
     private EmailService emailService;
