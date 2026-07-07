@@ -144,9 +144,10 @@ const BaoCaoThongKe: React.FC = () => {
   const totalRevenue = useMemo(() => {
     const directTotal = financeSummary?.TongDoanhThu ?? financeSummary?.tongDoanhThu ?? financeSummary?.tongdoanhthu ?? financeSummary?.tong_doanh_thu;
     if (directTotal !== undefined && directTotal !== null) return Number(directTotal) || 0;
-    return revenueData.reduce((sum, d) => sum + (d.TongDoanhThu || d.TongDoanhThu || d.doanhthu || d.doanh_thu || d.tong_doanh_thu || 0), 0);
+    return revenueData.reduce((sum, d) => sum + (d.TongDoanhThu || d.tongdoanhthu || d.doanhthu || d.doanh_thu || d.tong_doanh_thu || 0), 0);
   }, [financeSummary, revenueData]);
   const totalApps = useMemo(() => doctorStats.reduce((sum, d) => sum + (d.SoHoSo || d.sohoso || d.so_ho_so || 0), 0), [doctorStats]);
+  const getDoctorCases = (d: any) => d?.SoHoSo || d?.sohoso || d?.so_ho_so || 0;
 
   const formatMoney = (value: number) => `${Number(value || 0).toLocaleString('vi-VN')} đ`;
   const getRevenueValue = (item: any) => Number(item?.TongDoanhThu || item?.tongdoanhthu || item?.doanhthu || item?.doanh_thu || item?.tong_doanh_thu || 0);
@@ -196,7 +197,7 @@ const BaoCaoThongKe: React.FC = () => {
   // bs có hiệu suất cao nhất (nhiều ca hoàn thành nhất)
   const topDoctor = useMemo(() => {
     if (doctorStats.length === 0) return null;
-    return [...doctorStats].sort((a, b) => (b.SoHoSo || b.sohoso || b.so_ho_so || 0) - (a.SoHoSo || a.sohoso || a.so_ho_so || 0))[0];
+    return [...doctorStats].sort((a, b) => getDoctorCases(b) - getDoctorCases(a))[0];
   }, [doctorStats]);
 
   const topDoctorProfile = useMemo(() => {
@@ -306,7 +307,13 @@ const BaoCaoThongKe: React.FC = () => {
 
   const dailyChartData = {
     labels: sortedDailyData.map(d => {
-      const date = new Date(d.Ngay || d.ngay);
+      // Use string slice to avoid UTC timezone shift (Date object treats YYYY-MM-DD as UTC)
+      const rawDate = String(d.Ngay || d.ngay || '');
+      if (/^\d{4}-\d{2}-\d{2}/.test(rawDate)) {
+        const [, month, day] = rawDate.split('-');
+        return `${parseInt(day)}/${parseInt(month)}`;
+      }
+      const date = new Date(rawDate);
       return `${date.getDate()}/${date.getMonth() + 1}`;
     }),
     datasets: [{
@@ -319,11 +326,27 @@ const BaoCaoThongKe: React.FC = () => {
     }]
   };
 
+  // Normalize & deduplicate petStats: merge same-named types (handle encoding issues)
+  const normalizedPetStats = useMemo(() => {
+    const map = new Map<string, number>();
+    petStats.forEach((s: any) => {
+      const rawType: string = s.LoaiThuCung || s.loaithucung || s.loai_thu_cung || 'Khác';
+      const count: number = Number(s.SoLuong ?? s.soluong ?? s.so_luong ?? 0);
+      // Normalize common encoding errors
+      let type = rawType
+        .replace(/MÃ¨o|MÃ©o|M\u00c3\u00a8o/gi, 'Mèo')
+        .replace(/Ch\u00c3\u00b3|ChÃ³/gi, 'Chó')
+        .replace(/\bCho\b/gi, 'Chó');
+      map.set(type, (map.get(type) || 0) + count);
+    });
+    return Array.from(map.entries()).map(([loai, soLuong]) => ({ loai, soLuong }));
+  }, [petStats]);
+
   const petChartData = {
-    labels: petStats.map(s => s.LoaiThuCung || s.loai_thu_cung || 'Khác'),
+    labels: normalizedPetStats.map(s => s.loai),
     datasets: [{
       label: 'Số lượng',
-      data: petStats.map(s => s.SoLuong || s.so_luong || 0),
+      data: normalizedPetStats.map(s => s.soLuong),
       backgroundColor: ['#0ea5e9', '#f59e0b', '#14b8a6', '#10b981', '#ec4899'],
       borderWidth: 0,
       hoverOffset: 15
@@ -677,9 +700,9 @@ const BaoCaoThongKe: React.FC = () => {
             
             {/* Interactive Legend pills drill-down */}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center', overflowY: 'auto' }} className="no-print">
-              {petStats.map((s, idx) => {
-                const type = s.LoaiThuCung || s.loai_thu_cung || 'Khác';
-                const count = s.SoLuong || s.so_luong || 0;
+              {normalizedPetStats.map((s, idx) => {
+                const type = s.loai;
+                const count = s.soLuong;
                 const colors = ['#0ea5e9', '#f59e0b', '#14b8a6', '#10b981', '#ec4899'];
                 const color = colors[idx % colors.length];
                 return (

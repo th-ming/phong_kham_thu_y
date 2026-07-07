@@ -745,7 +745,7 @@ export const ChatbotShell: React.FC<ChatbotShellProps> = (props) => {
                                 onClick={() => activeTab === 'standard' ? handleSend() : handleAgentSend()}
                                 disabled={(activeTab === 'agent' ? agentLoading : false) || isCompressing}
                                 style={{
-                                    background: isMobile ? '#f97316' : (activeTab === 'agent' ? 'linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)' : 'var(--chat-gradient)'),
+                                    background: activeTab === 'agent' ? 'linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)' : 'var(--chat-gradient)',
                                     color: 'white', border: 'none', borderRadius: '50%', width: isMobile ? '40px' : '42px', height: isMobile ? '40px' : '42px', flexShrink: 0,
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                                     cursor: ((activeTab === 'agent' ? agentLoading : false) || isCompressing) ? 'not-allowed' : 'pointer',

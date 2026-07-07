@@ -1,7 +1,7 @@
-﻿import React, { useCallback, useState, useMemo } from "react";
+import React, { useCallback, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import axiosInstance from "@services/axios";
-import { getUserProfile } from "@utils/index";
+import { getUserProfile, fixVietnameseEncoding, isMockOrTestData } from "@utils/index";
 import { useAutoRefresh } from "@hooks/useAutoRefresh";
 import KpiIcon from "@components/KpiIcon";
 import { AnimatedNumber } from "@components/CommonUI";
@@ -37,10 +37,20 @@ const BacSiDashboard: React.FC = () => {
                 const allApps = extractArray(appsRes.data);
                 // BUG FIX #4: Backend có thể trả ISO datetime "2025-05-20T00:00:00"
                 // → phải dùng substring(0,10) thay vì === để tránh lọc trả 0 kết quả
-                const myTodaysApps = allApps.filter(a => {
-                    const ngay = a.ngay_kham ? String(a.ngay_kham).substring(0, 10) : '';
-                    return ngay === todayStr && String(a.id_bac_si) === String(currentUserId);
-                });
+                const myTodaysApps = allApps
+                    .filter(a => !isMockOrTestData(a))
+                    .filter(a => {
+                        const ngay = a.ngay_kham ? String(a.ngay_kham).substring(0, 10) : '';
+                        return ngay === todayStr && String(a.id_bac_si) === String(currentUserId);
+                    })
+                    .map(a => ({
+                        ...a,
+                        ten_thu_cung: fixVietnameseEncoding(a.ten_thu_cung),
+                        ten_khach_hang: fixVietnameseEncoding(a.ten_khach_hang),
+                        ten_bac_si: fixVietnameseEncoding(a.ten_bac_si),
+                        ly_do: fixVietnameseEncoding(a.ly_do),
+                        ghi_chu: fixVietnameseEncoding(a.ghi_chu)
+                    }));
                 setMyAppointments(myTodaysApps);
 
                 const last7Days = Array.from({ length: 7 }, (_, i) => {
@@ -51,17 +61,28 @@ const BacSiDashboard: React.FC = () => {
 
                 const weeklyData = last7Days.map(dateStr => {
                     // BUG FIX #5: Cùng vấn đề substring cho weekly stats
-                    const count = allApps.filter(a => {
-                        const ngay = a.ngay_kham ? String(a.ngay_kham).substring(0, 10) : '';
-                        return ngay === dateStr && String(a.id_bac_si) === String(currentUserId) && a.trang_thai?.toUpperCase() === 'HOAN_THANH';
-                    }).length;
+                    const count = allApps
+                        .filter(a => !isMockOrTestData(a))
+                        .filter(a => {
+                            const ngay = a.ngay_kham ? String(a.ngay_kham).substring(0, 10) : '';
+                            return ngay === dateStr && String(a.id_bac_si) === String(currentUserId) && a.trang_thai?.toUpperCase() === 'HOAN_THANH';
+                        }).length;
                     const [, month, day] = dateStr.split('-');
                     return { date: `${day}/${month}`, count };
                 });
                 setWeeklyStats(weeklyData);
 
                 const allRecords = extractArray(recordsRes.data);
-                const myRecentRecords = allRecords.filter(r => String(r.id_bac_si) === String(currentUserId)).slice(0, 5);
+                const myRecentRecords = allRecords
+                    .filter(r => !isMockOrTestData(r))
+                    .filter(r => String(r.id_bac_si) === String(currentUserId))
+                    .slice(0, 5)
+                    .map(r => ({
+                        ...r,
+                        ten_thu_cung: fixVietnameseEncoding(r.ten_thu_cung),
+                        chan_doan: fixVietnameseEncoding(r.chan_doan),
+                        phac_do_dieu_tri: fixVietnameseEncoding(r.phac_do_dieu_tri)
+                    }));
                 setMyMedicalRecords(myRecentRecords);
 
                 // Cập nhật nhãn thời gian thực khi tải dữ liệu thành công

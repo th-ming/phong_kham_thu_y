@@ -278,12 +278,8 @@ export const fixVietnameseEncoding = (text: string | null | undefined): string =
   
   let result = text;
 
-  // Ký tự tiếng Việt đặc thù (đ, ă, ơ, ư, Đ, Ă, Ơ, Ư và các tổ hợp dấu U+1E00-U+1EFF)
-  // KHÔNG BAO GIỜ xuất hiện trong Mojibake (Windows-1252 chỉ có U+0000-U+01FF thông thường)
-  const isValidUnicode = /[\u0102\u0103\u0110\u0111\u01A0\u01A1\u01AF\u01B0\u1E00-\u1EFF]/.test(result);
-
-  // Chuỗi Mojibake đặc trưng: Ã + byte tiếp theo (Ã¡=á, Ã =à,...), Ä' (=đ), á» (=ọ,ộ,...)
-  const hasMojibake = !isValidUnicode && /Ã[\u0080-\u00BF]|Ä['\u2018\u2019]|á»|á¹|á¸/.test(result);
+  // Mojibake patterns like Ã followed by Latin characters, or Windows-1252 character combinations
+  const hasMojibake = /Ã[\u0080-\u00BF]|Ä['\u2018\u2019\u201A\u201B\u201C\u201D\u0080-\u009F]|á»|á¹|á¸|Ã¡|Ã¢|Ã£|Ã©|Ãª|Ã|Ã²|Ã´|Ãµ|Ã¹|Ãº|Ã½|Ã°|Tráº|HoÃ/.test(result);
 
   if (hasMojibake) {
     try {
@@ -302,6 +298,22 @@ export const fixVietnameseEncoding = (text: string | null | undefined): string =
       result = result.replace(wrong, correct);
     }
   }
+
+  // Clean up any remaining common glitches
+  result = result
+    .replace(/Tráº¹n/g, 'Trần')
+    .replace(/Tráº§n/g, 'Trần')
+    .replace(/Trá*§n/g, 'Trần')
+    .replace(/HoÃ ng/g, 'Hoàng')
+    .replace(/HoÃ  ng/g, 'Hoàng')
+    .replace(/Hong/g, 'Hoàng')
+    .replace(/Tráº¹/g, 'Trần')
+    .replace(/Tráº/g, 'Trần')
+    .replace(/Trán/g, 'Trần')
+    .replace(/HoÃ/g, 'Hoà')
+    .replace(/MÃ¨o/g, 'Mèo')
+    .replace(/ChÃ³/g, 'Chó');
+
   return result;
 };
 
@@ -317,4 +329,27 @@ export const generateSlug = (str: string): string => {
     .replace(/[^a-z0-9\s-]/g, '')
     .trim()
     .replace(/\s+/g, '-');
+};
+
+// Lọc bỏ dữ liệu test
+export const isMockOrTestData = (item: any): boolean => {
+  if (!item) return false;
+  const fields = [
+    item.ten_khach_hang, item.tenKhachHang,
+    item.email,
+    item.sdt, item.so_dien_thoai,
+    item.ten_thu_cung, item.tenThuCung,
+    item.ho_ten, item.displayName,
+    item.id_khach_hang, item.id_lich_hen
+  ];
+  return fields.some(f => {
+    if (!f) return false;
+    const str = String(f).toLowerCase();
+    return str.includes('kiểm thử') || 
+           str.includes('kiem thu') || 
+           str.includes('tester') || 
+           str.includes('test_') ||
+           /\btest\b/.test(str) ||
+           /178294|178311/.test(str); // unique digit sequences from test seeds
+  });
 };

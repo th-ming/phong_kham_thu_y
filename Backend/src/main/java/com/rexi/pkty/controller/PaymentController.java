@@ -119,6 +119,9 @@ public class PaymentController {
     @org.springframework.beans.factory.annotation.Value("${vnpay.return.url:http://localhost:5173/khach-hang/hoa-don-thanh-toan}")
     private String vnp_ReturnUrl;
 
+    @org.springframework.beans.factory.annotation.Value("${vnpay.ipn.url:http://localhost:8081/api/payment/vnpay/ipn}")
+    private String vnp_IpnUrl;
+
     @org.springframework.beans.factory.annotation.Value("${webhook.secret:}")
     private String webhookSecret;
 
@@ -152,6 +155,14 @@ public class PaymentController {
             if (dbVal != null && !dbVal.trim().isEmpty()) return dbVal.trim();
         } catch (Exception e) {}
         return vnp_ReturnUrl;
+    }
+
+    private String getVnpIpnUrl() {
+        try {
+            String dbVal = jdbcTemplate.queryForObject("SELECT gia_tri FROM CauHinhHeThong WHERE ten_cau_hinh = 'vnpay_ipn_url'", String.class);
+            if (dbVal != null && !dbVal.trim().isEmpty()) return dbVal.trim();
+        } catch (Exception e) {}
+        return vnp_IpnUrl;
     }
 
     @PostMapping("/vnpay/create-url")
@@ -272,6 +283,55 @@ public class PaymentController {
             return ResponseEntity.status(400).body(Map.of("message", "Chữ ký sai!", "success", false));
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of("message", "Đã xảy ra lỗi hệ thống khi xử lý phản hồi thanh toán.", "success", false));
+        }
+    }
+
+    // VNPay IPN (Instant Payment Notification) — Server-to-server callback, không phụ thuộc trình duyệt
+    @GetMapping("/vnpay/ipn")
+    @org.springframework.transaction.annotation.Transactional
+    public ResponseEntity<?> paymentIpn(@RequestParam Map<String, String> queryParams) {
+        try {
+            String vnp_SecureHash = queryParams.get("vnp_SecureHash");
+            if (vnp_SecureHash == null)
+                return ResponseEntity.ok(Map.of("RspCode", "99", "Message", "Missing signature"));
+
+            queryParams.remove("vnp_SecureHash");
+            queryParams.remove("vnp_SecureHashType");
+
+            String signValue = VNPayConfig.hashAllFields(queryParams, getVnpHashSecret());
+            if (!signValue.equals(vnp_SecureHash))
+                return ResponseEntity.ok(Map.of("RspCode", "97", "Message", "Invalid signature"));
+
+            String responseCode = queryParams.get("vnp_ResponseCode");
+            if (!"00".equals(responseCode))
+                return ResponseEntity.ok(Map.of("RspCode", "00", "Message", "Transaction not successful, ignored"));
+
+            String idHoaDon = queryParams.get("vnp_TxnRef").split("_")[0];
+            java.math.BigDecimal amountPaid = new java.math.BigDecimal(queryParams.get("vnp_Amount"))
+                    .divide(new java.math.BigDecimal(100));
+
+            java.math.BigDecimal amountExpected = jdbcTemplate.queryForObject(
+                "SELECT tong_tien_cuoi FROM HoaDon WHERE id_hoa_don = ?",
+                java.math.BigDecimal.class, idHoaDon);
+
+            if (amountExpected == null || amountPaid.compareTo(amountExpected) < 0)
+                return ResponseEntity.ok(Map.of("RspCode", "04", "Message", "Amount mismatch"));
+
+            int updated = jdbcTemplate.update(
+                "UPDATE HoaDon SET trang_thai = 'DA_THANH_TOAN' WHERE id_hoa_don = ? AND trang_thai IN ('CHO_THANH_TOAN', 'DANG_THANH_TOAN')",
+                idHoaDon);
+
+            if (updated > 0) {
+                jdbcTemplate.update(
+                    "INSERT INTO ThanhToan (id_thanh_toan, id_hoa_don, ngay_tra_tien, so_tien, phuong_thuc, ghi_chu) VALUES (?, ?, CURRENT_TIMESTAMP, ?, 'VNPay', 'Thanh toán VNPay thành công (IPN)')",
+                    "TT-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase(), idHoaDon, amountPaid);
+                logger.info("IPN GẠCH NỢ THÀNH CÔNG: Hóa đơn #" + idHoaDon + " | Số tiền: " + amountPaid);
+            }
+
+            return ResponseEntity.ok(Map.of("RspCode", "00", "Message", "Confirm Success"));
+        } catch (Exception e) {
+            logger.severe("Lỗi xử lý IPN: " + e.getMessage());
+            return ResponseEntity.ok(Map.of("RspCode", "99", "Message", "Unknown error"));
         }
     }
 

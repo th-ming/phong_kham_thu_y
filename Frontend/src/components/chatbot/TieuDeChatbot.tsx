@@ -20,12 +20,10 @@ export const TieuDeChatbot: React.FC<{
             <span style={{ fontWeight: 900, fontSize: isMobile ? '0.9rem' : '1.05rem', letterSpacing: 0 }}>
                 {activeTab === 'agent' ? 'Rexi Agent' : (isMobile ? 'Trợ lý Rexi' : 'Trợ lý Rexi 🐾')}
             </span>
-            {isMobile && <span style={{ fontSize: '0.65rem', color: '#86efac', fontWeight: 800, letterSpacing: '0.5px' }}>ONLINE</span>}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '10px' : '14px' }}>
-            {!isMobile && (
-                <>
-                    <span
+            {activeTab === 'agent' && <span className="material-symbols-outlined" style={{ fontSize: isMobile ? '18px' : '20px', opacity: 0.7 }}>smart_toy</span>}
+            <span
                         className="material-symbols-outlined"
                         style={{ fontSize: '22px', cursor: 'pointer', color: isVoiceEnabled ? '#4ade80' : 'white', opacity: isVoiceEnabled ? 1 : 0.7 }}
                         onClick={onToggleVoice}
@@ -36,8 +34,6 @@ export const TieuDeChatbot: React.FC<{
                     <span className="material-symbols-outlined" style={{ fontSize: '22px', cursor: 'pointer', opacity: 0.8 }} onClick={onResetChat} title="Làm mới cuộc hội thoại">
                         restart_alt
                     </span>
-                </>
-            )}
             <span className="material-symbols-outlined" style={{ fontSize: isMobile ? '22px' : '22px', cursor: 'pointer', opacity: 0.8 }} onClick={onClose}>
                 close
             </span>

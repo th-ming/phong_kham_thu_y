@@ -229,7 +229,9 @@ const DangNhapDangKy: React.FC = () => {
 
     try {
       const endpoint = isLogin ? "/login" : "/register";
-      const payload = isLogin ? { username, password } : { ten_dang_nhap: username, mat_khau: password, ten_khach_hang: fullname, email, sdt: phone, dia_chi: address, nam_sinh: Number(birthYear) };
+      const trimmedUsername = username.trim();
+      const trimmedPassword = password.trim();
+      const payload = isLogin ? { username: trimmedUsername, password: trimmedPassword } : { ten_dang_nhap: trimmedUsername, mat_khau: trimmedPassword, ten_khach_hang: fullname, email, sdt: phone, dia_chi: address, nam_sinh: Number(birthYear) };
       const res = await axiosInstance.post(`${API_URL}${endpoint}`, payload);
       if (isLogin && res.data.token) {
         localStorage.setItem("token", res.data.token);

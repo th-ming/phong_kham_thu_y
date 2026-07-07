@@ -84,6 +84,13 @@ const QuanLyKhoThuoc: React.FC = () => {
     visibleCount: 8
   });
 
+  const loThuocVirtual = useVirtualScroll({
+    items: loThuocs,
+    itemHeight: 110,
+    containerHeight: 600,
+    visibleCount: 6
+  });
+
   if (loading) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
       <div className="dot-pulse"></div>
@@ -380,9 +387,12 @@ const QuanLyKhoThuoc: React.FC = () => {
 
         <div className="glass-card admin-inventory-side-card inv-card-anim" style={{ padding: '32px', borderRadius: 'var(--radius-xl)', background: 'var(--surface)', color: 'var(--ink)', border: '1px solid var(--gray-200)', animationDelay: '0.18s' }}>
           <h2 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '24px', color: 'var(--ink)' }}>Lô thuốc & Hạn dùng</h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {loThuocs.map((l, idx) => (
-              <div key={l.id_lo} className="inv-lot-anim" style={{ background: 'var(--primary-light)', padding: '16px', borderRadius: '16px', border: '1px solid var(--primary-border, rgba(15, 157, 138, 0.18))', animationDelay: `${0.2 + idx * 0.07}s`, transition: 'transform 0.2s, box-shadow 0.2s', cursor: 'default' }}>
+          <div ref={loThuocVirtual.containerRef} onScroll={loThuocVirtual.onScrollHandler} style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxHeight: '600px', overflowY: 'auto' }}>
+            {loThuocVirtual.shouldVirtualize && loThuocVirtual.visibleRange.start > 0 && (
+              <div style={{ height: loThuocVirtual.visibleRange.start * (110 + 16) }} />
+            )}
+            {(loThuocVirtual.shouldVirtualize ? loThuocVirtual.visibleItems : loThuocs).map((l, idx) => (
+              <div key={l.id_lo} className="inv-lot-anim" style={{ background: 'var(--primary-light)', padding: '16px', borderRadius: '16px', border: '1px solid var(--primary-border, rgba(15, 157, 138, 0.18))', animationDelay: `${0.2 + idx * 0.07}s`, transition: 'transform 0.2s, box-shadow 0.2s', cursor: 'default', flexShrink: 0 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                   <span style={{ fontWeight: 800, color: 'var(--ink)' }}>Lô: {l.so_lo}</span>
                   <span style={{
@@ -399,6 +409,9 @@ const QuanLyKhoThuoc: React.FC = () => {
                 </div>
               </div>
             ))}
+            {loThuocVirtual.shouldVirtualize && loThuocVirtual.visibleRange.end < loThuocs.length && (
+              <div style={{ height: (loThuocs.length - loThuocVirtual.visibleRange.end) * (110 + 16) }} />
+            )}
           </div>
         </div>
       </div>

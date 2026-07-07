@@ -1,7 +1,7 @@
-﻿import React, { useCallback, useState, useMemo } from "react";
+import React, { useCallback, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import axiosInstance from "@services/axios";
-import { getUserProfile, normalizeUserRole } from "@utils/index";
+import { getUserProfile, normalizeUserRole, fixVietnameseEncoding, isMockOrTestData } from "@utils/index";
 import KeToanDashboard from "./KeToanDashboard";
 import BacSiDashboard from "./BacSiDashboard";
 import TiepTanDashboard from "./TiepTanDashboard";
@@ -133,7 +133,7 @@ const DashboardQuanLy: React.FC = () => {
         };
 
         if (customers.data !== null) {
-          const arr = extractArray(customers.data).filter(isActiveCustomerRecord);
+          const arr = extractArray(customers.data).filter(isActiveCustomerRecord).filter(c => !isMockOrTestData(c));
           setCustomerCount(arr.length);
           const customerDateFields = ['ngay_tao', 'ngayTao', 'created_at', 'createdAt', 'ngay_dang_ky', 'ngayDangKy'];
           const customersToday = arr.filter((c: any) => getFirstDateKey(c, customerDateFields) === todayStr).length;
@@ -159,7 +159,7 @@ const DashboardQuanLy: React.FC = () => {
         }
 
         if (apps.data !== null) {
-          const arr = extractArray(apps.data);
+          const arr = extractArray(apps.data).filter(l => !isMockOrTestData(l));
           // BUG FIX: Backend có thể trả "2025-05-20T00:00:00" nên dùng startsWith thay vì ===
           const homNay = arr.filter((l: any) => {
             const ngay = getFirstDateKey(l, ['ngay_kham', 'ngayKham']);
@@ -169,7 +169,13 @@ const DashboardQuanLy: React.FC = () => {
             const ngay = getFirstDateKey(l, ['ngay_kham', 'ngayKham']);
             return ngay === yesterdayStr;
           });
-          setAppointments(homNay);
+          const homNayDecoded = homNay.map(a => ({
+            ...a,
+            ten_thu_cung: fixVietnameseEncoding(a.ten_thu_cung),
+            ten_khach_hang: fixVietnameseEncoding(a.ten_khach_hang),
+            ten_bac_si: fixVietnameseEncoding(a.ten_bac_si)
+          }));
+          setAppointments(homNayDecoded);
           setKpiCompare(prev => ({ ...prev, appointments: { today: homNay.length, yesterday: homQua.length } }));
         }
 
@@ -179,7 +185,8 @@ const DashboardQuanLy: React.FC = () => {
           const canhBao = arrLo.filter((l: any) => l.so_luong_ton < 10).map((l: any) => {
             const thuocInfo = arrThuoc.find((t: any) => String(t.id_thuoc) === String(l.id_thuoc));
             return {
-              ten_thuoc: thuocInfo ? thuocInfo.ten_thuoc : `Lô ${l.so_lo}`,
+              ten_thu_cung: '', // dummy to bypass typescript if needed
+              ten_thuoc: fixVietnameseEncoding(thuocInfo ? thuocInfo.ten_thuoc : `Lô ${l.so_lo}`),
               so_luong_ton: l.so_luong_ton,
               han_dung: l.han_su_dung || l.han_dung
             };
@@ -188,7 +195,7 @@ const DashboardQuanLy: React.FC = () => {
         }
 
         if (invoices.data !== null) {
-          const invArray = extractArray(invoices.data);
+          const invArray = extractArray(invoices.data).filter(inv => !isMockOrTestData(inv));
           const paidInvoices = invArray.filter((inv: any) => (inv.trang_thai || inv.trangThai || '').toUpperCase() === 'DA_THANH_TOAN');
           const todayRevenue = paidInvoices.reduce((sum: number, inv: any) => {
             return getFirstDateKey(inv, ['ngay_lap_hoa_don', 'ngayLapHoaDon', 'ngay_lap', 'ngayLap']) === todayStr ? sum + Number(inv.tong_tien_cuoi || inv.tongTienCuoi || 0) : sum;
@@ -493,16 +500,89 @@ const DashboardQuanLy: React.FC = () => {
         )}
 
         {(['admin', 'quan_ly', 'y_ta', 'staff'].includes(userRole)) && (
-          <div className="glass-card hover-lift" style={{ padding: '32px', borderRadius: 'var(--radius-xl)', position: 'relative', overflow: 'hidden' }}>
-            <div style={{ position: 'absolute', top: '-50px', right: '-50px', width: '150px', height: '150px', background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }}></div>
-            <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '24px', color: 'var(--ink)' }}>Cảnh báo kho</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              {inventoryAlerts.length === 0 ? <p style={{ opacity: 0.6, color: 'var(--gray-500)', fontWeight: 600 }}>Hệ thống ổn định</p> : inventoryAlerts.map((item, i) => (
-                <div key={i} style={{ background: 'var(--primary-light)', padding: '16px', borderRadius: '16px', border: '1px solid var(--primary-border, rgba(15, 157, 138, 0.1))' }}>
-                  <p style={{ fontWeight: 800, marginBottom: '4px', color: 'var(--ink)' }}>{item.ten_thuoc}</p>
-                  <p style={{ fontSize: '0.8rem', opacity: 0.8, color: 'var(--gray-500)', fontWeight: 600 }}>Tồn kho: {item.so_luong_ton} | Hạn: {item.han_dung?.substring(0, 10)}</p>
+          <div className="glass-card" style={{ padding: '32px', borderRadius: 'var(--radius-xl)', position: 'relative', overflow: 'hidden', border: inventoryAlerts.length > 0 ? '1px solid rgba(239, 68, 68, 0.15)' : '1px solid rgba(16, 185, 129, 0.15)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '20px' }}>
+              <div style={{
+                width: '48px', height: '48px', borderRadius: '14px',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                background: inventoryAlerts.length > 0 ? 'rgba(239, 68, 68, 0.12)' : 'rgba(16, 185, 129, 0.12)',
+                color: inventoryAlerts.length > 0 ? '#ef4444' : '#10b981'
+              }}>
+                <span className="material-symbols-outlined" style={{ fontSize: '26px' }}>
+                  {inventoryAlerts.length > 0 ? 'inventory_2' : 'check_circle'}
+                </span>
+              </div>
+              <div style={{ flex: 1 }}>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: 800, margin: 0, color: 'var(--ink)' }}>Kho thuốc</h3>
+                <p style={{ fontSize: '0.82rem', margin: '2px 0 0', fontWeight: 600, color: inventoryAlerts.length > 0 ? '#ef4444' : '#10b981' }}>
+                  {inventoryAlerts.length > 0
+                    ? `${inventoryAlerts.length} thuốc sắp hết hoặc đã hết hàng`
+                    : 'Tồn kho ổn định, không có cảnh báo'}
+                </p>
+              </div>
+              {inventoryAlerts.length > 0 && (
+                <div style={{
+                  width: '44px', height: '44px', borderRadius: '50%', flexShrink: 0,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444',
+                  fontWeight: 950, fontSize: '1.2rem'
+                }}>
+                  {inventoryAlerts.length > 9 ? '9+' : inventoryAlerts.length}
                 </div>
-              ))}
+              )}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {inventoryAlerts.length === 0 ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 0' }}>
+                  <span className="material-symbols-outlined" style={{ color: '#10b981', fontSize: '20px' }}>verified</span>
+                  <span style={{ fontWeight: 600, color: 'var(--gray-500)', fontSize: '0.9rem' }}>Hệ thống ổn định</span>
+                </div>
+              ) : (
+                inventoryAlerts.slice(0, 5).map((item, i) => {
+                  const stock = item.so_luong_ton || 0;
+                  const danger = stock <= 5;
+                  return (
+                    <div key={i} style={{
+                      display: 'flex', alignItems: 'center', gap: '12px',
+                      padding: '12px 14px', borderRadius: '12px',
+                      background: danger ? 'rgba(239, 68, 68, 0.05)' : 'rgba(245, 158, 11, 0.05)',
+                      border: danger ? '1px solid rgba(239, 68, 68, 0.1)' : '1px solid rgba(245, 158, 11, 0.1)'
+                    }}>
+                      <div style={{
+                        width: '36px', height: '36px', borderRadius: '10px', flexShrink: 0,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        background: danger ? 'rgba(239, 68, 68, 0.1)' : 'rgba(245, 158, 11, 0.1)',
+                        color: danger ? '#ef4444' : '#f59e0b'
+                      }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>medication</span>
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontWeight: 800, fontSize: '0.88rem', color: 'var(--ink)' }}>{item.ten_thuoc}</div>
+                        <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--gray-500)', marginTop: '2px' }}>
+                          HSD: {item.han_dung ? new Date(item.han_dung).toLocaleDateString('vi-VN') : 'N/A'}
+                        </div>
+                      </div>
+                      <div style={{
+                        padding: '4px 12px', borderRadius: '8px', fontWeight: 900, fontSize: '0.82rem', flexShrink: 0,
+                        background: stock <= 3 ? 'rgba(239, 68, 68, 0.12)' : stock <= 5 ? 'rgba(245, 158, 11, 0.12)' : 'rgba(16, 185, 129, 0.12)',
+                        color: stock <= 3 ? '#ef4444' : stock <= 5 ? '#f59e0b' : '#10b981'
+                      }}>
+                        Tồn: {stock}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+              {inventoryAlerts.length > 5 && (
+                <a href="/quan-ly/kho-thuoc" style={{
+                  marginTop: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                  background: 'rgba(239, 68, 68, 0.08)', color: '#ef4444', padding: '10px', borderRadius: '12px',
+                  fontSize: '0.82rem', fontWeight: 800, textDecoration: 'none', border: '1px solid rgba(239, 68, 68, 0.12)'
+                }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>visibility</span>
+                  Xem thêm {inventoryAlerts.length - 5} thuốc khác
+                </a>
+              )}
             </div>
           </div>
         )}

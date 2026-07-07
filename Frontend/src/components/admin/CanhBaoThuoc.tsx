@@ -90,7 +90,37 @@ const CanhBaoThuoc: React.FC = () => {
                     ))}
                 </div>
                 {thuocHetHan.length > 3 && (
-                    <div style={{ marginTop: '16px', fontSize: '0.9rem', color: 'var(--danger)', fontWeight: 800, cursor: 'pointer', display: 'inline-block' }}>+ Xem thêm {thuocHetHan.length - 3} lô thuốc khác trong trang Quản lý Kho...</div>
+                    <div style={{ marginTop: '16px' }}>
+                        <a 
+                            href="/quan-ly/kho-thuoc"
+                            className="btn btn-pill"
+                            style={{ 
+                                display: 'inline-flex', 
+                                alignItems: 'center', 
+                                gap: '6px', 
+                                background: 'rgba(239, 68, 68, 0.1)', 
+                                color: 'var(--danger)', 
+                                padding: '8px 16px', 
+                                borderRadius: '999px',
+                                fontSize: '0.85rem', 
+                                fontWeight: 800, 
+                                textDecoration: 'none',
+                                border: '1px solid rgba(239, 68, 68, 0.2)',
+                                transition: 'all 0.2s ease'
+                            }}
+                            onMouseOver={(e) => {
+                                e.currentTarget.style.background = 'var(--danger)';
+                                e.currentTarget.style.color = 'white';
+                            }}
+                            onMouseOut={(e) => {
+                                e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
+                                e.currentTarget.style.color = 'var(--danger)';
+                            }}
+                        >
+                            <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>inventory_2</span>
+                            Xem thêm {thuocHetHan.length - 3} lô thuốc khác trong trang Quản lý Kho...
+                        </a>
+                    </div>
                 )}
             </div>
         </div>

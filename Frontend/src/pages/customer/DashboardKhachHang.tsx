@@ -1081,7 +1081,7 @@ const DashboardKhachHang: React.FC = () => {
                       {app.trang_thai === 'DANG_KHAM' && (
                         <span className="pulse-dot" style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
                       )}
-                      <span style={{ fontSize: '0.72rem', fontWeight: 900, textTransform: 'uppercase', color: app.trang_thai === 'DANG_KHAM' ? '#14b8a6' : '#3b82f6' }}>
+                      <span style={{ fontSize: '0.72rem', fontWeight: 900, textTransform: 'uppercase', color: app.trang_thai === 'DANG_KHAM' ? '#14b8a6' : '#3b82f6', whiteSpace: 'nowrap' }}>
                         {app.trang_thai === 'DANG_KHAM' ? 'Đang khám' : app.trang_thai === 'DA_XAC_NHAN' ? 'Đã xác nhận' : 'Chờ xác nhận'}
                       </span>
                     </div>

@@ -42,3 +42,4 @@ dist/
 /playwright/.auth/
 
 .vercel
+.env*

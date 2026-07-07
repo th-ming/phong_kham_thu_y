@@ -14,7 +14,7 @@ export const getApiErrorMessage = (err: any, fallback: string): string => {
     if (status === 401) return "Phiên đăng nhập đã hết hạn hoặc chưa đăng nhập. Vui lòng đăng nhập lại rồi thử tiếp.";
     if (status === 403) return "Tài khoản hiện tại không đủ quyền thực hiện tác vụ này.";
     if (status === 429) return "Bạn đang gửi yêu cầu quá nhanh. Đợi một chút rồi thử lại.";
-    if (status >= 500) return "Backend đang lỗi khi xử lý yêu cầu này. Rexi chưa thực hiện thao tác nào.";
+    if (status >= 500) return "Rexi đang gặp sự cố kỹ thuật, vui lòng thử lại sau ít phút.";
     return fallback;
 };
 

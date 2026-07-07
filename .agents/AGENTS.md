@@ -7,3 +7,21 @@
 5. **Tự làm hết**: Không bắt user làm bất cứ thao tác nào (F5, kiểm tra console,...).
 6. **Nhanh và chuẩn**: Thời gian là vàng, nhưng chuẩn xác còn quan trọng hơn.
 7. **Cấm sửa code khi chưa được phép**: Phải trình bày hướng làm, chờ user đồng ý mới được sửa code. Không tự ý sửa bất kỳ dòng nào.
+
+# Thông tin dự án (ghi nhớ)
+
+## Vercel
+- Email Vercel: `tranminh@gmail.com` (chưa phải thành viên team `tranminh09818-6178s-projects`)
+- Team Vercel: `tranminh09818-6178s-projects` (team của `tranminh09818`)
+- Project frontend: `rexi-vet-clinic` → https://rexi-vet-clinic.vercel.app
+- Project frontend (cũ?): `rexi-veterinary`
+- Deploy bằng lệnh: `npx vercel --prod --cwd Frontend` (cần login account `tranminh09818`)
+- Git repo: `https://github.com/tranminh09818/phong_kham_thu_y.git`
+
+## Render
+- Backend: `rexi-backend` (Docker, free)
+- URL: `https://phong-kham-thu-y.onrender.com`
+- render.yaml ở root dự án (chạy Docker từ Backend/)
+
+## Domain
+- Frontend production: https://rexi-vet-clinic.vercel.app

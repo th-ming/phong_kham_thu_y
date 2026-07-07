@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import axiosInstance from "@services/axios";
 import { toast } from "@components/Toast";
 import { toastError } from '@utils/toastHelpers';
-import { matchesSearchFields, fixVietnameseEncoding } from "@utils/index";
+import { matchesSearchFields, fixVietnameseEncoding, isMockOrTestData } from "@utils/index";
 import { useAutoRefresh } from "@hooks/useAutoRefresh";
 import { ModalThemKhachHang } from "./quan-ly-khach-hang-thu-cung/ModalThemKhachHang";
 import { ModalThemThuCung } from "./quan-ly-khach-hang-thu-cung/ModalThemThuCung";
@@ -56,44 +56,50 @@ const QuanLyKhachHangThuCung: React.FC = () => {
   };
 
   const filteredKhachHang = React.useMemo(() => {
-    return khachHang.filter((kh) => {
-      const q = searchKhachHang.trim();
-      // Chuẩn hóa: loại bỏ mọi ký tự không phải số để nhận dạng SĐT đúng
-      // dù nhập "0916 123 456", "0916-123-456" hay "0916123456" đều được xử lý giống nhau
-      const digitsOnly = q.replace(/\D/g, '');
-      let normalizedDigits = digitsOnly;
-      // Bỏ tiền tố quốc tế 84 (VD: +84916... -> 0916...)
-      if (normalizedDigits.startsWith('84') && normalizedDigits.length === 11) {
-        normalizedDigits = '0' + normalizedDigits.slice(2);
-      }
-      const isExactPhone = normalizedDigits.length >= 9;
-      const isPartialPhone = normalizedDigits.length >= 4 && normalizedDigits.length < 9;
+    return khachHang
+      .filter(kh => !isMockOrTestData(kh))
+      .filter((kh) => {
+        const q = searchKhachHang.trim();
+        // Chuẩn hóa: loại bỏ mọi ký tự không phải số để nhận dạng SĐT đúng
+        // dù nhập "0916 123 456", "0916-123-456" hay "0916123456" đều được xử lý giống nhau
+        const digitsOnly = q.replace(/\D/g, '');
+        let normalizedDigits = digitsOnly;
+        // Bỏ tiền tố quốc tế 84 (VD: +84916... -> 0916...)
+        if (normalizedDigits.startsWith('84') && normalizedDigits.length === 11) {
+          normalizedDigits = '0' + normalizedDigits.slice(2);
+        }
+        const isExactPhone = normalizedDigits.length >= 9;
+        const isPartialPhone = normalizedDigits.length >= 4 && normalizedDigits.length < 9;
 
-      if (isExactPhone) {
-        const dbDigits = (kh.sdt || '').replace(/\D/g, '');
-        const dbNorm = dbDigits.startsWith('84') && dbDigits.length === 11
-          ? '0' + dbDigits.slice(2)
-          : dbDigits;
-        // So sánh chính xác, bỏ qua số 0 đầu để khớp cả 2 định dạng
-        return normalizedDigits === dbNorm
-          || normalizedDigits.replace(/^0/, '') === dbNorm.replace(/^0/, '');
-      }
-      if (isPartialPhone) {
-        // Tìm một phần trong SĐT, không lan sang tên/địa chỉ
-        const dbDigits = (kh.sdt || '').replace(/\D/g, '');
-        return dbDigits.includes(normalizedDigits);
-      }
-      // Không phải số điện thoại -> tìm rộng theo tên, email, địa chỉ...
-      return matchesSearchFields(searchKhachHang, [
-        kh.id_khach_hang,
-        kh.ten_khach_hang,
-        kh.sdt,
-        kh.email,
-        kh.dia_chi,
-        kh.trang_thai,
-        kh.ngay_tao
-      ]);
-    });
+        if (isExactPhone) {
+          const dbDigits = (kh.sdt || '').replace(/\D/g, '');
+          const dbNorm = dbDigits.startsWith('84') && dbDigits.length === 11
+            ? '0' + dbDigits.slice(2)
+            : dbDigits;
+          // So sánh chính xác, bỏ qua số 0 đầu để khớp cả 2 định dạng
+          return normalizedDigits === dbNorm
+            || normalizedDigits.replace(/^0/, '') === dbNorm.replace(/^0/, '');
+        }
+        if (isPartialPhone) {
+          // Tìm một phần trong SĐT, không lan sang tên/địa chỉ
+          const dbDigits = (kh.sdt || '').replace(/\D/g, '');
+          return dbDigits.includes(normalizedDigits);
+        }
+        // Không phải số điện thoại -> tìm rộng theo tên, email, địa chỉ...
+        return matchesSearchFields(searchKhachHang, [
+          kh.id_khach_hang,
+          kh.ten_khach_hang,
+          kh.sdt,
+          kh.email,
+          kh.dia_chi,
+          kh.trang_thai,
+          kh.ngay_tao
+        ]);
+      })
+      .map(kh => ({
+        ...kh,
+        ten_khach_hang: fixVietnameseEncoding(kh.ten_khach_hang)
+      }));
   }, [khachHang, searchKhachHang]);
 
   const fetchData = () => {
@@ -289,11 +295,24 @@ const QuanLyKhachHangThuCung: React.FC = () => {
 
   const getTenKhachHang = (id: number) => {
     const kh = khachHang.find(k => k.id_khach_hang === id);
-    return kh ? kh.ten_khach_hang : `KH-${id}`;
+    return kh ? fixVietnameseEncoding(kh.ten_khach_hang) : `KH-${id}`;
   };
 
-  const totalPages = isServerPaginated ? totalServerPages : Math.ceil(thuCung.length / ITEMS_PER_PAGE);
-  const currentRows = isServerPaginated ? thuCung : thuCung.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+  const filteredThuCung = React.useMemo(() => {
+    return thuCung
+      .filter(t => !isMockOrTestData(t) && !isMockOrTestData({ ten_khach_hang: getTenKhachHang(t.id_khach_hang) }))
+      .map(t => ({
+        ...t,
+        ten_thu_cung: fixVietnameseEncoding(t.ten_thu_cung),
+        giong: fixVietnameseEncoding(t.giong),
+        loai: fixVietnameseEncoding(t.loai),
+        mau_sac: fixVietnameseEncoding(t.mau_sac),
+        gioi_tinh: fixVietnameseEncoding(t.gioi_tinh)
+      }));
+  }, [thuCung, khachHang]);
+
+  const totalPages = isServerPaginated ? totalServerPages : Math.ceil(filteredThuCung.length / ITEMS_PER_PAGE);
+  const currentRows = isServerPaginated ? filteredThuCung : filteredThuCung.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
   if (isInitialLoading) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>

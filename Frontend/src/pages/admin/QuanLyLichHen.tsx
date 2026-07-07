@@ -3,7 +3,7 @@ import axiosInstance from "@services/axios";
 import ModalTaoLichHenAdmin from "./ModalTaoLichHenAdmin";
 import { Modal, InfoRow } from "@components/CommonUI";
 import { toast } from "@components/Toast";
-import { matchesSearchFields } from "@utils/index";
+import { matchesSearchFields, fixVietnameseEncoding, isMockOrTestData } from "@utils/index";
 import { useAutoRefresh } from "@hooks/useAutoRefresh";
 import useVirtualScroll from "@hooks/useVirtualScroll";
 
@@ -100,9 +100,9 @@ const QuanLyLichHen: React.FC = () => {
   }, [filterStatus, searchLichHen]);
 
   const rows = React.useMemo(() => {
-    let filtered = lichHens;
+    let filtered = lichHens.filter(l => !isMockOrTestData(l));
     if (!isServerPaginated) {
-      filtered = lichHens.filter(l => filterStatus === 'all' || l.trang_thai?.toUpperCase() === filterStatus.toUpperCase());
+      filtered = filtered.filter(l => filterStatus === 'all' || l.trang_thai?.toUpperCase() === filterStatus.toUpperCase());
     }
     if (!isServerPaginated && searchLichHen.trim() !== "") {
       filtered = filtered.filter(l => {
@@ -119,7 +119,15 @@ const QuanLyLichHen: React.FC = () => {
         ]);
       });
     }
-    return filtered;
+    return filtered.map(l => ({
+      ...l,
+      ten_thu_cung: fixVietnameseEncoding(l.ten_thu_cung),
+      ten_khach_hang: fixVietnameseEncoding(l.ten_khach_hang),
+      ten_bac_si: fixVietnameseEncoding(l.ten_bac_si),
+      ten_dich_vu: fixVietnameseEncoding(l.ten_dich_vu),
+      ly_do: fixVietnameseEncoding(l.ly_do),
+      ghi_chu: fixVietnameseEncoding(l.ghi_chu)
+    }));
   }, [lichHens, filterStatus, isServerPaginated, searchLichHen]);
 
   const totalPages = isServerPaginated ? totalServerPages : Math.ceil(rows.length / ITEMS_PER_PAGE);
@@ -443,7 +451,8 @@ const QuanLyLichHen: React.FC = () => {
                         <span style={{
                           padding: '8px 16px', borderRadius: '50px', fontSize: '0.7rem', fontWeight: 900, border: '1px solid transparent',
                           background: l.trang_thai?.toUpperCase() === 'HOAN_THANH' ? 'var(--primary-light)' : (['DA_HUY', 'KHONG_DEN'].includes(l.trang_thai?.toUpperCase()) ? 'var(--danger-light, rgba(239, 68, 68, 0.15))' : 'var(--warning-light, rgba(245, 158, 11, 0.15))'),
-                          color: l.trang_thai?.toUpperCase() === 'HOAN_THANH' ? 'var(--primary)' : (['DA_HUY', 'KHONG_DEN'].includes(l.trang_thai?.toUpperCase()) ? 'var(--danger, #ef4444)' : 'var(--warning, #d97706)')
+                          color: l.trang_thai?.toUpperCase() === 'HOAN_THANH' ? 'var(--primary)' : (['DA_HUY', 'KHONG_DEN'].includes(l.trang_thai?.toUpperCase()) ? 'var(--danger, #ef4444)' : 'var(--warning, #d97706)'),
+                          whiteSpace: 'nowrap'
                         }}>
                           {l.trang_thai?.toUpperCase() || 'CHO_XAC_NHAN'}
                         </span>

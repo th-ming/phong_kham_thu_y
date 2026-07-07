@@ -103,7 +103,7 @@ const KeToanDashboard: React.FC = () => {
 
     // Tính toán số liệu tổng quan
     const stats = useMemo(() => {
-        const todayStr = new Date().toISOString().split('T')[0];
+        const todayStr = new Date().toLocaleDateString('en-CA'); // VN local date (en-CA = YYYY-MM-DD format)
 
         const paidInvoices = invoices.filter(inv => inv.trang_thai?.toUpperCase() === 'DA_THANH_TOAN');
         const unpaidInvoices = invoices.filter(inv => inv.trang_thai?.toUpperCase() === 'CHO_THANH_TOAN');
@@ -126,10 +126,10 @@ const KeToanDashboard: React.FC = () => {
             return Number.isNaN(date.getTime()) ? String(value).slice(0, 10) : date.toISOString().slice(0, 10);
         };
         const today = new Date();
-        const todayKey = today.toISOString().slice(0, 10);
+        const todayKey = today.toLocaleDateString('en-CA');
         const yesterday = new Date(today);
         yesterday.setDate(today.getDate() - 1);
-        const yesterdayKey = yesterday.toISOString().slice(0, 10);
+        const yesterdayKey = yesterday.toLocaleDateString('en-CA');
 
         const paidInvoices = invoices.filter(inv => inv.trang_thai?.toUpperCase() === 'DA_THANH_TOAN');
         const unpaidInvoices = invoices.filter(inv => inv.trang_thai?.toUpperCase() === 'CHO_THANH_TOAN');
@@ -177,8 +177,12 @@ const KeToanDashboard: React.FC = () => {
     const getRevenueDateKey = (item: any) => {
         const rawDate = item?.Ngay || item?.ngay;
         if (!rawDate) return "";
+        // If it's a plain date string (YYYY-MM-DD), use it directly without Date object conversion
+        // (Date object parsing of YYYY-MM-DD treats it as UTC, causing -1 day in VN timezone)
+        const asStr = String(rawDate).slice(0, 10);
+        if (/^\d{4}-\d{2}-\d{2}$/.test(asStr)) return asStr;
         const date = new Date(rawDate);
-        return Number.isNaN(date.getTime()) ? String(rawDate).slice(0, 10) : date.toISOString().slice(0, 10);
+        return Number.isNaN(date.getTime()) ? asStr : date.toLocaleDateString('en-CA');
     };
 
     // Chuẩn bị dữ liệu cho biểu đồ Chart.js
@@ -197,7 +201,7 @@ const KeToanDashboard: React.FC = () => {
         for (let i = 6; i >= 0; i--) {
             const d = new Date();
             d.setDate(d.getDate() - i);
-            const dateKey = d.toISOString().slice(0, 10);
+            const dateKey = d.toLocaleDateString('en-CA'); // local VN date
             labels.push(`${d.getDate()}/${d.getMonth() + 1}`);
             data.push(revenueByDate.get(dateKey) || 0);
         }

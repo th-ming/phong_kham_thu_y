@@ -1,27 +1,69 @@
+# Version control
 .git
 .gitignore
+
+# Environment files — chỉ giữ .env.example nếu có
 .env
-.env.local
+.env.*
+!.env.example
+
+# Documentation — không cần trong Docker image
 README.md
+CHANGELOG.md
+documentation/
+
+# IDE & OS
 .idea
 .vscode
-node_modules
-npm-debug.log
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*.tmp
+
+# Logs
 *.log
+npm-debug.log
+*.out
+
+# Frontend — build artifacts & dependencies
+node_modules/
+Frontend/node_modules/
+Frontend/dist/
+Frontend/dev-dist/
+Frontend/.vite/
+Frontend/.cache/
+Frontend/coverage/
+Frontend/Tester/
+
+# Backend — Maven/Gradle build artifacts & test
 Backend/target/
 Backend/backups/
 Backend/logs/
 Backend/uploads/
 Backend/hs_err_pid*.log
 Backend/replay_pid*.log
-Frontend/dist/
-Frontend/dev-dist/
+Backend/.mvn/
+Backend/mvnw
+Backend/mvnw.cmd
+Backend/src/test/
+Backend/*.class
+
+# Other directories trong repo không cần trong image
 Tester/
-documentation/
+.github/
 scripts/
 skills/
 Báo cáo thực tập/
-Báo cáo thực tap/
 report_images/
 uploads/
-.DS_Store
+
+# Docker chính nó — không cần copy vào image
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# Playwright test artifacts
+test-results/
+playwright-report/
+playwright/.cache/
