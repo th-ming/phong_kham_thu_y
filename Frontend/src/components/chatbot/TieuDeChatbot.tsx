@@ -4,11 +4,12 @@ export const TieuDeChatbot: React.FC<{
     activeTab: 'standard' | 'agent';
     isMobile: boolean;
     isVoiceEnabled: boolean;
+    pageAgentVisible: boolean;
     onToggleVoice: () => void;
     onResetChat: () => void;
     onClose: () => void;
     onTogglePageAgent: () => void;
-}> = ({ activeTab, isMobile, isVoiceEnabled, onToggleVoice, onResetChat, onClose, onTogglePageAgent }) => (
+}> = ({ activeTab, isMobile, isVoiceEnabled, pageAgentVisible, onToggleVoice, onResetChat, onClose, onTogglePageAgent }) => (
     <div style={{
         background: activeTab === 'agent' ? 'linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)' : 'var(--chat-gradient)',
         padding: isMobile ? '12px 16px' : '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: 'white',
@@ -23,7 +24,7 @@ export const TieuDeChatbot: React.FC<{
             </span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '10px' : '14px' }}>
-            {activeTab === 'agent' && <span className="material-symbols-outlined" onClick={onTogglePageAgent} title="Bật/tắt PageAgent" style={{ fontSize: isMobile ? '18px' : '20px', cursor: 'pointer', opacity: 0.7 }}>smart_toy</span>}
+            {activeTab === 'agent' && <span className="material-symbols-outlined" onClick={onTogglePageAgent} title={pageAgentVisible ? 'Tắt PageAgent' : 'Bật PageAgent'} style={{ fontSize: isMobile ? '18px' : '20px', cursor: 'pointer', opacity: pageAgentVisible ? 0.7 : 0.5 }}>robot</span>}
             <span
                         className="material-symbols-outlined"
                         style={{ fontSize: '22px', cursor: 'pointer', color: isVoiceEnabled ? '#4ade80' : 'white', opacity: isVoiceEnabled ? 1 : 0.7 }}

@@ -40,14 +40,13 @@ export const ChatbotShell: React.FC<ChatbotShellProps> = (props) => {
     } = props;
     const hasMobileBottomNav = isCustomerRoute || isAdminRoute;
     const [pageAgentVisible, setPageAgentVisible] = React.useState(true);
-    const handleTogglePageAgent = () => {
+    const handleTogglePageAgent = React.useCallback(() => {
         const panel = document.getElementById('page-agent-runtime_agent-panel');
         if (panel) {
-            const next = !pageAgentVisible;
-            panel.style.display = next ? '' : 'none';
-            setPageAgentVisible(next);
+            panel.classList.toggle('pageagent-hidden');
+            setPageAgentVisible(v => !v);
         }
-    };
+    }, []);
 
     return (
         <>
@@ -191,6 +190,7 @@ export const ChatbotShell: React.FC<ChatbotShellProps> = (props) => {
                             activeTab={activeTab}
                             isMobile={isMobile}
                             isVoiceEnabled={isVoiceEnabled}
+                            pageAgentVisible={pageAgentVisible}
                             onToggleVoice={() => setIsVoiceEnabled(!isVoiceEnabled)}
                             onResetChat={handleResetChat}
                             onClose={() => setIsOpen(false)}
