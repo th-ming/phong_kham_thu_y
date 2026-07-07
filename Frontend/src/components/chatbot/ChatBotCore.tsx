@@ -3125,7 +3125,7 @@ export const ChatBotCore: React.FC = () => {
 
             cleanedReplyText = stripChatControlTags(cleanedReplyText);
 
-            const aiMessageId = `ai-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+            const aiMessageId = `ai-${Date.now()}-${window.crypto.randomUUID()}`;
             const aiResponseMsg = { 
                 id: aiMessageId,
                 type: "ai", 

@@ -18,6 +18,7 @@ import { LopKeoThaFileChatbot } from "@components/chatbot/LopKeoThaFileChatbot";
 import { TieuDeChatbot } from "@components/chatbot/TieuDeChatbot";
 import { PhieuDieuTriChatbot } from "@components/chatbot/PhieuDieuTriChatbot";
 import { KetQuaTimKiemChatbot } from "@components/chatbot/KetQuaTimKiemChatbot";
+import { NutAIAgentChatbot } from "@components/chatbot/NutAIAgentChatbot";
 import { CanhBaoDangNhapChatbot } from "@components/chatbot/CanhBaoDangNhapChatbot";
 
 type ChatbotShellProps = {
@@ -40,12 +41,29 @@ export const ChatbotShell: React.FC<ChatbotShellProps> = (props) => {
     } = props;
     const hasMobileBottomNav = isCustomerRoute || isAdminRoute;
     const [pageAgentVisible, setPageAgentVisible] = React.useState(true);
+    const [agentButtonDismissed, setAgentButtonDismissed] = React.useState(() => {
+        try { return localStorage.getItem('pageagent-btn-dismissed') === 'true'; } catch { return false; }
+    });
+    // Tự hiện lại nút mỗi khi mở khung chat (nếu đã tắt)
+    React.useEffect(() => {
+        if (isOpen && agentButtonDismissed) {
+            setAgentButtonDismissed(false);
+            try { localStorage.setItem('pageagent-btn-dismissed', 'false'); } catch {}
+        }
+    }, [isOpen]);
     const handleTogglePageAgent = React.useCallback(() => {
         const panel = document.getElementById('page-agent-runtime_agent-panel');
         if (panel) {
             panel.classList.toggle('pageagent-hidden');
             setPageAgentVisible(v => !v);
         }
+    }, []);
+    const handleDismissAgentButton = React.useCallback(() => {
+        setAgentButtonDismissed(true);
+        try {
+            localStorage.setItem('pageagent-btn-dismissed', 'true');
+            localStorage.removeItem('pageagent-btn-position');
+        } catch {}
     }, []);
 
     return (
@@ -774,6 +792,16 @@ export const ChatbotShell: React.FC<ChatbotShellProps> = (props) => {
                         </div>
                     </div>
                 </>
+            )}
+
+            {/* NÚT AI AGENT - NỔI NGOÀI CỬA SỔ CHAT */}
+            {!agentButtonDismissed && (
+                <NutAIAgentChatbot
+                    isMobile={isMobile}
+                    pageAgentVisible={pageAgentVisible}
+                    onTogglePageAgent={handleTogglePageAgent}
+                    onDismiss={handleDismissAgentButton}
+                />
             )}
 
             <AnhPhongToChatbot src={zoomedImage} onClose={() => setZoomedImage(null)} />

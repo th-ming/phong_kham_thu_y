@@ -407,7 +407,7 @@ const ThongTinCaNhanNhanVien: React.FC = () => {
 
                         <div className="admin-staff-avatar" style={{ width: '140px', height: '140px', margin: '0 auto 24px', borderRadius: '50%', background: 'var(--surface)', padding: '6px', border: '3px solid var(--primary)', position: 'relative', zIndex: 1, boxShadow: '0 10px 25px var(--primary-shadow)' }}>
                             <img
-                                src={formData.hinh_anh || profile.hinh_anh || user.avatar || "/img/avtpkty.png"}
+                                src={(formData.hinh_anh || profile.hinh_anh || user.avatar || "/img/avtpkty.png").replace(/^javascript:/i, '')}
                                 alt={profile.ho_ten || 'Avatar'}
                                 style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
                             />

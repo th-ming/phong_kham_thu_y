@@ -803,7 +803,7 @@ ChatMessage systemMsg = new ChatMessage();
                 "da bam", "da nhan nut", "da chon", "da dien", "da cap nhat", "da xoa", "da huy",
                 "da dat lich", "da tao lich", "da tao hoa don", "da khoa tai khoan", "da mo khoa",
                 "da gui email", "da chuyen sang trang", "toi da mo trang");
-        boolean hasControlTag = reply.matches("(?s).*\\[(CLICK|FILL|SELECT|TOGGLE|DELETE|SCROLL|NAVIGATE|AUTO_BOOK):[^\\]]+\\].*");
+        boolean hasControlTag = containsControlTagChar(reply);
         boolean privilegedRoute = route == ChatRoute.DB_LOCAL || route == ChatRoute.SENSITIVE_HANDOFF;
 
         if ((claimedSystemLookup || claimedCompletedAction) && !privilegedRoute && !hasControlTag) {
@@ -1140,10 +1140,10 @@ ChatMessage systemMsg = new ChatMessage();
 
             // Regex patterns to match results in DuckDuckGo HTML Lite
             java.util.regex.Pattern titlePattern = java.util.regex.Pattern.compile(
-                "<a rel=\"nofollow\" class=\"result__a\" href=\"([^\"]+)\">([^<]+)</a>"
+                "<a rel=\"nofollow\" class=\"result__a\" href=\"([^\"]++)\">([^<]++)</a>"
             );
             java.util.regex.Pattern snippetPattern = java.util.regex.Pattern.compile(
-                "<a class=\"result__snippet\"[^>]*>(.*?)</a>"
+                "<a class=\"result__snippet\"[^>]*+>([^<]*+)(?:</a>|(?=<))"
             );
 
             java.util.regex.Matcher titleMatcher = titlePattern.matcher(html);
@@ -1159,7 +1159,7 @@ ChatMessage systemMsg = new ChatMessage();
             List<String> snippets = new java.util.ArrayList<>();
             while (snippetMatcher.find()) {
                 String snippetHtml = snippetMatcher.group(1);
-                String snippetText = snippetHtml.replaceAll("<[^>]+>", "").trim();
+                String snippetText = stripHtmlEntities(snippetHtml).replaceAll("<[^>]++>", "").trim();
                 snippets.add(snippetText);
             }
 
@@ -2352,16 +2352,25 @@ ChatMessage systemMsg = new ChatMessage();
         return decoded;
     }
 
+    private static final java.util.regex.Pattern HTML_TAG_PATTERN =
+            java.util.regex.Pattern.compile("<[^>]++>");
     private String stripHtmlEntities(String value) {
         if (value == null) return "";
-        return value.replace("&amp;", "&")
+        return HTML_TAG_PATTERN.matcher(
+            value.replace("&amp;", "&")
                 .replace("&quot;", "\"")
                 .replace("&#x27;", "'")
                 .replace("&#39;", "'")
                 .replace("&lt;", "<")
                 .replace("&gt;", ">")
-                .replaceAll("<[^>]+>", "")
-                .trim();
+        ).replaceAll("").trim();
+    }
+
+    private static boolean containsControlTagChar(String reply) {
+        if (reply == null || reply.length() < 6) return false;
+        return reply.contains("[CLICK:") || reply.contains("[FILL:") || reply.contains("[SELECT:")
+                || reply.contains("[TOGGLE:") || reply.contains("[DELETE:") || reply.contains("[SCROLL:")
+                || reply.contains("[NAVIGATE:") || reply.contains("[AUTO_BOOK:");
     }
 
     private String normalizeVietnamese(String input) {

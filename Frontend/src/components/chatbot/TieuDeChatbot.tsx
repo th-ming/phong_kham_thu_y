@@ -24,7 +24,7 @@ export const TieuDeChatbot: React.FC<{
             </span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '10px' : '14px' }}>
-            {activeTab === 'agent' && <span className="material-symbols-outlined" onClick={onTogglePageAgent} title={pageAgentVisible ? 'Tắt PageAgent' : 'Bật PageAgent'} style={{ fontSize: isMobile ? '18px' : '20px', cursor: 'pointer', opacity: pageAgentVisible ? 0.7 : 0.5 }}>robot</span>}
+            {activeTab === 'agent' && <span className="material-symbols-outlined" onClick={onTogglePageAgent} title={pageAgentVisible ? 'Tắt PageAgent' : 'Bật PageAgent'} style={{ fontSize: isMobile ? '18px' : '20px', cursor: 'pointer', color: pageAgentVisible ? '#4ade80' : 'rgba(255,255,255,0.6)' }}>robot</span>}
             <span
                         className="material-symbols-outlined"
                         style={{ fontSize: '22px', cursor: 'pointer', color: isVoiceEnabled ? '#4ade80' : 'white', opacity: isVoiceEnabled ? 1 : 0.7 }}

@@ -21,6 +21,8 @@ public class AiToolService {
 
     private static final Logger logger = Logger.getLogger(AiToolService.class.getName());
     private static final ZoneId VN_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
+    private static final java.util.regex.Pattern HTML_TAG_PATTERN =
+            java.util.regex.Pattern.compile("<[^>]++>");
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -1075,8 +1077,8 @@ public class AiToolService {
             try (var br = new java.io.BufferedReader(new java.io.InputStreamReader(conn.getInputStream(), "UTF-8"))) {
                 String line; while ((line = br.readLine()) != null) resp.append(line);
             }
-            var titlePattern = java.util.regex.Pattern.compile("class=\"result__a\" href=\"([^\"]+)\">([^<]+)<");
-            var snippetPattern = java.util.regex.Pattern.compile("class=\"result__snippet\"[^>]*>(.*?)</a>");
+            var titlePattern = java.util.regex.Pattern.compile("class=\"result__a\" href=\"([^\"]++)\">([^<]++)<");
+            var snippetPattern = java.util.regex.Pattern.compile("class=\"result__snippet\"[^>]*+>([^<]*+)(?:</a>|(?=<))");
             String html = resp.toString();
             var m = titlePattern.matcher(html);
             var snippetMatcher = snippetPattern.matcher(html);
@@ -1105,13 +1107,13 @@ public class AiToolService {
 
     private String stripHtmlEntities(String value) {
         if (value == null) return "";
-        return value.replace("&amp;", "&")
+        return HTML_TAG_PATTERN.matcher(
+            value.replace("&amp;", "&")
                 .replace("&quot;", "\"")
                 .replace("&#x27;", "'")
                 .replace("&lt;", "<")
                 .replace("&gt;", ">")
-                .replaceAll("<[^>]+>", "")
-                .trim();
+        ).replaceAll("").trim();
     }
 
     private String cleanDuckDuckGoUrl(String rawUrl) {

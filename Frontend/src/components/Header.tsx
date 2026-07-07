@@ -191,7 +191,7 @@ const Header: React.FC<{ hideMenu?: boolean }> = ({ hideMenu }) => {
                 <div className="header-user-avatar">
                   <div className="header-user-avatar-ring" aria-hidden="true" />
                   <div className="header-user-avatar-core">
-                    {userAvatar ? (
+                    {userAvatar && /^(https?:|data:image\/)/.test(userAvatar) ? (
                       <img
                         src={userAvatar}
                         alt={userDisplayName}

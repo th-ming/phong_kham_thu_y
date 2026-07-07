@@ -103,7 +103,7 @@ const SidebarKhachHang: React.FC = () => {
             <div style={{ width: '52px', height: '52px', borderRadius: '50%', display: 'grid', placeItems: 'center', flexShrink: 0, position: 'relative' }}>
               <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: '2px solid var(--primary)', boxShadow: '0 0 15px var(--primary), inset 0 0 15px var(--primary)', animation: 'pulse 2s infinite' }} />
               <div style={{ width: '44px', height: '44px', borderRadius: '50%', overflow: 'hidden', background: 'rgba(20, 184, 166, 0.1)', display: 'grid', placeItems: 'center', color: 'var(--primary)', fontWeight: 950, fontSize: '1.5rem', position: 'relative', zIndex: 1, textShadow: '0 0 10px var(--primary)' }}>
-                {userAvatar && !avatarFailed ? (
+                {userAvatar && /^(https?:|data:image\/)/.test(userAvatar) && !avatarFailed ? (
                   <img
                     src={userAvatar}
                     alt={userDisplayName}

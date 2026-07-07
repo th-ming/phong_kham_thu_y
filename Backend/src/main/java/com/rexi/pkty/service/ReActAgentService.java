@@ -27,6 +27,36 @@ public class ReActAgentService {
     private static final int MAX_MODEL_MESSAGE_CHARS = 14_000;
     private static final ZoneId VN_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
 
+    private static final java.util.regex.Pattern THINK_TAG =
+            java.util.regex.Pattern.compile("(?is)" + java.util.regex.Pattern.quote("<think>") + "[^<]*+" + java.util.regex.Pattern.quote("</think>"));
+    private static final java.util.regex.Pattern ASSISTANT_TAG =
+            java.util.regex.Pattern.compile("(?is)</?+assistant>");
+    private static final java.util.regex.Pattern ISH_PREFIX =
+            java.util.regex.Pattern.compile("(?im)^\\s*+ish\\s*+");
+    private static final java.util.regex.Pattern OKAY_BREAKDOWN =
+            java.util.regex.Pattern.compile("(?is)" + java.util.regex.Pattern.quote("Okay, let me break down") + "[^<]*+" + java.util.regex.Pattern.quote("</think>"));
+    private static final java.util.regex.Pattern FIRST_I_NEED =
+            java.util.regex.Pattern.compile("(?is)" + java.util.regex.Pattern.quote("First, I need to") + "[^\\n]*+");
+    private static final java.util.regex.Pattern MULTI_WHITESPACE =
+            java.util.regex.Pattern.compile("[ \\t\\x0B\\f]++");
+    private static final java.util.regex.Pattern NEWLINE_AROUND =
+            java.util.regex.Pattern.compile(" *+\\n *+");
+    private static final java.util.regex.Pattern TRIPLE_NEWLINE =
+            java.util.regex.Pattern.compile("\\n{3,}+");
+    private static final java.util.regex.Pattern COLON_DASH =
+            java.util.regex.Pattern.compile("(?m)(:\\s*+)-\\s++");
+    private static final java.util.regex.Pattern DASH_DATE =
+            java.util.regex.Pattern.compile("\\s++-\\s++(?=\\d{4}-\\d{2}-\\d{2}\\b)");
+    private static final java.util.regex.Pattern DASH_TEXT =
+            java.util.regex.Pattern.compile("\\s++-\\s++(?=[\\p{L}Đđ][^\\n]{0,60}+:)");
+    private static final java.util.regex.Pattern LINE_BREAK_BEFORE = java.util.regex.Pattern.compile("\\s++(?=(?:Danh sách:|Cảnh báo conflict:|Nếu bắt buộc))");
+    private static final java.util.regex.Pattern NAVIGATE_TAG =
+            java.util.regex.Pattern.compile("\\s++(\\[NAVIGATE:[^\\]]++\\])");
+    private static final java.util.regex.Pattern BULLET_SPACE =
+            java.util.regex.Pattern.compile("(?m)^-\\s++");
+    private static final java.util.regex.Pattern TRAILING_SPACE_NEWLINE =
+            java.util.regex.Pattern.compile("[ \\t]++\\n");
+
     @Autowired private OpenRouterService openRouterService;
     @Autowired private GeminiService geminiService;
     @Autowired private GroqService groqService;
@@ -1549,17 +1579,16 @@ public class ReActAgentService {
 
     private String sanitizeFinalAnswer(String answer, String normalizedQuery) {
         if (answer != null) {
-            answer = answer
-                    .replaceAll("(?is)<think>.*?</think>", " ")
-                    .replaceAll("(?is)</?assistant>", " ")
-                    .replaceAll("(?is)^\\s*ish\\s*", " ")
-                    .replaceAll("(?is)Okay, let me break down.*?</think>", " ")
-                    .replaceAll("(?is)First, I need to.*?(?=\\n\\s*[\\p{L}Đđ])", " ")
+            answer = THINK_TAG.matcher(answer).replaceAll(" ")
+                    .replaceAll("(?is)</?+assistant>", " ")
+                    .replaceAll("(?im)^\\s*+ish\\s*+", " ")
+                    .replaceAll("(?is)" + java.util.regex.Pattern.quote("Okay, let me break down") + "[^<]*+" + java.util.regex.Pattern.quote("</think>"), " ")
+                    .replaceAll("(?is)" + java.util.regex.Pattern.quote("First, I need to") + "[^\\n]*+", " ")
                     .replace("\r\n", "\n")
                     .replace('\r', '\n')
-                    .replaceAll("[ \\t\\x0B\\f]+", " ")
-                    .replaceAll(" *\\n *", "\n")
-                    .replaceAll("\\n{3,}", "\n\n")
+                    .replaceAll("[ \\t\\x0B\\f]++", " ")
+                    .replaceAll(" *+\\n *+", "\n")
+                    .replaceAll("\\n{3,}+", "\n\n")
                     .trim();
         }
         if (answer == null || answer.isBlank() || "null".equalsIgnoreCase(answer.trim())) {
@@ -1574,16 +1603,14 @@ public class ReActAgentService {
     private String formatChatAnswer(String answer) {
         if (answer == null || answer.isBlank()) return answer;
         String formatted = answer
-                .replaceAll("(?m)(:\\s*)-\\s+", "$1\n- ")
-                .replaceAll("\\s+-\\s+(?=\\d{4}-\\d{2}-\\d{2}\\b)", "\n- ")
-                .replaceAll("\\s+-\\s+(?=[\\p{L}Đđ][^\\n]{0,60}:)", "\n- ")
-                .replaceAll("\\s+(Danh sách:)", "\n$1")
-                .replaceAll("\\s+(Cảnh báo conflict:)", "\n$1")
-                .replaceAll("\\s+(Nếu bắt buộc)", "\n$1")
-                .replaceAll("\\s+(\\[NAVIGATE:[^\\]]+\\])", "\n$1")
-                .replaceAll("(?m)^-\\s+", "- ")
-                .replaceAll("[ \\t]+\\n", "\n")
-                .replaceAll("\\n{3,}", "\n\n")
+                .replaceAll("(?m)(:\\s*+)-\\s++", "$1\n- ")
+                .replaceAll("\\s++-\\s++(?=\\d{4}-\\d{2}-\\d{2}\\b)", "\n- ")
+                .replaceAll("\\s++-\\s++(?=[\\p{L}Đđ][^\\n]{0,60}+:)", "\n- ")
+                .replaceAll("\\s++(?=(?:Danh sách:|Cảnh báo conflict:|Nếu bắt buộc))", "\n$0".replace("$0", ""))
+                .replaceAll("\\s++(\\[NAVIGATE:[^\\]]++\\])", "\n$1")
+                .replaceAll("(?m)^-\\s++", "- ")
+                .replaceAll("[ \\t]++\\n", "\n")
+                .replaceAll("\\n{3,}+", "\n\n")
                 .trim();
         String normalized = normalizeVietnamese(formatted.toLowerCase(Locale.ROOT));
         if (normalized.contains("rag ma nguon dong")) {

@@ -165,6 +165,8 @@ export const polishTextForSpeech = (text: string) => {
     const withoutMarkup = text
         .replace(/\[([^\]]+)\]\([^\)]+\)/g, "$1")
         .replace(/<[^>]*>/g, "")
+        .replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#x27;|&#39;/g, "'")
+        .replace(/<[^>]*>/g, "")
         .replace(/[\*\_`#]/g, "")
         .replace(/^-+\s*/gm, "")
         .replace(/[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF]/g, "");

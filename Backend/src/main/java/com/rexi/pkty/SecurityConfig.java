@@ -46,7 +46,10 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.disable())
+            .csrf(csrf -> csrf
+                .ignoringRequestMatchers(new org.springframework.security.web.util.matcher.AntPathRequestMatcher("/api/**"))
+                .csrfTokenRepository(org.springframework.security.web.csrf.CookieCsrfTokenRepository.withHttpOnlyFalse())
+            )
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             // STATELESS: ko session RAM
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

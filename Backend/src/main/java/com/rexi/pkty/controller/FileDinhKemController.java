@@ -129,7 +129,10 @@ public class FileDinhKemController {
             // Gen tên file qua UUID tránh trùng
             String newFileName = UUID.randomUUID().toString() + fileExtension;
 
-            Path filePath = uploadPath.resolve(newFileName);
+            Path filePath = uploadPath.resolve(newFileName).normalize();
+            if (!filePath.startsWith(uploadPath.normalize())) {
+                return ResponseEntity.badRequest().body(Map.of("message", "Đường dẫn file không hợp lệ!"));
+            }
             Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
             String fileUrl = "/" + UPLOAD_DIR + "/" + subFolder + newFileName;

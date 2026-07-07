@@ -400,7 +400,7 @@ public class SystemController {
         }
 
         email = email.trim().toLowerCase(Locale.ROOT);
-        if (!email.matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$") || email.length() > 100) {
+        if (!email.matches("^[^@\\s]++@[^@\\s]++\\.[^@\\s]++$") || email.length() > 100) {
             return ResponseEntity.badRequest().body(Map.of("message", "Email không hợp lệ"));
         }
 

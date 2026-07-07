@@ -37,6 +37,26 @@
       "sourceType": "autoskills-registry",
       "computedHash": "dcc414410b81cfcc5c56490a7e450e664b11d170f3c336fe475c6e0a47def574"
     },
+    "lightpanda": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "local"
+    },
+    "stagehand": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "local"
+    },
+    "testcafe": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "local"
+    },
+    "codeql": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "local"
+    },
     "seo": {
       "source": "addyosmani/web-quality-skills",
       "sourceType": "autoskills-registry",

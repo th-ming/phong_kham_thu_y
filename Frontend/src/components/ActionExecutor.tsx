@@ -392,8 +392,19 @@ export const executeAction = async (tag: string, skipConfirm: boolean = false) =
           }));
           break;
         }
+        const cleanUrl = (() => {
+          if (!/^(https?|tel|mailto|zalo):/i.test(normalizedHref)) return null;
+          if (/^javascript:/i.test(normalizedHref)) return null;
+          return normalizedHref.replace(/[\r\n]/g, '');
+        })();
+        if (!cleanUrl) {
+          window.dispatchEvent(new CustomEvent('agent-action', {
+            detail: { type: 'ERROR', tag, message: `URL không hợp lệ và bị chặn: ${payload}` }
+          }));
+          break;
+        }
         const link = document.createElement('a');
-        link.href = normalizedHref;
+        link.href = cleanUrl;
         link.textContent = label;
         link.target = normalizedHref.startsWith('tel:') || normalizedHref.startsWith('mailto:') ? '' : '_blank';
         link.rel = 'noopener noreferrer';

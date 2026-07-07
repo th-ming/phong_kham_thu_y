@@ -97,6 +97,72 @@
 			"sourceType": "github",
 			"skillPath": "skill/SKILL.md",
 			"computedHash": "local-dev"
+		},
+		"lightpanda": {
+			"source": "local",
+			"sourceType": "local",
+			"skillPath": ".agents/skills/lightpanda/SKILL.md",
+			"computedHash": "local-dev"
+		},
+		"stagehand": {
+			"source": "local",
+			"sourceType": "local",
+			"skillPath": ".agents/skills/stagehand/SKILL.md",
+			"computedHash": "local-dev"
+		},
+		"testcafe": {
+			"source": "local",
+			"sourceType": "local",
+			"skillPath": ".agents/skills/testcafe/SKILL.md",
+			"computedHash": "local-dev"
+		},
+		"codeql": {
+			"source": "local",
+			"sourceType": "local",
+			"skillPath": ".agents/skills/codeql/SKILL.md",
+			"computedHash": "local-dev"
+		},
+		"heretic": {
+			"source": "local",
+			"sourceType": "local",
+			"skillPath": ".agents/skills/heretic/SKILL.md",
+			"computedHash": "local-dev"
+		},
+		"nopecha-extension": {
+			"source": "local",
+			"sourceType": "local",
+			"skillPath": ".agents/skills/nopecha-extension/SKILL.md",
+			"computedHash": "local-dev"
+		},
+		"paper-design": {
+			"source": "local",
+			"sourceType": "local",
+			"skillPath": ".agents/skills/paper-design/SKILL.md",
+			"computedHash": "local-dev"
+		},
+		"hermes-agent": {
+			"source": "local",
+			"sourceType": "local",
+			"skillPath": ".agents/skills/hermes-agent/SKILL.md",
+			"computedHash": "local-dev"
+		},
+		"stirling-pdf": {
+			"source": "local",
+			"sourceType": "local",
+			"skillPath": ".agents/skills/stirling-pdf/SKILL.md",
+			"computedHash": "local-dev"
+		},
+		"gitingest": {
+			"source": "local",
+			"sourceType": "local",
+			"skillPath": ".agents/skills/gitingest/SKILL.md",
+			"computedHash": "local-dev"
+		},
+		"agentmemory": {
+			"source": "local",
+			"sourceType": "local",
+			"skillPath": ".agents/skills/agentmemory/SKILL.md",
+			"computedHash": "local-dev"
 		}
 	}
 }
