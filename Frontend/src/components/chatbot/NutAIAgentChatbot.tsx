@@ -101,7 +101,7 @@ export const NutAIAgentChatbot: React.FC<{
                 transition: dragRef.current ? 'none' : 'all 0.3s cubic-bezier(0.25, 1, 0.5, 1)',
             }}
             data-ai-id="button-toggle-pageagent"
-            onClick={(e) => {
+            onClick={() => {
                 if (dragRef.current) return;
                 if (!pageAgentVisible && onDismiss) {
                     const now = Date.now();
