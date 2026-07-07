@@ -39,6 +39,15 @@ export const ChatbotShell: React.FC<ChatbotShellProps> = (props) => {
         toggleListening, voiceLiveText, voiceMode, voiceStatus, waveBar1Ref, waveBar2Ref, waveBar3Ref, zoomedImage, isCustomerRoute, isAdminRoute
     } = props;
     const hasMobileBottomNav = isCustomerRoute || isAdminRoute;
+    const [pageAgentVisible, setPageAgentVisible] = React.useState(true);
+    const handleTogglePageAgent = () => {
+        const panel = document.getElementById('page-agent-runtime_agent-panel');
+        if (panel) {
+            const next = !pageAgentVisible;
+            panel.style.display = next ? '' : 'none';
+            setPageAgentVisible(next);
+        }
+    };
 
     return (
         <>
@@ -185,6 +194,7 @@ export const ChatbotShell: React.FC<ChatbotShellProps> = (props) => {
                             onToggleVoice={() => setIsVoiceEnabled(!isVoiceEnabled)}
                             onResetChat={handleResetChat}
                             onClose={() => setIsOpen(false)}
+                            onTogglePageAgent={handleTogglePageAgent}
                         />
 
                         {/* 2. DYNAMIC GLASSMORPHIC TAB BAR SELECTOR */}
