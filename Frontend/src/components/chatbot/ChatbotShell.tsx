@@ -158,16 +158,17 @@ export const ChatbotShell: React.FC<ChatbotShellProps> = (props) => {
                         onDrop={handleDrop}
                         style={{
                             position: 'fixed',
-                            bottom: isMobile
-                                ? (hasMobileBottomNav ? '164px' : '80px')
-                                : '110px',
-                            right: isMobile ? '10px' : '30px',
-                            width: isMobile ? 'min(430px, calc(100vw - 20px))' : 'min(450px, calc(100vw - 60px))',
-                            height: isMobile ? 'min(680px, calc(var(--rexi-viewport-height, 100dvh) - 24px))' : '600px',
+                            top: isMobile ? '50%' : 'auto',
+                            left: isMobile ? '50%' : 'auto',
+                            bottom: isMobile ? 'auto' : '100px',
+                            right: isMobile ? 'auto' : '30px',
+                            width: isMobile ? '90vw' : 'min(450px, calc(100vw - 60px))',
+                            height: isMobile ? '65dvh' : '600px',
                             zIndex: 1101,
-                            borderRadius: isMobile ? '22px' : '24px', overflow: 'hidden', display: 'flex', flexDirection: 'column',
-                            border: activeTab === 'agent' ? '2.5px solid rgba(244, 63, 94, 0.35)' : '2.5px solid rgba(16, 185, 129, 0.35)',
-                            boxShadow: activeTab === 'agent' ? '0 20px 50px rgba(244, 63, 94, 0.2)' : '0 20px 50px rgba(16, 185, 129, 0.2)',
+                            borderRadius: isMobile ? '16px' : '24px', overflow: 'hidden', display: 'flex', flexDirection: 'column',
+                            border: isMobile ? '1px solid rgba(255,255,255,0.12)' : (activeTab === 'agent' ? '2.5px solid rgba(244, 63, 94, 0.35)' : '2.5px solid rgba(16, 185, 129, 0.35)'),
+                            boxShadow: isMobile ? '0 20px 60px rgba(0,0,0,0.3)' : (activeTab === 'agent' ? '0 20px 50px rgba(244, 63, 94, 0.2)' : '0 20px 50px rgba(16, 185, 129, 0.2)'),
+                            transform: isMobile ? 'translate(-50%, -50%)' : 'none',
                             transition: 'all 0.4s ease',
                             minWidth: 0,
                             minHeight: 0
@@ -598,26 +599,26 @@ export const ChatbotShell: React.FC<ChatbotShellProps> = (props) => {
 
                         {/* 5. Ô NHẬP TIN NHẮN TẬP TRUNG (CONSOLIDATED INPUT DYNAMIC STYLING) */}
                         <div style={{
-                            padding: isMobile ? '10px 12px max(10px, env(safe-area-inset-bottom, 0px))' : '16px 20px',
+                            padding: isMobile ? '12px 16px' : '16px 20px',
                             background: 'var(--surface)', borderTop: '1px solid var(--gray-200)', display: 'flex', alignItems: 'flex-end', gap: isMobile ? '8px' : '12px',
                             flex: '0 0 auto',
                             minWidth: 0,
-                            borderBottomLeftRadius: isMobile ? '20px' : '22px',
-                            borderBottomRightRadius: isMobile ? '20px' : '22px'
+                            borderBottomLeftRadius: isMobile ? '0' : '22px',
+                            borderBottomRightRadius: isMobile ? '0' : '22px'
                         }}>
                             {/* Nút File Đính kèm */}
                             <input data-ai-id="input-chatbot-jmt6"
                                 type="file"
                                 ref={fileInputRef}
                                 accept="image/*,video/*" multiple style={{ display: 'none' }} onChange={handleFileChange} />
-                            <button data-ai-id="button-chatbot-veod" onClick={() => fileInputRef.current?.click()} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, flexShrink: 0, width: isMobile ? '34px' : '28px', height: isMobile ? '38px' : '28px' }}>
+                            <button data-ai-id="button-chatbot-veod" onClick={() => fileInputRef.current?.click()} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, flexShrink: 0, width: isMobile ? '40px' : '28px', height: isMobile ? '40px' : '28px' }}>
                                 <span className="material-symbols-outlined" style={{ fontSize: isMobile ? '25px' : '28px' }}>add_circle</span>
                             </button>
 
                             {/* MICROPHONE NHẬN DIỆN GIỌNG NÓI */}
                             <button data-ai-id="button-chatbot-4mbq"
                                 onClick={toggleListening}
-                                style={{ background: 'none', border: 'none', color: isListening ? (voiceMode === 'hold' ? '#f59e0b' : voiceMode === 'fast' ? '#22c55e' : '#ef4444') : '#94a3b8', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, flex: '0 0 auto', width: isMobile ? '34px' : '32px', height: isMobile ? '38px' : '34px' }}
+                                style={{ background: 'none', border: 'none', color: isListening ? (voiceMode === 'hold' ? '#f59e0b' : voiceMode === 'fast' ? '#22c55e' : '#ef4444') : '#94a3b8', cursor: 'pointer', display: isMobile ? 'none' : 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, flex: '0 0 auto', width: isMobile ? '34px' : '32px', height: isMobile ? '38px' : '34px' }}
                                 title={isListening ? `Đang nghe liên tục (${voiceMode === 'fast' ? 'nhanh' : voiceMode === 'hold' ? 'đang chờ' : 'bình thường'})` : "Bấm một lần để nói chuyện liên tục với Rexi"}
                             >
                                 <span className="material-symbols-outlined" style={{ fontSize: isMobile ? '25px' : '28px', animation: isListening ? 'blink 1.5s infinite' : 'none' }}>
@@ -670,7 +671,7 @@ export const ChatbotShell: React.FC<ChatbotShellProps> = (props) => {
                                     }
                                     rows={1}
                                     style={{
-                                        width: '100%', minWidth: 0, border: '1px solid var(--gray-300)', borderRadius: isMobile ? '16px' : '18px', padding: isMobile ? '9px 14px' : '10px 16px',
+                                        width: '100%', minWidth: 0, border: '1px solid var(--gray-300)', borderRadius: isMobile ? '20px' : '18px', padding: isMobile ? '9px 14px' : '10px 16px',
                                         resize: 'none', background: 'var(--background)', color: 'var(--ink)', fontSize: '0.88rem',
                                         outline: 'none', maxHeight: isMobile ? '96px' : '120px', lineHeight: '1.4'
                                     }}
@@ -744,7 +745,7 @@ export const ChatbotShell: React.FC<ChatbotShellProps> = (props) => {
                                 onClick={() => activeTab === 'standard' ? handleSend() : handleAgentSend()}
                                 disabled={(activeTab === 'agent' ? agentLoading : false) || isCompressing}
                                 style={{
-                                    background: activeTab === 'agent' ? 'linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)' : 'var(--chat-gradient)',
+                                    background: isMobile ? '#f97316' : (activeTab === 'agent' ? 'linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)' : 'var(--chat-gradient)'),
                                     color: 'white', border: 'none', borderRadius: '50%', width: isMobile ? '40px' : '42px', height: isMobile ? '40px' : '42px', flexShrink: 0,
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                                     cursor: ((activeTab === 'agent' ? agentLoading : false) || isCompressing) ? 'not-allowed' : 'pointer',

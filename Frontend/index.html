@@ -74,6 +74,35 @@
     <link rel="icon" type="image/png" href="/img/rexi_white_cat_logo.png" />
     <link rel="shortcut icon" type="image/png" href="/img/rexi_white_cat_logo.png" />
     
+    <style>
+      [id="page-agent-runtime_agent-panel"] {
+        font-family: 'Be Vietnam Pro', sans-serif !important;
+        --color-1: #0d9488 !important;
+        --color-2: #14b8a6 !important;
+        --color-3: #0d9488 !important;
+        --color-4: #14b8a6 !important;
+      }
+      [id="page-agent-runtime_agent-panel"] ._header_1tu05_99 {
+        background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%) !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        box-shadow: none !important;
+      }
+      [data-theme="light"] [id="page-agent-runtime_agent-panel"] ._background_1tu05_39 {
+        display: none !important;
+      }
+      [data-theme="dark"] [id="page-agent-runtime_agent-panel"] {
+        --color-1: #22d3ee !important;
+        --color-2: #14b8a6 !important;
+        --color-3: #22d3ee !important;
+        --color-4: #14b8a6 !important;
+      }
+      [data-theme="dark"] [id="page-agent-runtime_agent-panel"] ._header_1tu05_99 {
+        background: linear-gradient(135deg, #06b6d4 0%, #14b8a6 100%) !important;
+        box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.3), 0 0 20px rgba(34, 211, 238, 0.15) !important;
+      }
+    </style>
+    
     <!-- Google Sign-In: defer để không chặn parse HTML -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     
@@ -115,6 +144,125 @@
   </head>
   <body>
     <div id="root"></div>
+    <script src="https://cdn.jsdelivr.net/npm/page-agent@1.11.0/dist/iife/page-agent.demo.js?lang=en-US" crossorigin="anonymous"></script>
+    <script>
+      const translationMap = {
+        "等待任务开始...": "Đang chờ nhiệm vụ bắt đầu... 🐾",
+        "准备就绪": "Sẵn sàng",
+        "展开历史": "Xem lịch sử",
+        "收起历史": "Thu gọn lịch sử",
+        "关闭": "Đóng",
+        "输入新任务，详细描述步骤，回车提交": "Nhập nhiệm vụ mới, mô tả chi tiết các bước và nhấn Enter...",
+        "请回答上面问题，回车提交": "Trả lời câu hỏi trên, nhấn Enter",
+        "任务已终止": "Đã dừng",
+        "任务结束": "Hoàn thành",
+        "等待任务开始...": "Đang chờ nhiệm vụ bắt đầu... 🐾",
+        "正在思考...": "Đang suy nghĩ...",
+        "终止": "Dừng",
+        "成功": "Thành công",
+        "失败": "Thất bại",
+        "错误": "Lỗi",
+        "Waiting for task to start...": "Đang chờ nhiệm vụ bắt đầu... 🐾",
+        "Ready": "Sẵn sàng",
+        "Task completed": "Hoàn thành 🚀",
+        "Task failed": "Thất bại ❌",
+        "Thinking...": "Đang suy nghĩ...",
+        "Enter new task, describe steps in detail, press Enter to submit": "Nhập nhiệm vụ mới, mô tả chi tiết các bước và nhấn Enter",
+        "Please answer the question above, press Enter to submit": "Trả lời câu hỏi trên, nhấn Enter",
+        "Close": "Đóng",
+        "Stop": "Dừng",
+        "Expand history": "Xem lịch sử",
+        "Collapse history": "Thu gọn lịch sử",
+        "Task done": "Hoàn thành 🚀",
+        "Task terminated": "Đã dừng"
+      };
+
+      const translationPrefix = [
+        ["正在点击元素", "Đang nhấn"],
+        ["正在输入文本到元素", "Đang nhập vào"],
+        ["正在选择选项", "Đang chọn"],
+        ["正在滚动页面", "Đang cuộn"],
+        ["正在询问用户", "Đang hỏi"],
+        ["正在执行", "Đang thực thi"],
+        ["等待 ", "Đang chờ "],
+        ["结束任务", "Xong"],
+        ["已点击元素", "Đã nhấn"],
+        ["已输入文本", "Đã nhập"],
+        ["已选择选项", "Đã chọn"],
+        ["页面滚动完成", "Đã cuộn"],
+        ["等待完成", "Đã chờ"],
+        ["Clicking element", "Đang nhấn"],
+        ["Inputting text", "Đang nhập"],
+        ["Selecting option", "Đang chọn"],
+        ["Scrolling page", "Đang cuộn"],
+        ["Asking user", "Đang hỏi"],
+        ["Clicked element", "Đã nhấn"],
+        ["Inputted text", "Đã nhập"],
+        ["Selected option", "Đã chọn"],
+        ["Page scrolled", "Đã cuộn"],
+        ["Wait completed", "Đã chờ"],
+        ["Executing", "Đang thực thi"],
+        ["Retrying", "Đang thử lại"]
+      ];
+
+      function translatePageAgent() {
+        var panel = document.getElementById('page-agent-runtime_agent-panel');
+        if (!panel) return;
+
+        function tr(text) {
+          if (translationMap[text]) return translationMap[text];
+          for (var i = 0; i < translationPrefix.length; i++) {
+            if (text.indexOf(translationPrefix[i][0]) === 0)
+              return text.replace(translationPrefix[i][0], translationPrefix[i][1]);
+          }
+          var stepMatch = text.match(/(Step|步骤)\s+(\d+)/i);
+          if (stepMatch) return text.replace(stepMatch[0], 'Bước ' + stepMatch[2]);
+          return text;
+        }
+
+        function walk(node) {
+          if (node.nodeType === 3) {
+            var text = node.nodeValue;
+            var t = text.trim();
+            if (t && (translationMap[t] || translationPrefix.some(function(p) { return t.indexOf(p[0]) === 0; }) || /(Step|步骤)\s+\d+/i.test(t))) {
+              node.nodeValue = text.replace(t, tr(t));
+            }
+          } else if (node.nodeType === 1 && node.hasAttribute('title')) {
+            var t = node.getAttribute('title').trim();
+            if (t && translationMap[t]) {
+              node.setAttribute('title', translationMap[t]);
+            }
+          }
+          if (node.childNodes) {
+            for (var i = 0; i < node.childNodes.length; i++) {
+              walk(node.childNodes[i]);
+            }
+          }
+        }
+
+        walk(panel);
+
+        var inputs = panel.querySelectorAll('input, textarea');
+        for (var i = 0; i < inputs.length; i++) {
+          var ph = inputs[i].placeholder;
+          var t = tr(ph);
+          if (t !== ph) inputs[i].placeholder = t;
+        }
+      }
+
+      var observer = new MutationObserver(function() {
+        translatePageAgent();
+      });
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['title']
+      });
+      translatePageAgent();
+      setTimeout(translatePageAgent, 1000);
+      setTimeout(translatePageAgent, 3000);
+    </script>
     <script type="module">
       import RefreshRuntime from "/@react-refresh"
       RefreshRuntime.injectIntoGlobalHook(window)
