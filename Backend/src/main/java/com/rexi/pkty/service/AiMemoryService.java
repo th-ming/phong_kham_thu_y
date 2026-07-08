@@ -309,7 +309,45 @@ public class AiMemoryService {
             sb.append(getScheduleContext());
         }
 
+        // Smart Router: Chỉ nhét Thuốc nếu câu hỏi nhắc đến thuốc/dược/vaccine
+        if (cleanQuery.contains("thuốc") || cleanQuery.contains("thuoc") || cleanQuery.contains("dược") || cleanQuery.contains("duoc") ||
+            cleanQuery.contains("kháng sinh") || cleanQuery.contains("khang sinh") || cleanQuery.contains("vaccine") ||
+            cleanQuery.contains("uống") || cleanQuery.contains("tiêm") || cleanQuery.contains("trị") || cleanQuery.contains("chữa") ||
+            cleanQuery.contains("liều") || cleanQuery.contains("lieu") || cleanQuery.contains("thú y")) {
+            sb.append(getThuocContext());
+        }
+
         return sb.toString();
+    }
+
+    private String getThuocContext() {
+        try {
+            StringBuilder sb = new StringBuilder("\n[DANH SÁCH THUỐC TẠI PHÒNG KHÁM (THAM KHẢO)]\n");
+            List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+                "SELECT ten_thuoc, thanh_phan, dang_bao_che, don_vi, mo_ta, gia_ban FROM Thuoc WHERE da_xoa = 0 ORDER BY ten_thuoc ASC"
+            );
+            if (rows.isEmpty()) {
+                return "\n[KHÔNG CÓ DỮ LIỆU THUỐC]\n";
+            }
+            int count = 0;
+            for (Map<String, Object> r : rows) {
+                if (count >= 20) break; // Giới hạn tối đa 20 thuốc tiêu biểu
+                sb.append("- ").append(r.get("ten_thuoc"));
+                if (r.get("dang_bao_che") != null && !r.get("dang_bao_che").toString().isBlank()) {
+                    sb.append(" (").append(r.get("dang_bao_che")).append(")");
+                }
+                if (r.get("thanh_phan") != null && !r.get("thanh_phan").toString().isBlank()) {
+                    sb.append(": ").append(r.get("thanh_phan"));
+                }
+                if (r.get("gia_ban") != null) sb.append(" - ").append(r.get("gia_ban")).append(" VNĐ");
+                sb.append("\n");
+                count++;
+            }
+            sb.append("- ... (tham khảo thêm tại quầy thuốc phòng khám)\n");
+            return sb.toString();
+        } catch (Exception e) {
+            return "";
+        }
     }
 
     private String getScheduleContext() {
