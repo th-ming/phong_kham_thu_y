@@ -12,7 +12,7 @@
       "destination": "https://phong-kham-thu-y.onrender.com/ws/$1"
     },
     {
-      "source": "/((?!api/|ws/|assets/|img/|manifest.json|manifest.webmanifest|registerSW.js|rexi_partners_banner.png|robots.txt|service-worker.js|sitemap.xml|sw.js|workbox-9c191d2f.js|logo-192.png|logo-512.png).*)",
+      "source": "/((?!api/|ws/|assets/|img/|manifest.json|manifest.webmanifest|registerSW.js|rexi_partners_banner.png|robots.txt|service-worker.js|sitemap.xml|sw.js|workbox-9c191d2f.js|icon-192.png|icon-512.png).*)",
       "destination": "/index.html"
     }
   ]
