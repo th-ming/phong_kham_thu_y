@@ -1651,7 +1651,8 @@ ChatMessage systemMsg = new ChatMessage();
         String[] clinicKeywords = {
                 "bang gia", "gia tien", "chi phi", "dich vu", "lich lam viec",
                 "bac si", "bsi", "dia chi", "hotline", "so dien thoai", "phong kham",
-                "gio mo cua", "gio lam viec", "rexi"
+                "gio mo cua", "gio lam viec", "rexi",
+                "thuoc", "thuoc", "duoc", "vaccine", "khang sinh", "tieu chay", "dieutri", "dieu tri"
         };
         for (String kw : clinicKeywords) {
             if (normalizedQuery.contains(kw)) {
