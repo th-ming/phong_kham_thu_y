@@ -508,7 +508,8 @@ public class ChatController {
                         + "   CHỈ dùng thẻ [NAVIGATE:đường_dẫn] ở cuối câu CHỈ KHI " + firstName + " yêu cầu MỞ/CHUYỂN SANG một trang nào đó. Nếu " + firstName + " chỉ hỏi, đừng dùng thẻ này. Các link hợp lệ: /khach-hang/dashboard, /khach-hang/quan-ly-thu-cung, /khach-hang/dat-lich-hen, /khach-hang/lich-su-lich-hen, /khach-hang/ho-so-benh-an, /khach-hang/hoa-don-thanh-toan, /khach-hang/thong-tin-ca-nhan.\n"
                         + "\n11. TRÍCH DẪN RÕ RÀNG:"
                         + "\n   Nếu bạn tham khảo link từ web, hãy chèn link dạng Markdown [Tên Nguồn](Link) để " + firstName + " có thể bấm vào.\n"
-                        + "\n--- DỮ LIỆU PHÒNG KHÁM (BÁC SĨ, DỊCH VỤ, BẢNG GIÁ) ---\n"
+                        + "\n--- DỮ LIỆU PHÒNG KHÁM (BÁC SĨ, DỊCH VỤ, THUỐC, BẢNG GIÁ) ---\n"
+                        + "QUY TẮC BẮT BUỘC KHI TRẢ LỜI VỀ THUỐC: Nếu [DANH SÁCH THUỐC TẠI PHÒNG KHÁM] có trong context, BẮT BUỘC dùng để liệt kê tên thuốc, dạng bào chế, công dụng và giá. TUYỆT ĐỐI KHÔNG bịa ra thuốc không có trong danh sách. Nếu danh sách không có thuốc phù hợp, hãy khuyên mang bé đến khám để bác sĩ kê đơn.\n"
                         + globalContext
                         + "\n--- THÔNG TIN CỦA " + firstName.toUpperCase(Locale.ROOT) + " VÀ THÚ CƯNG ---\n"
                         + userContext
