@@ -155,3 +155,5 @@ pnpm-debug.log*
 # Misc
 *.dump
 *.sql.bak
+
+.vercel

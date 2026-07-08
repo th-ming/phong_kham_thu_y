@@ -44,16 +44,36 @@ export const scoreEnglishVoice = (voice: SpeechSynthesisVoice) => {
 };
 
 const englishSpeechWords = new Set([
+    // Tech
     "api", "ai", "agent", "chat", "voice", "email", "marketing", "booking", "dashboard", "login", "logout",
     "invoice", "payment", "database", "server", "client", "frontend", "backend", "model", "prompt", "token",
     "stream", "upload", "download", "file", "image", "video", "google", "chrome", "edge", "english", "vietnamese",
     "yes", "no", "ok", "okay", "please", "check", "search", "create", "update", "delete", "send", "open",
     "show", "filter", "report", "status", "error", "bug", "fix", "test", "build", "deploy", "cache", "data",
     "react", "typescript", "javascript", "vite", "node", "npm", "spring", "boot", "java", "maven", "jwt",
-    "json", "html", "css", "ui", "ux", "url", "http", "https", "sql", "server", "database", "table",
+    "json", "html", "css", "ui", "ux", "url", "http", "https", "sql", "table",
     "component", "state", "props", "hook", "hooks", "callback", "async", "await", "promise", "function",
     "array", "object", "string", "number", "boolean", "true", "false", "null", "undefined", "browser",
-    "localstorage", "sessionstorage", "clipboard", "paste", "drag", "drop", "preview", "agent", "standard"
+    "localstorage", "sessionstorage", "clipboard", "paste", "drag", "drop", "preview", "standard",
+    // Y khoa thú y (chỉ từ quan trọng, KHÔNG trùng tech)
+    "vaccine", "vaccination", "parvovirus", "parvo", "feline", "canine",
+    "leptospirosis", "rabies", "distemper", "chlamydia", "spay", "neuter",
+    "calcivirus", "panleukopenia",
+    "felv", "fiv", "fpv", "cdv", "cpv",
+    "antibiotic", "antiparasitic",
+    "deworming", "ivermectin", "doxycycline", "metronidazole",
+    "amoxicillin", "cephalexin", "clavamox", "prednisone", "meloxicam",
+    "gabapentin", "tramadol", "enrofloxacin",
+    "steroid", "nsaid",
+    "xray", "ultrasound", "biopsy", "pcr", "elisa",
+    "cbc", "creatinine",
+    "anesthesia", "surgery",
+    "catheter", "iv",
+    "heartworm", "flea", "tick", "fipronil", "nexgard", "bravecto",
+    "booster", "titer", 
+    "microchip", "identification",
+    "dosage", "protocol",
+    "fracture", "dental", "extraction", "antibody"
 ]);
 
 const strongEnglishSpeechWords = new Set([
@@ -92,7 +112,34 @@ const isEnglishSpeechToken = (token: string) => {
     if (englishSpeechWords.has(word)) return true;
     if (/^[A-Z]{2,6}s?$/.test(rawWord)) return true;
     if (vietnameseAsciiSpeechWords.has(word)) return false;
+
+    const tokenStripped = token.replace(/^[^a-zA-Z]+|[^a-zA-Z]+$/g, "");
+
+    if (/[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i.test(token)) return false;
+
+    const isEnglishPattern =
+        /^[a-zA-Z0-9]+$/i.test(tokenStripped) &&
+        tokenStripped.length >= 2 &&
+        !/^[a-z]{1,3}$/i.test(tokenStripped);
+    if (isEnglishPattern) return true;
+
     return /^[a-z][a-z-]{3,}$/i.test(word) && /[qwfjz]|tion|ment|ing|er$|or$|ed$/.test(word);
+};
+
+const hasVietnameseDau = (text: string) => /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i.test(text);
+
+const hasCjkToken = (token: string) => {
+    for (const ch of token) {
+        const code = ch.codePointAt(0) || 0;
+        if (code >= 0x4E00 && code <= 0x9FFF) return true;
+        if (code >= 0xAC00 && code <= 0xD7AF) return true;
+        if ((code >= 0x3040 && code <= 0x309F) || (code >= 0x30A0 && code <= 0x30FF)) return true;
+        if (code >= 0x0400 && code <= 0x04FF) return true;
+        if (code >= 0x0600 && code <= 0x06FF) return true;
+        if (code >= 0x0E00 && code <= 0x0E7F) return true;
+        if (code >= 0x0900 && code <= 0x097F) return true;
+    }
+    return false;
 };
 
 const applyInlineEnglishPronunciation = (text: string) => text
@@ -119,6 +166,33 @@ const applyInlineEnglishPronunciation = (text: string) => text
     .replace(/\bDatabase\b/gi, "đa ta bây")
     .replace(/\bToken\b/gi, "tốc cần");
 
+/**
+ * Phát hiện text chứa từ English lẫn trong tiếng Việt → cần gọi Kira AI TTS.
+ * Kira đọc tên thuốc/vaccine/thuật ngữ Anh-Việt tự nhiên hơn browser SpeechSynthesis rất nhiều.
+ */
+export const shouldUseKiraTts = (cleanText: string): boolean => {
+    if (!cleanText || cleanText.length < 10) return false;
+
+    const tokens = cleanText.match(/\S+/g) || [];
+    if (tokens.length < 3) return false;
+
+    let englishWordCount = 0;
+    let hasVietnamese = hasVietnameseDau(cleanText);
+    let hasNonLatinScript = false;
+
+    for (const token of tokens) {
+        if (isEnglishSpeechToken(token)) englishWordCount++;
+        if (!hasVietnamese && vietnameseAsciiSpeechWords.has(getSpeechWord(token).toLowerCase())) {
+            hasVietnamese = true;
+        }
+        if (!hasNonLatinScript && hasCjkToken(token)) hasNonLatinScript = true;
+    }
+
+    if (hasNonLatinScript && hasVietnamese) return true;
+
+    return englishWordCount >= 2 && hasVietnamese;
+};
+
 export const splitSpeechByLanguage = (text: string): Array<{ text: string; lang: SpeechLang }> => {
     const sentences = text
         .split(/(?<=[.!?])\s+/)
@@ -140,8 +214,8 @@ export const splitSpeechByLanguage = (text: string): Array<{ text: string; lang:
 
         const flushEnglish = () => {
             if (!englishText) return;
-            // Chatbot đọc cho KHACH_HANG/NHAN_SU nghe thì ưu tiên một giọng liền mạch; đổi en-US giữa câu nghe rất gắt.
-            vietnameseText += englishText;
+            const trimmed = englishText.trim();
+            if (trimmed) segments.push({ text: trimmed, lang: "en-US" });
             englishText = "";
         };
 

@@ -77,6 +77,7 @@ import {
     buildAdaptiveChatInstruction as buildAdaptiveChatInstructionBase,
     polishTextForSpeech,
     scoreAssistantVoice,
+    shouldUseKiraTts,
     splitSpeechByLanguage,
 } from "@components/chatbot/chatbotTextHelpers";
 
@@ -1020,6 +1021,63 @@ export const ChatBotCore: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isVoiceEnabled]);
 
+    // Kira AI TTS: đọc audio từ backend proxy khi text đan xen 2+ ngôn ngữ
+    const speakWithKiraTts = useCallback(async (cleanText: string) => {
+        isAiSpeakingRef.current = true;
+        if (recognitionRef.current && voiceSessionActiveRef.current) {
+            try { recognitionRef.current.abort(); } catch(e){}
+        }
+    try {
+        const res = await axiosInstance.post("/api/tts/kira-audio", { text: cleanText }, { responseType: "blob", timeout: 15000 });
+        // Check if response is actually error JSON disguised as blob
+        if (res.data instanceof Blob && res.data.type === 'application/json') {
+            const errorBlob = await res.data.text();
+            try {
+                const errorJson = JSON.parse(errorBlob);
+                console.error("Kira TTS backend error:", errorJson.error);
+                throw new Error(errorJson.error);
+            } catch (parseErr) {
+                console.error("Kira TTS invalid JSON error response:", errorBlob);
+                throw new Error("Kira server returned invalid response");
+            }
+        }
+
+        if (res.data && res.data.size > 0) {
+            const audioUrl = URL.createObjectURL(res.data);
+            const audio = new Audio(audioUrl);
+            audio.onended = () => {
+                URL.revokeObjectURL(audioUrl);
+                isAiSpeakingRef.current = false;
+                finishSpeechTurn();
+            };
+            audio.onerror = (e) => {
+                console.error("Kira audio playback error:", e);
+                URL.revokeObjectURL(audioUrl);
+                isAiSpeakingRef.current = false;
+                finishSpeechTurn();
+            };
+            try {
+                await audio.play();
+            } catch (playErr) {
+                console.error("Kira audio autoplay blocked:", (playErr as any)?.message || playErr);
+                URL.revokeObjectURL(audioUrl);
+                isAiSpeakingRef.current = false;
+                const segments = splitSpeechByLanguage(cleanText);
+                if (segments.length > 0) playSegmentChain(segments, 0, finishSpeechTurn);
+            }
+        } else {
+            console.warn("Kira TTS empty audio response");
+            throw new Error("Kira returned empty audio");
+        }
+    } catch (err) {
+        console.error("Kira TTS fallback to browser:", (err as any)?.message || err);
+        // Kira failed → fallback cứng: dùng browser TTS
+        isAiSpeakingRef.current = false;
+        const segments = splitSpeechByLanguage(cleanText);
+        if (segments.length > 0) playSegmentChain(segments, 0, finishSpeechTurn);
+    }
+    }, [finishSpeechTurn, playSegmentChain]);
+
     const speakText = useCallback((text: string) => {
         if (!isVoiceEnabled || !('speechSynthesis' in window)) return;
 
@@ -1030,17 +1088,29 @@ export const ChatBotCore: React.FC = () => {
 
         if (!cleanText) return;
 
+        // Nếu text đan xen Anh+Việt → gọi Kira AI TTS (tiết kiệm quota $50/ngày)
+        if (shouldUseKiraTts(cleanText)) {
+            speakWithKiraTts(cleanText);
+            return;
+        }
+
         const segments = splitSpeechByLanguage(cleanText);
         if (segments.length === 0) return;
 
-        // Chain từng segment qua onend → không có khoảng trống giữa các giọng đọc Việt/Anh
+        // Thuần Việt hoặc đơn giản → chain từng segment qua onend
         playSegmentChain(segments, 0, finishSpeechTurn);
-    }, [finishSpeechTurn, isVoiceEnabled, playSegmentChain]);
+    }, [finishSpeechTurn, isVoiceEnabled, playSegmentChain, speakWithKiraTts]);
 
     const speakStreamingText = useCallback((text: string) => {
         if (!isVoiceEnabled || !('speechSynthesis' in window)) return false;
         const cleanText = polishTextForSpeech(text);
         if (!cleanText) return false;
+
+        // Text đan xen Anh+Việt → Kira AI TTS (voice tự nhiên hơn browser)
+        if (shouldUseKiraTts(cleanText)) {
+            speakWithKiraTts(cleanText);
+            return true;
+        }
 
         const segments = splitSpeechByLanguage(cleanText);
         if (segments.length === 0) return false;
@@ -1048,7 +1118,7 @@ export const ChatBotCore: React.FC = () => {
         // Chain từng segment qua onend → không có khoảng ngắt giữa các giọng đọc khi streaming
         playSegmentChain(segments, 0, finishSpeechTurn);
         return true;
-    }, [finishSpeechTurn, isVoiceEnabled, playSegmentChain]);
+    }, [finishSpeechTurn, isVoiceEnabled, playSegmentChain, speakWithKiraTts]);
 
     useEffect(() => {
         if (!('speechSynthesis' in window)) return;
