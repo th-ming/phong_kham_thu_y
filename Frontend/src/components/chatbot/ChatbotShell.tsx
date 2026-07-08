@@ -54,8 +54,16 @@ export const ChatbotShell: React.FC<ChatbotShellProps> = (props) => {
     const handleTogglePageAgent = React.useCallback(() => {
         const panel = document.getElementById('page-agent-runtime_agent-panel');
         if (panel) {
-            panel.classList.toggle('pageagent-hidden');
-            setPageAgentVisible(v => !v);
+            const isDisplayNone = panel.style.display === 'none';
+            if (isDisplayNone) {
+                // Page-agent library đã ẩn bằng display: none (VD: bấm X)
+                panel.style.display = ''; // Xóa inline style
+                panel.classList.remove('pageagent-hidden');
+                setPageAgentVisible(true);
+            } else {
+                panel.classList.toggle('pageagent-hidden');
+                setPageAgentVisible(v => !v);
+            }
         }
     }, []);
     const handleDismissAgentButton = React.useCallback(() => {
