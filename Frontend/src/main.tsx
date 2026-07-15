@@ -9,7 +9,16 @@ import { WebSocketProvider } from './contexts/WebSocketProvider'
 import { installClientErrorReporter, reportAxiosError } from './services/clientErrorReporter'
 import { getApiErrorMessage } from '@utils/apiErrorMessage'
 
+import { registerSW } from 'virtual:pwa-register'
+
 installClientErrorReporter();
+
+// Auto reload when service worker updates
+registerSW({
+  onNeedRefresh() {
+    window.location.reload();
+  }
+});
 
 // config Axios Interceptor để tự động gắn TOKEN vào tất cả request
 axios.interceptors.request.use((config) => {
