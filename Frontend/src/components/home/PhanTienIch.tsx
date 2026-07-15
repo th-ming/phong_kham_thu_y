@@ -25,12 +25,15 @@ const PhanTienIch: React.FC = () => {
                     z-index: 1;
                 }
                 .home-feature-grid {
-                    display: grid;
-                    grid-template-columns: repeat(5, minmax(0, 1fr));
+                    display: flex;
+                    flex-wrap: wrap;
+                    justify-content: center;
                     gap: 12px;
                     align-items: stretch;
                 }
                 .home-feature-card {
+                    flex: 1 1 220px;
+                    max-width: 260px;
                     display: flex;
                     align-items: center;
                     gap: 12px;
@@ -107,13 +110,11 @@ const PhanTienIch: React.FC = () => {
                     background: rgba(255,255,255,0.15);
                 }
                 @media screen and (max-width: 1200px) {
-                    .home-feature-grid {
-                        grid-template-columns: repeat(3, minmax(0, 1fr));
-                    }
                     .home-feature-divider {
                         display: none !important;
                     }
                 }
+
                 @media screen and (max-width: 768px) {
                     .home-feature-strip {
                         padding: 9px 0;
@@ -124,6 +125,7 @@ const PhanTienIch: React.FC = () => {
                     }
                     .home-feature-grid {
                         display: flex;
+                        flex-wrap: nowrap;
                         gap: 0;
                         overflow-x: auto;
                         overflow-y: hidden;
