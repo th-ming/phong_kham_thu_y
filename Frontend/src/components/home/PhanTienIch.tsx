@@ -30,14 +30,16 @@ const PhanTienIch: React.FC = () => {
                     justify-content: center;
                     gap: 12px;
                     align-items: stretch;
+                    padding: 0;
                 }
                 .home-feature-card {
-                    flex: 1 1 220px;
+                    flex: 0 1 220px;
+                    width: 220px;
                     max-width: 260px;
                     display: flex;
                     align-items: center;
                     gap: 12px;
-                    min-width: 0;
+                    min-width: 180px;
                     min-height: 76px;
                     position: relative;
                     cursor: default;
