@@ -1,16 +1,12 @@
 {
-    "rewrites":  [
-                     {
-                         "destination":  "https://phong-kham-thu-y.onrender.com/api/$1",
-                         "source":  "/api/(.*)"
-                     },
-                     {
-                         "destination":  "https://phong-kham-thu-y.onrender.com/ws/$1",
-                         "source":  "/ws/(.*)"
-                     },
-                     {
-                         "destination":  "/index.html",
-                         "source":  "/(.*)"
-                     }
-                 ]
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "https://phong-kham-thu-y.onrender.com/api/$1"
+    },
+    {
+      "source": "/ws/(.*)",
+      "destination": "https://phong-kham-thu-y.onrender.com/ws/$1"
+    }
+  ]
 }
