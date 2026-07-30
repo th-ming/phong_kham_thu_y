@@ -17,6 +17,11 @@ Desktop.ini
 .vscode/
 *.code-workspace
 
+# Cursor IDE
+.cursor/
+.cursorrules
+.clauderules
+
 # IntelliJ IDEA
 .idea/
 *.iws
@@ -52,6 +57,7 @@ target/
 *.war
 *.ear
 hs_err_pid*
+build_log.txt
 
 # Spring Boot logs
 *.log
@@ -156,4 +162,20 @@ pnpm-debug.log*
 *.dump
 *.sql.bak
 
+# WPS Office
+wps_audit.log
+
+# Env hint files (contain secrets)
+VERCEL_ENV.txt
+RENDER_ENV.txt
+
+# Uploads (user data)
+uploads/
+
+# IDE
+RexiProject.code-workspace
+
 .vercel
+
+.vercel
+.env*
