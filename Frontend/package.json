@@ -44,7 +44,7 @@
     "dev": "vite --host 127.0.0.1 --port 3005 --strictPort true",
     "dev:lowram": "set NODE_OPTIONS=--max-old-space-size=384&& vite --host 127.0.0.1 --port 3005 --strictPort true",
     "dev:rtk": "rtk vite",
-    "build": "tsc && vite build",
+    "build": "vite build",
     "preview": "vite preview",
     "add-ai-id": "node scripts/add-ai-id.js",
     "lint": "tsc --noEmit",

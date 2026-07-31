@@ -1,8 +1,12 @@
 {
   "rewrites": [
     {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "source": "/api/(.*)",
+      "destination": "https://phong-kham-thu-y.onrender.com/api/$1"
+    },
+    {
+      "source": "/ws/(.*)",
+      "destination": "https://phong-kham-thu-y.onrender.com/ws/$1"
     }
   ]
 }
