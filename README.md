@@ -94,7 +94,7 @@ Hệ thống quản lý phòng khám thú y toàn diện REXI được xây dự
 
 ```bash
 # 1. Clone repository
-git clone https://github.com/tranminh09818/phong_kham_thu_y.git
+git clone https://github.com/th-ming/phong_kham_thu_y.git
 cd phong_kham_thu_y
 
 # 2. Khởi chạy Backend (port 8081)
@@ -131,7 +131,7 @@ Hệ thống hỗ trợ chạy toàn bộ môi trường (SQL Server, Redis, Jav
 
 ```bash
 # 1. Sao chép dự án và truy cập thư mục
-git clone https://github.com/tranminh09818/phong_kham_thu_y.git
+git clone https://github.com/th-ming/phong_kham_thu_y.git
 cd phong_kham_thu_y
 
 # 2. Tạo tệp .env cấu hình môi trường chạy Docker

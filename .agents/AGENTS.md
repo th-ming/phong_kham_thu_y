@@ -14,9 +14,8 @@
 - Email Vercel: `tranminh@gmail.com` (chưa phải thành viên team `tranminh09818-6178s-projects`)
 - Team Vercel: `tranminh09818-6178s-projects` (team của `tranminh09818`)
 - Project frontend: `rexi-vet-clinic` → https://rexi-vet-clinic.vercel.app
-- Project frontend (cũ?): `rexi-veterinary`
-- Deploy bằng lệnh: `npx vercel --prod --cwd Frontend` (cần login account `tranminh09818`)
-- Git repo: `https://github.com/tranminh09818/phong_kham_thu_y.git`
+- Deploy bằng lệnh: `npx vercel --prod --cwd Frontend` (cần login account `th-ming`)
+- Git repo: `https://github.com/th-ming/phong_kham_thu_y.git`
 
 ## Render
 - Backend: `rexi-backend` (Docker, free)

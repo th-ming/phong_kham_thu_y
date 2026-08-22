@@ -13,7 +13,7 @@
 ### Bước 1: Tạo Web Service trên Render
 1. Vào [Render Dashboard](https://dashboard.render.com/)
 2. Chọn **New +** → **Web Service**
-3. Connect repo: `tranminh09818/phong_kham_thu_y`
+3. Connect repo: `th-ming/phong_kham_thu_y`
 4. Cấu hình:
    - **Name**: `rexi-backend` (hoặc tên bạn muốn)
    - **Region**: Singapore (gần VN nhất)
@@ -70,7 +70,7 @@ Nếu trả về `200 OK` → Deploy thành công.
 ### Bước 1: Import Project
 1. Vào [Vercel Dashboard](https://vercel.com/)
 2. **Add New...** → **Project**
-3. Import `tranminh09818/phong_kham_thu_y`
+3. Import `th-ming/phong_kham_thu_y`
 4. Cấu hình:
    - **Framework Preset**: `Vite`
    - **Root Directory**: `Frontend/` (nếu được hỏi)
@@ -165,4 +165,4 @@ Nếu browser báo lỗi CORS:
 
 ## Liên Hệ
 - **Tác giả**: Trần Minh (FITA - VNUA)
-- **Repo**: https://github.com/tranminh09818/phong_kham_thu_y
+- **Repo**: https://github.com/th-ming/phong_kham_thu_y
