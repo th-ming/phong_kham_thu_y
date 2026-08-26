@@ -129,6 +129,20 @@ public class SystemController {
         }
     }
 
+    @GetMapping("/public-ai-keys")
+    public ResponseEntity<?> getPublicAiKeys() {
+        String groqKey = "";
+        try {
+            groqKey = jdbcTemplate.queryForObject(
+                "SELECT gia_tri FROM \"CauHinhHeThong\" WHERE ten_cau_hinh = 'groq_api_key'",
+                String.class);
+        } catch (Exception e) {}
+        return ResponseEntity.ok(Map.of(
+                "groq_key", groqKey != null ? groqKey : "",
+                "configured", groqKey != null && !groqKey.isBlank()
+        ));
+    }
+
     @PostMapping("/cau-hinh")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> saveCauHinh(@RequestBody Map<String, String> payload) {
