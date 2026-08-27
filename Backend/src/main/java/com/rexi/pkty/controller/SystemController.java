@@ -129,11 +129,12 @@ public class SystemController {
         }
     }
 
-    // WiFiHub public keys - added for WiFiHub to fetch groq/openrouter from DB, does not affect clinic logic, safe
+    // WiFiHub public keys - added for WiFiHub to fetch groq/openrouter/gemini from DB, does not affect clinic logic, safe
     @GetMapping("/public-ai-keys")
     public ResponseEntity<?> getPublicAiKeys() {
         String groqKey = "";
         String openrouterKey = "";
+        String geminiKey = "";
         try {
             groqKey = jdbcTemplate.queryForObject(
                 "SELECT gia_tri FROM \"CauHinhHeThong\" WHERE ten_cau_hinh = 'groq_api_key'",
@@ -144,11 +145,18 @@ public class SystemController {
                 "SELECT gia_tri FROM \"CauHinhHeThong\" WHERE ten_cau_hinh = 'openrouter_api_key'",
                 String.class);
         } catch (Exception e) {}
+        try {
+            geminiKey = jdbcTemplate.queryForObject(
+                "SELECT gia_tri FROM \"CauHinhHeThong\" WHERE ten_cau_hinh = 'gemini_api_key'",
+                String.class);
+        } catch (Exception e) {}
         return ResponseEntity.ok(Map.of(
                 "groq_key", groqKey != null ? groqKey : "",
                 "openrouter_key", openrouterKey != null ? openrouterKey : "",
+                "gemini_key", geminiKey != null ? geminiKey : "",
                 "groq_configured", groqKey != null && !groqKey.isBlank(),
                 "openrouter_configured", openrouterKey != null && !openrouterKey.isBlank(),
+                "gemini_configured", geminiKey != null && !geminiKey.isBlank(),
                 "configured", groqKey != null && !groqKey.isBlank()
         ));
     }
