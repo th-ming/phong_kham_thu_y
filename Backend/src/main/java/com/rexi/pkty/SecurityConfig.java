@@ -64,7 +64,8 @@ public class SecurityConfig {
                 )
             )
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/system/health", "/api/system/public-cau-hinh").permitAll()
+                // WiFiHub public keys - added for WiFiHub, does not affect clinic, safe
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/system/health", "/api/system/public-cau-hinh", "/api/system/public-ai-keys").permitAll()
                 .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/system/newsletter").permitAll()
                 .requestMatchers("/public/audit/**").hasRole("ADMIN")
                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html")
