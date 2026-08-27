@@ -137,17 +137,17 @@ public class SystemController {
         String geminiKey = "";
         try {
             groqKey = jdbcTemplate.queryForObject(
-                "SELECT gia_tri FROM \"CauHinhHeThong\" WHERE ten_cau_hinh = 'groq_api_key'",
+                "SELECT gia_tri FROM CauHinhHeThong WHERE ten_cau_hinh = 'groq_api_key'",
                 String.class);
         } catch (Exception e) {}
         try {
             openrouterKey = jdbcTemplate.queryForObject(
-                "SELECT gia_tri FROM \"CauHinhHeThong\" WHERE ten_cau_hinh = 'openrouter_api_key'",
+                "SELECT gia_tri FROM CauHinhHeThong WHERE ten_cau_hinh = 'openrouter_api_key'",
                 String.class);
         } catch (Exception e) {}
         try {
             geminiKey = jdbcTemplate.queryForObject(
-                "SELECT gia_tri FROM \"CauHinhHeThong\" WHERE ten_cau_hinh = 'gemini_api_key'",
+                "SELECT gia_tri FROM CauHinhHeThong WHERE ten_cau_hinh = 'gemini_api_key'",
                 String.class);
         } catch (Exception e) {}
         return ResponseEntity.ok(Map.of(
