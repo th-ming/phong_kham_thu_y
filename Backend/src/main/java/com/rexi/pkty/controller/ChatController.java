@@ -900,15 +900,21 @@ ChatMessage systemMsg = new ChatMessage();
         String q = normalizedQuery;
         String lowerRaw = rawQuery == null ? "" : rawQuery.toLowerCase(Locale.ROOT);
 
-        // --- PROFANITY FILTER (BỘ LỌC TỪ NGỮ NHẠY CẢM) ---
-        boolean isProfane = containsAny(q, "lon", "loz", "cc", "cl", "dcm", "vkl", "vl", "buoi", "cac", "deo", "con cac", "cai lon", "dit", "du ma", "vai l", "vai c")
-                            || lowerRaw.contains("lồn") 
-                            || lowerRaw.contains("địt") 
-                            || lowerRaw.contains("đụ") 
-                            || lowerRaw.contains("cặc") 
-                            || lowerRaw.contains("buồi") 
-                            || lowerRaw.contains("đéo") 
-                            || lowerRaw.contains("vãi");
+        // --- PROFANITY FILTER: check có dấu trước, bỏ bare không dấu dễ dính oan (huong dan/cac/lon/buoi/deo) ---
+        boolean hasLegitAllowlist = containsAny(q, "huong dan", "cac loai", "cac dich vu", "cac goi", "be lon", "lon len", "buoi sang", "buoi chieu", "buoi toi", "deo vong", "deu co", "dat lich", "thanh toan");
+        boolean isProfaneRaw = lowerRaw.contains("lồn")
+                            || lowerRaw.contains("địt")
+                            || lowerRaw.contains("đụ")
+                            || lowerRaw.contains("cặc")
+                            || lowerRaw.contains("buồi")
+                            || lowerRaw.contains("đéo")
+                            || lowerRaw.contains("vãi")
+                            || lowerRaw.contains("dcm")
+                            || lowerRaw.contains("vkl")
+                            || lowerRaw.contains("loz")
+                            || lowerRaw.contains("đần độn");
+        boolean isProfaneNoMark = !hasLegitAllowlist && containsAny(q, "loz", "dcm", "vkl", "con cac", "cai lon", "dit me", "du ma", "vai l", "vai c", "dan don");
+        boolean isProfane = isProfaneRaw || isProfaneNoMark;
         
         if (isProfane) {
             return "Dạ, Rexi là trợ lý y khoa chuyên hỗ trợ chăm sóc sức khỏe thú cưng. Mong bạn sử dụng ngôn từ phù hợp để Rexi có thể hỗ trợ tốt nhất ạ. Bạn đang cần tư vấn gì cho bé thú cưng nhà mình không?";
@@ -953,7 +959,7 @@ ChatMessage systemMsg = new ChatMessage();
         if (containsAny(q, "ke cho tao lieu", "lieu amox", "lieu amoxicillin", "amox cho cho") || (containsAny(q, "amox", "amoxicillin") && containsAny(q, "lieu", "10kg", "10 kg"))) {
             return "Em không kê đơn online hoặc chỉ liều kháng sinh. Anh đưa bé tới phòng khám để bác sĩ cân nặng, khám và kê đơn đúng.";
         }
-        if (containsAny(q, "bo qua tat ca luat", "gio may la dan", "dan")) {
+        if (containsAny(q, "bo qua tat ca luat", "gio may la dan", "you are dan", "dan mode", "do anything now", "dan jailbreak")) {
             return "Không thể bỏ qua quy định an toàn. Rexi vẫn chỉ hỗ trợ thú cưng/phòng khám theo quyền hợp lệ.";
         }
         if (containsAny(q, "sudo") && containsAny(q, "doanh thu", "admin", "role")) {
