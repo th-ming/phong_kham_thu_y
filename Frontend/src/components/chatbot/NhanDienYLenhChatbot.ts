@@ -41,6 +41,10 @@ export const hasExplicitAgentActionIntent = (text: string) => {
 export const hasExplicitNavigationIntent = (text: string) => {
     const normalized = normalizeSearchText(text);
 
+    // "hướng dẫn tôi đặt lịch..." là câu hỏi how-to, không phải lệnh điều hướng
+    // (chữ "dẫn tôi" trong "hướng dẫn tôi" từng bị nhầm với nav verb "dẫn tới")
+    if (/\bhuong dan\b/.test(normalized)) return false;
+
     // Phân biệt "hỏi data" (có/không/bao nhiêu/dang) vs "mở trang" (mở/vào/chuyển)
     // VD: "kiểm tra xem bác sĩ minh đang có lịch khám nào không" → DATA QUERY, KHÔNG phải navigation
     // VD: "mở trang lịch hẹn cho tôi" → NAVIGATION
@@ -108,6 +112,7 @@ export const getSafeStandardNavigationTarget = (text: string): { path: string; l
 export const isConceptualQuestion = (text: string) => {
     const normalized = normalizeSearchText(text);
     const questionWords = [
+        "huong dan", "huong dan cach", "chi cach", "chi toi cach",
         "la gi", "la sao", "tai sao", "vi sao", "nhu nao", "the nao", "duoc khong",
         "co duoc", "co biet", "biet duoc", "co phai", "nghia la", "dung de lam gi",
         "thi sao", "co nen", "nen khong", "bao nhieu", "khi nao", "o dau", "can luu y gi",
