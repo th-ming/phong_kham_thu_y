@@ -1913,6 +1913,11 @@ ChatMessage systemMsg = new ChatMessage();
         if (!hasMedia && isDoctorListQuery(normalizedQuery)) {
             return new ChatRequestPlan(ChatRoute.DB_LOCAL, true, false, false, true, "database");
         }
+        // Câu hỏi bảng giá phải trả dữ liệu thật từ DB, không phụ thuộc AI classifier
+        // (classifier thật từng trả CLINICAL_QUESTION cho "bang gia dich vu" rồi đoán giá)
+        if (!hasMedia && isServicePriceQuery(normalizedQuery)) {
+            return new ChatRequestPlan(ChatRoute.DB_LOCAL, true, false, false, true, "database");
+        }
 
         // Cốt lõi của sự thông minh: Luôn hỏi AI phân loại ý định trước
         String aiIntent = "OTHER";
