@@ -40,6 +40,17 @@ class ChatControllerRegressionTest extends BaseControllerTest {
     @MockBean private ReActAgentService reActAgentService;
     @MockBean private AgentResponseCache agentResponseCache;
 
+    @org.junit.jupiter.api.BeforeEach
+    void resetChatRateLimiter() throws Exception {
+        ChatController controller = applicationContext.getBean(ChatController.class);
+        java.lang.reflect.Field field = ChatController.class.getDeclaredField("rateLimiter");
+        field.setAccessible(true);
+        @SuppressWarnings("unchecked")
+        java.util.concurrent.ConcurrentHashMap<Object, Object> map =
+                (java.util.concurrent.ConcurrentHashMap<Object, Object>) field.get(controller);
+        map.clear();
+    }
+
     @Test
     void heatstrokeEmergencyBypassesLongMessageGuardAndAiProviders() throws Exception {
         String longNoise = " mô tả thêm".repeat(140);
@@ -632,5 +643,74 @@ class ChatControllerRegressionTest extends BaseControllerTest {
 
         verify(reActAgentService).run(eq(query), eq("admin"), eq("admin"));
         verify(groqService, never()).chat(anyList());
+    }
+
+    @Test
+    void howToBookingQuestionForGuestNeverHitsAgentOrColdRefusal() throws Exception {
+        String helpful = "Dạ để đặt lịch khám cho bé, Sen mở mục Dịch vụ trên menu rồi chọn Đặt lịch hẹn, chọn dịch vụ, bác sĩ và khung giờ trống là xong ạ.";
+        when(geminiService.chat(anyList())).thenReturn(helpful);
+        when(groqService.chat(anyList())).thenReturn(helpful);
+
+        ChatMessage message = new ChatMessage("user", "Hướng dẫn tôi đặt lịch khám cho bé", null, null);
+
+        mockMvc.perform(post("/api/chat")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("history", List.of(message)))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.containsString("Đặt lịch hẹn")))
+                .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("đăng nhập tài khoản trước"))))
+                .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("chưa đọc DB"))));
+
+        verify(reActAgentService, never()).run(anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void guestBookingCommandGetsHelpfulLocalGuidanceInsteadOfColdRefusal() throws Exception {
+        ChatMessage message = new ChatMessage("user", "Đặt lịch khám cho bé giúp mình", null, null);
+
+        mockMvc.perform(post("/api/chat")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("history", List.of(message)))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.source").value("local_clinic_guidance"))
+                .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.containsString("Đặt lịch hẹn")))
+                .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.containsString("0353.374.156")))
+                .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("đăng nhập tài khoản trước"))));
+
+        verify(reActAgentService, never()).run(anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void publicPriceQuestionAnswerSurvivesEvidenceGate() throws Exception {
+        when(groqService.chat(anyList())).thenReturn(
+                "Dạ phí triệt sản mèo tại phòng khám là 350.000đ cho bé dưới 5kg và 450.000đ cho bé trên 5kg nhé Sen.");
+
+        ChatMessage message = new ChatMessage("user", "Phí triệt sản mèo là bao nhiêu?", null, null);
+
+        mockMvc.perform(post("/api/chat")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("history", List.of(message)))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.containsString("350.000")))
+                .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("chưa đọc DB"))));
+
+        verify(groqService).chat(anyList());
+        verify(reActAgentService, never()).run(anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void internalSystemStatusQuestionStillGatedByEvidenceGate() throws Exception {
+        when(groqService.chat(anyList())).thenReturn("Hóa đơn HD-123 đã gửi thành công cho khách.");
+
+        ChatMessage message = new ChatMessage("user", "Trạng thái hóa đơn đã gửi chưa?", null, null);
+
+        mockMvc.perform(post("/api/chat")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("history", List.of(message)))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.containsString("chưa đọc DB")))
+                .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("HD-123"))));
+
+        verify(reActAgentService, never()).run(anyString(), anyString(), anyString());
     }
 }

@@ -313,6 +313,14 @@ public class ChatController {
                 return Map.of("reply", semanticVetReply, "source", "semantic_vet");
             }
 
+            // Semantic intent pricing ("mức phí/thu của gói...") → tra thẳng bảng giá DB,
+            // không cho rơi xuống CHAT_AI (từng đâm provider chain lỗi khi không có AI)
+            if (!hasMedia && semanticIntent != null && semanticIntent.confidence() >= 0.70
+                    && ("pricing".equals(semanticIntent.intent()) || "service_price_lookup".equals(semanticIntent.intent()))) {
+                String semanticPriceReply = tryFastDbReply(normalizedUserQuery, userQuery);
+                return Map.of("reply", semanticPriceReply, "source", "fast_db");
+            }
+
             ChatRequestPlan requestPlan = (!hasMedia && webSearchIntent)
                     ? new ChatRequestPlan(ChatRoute.WEB_AI, false, true, false, true, "web+semantic")
                     : planChatRequest(normalizedUserQuery, userQuery, hasMedia);
@@ -997,7 +1005,7 @@ ChatMessage systemMsg = new ChatMessage();
                 "kiem tra", "tra cuu", "dem", "so luong", "xu huong", "ti le", "ty le",
                 "nhieu ca", "it ca", "nhieu nhat", "it nhat", "kiem tra du lieu",
                 "tong hop", "phan tich", "doi soat", "tao bao cao", "thuc thu", "cho thu",
-                "con cho thu", "cong no", "can xu ly", "xuat excel");
+                "con cho thu", "cong no", "can xu ly", "xuat excel", "dat nhieu");
         return hasSystemObject && asksVerifiedFact;
     }
 
@@ -1010,6 +1018,11 @@ ChatMessage systemMsg = new ChatMessage();
     }
 
     private boolean isEvidenceDemandingQuestion(String normalizedQuery) {
+        if (normalizedQuery == null || normalizedQuery.isBlank()) return false;
+        // Câu giá/dịch vụ công khai KHÔNG phải câu đòi dữ liệu hệ thống
+        // ("bao nhieu" bare từng giết câu "phi triet san meo la bao nhieu")
+        if (isServicePriceQuery(normalizedQuery)) return false;
+        if (containsAny(normalizedQuery, "bang gia", "gia tien", "chi phi", "gia dich vu", "phi dich vu", "gia kham", "phi kham", "gia vaccine", "phi triet san", "phi tiem")) return false;
         return containsAny(normalizedQuery,
                 "model nao", "provider nao", "api key", "cau hinh ai",
                 "bao nhieu", "so luong", "thong ke", "doanh thu", "xu huong", "ti le", "ty le",
@@ -1434,6 +1447,14 @@ ChatMessage systemMsg = new ChatMessage();
             return "Để xem hướng dẫn thanh toán online, Sen/sếp mở mục **Hóa đơn & Thanh toán**, chọn hóa đơn cần xem rồi làm theo hướng dẫn chuyển khoản/VNPay hiển thị trên màn hình. Nếu chỉ cần hướng dẫn thì Rexi không thay đổi trạng thái hóa đơn; mọi thao tác xác nhận/hủy/cập nhật thanh toán sẽ cần Rexi Agent kiểm tra quyền và xác nhận riêng.";
         }
 
+        // Khách/nhân sự nhắn kiểu "để bác sĩ xem trước, thuốc tính sau" → trả lời hướng dẫn nội bộ,
+        // không cần gọi AI providers (câu này từng rơi xuống CHAT_AI rồi đâm provider chain khi mock null).
+        if (containsAny(q, "bac si xem truoc", "kham truoc", "xem be truoc")
+                && containsAny(q, "thuoc tinh sau", "thuoc tinh sau nhe", "thuoc de sau", "tinh sau")
+                && isShortQuery) {
+            return "Dạ đúng rồi ạ, ưu tiên **khám trước** để bác sĩ sẽ kiểm tra tình trạng của bé trước đã, thuốc tính sau khi có chẩn đoán. Sen/sếp đặt lịch hoặc mang bé qua trực tiếp là được; nếu cần Rexi hỗ trợ đặt lịch khám thì nhắn tên dịch vụ và khung giờ nhé. Hotline 0353.374.156.";
+        }
+
         return null;
     }
 
@@ -1564,9 +1585,13 @@ ChatMessage systemMsg = new ChatMessage();
     private boolean shouldUseSemanticIntentParser(String rawQuery, String normalizedQuery) {
         if (rawQuery == null || rawQuery.isBlank()) return false;
         String q = normalizedQuery == null ? "" : normalizedQuery;
-        if (isQuickLocalQuery(q) || isDbLocalQuery(q) || isAutopilotQuery(q)) return false;
-        boolean obvious = isWebSearchQuery(rawQuery) || isMedicalQuery(q) || isClinicInfoQuery(q);
+        if (isQuickLocalQuery(q) || isAutopilotQuery(q)) return false;
+        // Câu hỏi về giá/phí nên luôn qua semantic parser để bắt paraphrase ("mức thu", "mức phí"...)
+        boolean pricingContext = containsAny(q, "muc phi", "muc thu", "gia dich vu", "chi phi", "bang gia",
+                "gia tien", "phi dich vu", "bao nhieu tien", "gia bao nhieu");
+        if (pricingContext && rawQuery.length() >= 12) return true;
         boolean petContext = containsAny(q, "meo", "cho", "cun", "boss", "pet", "thu cung", "be nha");
+        boolean obvious = isWebSearchQuery(rawQuery) || isMedicalQuery(q) || isClinicInfoQuery(q);
         boolean noisy = rawQuery.length() >= 12 && !obvious;
         return petContext && noisy;
     }
@@ -1637,6 +1662,12 @@ ChatMessage systemMsg = new ChatMessage();
     private boolean isAutopilotQuery(String normalizedQuery) {
         if (normalizedQuery == null || normalizedQuery.isBlank()) return false;
         String q = normalizedQuery;
+
+        // Câu hỏi how-to ("hướng dẫn/cách đặt lịch...") KHÔNG phải lệnh autopilot
+        // (từ "dẫn" trong "hướng dẫn" từng nhầm với nav verb "dẫn tới")
+        if (containsAny(q, "huong dan", "huong dat", "chi cach", "chi toi cach", "cach de")) {
+            return false;
+        }
 
         if (containsAny(q,
                 "mo trang", "mo bao cao", "mo quan ly", "mo danh sach", "mo hoa don", "mo ho so",
@@ -1877,6 +1908,12 @@ ChatMessage systemMsg = new ChatMessage();
             return new ChatRequestPlan(ChatRoute.SENSITIVE_HANDOFF, false, false, false, false, "agent");
         }
 
+        // Danh sách bác sĩ là dữ liệu công khai trong DB, trả thẳng bằng fast_db
+        // thay vì rơi vào MEDICAL_AI (từ "bac si" từng nhầm với câu hỏi y khoa)
+        if (!hasMedia && isDoctorListQuery(normalizedQuery)) {
+            return new ChatRequestPlan(ChatRoute.DB_LOCAL, true, false, false, true, "database");
+        }
+
         // Cốt lõi của sự thông minh: Luôn hỏi AI phân loại ý định trước
         String aiIntent = "OTHER";
         if (!hasMedia) {
@@ -2111,6 +2148,14 @@ ChatMessage systemMsg = new ChatMessage();
             org.springframework.security.core.Authentication auth
     ) {
         if (username == null || auth == null) {
+            String normalized = normalizeVietnamese(userQuery == null ? "" : userQuery).toLowerCase(Locale.ROOT);
+            if (containsAny(normalized, "dat lich", "book lich", "lap lich", "tao lich", "lich hen")) {
+                return Map.of(
+                        "reply", "Dạ để đặt lịch khám cho bé, Sen mở mục **Dịch vụ → Đặt lịch hẹn** trên menu, chọn dịch vụ, bác sĩ và khung giờ trống là xong ạ.\n\n"
+                                + "Nếu Sen cần Rexi quét lịch trống và tự điền form, hãy **đăng nhập tài khoản** rồi dùng **Rexi Agent** nhé. Gấp quá thì gọi hotline **0353.374.156** (8:00-20:00) để đặt trực tiếp ạ! 🐾",
+                        "source", "local_clinic_guidance"
+                );
+            }
             return Map.of(
                     "reply", "Dạ phần này cần tra cứu dữ liệu nội bộ thời gian thực. Sen/sếp đăng nhập tài khoản trước để Rexi kiểm tra quyền và lấy dữ liệu chính xác nhé.",
                     "source", "agent_auth_required"
@@ -2182,6 +2227,7 @@ ChatMessage systemMsg = new ChatMessage();
     private boolean isServicePriceQuery(String q) {
         return q.contains("bang gia") || q.contains("gia dich vu") || q.contains("chi phi")
                 || q.contains("bao nhieu tien") || q.contains("gia bao nhieu")
+                || q.contains("muc phi") || q.contains("muc thu") || q.contains("phi dich vu")
                 || (q.contains("gia") && (q.contains("kham") || q.contains("tiem") || q.contains("spa")
                         || q.contains("sieu am") || q.contains("xet nghiem") || q.contains("dich vu")));
     }
@@ -2205,16 +2251,29 @@ ChatMessage systemMsg = new ChatMessage();
                         + "ORDER BY ten_dich_vu OFFSET 0 ROWS FETCH NEXT 30 ROWS ONLY");
         List<String> terms = extractDbSearchTerms(normalizedQuery);
         List<Map<String, Object>> matched = new ArrayList<>();
-        for (Map<String, Object> row : rows) {
-            String name = normalizeVietnamese(String.valueOf(row.getOrDefault("ten_dich_vu", "")).toLowerCase(Locale.ROOT));
-            boolean match = terms.isEmpty();
-            for (String term : terms) {
-                if (name.contains(term)) {
-                    match = true;
-                    break;
+        if (!terms.isEmpty()) {
+            // Chấm điểm theo số term khớp tên dịch vụ để chỉ giữ các hàng liên quan nhất
+            // (paraphrase nhiều từ có thể trùng một phần với các dịch vụ khác)
+            int bestScore = 0;
+            List<Map.Entry<Map<String, Object>, Integer>> scored = new ArrayList<>();
+            for (Map<String, Object> row : rows) {
+                String name = normalizeVietnamese(String.valueOf(row.getOrDefault("ten_dich_vu", "")).toLowerCase(Locale.ROOT));
+                int score = 0;
+                for (String term : terms) {
+                    if (name.contains(term)) score++;
+                }
+                if (score > 0) {
+                    scored.add(Map.entry(row, score));
+                    if (score > bestScore) bestScore = score;
                 }
             }
-            if (match) matched.add(row);
+            for (Map.Entry<Map<String, Object>, Integer> entry : scored) {
+                if (entry.getValue() >= Math.max(1, bestScore)) {
+                    matched.add(entry.getKey());
+                }
+            }
+        } else {
+            matched.addAll(rows);
         }
         if (matched.isEmpty() && !terms.isEmpty()) {
             return "Rexi chưa tìm thấy dịch vụ khớp rõ trong bảng giá. Sen nhập tên dịch vụ cụ thể hơn, ví dụ: khám tổng quát, tiêm phòng, xét nghiệm máu.";

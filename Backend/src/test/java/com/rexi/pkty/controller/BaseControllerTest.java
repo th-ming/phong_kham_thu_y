@@ -6,6 +6,8 @@ import com.rexi.pkty.security.CookieUtil;
 import com.rexi.pkty.security.JwtUtil;
 import com.rexi.pkty.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.context.ApplicationContext;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -17,6 +19,9 @@ public abstract class BaseControllerTest {
 
     @Autowired
     protected MockMvc mockMvc;
+
+    @Autowired
+    protected ApplicationContext applicationContext;
 
     @Autowired
     protected ObjectMapper objectMapper;
