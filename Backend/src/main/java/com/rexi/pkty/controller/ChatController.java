@@ -1501,7 +1501,9 @@ ChatMessage systemMsg = new ChatMessage();
             return "Sau khi bé vừa khám xong, Sen theo dõi 24-48 giờ đầu: ăn uống, nôn/tiêu chảy, mức tỉnh táo, vết tiêm/vết thương, nhịp thở và việc đi vệ sinh. Cho bé nghỉ ở nơi yên tĩnh, dùng thuốc đúng đơn nếu bác sĩ đã kê, không tự thêm thuốc người. Cần gọi lại phòng khám hoặc đưa bé tái khám sớm nếu bé lừ đừ tăng, bỏ ăn, nôn nhiều, khó thở, sốt, chảy máu, sưng đau nhiều hoặc có dấu hiệu lạ sau dùng thuốc.";
         }
 
-        if (isVaccineScheduleQuery(q) && isShortQuery) {
+        // Câu hỏi giá/phí (chi phi, bao nhieu...) không được branch lịch vaccine nuốt —
+        // phải chảy xuống route fast_db để trả bảng giá thật từ DB
+        if (isVaccineScheduleQuery(q) && isShortQuery && !isServicePriceQuery(q)) {
             return "Lịch vaccine phụ thuộc tuổi, loài, vaccine đã tiêm và nguy cơ tiếp xúc. Thông thường chó/mèo con bắt đầu tiêm từ khoảng 6-8 tuần tuổi, nhắc theo lịch bác sĩ đến khi hoàn tất mũi cơ bản, sau đó nhắc định kỳ hằng năm hoặc theo khuyến cáo từng loại vaccine. Sen nên mang sổ tiêm/ảnh mũi cũ khi đặt lịch để bác sĩ Rexi chốt lịch chính xác, không tiêm khi bé đang sốt, tiêu chảy hoặc quá yếu.";
         }
 

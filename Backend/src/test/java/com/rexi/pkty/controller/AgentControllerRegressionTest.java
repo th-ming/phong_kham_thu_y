@@ -40,7 +40,7 @@ class AgentControllerRegressionTest extends BaseControllerTest {
         TaiKhoan taiKhoan = new TaiKhoan();
         taiKhoan.setId_tai_khoan("TK-ADMIN");
         when(taiKhoanRepository.findByTenDangNhap("admin")).thenReturn(Optional.of(taiKhoan));
-        when(reActAgentService.run(eq("ping"), eq("admin"), eq("ADMIN")))
+        when(reActAgentService.run(eq("ping"), eq("admin"), eq("ADMIN"), any()))
                 .thenReturn(new ReActAgentService.ReActResult(
                         "Rexi đã sẵn sàng.",
                         List.of(new ReActAgentService.ReActStep("FINAL", "Rexi đã sẵn sàng.", null, null, null)),

@@ -109,12 +109,25 @@ public class SystemController {
             List<Map<String, Object>> rows = jdbcTemplate.queryForList("SELECT ten_cau_hinh, gia_tri FROM CauHinhHeThong");
             Map<String, String> configs = new HashMap<>();
             for (Map<String, Object> row : rows) {
-                configs.put((String) row.get("ten_cau_hinh"), (String) row.get("gia_tri"));
+                String tenCauHinh = (String) row.get("ten_cau_hinh");
+                String giaTri = (String) row.get("gia_tri");
+                // Mask giá trị nhạy cảm (password/secret/key/token) — giữ nguyên key name để FE không vỡ
+                if (isSensitiveConfigKey(tenCauHinh)) {
+                    giaTri = maskSecret(giaTri);
+                }
+                configs.put(tenCauHinh, giaTri);
             }
             return ResponseEntity.ok(configs);
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of("message", "Lỗi tải cấu hình"));
         }
+    }
+
+    private boolean isSensitiveConfigKey(String tenCauHinh) {
+        if (tenCauHinh == null) return false;
+        String lower = tenCauHinh.toLowerCase(Locale.ROOT);
+        return lower.contains("password") || lower.contains("secret")
+                || lower.contains("key") || lower.contains("token");
     }
 
     @GetMapping("/public-cau-hinh")
@@ -129,7 +142,7 @@ public class SystemController {
         }
     }
 
-    // WiFiHub public keys - added for WiFiHub to fetch groq/openrouter/gemini from DB, does not affect clinic logic, safe
+    // WiFiHub public keys - chỉ trả trạng thái configured + key đã mask, KHÔNG trả key thô
     @GetMapping("/public-ai-keys")
     public ResponseEntity<?> getPublicAiKeys() {
         String groqKey = "";
@@ -150,15 +163,27 @@ public class SystemController {
                 "SELECT gia_tri FROM CauHinhHeThong WHERE ten_cau_hinh = 'gemini_api_key'",
                 String.class);
         } catch (Exception e) {}
+        boolean groqConfigured = groqKey != null && !groqKey.isBlank();
+        boolean openrouterConfigured = openrouterKey != null && !openrouterKey.isBlank();
+        boolean geminiConfigured = geminiKey != null && !geminiKey.isBlank();
         return ResponseEntity.ok(Map.of(
-                "groq_key", groqKey != null ? groqKey : "",
-                "openrouter_key", openrouterKey != null ? openrouterKey : "",
-                "gemini_key", geminiKey != null ? geminiKey : "",
-                "groq_configured", groqKey != null && !groqKey.isBlank(),
-                "openrouter_configured", openrouterKey != null && !openrouterKey.isBlank(),
-                "gemini_configured", geminiKey != null && !geminiKey.isBlank(),
-                "configured", groqKey != null && !groqKey.isBlank()
+                "groq_key", groqConfigured ? maskSecret(groqKey) : "",
+                "openrouter_key", openrouterConfigured ? maskSecret(openrouterKey) : "",
+                "gemini_key", geminiConfigured ? maskSecret(geminiKey) : "",
+                "groq_configured", groqConfigured,
+                "openrouter_configured", openrouterConfigured,
+                "gemini_configured", geminiConfigured,
+                "configured", groqConfigured
         ));
+    }
+
+    // Mask key/secret: chỉ giữ 4 ký tự đầu và 4 ký tự cuối
+    private String maskSecret(String value) {
+        if (value == null) return "";
+        String trimmed = value.trim();
+        if (trimmed.isEmpty()) return "";
+        if (trimmed.length() <= 8) return "***";
+        return trimmed.substring(0, 4) + "..." + trimmed.substring(trimmed.length() - 4);
     }
 
     @PostMapping("/cau-hinh")

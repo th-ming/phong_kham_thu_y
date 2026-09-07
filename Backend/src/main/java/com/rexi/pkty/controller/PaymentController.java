@@ -338,13 +338,14 @@ public class PaymentController {
     // =========================================================================
     // CẤU HÌNH TÀI KHOẢN NGÂN HÀNG NHẬN TIỀN (VIETQR)
     // =========================================================================
-    @org.springframework.beans.factory.annotation.Value("${vietqr.bank.id:MB}")
+    // Không hardcode STK/tên chủ TK trong source — lấy từ DB (CauHinhHeThong) hoặc env
+    @org.springframework.beans.factory.annotation.Value("${vietqr.bank.id:}")
     private String BANK_ID;
 
-    @org.springframework.beans.factory.annotation.Value("${vietqr.account.no:***REMOVED***}")
+    @org.springframework.beans.factory.annotation.Value("${vietqr.account.no:}")
     private String ACCOUNT_NO;
 
-    @org.springframework.beans.factory.annotation.Value("${vietqr.account.name:***REMOVED***}")
+    @org.springframework.beans.factory.annotation.Value("${vietqr.account.name:}")
     private String ACCOUNT_NAME;
 
     private String getVietQrBankId() {
@@ -399,11 +400,19 @@ public class PaymentController {
             // Nội dung ck mẫu: REXI HD123
             String addInfo = "REXI " + idHoaDon;
 
+            String bankId = getVietQrBankId();
+            String accountNo = getVietQrAccountNo();
+            String accountName = getVietQrAccountName();
+            if (bankId.isBlank() || accountNo.isBlank() || accountName.isBlank()) {
+                return ResponseEntity.status(503).body(Map.of(
+                        "message", "Chưa cấu hình tài khoản ngân hàng nhận tiền. Vui lòng liên hệ quản trị viên."));
+            }
+
             String qrUrl = String.format(
                     "https://img.vietqr.io/image/%s-%s-compact2.png?amount=%s&addInfo=%s&accountName=%s",
-                    getVietQrBankId(), getVietQrAccountNo(), amount,
+                    bankId, accountNo, amount,
                     java.net.URLEncoder.encode(addInfo, java.nio.charset.StandardCharsets.UTF_8),
-                    java.net.URLEncoder.encode(getVietQrAccountName(), java.nio.charset.StandardCharsets.UTF_8));
+                    java.net.URLEncoder.encode(accountName, java.nio.charset.StandardCharsets.UTF_8));
 
             return ResponseEntity.ok(Map.of(
                     "qr_url", qrUrl,

@@ -699,6 +699,29 @@ class ChatControllerRegressionTest extends BaseControllerTest {
     }
 
     @Test
+    void vaccinePriceQuestionRoutesToFastDbInsteadOfVaccineScheduleBranch() throws Exception {
+        when(jdbcTemplate.queryForList(anyString())).thenReturn(List.of(Map.of(
+                "ten_dich_vu", "Tiêm vaccine dại chó",
+                "gia", 150000,
+                "thoi_luong_phut", 15
+        )));
+
+        ChatMessage message = new ChatMessage("user", "chi phí tiêm vaccine cho chó là bao nhiêu", null, null);
+
+        mockMvc.perform(post("/api/chat")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("history", List.of(message)))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.source").value("fast_db"))
+                .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.containsString("Tiêm vaccine dại chó")))
+                .andExpect(jsonPath("$.reply").value(org.hamcrest.Matchers.containsString("150,000")));
+
+        verify(groqService, never()).chat(anyList());
+        verify(openRouterService, never()).chat(anyList());
+        verify(reActAgentService, never()).run(anyString(), anyString(), anyString());
+    }
+
+    @Test
     void internalSystemStatusQuestionStillGatedByEvidenceGate() throws Exception {
         when(groqService.chat(anyList())).thenReturn("Hóa đơn HD-123 đã gửi thành công cho khách.");
 
