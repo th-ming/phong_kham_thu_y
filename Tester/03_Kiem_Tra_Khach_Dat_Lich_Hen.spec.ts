@@ -22,8 +22,8 @@ test.describe('Kiểm thử luồng Đặt lịch hẹn dành cho Khách hàng (
         await page.goto(`${BASE_URL}/dang-nhap`);
 
         // 2. Nhập tài khoản Khách hàng thực tế
-        await page.getByPlaceholder('Tên đăng nhập').fill('***REMOVED***');
-        await page.getByPlaceholder('Mật khẩu').fill('***REMOVED***');
+        await page.getByPlaceholder('Tên đăng nhập').fill('__CHANGE_ME__');
+        await page.getByPlaceholder('Mật khẩu').fill('__CHANGE_ME__');
         await page.getByRole('button', { name: 'Đăng nhập ngay' }).click();
 
         // 3. Chờ điều hướng vào Giao diện Khách hàng thành công

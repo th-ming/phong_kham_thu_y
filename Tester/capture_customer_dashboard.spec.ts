@@ -9,8 +9,8 @@ test("Capture Customer Dashboard to verify padding", async ({ page }) => {
     // Login
     await page.goto(FRONTEND + "/dang-nhap", { waitUntil: "load", timeout: 90000 });
     await page.waitForTimeout(2000);
-    await page.locator("input").nth(0).fill("***REMOVED***");
-    await page.locator("input[type=password]").first().fill("***REMOVED***");
+    await page.locator("input").nth(0).fill("__CHANGE_ME__");
+    await page.locator("input[type=password]").first().fill("__CHANGE_ME__");
     await page.locator("button[type=submit]").first().click();
     
     // Wait for redirect to dashboard
