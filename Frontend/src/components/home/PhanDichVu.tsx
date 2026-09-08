@@ -155,8 +155,8 @@ const PhanDichVu: React.FC = () => {
                         left: 0;
                         right: 0;
                         border-radius: 999px;
-                        background: linear-gradient(180deg, #22d3ee, #14b8a6);
-                        box-shadow: 0 0 10px rgba(34, 211, 238, 0.45);
+                        background: linear-gradient(180deg, #e07a3f, #e07a3f);
+                        box-shadow: 0 0 10px rgba(224, 122, 63, 0.45);
                         transition: top 0.08s linear;
                     }
                     @keyframes serviceCtaShine {
@@ -299,7 +299,7 @@ const PhanDichVu: React.FC = () => {
                             height: 44px !important;
                             border-radius: 14px !important;
                             margin-bottom: 12px !important;
-                            background: rgba(34, 211, 238, 0.2) !important;
+                            background: rgba(224, 122, 63, 0.2) !important;
                             border: 1px solid rgba(255,255,255,0.28) !important;
                             backdrop-filter: blur(8px);
                         }
@@ -402,7 +402,7 @@ const PhanDichVu: React.FC = () => {
                             overscroll-behavior-y: auto;
                             -webkit-overflow-scrolling: touch;
                             scrollbar-width: thin;
-                            scrollbar-color: rgba(34, 211, 238, 0.45) transparent;
+                            scrollbar-color: rgba(224, 122, 63, 0.45) transparent;
                         }
                         .service-list-container::-webkit-scrollbar {
                             width: 4px;
@@ -411,7 +411,7 @@ const PhanDichVu: React.FC = () => {
                             background: transparent;
                         }
                         .service-list-container::-webkit-scrollbar-thumb {
-                            background: rgba(34, 211, 238, 0.45);
+                            background: rgba(224, 122, 63, 0.45);
                             border-radius: 999px;
                         }
                         .service-tab {

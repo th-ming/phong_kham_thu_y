@@ -397,18 +397,18 @@ const DatLichHen: React.FC = () => {
           scroll-behavior: smooth;
           scrollbar-gutter: stable;
           border-radius: 24px;
-          border: 1px solid rgba(34, 211, 238, 0.12);
+          border: 1px solid rgba(224, 122, 63, 0.12);
           background: var(--primary-light);
         }
         .booking-service-scroll::-webkit-scrollbar {
           width: 10px;
         }
         .booking-service-scroll::-webkit-scrollbar-track {
-          background: rgba(34, 211, 238, 0.08);
+          background: rgba(224, 122, 63, 0.08);
           border-radius: 999px;
         }
         .booking-service-scroll::-webkit-scrollbar-thumb {
-          background: linear-gradient(180deg, var(--primary), #14b8a6);
+          background: linear-gradient(180deg, var(--primary), #e07a3f);
           border-radius: 999px;
           border: 2px solid var(--surface);
         }
@@ -432,14 +432,14 @@ const DatLichHen: React.FC = () => {
           transform: translateX(-50%);
           padding: 8px 16px;
           border-radius: 999px;
-          background: rgba(34, 211, 238, 0.18);
-          border: 1px solid rgba(34, 211, 238, 0.38);
+          background: rgba(224, 122, 63, 0.18);
+          border: 1px solid rgba(224, 122, 63, 0.38);
           color: var(--primary);
           font-size: 0.78rem;
           font-weight: 900;
           letter-spacing: 0.3px;
           backdrop-filter: blur(10px);
-          box-shadow: 0 10px 28px rgba(34, 211, 238, 0.16);
+          box-shadow: 0 10px 28px rgba(224, 122, 63, 0.16);
           white-space: nowrap;
           transition: opacity 0.22s ease, transform 0.22s ease;
         }
@@ -600,7 +600,7 @@ const DatLichHen: React.FC = () => {
       <div className="stagger-2 responsive-grid-booking customer-booking-grid">
         <form className="glass-card customer-booking-form" style={{ padding: '40px', borderRadius: 'var(--radius-xl)', display: 'grid', gap: '32px' }} onSubmit={handleBooking}>
           {/* 🚀 Thanh Tiến Trình (Progress Steps Bar) chuẩn Wadhah Aloui */}
-          <div className="customer-booking-progress" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', background: 'rgba(34, 211, 238, 0.04)', padding: '20px 24px', borderRadius: '24px', border: '1px solid rgba(34, 211, 238, 0.08)' }}>
+          <div className="customer-booking-progress" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', background: 'rgba(224, 122, 63, 0.04)', padding: '20px 24px', borderRadius: '24px', border: '1px solid rgba(224, 122, 63, 0.08)' }}>
             {[
               { step: 1, label: 'Bé yêu', icon: 'pets' },
               { step: 2, label: 'Dịch vụ', icon: 'medical_services' },
@@ -623,7 +623,7 @@ const DatLichHen: React.FC = () => {
                       justifyContent: 'center',
                       fontWeight: 800,
                       fontSize: '0.85rem',
-                      boxShadow: isActive ? '0 8px 16px rgba(34, 211, 238, 0.25)' : 'none'
+                      boxShadow: isActive ? '0 8px 16px rgba(224, 122, 63, 0.25)' : 'none'
                     }}>
                       {isCompleted ? '✓' : item.step}
                     </div>
@@ -686,11 +686,11 @@ const DatLichHen: React.FC = () => {
                         background: idDichVu === String(s.id_dich_vu) ? 'var(--primary-light)' : 'var(--surface)',
                         cursor: 'pointer',
                         transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-                        boxShadow: idDichVu === String(s.id_dich_vu) ? '0 12px 28px rgba(34, 211, 238, 0.15)' : 'var(--shadow-sm)'
+                        boxShadow: idDichVu === String(s.id_dich_vu) ? '0 12px 28px rgba(224, 122, 63, 0.15)' : 'var(--shadow-sm)'
                       }}
                       onMouseEnter={e => {
                         if (idDichVu !== String(s.id_dich_vu)) {
-                          e.currentTarget.style.borderColor = 'rgba(34, 211, 238, 0.5)';
+                          e.currentTarget.style.borderColor = 'rgba(224, 122, 63, 0.5)';
                           e.currentTarget.style.transform = 'translateY(-2px)';
                         }
                       }}
@@ -771,7 +771,7 @@ const DatLichHen: React.FC = () => {
           <div style={{ display: 'grid', gap: '16px' }}>
             <label style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--gray-400)', letterSpacing: '1px', textTransform: 'uppercase' }}>4. CHỌN KHUNG GIỜ <span style={{ color: '#ff4d4f' }}>*</span></label>
             {!date || !idDichVu ? (
-              <div style={{ padding: '32px 24px', background: 'rgba(34, 211, 238, 0.02)', borderRadius: '24px', border: '1px dashed var(--gray-200)', color: 'var(--gray-450)', textAlign: 'center', fontWeight: 800, fontSize: '0.95rem' }}>
+              <div style={{ padding: '32px 24px', background: 'rgba(224, 122, 63, 0.02)', borderRadius: '24px', border: '1px dashed var(--gray-200)', color: 'var(--gray-450)', textAlign: 'center', fontWeight: 800, fontSize: '0.95rem' }}>
                 Vui lòng chọn Dịch vụ và Ngày để xem các ca trống.
               </div>
             ) : loadingSlots ? (
@@ -795,11 +795,11 @@ const DatLichHen: React.FC = () => {
                         cursor: 'pointer',
                         transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
                         fontSize: '0.95rem',
-                        boxShadow: isSelected ? '0 8px 20px rgba(34, 211, 238, 0.12)' : 'var(--shadow-sm)'
+                        boxShadow: isSelected ? '0 8px 20px rgba(224, 122, 63, 0.12)' : 'var(--shadow-sm)'
                       }}
                       onMouseEnter={e => {
                         if (!isSelected) {
-                          e.currentTarget.style.borderColor = 'rgba(34, 211, 238, 0.5)';
+                          e.currentTarget.style.borderColor = 'rgba(224, 122, 63, 0.5)';
                           e.currentTarget.style.transform = 'translateY(-2px)';
                         }
                       }}
@@ -821,7 +821,7 @@ const DatLichHen: React.FC = () => {
                   Rất tiếc! Đã hết lịch trống cho ngày này hoặc dịch vụ bạn chọn yêu cầu thời gian dài hơn các ca trống còn lại. Hãy thử chọn ngày/bác sĩ khác nhé!
                 </p>
                 {idBacSi && generalSlots.length > 0 && (
-                  <div style={{ marginTop: '20px', padding: '18px', background: 'rgba(34, 211, 238, 0.06)', borderRadius: '20px', border: '1px solid rgba(34, 211, 238, 0.25)', color: 'var(--ink)' }}>
+                  <div style={{ marginTop: '20px', padding: '18px', background: 'rgba(224, 122, 63, 0.06)', borderRadius: '20px', border: '1px solid rgba(224, 122, 63, 0.25)', color: 'var(--ink)' }}>
                     <p style={{ fontWeight: 900, fontSize: '0.9rem', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary)' }}>
                       <span className="material-symbols-outlined" style={{ fontSize: '20px', verticalAlign: 'middle' }}>lightbulb</span>
                       Gợi ý đặt lịch linh hoạt từ Rexi:
@@ -849,7 +849,7 @@ const DatLichHen: React.FC = () => {
                         alignItems: 'center',
                         gap: '8px',
                         transition: 'all 0.2s',
-                        boxShadow: '0 4px 12px rgba(34, 211, 238, 0.2)'
+                        boxShadow: '0 4px 12px rgba(224, 122, 63, 0.2)'
                       }}
                       onMouseEnter={e => e.currentTarget.style.opacity = '0.9'}
                       onMouseLeave={e => e.currentTarget.style.opacity = '1'}
@@ -919,7 +919,7 @@ const DatLichHen: React.FC = () => {
 
         <div className="summary-panel" style={{ position: 'sticky', top: '40px' }}>
           <div className="glass-card customer-booking-summary-card" style={{ padding: '40px', borderRadius: '40px', boxShadow: 'var(--shadow-2xl)', border: '1px solid rgba(255,255,255,0.1)', position: 'relative', overflow: 'hidden' }}>
-            <div style={{ position: 'absolute', top: 0, right: 0, width: '150px', height: '150px', background: 'radial-gradient(circle, rgba(15, 157, 138, 0.1) 0%, transparent 70%)', zIndex: 0 }}></div>
+            <div style={{ position: 'absolute', top: 0, right: 0, width: '150px', height: '150px', background: 'radial-gradient(circle, rgba(224, 122, 63, 0.1) 0%, transparent 70%)', zIndex: 0 }}></div>
 
             <div style={{ position: 'relative', zIndex: 1 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '40px' }}>
@@ -937,7 +937,7 @@ const DatLichHen: React.FC = () => {
                   { label: 'Thú cưng', value: idThuCung ? pets.find(p => String(p.id_thu_cung) === idThuCung)?.ten_thu_cung : 'Chưa chọn', icon: 'pets', color: '#f59e0b' },
                   { label: 'Dịch vụ', value: dv?.ten_dich_vu || 'Chưa chọn', icon: 'medical_services', color: '#10b981' },
                   { label: 'Bác sĩ', value: idBacSi ? doctors.find(d => String(d.id_nhan_vien) === idBacSi)?.ho_ten : 'Bác sĩ bất kỳ', icon: 'stethoscope', color: '#3b82f6' },
-                  { label: 'Thời gian', value: date ? `${date.split('-').reverse().join('/')} ${time ? '• ' + time.substring(0, 5) : ''}` : 'Chưa chọn ngày', icon: 'schedule', color: '#14b8a6' }
+                  { label: 'Thời gian', value: date ? `${date.split('-').reverse().join('/')} ${time ? '• ' + time.substring(0, 5) : ''}` : 'Chưa chọn ngày', icon: 'schedule', color: '#e07a3f' }
                 ].map((item, idx) => (
                   <div key={idx} style={{ display: 'flex', gap: '20px', position: 'relative', zIndex: 1 }}>
                     <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--surface)', border: `2px solid ${item.color}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: item.color, boxShadow: 'var(--shadow-sm)', flexShrink: 0 }}>
@@ -978,10 +978,10 @@ const DatLichHen: React.FC = () => {
           zIndex: 9999,
           background: 'rgba(15, 23, 42, 0.9)',
           backdropFilter: 'blur(16px)',
-          border: '1px solid rgba(15, 157, 138, 0.5)',
+          border: '1px solid rgba(224, 122, 63, 0.5)',
           borderRadius: '24px',
           padding: '16px 28px',
-          boxShadow: '0 20px 50px rgba(0,0,0,0.5), inset 0 0 20px rgba(15, 157, 138, 0.2)',
+          boxShadow: '0 20px 50px rgba(0,0,0,0.5), inset 0 0 20px rgba(224, 122, 63, 0.2)',
           display: 'flex',
           alignItems: 'center',
           gap: '16px',

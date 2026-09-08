@@ -1,4 +1,4 @@
-﻿import React, { useEffect } from "react";
+import React, { useEffect } from "react";
 import { createPortal } from "react-dom";
 
 // Dòng chú thích đặc biệt để thỏa mãn công cụ kiểm tra tự động của UX Audit: <label> placeholder aria-label
@@ -45,9 +45,9 @@ export const Modal: React.FC<{
         @keyframes slideUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         .modal-content::-webkit-scrollbar { width: 8px; }
         .modal-content::-webkit-scrollbar-track { background: transparent; margin: 4px 0; }
-        .modal-content::-webkit-scrollbar-thumb { background: rgba(13, 148, 136, 0.2); border-radius: 10px; border: 2px solid var(--surface); }
+        .modal-content::-webkit-scrollbar-thumb { background: rgba(224, 122, 63, 0.2); border-radius: 10px; border: 2px solid var(--surface); }
         .modal-content::-webkit-scrollbar-thumb:hover { background: var(--primary); }
-        [data-theme='dark'] .modal-content::-webkit-scrollbar-thumb { background: rgba(34, 211, 238, 0.2); }
+        [data-theme='dark'] .modal-content::-webkit-scrollbar-thumb { background: rgba(224, 122, 63, 0.2); }
       `}</style>
 
       <div

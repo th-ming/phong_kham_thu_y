@@ -164,7 +164,7 @@ const PhanGioiThieu: React.FC = () => {
                         left: 0;
                         width: 100%;
                         height: 100%;
-                        background: linear-gradient(-45deg, rgba(34, 211, 238, 0.08), rgba(20, 184, 166, 0.08), rgba(16, 185, 129, 0.05), rgba(34, 211, 238, 0.03));
+                        background: linear-gradient(-45deg, rgba(224, 122, 63, 0.08), rgba(196, 145, 88, 0.08), rgba(16, 185, 129, 0.05), rgba(224, 122, 63, 0.03));
                         background-size: 400% 400%;
                         animation: gradientAnimation 12s ease infinite;
                         z-index: 1;
@@ -300,14 +300,14 @@ const PhanGioiThieu: React.FC = () => {
                     .cta-invite {
                         position: relative;
                         overflow: hidden;
-                        box-shadow: 0 0 20px rgba(34, 211, 238, 0.35);
+                        box-shadow: 0 0 20px rgba(224, 122, 63, 0.35);
                         background: var(--primary-gradient) !important;
                         border: none !important;
                         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
                     }
                     .cta-invite:hover {
                         transform: translateY(-3px) scale(1.03);
-                        box-shadow: 0 12px 28px rgba(34, 211, 238, 0.55);
+                        box-shadow: 0 12px 28px rgba(224, 122, 63, 0.55);
                     }
                     .cta-invite::after {
                         content: '';
@@ -330,25 +330,25 @@ const PhanGioiThieu: React.FC = () => {
                         text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
                     }
                     [data-theme='dark'] .hero-title {
-                        text-shadow: 0 0 55px rgba(45, 212, 191, 0.28), 0 0 22px rgba(15, 157, 138, 0.35), 0 2px 8px rgba(0, 0, 0, 0.55);
+                        text-shadow: 0 0 55px rgba(45, 212, 191, 0.28), 0 0 22px rgba(224, 122, 63, 0.35), 0 2px 8px rgba(0, 0, 0, 0.55);
                     }
                     .hero-glow-text {
                         color: #0f9d8a;
-                        text-shadow: 0 0 6px rgba(15, 157, 138, 0.32), 0 0 14px rgba(45, 212, 191, 0.18);
+                        text-shadow: 0 0 6px rgba(224, 122, 63, 0.32), 0 0 14px rgba(45, 212, 191, 0.18);
                         animation: glowPulse 3s ease-in-out infinite;
                         font-weight: 900;
                     }
                     [data-theme='dark'] .hero-glow-text {
                         color: var(--primary);
-                        text-shadow: 0 0 8px rgba(45, 212, 191, 0.58), 0 0 18px rgba(34, 211, 238, 0.30);
+                        text-shadow: 0 0 8px rgba(45, 212, 191, 0.58), 0 0 18px rgba(224, 122, 63, 0.30);
                     }
                     
                     /* Chữ chào phát sáng lớn phía sau động vật */
                     .glow-bg-text {
                         color: #ffffff;
                         text-shadow: 
-                            0 0 10px rgba(15, 157, 138, 0.4), 
-                            0 0 20px rgba(15, 157, 138, 0.3), 
+                            0 0 10px rgba(224, 122, 63, 0.4), 
+                            0 0 20px rgba(224, 122, 63, 0.3), 
                             0 0 40px rgba(45, 212, 191, 0.2);
                         filter: drop-shadow(0 4px 8px rgba(0,0,0,0.06));
                     }
@@ -356,14 +356,14 @@ const PhanGioiThieu: React.FC = () => {
                         color: #ffffff;
                         text-shadow: 
                             0 0 15px rgba(45, 212, 191, 0.95), 
-                            0 0 30px rgba(15, 157, 138, 0.75), 
-                            0 0 45px rgba(20, 184, 166, 0.55),
-                            0 0 60px rgba(34, 211, 238, 0.35);
+                            0 0 30px rgba(224, 122, 63, 0.75), 
+                            0 0 45px rgba(196, 145, 88, 0.55),
+                            0 0 60px rgba(224, 122, 63, 0.35);
                     }
 
                     @keyframes glowPulse {
-                        0%, 100% { filter: drop-shadow(0 0 1px rgba(15, 157, 138, 0.18)); }
-                        50% { filter: drop-shadow(0 0 4px rgba(15, 157, 138, 0.36)) drop-shadow(0 0 8px rgba(45, 212, 191, 0.22)); }
+                        0%, 100% { filter: drop-shadow(0 0 1px rgba(224, 122, 63, 0.18)); }
+                        50% { filter: drop-shadow(0 0 4px rgba(224, 122, 63, 0.36)) drop-shadow(0 0 8px rgba(45, 212, 191, 0.22)); }
                     }
                     .banner-sync-text {
                         position: absolute;
@@ -385,10 +385,10 @@ const PhanGioiThieu: React.FC = () => {
                         -webkit-font-smoothing: antialiased;
                         text-shadow:
                             0 1px 0 rgba(255,255,255,0.32),
-                            0 0 10px rgba(15, 157, 138, 0.42),
+                            0 0 10px rgba(224, 122, 63, 0.42),
                             0 0 24px rgba(45, 212, 191, 0.28),
                             0 8px 20px rgba(0,0,0,0.16);
-                        filter: drop-shadow(0 0 10px rgba(20, 184, 166, 0.34));
+                        filter: drop-shadow(0 0 10px rgba(196, 145, 88, 0.34));
                     }
                     .mobile-speech-bubble {
                         display: none;
@@ -402,9 +402,9 @@ const PhanGioiThieu: React.FC = () => {
                         text-shadow:
                             0 1px 0 rgba(255,255,255,0.12),
                             0 0 10px rgba(125, 211, 252, 0.46),
-                            0 0 22px rgba(34, 211, 238, 0.30),
+                            0 0 22px rgba(224, 122, 63, 0.30),
                             0 10px 24px rgba(0,0,0,0.45);
-                        filter: drop-shadow(0 0 10px rgba(34, 211, 238, 0.34));
+                        filter: drop-shadow(0 0 10px rgba(224, 122, 63, 0.34));
                     }
                     [data-theme='dark'] .hero-light-effect {
                         mix-blend-mode: soft-light;
@@ -661,7 +661,7 @@ const PhanGioiThieu: React.FC = () => {
                         }
                         [data-theme='dark'] .banner-pet-stage {
                             background: rgba(15, 23, 42, 0.4) !important;
-                            border-color: rgba(34, 211, 238, 0.15) !important;
+                            border-color: rgba(224, 122, 63, 0.15) !important;
                         }
                         .banner-pet-video {
                             width: 114% !important;
@@ -756,10 +756,10 @@ const PhanGioiThieu: React.FC = () => {
                         }
                         [data-theme='dark'] .mobile-speech-bubble {
                             background: rgba(2, 6, 23, 0.82) !important;
-                            border-color: rgba(34, 211, 238, 0.34) !important;
+                            border-color: rgba(224, 122, 63, 0.34) !important;
                             color: #e0f2fe !important;
                             font-size: 1rem !important;
-                            box-shadow: 0 14px 30px rgba(0, 0, 0, 0.42), 0 0 24px rgba(34, 211, 238, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+                            box-shadow: 0 14px 30px rgba(0, 0, 0, 0.42), 0 0 24px rgba(224, 122, 63, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
                         }
                         @media screen and (max-width: 390px) {
                             .hero-layout-grid .hero-image-container {
@@ -814,7 +814,7 @@ const PhanGioiThieu: React.FC = () => {
 
                 {/* hiệu ứng trang trí lơ lửng động */}
                 <span className="material-symbols-outlined floating-paw-1" style={{ position: 'absolute', top: '15%', left: '15%', fontSize: '42px', color: 'var(--primary)', pointerEvents: 'none', zIndex: 3 }}>pets</span>
-                <span className="material-symbols-outlined floating-paw-2" style={{ position: 'absolute', bottom: '25%', right: '25%', fontSize: '36px', color: '#14b8a6', pointerEvents: 'none', zIndex: 3 }}>favorite</span>
+                <span className="material-symbols-outlined floating-paw-2" style={{ position: 'absolute', bottom: '25%', right: '25%', fontSize: '36px', color: '#e07a3f', pointerEvents: 'none', zIndex: 3 }}>favorite</span>
 
                 <div className="floating-bg" style={{ position: 'absolute', top: '10%', left: '3%', width: '220px', opacity: 0.18, pointerEvents: 'none', zIndex: 3 }}>
                     <LottiePlayer url="https://assets3.lottiefiles.com/packages/lf20_syqnfe7c.json" />

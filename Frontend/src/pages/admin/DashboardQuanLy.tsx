@@ -282,7 +282,7 @@ const DashboardQuanLy: React.FC = () => {
     const s = status?.toUpperCase() || '';
     if (s === 'DA_DAT' || s === 'CHỜ XÁC NHẬN') return '#f59e0b';
     if (s === 'DA_XAC_NHAN') return '#3b82f6';
-    if (s === 'DANG_KHAM') return '#14b8a6';
+    if (s === 'DANG_KHAM') return '#e07a3f';
     if (s === 'HOAN_THANH') return '#10b981';
     if (s === 'DA_HUY' || s === 'HUY') return '#ef4444';
     return 'var(--gray-400)';
@@ -322,7 +322,7 @@ const DashboardQuanLy: React.FC = () => {
 
         .growth-bar-animate {
           animation: growBar 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-          background: linear-gradient(to top, var(--primary) 0%, #14b8a6 100%) !important;
+          background: linear-gradient(to top, var(--primary) 0%, #e07a3f 100%) !important;
         }
 
         .table-row {

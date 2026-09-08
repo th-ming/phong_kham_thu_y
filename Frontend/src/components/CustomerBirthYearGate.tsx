@@ -168,7 +168,7 @@ const CustomerBirthYearGate: React.FC = () => {
               width: "100%",
               padding: "16px 18px",
               borderRadius: "16px",
-              border: "2px solid rgba(15, 157, 138, 0.22)",
+              border: "2px solid rgba(224, 122, 63, 0.22)",
               backgroundColor: "var(--gray-50)",
               color: "var(--ink)",
               fontSize: "1.05rem",

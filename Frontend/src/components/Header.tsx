@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import ThemeToggle from "./ThemeToggle";
 import { normalizeUserRole } from "../utils/index";
@@ -139,7 +139,7 @@ const Header: React.FC<{ hideMenu?: boolean }> = ({ hideMenu }) => {
             alignItems: 'center',
             justifyContent: 'center',
             transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
-            boxShadow: '0 8px 16px rgba(15, 157, 138, 0.2)'
+            boxShadow: '0 8px 16px rgba(224, 122, 63, 0.28)'
           }}>
             {/* logo phòng khám góc trái */}
             <img src="/img/avtpkty.png" alt="Rexi" style={{ width: '65%', filter: 'brightness(0) invert(1)' }} />
@@ -256,7 +256,7 @@ const Header: React.FC<{ hideMenu?: boolean }> = ({ hideMenu }) => {
               key={idx}
               onClick={() => handleNavClick(item)}
               className="mobile-menu-action"
-              style={{ ['--item-index' as any]: idx, background: 'rgba(15, 157, 138, 0.05)', border: '1px solid transparent', textAlign: 'left', color: 'var(--ink)', fontWeight: 800, padding: '15px 16px', borderRadius: '14px', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}
+              style={{ ['--item-index' as any]: idx, background: 'rgba(224, 122, 63, 0.06)', border: '1px solid transparent', textAlign: 'left', color: 'var(--ink)', fontWeight: 800, padding: '15px 16px', borderRadius: '14px', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}
             >
               <span className="material-symbols-outlined" style={{ color: 'var(--primary)' }}>{item.icon}</span>
               {item.label}
@@ -272,11 +272,11 @@ const Header: React.FC<{ hideMenu?: boolean }> = ({ hideMenu }) => {
       .text-blink-red { animation: textBlinkRed 1.8s infinite ease-in-out; }
       @keyframes headerAvatarGlow {
         0%, 100% {
-          box-shadow: 0 0 12px rgba(15, 157, 138, 0.35), 0 0 22px rgba(34, 211, 238, 0.22), inset 0 0 10px rgba(15, 157, 138, 0.12);
+          box-shadow: 0 0 12px rgba(224, 122, 63, 0.3), 0 0 22px rgba(196, 145, 88, 0.2), inset 0 0 10px rgba(224, 122, 63, 0.1);
           opacity: 0.88;
         }
         50% {
-          box-shadow: 0 0 18px rgba(15, 157, 138, 0.55), 0 0 32px rgba(34, 211, 238, 0.42), inset 0 0 14px rgba(34, 211, 238, 0.2);
+          box-shadow: 0 0 18px rgba(224, 122, 63, 0.5), 0 0 32px rgba(224, 122, 63, 0.35), inset 0 0 14px rgba(224, 122, 63, 0.18);
           opacity: 1;
         }
       }
@@ -351,9 +351,9 @@ const Header: React.FC<{ hideMenu?: boolean }> = ({ hideMenu }) => {
       }
       .header-user-dropdown-action:hover,
       .header-user-dropdown-action:focus-visible {
-        background: rgba(15, 157, 138, 0.08);
+        background: rgba(224, 122, 63, 0.08);
         color: var(--primary);
-        border-color: rgba(15, 157, 138, 0.16);
+        border-color: rgba(224, 122, 63, 0.16);
         outline: none;
       }
       .header-user-logout {
@@ -403,12 +403,12 @@ const Header: React.FC<{ hideMenu?: boolean }> = ({ hideMenu }) => {
         display: flex;
         align-items: center;
         justify-content: center;
-        background: rgba(15, 157, 138, 0.12);
+        background: rgba(224, 122, 63, 0.12);
         color: var(--primary);
         font-weight: 950;
         z-index: 1;
-        border: 1.5px solid rgba(15, 157, 138, 0.35);
-        box-shadow: 0 0 14px rgba(15, 157, 138, 0.28);
+        border: 1.5px solid rgba(224, 122, 63, 0.35);
+        box-shadow: 0 0 14px rgba(224, 122, 63, 0.28);
         box-sizing: border-box;
       }
       .header-user-avatar-img {
@@ -427,7 +427,7 @@ const Header: React.FC<{ hideMenu?: boolean }> = ({ hideMenu }) => {
         height: auto;
         font-size: 1.35rem;
         line-height: 1;
-        text-shadow: 0 0 10px rgba(34, 211, 238, 0.45);
+        text-shadow: 0 0 10px rgba(224, 122, 63, 0.45);
         padding: 0;
         box-sizing: border-box;
         font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -437,15 +437,15 @@ const Header: React.FC<{ hideMenu?: boolean }> = ({ hideMenu }) => {
         animation-duration: 1.6s;
       }
       .header-user-avatar:hover .header-user-avatar-core {
-        box-shadow: 0 0 20px rgba(15, 157, 138, 0.45), 0 0 28px rgba(34, 211, 238, 0.35);
+        box-shadow: 0 0 20px rgba(224, 122, 63, 0.45), 0 0 28px rgba(224, 122, 63, 0.35);
       }
       @keyframes headerCtaGlowBreath {
         0%, 100% {
-          box-shadow: 0 10px 20px var(--primary-shadow), 0 0 10px rgba(15, 157, 138, 0.18);
+          box-shadow: 0 10px 20px var(--primary-shadow), 0 0 10px rgba(224, 122, 63, 0.18);
           filter: brightness(1);
         }
         52% {
-          box-shadow: 0 12px 26px var(--primary-shadow), 0 0 24px rgba(34, 211, 238, 0.46), 0 0 38px rgba(15, 157, 138, 0.24);
+          box-shadow: 0 12px 26px var(--primary-shadow), 0 0 24px rgba(224, 122, 63, 0.46), 0 0 38px rgba(224, 122, 63, 0.24);
           filter: brightness(1.06);
         }
       }
@@ -468,7 +468,7 @@ const Header: React.FC<{ hideMenu?: boolean }> = ({ hideMenu }) => {
         .nav-link-btn:hover .material-symbols-outlined { color: var(--primary) !important; }
         .nav-underline { position: absolute; bottom: 0; left: 0; width: 0; height: 2px; background: var(--primary); transition: width 0.3s; }
         .nav-link-btn:hover .nav-underline { width: 100%; }
-        .mobile-show:hover { transform: translateY(-1px); background: rgba(15, 157, 138, 0.10) !important; border-color: rgba(15, 157, 138, 0.28) !important; }
+        .mobile-show:hover { transform: translateY(-1px); background: rgba(224, 122, 63, 0.10) !important; border-color: rgba(224, 122, 63, 0.28) !important; }
         .mobile-show:active { transform: scale(0.94); }
         .mobile-nav-panel {
           transform-origin: top center;
@@ -494,9 +494,9 @@ const Header: React.FC<{ hideMenu?: boolean }> = ({ hideMenu }) => {
         .mobile-menu-action:hover,
         .mobile-menu-action:focus-visible {
           color: var(--primary) !important;
-          background: rgba(15, 157, 138, 0.12) !important;
-          border-color: rgba(15, 157, 138, 0.25) !important;
-          box-shadow: 0 10px 24px rgba(15, 157, 138, 0.12);
+          background: rgba(224, 122, 63, 0.12) !important;
+          border-color: rgba(224, 122, 63, 0.25) !important;
+          box-shadow: 0 10px 24px rgba(224, 122, 63, 0.12);
           transform: translateX(4px);
           outline: none;
         }

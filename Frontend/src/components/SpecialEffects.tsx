@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Lottie from "lottie-react";
 import { useLiveUserProfile } from "@hooks/useLiveUserProfile";
 
@@ -359,12 +359,12 @@ const MemeCatCore: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
 
       <style>{`
           @keyframes darkBubblePulse {
-            0%, 100% { border-color: rgba(34, 211, 238, 0.2); box-shadow: 0 8px 32px rgba(0,0,0,0.2); }
-            50% { border-color: rgba(34, 211, 238, 1); box-shadow: 0 0 15px rgba(34, 211, 238, 0.6), 0 8px 32px rgba(0,0,0,0.2); }
+            0%, 100% { border-color: rgba(224, 122, 63, 0.2); box-shadow: 0 8px 32px rgba(0,0,0,0.2); }
+            50% { border-color: rgba(224, 122, 63, 1); box-shadow: 0 0 15px rgba(224, 122, 63, 0.6), 0 8px 32px rgba(0,0,0,0.2); }
           }
           [data-theme='dark'] .cat-bubble-animate {
             background: rgba(15, 23, 42, 0.85) !important;
-            color: #22d3ee !important;
+            color: #e07a3f !important;
             animation: darkBubblePulse 1.8s infinite ease-in-out !important;
           }
           .cat-bubble-close {
@@ -373,7 +373,7 @@ const MemeCatCore: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
             right: -5px;
             width: 15px;
             height: 15px;
-            border: 1px solid rgba(15, 157, 138, 0.18);
+            border: 1px solid rgba(224, 122, 63, 0.18);
             border-radius: 999px;
             background: var(--surface);
             color: var(--primary);
@@ -393,8 +393,8 @@ const MemeCatCore: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
           }
           [data-theme='dark'] .cat-bubble-close {
             background: rgba(15, 23, 42, 0.96);
-            border-color: rgba(34, 211, 238, 0.36);
-            color: #22d3ee;
+            border-color: rgba(224, 122, 63, 0.36);
+            color: #e07a3f;
           }
           @keyframes bananaAuraPulse {
             0%, 100% { filter: none; }
@@ -830,7 +830,7 @@ export const CustomCursor: React.FC = () => {
     <div style={{
       position: 'fixed', top: pos.y, left: pos.x,
       width: isHover ? '50px' : '20px', height: isHover ? '50px' : '20px',
-      background: isHover ? 'rgba(15, 157, 138, 0.1)' : 'rgba(15, 157, 138, 0.5)',
+      background: isHover ? 'rgba(224, 122, 63, 0.1)' : 'rgba(224, 122, 63, 0.5)',
       border: isHover ? '2px solid #0f9d8a' : 'none',
       borderRadius: '50%', transform: 'translate(-50%, -50%)',
       pointerEvents: 'none', zIndex: 99999, transition: 'all 0.3s'
@@ -899,10 +899,10 @@ export const Typewriter: React.FC<{ words: string[] }> = ({ words }) => {
   return (
     <span style={{
       color: "#0f9d8a",
-      textShadow: "0 0 7px rgba(15, 157, 138, 0.46), 0 0 14px rgba(45, 212, 191, 0.24)",
+      textShadow: "0 0 7px rgba(224, 122, 63, 0.46), 0 0 14px rgba(45, 212, 191, 0.24)",
       borderRight: "3px solid #0f9d8a",
       paddingRight: "4px",
-      filter: "drop-shadow(0 0 2px rgba(15, 157, 138, 0.28))"
+      filter: "drop-shadow(0 0 2px rgba(224, 122, 63, 0.28))"
     }}>{text}</span>
   );
 };

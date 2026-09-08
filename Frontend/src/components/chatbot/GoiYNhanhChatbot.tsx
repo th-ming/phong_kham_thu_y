@@ -162,7 +162,7 @@ const suggestionToneStyles: Record<NonNullable<QuickSuggestion["tone"]>, React.C
     danger: { borderColor: "rgba(239, 68, 68, 0.55)", background: "rgba(239, 68, 68, 0.08)", color: "#ef4444" },
     warning: { borderColor: "rgba(245, 158, 11, 0.55)", background: "rgba(245, 158, 11, 0.10)", color: "#f59e0b" },
     success: { borderColor: "rgba(16, 185, 129, 0.55)", background: "rgba(16, 185, 129, 0.10)", color: "#10b981" },
-    info: { borderColor: "rgba(34, 211, 238, 0.55)", background: "rgba(34, 211, 238, 0.10)", color: "#22d3ee" },
+    info: { borderColor: "rgba(224, 122, 63, 0.55)", background: "rgba(224, 122, 63, 0.10)", color: "#e07a3f" },
     agent: { borderColor: "rgba(244, 63, 94, 0.55)", background: "rgba(244, 63, 94, 0.10)", color: "#f43f5e" },
     doctor: { borderColor: "rgba(168, 85, 247, 0.65)", background: "rgba(168, 85, 247, 0.14)", color: "#a855f7" },
 };

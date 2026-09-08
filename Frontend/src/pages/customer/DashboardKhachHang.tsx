@@ -1,4 +1,4 @@
-﻿
+
 import React, { useState, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axiosInstance from "@services/axios";
@@ -371,7 +371,7 @@ const DashboardKhachHang: React.FC = () => {
       { label: "BÉ CƯNG", value: pets.length, icon: "pets", color: "var(--primary)", trendData: petsTrend, summary: petsSummary },
       { label: "LỊCH HẸN", value: upcoming.length, icon: "calendar_month", color: "#3b82f6", trendData: upcTrend, summary: upcSummary },
       { label: "ĐÃ KHÁM", value: hoanTat, icon: "verified", color: "#f59e0b", trendData: hoanTatTrend, summary: hoanTatSummary },
-      { label: "CHI TIÊU", value: formatTienVND(totalSpent), icon: "payments", color: "#14b8a6", trendData: spentTrend, summary: spentSummary },
+      { label: "CHI TIÊU", value: formatTienVND(totalSpent), icon: "payments", color: "#e07a3f", trendData: spentTrend, summary: spentSummary },
     ];
   }, [pets, petRowsForTrend, upcoming, allAppointments, hoanTat, paidInvoices, totalSpent]);
 
@@ -482,7 +482,7 @@ const DashboardKhachHang: React.FC = () => {
         .hover-lift:hover { transform: translateY(-6px); box-shadow: 0 20px 40px rgba(0,0,0,0.06); }
         
         .appointment-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); border: 1px solid var(--gray-100); }
-        .appointment-card:hover { border-color: var(--primary) !important; background: var(--surface) !important; transform: scale(1.02) translateX(8px); box-shadow: -5px 15px 25px rgba(15, 157, 138, 0.12); z-index: 10; }
+        .appointment-card:hover { border-color: var(--primary) !important; background: var(--surface) !important; transform: scale(1.02) translateX(8px); box-shadow: -5px 15px 25px rgba(224, 122, 63, 0.12); z-index: 10; }
         
         .icon-bounce:hover span { animation: bounceLocal 0.3s ease infinite alternate; }
 
@@ -591,7 +591,7 @@ const DashboardKhachHang: React.FC = () => {
           border-color: var(--primary) !important;
           background: var(--surface) !important;
           /* Hiệu ứng phát sáng (glow) kết hợp bóng đổ mượt mà */
-          box-shadow: 0 15px 30px rgba(15, 157, 138, 0.2), 0 0 12px rgba(15, 157, 138, 0.15);
+          box-shadow: 0 15px 30px rgba(224, 122, 63, 0.2), 0 0 12px rgba(224, 122, 63, 0.15);
           /* Tăng độ sáng khi di chuột để làm nổi bật thẻ */
           filter: brightness(1.2);
         }
@@ -604,7 +604,7 @@ const DashboardKhachHang: React.FC = () => {
           background: var(--primary) !important;
           color: white !important;
           transform: scale(1.1) rotate(6deg);
-          box-shadow: 0 6px 20px rgba(15, 157, 138, 0.35);
+          box-shadow: 0 6px 20px rgba(224, 122, 63, 0.35);
         }
 
         @media (max-width: 768px) {
@@ -878,10 +878,10 @@ const DashboardKhachHang: React.FC = () => {
         }
         
         .customer-dashboard-hero {
-          --hero-bg-start: #0d9488;
+          --hero-bg-start: #c05621;
           --hero-bg-mid: #0f766e;
           --hero-bg-end: #10b981;
-          --hero-shadow-color: rgba(13, 148, 136, 0.2);
+          --hero-shadow-color: rgba(224, 122, 63, 0.2);
           --hero-glow: rgba(255, 255, 255, 0.15);
         }
         
@@ -995,7 +995,7 @@ const DashboardKhachHang: React.FC = () => {
               .pet-insta-card:hover {
                 transform: translateY(-8px) scale(1.04) rotate(1deg);
                 border-color: var(--primary) !important;
-                box-shadow: 0 15px 30px rgba(15, 157, 138, 0.2);
+                box-shadow: 0 15px 30px rgba(224, 122, 63, 0.2);
               }
             `}</style>
             {pets.map(p => {
@@ -1012,7 +1012,7 @@ const DashboardKhachHang: React.FC = () => {
                     alignItems: 'center', 
                     justifyContent: 'center', 
                     fontSize: p.hinh_anh ? 'unset' : '2.5rem', 
-                    boxShadow: '0 8px 20px rgba(34, 211, 238, 0.15)',
+                    boxShadow: '0 8px 20px rgba(224, 122, 63, 0.15)',
                     overflow: 'hidden',
                     border: '2px solid var(--gray-100)'
                   }}>
@@ -1038,7 +1038,7 @@ const DashboardKhachHang: React.FC = () => {
               );
             })}
             {/* Thẻ thêm bé nhanh */}
-            <div className="pet-insta-card" onClick={() => navigate('/khach-hang/quan-ly-thu-cung')} style={{ borderStyle: 'dashed', borderColor: 'var(--primary)', background: 'rgba(34, 211, 238, 0.02)', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: '166px' }}>
+            <div className="pet-insta-card" onClick={() => navigate('/khach-hang/quan-ly-thu-cung')} style={{ borderStyle: 'dashed', borderColor: 'var(--primary)', background: 'rgba(224, 122, 63, 0.02)', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: '166px' }}>
               <span className="material-symbols-outlined" style={{ fontSize: '32px', color: 'var(--primary)', marginBottom: '8px' }}>add_circle</span>
               <span style={{ fontWeight: 800, color: 'var(--primary)', fontSize: '0.85rem' }}>Thêm bé mới</span>
             </div>
@@ -1077,11 +1077,11 @@ const DashboardKhachHang: React.FC = () => {
                   <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
                     <p style={{ fontWeight: 900, color: 'var(--ink)', margin: 0 }}>{app.ngay_kham?.split('T')[0].split('-').reverse().join('/') || "---"}</p>
                     <p style={{ fontSize: '0.85rem', color: 'var(--primary)', fontWeight: 900, margin: 0 }}>{app.gio_kham?.substring(0, 5)}</p>
-                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: app.trang_thai === 'DANG_KHAM' ? 'rgba(20, 184, 166, 0.12)' : 'rgba(59, 130, 246, 0.1)', padding: '4px 10px', borderRadius: '50px', marginTop: '4px' }}>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: app.trang_thai === 'DANG_KHAM' ? 'rgba(196, 145, 88, 0.12)' : 'rgba(59, 130, 246, 0.1)', padding: '4px 10px', borderRadius: '50px', marginTop: '4px' }}>
                       {app.trang_thai === 'DANG_KHAM' && (
                         <span className="pulse-dot" style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
                       )}
-                      <span style={{ fontSize: '0.72rem', fontWeight: 900, textTransform: 'uppercase', color: app.trang_thai === 'DANG_KHAM' ? '#14b8a6' : '#3b82f6', whiteSpace: 'nowrap' }}>
+                      <span style={{ fontSize: '0.72rem', fontWeight: 900, textTransform: 'uppercase', color: app.trang_thai === 'DANG_KHAM' ? '#e07a3f' : '#3b82f6', whiteSpace: 'nowrap' }}>
                         {app.trang_thai === 'DANG_KHAM' ? 'Đang khám' : app.trang_thai === 'DA_XAC_NHAN' ? 'Đã xác nhận' : 'Chờ xác nhận'}
                       </span>
                     </div>
@@ -1101,7 +1101,7 @@ const DashboardKhachHang: React.FC = () => {
                 { label: 'Đặt lịch hẹn', icon: 'calendar_month', path: '/khach-hang/dat-lich-hen', color: 'var(--primary)' },
                 { label: 'Hồ sơ bệnh án', icon: 'folder_shared', path: '/khach-hang/ho-so-benh-an', color: '#3b82f6' },
                 { label: 'Bé cưng của tôi', icon: 'pets', path: '/khach-hang/quan-ly-thu-cung', color: '#f59e0b' },
-                { label: 'Lịch sử hóa đơn', icon: 'receipt_long', path: '/khach-hang/hoa-don-thanh-toan', color: '#14b8a6' }
+                { label: 'Lịch sử hóa đơn', icon: 'receipt_long', path: '/khach-hang/hoa-don-thanh-toan', color: '#e07a3f' }
               ].map((action, idx) => (
                 <div
                   key={idx}
@@ -1183,7 +1183,7 @@ const DashboardKhachHang: React.FC = () => {
           {confettiActive && (
             <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 10 }}>
               {Array.from({ length: 45 }).map((_, idx) => {
-                const colors = ['#0f9d8a', '#14b8a6', '#f59e0b', '#3b82f6', '#e11d48', '#10b981'];
+                const colors = ['#0f9d8a', '#e07a3f', '#f59e0b', '#3b82f6', '#e11d48', '#10b981'];
                 const left = Math.random() * 100;
                 const delay = Math.random() * 2;
                 const duration = Math.random() * 2 + 1.5;
@@ -1215,7 +1215,7 @@ const DashboardKhachHang: React.FC = () => {
             borderRadius: '40px',
             background: 'var(--surface)',
             border: '2.5px solid var(--primary)',
-            boxShadow: '0 25px 60px rgba(0,0,0,0.15), 0 0 30px rgba(15, 157, 138, 0.25)',
+            boxShadow: '0 25px 60px rgba(0,0,0,0.15), 0 0 30px rgba(224, 122, 63, 0.25)',
             textAlign: 'center',
             position: 'relative',
             animation: 'slideUpFade 0.5s cubic-bezier(0.16, 1, 0.3, 1)'
@@ -1227,7 +1227,7 @@ const DashboardKhachHang: React.FC = () => {
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               color: 'var(--primary)',
               margin: '0 auto 24px',
-              boxShadow: '0 10px 24px rgba(15, 157, 138, 0.15)'
+              boxShadow: '0 10px 24px rgba(224, 122, 63, 0.15)'
             }}>
               <span className="material-symbols-outlined" style={{ fontSize: '40px' }}>face_5</span>
             </div>
@@ -1268,7 +1268,7 @@ const DashboardKhachHang: React.FC = () => {
                 <style>{`
                   .yob-input-neon:focus {
                     border-color: var(--primary) !important;
-                    box-shadow: 0 0 15px rgba(15, 157, 138, 0.25) !important;
+                    box-shadow: 0 0 15px rgba(224, 122, 63, 0.25) !important;
                   }
                   /* Ẩn nút tăng giảm của input number */
                   input::-webkit-outer-spin-button,
@@ -1287,7 +1287,7 @@ const DashboardKhachHang: React.FC = () => {
                 <div className="animate-fade-in" style={{
                   padding: '16px 20px',
                   borderRadius: '20px',
-                  background: 'rgba(20, 184, 166, 0.08)',
+                  background: 'rgba(196, 145, 88, 0.08)',
                   border: '1.5px dashed var(--primary)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
                   animation: 'slideUpFade 0.3s ease-out'

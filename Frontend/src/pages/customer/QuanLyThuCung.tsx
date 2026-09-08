@@ -359,12 +359,12 @@ const QuanLyThuCung: React.FC = () => {
         }
         .stagger-1 { animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both; }
         .btn-action { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important; font-weight: 800; }
-        .btn-action:hover:not(:disabled) { transform: translateY(-3px) scale(1.02); box-shadow: 0 10px 20px rgba(13, 148, 136, 0.2); filter: brightness(1.05); }
+        .btn-action:hover:not(:disabled) { transform: translateY(-3px) scale(1.02); box-shadow: 0 10px 20px rgba(224, 122, 63, 0.2); filter: brightness(1.05); }
         .btn-action.btn-delete:hover:not(:disabled) { box-shadow: 0 10px 20px rgba(239, 68, 68, 0.2); background: var(--danger) !important; color: white !important; }
         .camera-upload-btn:hover {
           transform: scale(1.18) rotate(-8deg) !important;
           background: var(--ink) !important;
-          box-shadow: 0 6px 14px rgba(15, 157, 138, 0.5) !important;
+          box-shadow: 0 6px 14px rgba(224, 122, 63, 0.5) !important;
         }
         .customer-pet-card {
           transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
@@ -458,7 +458,7 @@ const QuanLyThuCung: React.FC = () => {
             padding: 16px !important;
             border-radius: 24px !important;
             gap: 14px !important;
-            border-color: rgba(34, 211, 238, 0.28) !important;
+            border-color: rgba(224, 122, 63, 0.28) !important;
           }
 
           .customer-pet-card h3 {
@@ -721,7 +721,7 @@ const QuanLyThuCung: React.FC = () => {
                         alignItems: 'center', 
                         justifyContent: 'center', 
                         cursor: 'pointer',
-                        boxShadow: isCat ? '0 4px 10px rgba(244, 63, 94, 0.4)' : isDog ? '0 4px 10px rgba(16, 185, 129, 0.4)' : '0 4px 10px rgba(15, 157, 138, 0.4)',
+                        boxShadow: isCat ? '0 4px 10px rgba(244, 63, 94, 0.4)' : isDog ? '0 4px 10px rgba(16, 185, 129, 0.4)' : '0 4px 10px rgba(224, 122, 63, 0.4)',
                         border: '2px solid var(--surface)',
                         transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
                         zIndex: 2

@@ -100,7 +100,7 @@ export const StyleChatbot: React.FC = () => (
         .chat-tab-btn:focus-visible,
         .chat-suggestion-chip:focus-visible,
         #chatWindow button:focus-visible {
-            outline: 2px solid rgba(34, 211, 238, 0.85);
+            outline: 2px solid rgba(224, 122, 63, 0.85);
             outline-offset: 2px;
         }
         .chat-tab-btn.active-tab {
@@ -121,7 +121,7 @@ export const StyleChatbot: React.FC = () => (
             border-top: 1px solid var(--gray-200);
             overscroll-behavior-x: contain;
             scrollbar-width: thin;
-            scrollbar-color: rgba(34, 211, 238, 0.45) transparent;
+            scrollbar-color: rgba(224, 122, 63, 0.45) transparent;
         }
         .chat-suggestion-shell::-webkit-scrollbar {
             height: 6px;
@@ -130,7 +130,7 @@ export const StyleChatbot: React.FC = () => (
             background: transparent;
         }
         .chat-suggestion-shell::-webkit-scrollbar-thumb {
-            background: rgba(34, 211, 238, 0.45);
+            background: rgba(224, 122, 63, 0.45);
             border-radius: 999px;
         }
         .chat-suggestion-track {
@@ -180,7 +180,7 @@ export const StyleChatbot: React.FC = () => (
         }
         .chat-message-scroll {
             scrollbar-width: thin;
-            scrollbar-color: rgba(34, 211, 238, 0.45) transparent;
+            scrollbar-color: rgba(224, 122, 63, 0.45) transparent;
         }
         .chat-message-scroll::-webkit-scrollbar {
             width: 7px;
@@ -189,7 +189,7 @@ export const StyleChatbot: React.FC = () => (
             background: transparent;
         }
         .chat-message-scroll::-webkit-scrollbar-thumb {
-            background: rgba(34, 211, 238, 0.4);
+            background: rgba(224, 122, 63, 0.4);
             border-radius: 999px;
         }
         .chat-message-ai,
@@ -380,9 +380,9 @@ export const StyleChatbot: React.FC = () => (
         }
         #chatBtn::after {
             inset: -8px;
-            border-color: rgba(34, 211, 238, 0.18);
+            border-color: rgba(224, 122, 63, 0.18);
             box-shadow:
-                0 0 22px rgba(34, 211, 238, 0.12),
+                0 0 22px rgba(224, 122, 63, 0.12),
                 inset 0 0 18px rgba(103, 232, 249, 0.10);
             animation-delay: 0.12s;
         }
@@ -392,12 +392,12 @@ export const StyleChatbot: React.FC = () => (
             opacity: 0;
         }
         [data-theme='dark'] #chatBtn::before {
-            border-color: rgba(34, 211, 238, 0.20);
-            box-shadow: 0 0 20px rgba(34, 211, 238, 0.12);
+            border-color: rgba(224, 122, 63, 0.20);
+            box-shadow: 0 0 20px rgba(224, 122, 63, 0.12);
         }
         [data-theme='dark'] #chatBtn::after {
-            border-color: rgba(20, 184, 166, 0.12);
-            box-shadow: 0 0 24px rgba(20, 184, 166, 0.08);
+            border-color: rgba(196, 145, 88, 0.12);
+            box-shadow: 0 0 24px rgba(196, 145, 88, 0.08);
         }
         #chatBtn:hover::before,
         #chatBtn:hover::after {

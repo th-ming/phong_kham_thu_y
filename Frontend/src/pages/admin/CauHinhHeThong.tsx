@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import axiosInstance from '@services/axios';
 import { toast } from '@components/Toast';
 import { toastError } from '@utils/toastHelpers';
@@ -31,7 +31,7 @@ const ACTIONS = [
 const AI_PROVIDERS = [
     { id: 'groq', name: 'Groq', keyField: 'groq_api_key', modelField: 'groq_model', color: '#10b981', fallbackKeyFields: ['groq_api_key_2', 'groq_api_key_3'] },
     { id: 'gemini', name: 'Gemini', keyField: 'gemini_api_key', modelField: 'gemini_model', color: '#f59e0b' },
-    { id: 'openrouter', name: 'OpenRouter', keyField: 'openrouter_api_key', modelField: 'openrouter_model', color: '#22d3ee' }
+    { id: 'openrouter', name: 'OpenRouter', keyField: 'openrouter_api_key', modelField: 'openrouter_model', color: '#e07a3f' }
 ];
 
 const DEFAULT_AI_POLICY: Record<string, string[]> = {
@@ -545,7 +545,7 @@ const CauHinhHeThong: React.FC = () => {
                     min-width: 0;
                 }
                 .admin-config-tab-btn.is-active {
-                    border-color: rgba(34, 211, 238, 0.42) !important;
+                    border-color: rgba(224, 122, 63, 0.42) !important;
                     background: var(--surface) !important;
                     box-shadow: 0 14px 32px rgba(15, 23, 42, 0.06) !important;
                 }
@@ -1310,7 +1310,7 @@ const CauHinhHeThong: React.FC = () => {
 
                                 <div style={{ padding: '20px', border: '1px solid var(--gray-200)', borderRadius: '16px', background: 'var(--surface)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                                     <h3 style={{ margin: '0 0 4px', color: 'var(--ink)', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                        <span className="material-symbols-outlined" style={{ color: '#22d3ee' }}>globe</span>
+                                        <span className="material-symbols-outlined" style={{ color: '#e07a3f' }}>globe</span>
                                         OpenRouter
                                     </h3>
                                     <div>
@@ -1392,10 +1392,10 @@ const CauHinhHeThong: React.FC = () => {
                                 <button data-ai-id="button-cauhinhhethong-refresh-backups" className="btn btn-outline settings-action-btn" onClick={() => fetchBackups()} style={{ width: '100%', marginBottom: '12px' }}>Làm mới danh sách</button>
                                 <button data-ai-id="button-cauhinhhethong-create-backup" className="btn btn-primary settings-action-btn" onClick={handleCreateBackup} disabled={backingUp} style={{
                                     width: '100%',
-                                    background: backingUp ? 'rgba(34, 211, 238, 0.55)' : 'var(--primary-gradient)',
-                                    borderColor: 'rgba(34, 211, 238, 0.45)',
+                                    background: backingUp ? 'rgba(224, 122, 63, 0.55)' : 'var(--primary-gradient)',
+                                    borderColor: 'rgba(224, 122, 63, 0.45)',
                                     color: 'white',
-                                    boxShadow: backingUp ? 'none' : '0 14px 30px rgba(6, 182, 212, 0.24)',
+                                    boxShadow: backingUp ? 'none' : '0 14px 30px rgba(224, 122, 63, 0.24)',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
@@ -1552,15 +1552,15 @@ const CauHinhHeThong: React.FC = () => {
                     content: "";
                     position: absolute;
                     inset: 0;
-                    background: radial-gradient(circle at var(--spot-x, 50%) var(--spot-y, 0%), rgba(34, 211, 238, 0.12), transparent 42%);
+                    background: radial-gradient(circle at var(--spot-x, 50%) var(--spot-y, 0%), rgba(224, 122, 63, 0.12), transparent 42%);
                     opacity: 0;
                     transition: opacity 0.22s ease;
                     pointer-events: none;
                 }
                 .settings-panel-interactive:hover {
                     transform: translateY(-2px);
-                    border-color: rgba(34, 211, 238, 0.42) !important;
-                    box-shadow: 0 18px 42px rgba(6, 182, 212, 0.12);
+                    border-color: rgba(224, 122, 63, 0.42) !important;
+                    box-shadow: 0 18px 42px rgba(224, 122, 63, 0.12);
                 }
                 .settings-panel-interactive:hover::before {
                     opacity: 1;
@@ -1589,13 +1589,13 @@ const CauHinhHeThong: React.FC = () => {
                     transition: background 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
                 }
                 .settings-list-row:hover {
-                    background: rgba(34, 211, 238, 0.07);
+                    background: rgba(224, 122, 63, 0.07);
                     transform: translateX(3px);
                     box-shadow: inset 3px 0 0 var(--primary);
                 }
                 .settings-log-row:hover {
-                    background: rgba(34, 211, 238, 0.055);
-                    box-shadow: inset 3px 0 0 rgba(34, 211, 238, 0.7);
+                    background: rgba(224, 122, 63, 0.055);
+                    box-shadow: inset 3px 0 0 rgba(224, 122, 63, 0.7);
                 }
                 @media (max-width: 1180px) {
                     .backup-grid {

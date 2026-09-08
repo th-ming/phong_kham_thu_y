@@ -42,13 +42,13 @@ export const ToastContainer: React.FC = () => {
             {toasts.map(t => (
                 <div key={t.id} style={{
                     padding: isMobile ? '12px 14px' : '18px 28px',
-                    background: t.type === 'error' ? 'rgba(244, 63, 94, 0.9)' : t.type === 'success' ? 'rgba(13, 148, 136, 0.9)' : 'rgba(59, 130, 246, 0.9)',
+                    background: t.type === 'error' ? 'rgba(244, 63, 94, 0.9)' : t.type === 'success' ? 'rgba(224, 122, 63, 0.9)' : 'rgba(59, 130, 246, 0.9)',
                     backgroundImage: t.type === 'error' ? 'var(--accent-gradient)' : t.type === 'success' ? 'var(--primary-gradient)' : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
                     backdropFilter: 'blur(12px)',
                     WebkitBackdropFilter: 'blur(12px)',
                     color: 'white',
                     borderRadius: isMobile ? '16px' : '20px',
-                    boxShadow: t.type === 'error' ? '0 15px 30px rgba(244, 63, 94, 0.3)' : t.type === 'success' ? '0 15px 30px rgba(13, 148, 136, 0.3)' : '0 15px 30px rgba(59, 130, 246, 0.3)',
+                    boxShadow: t.type === 'error' ? '0 15px 30px rgba(244, 63, 94, 0.3)' : t.type === 'success' ? '0 15px 30px rgba(224, 122, 63, 0.3)' : '0 15px 30px rgba(59, 130, 246, 0.3)',
                     border: '1px solid rgba(255, 255, 255, 0.2)',
                     display: 'flex', alignItems: 'center', gap: isMobile ? '10px' : '16px',
                     width: isMobile ? '100%' : 'auto',

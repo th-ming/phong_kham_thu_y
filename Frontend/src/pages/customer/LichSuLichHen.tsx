@@ -336,9 +336,9 @@ const LichSuLichHen: React.FC = () => {
           100% { transform: translateY(0px); }
         }
         @keyframes pulse-glow {
-          0% { box-shadow: 0 0 20px rgba(20, 184, 166, 0.2); }
-          50% { box-shadow: 0 0 40px rgba(20, 184, 166, 0.4); }
-          100% { box-shadow: 0 0 20px rgba(20, 184, 166, 0.2); }
+          0% { box-shadow: 0 0 20px rgba(196, 145, 88, 0.2); }
+          50% { box-shadow: 0 0 40px rgba(196, 145, 88, 0.4); }
+          100% { box-shadow: 0 0 20px rgba(196, 145, 88, 0.2); }
         }
         .stagger-1 { animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both; }
         .stagger-2 { animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both; }
@@ -534,14 +534,14 @@ const LichSuLichHen: React.FC = () => {
             <div style={{ 
               width: '160px', 
               height: '160px', 
-              background: 'linear-gradient(135deg, rgba(20, 184, 166, 0.1) 0%, rgba(13, 148, 136, 0.05) 100%)', 
+              background: 'linear-gradient(135deg, rgba(196, 145, 88, 0.1) 0%, rgba(224, 122, 63, 0.05) 100%)', 
               borderRadius: '60px', 
               display: 'flex', 
               alignItems: 'center', 
               justifyContent: 'center', 
               margin: '0 auto 40px', 
               animation: 'float 4s ease-in-out infinite, pulse-glow 3s infinite',
-              border: '1px solid rgba(20, 184, 166, 0.2)'
+              border: '1px solid rgba(196, 145, 88, 0.2)'
             }}>
               <span className="material-symbols-outlined" style={{ fontSize: '80px', color: 'var(--primary)', filter: 'drop-shadow(0 0 15px var(--primary))' }}>calendar_month</span>
             </div>

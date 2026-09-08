@@ -255,8 +255,8 @@ const QuanLyNhanVienPhanQuyen: React.FC = () => {
         }
         .stagger-1 { animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both; }
         .stagger-2 { animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both; }
-        .table-row:hover { background-color: var(--surface) !important; transform: scale(1.005) translateX(4px); box-shadow: -10px 10px 20px rgba(15, 157, 138, 0.05); z-index: 10; position: relative; }
-        [data-theme='dark'] .table-row:hover { background-color: rgba(15, 23, 42, 0.96) !important; box-shadow: -10px 10px 24px rgba(34, 211, 238, 0.08); }
+        .table-row:hover { background-color: var(--surface) !important; transform: scale(1.005) translateX(4px); box-shadow: -10px 10px 20px rgba(224, 122, 63, 0.05); z-index: 10; position: relative; }
+        [data-theme='dark'] .table-row:hover { background-color: rgba(15, 23, 42, 0.96) !important; box-shadow: -10px 10px 24px rgba(224, 122, 63, 0.08); }
         .admin-staff-mobile-list { display: none; }
         .admin-account-mobile-list { display: none; }
         @media screen and (max-width: 1024px) {

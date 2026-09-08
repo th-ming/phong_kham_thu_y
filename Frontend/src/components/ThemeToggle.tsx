@@ -39,7 +39,7 @@ const ThemeToggle: React.FC = () => {
           transform: scale(1.1) rotate(12deg);
           background: var(--primary);
           color: white;
-          box-shadow: 0 8px 20px rgba(15, 157, 138, 0.3);
+          box-shadow: 0 8px 20px rgba(224, 122, 63, 0.3);
           border-color: var(--primary);
         }
 

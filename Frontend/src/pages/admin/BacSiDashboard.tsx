@@ -270,7 +270,7 @@ const BacSiDashboard: React.FC = () => {
                 .quick-btn { transition: all 0.2s ease; border: 1px solid transparent; }
                 .quick-btn:hover { transform: translateX(4px); box-shadow: var(--shadow-sm); }
                 .quick-btn:active { transform: scale(0.98); }
-                .chart-bar-container:hover .chart-bar { background: linear-gradient(to top, var(--primary) 0%, var(--primary-light) 100%) !important; filter: drop-shadow(0 4px 8px rgba(20, 184, 166, 0.3)); }
+                .chart-bar-container:hover .chart-bar { background: linear-gradient(to top, var(--primary) 0%, var(--primary-light) 100%) !important; filter: drop-shadow(0 4px 8px rgba(196, 145, 88, 0.3)); }
                 .chart-bar-container:hover .chart-val { opacity: 1 !important; transform: translateY(0) !important; }
                 
                 /* Responsive Dashboard Grid System */
@@ -441,7 +441,7 @@ const BacSiDashboard: React.FC = () => {
             <div className="animate-slide-up stagger-1" style={{ 
                 padding: '40px', 
                 borderRadius: '24px', 
-                background: 'linear-gradient(135deg, var(--primary) 0%, #0d9488 100%)', 
+                background: 'linear-gradient(135deg, var(--primary) 0%, #c05621 100%)', 
                 color: 'white', 
                 position: 'relative', 
             overflow: 'visible',
@@ -460,7 +460,7 @@ const BacSiDashboard: React.FC = () => {
                             Xin chào, {user.ho_ten || 'Bác sĩ'}!
                         </h1>
                         <p style={{ fontWeight: 600, color: 'rgba(255,255,255,0.9)', margin: 0, fontSize: '1.05rem' }}>
-                            Hôm nay bạn có <span style={{ color: '#2dd4bf', fontWeight: 900 }}>{myAppointments.length} ca khám</span> trong lịch trình. Hãy cùng chăm sóc tốt cho các bé nhé!
+                            Hôm nay bạn có <span style={{ color: '#e8955c', fontWeight: 900 }}>{myAppointments.length} ca khám</span> trong lịch trình. Hãy cùng chăm sóc tốt cho các bé nhé!
                         </p>
                     </div>
                     {lastUpdated && (
@@ -477,7 +477,7 @@ const BacSiDashboard: React.FC = () => {
                             width: 'fit-content',
                             border: '1px solid rgba(255,255,255,0.08)'
                         }}>
-                            <span className="material-symbols-outlined" style={{ fontSize: '14px', color: '#2dd4bf', animation: 'spin 4s infinite linear' }}>sync</span>
+                            <span className="material-symbols-outlined" style={{ fontSize: '14px', color: '#e8955c', animation: 'spin 4s infinite linear' }}>sync</span>
                             <span>Đồng bộ thực tế: {lastUpdated}</span>
                         </div>
                     )}
@@ -682,7 +682,7 @@ const BacSiDashboard: React.FC = () => {
                                 gap: '12px', 
                                 padding: '14px', 
                                 borderRadius: '16px', 
-                                background: 'linear-gradient(135deg, rgba(20, 184, 166, 0.08) 0%, rgba(20, 184, 166, 0.02) 100%)', 
+                                background: 'linear-gradient(135deg, rgba(196, 145, 88, 0.08) 0%, rgba(196, 145, 88, 0.02) 100%)', 
                                 color: 'var(--primary)', 
                                 fontWeight: 850, 
                                 fontSize: '0.9rem',
@@ -755,7 +755,7 @@ const BacSiDashboard: React.FC = () => {
                                         width: '100%', 
                                         height: `${heightPct}%`, 
                                         minHeight: '6px', 
-                                        background: stat.count > 0 ? 'linear-gradient(to top, #0d9488 0%, #2dd4bf 100%)' : 'var(--gray-100)', 
+                                        background: stat.count > 0 ? 'linear-gradient(to top, #c05621 0%, #e8955c 100%)' : 'var(--gray-100)', 
                                         borderRadius: '6px 6px 0 0', 
                                         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' 
                                     }}></div>

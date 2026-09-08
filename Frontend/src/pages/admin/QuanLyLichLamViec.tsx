@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import axiosInstance from '@services/axios';
 import { toast } from '@components/Toast';
@@ -80,10 +80,10 @@ const shouldBlockEmployeeScheduleAction = (dateStr: string) => {
 
 
 const DOCTOR_COLORS = [
-    { bg: 'rgba(15, 157, 138, 0.15)', border: '#0f9d8a', text: '#0f9d8a' }, // Teal (Màu chuẩn Rexi)
+    { bg: 'rgba(224, 122, 63, 0.15)', border: '#0f9d8a', text: '#0f9d8a' }, // Teal (Màu chuẩn Rexi)
     { bg: 'rgba(59, 130, 246, 0.15)', border: '#3b82f6', text: '#2563eb' }, // Blue
     { bg: 'rgba(236, 72, 153, 0.15)', border: '#ec4899', text: '#db2777' }, // Pink
-    { bg: 'rgba(139, 92, 246, 0.15)', border: '#14b8a6', text: '#115e59' }, // teal
+    { bg: 'rgba(139, 92, 246, 0.15)', border: '#e07a3f', text: '#115e59' }, // teal
     { bg: 'rgba(16, 185, 129, 0.15)', border: '#10b981', text: '#059669' }, // Emerald
     { bg: 'rgba(244, 63, 94, 0.15)', border: '#f43f5e', text: '#e11d48' }, // Rose
     { bg: 'rgba(245, 158, 11, 0.15)', border: '#f59e0b', text: '#d97706' }, // Amber
@@ -514,7 +514,7 @@ const QuanLyLichLamViec: React.FC = () => {
                 }
                 .schedule-scroll-wrap::-webkit-scrollbar-thumb,
                 .slot-shift-list::-webkit-scrollbar-thumb {
-                    background: rgba(13, 148, 136, 0.24);
+                    background: rgba(224, 122, 63, 0.24);
                     border-radius: 999px;
                 }
                 .schedule-grid {
@@ -561,7 +561,7 @@ const QuanLyLichLamViec: React.FC = () => {
                     width: 8px;
                 }
                 .staff-picker-menu::-webkit-scrollbar-thumb {
-                    background: rgba(20, 184, 166, 0.45);
+                    background: rgba(196, 145, 88, 0.45);
                     border-radius: 999px;
                 }
                 .staff-hours-rail {
@@ -578,7 +578,7 @@ const QuanLyLichLamViec: React.FC = () => {
                     height: 8px;
                 }
                 .staff-hours-rail::-webkit-scrollbar-thumb {
-                    background: rgba(13, 148, 136, 0.24);
+                    background: rgba(224, 122, 63, 0.24);
                     border-radius: 999px;
                 }
                 .staff-hours-chip {
@@ -603,7 +603,7 @@ const QuanLyLichLamViec: React.FC = () => {
                     cursor: pointer;
                 }
                 .schedule-slot-cell.slot-editable:hover {
-                    background: rgba(20, 184, 166, 0.05) !important;
+                    background: rgba(196, 145, 88, 0.05) !important;
                 }
                 .schedule-slot-cell.slot-locked {
                     cursor: not-allowed;

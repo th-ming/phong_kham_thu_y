@@ -295,8 +295,8 @@ const BaoCaoThongKe: React.FC = () => {
       backgroundColor: (context: any) => {
         const ctx = context.chart.ctx;
         const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-        gradient.addColorStop(0, 'rgba(15, 157, 138, 1)');
-        gradient.addColorStop(1, 'rgba(20, 184, 166, 0.2)');
+        gradient.addColorStop(0, 'rgba(224, 122, 63, 1)');
+        gradient.addColorStop(1, 'rgba(196, 145, 88, 0.2)');
         return gradient;
       },
       borderRadius: 12,
@@ -347,7 +347,7 @@ const BaoCaoThongKe: React.FC = () => {
     datasets: [{
       label: 'Số lượng',
       data: normalizedPetStats.map(s => s.soLuong),
-      backgroundColor: ['#0ea5e9', '#f59e0b', '#14b8a6', '#10b981', '#ec4899'],
+      backgroundColor: ['#0ea5e9', '#f59e0b', '#e07a3f', '#10b981', '#ec4899'],
       borderWidth: 0,
       hoverOffset: 15
     }]
@@ -369,16 +369,16 @@ const BaoCaoThongKe: React.FC = () => {
       backgroundColor: (context: any) => {
         const chart = context.chart;
         const { ctx, chartArea } = chart;
-        if (!chartArea) return 'rgba(34, 211, 238, 0.75)';
+        if (!chartArea) return 'rgba(224, 122, 63, 0.75)';
         const gradient = ctx.createLinearGradient(chartArea.left, 0, chartArea.right, 0);
-        gradient.addColorStop(0, 'rgba(34, 211, 238, 0.95)');
-        gradient.addColorStop(1, 'rgba(20, 184, 166, 0.72)');
+        gradient.addColorStop(0, 'rgba(224, 122, 63, 0.95)');
+        gradient.addColorStop(1, 'rgba(196, 145, 88, 0.72)');
         return gradient;
       },
       borderColor: 'rgba(125, 211, 252, 0.9)',
       borderWidth: 1,
       borderRadius: 8,
-      hoverBackgroundColor: 'rgba(34, 211, 238, 1)',
+      hoverBackgroundColor: 'rgba(224, 122, 63, 1)',
       maxBarThickness: 45,
     }]
   };
@@ -500,7 +500,7 @@ const BaoCaoThongKe: React.FC = () => {
           }
         }
         .hover-lift { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: default; }
-        .hover-lift:hover { transform: translateY(-6px); box-shadow: 0 20px 40px rgba(15, 157, 138, 0.08) !important; }
+        .hover-lift:hover { transform: translateY(-6px); box-shadow: 0 20px 40px rgba(224, 122, 63, 0.08) !important; }
         @keyframes slideUpFade { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes growBar { from { width: 0 !important; } to {} }
         .report-kpi-card { animation: slideUpFade 0.5s cubic-bezier(.22,.68,0,1.2) both; }
@@ -525,8 +525,8 @@ const BaoCaoThongKe: React.FC = () => {
           align-items: center;
           padding: 7px 10px;
           border-radius: 999px;
-          border: 1px solid rgba(20, 184, 166, 0.28);
-          background: rgba(20, 184, 166, 0.1);
+          border: 1px solid rgba(196, 145, 88, 0.28);
+          background: rgba(196, 145, 88, 0.1);
           color: var(--primary);
           font-size: 0.72rem;
           font-weight: 950;
@@ -543,7 +543,7 @@ const BaoCaoThongKe: React.FC = () => {
           z-index: 90;
           padding: 16px;
           border-radius: 16px;
-          border: 1px solid rgba(20, 184, 166, 0.35);
+          border: 1px solid rgba(196, 145, 88, 0.35);
           background: var(--surface);
           box-shadow: 0 24px 56px rgba(15, 23, 42, 0.22);
           opacity: 0;
@@ -609,8 +609,8 @@ const BaoCaoThongKe: React.FC = () => {
 
       {/* HÀNG THẺ KPI KÍNH MỜ CAO CẤP */}
       <div className="stagger-1 no-print admin-report-kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '24px', marginBottom: '40px' }}>
-        <div className="glass-card hover-lift report-kpi-card" onClick={() => setSelectedKpi("revenue")} title="Bấm để xem chi tiết doanh thu" style={{ padding: '32px', borderRadius: '32px', border: '1px solid rgba(20, 184, 166, 0.25)', background: 'linear-gradient(135deg, rgba(20, 184, 166, 0.15) 0%, var(--surface) 100%)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <div style={{ width: '60px', height: '60px', borderRadius: '20px', background: 'rgba(20, 184, 166, 0.18)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 20px rgba(20, 184, 166, 0.12)', fontSize: '1.55rem', fontWeight: 950, marginBottom: '16px' }}><KpiIcon name="money" /></div>
+        <div className="glass-card hover-lift report-kpi-card" onClick={() => setSelectedKpi("revenue")} title="Bấm để xem chi tiết doanh thu" style={{ padding: '32px', borderRadius: '32px', border: '1px solid rgba(196, 145, 88, 0.25)', background: 'linear-gradient(135deg, rgba(196, 145, 88, 0.15) 0%, var(--surface) 100%)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div style={{ width: '60px', height: '60px', borderRadius: '20px', background: 'rgba(196, 145, 88, 0.18)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 20px rgba(196, 145, 88, 0.12)', fontSize: '1.55rem', fontWeight: 950, marginBottom: '16px' }}><KpiIcon name="money" /></div>
           <div>
             <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gray-500)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>TỔNG DOANH THU</span>
           </div>
@@ -703,7 +703,7 @@ const BaoCaoThongKe: React.FC = () => {
               {normalizedPetStats.map((s, idx) => {
                 const type = s.loai;
                 const count = s.soLuong;
-                const colors = ['#0ea5e9', '#f59e0b', '#14b8a6', '#10b981', '#ec4899'];
+                const colors = ['#0ea5e9', '#f59e0b', '#e07a3f', '#10b981', '#ec4899'];
                 const color = colors[idx % colors.length];
                 return (
                   <button data-ai-id="button-baocaothongke-tlo0"

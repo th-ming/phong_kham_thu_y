@@ -197,7 +197,7 @@ export const Preloader: React.FC = () => {
                             bottom: '15px',
                             width: '60px',
                             height: '15px',
-                            background: 'rgba(15, 157, 138, 0.15)',
+                            background: 'rgba(224, 122, 63, 0.15)',
                             borderRadius: '50%',
                             filter: 'blur(8px)',
                             animation: 'dust-cat 0.3s infinite'
@@ -222,7 +222,7 @@ export const Preloader: React.FC = () => {
                         position: 'absolute',
                         height: '100%',
                         width: `${progress}%`,
-                        background: 'linear-gradient(90deg, #0f9d8a, #2dd4bf)',
+                        background: 'linear-gradient(90deg, #0f9d8a, #e8955c)',
                         borderRadius: '20px',
                         transition: 'width 0.3s ease-out'
                     }} />

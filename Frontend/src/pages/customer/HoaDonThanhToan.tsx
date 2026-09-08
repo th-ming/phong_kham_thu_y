@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useMemo, useRef, useState, useEffect } from "react";
+import React, { useCallback, useMemo, useRef, useState, useEffect } from "react";
 import axiosInstance from "@services/axios";
 import { formatTienVND, getUserProfile, matchesSearchFields } from "@utils/index";
 import { customerToneCopy, isGenZBirthYear } from "@utils/customerTone";
@@ -48,7 +48,7 @@ const getInvoiceStatusBadgeStyle = (hd: any): React.CSSProperties => {
     return {
       background: "var(--primary-light)",
       color: "var(--primary)",
-      border: "1px solid rgba(20, 184, 166, 0.28)"
+      border: "1px solid rgba(196, 145, 88, 0.28)"
     };
   }
   if (invoiceStatus === "dang_thanh_toan") {
@@ -392,7 +392,7 @@ const HoaDonThanhToan: React.FC = () => {
         .item-card:hover {
           transform: translateY(-6px) !important;
           border-color: var(--primary) !important;
-          box-shadow: 0 20px 40px rgba(15, 157, 138, 0.12), 0 1px 12px rgba(0, 0, 0, 0.02) !important;
+          box-shadow: 0 20px 40px rgba(224, 122, 63, 0.12), 0 1px 12px rgba(0, 0, 0, 0.02) !important;
           z-index: 10;
           position: relative;
         }
@@ -430,7 +430,7 @@ const HoaDonThanhToan: React.FC = () => {
           z-index: 90;
           padding: 16px;
           border-radius: 16px;
-          border: 1px solid rgba(20, 184, 166, 0.35);
+          border: 1px solid rgba(196, 145, 88, 0.35);
           background: var(--surface);
           color: var(--ink);
           box-shadow: 0 24px 56px rgba(15, 23, 42, 0.22);
@@ -722,7 +722,7 @@ const HoaDonThanhToan: React.FC = () => {
           }
         />
         <CustomerKpiCard
-          accent="#14b8a6"
+          accent="#e07a3f"
           title="Tổng chi tiêu"
           value={<AnimatedNumber value={stats.totalPaid} format="currency" />}
           icon={<KpiIcon name="money" />}

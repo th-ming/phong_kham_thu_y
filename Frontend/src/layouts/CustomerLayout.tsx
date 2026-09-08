@@ -177,7 +177,7 @@ const CustomerLayout: React.FC = () => {
         <div style={{
           position: "fixed",
           inset: 0,
-          background: "rgba(15, 23, 42, 0.52)",
+          background: "rgba(28, 25, 23, 0.5)",
           backdropFilter: "blur(18px) saturate(170%)",
           WebkitBackdropFilter: "blur(18px) saturate(170%)",
           display: "flex",
@@ -193,7 +193,7 @@ const CustomerLayout: React.FC = () => {
             borderRadius: "28px",
             background: "var(--surface)",
             border: "1px solid var(--gray-200)",
-            boxShadow: "0 30px 70px rgba(15, 23, 42, 0.24)",
+            boxShadow: "0 30px 70px rgba(28, 25, 23, 0.24)",
             textAlign: "center"
           }}>
             <img
@@ -229,7 +229,7 @@ const CustomerLayout: React.FC = () => {
                   width: "100%",
                   padding: "16px 18px",
                   borderRadius: "16px",
-                  border: "2px solid rgba(15, 157, 138, 0.22)",
+                  border: "2px solid rgba(224, 122, 63, 0.22)",
                   backgroundColor: "var(--gray-50)",
                   color: "var(--ink)",
                   fontSize: "1.05rem",
@@ -239,7 +239,7 @@ const CustomerLayout: React.FC = () => {
                   marginBottom: "18px"
                 }}
                 onFocus={(e) => e.target.style.borderColor = "var(--primary)"}
-                onBlur={(e) => e.target.style.borderColor = "rgba(15, 157, 138, 0.22)"}
+                onBlur={(e) => e.target.style.borderColor = "rgba(224, 122, 63, 0.22)"}
               />
 
               <button

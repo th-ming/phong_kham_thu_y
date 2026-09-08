@@ -113,7 +113,7 @@ const GoogleAccountLink: React.FC = () => {
             {/* avatar logo ở trang liên kết google */}
             <img src="/img/avtpkty.png" alt="Rexi" style={{ width: 56, height: 56, objectFit: "contain" }} />
             <div>
-              <h1 style={{ margin: 0, fontSize: "1.75rem", fontWeight: 900, color: "#0d9488" }}>Rexi</h1>
+              <h1 style={{ margin: 0, fontSize: "1.75rem", fontWeight: 900, color: "#c05621" }}>Rexi</h1>
               <p style={{ margin: "4px 0 0 0", fontSize: "0.85rem", color: "#64748b", fontWeight: 600 }}>Phòng khám thú y</p>
             </div>
           </div>
@@ -139,7 +139,7 @@ const GoogleAccountLink: React.FC = () => {
               disabled={isLoading || success}
               style={{
                 width: "100%",
-                background: "#0d9488",
+                background: "#c05621",
                 color: "white",
                 border: "none",
                 borderRadius: "16px",
@@ -151,7 +151,7 @@ const GoogleAccountLink: React.FC = () => {
                 transition: "all 0.2s",
               }}
               onMouseEnter={(e) => !isLoading && !success && (e.currentTarget.style.background = "#0f766e")}
-              onMouseLeave={(e) => !isLoading && !success && (e.currentTarget.style.background = "#0d9488")}
+              onMouseLeave={(e) => !isLoading && !success && (e.currentTarget.style.background = "#c05621")}
             >
               {isLoading && !showLinkForm ? "⏳ Đang xử lý..." : "+ Tạo tài khoản mới"}
             </button>
@@ -163,8 +163,8 @@ const GoogleAccountLink: React.FC = () => {
                 style={{
                   width: "100%",
                   background: "transparent",
-                  border: "2px solid #0d9488",
-                  color: "#0d9488",
+                  border: "2px solid #c05621",
+                  color: "#c05621",
                   borderRadius: "16px",
                   padding: "14px",
                   fontWeight: 800,
@@ -271,14 +271,14 @@ const GoogleAccountLink: React.FC = () => {
           )}
 
           {!showLinkForm && (
-            <div style={{ marginTop: "24px", padding: "16px", background: "#e6f4ea", borderRadius: "12px", fontSize: "0.85rem", color: "#64748b", borderLeft: "3px solid #0d9488" }}>
+            <div style={{ marginTop: "24px", padding: "16px", background: "#e6f4ea", borderRadius: "12px", fontSize: "0.85rem", color: "#64748b", borderLeft: "3px solid #c05621" }}>
               <strong>💡 Ghi chú:</strong><br />
               Nếu bạn đã từng khám ở Rexi, hãy liên kết tài khoản để đồng bộ dữ liệu. Nếu chưa, hãy tạo tài khoản mới để bắt đầu.
             </div>
           )}
 
           <div style={{ marginTop: "28px", textAlign: "center", paddingTop: "20px", borderTop: "1px solid #e2e8f0" }}>
-            <Link to="/dang-nhap" style={{ color: "#0d9488", fontWeight: 700, textDecoration: "none", fontSize: "0.9rem" }}>
+            <Link to="/dang-nhap" style={{ color: "#c05621", fontWeight: 700, textDecoration: "none", fontSize: "0.9rem" }}>
               ← Quay lại đăng nhập
             </Link>
           </div>
@@ -305,7 +305,7 @@ const GoogleAccountLink: React.FC = () => {
           }
           [data-theme='dark'] .google-link-page > div > div {
             background: #0f172a !important;
-            border-color: rgba(20, 184, 166, 0.24) !important;
+            border-color: rgba(196, 145, 88, 0.24) !important;
             color: #f8fafc !important;
             box-shadow: 0 28px 70px rgba(0, 0, 0, 0.45) !important;
           }
@@ -313,7 +313,7 @@ const GoogleAccountLink: React.FC = () => {
           [data-theme='dark'] .google-link-page p { color: #94a3b8 !important; }
           [data-theme='dark'] .google-link-page input {
             background: #111827 !important;
-            border-color: rgba(20, 184, 166, 0.28) !important;
+            border-color: rgba(196, 145, 88, 0.28) !important;
             color: #f8fafc !important;
           }
           [data-theme='dark'] .google-link-page input::placeholder { color: #94a3b8 !important; }

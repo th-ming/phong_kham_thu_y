@@ -318,7 +318,7 @@ const QuanLyHoaDon: React.FC = () => {
           <h1 style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--ink)', letterSpacing: '-1px' }}>Quản lý Hóa đơn</h1>
           <p style={{ color: 'var(--gray-500)', fontWeight: 600 }}>Theo dõi dòng tiền và lịch sử thanh toán của khách hàng.</p>
         </div>
-        <button data-ai-id="button-quanlyhoadon-5wcs" onClick={handleExportExcel} className="btn btn-primary btn-pill hover-lift" style={{ background: 'var(--primary)', color: '#ffffff', border: '1px solid var(--primary)', padding: '10px 20px', fontSize: '0.9rem', fontWeight: 800, boxShadow: '0 12px 28px rgba(15, 157, 138, 0.22)' }}>
+        <button data-ai-id="button-quanlyhoadon-5wcs" onClick={handleExportExcel} className="btn btn-primary btn-pill hover-lift" style={{ background: 'var(--primary)', color: '#ffffff', border: '1px solid var(--primary)', padding: '10px 20px', fontSize: '0.9rem', fontWeight: 800, boxShadow: '0 12px 28px rgba(224, 122, 63, 0.22)' }}>
           <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>download</span> Xuất Excel
         </button>
       </div>

@@ -274,8 +274,8 @@ export const ModalTaoLichHenAdmin: React.FC<ModalProps> = ({ isOpen, onClose, on
                                     <span className="material-symbols-outlined">person_add</span> Khách hàng mới
                                 </p>
                                 <div style={{ display: 'grid', gap: '16px' }}>
-                                    <input data-ai-id="input-modaltaolichhenadmin-1jt8" value={newCustomerName} onChange={e => setNewCustomerName(e.target.value)} placeholder="Họ và tên khách hàng" style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid rgba(15, 157, 138, 0.3)', outline: 'none', fontWeight: 600 }} autoFocus />
-                                    <input data-ai-id="input-modaltaolichhenadmin-bplk" value={newPetName} onChange={e => setNewPetName(e.target.value)} placeholder="Tên thú cưng" style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid rgba(15, 157, 138, 0.3)', outline: 'none', fontWeight: 600 }} onKeyDown={e => { if (e.key === 'Enter') { if (newCustomerName && newPetName) { setSelectedCustomer({ ten_khach_hang: newCustomerName }); setStep(2); } else { toastError("Vui lòng nhập đầy đủ Tên khách và Tên bé nhé!"); } } }} />
+                                    <input data-ai-id="input-modaltaolichhenadmin-1jt8" value={newCustomerName} onChange={e => setNewCustomerName(e.target.value)} placeholder="Họ và tên khách hàng" style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid rgba(224, 122, 63, 0.3)', outline: 'none', fontWeight: 600 }} autoFocus />
+                                    <input data-ai-id="input-modaltaolichhenadmin-bplk" value={newPetName} onChange={e => setNewPetName(e.target.value)} placeholder="Tên thú cưng" style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid rgba(224, 122, 63, 0.3)', outline: 'none', fontWeight: 600 }} onKeyDown={e => { if (e.key === 'Enter') { if (newCustomerName && newPetName) { setSelectedCustomer({ ten_khach_hang: newCustomerName }); setStep(2); } else { toastError("Vui lòng nhập đầy đủ Tên khách và Tên bé nhé!"); } } }} />
                                     <button data-ai-id="button-modaltaolichhenadmin-z04y" onClick={() => {
                                         if (newCustomerName && newPetName) {
                                             setSelectedCustomer({ ten_khach_hang: newCustomerName }); setStep(2);
@@ -293,7 +293,7 @@ export const ModalTaoLichHenAdmin: React.FC<ModalProps> = ({ isOpen, onClose, on
                 {step === 2 && (
                     <form onSubmit={handleCreateAppointment}>
                         {/* Hiển thị thông báo về khách hàng đang được chọn */}
-                        <div style={{ padding: '20px 24px', background: 'var(--primary-light)', borderRadius: '24px', marginBottom: '28px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid rgba(15, 157, 138, 0.2)' }}>
+                        <div style={{ padding: '20px 24px', background: 'var(--primary-light)', borderRadius: '24px', marginBottom: '28px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid rgba(224, 122, 63, 0.2)' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                 <div style={{ background: 'var(--primary)', color: 'white', width: '32px', height: '32px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                     <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>account_circle</span>

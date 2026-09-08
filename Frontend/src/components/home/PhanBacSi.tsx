@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { Link } from "react-router-dom";
 import { RevealSection } from "@components/SpecialEffects";
 
@@ -174,7 +174,7 @@ const PhanBacSi: React.FC = () => {
                             border-radius: 22px !important;
                             overflow: hidden !important;
                             background: var(--primary-light) !important;
-                            box-shadow: 0 14px 28px rgba(15, 157, 138, 0.15);
+                            box-shadow: 0 14px 28px rgba(224, 122, 63, 0.15);
                         }
                         .doc-featured-image .doc-featured-img {
                             height: 100% !important;

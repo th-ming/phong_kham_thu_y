@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { RevealSection } from "@components/SpecialEffects";
 
 
@@ -67,8 +67,8 @@ const PhanQuyTrinh: React.FC = () => {
                                 box-shadow: 0 0 0 8px rgba(15,157,138,0.05) !important; 
                             }
                             [data-theme='dark'] .step-icon-wrap {
-                                background: rgba(15, 157, 138, 0.15) !important;
-                                border-color: rgba(15, 157, 138, 0.2) !important;
+                                background: rgba(224, 122, 63, 0.15) !important;
+                                border-color: rgba(224, 122, 63, 0.2) !important;
                             }
                             .step-card .step-icon-wrap {
                                 animation: stepIconFloat 3.2s ease-in-out infinite;
@@ -85,7 +85,7 @@ const PhanQuyTrinh: React.FC = () => {
                             .process-line {
                                 background-size: 200% 100% !important;
                                 animation: processLineFlow 4s linear infinite;
-                                box-shadow: 0 0 18px rgba(15, 157, 138, 0.18);
+                                box-shadow: 0 0 18px rgba(224, 122, 63, 0.18);
                             }
                             .process-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 40px; }
                             .process-mobile-summary {
@@ -99,7 +99,7 @@ const PhanQuyTrinh: React.FC = () => {
                                 .home-process-section {
                                     padding: 64px 0 !important;
                                     background:
-                                        radial-gradient(circle at 16% 8%, rgba(15, 157, 138, 0.08), transparent 32%),
+                                        radial-gradient(circle at 16% 8%, rgba(224, 122, 63, 0.08), transparent 32%),
                                         var(--background) !important;
                                 }
                                 .home-process-container > .section-label {
@@ -250,7 +250,7 @@ const PhanQuyTrinh: React.FC = () => {
                                 }
                             }
                         `}</style>
-                        <div className="process-line" style={{ position: 'absolute', top: '40px', left: '12%', right: '12%', height: '2px', background: 'linear-gradient(90deg, #ccfbf1 0%, #2dd4bf 30%, #0f9d8a 50%, #99f6e4 70%, #ccfbf1 100%)', zIndex: 0, borderRadius: '2px' }}></div>
+                        <div className="process-line" style={{ position: 'absolute', top: '40px', left: '12%', right: '12%', height: '2px', background: 'linear-gradient(90deg, #ccfbf1 0%, #e8955c 30%, #0f9d8a 50%, #99f6e4 70%, #ccfbf1 100%)', zIndex: 0, borderRadius: '2px' }}></div>
                         {[
                             { t: "Tạo tài khoản", d: "Đăng ký nhanh qua email hoặc Google", icon: "person_add" },
                             { t: "Chọn dịch vụ", d: "Chọn loại dịch vụ và bác sĩ phù hợp", icon: "stethoscope" },

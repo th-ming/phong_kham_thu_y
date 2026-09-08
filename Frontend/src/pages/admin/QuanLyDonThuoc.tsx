@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import axiosInstance from "@services/axios";
 import { Modal } from "@components/CommonUI";
 import { toast } from "@components/Toast";
@@ -377,7 +377,7 @@ const QuanLyDonThuoc: React.FC = () => {
              <div style={{ marginTop: '40px', display: 'flex', gap: '12px', justifyContent: 'flex-end' }} className="no-print">
                <button data-ai-id="button-quanlydonthuoc-oxr6" className="btn btn-pill" onClick={() => setViewingDT(null)} style={{ background: 'var(--gray-100)' }}>Đóng</button>
                {viewingDT.trang_thai !== 'DA_XUAT' && (
-                 <button className="btn btn-primary btn-pill" onClick={() => handleDispense(viewingDT.id_don_thuoc)} disabled={isDispensing} style={{ boxShadow: '0 8px 24px rgba(15, 157, 138, 0.25)' }}>
+                 <button className="btn btn-primary btn-pill" onClick={() => handleDispense(viewingDT.id_don_thuoc)} disabled={isDispensing} style={{ boxShadow: '0 8px 24px rgba(224, 122, 63, 0.25)' }}>
                    <span className="material-symbols-outlined">inventory_2</span>
                    {isDispensing ? 'Đang xuất...' : 'Xuất thuốc & Tính tiền'}
                  </button>

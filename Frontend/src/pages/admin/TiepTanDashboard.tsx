@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import axiosInstance from "@services/axios";
 import { getUserProfile, matchesSearchFields } from "@utils/index";
@@ -130,7 +130,7 @@ const TiepTanDashboard: React.FC = () => {
     return {
       pending: { count: pending, pct: (pending / total) * 100, color: "#f59e0b", label: "Chờ XN" },
       confirmed: { count: confirmed, pct: (confirmed / total) * 100, color: "#3b82f6", label: "Đã XN" },
-      checkingIn: { count: checkingIn, pct: (checkingIn / total) * 100, color: "#14b8a6", label: "Đang khám" },
+      checkingIn: { count: checkingIn, pct: (checkingIn / total) * 100, color: "#e07a3f", label: "Đang khám" },
       completed: { count: completed, pct: (completed / total) * 100, color: "#10b981", label: "Hoàn thành" },
       canceled: { count: canceled, pct: (canceled / total) * 100, color: "#ef4444", label: "Đã hủy" },
     };
@@ -268,7 +268,7 @@ const TiepTanDashboard: React.FC = () => {
           border-bottom: 1px solid var(--gray-50);
           min-height: ${ROW_HEIGHT}px;
         }
-        .reception-row:hover { background: rgba(20, 184, 166, 0.04); }
+        .reception-row:hover { background: rgba(196, 145, 88, 0.04); }
         .reception-actions {
           display: flex;
           gap: 8px;
@@ -310,7 +310,7 @@ const TiepTanDashboard: React.FC = () => {
           z-index: 90;
           padding: 16px;
           border-radius: 16px;
-          border: 1px solid rgba(20, 184, 166, 0.35);
+          border: 1px solid rgba(196, 145, 88, 0.35);
           background: var(--surface);
           color: var(--ink);
           box-shadow: 0 24px 56px rgba(15, 23, 42, 0.22);

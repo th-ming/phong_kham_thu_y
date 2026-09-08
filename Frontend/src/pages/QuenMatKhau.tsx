@@ -141,10 +141,10 @@ const QuenMatKhau: React.FC = () => {
         }
         [data-theme='dark'] .auth-sidebar {
           background:
-            linear-gradient(135deg, rgba(6, 182, 212, 0.92) 0%, rgba(20, 184, 166, 0.86) 100%),
+            linear-gradient(135deg, rgba(224, 122, 63, 0.92) 0%, rgba(196, 145, 88, 0.86) 100%),
             url('/img/hinh-nen-chan-thu.png') center/420px repeat !important;
           background-blend-mode: multiply;
-          border-right: 1px solid rgba(34, 211, 238, 0.26);
+          border-right: 1px solid rgba(224, 122, 63, 0.26);
         }
         [data-theme='dark'] .auth-sidebar h2,
         [data-theme='dark'] .auth-sidebar p,
@@ -163,21 +163,21 @@ const QuenMatKhau: React.FC = () => {
         }
         [data-theme='dark'] .input-group {
           background: var(--gray-50) !important;
-          border-color: rgba(34, 211, 238, 0.34) !important;
+          border-color: rgba(224, 122, 63, 0.34) !important;
         }
         [data-theme='dark'] .input-group input { color: #f8fafc !important; }
         [data-theme='dark'] .input-group input::placeholder { color: #cbd5e1 !important; opacity: 0.78; }
         [data-theme='dark'] .back-btn {
           background: var(--surface) !important;
           color: #f8fafc !important;
-          border-color: rgba(34, 211, 238, 0.34) !important;
+          border-color: rgba(224, 122, 63, 0.34) !important;
         }
         [data-theme='dark'] .tab-container { background: var(--gray-50) !important; }
         [data-theme='dark'] .tab-btn.active { background: var(--surface) !important; color: var(--primary) !important; }
         [data-theme='dark'] .tab-btn:not(.active) { color: #94a3b8 !important; }
         [data-theme='dark'] .auth-logo-box {
           background: var(--primary-gradient) !important;
-          box-shadow: 0 12px 28px rgba(34, 211, 238, 0.24);
+          box-shadow: 0 12px 28px rgba(224, 122, 63, 0.24);
         }
         [data-theme='dark'] .auth-logo-title { color: var(--primary) !important; }
         [data-theme='dark'] .auth-logo-subtitle { color: var(--gray-400) !important; opacity: 1 !important; }

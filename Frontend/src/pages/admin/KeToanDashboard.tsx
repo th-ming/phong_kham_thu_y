@@ -915,7 +915,7 @@ const KeToanDashboard: React.FC = () => {
                     z-index: 90;
                     padding: 16px;
                     border-radius: 16px;
-                    border: 1px solid rgba(20, 184, 166, 0.35);
+                    border: 1px solid rgba(196, 145, 88, 0.35);
                     background: #ffffff;
                     color: var(--ink);
                     box-shadow: 0 24px 56px rgba(15, 23, 42, 0.24);
@@ -946,7 +946,7 @@ const KeToanDashboard: React.FC = () => {
                 }
                 [data-theme='dark'] .ketoan-kpi-popover {
                     background: #111827;
-                    border-color: rgba(34, 211, 238, 0.42);
+                    border-color: rgba(224, 122, 63, 0.42);
                     box-shadow: 0 24px 56px rgba(0, 0, 0, 0.42);
                 }
             `}</style>

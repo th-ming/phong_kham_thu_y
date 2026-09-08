@@ -301,7 +301,7 @@ const DangNhapDangKy: React.FC = () => {
         }
 
         .auth-sidebar {
-          background: linear-gradient(135deg, #0d9488 0%, #0f766e 50%, #10b981 100%) !important;
+          background: linear-gradient(135deg, #c05621 0%, #0f766e 50%, #10b981 100%) !important;
           padding: 48px;
           color: white !important;
           position: relative;
@@ -386,10 +386,10 @@ const DangNhapDangKy: React.FC = () => {
         }
         [data-theme='dark'] .auth-sidebar {
           background:
-            linear-gradient(135deg, rgba(6, 182, 212, 0.9) 0%, rgba(20, 184, 166, 0.8) 100%),
+            linear-gradient(135deg, rgba(224, 122, 63, 0.9) 0%, rgba(196, 145, 88, 0.8) 100%),
             url('/img/hinh-nen-chan-thu.png') center/420px repeat !important;
           background-blend-mode: multiply;
-          border-right: 1px solid rgba(34, 211, 238, 0.2);
+          border-right: 1px solid rgba(224, 122, 63, 0.2);
         }
         [data-theme='dark'] .auth-sidebar-copy,
         [data-theme='dark'] .auth-sidebar span,
@@ -429,7 +429,7 @@ const DangNhapDangKy: React.FC = () => {
         [data-theme='dark'] .btn-auth {
           background: var(--primary-gradient) !important;
           color: #ffffff !important;
-          box-shadow: 0 16px 32px rgba(34, 211, 238, 0.24);
+          box-shadow: 0 16px 32px rgba(224, 122, 63, 0.24);
         }
         [data-theme='dark'] .auth-home-link {
           background: var(--surface) !important;
@@ -438,7 +438,7 @@ const DangNhapDangKy: React.FC = () => {
         }
         [data-theme='dark'] .auth-logo-box {
           background: var(--primary-gradient) !important;
-          box-shadow: 0 12px 28px rgba(34, 211, 238, 0.24);
+          box-shadow: 0 12px 28px rgba(224, 122, 63, 0.24);
         }
         [data-theme='dark'] .auth-logo-title {
           color: var(--primary) !important;
@@ -466,8 +466,8 @@ const DangNhapDangKy: React.FC = () => {
           pointer-events: none;
           transition: opacity 0.5s ease;
         }
-        .blob-1 { top: -200px; left: -200px; background: #0d9488; }
-        .blob-2 { bottom: -200px; right: -200px; background: #14b8a6; }
+        .blob-1 { top: -200px; left: -200px; background: #c05621; }
+        .blob-2 { bottom: -200px; right: -200px; background: #e07a3f; }
 
         /* Wizard UI styles */
         .progress-container {
@@ -494,7 +494,7 @@ const DangNhapDangKy: React.FC = () => {
           top: 50%;
           left: 40px;
           height: 4px;
-          background: #0d9488;
+          background: #c05621;
           z-index: 2;
           transform: translateY(-50%);
           transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
@@ -515,10 +515,10 @@ const DangNhapDangKy: React.FC = () => {
           transition: all 0.3s ease;
         }
         .step-dot.active {
-          border-color: #0d9488;
-          background: #0d9488;
+          border-color: #c05621;
+          background: #c05621;
           color: white;
-          box-shadow: 0 0 12px rgba(13, 148, 136, 0.4);
+          box-shadow: 0 0 12px rgba(224, 122, 63, 0.4);
         }
         .step-label {
           position: absolute;
@@ -530,7 +530,7 @@ const DangNhapDangKy: React.FC = () => {
           transition: color 0.3s ease;
         }
         .step-label.active {
-          color: #0d9488;
+          color: #c05621;
         }
         @keyframes slideIn {
           from {
@@ -555,8 +555,8 @@ const DangNhapDangKy: React.FC = () => {
           color: #94a3b8 !important;
         }
         [data-theme='dark'] .step-dot.active {
-          background: #0d9488 !important;
-          border-color: #0d9488 !important;
+          background: #c05621 !important;
+          border-color: #c05621 !important;
           color: white !important;
         }
 
@@ -695,23 +695,23 @@ const DangNhapDangKy: React.FC = () => {
                   {step === 1 ? (
                     <div style={{ display: 'grid', gap: '12px' }}>
                       <div className="input-group">
-                        <span className="material-symbols-outlined" style={{ color: '#0d9488', opacity: 0.7, fontSize: '18px' }}>badge</span>
+                        <span className="material-symbols-outlined" style={{ color: '#c05621', opacity: 0.7, fontSize: '18px' }}>badge</span>
                         <input data-ai-id="input-dangnhapdangky-wgtk" placeholder="Họ và tên" value={fullname} onChange={e => setFullname(e.target.value)} required />
                       </div>
                       <div className="input-group">
-                        <span className="material-symbols-outlined" style={{ color: '#0d9488', opacity: 0.7, fontSize: '18px' }}>mail</span>
+                        <span className="material-symbols-outlined" style={{ color: '#c05621', opacity: 0.7, fontSize: '18px' }}>mail</span>
                         <input data-ai-id="input-dangnhapdangky-mw60" type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} required />
                       </div>
                       <div className="input-group">
-                        <span className="material-symbols-outlined" style={{ color: '#0d9488', opacity: 0.7, fontSize: '18px' }}>phone</span>
+                        <span className="material-symbols-outlined" style={{ color: '#c05621', opacity: 0.7, fontSize: '18px' }}>phone</span>
                         <input data-ai-id="input-dangnhapdangky-v63p" placeholder="Số điện thoại" value={phone} onChange={e => handlePhoneChange(e.target.value)} required />
                       </div>
                       <div className="input-group">
-                        <span className="material-symbols-outlined" style={{ color: '#0d9488', opacity: 0.7, fontSize: '18px' }}>location_on</span>
+                        <span className="material-symbols-outlined" style={{ color: '#c05621', opacity: 0.7, fontSize: '18px' }}>location_on</span>
                         <input data-ai-id="input-dangnhapdangky-gejq" placeholder="Địa chỉ" value={address} onChange={e => setAddress(e.target.value)} required />
                       </div>
                       <div className="input-group">
-                        <span className="material-symbols-outlined" style={{ color: '#0d9488', opacity: 0.7, fontSize: '18px' }}>cake</span>
+                        <span className="material-symbols-outlined" style={{ color: '#c05621', opacity: 0.7, fontSize: '18px' }}>cake</span>
                         <BirthYearSelect
                           data-ai-id="select-dangnhapdangky-namsinh"
                           placeholder="Chọn năm sinh"
@@ -728,26 +728,26 @@ const DangNhapDangKy: React.FC = () => {
                           }}
                         />
                       </div>
-                      <button data-ai-id="button-dangnhapdangky-next" onClick={handleNextStep} className="btn-auth" style={{ width: '100%', background: '#0d9488', color: 'white', border: 'none', borderRadius: '50px', padding: '16px', fontWeight: 800, cursor: 'pointer', marginTop: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                      <button data-ai-id="button-dangnhapdangky-next" onClick={handleNextStep} className="btn-auth" style={{ width: '100%', background: '#c05621', color: 'white', border: 'none', borderRadius: '50px', padding: '16px', fontWeight: 800, cursor: 'pointer', marginTop: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                         Tiếp theo <span className="material-symbols-outlined">arrow_forward</span>
                       </button>
                     </div>
                   ) : (
                     <div style={{ display: 'grid', gap: '12px' }}>
                       <div className="input-group">
-                        <span className="material-symbols-outlined" style={{ color: '#0d9488', opacity: 0.7, fontSize: '18px' }}>person</span>
+                        <span className="material-symbols-outlined" style={{ color: '#c05621', opacity: 0.7, fontSize: '18px' }}>person</span>
                         <input data-ai-id="input-dangnhapdangky-0l0l" placeholder="Tên đăng nhập" value={username} onChange={e => setUsername(e.target.value)} required />
                       </div>
                       <div>
                         <div className="input-group">
-                          <span className="material-symbols-outlined" style={{ color: '#0d9488', opacity: 0.7, fontSize: '18px' }}>lock</span>
+                          <span className="material-symbols-outlined" style={{ color: '#c05621', opacity: 0.7, fontSize: '18px' }}>lock</span>
                           <input data-ai-id="input-dangnhapdangky-ond4" type={showPassword ? "text" : "password"} placeholder="Mật khẩu" value={password} onChange={e => setPassword(e.target.value)} onFocus={() => setPasswordFocused(true)} onBlur={() => setPasswordFocused(false)} required />
                           <span className="material-symbols-outlined" onClick={() => setShowPassword(!showPassword)} style={{ cursor: 'pointer', color: '#94a3b8', fontSize: '18px' }}>{showPassword ? 'visibility_off' : 'visibility'}</span>
                         </div>
                         <PasswordHint password={password} show={passwordFocused} />
                       </div>
                       <div className="input-group">
-                        <span className="material-symbols-outlined" style={{ color: '#0d9488', opacity: 0.7, fontSize: '18px' }}>lock_reset</span>
+                        <span className="material-symbols-outlined" style={{ color: '#c05621', opacity: 0.7, fontSize: '18px' }}>lock_reset</span>
                         <input data-ai-id="input-dangnhapdangky-t0t3" type={showPassword ? "text" : "password"} placeholder="Xác nhận mật khẩu" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required />
                         <span className="material-symbols-outlined" onClick={() => setShowPassword(!showPassword)} style={{ cursor: 'pointer', color: '#94a3b8', fontSize: '18px' }}>{showPassword ? 'visibility_off' : 'visibility'}</span>
                       </div>
@@ -755,7 +755,7 @@ const DangNhapDangKy: React.FC = () => {
                         <button data-ai-id="button-dangnhapdangky-back" onClick={handlePrevStep} className="btn-auth" style={{ flex: 1, background: 'transparent', color: 'var(--ink)', border: '1px solid var(--gray-300)', borderRadius: '50px', padding: '16px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                           <span className="material-symbols-outlined">arrow_back</span> Quay lại
                         </button>
-                        <button data-ai-id="button-dangnhapdangky-submit" type="submit" disabled={loading} className="btn-auth" style={{ flex: 2, background: loading ? '#94a3b8' : '#0d9488', color: 'white', border: 'none', borderRadius: '50px', padding: '16px', fontWeight: 800, cursor: loading ? 'not-allowed' : 'pointer' }}>
+                        <button data-ai-id="button-dangnhapdangky-submit" type="submit" disabled={loading} className="btn-auth" style={{ flex: 2, background: loading ? '#94a3b8' : '#c05621', color: 'white', border: 'none', borderRadius: '50px', padding: '16px', fontWeight: 800, cursor: loading ? 'not-allowed' : 'pointer' }}>
                           {loading ? 'Đang xử lý...' : 'Đăng ký ngay'}
                         </button>
                       </div>
@@ -765,12 +765,12 @@ const DangNhapDangKy: React.FC = () => {
               ) : (
                 <>
                   <div className="input-group">
-                    <span className="material-symbols-outlined" style={{ color: '#0d9488', opacity: 0.7 }}>person</span>
+                    <span className="material-symbols-outlined" style={{ color: '#c05621', opacity: 0.7 }}>person</span>
                     <input data-ai-id="input-dangnhapdangky-8dku" placeholder="Tên đăng nhập" value={username} onChange={e => setUsername(e.target.value)} required />
                   </div>
                   <div>
                     <div className="input-group">
-                      <span className="material-symbols-outlined" style={{ color: '#0d9488', opacity: 0.7 }}>lock</span>
+                      <span className="material-symbols-outlined" style={{ color: '#c05621', opacity: 0.7 }}>lock</span>
                       <input data-ai-id="input-dangnhapdangky-h1ru" type={showPassword ? "text" : "password"} placeholder="Mật khẩu" value={password} onChange={e => setPassword(e.target.value)} onFocus={() => setPasswordFocused(true)} onBlur={() => setPasswordFocused(false)} required />
                       <span className="material-symbols-outlined" onClick={() => setShowPassword(!showPassword)} style={{ cursor: 'pointer', color: '#94a3b8' }}>{showPassword ? 'visibility_off' : 'visibility'}</span>
                     </div>
@@ -783,9 +783,9 @@ const DangNhapDangKy: React.FC = () => {
                        <input data-ai-id="input-dangnhapdangky-cyre" type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} style={{ width: '18px', height: '18px' }} />
                       Ghi nhớ đăng nhập
                     </label>
-                    <Link to="/quen-mat-khau" style={{ color: '#0d9488', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 800 }}>Quên mật khẩu?</Link>
+                    <Link to="/quen-mat-khau" style={{ color: '#c05621', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 800 }}>Quên mật khẩu?</Link>
                   </div>
-                  <button data-ai-id="button-dangnhapdangky-xgfa" type="submit" disabled={loading} className="btn-auth" style={{ background: loading ? '#94a3b8' : '#0d9488', color: 'white', border: 'none', borderRadius: '50px', padding: '16px', fontWeight: 800, cursor: loading ? 'not-allowed' : 'pointer', marginTop: '10px' }}>{loading ? 'Đang xử lý...' : 'Đăng nhập ngay'}</button>
+                  <button data-ai-id="button-dangnhapdangky-xgfa" type="submit" disabled={loading} className="btn-auth" style={{ background: loading ? '#94a3b8' : '#c05621', color: 'white', border: 'none', borderRadius: '50px', padding: '16px', fontWeight: 800, cursor: loading ? 'not-allowed' : 'pointer', marginTop: '10px' }}>{loading ? 'Đang xử lý...' : 'Đăng nhập ngay'}</button>
                 </>
               )}
             </form>
@@ -795,7 +795,7 @@ const DangNhapDangKy: React.FC = () => {
                 {isLogin ? "Chưa có tài khoản? " : "Đã có tài khoản? "}
                 <span 
                   onClick={() => { setIsLogin(!isLogin); setStep(1); setError(""); setSuccess(""); }} 
-                  style={{ color: '#0d9488', cursor: 'pointer', textDecoration: 'underline' }}
+                  style={{ color: '#c05621', cursor: 'pointer', textDecoration: 'underline' }}
                 >
                   {isLogin ? "Đăng ký ngay" : "Đăng nhập"}
                 </span>

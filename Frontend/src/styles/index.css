@@ -14,7 +14,7 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(13, 148, 136, 0.2);
+  background: rgba(224, 122, 63, 0.25);
   border-radius: 20px;
   border: 2px solid transparent;
   background-clip: content-box;
@@ -37,31 +37,51 @@
 
 /* Hiệu ứng chuyển giao diện Sáng / Tối mượt mà và cực sang trọng (Luxury Fluid Transition) */
 html, body, header, footer, section, div, a, button, h1, h2, h3, h4, h5, h6, p, span, input, select, textarea {
-  transition: background-color 0.6s cubic-bezier(0.4, 0, 0.2, 1),
-              background-image 0.6s cubic-bezier(0.4, 0, 0.2, 1),
-              border-color 0.6s cubic-bezier(0.4, 0, 0.2, 1),
-              color 0.6s cubic-bezier(0.4, 0, 0.2, 1),
-              box-shadow 0.6s cubic-bezier(0.4, 0, 0.2, 1),
-              opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: background-color 0.3s var(--ease-theme),
+              background-image 0.3s var(--ease-theme),
+              border-color 0.3s var(--ease-theme),
+              color 0.3s var(--ease-theme),
+              box-shadow 0.3s var(--ease-theme),
+              opacity 0.3s var(--ease-theme);
 }
 
 :root {
-  /* Bảng màu chung & Hệ thống nhận diện */
+  /* Bảng màu chung & Hệ thống nhận diện — Warm Vet Editorial */
   --accent: #f59e0b;
+  --accent-warm: #e07a3f;          /* terracotta — hơi ấm "ngôi nhà cho thú cưng" */
+  --accent-warm-soft: rgba(224, 122, 63, 0.12);
   --danger: #ff4d4d;
   --success: #10b981;
-  --gray-400: #94a3b8;
-  --gray-500: #64748b;
-  
-  /* Đổ bóng & Chiều sâu nổi 3D cao cấp */
-  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.02);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.05);
-  --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
-  --shadow-xl: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
-  --shadow-2xl: 0 35px 70px -15px rgba(0, 0, 0, 0.25);
+  --gray-400: #a8a29e;
+  --gray-450: #8a8580;
+  --gray-500: #78716c;
 
+  /* Font system — 1 display + 1 body, hỗ trợ tiếng Việt đầy đủ */
+  --font-body: 'Be Vietnam Pro', 'Segoe UI', sans-serif;
+  --font-display: 'Lora', 'Be Vietnam Pro', serif;
+  --font-friendly: 'Nunito', 'Be Vietnam Pro', sans-serif;
+
+  /* Motion tokens — chuyển động có "khối lượng", không tuyến tính */
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-spring: cubic-bezier(0.34, 1.3, 0.64, 1);
+  --ease-theme: cubic-bezier(0.4, 0, 0.2, 1);
+  --dur-1: 150ms;
+  --dur-2: 250ms;
+  --dur-3: 400ms;
+  --dur-4: 650ms;
+
+  /* Đổ bóng ấm, lan tỏa mềm — ánh đèn vàng phòng khám, không bóng đen cứng */
+  --shadow-sm: 0 1px 2px rgba(28, 25, 23, 0.04), 0 1px 1px rgba(28, 25, 23, 0.02);
+  --shadow-md: 0 2px 6px rgba(28, 25, 23, 0.05), 0 4px 14px rgba(28, 25, 23, 0.04);
+  --shadow-lg: 0 4px 12px rgba(28, 25, 23, 0.05), 0 14px 32px -8px rgba(28, 25, 23, 0.1);
+  --shadow-xl: 0 8px 20px rgba(28, 25, 23, 0.06), 0 28px 56px -16px rgba(28, 25, 23, 0.16);
+  --shadow-2xl: 0 12px 28px rgba(28, 25, 23, 0.08), 0 40px 80px -20px rgba(28, 25, 23, 0.24);
+
+  --radius-sm: 10px;
+  --radius-md: 16px;
   --radius-lg: 24px;
   --radius-xl: 40px;
+  --radius-pill: 999px;
   --sidebar-width: 280px;
 
   /* Z-Index */
@@ -70,21 +90,22 @@ html, body, header, footer, section, div, a, button, h1, h2, h3, h4, h5, h6, p, 
 }
 
 [data-theme='light'], :root:not([data-theme='dark']) {
-  --primary: #0d9488;
-  --primary-light: rgba(13, 148, 136, 0.08);
-  --primary-gradient: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
-  --secondary: #0f172a;
-  --background: #f8fafc;
-  --surface: rgba(255, 255, 255, 0.9);
-  --ink: #0f172a;
-  --glass: rgba(255, 255, 255, 0.7);
-  --glass-border: rgba(255, 255, 255, 0.4);
-  --glass-blur: blur(16px);
-  --gray-50: #f8fafc;
-  --gray-100: #f1f5f9;
-  --gray-200: #e2e8f0;
-  --gray-300: #cbd5e1;
-  --secondary-gradient: linear-gradient(135deg, #0d9488 0%, #2dd4bf 100%);
+  /* Terracotta ấm làm màu chủ đạo — sự tin cậy của y khoa + hơi ấm mái ấm */
+  --primary: #c05621;
+  --primary-light: rgba(224, 122, 63, 0.1);
+  --primary-gradient: linear-gradient(135deg, #c05621 0%, #e07a3f 100%);
+  --secondary: #1c1917;
+  --background: #faf7f2;
+  --surface: rgba(255, 253, 250, 0.92);
+  --ink: #1c1917;
+  --glass: rgba(255, 253, 250, 0.78);
+  --glass-border: rgba(226, 216, 200, 0.55);
+  --glass-blur: blur(14px);
+  --gray-50: #faf7f2;
+  --gray-100: #f1ede7;
+  --gray-200: #e5e0d8;
+  --gray-300: #d3ccc1;
+  --secondary-gradient: linear-gradient(135deg, #c05621 0%, #e8955c 100%);
   
   /* Cảnh báo dịch tễ hiện đại (Notion/Apple style) */
   --alert-bg: #fff1f2;
@@ -92,28 +113,30 @@ html, body, header, footer, section, div, a, button, h1, h2, h3, h4, h5, h6, p, 
   --alert-border: #fecdd3;
   --alert-link: #be123c;
   --alert-icon-color: #e11d48;
-  --chat-gradient: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
-  --tien-ich-gradient: linear-gradient(135deg, #0d8a7a 0%, #0f9d8a 50%, #1ab8a4 100%);
+  --chat-gradient: linear-gradient(135deg, #c05621 0%, #e07a3f 100%);
+  --tien-ich-gradient: linear-gradient(135deg, #b45309 0%, #c05621 50%, #e07a3f 100%);
+  --primary-shadow: rgba(224, 122, 63, 0.35);
 }
 
 /* Bảng màu chủ đạo (Chế độ Tối - Luxury Aura Midnight) */
 [data-theme='dark'] {
+  /* Than ngả lục ấm — "phòng khám ban đêm", không phải navy lạnh */
   --primary: #22d3ee;
   --primary-light: rgba(34, 211, 238, 0.15);
   --primary-gradient: linear-gradient(135deg, #06b6d4 0%, #14b8a6 100%);
-  --secondary: #1e293b;
-  --background: #020617;
-  --surface: rgba(15, 23, 42, 0.9);
-  --ink: #ffffff;
-  --glass: rgba(15, 23, 42, 0.8);
-  --glass-border: rgba(255, 255, 255, 0.1);
+  --secondary: #292524;
+  --background: #12100e;
+  --surface: rgba(28, 25, 23, 0.88);
+  --ink: #f5f0ea;
+  --glass: rgba(28, 25, 23, 0.82);
+  --glass-border: rgba(226, 216, 200, 0.12);
   --glass-blur: blur(8px); /* Giảm thêm để cực kỳ sắc nét */
-  --gray-50: #0f172a;
-  --gray-100: #1e293b;
-  --gray-200: #334155;
-  --gray-300: #475569;
+  --gray-50: #1c1917;
+  --gray-100: #292524;
+  --gray-200: #3f3a36;
+  --gray-300: #57534e;
   color-scheme: dark;
-  --secondary-gradient: linear-gradient(135deg, #06b6d4 0%, #1e293b 100%);
+  --secondary-gradient: linear-gradient(135deg, #06b6d4 0%, #292524 100%);
   
   /* Cảnh báo dịch tễ hiện đại Dark Mode (Glassmorphism) */
   --alert-bg: rgba(239, 68, 68, 0.08); /* Đỏ ấm dịu, tinh tế và ít chói mắt hơn */
@@ -121,17 +144,17 @@ html, body, header, footer, section, div, a, button, h1, h2, h3, h4, h5, h6, p, 
   --alert-border: rgba(239, 68, 68, 0.18);
   --alert-link: #f87171;
   --alert-icon-color: #f87171;
-  --chat-gradient: linear-gradient(135deg, #06b6d4 0%, #0e7490 50%, #0f172a 100%);
-  --tien-ich-gradient: linear-gradient(135deg, #06b6d4 0%, #1e293b 100%);
+  --chat-gradient: linear-gradient(135deg, #06b6d4 0%, #0e7490 50%, #12100e 100%);
+  --tien-ich-gradient: linear-gradient(135deg, #06b6d4 0%, #292524 100%);
 }
 
 :root {
   /* Đổ bóng & Chiều sâu nổi 3D cao cấp */
-  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.02);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.05);
-  --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
-  --shadow-xl: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
-  --shadow-2xl: 0 35px 70px -15px rgba(0, 0, 0, 0.25);
+  --shadow-sm: 0 1px 2px rgba(28, 25, 23, 0.04), 0 1px 1px rgba(28, 25, 23, 0.02);
+  --shadow-md: 0 2px 6px rgba(28, 25, 23, 0.05), 0 4px 14px rgba(28, 25, 23, 0.04);
+  --shadow-lg: 0 4px 12px rgba(28, 25, 23, 0.05), 0 14px 32px -8px rgba(28, 25, 23, 0.1);
+  --shadow-xl: 0 8px 20px rgba(28, 25, 23, 0.06), 0 28px 56px -16px rgba(28, 25, 23, 0.16);
+  --shadow-2xl: 0 12px 28px rgba(28, 25, 23, 0.08), 0 40px 80px -20px rgba(28, 25, 23, 0.24);
 
   /* Bảng màu mở rộng (Màu thông báo, màu nhấn) */
   --green-50: rgba(16, 185, 129, 0.08);
@@ -143,7 +166,6 @@ html, body, header, footer, section, div, a, button, h1, h2, h3, h4, h5, h6, p, 
   --rose-400: #fb7185;
   --rose-500: #f43f5e;
   --rose-shadow: rgba(244, 63, 94, 0.25);
-  --primary-shadow: rgba(15, 157, 138, 0.25);
   --white: #ffffff;
 
   /* Bố cục & Kích thước chuẩn cho độ bo góc */
@@ -168,13 +190,13 @@ html, body, header, footer, section, div, a, button, h1, h2, h3, h4, h5, h6, p, 
 
 /* Cài đặt cấu hình chung cho toàn bộ thân trang web */
 body {
-  font-family: 'Be Vietnam Pro', sans-serif;
+  font-family: var(--font-body);
   background: var(--background);
   color: var(--ink);
-  line-height: 1.6;
+  line-height: 1.65;
   min-height: 100vh;
   overflow-x: hidden;
-  transition: background 0.5s ease;
+  transition: background 0.3s var(--ease-theme);
   /* TỐI ƯU: Chừa không gian "Vùng an toàn" cho thanh home ảo của iPhone X trở lên */
   padding-bottom: env(safe-area-inset-bottom);
 }
@@ -197,17 +219,17 @@ body {
 /* Khung liên kết rõ rệt cho các phân hệ đăng nhập (Admin/Customer) */
 .workspace-main {
   background:
-    radial-gradient(circle at 0% 0%, rgba(13, 148, 136, 0.1), transparent 33%),
-    radial-gradient(circle at 100% 100%, rgba(20, 184, 166, 0.08), transparent 30%),
+    radial-gradient(circle at 0% 0%, rgba(224, 122, 63, 0.09), transparent 33%),
+    radial-gradient(circle at 100% 100%, rgba(196, 145, 88, 0.07), transparent 30%),
     var(--background);
 }
 
 .workspace-content-frame {
-  border: 1px solid rgba(13, 148, 136, 0.22);
+  border: 1px solid rgba(224, 122, 63, 0.2);
   border-radius: 22px;
   padding: 18px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.58), rgba(255, 255, 255, 0.3));
-  box-shadow: 0 18px 42px -20px rgba(15, 23, 42, 0.35);
+  background: linear-gradient(180deg, rgba(255, 253, 250, 0.6), rgba(250, 244, 235, 0.32));
+  box-shadow: var(--shadow-lg);
   position: relative;
 }
 
@@ -217,7 +239,7 @@ body {
   inset: 0;
   border-radius: inherit;
   padding: 1px;
-  background: linear-gradient(135deg, rgba(13, 148, 136, 0.36), rgba(20, 184, 166, 0.08), rgba(13, 148, 136, 0.28));
+  background: linear-gradient(135deg, rgba(224, 122, 63, 0.34), rgba(196, 145, 88, 0.08), rgba(224, 122, 63, 0.26));
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
@@ -232,7 +254,7 @@ body {
   bottom: 0;
   left: 0;
   width: 2px;
-  background: linear-gradient(180deg, rgba(13, 148, 136, 0.55), rgba(20, 184, 166, 0.15), rgba(13, 148, 136, 0.4));
+  background: linear-gradient(180deg, rgba(224, 122, 63, 0.55), rgba(196, 145, 88, 0.15), rgba(224, 122, 63, 0.4));
 }
 
 [data-theme='dark'] .workspace-main {
@@ -243,25 +265,25 @@ body {
 }
 
 [data-theme='dark'] .workspace-content-frame {
-  border-color: rgba(34, 211, 238, 0.26);
-  background: linear-gradient(180deg, rgba(15, 23, 42, 0.72), rgba(15, 23, 42, 0.5));
-  box-shadow: 0 24px 52px -24px rgba(2, 6, 23, 0.78), 0 0 0 1px rgba(34, 211, 238, 0.08);
+  border-color: rgba(226, 216, 200, 0.16);
+  background: linear-gradient(180deg, rgba(28, 25, 23, 0.74), rgba(28, 25, 23, 0.52));
+  box-shadow: 0 24px 52px -24px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(226, 216, 200, 0.06);
 }
 
 [data-theme='dark'] .workspace-content-frame::before {
-  background: linear-gradient(135deg, rgba(34, 211, 238, 0.46), rgba(20, 184, 166, 0.14), rgba(34, 211, 238, 0.35));
+  background: linear-gradient(135deg, rgba(226, 216, 200, 0.3), rgba(196, 145, 88, 0.12), rgba(226, 216, 200, 0.22));
 }
 
 [data-theme='dark'] .workspace-main::before {
-  background: linear-gradient(180deg, rgba(34, 211, 238, 0.68), rgba(20, 184, 166, 0.2), rgba(34, 211, 238, 0.42));
+  background: linear-gradient(180deg, rgba(226, 216, 200, 0.5), rgba(196, 145, 88, 0.2), rgba(226, 216, 200, 0.32));
 }
 
 
 [data-theme='dark'] body {
   background-image:
-    radial-gradient(at 0% 0%, rgba(6, 182, 212, 0.15) 0px, transparent 50%),
-    radial-gradient(at 100% 0%, rgba(139, 92, 246, 0.1) 0px, transparent 50%),
-    radial-gradient(at 50% 50%, #020617 0px, transparent 100%);
+    radial-gradient(at 0% 0%, rgba(224, 122, 63, 0.12) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(196, 145, 88, 0.08) 0px, transparent 50%),
+    radial-gradient(at 50% 50%, #12100e 0px, transparent 100%);
 }
 
 /* Sửa lỗi icon lịch bị đen trong Dark Mode */
@@ -279,9 +301,9 @@ body {
 }
 
 [data-theme='dark'] select option {
-  background-color: #0f172a;
-  /* Màu Navy đậm */
-  color: #f8fafc;
+  background-color: #1c1917;
+  /* Nâu than đậm */
+  color: #f5f0ea;
 }
 
 /* Khung chứa nội dung luôn căn giữa màn hình */
@@ -292,13 +314,14 @@ body {
   padding: 0 24px;
 }
 
-/* Định dạng chung cho các thẻ Tiêu đề */
+/* Định dạng chung cho các thẻ Tiêu đề — Lora editorial, sắc nét trên nền kem */
 h1,
 h2,
 h3,
 h4 {
-  font-family: 'Lora', serif;
-  font-weight: 800;
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
 
 /* Chữ tự động co giãn kích thước theo độ rộng màn hình */
@@ -325,19 +348,19 @@ h2 {
 
 /* Thẻ Glass cao cấp với Aura (Dark Mode) */
 [data-theme='dark'] .glass-card {
-  background: linear-gradient(135deg, rgba(15, 23, 42, 0.55) 0%, rgba(15, 23, 42, 0.92) 100%);
+  background: linear-gradient(135deg, rgba(28, 25, 23, 0.55) 0%, rgba(28, 25, 23, 0.92) 100%);
   backdrop-filter: var(--glass-blur);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(226, 216, 200, 0.1);
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
-/* Thẻ Glass tiêu chuẩn cho Light Mode */
+/* Thẻ Glass tiêu chuẩn cho Light Mode — nền trắng kem, viền ấm, bóng tán mềm */
 .glass-card {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.72) 0%, rgba(255, 255, 255, 0.95) 100%);
+  background: linear-gradient(135deg, rgba(255, 253, 250, 0.72) 0%, rgba(255, 253, 250, 0.95) 100%);
   backdrop-filter: var(--glass-blur);
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  box-shadow: 0 20px 40px -15px rgba(15, 157, 138, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.6);
-  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-lg), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  transition: transform var(--dur-3) var(--ease-out-quart), box-shadow var(--dur-3) var(--ease-out-quart), border-color var(--dur-2) var(--ease-theme);
   position: relative;
   overflow: hidden;
 }
@@ -345,13 +368,13 @@ h2 {
 /* Các hiệu ứng Hover Cao Cấp - Chỉ kích hoạt trên Desktop có chuột */
 @media (hover: hover) {
   .glass-card:hover {
-    transform: translateY(-6px) scale(1.008);
-    box-shadow: 0 30px 60px -15px rgba(15, 157, 138, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-xl), inset 0 1px 0 rgba(255, 255, 255, 0.85);
   }
   
   [data-theme='dark'] .glass-card:hover {
-    border-color: rgba(34, 211, 238, 0.35);
-    box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.6), 0 0 22px rgba(34, 211, 238, 0.15);
+    border-color: rgba(226, 216, 200, 0.24);
+    box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.6), 0 0 22px rgba(224, 122, 63, 0.08);
   }
 }
 
@@ -369,39 +392,39 @@ h2 {
   pointer-events: none;
 }
 
-/* Khung nút bấm chuẩn mực */
+/* Khung nút bấm chuẩn mực — kiểu chữ editorial, chuyển động "có lò xo nhẹ" */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
-  padding: 16px 32px;
-  border-radius: 14px;
-  font-weight: 800;
+  padding: 15px 30px;
+  border-radius: var(--radius-sm);
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform var(--dur-2) var(--ease-spring), box-shadow var(--dur-2) var(--ease-out-quart), background var(--dur-2) var(--ease-theme), border-color var(--dur-2) var(--ease-theme);
   border: none;
   font-size: 1rem;
   white-space: nowrap;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
   position: relative;
   overflow: hidden;
 }
 
 .btn:active {
-  transform: scale(0.95);
+  transform: scale(0.96);
 }
 
 /* Nút bấm nổi bật (Màu chính) */
 .btn-primary {
   background: var(--primary-gradient);
   color: white;
-  box-shadow: 0 10px 20px -10px rgba(6, 182, 212, 0.4);
+  box-shadow: 0 8px 18px -8px var(--primary-shadow);
 }
 
 .btn-primary:hover {
-  box-shadow: 0 20px 40px -10px rgba(6, 182, 212, 0.6);
-  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 14px 30px -10px var(--primary-shadow);
+  transform: translateY(-2px);
 }
 
 /* Nút bấm viền trong suốt */
@@ -440,8 +463,8 @@ h2 {
 }
 
 .feature-item:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 22px 40px rgba(15, 23, 42, 0.12);
+  transform: translateY(-4px);
+  box-shadow: 0 22px 40px rgba(28, 25, 23, 0.12);
   border-color: rgba(255, 255, 255, 0.35);
 }
 
@@ -470,13 +493,13 @@ h2 {
 }
 
 .hero-section {
-  color: #0f172a;
+  color: #1c1917;
 }
 
 .hero-hero-background {
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at top left, rgba(6, 182, 212, 0.12), transparent 35%), radial-gradient(circle at bottom right, rgba(15, 157, 138, 0.08), transparent 30%);
+  background: radial-gradient(circle at top left, rgba(224, 122, 63, 0.12), transparent 35%), radial-gradient(circle at bottom right, rgba(196, 145, 88, 0.09), transparent 30%);
   pointer-events: none;
 }
 
@@ -513,7 +536,7 @@ select {
   appearance: none;
   padding-right: 56px !important;
   border-radius: 16px;
-  background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Crect x='4.5' y='4.5' width='31' height='31' rx='11.5' fill='%2306B6D4' fill-opacity='.12' stroke='%2306B6D4' stroke-opacity='.45'/%3E%3Cpath d='M14 17L20 23L26 17' stroke='%2322D3EE' stroke-width='2.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
+  background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Crect x='4.5' y='4.5' width='31' height='31' rx='11.5' fill='%23E07A3F' fill-opacity='.12' stroke='%23E07A3F' stroke-opacity='.45'/%3E%3Cpath d='M14 17L20 23L26 17' stroke='%23C05621' stroke-width='2.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
   background-repeat: no-repeat !important;
   background-position: right 10px center !important;
   background-size: 40px 40px !important;
@@ -807,7 +830,7 @@ label {
 
 /* Hiệu ứng Mờ dần và trượt lên */
 .animate-fade-in {
-  animation: fadeInUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: fadeInUp 0.55s var(--ease-out-quart) forwards;
 }
 
 @keyframes fadeInUp {
@@ -1115,14 +1138,14 @@ label {
   align-items: center;
   gap: 8px;
   color: var(--primary);
-  font-weight: 900;
+  font-weight: 800;
   font-size: 0.8rem;
   letter-spacing: 2.5px;
   text-transform: uppercase;
   background: var(--primary-light);
   padding: 8px 20px;
   border-radius: 50px;
-  border: 1px solid rgba(0, 242, 254, 0.2);
+  border: 1px solid color-mix(in srgb, var(--primary) 22%, transparent);
   margin-bottom: 24px;
 }
 
@@ -1155,14 +1178,14 @@ label {
     transform: translateY(0) rotate(0deg) scale(1);
     box-shadow:
       0 12px 30px var(--primary-shadow),
-      0 0 0 0 rgba(34, 211, 238, 0.18);
+      0 0 0 0 rgba(224, 122, 63, 0.18);
   }
 
   50% {
     transform: translateY(-2px) rotate(0deg) scale(1.035);
     box-shadow:
-      0 16px 34px rgba(34, 211, 238, 0.22),
-      0 0 0 9px rgba(34, 211, 238, 0);
+      0 16px 34px rgba(224, 122, 63, 0.22),
+      0 0 0 9px rgba(224, 122, 63, 0);
   }
 }
 
@@ -1467,7 +1490,7 @@ html {
 .premium-fluid-gradient {
   position: relative;
   overflow: hidden;
-  background: linear-gradient(135deg, #0d8a7a 0%, #0f9d8a 50%, #1ab8a4 100%) !important;
+  background: linear-gradient(135deg, #b45309 0%, #c05621 50%, #e07a3f 100%) !important;
   z-index: 1;
 }
 
@@ -1475,11 +1498,11 @@ html {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, #06b6d4 0%, #1e293b 100%) !important;
+  background: linear-gradient(135deg, #06b6d4 0%, #1c1917 100%) !important;
   z-index: -1;
   /* Trạng thái ban đầu ở chế độ sáng: Bị thu nhỏ về mép trái dưới dạng hình tròn */
   clip-path: circle(0% at 0% 50%);
-  transition: clip-path 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: clip-path 1.2s var(--ease-theme);
 }
 
 /* Khi chuyển sang chế độ tối (Dark Mode): Loang dần từ góc trái sang phủ kín toàn bộ */
@@ -1489,12 +1512,12 @@ html {
 
 @keyframes heroCtaGlowBreath {
   0%, 100% {
-    box-shadow: 0 8px 25px var(--primary-shadow), 0 0 12px rgba(15, 157, 138, 0.20);
+    box-shadow: 0 8px 25px var(--primary-shadow), 0 0 12px rgba(224, 122, 63, 0.18);
     filter: brightness(1);
   }
   52% {
-    box-shadow: 0 13px 34px var(--primary-shadow), 0 0 28px rgba(34, 211, 238, 0.50), 0 0 48px rgba(15, 157, 138, 0.28);
-    filter: brightness(1.07);
+    box-shadow: 0 13px 34px var(--primary-shadow), 0 0 24px rgba(224, 122, 63, 0.35), 0 0 44px rgba(196, 145, 88, 0.22);
+    filter: brightness(1.05);
   }
 }
 
@@ -1531,11 +1554,11 @@ html {
 @keyframes heroSecondaryIdle {
   0%, 78%, 100% {
     transform: translateY(0);
-    box-shadow: 0 8px 18px rgba(15, 157, 138, 0);
+    box-shadow: 0 8px 18px rgba(224, 122, 63, 0);
   }
   84% {
     transform: translateY(-1px);
-    box-shadow: 0 10px 20px rgba(15, 157, 138, 0.10);
+    box-shadow: 0 10px 20px rgba(224, 122, 63, 0.12);
   }
   90% {
     transform: translateY(0);
@@ -1579,24 +1602,24 @@ html {
 
 /* CHAT BUBBLE FOOTER */
 .footer-chat-bubble {
-  background: rgba(15, 23, 42, 0.65);
+  background: rgba(28, 25, 23, 0.68);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  color: #f8fafc;
+  color: #f5f0ea;
   padding: 10px 24px;
   border-radius: 30px;
   font-weight: 700;
   font-size: 0.9rem;
   position: relative;
   animation: floatBubble 3s ease-in-out infinite;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(226, 216, 200, 0.16);
   will-change: transform;
   white-space: nowrap;
   display: flex;
   align-items: center;
   gap: 8px;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform var(--dur-2) var(--ease-spring), background var(--dur-2) var(--ease-theme), box-shadow var(--dur-2) var(--ease-theme), border-color var(--dur-2) var(--ease-theme);
 }
 
 .footer-chat-bubble:hover {
@@ -1628,7 +1651,7 @@ html {
   transform: translateX(-50%);
   border-width: 8px 8px 0;
   border-style: solid;
-  border-color: rgba(15, 23, 42, 0.65) transparent transparent transparent;
+  border-color: rgba(28, 25, 23, 0.68) transparent transparent transparent;
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   z-index: 2;
 }
@@ -1724,8 +1747,8 @@ html {
   position: relative;
   isolation: isolate;
   background:
-    radial-gradient(circle at 12% 0%, rgba(13, 148, 136, 0.12), transparent 32%),
-    radial-gradient(circle at 96% 8%, rgba(14, 165, 233, 0.08), transparent 30%),
+    radial-gradient(circle at 12% 0%, rgba(224, 122, 63, 0.1), transparent 32%),
+    radial-gradient(circle at 96% 8%, rgba(196, 145, 88, 0.08), transparent 30%),
     linear-gradient(180deg, color-mix(in srgb, var(--background) 94%, var(--primary-light)), var(--background)) !important;
 }
 
@@ -1737,17 +1760,17 @@ html {
   pointer-events: none;
   opacity: 0.42;
   background-image:
-    linear-gradient(rgba(13, 148, 136, 0.045) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(13, 148, 136, 0.045) 1px, transparent 1px);
+    linear-gradient(rgba(196, 145, 88, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(196, 145, 88, 0.06) 1px, transparent 1px);
   background-size: 44px 44px;
   mask-image: linear-gradient(180deg, rgba(0,0,0,0.72), transparent 84%);
 }
 
 [data-theme='dark'] .admin-shell {
   background:
-    radial-gradient(circle at 12% 0%, rgba(34, 211, 238, 0.16), transparent 34%),
-    radial-gradient(circle at 98% 10%, rgba(20, 184, 166, 0.10), transparent 32%),
-    linear-gradient(180deg, #06111f 0%, var(--background) 58%) !important;
+    radial-gradient(circle at 12% 0%, rgba(224, 122, 63, 0.12), transparent 34%),
+    radial-gradient(circle at 98% 10%, rgba(196, 145, 88, 0.08), transparent 32%),
+    linear-gradient(180deg, #1a1512 0%, var(--background) 58%) !important;
 }
 
 .admin-content-frame {
@@ -1773,17 +1796,17 @@ html {
   border: 1px solid color-mix(in srgb, var(--primary) 18%, var(--glass-border)) !important;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.58),
-    0 24px 60px rgba(15, 23, 42, 0.12) !important;
+    var(--shadow-lg) !important;
 }
 
 [data-theme='dark'] .admin-control-rail {
   background:
-    linear-gradient(180deg, rgba(15, 23, 42, 0.86), rgba(2, 6, 23, 0.72)) !important;
-  border-color: rgba(34, 211, 238, 0.16) !important;
+    linear-gradient(180deg, rgba(28, 25, 23, 0.88), rgba(18, 16, 14, 0.76)) !important;
+  border-color: rgba(226, 216, 200, 0.14) !important;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    0 24px 72px rgba(2, 6, 23, 0.66),
-    0 0 0 1px rgba(34, 211, 238, 0.05) !important;
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 24px 72px rgba(0, 0, 0, 0.6),
+    0 0 0 1px rgba(226, 216, 200, 0.04) !important;
 }
 
 .admin-rail-brand {
@@ -1812,7 +1835,7 @@ html {
   border-color: color-mix(in srgb, var(--primary) 20%, var(--gray-200)) !important;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.42),
-    0 16px 32px rgba(15, 23, 42, 0.08) !important;
+    var(--shadow-md) !important;
 }
 
 .admin-operator-avatar > div:first-child {
@@ -1892,14 +1915,14 @@ html {
   border-color: color-mix(in srgb, var(--primary) 14%, var(--gray-200));
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.45),
-    0 18px 44px rgba(15, 23, 42, 0.07);
+    var(--shadow-lg);
 }
 
 [data-theme='dark'] .admin-main-content .glass-card {
-  border-color: rgba(34, 211, 238, 0.12);
+  border-color: rgba(226, 216, 200, 0.1);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    0 22px 54px rgba(2, 6, 23, 0.46);
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 22px 54px rgba(0, 0, 0, 0.45);
 }
 
 .admin-main-content .table-responsive-wrapper {
@@ -1972,8 +1995,8 @@ html {
     padding: 26px 18px !important;
     border-radius: 0 28px 28px 0 !important;
     transform: translateX(-112%) !important;
-    transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1) !important;
-    box-shadow: 22px 0 60px rgba(15, 23, 42, 0.24);
+    transition: transform 0.32s var(--ease-out-quart) !important;
+    box-shadow: 22px 0 60px rgba(28, 25, 23, 0.22);
   }
 
   .admin-sidebar.active {
@@ -2061,7 +2084,7 @@ html {
     border: 1px solid color-mix(in srgb, var(--primary) 18%, var(--gray-200));
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.48),
-      0 18px 48px rgba(15, 23, 42, 0.18);
+      0 18px 48px rgba(28, 25, 23, 0.16);
     backdrop-filter: blur(18px) saturate(160%);
     -webkit-backdrop-filter: blur(18px) saturate(160%);
   }
@@ -2433,7 +2456,7 @@ html {
     background:
       linear-gradient(145deg, color-mix(in srgb, var(--surface) 95%, white), color-mix(in srgb, var(--primary-light) 20%, var(--surface)));
     border: 1px solid color-mix(in srgb, var(--primary) 18%, var(--gray-200));
-    box-shadow: 0 12px 26px rgba(15, 23, 42, 0.07);
+    box-shadow: var(--shadow-md);
   }
 
   .admin-main-content .admin-mobile-staff-card.is-muted {
@@ -2817,7 +2840,7 @@ html {
     border-radius: 16px;
     background: color-mix(in srgb, var(--surface) 94%, var(--primary-light));
     border: 1px solid color-mix(in srgb, var(--primary) 22%, var(--gray-200));
-    box-shadow: 0 12px 26px rgba(15, 23, 42, 0.07);
+    box-shadow: var(--shadow-md);
     overflow: hidden;
   }
 
@@ -3111,7 +3134,7 @@ html {
 
   .admin-main-content .glass-card {
     border-radius: 22px !important;
-    box-shadow: 0 14px 34px rgba(15, 23, 42, 0.08) !important;
+    box-shadow: var(--shadow-md) !important;
   }
 
   .admin-main-content .table-responsive-wrapper {
@@ -3169,14 +3192,14 @@ html {
     left: 0 !important;
     height: 100dvh !important;
     transform: translateX(-112%) !important;
-    transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    transition: transform 0.32s var(--ease-out-quart) !important;
   }
 
   .customer-sidebar.active {
     width: min(86vw, 290px) !important;
     transform: translateX(0) !important;
     border-radius: 0 28px 28px 0;
-    box-shadow: 22px 0 60px rgba(15, 23, 42, 0.24);
+    box-shadow: 22px 0 60px rgba(28, 25, 23, 0.22);
   }
 
   .customer-sidebar-close,
@@ -3187,13 +3210,13 @@ html {
     z-index: 3;
     width: 36px;
     height: 36px;
-    border: 1px solid rgba(34, 211, 238, 0.28);
+    border: 1px solid rgba(224, 122, 63, 0.35);
     border-radius: 12px;
-    background: rgba(34, 211, 238, 0.12);
+    background: rgba(224, 122, 63, 0.14);
     color: white;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 10px 22px rgba(15, 23, 42, 0.18);
+    box-shadow: 0 10px 22px rgba(28, 25, 23, 0.16);
     cursor: pointer;
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
@@ -3233,7 +3256,7 @@ html {
     border-radius: 24px;
     background: color-mix(in srgb, var(--surface) 92%, transparent);
     border: 1px solid var(--gray-200);
-    box-shadow: 0 18px 48px rgba(15, 23, 42, 0.18);
+    box-shadow: 0 18px 48px rgba(28, 25, 23, 0.16);
     backdrop-filter: blur(18px) saturate(160%);
     -webkit-backdrop-filter: blur(18px) saturate(160%);
   }
@@ -3708,3 +3731,96 @@ canvas.banner-pet-video {
   }
 }
 
+
+
+/* ============================================================ */
+/* WARM VET EDITORIAL — GLOBAL POLISH LAYER (P2)                */
+/* Tầng hoàn thiện cuối: focus ring, bảng, chatbot, a11y        */
+/* ============================================================ */
+
+/* Ring tập trung cho keyboard — ấm, rõ, không phá layout */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--primary) 45%, transparent);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* Bảng dữ liệu: hàng thở nhẹ khi hover, viền ngang mảnh hơn */
+.table-responsive-wrapper table tbody tr {
+  transition: background-color var(--dur-2) var(--ease-theme);
+}
+
+@media (hover: hover) {
+  .table-responsive-wrapper table tbody tr:hover td {
+    background-color: color-mix(in srgb, var(--primary-light) 55%, transparent);
+  }
+}
+
+.table-responsive-wrapper table th {
+  font-weight: 800;
+  border-bottom-width: 2px;
+}
+
+/* Hình ảnh bác sĩ/thú cưng: tông ấm nhẹ để hoà với nền kem */
+.doctor-card img,
+.hero-image-container img {
+  filter: saturate(0.96) contrast(1.02);
+}
+
+/* Chatbot: bong bóng tin nhắn bo tròn kiểu tin nhắn, chữ Nunito thân thiện */
+.footer-chat-bubble,
+#chatbotBtn {
+  font-family: var(--font-friendly);
+}
+
+#chatbotBtn {
+  transition: transform var(--dur-2) var(--ease-spring), box-shadow var(--dur-2) var(--ease-theme);
+}
+
+@media (hover: hover) {
+  #chatbotBtn:hover {
+    transform: scale(1.06) translateY(-2px);
+  }
+}
+
+/* Input: viền ấm hơn khi chỉ hover (không focus) */
+@media (hover: hover) {
+  input:hover:not(:focus),
+  select:hover:not(:focus),
+  textarea:hover:not(:focus) {
+    border-color: color-mix(in srgb, var(--primary) 34%, var(--gray-300));
+  }
+}
+
+/* Modal: bóng ấm sâu, backdrop mờ ấm */
+.modal-wrapper {
+  background: rgba(28, 25, 23, 0.5);
+  backdrop-filter: blur(10px) saturate(140%);
+  -webkit-backdrop-filter: blur(10px) saturate(140%);
+}
+
+.modal-content {
+  box-shadow: var(--shadow-2xl);
+}
+
+/* Toast: xuất hiện có trọng lượng, biến mất êm */
+.toast {
+  box-shadow: var(--shadow-lg);
+}
+
+/* Tôn trọng người dùng giảm chuyển động */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

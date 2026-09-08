@@ -117,7 +117,7 @@ const AISummaryModal: React.FC<AISummaryModalProps> = ({ isOpen, onClose, summar
           <div style={{
             width: '48px', height: '48px', background: 'var(--primary-light)', borderRadius: '16px',
             display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)',
-            boxShadow: '0 8px 16px rgba(13, 148, 136, 0.15)'
+            boxShadow: '0 8px 16px rgba(224, 122, 63, 0.15)'
           }}>
             <span className="material-symbols-outlined">auto_awesome</span>
           </div>

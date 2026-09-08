@@ -65,7 +65,7 @@ const BangGiaDichVu: React.FC = () => {
             { title: "Khám Lâm Sàng & Chẩn Đoán", icon: "stethoscope", color: "#0ea5e9", keywords: ["khám", "siêu âm", "x-quang", "xét nghiệm", "chẩn đoán"] },
             { title: "Tiêm Phòng & Tẩy Giun", icon: "vaccines", color: "#10b981", keywords: ["tiêm", "vaccine", "vắc", "giun", "ký sinh"] },
             { title: "Phẫu Thuật & Can Thiệp", icon: "surgical", color: "#f59e0b", keywords: ["phẫu thuật", "mổ", "triệt sản", "răng", "xương"] },
-            { title: "Lưu Chuồng & Grooming", icon: "spa", color: "#14b8a6", keywords: ["tắm", "cắt tỉa", "spa", "lưu chuồng", "nội trú", "grooming"] }
+            { title: "Lưu Chuồng & Grooming", icon: "spa", color: "#e07a3f", keywords: ["tắm", "cắt tỉa", "spa", "lưu chuồng", "nội trú", "grooming"] }
         ];
 
         return categories.map(cat => {
@@ -87,16 +87,16 @@ const BangGiaDichVu: React.FC = () => {
         <div style={{ background: 'var(--background)', minHeight: '100vh' }}>
             <section style={{ padding: '100px 0 80px', background: isDark ? 'var(--secondary-gradient)' : 'var(--primary-gradient)', color: 'white', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
                 <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: isDark ? 0.05 : 0.1, backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '30px 30px' }}></div>
-                <div style={{ position: 'absolute', top: '-50%', left: '-10%', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(13, 148, 136, 0.25) 0%, transparent 70%)', borderRadius: '50%' }}></div>
-                <div style={{ position: 'absolute', bottom: '-40%', right: '-10%', width: '600px', height: '600px', background: 'radial-gradient(circle, rgba(34, 211, 238, 0.15) 0%, transparent 70%)', borderRadius: '50%' }}></div>
+                <div style={{ position: 'absolute', top: '-50%', left: '-10%', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(224, 122, 63, 0.25) 0%, transparent 70%)', borderRadius: '50%' }}></div>
+                <div style={{ position: 'absolute', bottom: '-40%', right: '-10%', width: '600px', height: '600px', background: 'radial-gradient(circle, rgba(224, 122, 63, 0.15) 0%, transparent 70%)', borderRadius: '50%' }}></div>
                 <div className="container" style={{ position: 'relative', zIndex: 1 }}>
                     <RevealSection>
                         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.1)', padding: '8px 20px', borderRadius: '50px', fontSize: '0.85rem', fontWeight: 900, marginBottom: '24px', border: '1px solid rgba(255,255,255,0.1)', letterSpacing: '1px' }}>
-                            <span className="material-symbols-outlined" style={{ fontSize: '18px', color: '#2dd4bf' }}>verified</span>
+                            <span className="material-symbols-outlined" style={{ fontSize: '18px', color: '#e8955c' }}>verified</span>
                             MINH BẠCH & RÕ RÀNG
                         </div>
                         <h1 style={{ fontSize: "clamp(2.5rem, 5vw, 4rem)", fontWeight: 950, marginBottom: "24px", letterSpacing: "-1px" }}>
-                            Bảng Giá <span style={{ color: "#2dd4bf" }}>Dịch Vụ</span>
+                            Bảng Giá <span style={{ color: "#e8955c" }}>Dịch Vụ</span>
                         </h1>
                         <p style={{ fontSize: "1.15rem", maxWidth: "650px", margin: "0 auto", lineHeight: 1.6, fontWeight: 500, color: '#cbd5e1' }}>
                             Rexi Vet cam kết cung cấp dịch vụ y tế chuẩn quốc tế. Mọi chi phí được cập nhật chính xác từ hệ thống quản lý của chúng tôi.
@@ -220,12 +220,12 @@ const BangGiaDichVu: React.FC = () => {
                 padding: '80px 0',
                 background: isDark
                     ? 'linear-gradient(135deg, rgba(15, 23, 42, 0.96) 0%, rgba(8, 47, 73, 0.92) 100%)'
-                    : 'linear-gradient(135deg, #0d9488 0%, #14b8a6 100%)',
+                    : 'linear-gradient(135deg, #c05621 0%, #e07a3f 100%)',
                 color: 'white',
                 textAlign: 'center',
-                borderTop: isDark ? '1px solid rgba(34, 211, 238, 0.16)' : 'none',
-                borderBottom: isDark ? '1px solid rgba(34, 211, 238, 0.16)' : 'none',
-                boxShadow: isDark ? 'inset 0 1px 0 rgba(255,255,255,0.04), 0 -24px 80px rgba(34, 211, 238, 0.08)' : 'none'
+                borderTop: isDark ? '1px solid rgba(224, 122, 63, 0.16)' : 'none',
+                borderBottom: isDark ? '1px solid rgba(224, 122, 63, 0.16)' : 'none',
+                boxShadow: isDark ? 'inset 0 1px 0 rgba(255,255,255,0.04), 0 -24px 80px rgba(224, 122, 63, 0.08)' : 'none'
             }}>
                 <div className="container">
                     <RevealSection>
@@ -235,13 +235,13 @@ const BangGiaDichVu: React.FC = () => {
                             alignItems: 'center',
                             gap: '8px',
                             background: isDark ? 'var(--primary-gradient)' : 'white',
-                            color: isDark ? '#ffffff' : '#0d9488',
+                            color: isDark ? '#ffffff' : '#c05621',
                             padding: '16px 32px',
                             borderRadius: '50px',
                             textDecoration: 'none',
                             fontWeight: 900,
                             fontSize: '1rem',
-                            boxShadow: isDark ? '0 14px 34px rgba(34, 211, 238, 0.22)' : '0 10px 20px rgba(0,0,0,0.1)',
+                            boxShadow: isDark ? '0 14px 34px rgba(224, 122, 63, 0.22)' : '0 10px 20px rgba(0,0,0,0.1)',
                             border: isDark ? '1px solid rgba(255,255,255,0.12)' : 'none',
                             transition: 'transform 0.2s'
                         }}>

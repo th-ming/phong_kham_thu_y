@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { Link } from "react-router-dom";
 import { MemeCat, ScrollToTop, RevealSection } from "@components/SpecialEffects";
 import { useTheme } from "../contexts/ThemeContextV2";
@@ -44,16 +44,16 @@ const LienHe: React.FC = () => {
             {/* banner trang liên hệ */}
             <section style={{ padding: '100px 0 80px', background: isDark ? 'var(--secondary-gradient)' : 'var(--primary-gradient)', color: 'white', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
                 <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: isDark ? 0.05 : 0.1, backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '30px 30px' }}></div>
-                <div style={{ position: 'absolute', top: '-50%', left: '-10%', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(13, 148, 136, 0.25) 0%, transparent 70%)', borderRadius: '50%' }}></div>
-                <div style={{ position: 'absolute', bottom: '-40%', right: '-10%', width: '600px', height: '600px', background: 'radial-gradient(circle, rgba(34, 211, 238, 0.15) 0%, transparent 70%)', borderRadius: '50%' }}></div>
+                <div style={{ position: 'absolute', top: '-50%', left: '-10%', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(224, 122, 63, 0.25) 0%, transparent 70%)', borderRadius: '50%' }}></div>
+                <div style={{ position: 'absolute', bottom: '-40%', right: '-10%', width: '600px', height: '600px', background: 'radial-gradient(circle, rgba(224, 122, 63, 0.15) 0%, transparent 70%)', borderRadius: '50%' }}></div>
                 <div className="container" style={{ position: 'relative', zIndex: 1 }}>
                     <RevealSection>
                         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.1)', padding: '8px 20px', borderRadius: '50px', fontSize: '0.85rem', fontWeight: 900, marginBottom: '24px', border: '1px solid rgba(255,255,255,0.1)', letterSpacing: '1px' }}>
-                            <span className="material-symbols-outlined" style={{ fontSize: '18px', color: '#2dd4bf' }}>support_agent</span>
+                            <span className="material-symbols-outlined" style={{ fontSize: '18px', color: '#e8955c' }}>support_agent</span>
                             LUÔN SẴN SÀNG HỖ TRỢ
                         </div>
                         <h1 style={{ fontSize: "clamp(2.5rem, 5vw, 4rem)", fontWeight: 950, marginBottom: "24px", letterSpacing: "-1px" }}>
-                            Liên Hệ <span style={{ color: "#2dd4bf" }}>Rexi</span>
+                            Liên Hệ <span style={{ color: "#e8955c" }}>Rexi</span>
                         </h1>
                         <p style={{ fontSize: '1.05rem', color: '#cbd5e1', lineHeight: 1.8, marginBottom: '40px', fontWeight: 500 }}>
                             Chúng tôi luôn sẵn lòng lắng nghe và hỗ trợ bạn. Mọi thắc mắc về dịch vụ y tế, đặt lịch hẹn hoặc phản hồi chất lượng, vui lòng liên hệ với Rexi qua các kênh dưới đây.

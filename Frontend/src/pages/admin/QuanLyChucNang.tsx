@@ -156,7 +156,7 @@ const QuanLyChucNang: React.FC = () => {
           <div style={{ fontSize: '0.78rem', color: 'var(--gray-500)', fontWeight: 900, letterSpacing: '0.8px' }}>ĐANG HOẠT ĐỘNG</div>
           <div style={{ fontSize: '2rem', color: '#10b981', fontWeight: 950 }}>{chucNangs.length}</div>
         </div>
-        <div className="glass-card" style={{ padding: '18px', borderRadius: '18px', borderLeft: '4px solid #06b6d4' }}>
+        <div className="glass-card" style={{ padding: '18px', borderRadius: '18px', borderLeft: '4px solid #e07a3f' }}>
           <div style={{ fontSize: '0.78rem', color: 'var(--gray-500)', fontWeight: 900, letterSpacing: '0.8px' }}>NGUỒN DỮ LIỆU</div>
           <div style={{ fontSize: '1rem', color: 'var(--ink)', fontWeight: 900, marginTop: '10px' }}>Đồng bộ route & quyền thật</div>
         </div>

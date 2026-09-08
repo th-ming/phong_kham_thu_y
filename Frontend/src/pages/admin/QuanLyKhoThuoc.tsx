@@ -392,7 +392,7 @@ const QuanLyKhoThuoc: React.FC = () => {
               <div style={{ height: loThuocVirtual.visibleRange.start * (110 + 16) }} />
             )}
             {(loThuocVirtual.shouldVirtualize ? loThuocVirtual.visibleItems : loThuocs).map((l, idx) => (
-              <div key={l.id_lo} className="inv-lot-anim" style={{ background: 'var(--primary-light)', padding: '16px', borderRadius: '16px', border: '1px solid var(--primary-border, rgba(15, 157, 138, 0.18))', animationDelay: `${0.2 + idx * 0.07}s`, transition: 'transform 0.2s, box-shadow 0.2s', cursor: 'default', flexShrink: 0 }}>
+              <div key={l.id_lo} className="inv-lot-anim" style={{ background: 'var(--primary-light)', padding: '16px', borderRadius: '16px', border: '1px solid var(--primary-border, rgba(224, 122, 63, 0.18))', animationDelay: `${0.2 + idx * 0.07}s`, transition: 'transform 0.2s, box-shadow 0.2s', cursor: 'default', flexShrink: 0 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                   <span style={{ fontWeight: 800, color: 'var(--ink)' }}>Lô: {l.so_lo}</span>
                   <span style={{

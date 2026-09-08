@@ -276,7 +276,7 @@ const QuanLyFileDinhKem: React.FC = () => {
                 </label>
               </div>
             ) : (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '20px', background: 'var(--primary-light)', borderRadius: '16px', border: '1px solid rgba(15, 157, 138, 0.2)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '20px', background: 'var(--primary-light)', borderRadius: '16px', border: '1px solid rgba(224, 122, 63, 0.2)' }}>
                 <div style={{ width: '48px', height: '48px', background: 'var(--primary)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', flexShrink: 0 }}>
                   <span className="material-symbols-outlined" style={{ fontSize: '24px' }}>
                     {selectedFile.type.includes('image') ? 'image' : selectedFile.type.includes('video') ? 'movie' : 'description'}

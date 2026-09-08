@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { RevealSection } from "@components/SpecialEffects";
 import { useTheme } from "../../contexts/ThemeContextV2";
 
@@ -48,7 +48,7 @@ const PhanLienHe: React.FC = () => {
             label: 'Thời gian làm việc',
             value: 'Thứ 2 - CN: 08:00 - 20:00',
             subValue: 'Phục vụ không nghỉ lễ',
-            color: '#14b8a6',
+            color: '#e07a3f',
             bg: '#f5f3ff'
         }
     ];
@@ -110,7 +110,7 @@ const PhanLienHe: React.FC = () => {
                     .btn-direction:hover span:first-child { transform: rotate(-10deg) scale(1.08); }
                     [data-theme='dark'] .contact-info-row:hover {
                         background: rgba(15, 23, 42, 0.72);
-                        border-color: rgba(34, 211, 238, 0.22);
+                        border-color: rgba(224, 122, 63, 0.22);
                     }
                     @media (max-width: 991px) {
                         .contact-grid { grid-template-columns: 1fr !important; gap: 40px !important; }

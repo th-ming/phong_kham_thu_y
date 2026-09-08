@@ -55,7 +55,7 @@ const SidebarKhachHang: React.FC = () => {
           style={{
             background: 'var(--primary)', color: 'white', border: 'none',
             borderRadius: '50%',
-            boxShadow: '0 4px 15px rgba(15, 157, 138, 0.4)',
+            boxShadow: '0 4px 15px rgba(224, 122, 63, 0.4)',
             display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
           }}
         >
@@ -102,7 +102,7 @@ const SidebarKhachHang: React.FC = () => {
           <div className="glass-card" style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '20px', borderRadius: '24px', border: '1px solid var(--glass-border)', boxShadow: '0 10px 30px -5px rgba(0,0,0,0.3)', background: 'rgba(255,255,255,0.02)' }}>
             <div style={{ width: '52px', height: '52px', borderRadius: '50%', display: 'grid', placeItems: 'center', flexShrink: 0, position: 'relative' }}>
               <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: '2px solid var(--primary)', boxShadow: '0 0 15px var(--primary), inset 0 0 15px var(--primary)', animation: 'pulse 2s infinite' }} />
-              <div style={{ width: '44px', height: '44px', borderRadius: '50%', overflow: 'hidden', background: 'rgba(20, 184, 166, 0.1)', display: 'grid', placeItems: 'center', color: 'var(--primary)', fontWeight: 950, fontSize: '1.5rem', position: 'relative', zIndex: 1, textShadow: '0 0 10px var(--primary)' }}>
+              <div style={{ width: '44px', height: '44px', borderRadius: '50%', overflow: 'hidden', background: 'rgba(196, 145, 88, 0.1)', display: 'grid', placeItems: 'center', color: 'var(--primary)', fontWeight: 950, fontSize: '1.5rem', position: 'relative', zIndex: 1, textShadow: '0 0 10px var(--primary)' }}>
                 {userAvatar && /^(https?:|data:image\/)/.test(userAvatar) && !avatarFailed ? (
                   <img
                     src={userAvatar}

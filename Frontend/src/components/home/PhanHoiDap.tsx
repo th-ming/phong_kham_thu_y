@@ -1,4 +1,4 @@
-﻿import React, { useState } from "react";
+import React, { useState } from "react";
 import { RevealSection } from "@components/SpecialEffects";
 
 const faqs = [
@@ -22,8 +22,8 @@ const PhanHoiDap: React.FC = () => {
                     .faq-toggle-btn { transition: all 0.3s ease; }
                     .faq-toggle-btn:hover { background: var(--primary-light) !important; }
                     @keyframes faqIconPulse {
-                        0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.22); }
-                        50% { transform: scale(1.06); box-shadow: 0 0 0 10px rgba(34, 211, 238, 0); }
+                        0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(224, 122, 63, 0.22); }
+                        50% { transform: scale(1.06); box-shadow: 0 0 0 10px rgba(224, 122, 63, 0); }
                     }
                     @keyframes faqCallShine {
                         0% { opacity: 0; transform: translateX(-130%) skewX(-18deg); }
@@ -39,15 +39,15 @@ const PhanHoiDap: React.FC = () => {
                         content: "";
                         position: absolute;
                         inset: -50%;
-                        background: radial-gradient(circle at 20% 20%, rgba(34, 211, 238, 0.2), transparent 36%);
+                        background: radial-gradient(circle at 20% 20%, rgba(224, 122, 63, 0.2), transparent 36%);
                         opacity: 0;
                         transition: opacity 0.35s ease;
                         pointer-events: none;
                     }
                     .faq-contact-card:hover {
                         transform: translateY(-6px);
-                        border-color: rgba(34, 211, 238, 0.55) !important;
-                        box-shadow: 0 22px 48px rgba(34, 211, 238, 0.16) !important;
+                        border-color: rgba(224, 122, 63, 0.55) !important;
+                        box-shadow: 0 22px 48px rgba(224, 122, 63, 0.16) !important;
                     }
                     .faq-contact-card:hover::before { opacity: 1; }
                     .faq-contact-icon {
@@ -76,19 +76,19 @@ const PhanHoiDap: React.FC = () => {
                     .faq-call-link:hover {
                         transform: translateY(-2px);
                         filter: brightness(1.05);
-                        box-shadow: 0 12px 28px rgba(34, 211, 238, 0.28);
+                        box-shadow: 0 12px 28px rgba(224, 122, 63, 0.28);
                     }
                     .faq-call-link:hover .call-icon {
                         transform: rotate(-10deg) scale(1.08);
                     }
                     [data-theme='dark'] .faq-contact-card {
                         background: linear-gradient(145deg, rgba(15, 23, 42, 0.92), rgba(8, 47, 73, 0.34)) !important;
-                        border-color: rgba(34, 211, 238, 0.24) !important;
+                        border-color: rgba(224, 122, 63, 0.24) !important;
                         box-shadow: 0 18px 48px rgba(0, 0, 0, 0.24) !important;
                     }
                     [data-theme='dark'] .faq-call-link {
                         background: var(--primary-gradient) !important;
-                        box-shadow: 0 10px 26px rgba(34, 211, 238, 0.22);
+                        box-shadow: 0 10px 26px rgba(224, 122, 63, 0.22);
                     }
                     @keyframes slideDownFaq {
                         from { opacity: 0; transform: translateY(-8px); }

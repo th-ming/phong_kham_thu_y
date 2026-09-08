@@ -355,7 +355,7 @@ const HoSoBenhAn: React.FC = () => {
                 <p style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '8px' }}>TRIỆU CHỨNG LÂM SÀNG</p>
                 <p style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--ink)', margin: 0, lineHeight: '1.6' }}>{h.trieu_chung ?? h.trieuChung ?? '—'}</p>
               </div>
-              <div style={{ gridColumn: '1 / -1', background: 'var(--primary-light)', padding: '24px', borderRadius: '24px', border: '1px solid rgba(15, 157, 138, 0.2)' }}>
+              <div style={{ gridColumn: '1 / -1', background: 'var(--primary-light)', padding: '24px', borderRadius: '24px', border: '1px solid rgba(224, 122, 63, 0.2)' }}>
                 <p style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--primary)', marginBottom: '8px' }}>CHẨN ĐOÁN CỦA BÁC SĨ</p>
                 <p style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--ink)', margin: 0, lineHeight: '1.6' }}>{h.chan_doan ?? h.chanDoan ?? '—'}</p>
               </div>
@@ -363,7 +363,7 @@ const HoSoBenhAn: React.FC = () => {
                 <p style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--gray-400)', marginBottom: '8px' }}>PHÁC ĐỒ ĐIỀU TRỊ</p>
                 <p style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--ink)', margin: 0, lineHeight: '1.6' }}>{h.phac_do_dieu_tri ?? h.phacDoDieuTri ?? '—'}</p>
               </div>
-              <div style={{ gridColumn: '1 / -1', background: 'rgba(20, 184, 166, 0.1)', padding: '24px', borderRadius: '24px', border: '1px dashed rgba(20, 184, 166, 0.3)' }}>
+              <div style={{ gridColumn: '1 / -1', background: 'rgba(196, 145, 88, 0.1)', padding: '24px', borderRadius: '24px', border: '1px dashed rgba(196, 145, 88, 0.3)' }}>
                 <p style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--primary)', marginBottom: '8px' }}>HƯỚNG DẪN CHĂM SÓC TẠI NHÀ</p>
                 <p style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--ink)', margin: 0, lineHeight: '1.6' }}>{h.huong_dan_cham_soc ?? h.huongDanChamSoc ?? '—'}</p>
               </div>

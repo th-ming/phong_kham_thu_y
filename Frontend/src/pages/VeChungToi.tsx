@@ -67,9 +67,9 @@ const VeChungToi: React.FC = () => {
                 <div className="about-hero-bg"></div>
                 <div className="container" style={{ textAlign: 'center', color: 'white', position: 'relative', zIndex: 1 }}>
                     <RevealSection>
-                        <p style={{ color: "#2dd4bf", fontWeight: 900, fontSize: "1rem", letterSpacing: "3px", textTransform: "uppercase", marginBottom: '16px' }}>VỀ CHÚNG TÔI</p>
+                        <p style={{ color: "#e8955c", fontWeight: 900, fontSize: "1rem", letterSpacing: "3px", textTransform: "uppercase", marginBottom: '16px' }}>VỀ CHÚNG TÔI</p>
                         <h1 style={{ fontSize: "clamp(2.5rem, 6vw, 4.5rem)", fontWeight: 1000, marginBottom: "24px", letterSpacing: "-2px", textShadow: '0 4px 20px rgba(0,0,0,0.4)' }}>
-                            Nâng Tầm Sức Khỏe <br /> <span style={{ color: "#2dd4bf" }}>Yêu Thương Thú Cưng</span>
+                            Nâng Tầm Sức Khỏe <br /> <span style={{ color: "#e8955c" }}>Yêu Thương Thú Cưng</span>
                         </h1>
                         <p style={{ fontSize: "1.25rem", maxWidth: "700px", margin: "0 auto", lineHeight: 1.6, fontWeight: 500, opacity: 0.9 }}>
                             Hành trình hơn 10 năm đồng hành và chăm sóc hàng ngàn gia đình nhỏ tại Việt Nam.
@@ -178,7 +178,7 @@ const VeChungToi: React.FC = () => {
             </section>
 
             {/* PHẦN 5: CALL TO ACTION */}
-            <section style={{ padding: '80px 0', background: 'linear-gradient(135deg, #0f9d8a 0%, #2dd4bf 100%)', color: 'white', textAlign: 'center' }}>
+            <section style={{ padding: '80px 0', background: 'linear-gradient(135deg, #0f9d8a 0%, #e8955c 100%)', color: 'white', textAlign: 'center' }}>
                 <div className="container">
                     <RevealSection>
                         <h2 style={{ fontSize: '2.5rem', fontWeight: 950, marginBottom: '24px' }}>Bạn Đã Sẵn Sàng Trải Nghiệm Dịch Vụ?</h2>
