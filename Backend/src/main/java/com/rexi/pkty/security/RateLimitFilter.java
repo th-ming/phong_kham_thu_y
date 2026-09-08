@@ -172,6 +172,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
         // Do not inspect X-AI-ACTION as an attack payload. Tool tags like FILL:password
         // describe UI automation and previously caused false credential-attack blocks on /api/auth/login.
         String probe = (uri + " " + query + " " + userAgent).toLowerCase();
+        // Endpoint auth hợp lệ của app: refresh/logout vẫn gửi "token" trong path — không phải probing
+        boolean legitAuthFlow = uri.matches(".*/api/auth/(refresh-token|logout).*");
 
         if (probe.matches(".*(union\\s+select|sleep\\s*\\(|benchmark\\s*\\(|information_schema|xp_cmdshell|or\\s+1\\s*=\\s*1|--|/\\*|\\*/).*")) {
             return new AttackSignal("SQL injection", truncate(probe));
@@ -188,7 +190,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
         if (probe.matches(".*(\\.\\./|\\.\\.\\\\|/etc/passwd|boot\\.ini|win\\.ini|%2e%2e|%252e%252e).*")) {
             return new AttackSignal("Path traversal / file probing", truncate(probe));
         }
-        if (probe.matches(".*(api[_-]?key|secret|access[_-]?token|refresh[_-]?token|private[_-]?key|\\.aws/credentials|id_rsa).*")) {
+        if (probe.matches(".*(api[_-]?key|secret|private[_-]?key|\\.aws/credentials|id_rsa).*")
+                || (!legitAuthFlow && probe.matches(".*(access[_-]?token|refresh[_-]?token).*"))) {
             return new AttackSignal("Credential/API key probing", truncate(probe));
         }
         if (probe.matches(".*(/login|/dang-nhap|/api/auth|/wp-login).*") && probe.matches(".*(hydra|patator|bruteforce|credential|password).*")) {
