@@ -15,6 +15,7 @@ export default {
   transform: {
     '^.+\\.(ts|tsx)$': 'ts-jest',
   },
-  testMatch: ['**/__tests__/**/*.test.(ts|tsx)', '**/*.(test|spec).(ts|tsx)'],
+  // Chỉ chạy unit test trong src/ — tests/e2e.test.ts là TestCafe spec (chạy riêng, không cài trong jest)
+  testMatch: ['**/src/**/*.(test|spec).(ts|tsx)', '**/src/**/__tests__/**/*.test.(ts|tsx)'],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
 };
