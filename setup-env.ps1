@@ -1,4 +1,4 @@
-# Script to help set up environment variables for Render + Vercel
+﻿# Script to help set up environment variables for Render + Vercel
 # This does NOT upload automatically - it just prints the commands to copy
 
 Write-Host "========================================" -ForegroundColor Cyan
@@ -20,7 +20,7 @@ Write-Host "COOKIE_SECURE=true"
 Write-Host "MAIL_USERNAME=rexivetsys@gmail.com"
 Write-Host "MAIL_PASSWORD=<app-password>"
 Write-Host "WEBHOOK_SECRET=<random-long-string>"
-Write-Host "VNPAY_TMN_CODE=***REMOVED***-VNPAY_TMN_CODE"
+Write-Host "VNPAY_TMN_CODE=<your-vnpay-tmn-code>"
 Write-Host "VNPAY_HASH_SECRET=<your-secret>"
 Write-Host "VNPAY_URL=https://sandbox.vnpayment.vn/paymentv2/vpcpay.html"
 Write-Host "VNPAY_RETURN_URL=https://<your-vercel-domain>.vercel.app/khach-hang/hoa-don-thanh-toan"

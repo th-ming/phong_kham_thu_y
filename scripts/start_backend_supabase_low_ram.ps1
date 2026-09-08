@@ -1,4 +1,4 @@
-# Chay backend tiet kiem RAM kết nối với Supabase (Production)
+﻿# Chay backend tiet kiem RAM kết nối với Supabase (Production)
 param(
     [int]$MaxHeapMb = 512
 )

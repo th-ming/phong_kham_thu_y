@@ -1,4 +1,4 @@
-# DEPLOY GUIDE - REXI Phòng Khám Thú Y
+﻿# DEPLOY GUIDE - REXI Phòng Khám Thú Y
 
 ## Mục Lục
 1. [Render - Backend](#render---backend)
@@ -43,7 +43,7 @@ Vào tab **Environment** và thêm các biến sau:
 | `WEBHOOK_SECRET` | `<chuỗi bí mật dài>` | Xác thực webhook thanh toán |
 | `MAIL_USERNAME` | `rexivetsys@gmail.com` | |
 | `MAIL_PASSWORD` | `<mật khẩu ứng dụng Gmail>` | Dùng App Password, không phải password thường |
-| `VNPAY_TMN_CODE` | `***REMOVED***-VNPAY_TMN_CODE` | |
+| `VNPAY_TMN_CODE` | `<your-vnpay-tmn-code>` | |
 | `VNPAY_HASH_SECRET` | `<bí mật VNPay>` | |
 | `VNPAY_URL` | `https://sandbox.vnpayment.vn/paymentv2/vpcpay.html` | |
 | `VNPAY_RETURN_URL` | `https://<ten-mien-vercel-cua-ban>.vercel.app/khach-hang/hoa-don-thanh-toan` | |
