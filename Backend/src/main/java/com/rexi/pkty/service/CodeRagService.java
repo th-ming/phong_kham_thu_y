@@ -1,5 +1,6 @@
 package com.rexi.pkty.service;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -45,7 +46,14 @@ public class CodeRagService {
             "(?i)(data-ai-id\\s*[:=]?\\s*)?([a-z][a-z0-9_]*-[a-z0-9_-]+)"
     );
 
+    /** C2: RAG quét mã nguồn chỉ bật khi cần debug nội bộ — prod tắt qua code-rag.enabled=false. */
+    @Value("${code-rag.enabled:true}")
+    private boolean enabled = true;
+
     public String search(String rawQuery) {
+        if (!enabled) {
+            return "RAG mã nguồn đang tắt trên môi trường này (code-rag.enabled=false). Dùng bản đồ module tĩnh để tra vị trí code.";
+        }
         String query = Objects.toString(rawQuery, "").trim();
         if (query.isBlank()) {
             return "Cần từ khóa để tra cứu RAG mã nguồn. Ví dụ: trang hóa đơn, nút thêm dịch vụ, api đăng nhập, tool agent.";

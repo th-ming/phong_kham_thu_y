@@ -24,6 +24,11 @@ public class DatabaseBackupService {
     @Scheduled(cron = "0 0 2 * * ?")
     public void autoBackup() {
         try {
+            if (com.rexi.pkty.util.DatabaseDialect.isPostgres(jdbcTemplate)) {
+                // C1: BACKUP DATABASE là T-SQL — Render Postgres dùng backup của Render, không chạy ở đây
+                logger.info("Bỏ qua sao lưu tự động: đang chạy trên Postgres (Render quản lý backup riêng).");
+                return;
+            }
             logger.info("Bắt đầu tiến trình sao lưu cơ sở dữ liệu định kỳ...");
             backupDatabaseManual();
             cleanOldBackups();
@@ -71,6 +76,11 @@ public class DatabaseBackupService {
 
     // Hàm thực thi lệnh Backup SQL Server
     public String backupDatabaseManual() throws Exception {
+        if (com.rexi.pkty.util.DatabaseDialect.isPostgres(jdbcTemplate)) {
+            // C1: BACKUP DATABASE ... TO DISK chỉ có trên SQL Server
+            throw new UnsupportedOperationException(
+                    "Sao lưu .bak chỉ hỗ trợ SQL Server. Trên Postgres hãy dùng backup managed của Render (pg_dump).");
+        }
         // Tạo thư mục "backups" nằm ngay trong thư mục chạy project Backend
         String backupDirPath = System.getProperty("user.dir") + File.separator + "backups";
         File backupDir = new File(backupDirPath);
@@ -90,6 +100,11 @@ public class DatabaseBackupService {
     // Khôi phục CSDL từ file .bak có sẵn trong thư mục backups/
     // Bảo vệ: chỉ nhận filename thuần (không cho phép path traversal)
     public void restoreDatabase(String filename) throws Exception {
+        if (com.rexi.pkty.util.DatabaseDialect.isPostgres(jdbcTemplate)) {
+            // C1: RESTORE DATABASE chỉ có trên SQL Server
+            throw new UnsupportedOperationException(
+                    "Khôi phục .bak chỉ hỗ trợ SQL Server. Trên Postgres hãy dùng restore managed của Render.");
+        }
         // Chặn path traversal: chỉ cho phép tên file không có ký tự phân cách đường dẫn
         if (filename == null || filename.contains("..") || filename.contains("/") || filename.contains("\\")) {
             throw new IllegalArgumentException("Tên file không hợp lệ.");
