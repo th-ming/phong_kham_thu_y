@@ -107,6 +107,7 @@ public class HoSoBenhAnController {
     }
 
     @GetMapping("/{id}")
+    @org.springframework.security.access.prepost.PreAuthorize(com.rexi.pkty.security.RexiSecurityRoles.CUSTOMER_RECORD_READ)
     public org.springframework.http.ResponseEntity<?> getHoSoById(@PathVariable String id) {
         String sql = "SELECT hs.id_ho_so_benh_an as id_ho_so, hs.ngay_kham, hs.trieu_chung, hs.chan_doan, hs.phac_do_dieu_tri, hs.huong_dan_cham_soc, "
                 + "hs.nhiet_do, hs.can_nang, hs.trang_thai_ho_so, "

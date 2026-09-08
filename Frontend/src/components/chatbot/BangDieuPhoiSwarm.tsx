@@ -66,6 +66,7 @@ export const BangDieuPhoiSwarm: React.FC<BangDieuPhoiSwarmProps> = ({ data, isDa
             await axiosInstance.post("/api/agent/bulk-send-email", {
                 contacts,
                 campaignName: data.orchestratorPrompt?.slice(0, 60) || "Chiến dịch Marketing Rexi",
+                dryRun: false,
             });
             setIsSent(true);
         } catch (err) {

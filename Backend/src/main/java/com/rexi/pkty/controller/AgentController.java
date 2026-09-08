@@ -87,6 +87,10 @@ public class AgentController {
             List<Map<String, Object>> pets = jdbcTemplate.queryForList(sql, idKhachHang);
             List<Map<String, Object>> reminders = new ArrayList<>();
 
+            // B7: tra DichVu + NhanVien that tu DB (tra 1 lan truoc loop), fallback hardcode
+            Map<String, String> serviceIds = resolveServiceIds();
+            Map<String, String> doctorIds = resolveDoctorIds();
+
             for (Map<String, Object> pet : pets) {
                 String loai = pet.get("loai") != null ? pet.get("loai").toString().toLowerCase().trim() : "";
                 String tenThuCung = pet.get("ten_thu_cung") != null ? pet.get("ten_thu_cung").toString() : "Be";
@@ -99,24 +103,24 @@ public class AgentController {
                 if (laMeo) {
                     reminder.put("type", "TRIET_SAN");
                     reminder.put("message", "Chào Sen! Bé " + tenThuCung + " đã đến tuổi triệt sản. Rexi đề nghị đặt lịch triệt sản sớm để đảm bảo sức khỏe cho bé. Sen có muốn đặt lịch không?");
-                    reminder.put("service_id", "DV-003");
+                    reminder.put("service_id", serviceIds.get("TRIET_SAN"));
                     reminder.put("suggested_date", java.time.LocalDate.now().plusDays(3).toString());
                     reminder.put("suggested_time", "09:00");
-                    reminder.put("doctor_id", "NV-002");
+                    reminder.put("doctor_id", doctorIds.get("TRIET_SAN"));
                 } else if (laCho) {
                     reminder.put("type", "TIEM_PHONG");
                     reminder.put("message", "Chào Sen! Bé " + tenThuCung + " cần tiêm phòng uốn ván và 5-in-1 để duy trì sức khỏe. Rexi đã chuẩn bị lịch tiêm. Sen muốn đặt lịch không?");
-                    reminder.put("service_id", "DV-002");
+                    reminder.put("service_id", serviceIds.get("TIEM_PHONG"));
                     reminder.put("suggested_date", java.time.LocalDate.now().plusDays(1).toString());
                     reminder.put("suggested_time", "10:00");
-                    reminder.put("doctor_id", "NV-003");
+                    reminder.put("doctor_id", doctorIds.get("TIEM_PHONG"));
                 } else {
                     reminder.put("type", "KHAM_DINH_KY");
                     reminder.put("message", "Chào Sen! Bé " + tenThuCung + " nên khám định kỳ để đảm bảo sức khỏe tốt nhất. Sen có muốn đặt lịch khám không?");
-                    reminder.put("service_id", "DV-001");
+                    reminder.put("service_id", serviceIds.get("KHAM_DINH_KY"));
                     reminder.put("suggested_date", java.time.LocalDate.now().plusDays(2).toString());
                     reminder.put("suggested_time", "08:30");
-                    reminder.put("doctor_id", "NV-002");
+                    reminder.put("doctor_id", doctorIds.get("KHAM_DINH_KY"));
                 }
                 reminders.add(reminder);
             }
@@ -128,18 +132,92 @@ public class AgentController {
         }
     }
 
+    /**
+     * B7: Tìm id dịch vụ thật trong DB theo tên (khớp biến thể có dấu + ASCII).
+     * Fallback về id hardcode khi DB trống/lỗi.
+     */
+    private Map<String, String> resolveServiceIds() {
+        Map<String, String> fallback = Map.of(
+                "TRIET_SAN", "DV-003",
+                "TIEM_PHONG", "DV-002",
+                "KHAM_DINH_KY", "DV-001"
+        );
+        try {
+            Map<String, String> resolved = new HashMap<>(fallback);
+            List<Map<String, Object>> services = jdbcTemplate.queryForList(
+                    "SELECT id_dich_vu, ten_dich_vu FROM DichVu "
+                            + "WHERE (da_xoa IS NULL OR LOWER(CAST(da_xoa AS varchar)) IN ('0', 'false'))");
+            for (Map<String, Object> row : services) {
+                String name = normalizeAsciiLower(String.valueOf(row.getOrDefault("ten_dich_vu", "")));
+                String id = String.valueOf(row.get("id_dich_vu"));
+                if (resolved.get("TRIET_SAN").equals("DV-003") && (name.contains("triet san") || name.contains("steril") || name.contains("neuter") || name.contains("spay"))) {
+                    resolved.put("TRIET_SAN", id);
+                } else if (resolved.get("TIEM_PHONG").equals("DV-002") && (name.contains("tiem phong") || name.contains("vaccine") || name.contains("vac xin"))) {
+                    resolved.put("TIEM_PHONG", id);
+                } else if (resolved.get("KHAM_DINH_KY").equals("DV-001") && (name.contains("kham") && !name.contains("cap cuu") && !name.contains("triet") && !name.contains("tiem"))) {
+                    resolved.put("KHAM_DINH_KY", id);
+                }
+            }
+            return resolved;
+        } catch (Exception e) {
+            logger.warning("Khong tra duoc DichVu dong, dung id mac dinh: " + e.getMessage());
+            return fallback;
+        }
+    }
+
+    /**
+     * B7: Tìm id bác sĩ thật trong DB theo chuyen_mon / vai trò. Fallback hardcode.
+     */
+    private Map<String, String> resolveDoctorIds() {
+        Map<String, String> fallback = Map.of(
+                "TRIET_SAN", "NV-002",
+                "TIEM_PHONG", "NV-003",
+                "KHAM_DINH_KY", "NV-002"
+        );
+        try {
+            Map<String, String> resolved = new HashMap<>(fallback);
+            List<Map<String, Object>> doctors = jdbcTemplate.queryForList(
+                    "SELECT id_nhan_vien, chuyen_mon FROM NhanVien "
+                            + "WHERE (da_xoa IS NULL OR LOWER(CAST(da_xoa AS varchar)) IN ('0', 'false')) "
+                            + "AND (LOWER(COALESCE(chuyen_mon, '')) LIKE '%bác sĩ%' "
+                            + "OR LOWER(COALESCE(chuyen_mon, '')) LIKE '%bac si%' "
+                            + "OR LOWER(COALESCE(chuyen_mon, '')) LIKE '%doctor%')");
+            if (doctors.isEmpty()) return fallback;
+            String firstDoctor = String.valueOf(doctors.get(0).get("id_nhan_vien"));
+            String secondDoctor = doctors.size() > 1 ? String.valueOf(doctors.get(1).get("id_nhan_vien")) : firstDoctor;
+            resolved.put("TRIET_SAN", secondDoctor);
+            resolved.put("TIEM_PHONG", firstDoctor);
+            resolved.put("KHAM_DINH_KY", firstDoctor);
+            return resolved;
+        } catch (Exception e) {
+            logger.warning("Khong tra duoc NhanVien bac si, dung id mac dinh: " + e.getMessage());
+            return fallback;
+        }
+    }
+
+    /** Chuẩn hóa chuỗi về ASCII lowercase (bỏ dấu tiếng Việt). */
+    private String normalizeAsciiLower(String input) {
+        if (input == null) return "";
+        String normalized = java.text.Normalizer.normalize(input, java.text.Normalizer.Form.NFD)
+                .replaceAll("\\p{M}+", "")
+                .replace("đ", "d").replace("Đ", "D");
+        return normalized.toLowerCase(java.util.Locale.ROOT).trim();
+    }
+
     // Swarm Agent (multi-agent orchestration) post campaign
     @PostMapping("/swarm-orchestration")
     @PreAuthorize(RexiSecurityRoles.MARKETING)
     public ResponseEntity<?> handleSwarmOrchestration(@RequestBody Map<String, String> payload) {
         String query = payload.get("query") != null ? payload.get("query") : "";
-        logger.info("[SWARM] Tiep nhan yeu cau dieu phoi da Agent Swarm: " + query);
+        // B5: mask PII (email/SĐT) trong query trước khi log + nhúng prompt AI
+        String maskedQuery = maskPii(query);
+        logger.info("[SWARM] Tiep nhan yeu cau dieu phoi da Agent Swarm: " + maskedQuery);
 
         try {
             // B1: Swarm Orchestrator phan viec
             String step1Agent = "Rexi Orchestrator";
             String step1Action = "Phan tich yeu cau chien dich va phan nhiem cong viec cho cac Agent phu trach";
-            String step1Output = "Da tiep nhan yeu cau tu sp: \"" + query + "\"\n" +
+            String step1Output = "Da tiep nhan yeu cau tu sp: \"" + maskedQuery + "\"\n" +
                     "Bat dau phan nhiem cong viec thanh cac JSON Tasks:\n" +
                     "1. Giao DataAgent: Phan tch va tim kiem, chuyen doi sang khung truy van an toan va truy xuat database.\n" +
                     "2. Giao CreativeAgent: Tiep nhan ket qua tu DataAgent, len kich ban viet email tri an/nhac lich ca nhan hoa.\n" +
@@ -158,7 +236,7 @@ public class AgentController {
                     "- `CUSTOMER_NAME`: Neu nguoi dung tim theo ten chu nuoi\n" +
                     "- `CUSTOMER_EMAIL`: Neu nguoi dung tim theo email khach hang\n" +
                     "- `ALL`: Neu nguoi dung muon loc tat ca.\n\n" +
-                    "Yeu cau cua nguoi dung: \"" + query + "\"\n\n" +
+                    "Yeu cau cua nguoi dung: \"" + maskedQuery + "\"\n\n" +
                     "Chi tra ve JSON duy nhat khong co ky tu markdown nao khac.";
 
             List<ChatMessage> dataHistory = new ArrayList<>();
@@ -169,7 +247,7 @@ public class AgentController {
             
             ChatMessage dataUserMsg = new ChatMessage();
             dataUserMsg.setRole("user");
-            dataUserMsg.setContent(query);
+            dataUserMsg.setContent(maskedQuery);
             dataHistory.add(dataUserMsg);
 
             String dataLlmResponse = "";
@@ -251,7 +329,7 @@ public class AgentController {
 
             String step2Output = "BO LOC DU LIEU DA DICH THANH CONG:\n" +
                     "- Kieu loc: " + searchType + "\n" +
-                    "- Tu khoa tim kiem: \"" + keyword + "\"\n" +
+                    "- Tu khoa tim kiem: \"" + maskPii(keyword) + "\"\n" +
                     "- Ket qua truy xuat: Tim thay " + dbResults.size() + " chu nui ph hop trong he thong" +
                     (dbResults.isEmpty() ? ". Khong co email nao duoc tao de tranh gui nham." : ".");
 
@@ -288,7 +366,7 @@ public class AgentController {
                     "Nhiem vu cua ban la viet mot email nhac lich ti kham, tang voucher hoac tri an cac ky dieu dac biet.\n" +
                     "Hay dung tu 'Sen' de gui chu nui, va 'Boss' hoac 'Be' de gui thu cung.\n" +
                     "Hay danh dau cac thong tin ca nhan hoa la [Ten Khach Hang] va [Ten Thu Chung] chinh xac.\n" +
-                    "Yeu cau noi dung tu sp: \"" + query + "\"\n" +
+                    "Yeu cau noi dung tu sp: \"" + maskedQuery + "\"\n" +
                     "Hay tra ve noi dung email hoan chinh, ngan gon, co tieu de email ro rang.";
 
             List<ChatMessage> creativeHistory = new ArrayList<>();
@@ -391,6 +469,15 @@ public class AgentController {
     }
 
     // Approve & bulk send mail (Async task)
+    // B6: dryRun mặc định true — chỉ gửi khi FE bấm "Phê Duyệt & Gửi" (gửi dryRun=false).
+    // Giới hạn 200 email/lần, executor bounded (tránh ngốn thread của ForkJoinPool chung).
+    private static final int MAX_BULK_EMAILS = 200;
+    private final java.util.concurrent.ExecutorService bulkEmailExecutor =
+            new java.util.concurrent.ThreadPoolExecutor(
+                    4, 8, 60L, java.util.concurrent.TimeUnit.SECONDS,
+                    new java.util.concurrent.LinkedBlockingQueue<>(500),
+                    new java.util.concurrent.ThreadPoolExecutor.DiscardOldestPolicy());
+
     @PostMapping("/bulk-send-email")
     @PreAuthorize(RexiSecurityRoles.MARKETING)
     public ResponseEntity<?> bulkSendEmail(@RequestBody Map<String, Object> request) {
@@ -398,12 +485,48 @@ public class AgentController {
             @SuppressWarnings("unchecked")
             List<Map<String, Object>> contacts = (List<Map<String, Object>>) request.get("contacts");
             String campaignName = request.getOrDefault("campaignName", "Chien dich Marketing Rexi").toString();
+            boolean dryRun = !Boolean.TRUE.equals(request.get("dryRun"));
 
             if (contacts == null || contacts.isEmpty()) {
                 return ResponseEntity.badRequest().body(Map.of(
                     "success", false,
                     "error", "Khong co contacts nao de gui email!"
                 ));
+            }
+
+            if (contacts.size() > MAX_BULK_EMAILS) {
+                return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "error", "Chien dich toi da " + MAX_BULK_EMAILS + " email moi luot. Hay chia nho danh sach (" + contacts.size() + " nguoi nhan)."
+                ));
+            }
+
+            if (dryRun) {
+                // Preview an toàn: đếm số email hợp lệ mà KHÔNG gửi gì cả
+                int wouldSend = 0;
+                List<String> previewLog = new ArrayList<>();
+                for (Map<String, Object> contact : contacts) {
+                    String name = contact.getOrDefault("name", "---").toString();
+                    String email = contact.getOrDefault("email", "").toString();
+                    if (!email.isEmpty() && mailSender != null) {
+                        wouldSend++;
+                        previewLog.add(String.format(" %s (%s) - Se duoc gui khi phe duyet", name, email));
+                    } else {
+                        previewLog.add(String.format(" %s (%s) - Bo qua (thieu email/SMTP chua cau hinh)", name, email));
+                    }
+                }
+                Map<String, Object> result = new HashMap<>();
+                result.put("success", true);
+                result.put("dryRun", true);
+                result.put("sent", 0);
+                result.put("total", contacts.size());
+                result.put("campaign", campaignName);
+                result.put("log", previewLog);
+                result.put("message", String.format(
+                    "CHE DO XEM TRUOC: chien dich \"%s\" se gui %d/%d email. Bam Phe Duyet de gui that.",
+                    campaignName, wouldSend, contacts.size()
+                ));
+                return ResponseEntity.ok(result);
             }
 
             int expectedSendCount = 0;
@@ -424,9 +547,9 @@ public class AgentController {
                 }
             }
 
-            // Async ThreadPool gui background
+            // Async gui background voi executor bounded (4-8 thread, khong dung ForkJoinPool chung)
             if (!validContacts.isEmpty()) {
-                java.util.concurrent.CompletableFuture.runAsync(() -> {
+                bulkEmailExecutor.submit(() -> {
                     for (Map<String, Object> contact : validContacts) {
                         try {
                             String email = contact.getOrDefault("email", "").toString();
@@ -436,7 +559,7 @@ public class AgentController {
                             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
                             helper.setTo(email);
                             helper.setSubject("Rexi Vet - " + campaignName);
-                            helper.setText(emailContent.replace("\n", "<br/>"), true); 
+                            helper.setText(emailContent.replace("\n", "<br/>"), true);
                             mailSender.send(message);
                             
                             logger.info(String.format("[BACKGROUND EMAIL] Da gui thanh cong toi: %s", email));
@@ -450,6 +573,7 @@ public class AgentController {
 
             Map<String, Object> result = new HashMap<>();
             result.put("success", true);
+            result.put("dryRun", false);
             result.put("sent", expectedSendCount);
             result.put("total", contacts.size());
             result.put("campaign", campaignName);
@@ -468,6 +592,22 @@ public class AgentController {
                 "error", "Khong the gui email do su co he thong. Vui long thu lai sau."
             ));
         }
+    }
+
+    /**
+     * B5: Mask PII (email, số điện thoại) trước khi ghi log hoặc nhúng vào prompt AI.
+     * Email → "email-da-an", số điện thoại VN (9-11 số) → "sdt-da-an".
+     */
+    private static final java.util.regex.Pattern PII_EMAIL =
+            java.util.regex.Pattern.compile("[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}");
+    private static final java.util.regex.Pattern PII_PHONE =
+            java.util.regex.Pattern.compile("(?<!\\d)(?:0|84|\\+84)[\\s.-]?\\d[\\d\\s.-]{7,11}\\d(?!\\d)");
+
+    private String maskPii(String text) {
+        if (text == null || text.isBlank()) return text == null ? "" : text;
+        String masked = PII_EMAIL.matcher(text).replaceAll("email-da-an");
+        masked = PII_PHONE.matcher(masked).replaceAll("sdt-da-an");
+        return masked;
     }
 
     // Direct run tool bypass LLM (Voice/Autopilot)
@@ -512,7 +652,7 @@ public class AgentController {
         } catch (Exception e) {
             logger.severe("[DIRECT TOOL] Loi: " + e.getMessage());
             return ResponseEntity.internalServerError().body(Map.of(
-                "error", "Loi chay tool truc tiep: " + e.getMessage()
+                "error", "Loi he thong khi chay tool. Vui long thu lai sau."
             ));
         }
     }
@@ -571,8 +711,9 @@ public class AgentController {
             ));
         } catch (Exception e) {
             logger.severe("[ReAct] Loi: " + e.getMessage());
-            saveAgentChatLog(username, query, "Loi ReAct Agent: " + e.getMessage(), "System", List.of());
-            return ResponseEntity.internalServerError().body(Map.of("error", "Loi ReAct Agent: " + e.getMessage()));
+            // B9: khong leak e.getMessage() ra response hay DB log nguoi dung
+            saveAgentChatLog(username, query, "Loi ReAct Agent, vui long thu lai sau.", "System", List.of());
+            return ResponseEntity.internalServerError().body(Map.of("error", "Loi he thong khi chay Rexi Agent. Vui long thu lai sau."));
         }
     }
 

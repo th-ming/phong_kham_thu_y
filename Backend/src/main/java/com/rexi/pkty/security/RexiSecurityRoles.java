@@ -32,6 +32,10 @@ public final class RexiSecurityRoles {
     public static final String CUSTOMER_PET_WRITE =
             "hasAnyRole('ADMIN', 'QUAN_LY', 'BAC_SI', 'Y_TA', 'TIEP_TAN', 'CUSTOMER')";
 
+    /** Đọc hồ sơ khách hàng: nội bộ + chính chủ (CUSTOMER = VT-5 login thường, KHACH_HANG = Google login) */
+    public static final String CUSTOMER_RECORD_READ =
+            "hasAnyRole('ADMIN', 'QUAN_LY', 'KE_TOAN', 'BAC_SI', 'Y_TA', 'TIEP_TAN', 'STAFF', 'CUSTOMER', 'KHACH_HANG')";
+
     /** Lịch hẹn nội bộ (danh sách / hôm nay) */
     public static final String APPOINTMENT_READ =
             "hasAnyRole('ADMIN', 'QUAN_LY', 'STAFF', 'BAC_SI', 'TIEP_TAN', 'Y_TA')";

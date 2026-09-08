@@ -115,19 +115,20 @@ public class KhachHangController {
 
     // Get 1 khách hàng theo ID
     @GetMapping("/{id}")
+    @org.springframework.security.access.prepost.PreAuthorize(com.rexi.pkty.security.RexiSecurityRoles.CUSTOMER_RECORD_READ)
     public ResponseEntity<?> getById(@PathVariable String id) {
-        // Chặn IDOR: KHACH_HANG ko được xem profile người khác
+        // Chặn IDOR: khách hàng (VT-5/KHACH_HANG) chỉ được xem profile của chính mình
         org.springframework.security.core.Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String username = (auth != null) ? auth.getName() : null;
         if (username != null && !username.equals("anonymousUser")) {
             Optional<TaiKhoan> tkOpt = taiKhoanRepository.findByTenDangNhap(username);
             if (tkOpt.isPresent()) {
                 TaiKhoan tk = tkOpt.get();
-                if (tk.getId_vai_tro() != null && tk.getId_vai_tro().equals("VT-5")) { // Là khách hàng
-                    if (!tk.getId_khach_hang().equals(id)) {
-                        return ResponseEntity.status(403).body(Map.of("message",
-                                "Cảnh báo bảo mật: Bạn không có quyền xem thông tin của người khác!"));
-                    }
+                String role = tk.getId_vai_tro() != null ? tk.getId_vai_tro().toUpperCase(java.util.Locale.ROOT) : "";
+                boolean laKhachHang = "VT-5".equals(role) || role.contains("CUSTOMER") || role.contains("KHACH");
+                if (laKhachHang && !java.util.Objects.equals(tk.getId_khach_hang(), id)) {
+                    return ResponseEntity.status(403).body(Map.of("message",
+                            "Cảnh báo bảo mật: Bạn không có quyền xem thông tin của người khác!"));
                 }
             }
         }

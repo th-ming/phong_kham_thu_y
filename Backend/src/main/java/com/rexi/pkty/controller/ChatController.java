@@ -236,6 +236,14 @@ public class ChatController {
             boolean hasImage = lastMsg.getImages() != null && !lastMsg.getImages().isEmpty();
             boolean hasMedia = hasVideo || hasImage;
 
+            // Max 1000 ky tu de tranh spam tin sieu dai — nhưng tin khẩn cấp (triage) vẫn đi tiếp
+            // để được trả lời local_triage thay vì bị chặn
+            if (userQuery.length() > 1000 && !classifyEmergencyTriage(normalizedUserQuery).emergency()) {
+                return Map.of("reply",
+                        "Sen ơi tin nhắn hơi dài quá òi! 😿 Sen tóm tắt lại tình trạng của bé ngắn gọn (dưới 1000 ký tự) để Rexi đọc và tư vấn chuẩn xác nhất nha!",
+                        "source", "local_length_guard");
+            }
+
             String deterministicGuardReply = tryDeterministicChatGuard(normalizedUserQuery, userQuery, hasMedia);
             if (deterministicGuardReply != null) {
                 return Map.of("reply", deterministicGuardReply, "source", "local_guard");
@@ -296,12 +304,6 @@ public class ChatController {
             String localClinicReply = tryLocalClinicGuidanceReply(normalizedUserQuery);
             if (!hasMedia && localClinicReply != null) {
                 return Map.of("reply", localClinicReply, "source", "local_clinic_guidance");
-            }
-
-            // Max 1000 ky tu de tranh spam tin sieu dai
-            if (userQuery.length() > 1000) {
-                return Map.of("reply",
-                        "Sen ơi tin nhắn hơi dài quá òi! 😿 Sen tóm tắt lại tình trạng của bé ngắn gọn (dưới 1000 ký tự) để Rexi đọc và tư vấn chuẩn xác nhất nha!");
             }
 
             String localVetReply = tryLocalVeterinaryReply(normalizedUserQuery, userQuery);
@@ -365,8 +367,8 @@ public class ChatController {
 
             // Get payload currentPath va domContext tu HTTP body
             String currentPath = payload.currentPath != null ? payload.currentPath : "/";
-            String currentDomContext = autopilotRequested && payload.domContext != null && !payload.domContext.isBlank() 
-                                        ? payload.domContext 
+            String currentDomContext = autopilotRequested && payload.domContext != null && !payload.domContext.isBlank()
+                                        ? sanitizeDomContext(payload.domContext)
                                         : "Không có bối cảnh giao diện.";
             
             String currentActivityLogs = "Không có nhật ký hành động gần đây.";
@@ -1013,7 +1015,7 @@ ChatMessage systemMsg = new ChatMessage();
         return containsAny(normalizedQuery,
                 "file nao", "dong nao", "line nao", "line nhiu", "code nao", "ham nao", "function nao",
                 "component nao", "route nao", "api nao", "endpoint nao", "controller nao", "service nao",
-                "data ai id", "data-ai-id", "button-chatbot", "input-chatbot", "chatbot-", "id ",
+                "data ai id", "data-ai-id", "button-chatbot", "input-chatbot", "chatbot-", "id:", "id =",
                 "nam o dau", "nam dau", "o dau", "o file", "trang nao", "swagger", "openapi", "api docs");
     }
 
@@ -2077,8 +2079,38 @@ ChatMessage systemMsg = new ChatMessage();
         return new ChatPersonaContext(audience, mode, tone, allowedActions, forbiddenActions);
     }
 
-    private String renderPersonaBlock(ChatPersonaContext persona, ChatRequestPlan plan, String currentPath) {
-        return "--- CHAT PERSONA CONTEXT (BẮT BUỘC TUÂN THỦ) ---\n"
+    /**
+     * Làm sạch domContext gửi từ client trước khi nhúng vào prompt AI:
+     * - Giới hạn 2000 ký tự (chống phình token).
+     * - Loại các dòng cố gắng chỉ đạo AI (prompt injection) như "ignore previous",
+     *   "system prompt", "you are", action tag giả mạo.
+     */
+    private String sanitizeDomContext(String domContext) {
+        if (domContext == null || domContext.isBlank()) return "Không có bối cảnh giao diện.";
+        String[] injectionPatterns = {
+                "ignore (all )?(previous|prior|above)", "disregard (all )?(previous|prior|above)",
+                "system prompt", "bỏ qua hướng dẫn", "bo qua huong dan", "quên hướng dẫn",
+                "you are now", "act as", "pretend to be", "jailbreak",
+                "\\[CLICK:", "\\[FILL:", "\\[SELECT:", "\\[TOGGLE:", "\\[DELETE:", "\\[NAVIGATE:"
+        };
+        StringBuilder cleaned = new StringBuilder();
+        for (String line : domContext.split("\\r?\\n")) {
+            String lower = line.toLowerCase();
+            boolean injected = false;
+            for (String pattern : injectionPatterns) {
+                if (lower.matches(".*" + pattern + ".*")) {
+                    injected = true;
+                    break;
+                }
+            }
+            if (!injected) cleaned.append(line).append('\n');
+        }
+        String result = cleaned.toString().trim();
+        if (result.length() > 2000) result = result.substring(0, 2000);
+        return result.isBlank() ? "Không có bối cảnh giao diện." : result;
+    }
+
+    private String renderPersonaBlock(ChatPersonaContext persona, ChatRequestPlan plan, String currentPath) {        return "--- CHAT PERSONA CONTEXT (BẮT BUỘC TUÂN THỦ) ---\n"
                 + "Người đang nói chuyện: " + persona.audience() + ".\n"
                 + "Chế độ xử lý request: " + persona.mode() + " (" + plan.route() + ").\n"
                 + "Provider ưu tiên: " + plan.providerHint() + ".\n"
@@ -2089,38 +2121,6 @@ ChatMessage systemMsg = new ChatMessage();
                 + "Nguyên tắc tốc độ/độ đúng: trả lời ngắn và đúng việc trước; nếu câu hỏi là lệnh chuyển trang/thao tác rõ ràng thì phản hồi bằng hành động hoặc tag điều hướng ngay, không giải thích dài; chỉ đọc DB, web, DOM hoặc gọi AI nặng khi route cho phép; nếu thiếu dữ liệu thì nói rõ thiếu dữ liệu thay vì đoán.\n"
                 + "Hiểu ngôn ngữ tự nhiên và Gen Z: các cách nói như 'check giúp', 'qua trang', 'tele qua', 'book lịch', 'bill', 'acc', 'boss/be nhà tôi', 'khum/hông' phải được hiểu theo ý định thật, không bắt người dùng nói đúng thuật ngữ hệ thống.\n"
                 + "--- HẾT PERSONA CONTEXT ---\n\n";
-    }
-
-    private ChatRequestPlan duplicate_planChatRequest(String normalizedQuery, String rawQuery, boolean hasMedia) {
-        if (!hasMedia && isQuickLocalQuery(normalizedQuery)) {
-            return new ChatRequestPlan(ChatRoute.QUICK_LOCAL, false, false, false, false, "local");
-        }
-        if (!hasMedia && isSensitiveDataLookup(normalizedQuery)) {
-            return new ChatRequestPlan(ChatRoute.SENSITIVE_HANDOFF, false, false, false, false, "agent");
-        }
-        if (!hasMedia && isDbLocalQuery(normalizedQuery)) {
-            return new ChatRequestPlan(ChatRoute.DB_LOCAL, true, false, false, true, "database");
-        }
-        if (hasMedia) {
-            return new ChatRequestPlan(ChatRoute.MEDIA_AI, false, true, false, true, "gemini");
-        }
-        if (isWebSearchQuery(rawQuery)) {
-            return new ChatRequestPlan(ChatRoute.WEB_AI, false, true, false, true, "web+ai");
-        }
-        if (isAutopilotQuery(normalizedQuery)) {
-            return new ChatRequestPlan(ChatRoute.AUTOPILOT_AI, false, true, false, true, "groq");
-        }
-        if (isMedicalQuery(normalizedQuery)) {
-            return new ChatRequestPlan(ChatRoute.MEDICAL_AI, false, true, false, true, "medical");
-        }
-        boolean needsClinicContext = isClinicInfoQuery(normalizedQuery);
-        return new ChatRequestPlan(ChatRoute.CHAT_AI, false, true, true, needsClinicContext, "groq");
-    }
-
-    private boolean isDbLocalQuery(String normalizedQuery) {
-        return isServicePriceQuery(normalizedQuery)
-                || isScheduleQuery(normalizedQuery)
-                || isDoctorListQuery(normalizedQuery);
     }
 
     private String tryFastDbReply(String normalizedQuery, String rawQuery) {
@@ -2251,12 +2251,8 @@ ChatMessage systemMsg = new ChatMessage();
     }
 
     private String buildServicePriceReply(String normalizedQuery) {
-        List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-                "SELECT ten_dich_vu, gia, thoi_luong_phut FROM DichVu "
-                        + "WHERE (da_xoa IS NULL OR LOWER(CAST(da_xoa AS varchar)) IN ('0', 'false')) "
-                        + "AND (trang_thai IS NULL OR LOWER(CAST(trang_thai AS varchar)) IN ('1', 'true')) "
-                        + "ORDER BY ten_dich_vu OFFSET 0 ROWS FETCH NEXT 30 ROWS ONLY");
         List<String> terms = extractDbSearchTerms(normalizedQuery);
+        List<Map<String, Object>> rows = queryServicePriceRows(terms);
         List<Map<String, Object>> matched = new ArrayList<>();
         if (!terms.isEmpty()) {
             // Chấm điểm theo số term khớp tên dịch vụ để chỉ giữ các hàng liên quan nhất
@@ -2385,6 +2381,48 @@ ChatMessage systemMsg = new ChatMessage();
             }
         }
         return terms;
+    }
+
+    /**
+     * Prefilter bảng giá trong DB theo search terms (tránh fetch toàn bộ 30 rows).
+     * Terms được sanitize chỉ giữ [a-z0-9] rồi nhúng thẳng SQL (không có user param
+     * nên dùng queryForList(String) single-arg). Nếu terms rỗng hoặc prefilter trống
+     * → fallback lấy danh sách chuẩn 30 rows như cũ.
+     */
+    private List<Map<String, Object>> queryServicePriceRows(List<String> terms) {
+        String baseSql = "SELECT ten_dich_vu, gia, thoi_luong_phut FROM DichVu "
+                + "WHERE (da_xoa IS NULL OR LOWER(CAST(da_xoa AS varchar)) IN ('0', 'false')) "
+                + "AND (trang_thai IS NULL OR LOWER(CAST(trang_thai AS varchar)) IN ('1', 'true')) ";
+        if (terms != null && !terms.isEmpty()) {
+            // Prefilter ASCII-only: term đã normalize không dấu. Nếu collation DB
+            // phân biệt dấu và prefilter trống (VD "Triệt sản") → fallback 30 rows
+            // như cũ rồi chấm điểm in-memory với normalizeVietnamese — không suy giảm.
+            java.util.LinkedHashSet<String> likeVariants = new java.util.LinkedHashSet<>();
+            for (String term : terms) {
+                String safe = term.replaceAll("[^a-z0-9]", "").toLowerCase(Locale.ROOT);
+                if (safe.length() >= 2) likeVariants.add(safe);
+            }
+            if (!likeVariants.isEmpty()) {
+                try {
+                    StringBuilder like = new StringBuilder();
+                    int i = 0;
+                    for (String safe : likeVariants) {
+                        if (i++ > 0) like.append(" OR ");
+                        like.append("LOWER(CAST(ten_dich_vu AS varchar)) LIKE N'%").append(safe).append("%'");
+                    }
+                    String prefilterSql = baseSql + "AND (" + like + ") "
+                            + "ORDER BY ten_dich_vu OFFSET 0 ROWS FETCH NEXT 30 ROWS ONLY";
+                    List<Map<String, Object>> prefiltered = jdbcTemplate.queryForList(prefilterSql);
+                    if (prefiltered != null && !prefiltered.isEmpty()) {
+                        return prefiltered;
+                    }
+                } catch (Exception e) {
+                    logger.warning("Prefilter bảng giá lỗi, fallback danh sách chuẩn: " + e.getMessage());
+                }
+            }
+        }
+        return jdbcTemplate.queryForList(baseSql
+                + "ORDER BY ten_dich_vu OFFSET 0 ROWS FETCH NEXT 30 ROWS ONLY");
     }
 
     private String formatMoney(Object value) {
