@@ -13,6 +13,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.logging.Logger;
 
@@ -53,11 +54,12 @@ public class JwtUtil {
         return createToken(claims, username);
     }
 
-    /** Tạo Refresh Token dài hạn */
+    /** Tạo Refresh Token dài hạn (có jti để thu hồi được) */
     public String generateRefreshToken(String username) {
         Instant now = Instant.now();
         Instant expiresAt = now.plus(refreshExpiration, ChronoUnit.MILLIS);
-        return Jwts.builder().setSubject(username).setIssuedAt(Date.from(now))
+        return Jwts.builder().setSubject(username).setId(UUID.randomUUID().toString())
+                .setIssuedAt(Date.from(now))
                 .setExpiration(Date.from(expiresAt)).signWith(getSigningKey(), SignatureAlgorithm.HS256).compact();
     }
 
@@ -68,6 +70,7 @@ public class JwtUtil {
 
         return Jwts.builder()
                 .setClaims(claims)
+                .setId(UUID.randomUUID().toString()) // jti — dùng cho blacklist khi logout
                 .setSubject(subject)
                 .setIssuedAt(Date.from(now))
                 .setExpiration(Date.from(expiresAt))
@@ -94,6 +97,11 @@ public class JwtUtil {
     /** Get Role từ Token */
     public String extractRole(String token) {
         return extractAllClaims(token).get("role", String.class);
+    }
+
+    /** Get jti (token ID) từ Token — dùng cho blacklist */
+    public String extractJti(String token) {
+        return extractAllClaims(token).getId();
     }
 
     // Get ngày hết hạn

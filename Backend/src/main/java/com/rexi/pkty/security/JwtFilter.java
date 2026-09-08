@@ -28,18 +28,10 @@ public class JwtFilter extends OncePerRequestFilter {
     private CookieUtil cookieUtil;
 
     @Autowired
+    private TokenBlacklistService tokenBlacklistService;
+
+    @Autowired
     private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
-
-    /** Cache token revoked: token -> thời gian revoked (millis) */
-    private static final ConcurrentHashMap<String, Long> revokedTokens = new ConcurrentHashMap<>();
-    private static final long REVOKED_CACHE_TTL_MS = 30 * 60 * 1000L; // 30 phút
-
-    /**
-       Đánh dấu token là revoked. Gọi từ AuthController khi đổi mật khẩu / khóa tài khoản.
-     */
-    public static void revokeToken(String token) {
-        revokedTokens.put(token, System.currentTimeMillis());
-    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
@@ -71,7 +63,7 @@ public class JwtFilter extends OncePerRequestFilter {
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             if (jwtUtil.validateToken(jwt, username)) {
 
-                // Kiểm tra token có bị revoked (đổi mật khẩu, khóa tk) ko
+                // Kiểm tra token có bị revoked (logout, đổi mật khẩu, khóa tk) qua jti blacklist DB
                 if (isTokenRevoked(jwt)) {
                     logger.warning("Token đã bị thu hồi cho: " + username);
                     chain.doFilter(request, response);
@@ -108,18 +100,17 @@ public class JwtFilter extends OncePerRequestFilter {
     }
 
     /**
-     * Kiểm tra token có bị thu hồi không. Dọn dẹp cache cũ.
+     * Kiểm tra token có bị thu hồi không (theo jti trong blacklist DB).
+     * Token cũ không có jti → bỏ qua blacklist (hành vi như trước).
      */
     private boolean isTokenRevoked(String token) {
-        Long revokedTime = revokedTokens.get(token);
-        if (revokedTime == null) return false;
-
-        // Dọn dẹp cache nếu quá hạn
-        if (System.currentTimeMillis() - revokedTime > REVOKED_CACHE_TTL_MS) {
-            revokedTokens.remove(token, revokedTime);
+        try {
+            String jti = jwtUtil.extractJti(token);
+            return jti != null && !jti.isBlank() && tokenBlacklistService.isRevoked(jti);
+        } catch (Exception e) {
+            logger.warning("Không kiểm tra được trạng thái thu hồi token: " + e.getMessage());
             return false;
         }
-        return true;
     }
 
     /**

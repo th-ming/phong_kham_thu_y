@@ -1,4 +1,4 @@
-﻿package com.rexi.pkty.service;
+package com.rexi.pkty.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;

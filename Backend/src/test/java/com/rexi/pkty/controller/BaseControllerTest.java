@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rexi.pkty.repository.*;
 import com.rexi.pkty.security.CookieUtil;
 import com.rexi.pkty.security.JwtUtil;
+import com.rexi.pkty.security.TokenBlacklistService;
 import com.rexi.pkty.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.ObjectProvider;
@@ -53,4 +54,5 @@ public abstract class BaseControllerTest {
     @MockBean protected JdbcTemplate jdbcTemplate;
     @MockBean protected JwtUtil jwtUtil;
     @MockBean protected CookieUtil cookieUtil;
+    @MockBean protected TokenBlacklistService tokenBlacklistService;
 }

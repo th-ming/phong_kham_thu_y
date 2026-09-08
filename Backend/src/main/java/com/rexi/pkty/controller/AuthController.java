@@ -68,6 +68,9 @@ public class AuthController {
     @Autowired
     private com.rexi.pkty.security.CookieUtil cookieUtil;
 
+    @Autowired
+    private com.rexi.pkty.security.TokenBlacklistService tokenBlacklistService;
+
     // Login dùng BCrypt check pass. Ép Validation, giấu exception thô.
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request, BindingResult bindingResult,
@@ -711,11 +714,44 @@ public class AuthController {
         }
     }
 
-    /** Đăng xuất — xóa httpOnly cookie và trả về 200 */
+    /** Đăng xuất — revoke token (blacklist DB theo jti), xóa httpOnly cookie và trả về 200 */
     @PostMapping("/logout")
-    public ResponseEntity<?> logout(jakarta.servlet.http.HttpServletResponse httpResponse) {
+    public ResponseEntity<?> logout(jakarta.servlet.http.HttpServletRequest httpRequest,
+            jakarta.servlet.http.HttpServletResponse httpResponse) {
+        revokeRequestTokens(httpRequest);
         cookieUtil.clearAllTokenCookies(httpResponse);
         return ResponseEntity.ok(Map.of("message", "Đăng xuất thành công!"));
+    }
+
+    /** Đưa access token (cookie hoặc Bearer) và refresh token cookie vào blacklist. */
+    private void revokeRequestTokens(jakarta.servlet.http.HttpServletRequest httpRequest) {
+        try {
+            String accessToken = cookieUtil.getAccessTokenFromCookie(httpRequest);
+            if (accessToken == null || accessToken.isBlank()) {
+                String authHeader = httpRequest.getHeader("Authorization");
+                if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                    accessToken = authHeader.substring(7);
+                }
+            }
+            if (accessToken != null && !accessToken.isBlank()) {
+                String jti = jwtUtil.extractJti(accessToken);
+                java.util.Date exp = jwtUtil.extractExpiration(accessToken);
+                if (jti != null && !jti.isBlank() && exp != null) {
+                    tokenBlacklistService.revoke(jti, exp.toInstant());
+                }
+            }
+            String refreshToken = cookieUtil.getRefreshTokenFromCookie(httpRequest);
+            if (refreshToken != null && !refreshToken.isBlank()) {
+                String jti = jwtUtil.extractJti(refreshToken);
+                java.util.Date exp = jwtUtil.extractExpiration(refreshToken);
+                if (jti != null && !jti.isBlank() && exp != null) {
+                    tokenBlacklistService.revoke(jti, exp.toInstant());
+                }
+            }
+        } catch (Exception e) {
+            // Logout không được lỗi vì blacklist — cookie vẫn bị xóa
+            logger.warning("Không revoke được token khi logout: " + e.getMessage());
+        }
     }
 
     /**
