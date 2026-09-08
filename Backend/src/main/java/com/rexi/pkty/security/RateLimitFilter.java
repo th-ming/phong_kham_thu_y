@@ -24,10 +24,14 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private final ConcurrentHashMap<String, java.util.concurrent.atomic.AtomicInteger> requestCounts = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Long> requestTimestamps = new ConcurrentHashMap<>();
     private static final int MAX_REQUESTS_PER_MINUTE = 200; // Ngưỡng chặn
+    private static final int MAX_TRACKED_CLIENTS = 10_000; // Cap tránh memory leak
+    private static final long SWEEP_INTERVAL_MS = 30_000;
+    private final Object sweepLock = new Object();
+    private volatile long lastSweepTime = 0;
 
     // Dùng ConcurrentHashMap.newKeySet() thay vì HashSet để đảm bảo thread-safe
     private final java.util.Set<String> blockedIps = java.util.concurrent.ConcurrentHashMap.newKeySet();
-    private long lastCheckTime = 0;
+    private volatile long lastCheckTime = 0;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -40,12 +44,10 @@ public class RateLimitFilter extends OncePerRequestFilter {
         long currentTime = System.currentTimeMillis();
 
         // Bỏ qua chặn IP bảo mật để tránh chặn nhầm người dùng
-        /*
         if (securityAlertService != null && securityAlertService.isBlocked(ip)) {
             writeBlockedResponse(response, "Truy cập bị từ chối: IP của bạn đang nằm trong danh sách chặn bảo mật.");
             return;
         }
-        */
 
         // Check Blacklist IP từ DB (1 phút load 1 lần tránh chậm DB)
         if (currentTime - lastCheckTime > 60000) {
@@ -65,12 +67,10 @@ public class RateLimitFilter extends OncePerRequestFilter {
             lastCheckTime = currentTime;
         }
 
-        /*
         if (blockedIps.contains(ip)) {
             writeBlockedResponse(response, "Truy cập bị từ chối: Địa chỉ IP của bạn đã bị đưa vào danh sách đen (Blacklist)!");
             return;
         }
-        */
 
         if (localhost) {
             // Localhost trong blacklist vẫn chặn, nhưng skip rate limit để tiện dev
@@ -78,27 +78,34 @@ public class RateLimitFilter extends OncePerRequestFilter {
             return;
         }
 
-        // Không tự động chặn IP khi phát hiện AttackSignal (vẫn cho đi qua)
-        /*
-        AttackSignal attackSignal = detectAttack(request);
-        if (attackSignal != null) {
-            if (securityAlertService != null) {
-                securityAlertService.reportAndBlock(
-                        ip,
-                        attackSignal.attackType,
-                        request.getRequestURI() + (request.getQueryString() == null ? "" : "?" + request.getQueryString()),
-                        request.getMethod(),
-                        request.getHeader("User-Agent"),
-                        attackSignal.evidence,
-                        getLocationHint(request)
-                );
-            } else {
-                persistBlockedIp(ip);
+        // Tự động chặn IP khi phát hiện AttackSignal (trừ health check cho monitor)
+        String requestPath = safe(request.getRequestURI());
+        boolean isHealthProbe = requestPath.startsWith("/api/system/health") || requestPath.startsWith("/actuator");
+        if (!isHealthProbe) {
+            AttackSignal attackSignal = detectAttack(request);
+            if (attackSignal != null) {
+                if (securityAlertService != null) {
+                    try {
+                        securityAlertService.reportAndBlock(
+                                ip,
+                                attackSignal.attackType,
+                                request.getRequestURI() + (request.getQueryString() == null ? "" : "?" + request.getQueryString()),
+                                request.getMethod(),
+                                request.getHeader("User-Agent"),
+                                attackSignal.evidence,
+                                getLocationHint(request)
+                        );
+                    } catch (Exception e) {
+                        logger.warn("Không thể ghi cảnh báo bảo mật: " + e.getMessage());
+                        persistBlockedIp(ip);
+                    }
+                } else {
+                    persistBlockedIp(ip);
+                }
+                writeBlockedResponse(response, "Cảnh báo bảo mật: Phát hiện hành vi tấn công. IP đã bị chặn cho tới khi Admin gỡ.");
+                return;
             }
-            writeBlockedResponse(response, "Cảnh báo bảo mật: Phát hiện hành vi tấn công. IP đã bị chặn cho tới khi Admin gỡ.");
-            return;
         }
-        */
 
         requestTimestamps.compute(rateKey, (key, timestamp) -> {
             if (timestamp == null || (currentTime - timestamp) > 60000) {
@@ -126,7 +133,23 @@ public class RateLimitFilter extends OncePerRequestFilter {
             return;
         }
 
+        sweepStaleEntries(currentTime);
         filterChain.doFilter(request, response);
+    }
+
+    /** Dọn định kỳ các entry rate-limit quá hạn để map không phình vô hạn. */
+    private void sweepStaleEntries(long currentTime) {
+        boolean due = (currentTime - lastSweepTime) >= SWEEP_INTERVAL_MS;
+        if (!due && requestTimestamps.size() < MAX_TRACKED_CLIENTS) return;
+        synchronized (sweepLock) {
+            if ((currentTime - lastSweepTime) < SWEEP_INTERVAL_MS && requestTimestamps.size() < MAX_TRACKED_CLIENTS) {
+                return;
+            }
+            // Chỉ xóa entry stale quá 2 phút (đủ rộng hơn cửa sổ 60s để không reset nhầm đếm)
+            requestTimestamps.entrySet().removeIf(e -> (currentTime - e.getValue()) > 120_000);
+            requestCounts.keySet().retainAll(requestTimestamps.keySet());
+            lastSweepTime = currentTime;
+        }
     }
 
     private String getClientIP(HttpServletRequest request) {
