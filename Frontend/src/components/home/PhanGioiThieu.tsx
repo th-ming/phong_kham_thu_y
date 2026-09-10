@@ -17,8 +17,6 @@ const getBannerPetFilter = (isDark: boolean): string => isDark
     ? 'brightness(1.02) contrast(1.05) drop-shadow(0 10px 18px rgba(0, 0, 0, 0.26))'
     : 'contrast(1.04) drop-shadow(0 12px 20px rgba(0, 0, 0, 0.11))';
 
-const BANNER_PET_SWAP_DURATION = '10s';
-
 const bannerPetVideoStyle: React.CSSProperties = {
     width: '168%',
     height: '168%',
@@ -56,6 +54,14 @@ const PhanGioiThieu: React.FC = () => {
     const heroRef = useRef<HTMLDivElement>(null);
     const [dogBannerText, setDogBannerText] = useState("Hello bạn! 🐶");
     const [catBannerText, setCatBannerText] = useState("Meow meow~ 😽");
+    // Luân phiên chó/mèo bằng state (deterministic) thay vì CSS keyframes — keyframes
+    // chạy trên lớp chữ trang trí từng khiến 2 lớp chữ hiện cùng lúc, đè nhau và đè heading.
+    const [activePet, setActivePet] = useState<'dog' | 'cat'>('dog');
+    useEffect(() => {
+        if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+        const id = window.setInterval(() => setActivePet(p => (p === 'dog' ? 'cat' : 'dog')), 5000);
+        return () => window.clearInterval(id);
+    }, []);
     const liveUser = useLiveUserProfile();
     const profileUser = liveUser || getUserProfile();
     const profileBirthYear = Number(profileUser?.nam_sinh || 0);
@@ -164,7 +170,7 @@ const PhanGioiThieu: React.FC = () => {
                         left: 0;
                         width: 100%;
                         height: 100%;
-                        background: linear-gradient(-45deg, rgba(224, 122, 63, 0.08), rgba(196, 145, 88, 0.08), rgba(16, 185, 129, 0.05), rgba(224, 122, 63, 0.03));
+                        background: linear-gradient(-45deg, rgba(224, 122, 63, 0.08), rgba(196, 145, 88, 0.08), rgba(232, 149, 92, 0.05), rgba(224, 122, 63, 0.03));
                         background-size: 400% 400%;
                         animation: gradientAnimation 12s ease infinite;
                         z-index: 1;
@@ -227,27 +233,9 @@ const PhanGioiThieu: React.FC = () => {
                         overflow: visible;
                         isolation: isolate;
                     }
-                    /* 10s = 1 vòng video @ playbackRate 0.6 — 0% và 100% khớp nhau, không khựng loop */
-                    @keyframes bannerPetDog {
-                        0%, 41% { opacity: 1; }
-                        49%, 91% { opacity: 0; }
-                        100% { opacity: 1; }
-                    }
-                    @keyframes bannerPetCat {
-                        0%, 41% { opacity: 0; }
-                        49%, 91% { opacity: 1; }
-                        100% { opacity: 0; }
-                    }
-                    @keyframes bannerPetTextDog {
-                        0%, 41% { opacity: 1; transform: translateX(-50%); }
-                        49%, 91% { opacity: 0; transform: translateX(-50%); }
-                        100% { opacity: 1; transform: translateX(-50%); }
-                    }
-                    @keyframes bannerPetTextCat {
-                        0%, 41% { opacity: 0; transform: translateX(-50%); }
-                        49%, 91% { opacity: 1; transform: translateX(-50%); }
-                        100% { opacity: 0; transform: translateX(-50%); }
-                    }
+                    /* Ẩn/hiện chó-meo do state activePet điều khiển (transition), không dùng keyframes
+                       vô hạn — tránh 2 lớp chữ trang trí hiện cùng lúc đè nhau/đè heading. */
+                    .banner-hidden { opacity: 0 !important; }
                     .banner-pet-layer {
                         position: absolute;
                         inset: 0;
@@ -261,11 +249,11 @@ const PhanGioiThieu: React.FC = () => {
                     }
                     .banner-pet-layer--dog {
                         z-index: 2;
-                        animation: bannerPetDog ${BANNER_PET_SWAP_DURATION} cubic-bezier(0.42, 0, 0.58, 1) infinite;
+                        transition: opacity 0.6s ease;
                     }
                     .banner-pet-layer--cat {
                         z-index: 1;
-                        animation: bannerPetCat ${BANNER_PET_SWAP_DURATION} cubic-bezier(0.42, 0, 0.58, 1) infinite;
+                        transition: opacity 0.6s ease;
                     }
                     .banner-sync-text-slot {
                         position: absolute;
@@ -278,11 +266,9 @@ const PhanGioiThieu: React.FC = () => {
                         backface-visibility: hidden;
                         -webkit-backface-visibility: hidden;
                     }
-                    .banner-sync-text-slot--dog {
-                        animation: bannerPetTextDog ${BANNER_PET_SWAP_DURATION} cubic-bezier(0.42, 0, 0.58, 1) infinite;
-                    }
+                    .banner-sync-text-slot--dog,
                     .banner-sync-text-slot--cat {
-                        animation: bannerPetTextCat ${BANNER_PET_SWAP_DURATION} cubic-bezier(0.42, 0, 0.58, 1) infinite;
+                        transition: opacity 0.6s ease;
                     }
                     @keyframes floatSlow {
                         0% { transform: translateY(0) rotate(0deg); opacity: 0.15; }
@@ -330,17 +316,17 @@ const PhanGioiThieu: React.FC = () => {
                         text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
                     }
                     [data-theme='dark'] .hero-title {
-                        text-shadow: 0 0 55px rgba(45, 212, 191, 0.28), 0 0 22px rgba(224, 122, 63, 0.35), 0 2px 8px rgba(0, 0, 0, 0.55);
+                        text-shadow: 0 0 55px rgba(224, 122, 63, 0.28), 0 0 22px rgba(232, 149, 92, 0.35), 0 2px 8px rgba(0, 0, 0, 0.55);
                     }
                     .hero-glow-text {
-                        color: #0f9d8a;
-                        text-shadow: 0 0 6px rgba(224, 122, 63, 0.32), 0 0 14px rgba(45, 212, 191, 0.18);
+                        color: var(--primary);
+                        text-shadow: 0 0 6px rgba(224, 122, 63, 0.32), 0 0 14px rgba(232, 149, 92, 0.25);
                         animation: glowPulse 3s ease-in-out infinite;
                         font-weight: 900;
                     }
                     [data-theme='dark'] .hero-glow-text {
                         color: var(--primary);
-                        text-shadow: 0 0 8px rgba(45, 212, 191, 0.58), 0 0 18px rgba(224, 122, 63, 0.30);
+                        text-shadow: 0 0 8px rgba(232, 149, 92, 0.58), 0 0 18px rgba(224, 122, 63, 0.30);
                     }
                     
                     /* Chữ chào phát sáng lớn phía sau động vật */
@@ -349,13 +335,13 @@ const PhanGioiThieu: React.FC = () => {
                         text-shadow: 
                             0 0 10px rgba(224, 122, 63, 0.4), 
                             0 0 20px rgba(224, 122, 63, 0.3), 
-                            0 0 40px rgba(45, 212, 191, 0.2);
+                            0 0 40px rgba(224, 122, 63, 0.2);
                         filter: drop-shadow(0 4px 8px rgba(0,0,0,0.06));
                     }
                     [data-theme='dark'] .glow-bg-text {
                         color: #ffffff;
                         text-shadow: 
-                            0 0 15px rgba(45, 212, 191, 0.95), 
+                            0 0 15px rgba(232, 149, 92, 0.95), 
                             0 0 30px rgba(224, 122, 63, 0.75), 
                             0 0 45px rgba(196, 145, 88, 0.55),
                             0 0 60px rgba(224, 122, 63, 0.35);
@@ -363,7 +349,7 @@ const PhanGioiThieu: React.FC = () => {
 
                     @keyframes glowPulse {
                         0%, 100% { filter: drop-shadow(0 0 1px rgba(224, 122, 63, 0.18)); }
-                        50% { filter: drop-shadow(0 0 4px rgba(224, 122, 63, 0.36)) drop-shadow(0 0 8px rgba(45, 212, 191, 0.22)); }
+                        50% { filter: drop-shadow(0 0 4px rgba(224, 122, 63, 0.36)) drop-shadow(0 0 8px rgba(232, 149, 92, 0.28)); }
                     }
                     .banner-sync-text {
                         position: absolute;
@@ -379,14 +365,14 @@ const PhanGioiThieu: React.FC = () => {
                         font-weight: 950;
                         font-style: italic;
                         letter-spacing: 0;
-                        color: #0f9d8a;
+                        color: #c05621;
                         text-align: center;
                         text-rendering: geometricPrecision;
                         -webkit-font-smoothing: antialiased;
                         text-shadow:
                             0 1px 0 rgba(255,255,255,0.32),
                             0 0 10px rgba(224, 122, 63, 0.42),
-                            0 0 24px rgba(45, 212, 191, 0.28),
+                            0 0 24px rgba(224, 122, 63, 0.28),
                             0 8px 20px rgba(0,0,0,0.16);
                         filter: drop-shadow(0 0 10px rgba(196, 145, 88, 0.34));
                     }
@@ -398,10 +384,10 @@ const PhanGioiThieu: React.FC = () => {
                         display: none;
                     }
                     [data-theme='dark'] .banner-sync-text {
-                        color: #7dd3fc;
+                        color: #f6c391;
                         text-shadow:
                             0 1px 0 rgba(255,255,255,0.12),
-                            0 0 10px rgba(125, 211, 252, 0.46),
+                            0 0 10px rgba(246, 195, 145, 0.46),
                             0 0 22px rgba(224, 122, 63, 0.30),
                             0 10px 24px rgba(0,0,0,0.45);
                         filter: drop-shadow(0 0 10px rgba(224, 122, 63, 0.34));
@@ -412,7 +398,7 @@ const PhanGioiThieu: React.FC = () => {
                     }
                     [data-theme='dark'] .floating-glass-card {
                         background: rgba(15, 23, 42, 0.92) !important;
-                        border-color: rgba(45, 212, 191, 0.5) !important;
+                        border-color: rgba(224, 122, 63, 0.5) !important;
                         box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5) !important;
                     }
                     
@@ -623,7 +609,7 @@ const PhanGioiThieu: React.FC = () => {
                         }
                         [data-theme='dark'] .hero-stat-pill {
                             background: rgba(15, 23, 42, 0.72) !important;
-                            border: 1px solid rgba(125, 211, 252, 0.16) !important;
+                            border: 1px solid rgba(232, 149, 92, 0.20) !important;
                             box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
                         }
                         .hero-stat-pill div div:first-child {
@@ -687,12 +673,8 @@ const PhanGioiThieu: React.FC = () => {
                         [data-theme='dark'] .banner-pet-video {
                             filter: drop-shadow(0 24px 30px rgba(0, 0, 0, 0.42)) !important;
                         }
-                        .banner-pet-layer--dog {
-                            animation: bannerPetDog ${BANNER_PET_SWAP_DURATION} cubic-bezier(0.42, 0, 0.58, 1) infinite !important;
-                        }
                         .banner-pet-layer--cat {
                             display: flex !important;
-                            animation: bannerPetCat ${BANNER_PET_SWAP_DURATION} cubic-bezier(0.42, 0, 0.58, 1) infinite !important;
                         }
                         .banner-sync-text-slot--cat,
                         .banner-sync-text-slot--dog {
@@ -714,8 +696,9 @@ const PhanGioiThieu: React.FC = () => {
                             border-radius: 999px !important;
                             background: rgba(255, 255, 255, 0.9) !important;
                             border: 1px solid rgba(255, 255, 255, 0.38) !important;
-                            color: #0f766e !important;
-                            opacity: 1 !important;
+                            color: #9a3412 !important;
+                            opacity: 0 !important;
+                            transition: opacity 0.6s ease !important;
                             font-family: Inter, system-ui, sans-serif !important;
                             font-size: 0.95rem !important;
                             font-style: normal !important;
@@ -726,7 +709,7 @@ const PhanGioiThieu: React.FC = () => {
                             white-space: nowrap !important;
                             text-align: center !important;
                             text-shadow: none !important;
-                            box-shadow: 0 12px 26px rgba(2, 6, 23, 0.14), 0 0 22px rgba(45, 212, 191, 0.22) !important;
+                            box-shadow: 0 12px 26px rgba(2, 6, 23, 0.14), 0 0 22px rgba(224, 122, 63, 0.28) !important;
                             filter: none !important;
                         }
                         .mobile-speech-bubble::after {
@@ -741,6 +724,9 @@ const PhanGioiThieu: React.FC = () => {
                             border-bottom: inherit;
                             transform: translateX(-50%) rotate(45deg);
                             box-shadow: 7px 7px 12px rgba(2, 6, 23, 0.08);
+                        }
+                        .mobile-speech-bubble.is-active {
+                            opacity: 1 !important;
                         }
                         .mobile-speech-bubble--dog {
                             --mobile-speech-x: var(--mobile-speech-dog-x);
@@ -821,8 +807,8 @@ const PhanGioiThieu: React.FC = () => {
                 </div>
                 <span className="material-symbols-outlined floating-bg" style={{ position: 'absolute', bottom: '15%', right: '35%', fontSize: '200px', color: 'var(--primary)', opacity: 0.03, pointerEvents: 'none', animationDelay: '1s', zIndex: 3 }}>pets</span>
 
-                <div style={{ position: 'absolute', top: '-100px', right: '-100px', width: '450px', height: '450px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(15,157,138,0.07) 0%, transparent 70%)', pointerEvents: 'none', zIndex: 3 }} />
-                <div style={{ position: 'absolute', bottom: '-120px', left: '-80px', width: '380px', height: '380px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(45,212,191,0.06) 0%, transparent 70%)', pointerEvents: 'none', zIndex: 3 }} />
+                <div style={{ position: 'absolute', top: '-100px', right: '-100px', width: '450px', height: '450px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(224,122,63,0.07) 0%, transparent 70%)', pointerEvents: 'none', zIndex: 3 }} />
+                <div style={{ position: 'absolute', bottom: '-120px', left: '-80px', width: '380px', height: '380px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(232,149,92,0.06) 0%, transparent 70%)', pointerEvents: 'none', zIndex: 3 }} />
 
                 <div className="hero-hero-background" />
                 <div className="container" style={{ position: 'relative', zIndex: 4 }}>
@@ -908,20 +894,22 @@ const PhanGioiThieu: React.FC = () => {
                              {/* Khu vực trình diễn chó mèo động */}
                             <div className="banner-pet-stage">
                                 <div
-                                    className="banner-sync-text-slot banner-sync-text-slot--dog banner-sync-text"
+                                    className={`banner-sync-text-slot banner-sync-text-slot--dog banner-sync-text${activePet === 'dog' ? '' : ' banner-hidden'}`}
                                     style={getBannerTextStyle(dogBannerText)}
+                                    aria-hidden={activePet !== 'dog'}
                                 >
                                     {dogBannerText}
                                 </div>
                                 <div
-                                    className="banner-sync-text-slot banner-sync-text-slot--cat banner-sync-text"
+                                    className={`banner-sync-text-slot banner-sync-text-slot--cat banner-sync-text${activePet === 'cat' ? '' : ' banner-hidden'}`}
                                     style={getBannerTextStyle(catBannerText)}
+                                    aria-hidden={activePet !== 'cat'}
                                 >
                                     {catBannerText}
                                 </div>
 
-                                <div className="banner-pet-layer banner-pet-layer--dog">
-                                    <div className="mobile-speech-bubble mobile-speech-bubble--dog">{dogBannerText}</div>
+                                <div className={`banner-pet-layer banner-pet-layer--dog${activePet === 'dog' ? '' : ' banner-hidden'}`} aria-hidden={activePet !== 'dog'}>
+                                    <div className={`mobile-speech-bubble mobile-speech-bubble--dog${activePet === 'dog' ? ' is-active' : ''}`}>{dogBannerText}</div>
                                     <TransparentVideo 
                                         src="/img/video_cho_chao.webm" 
                                         playbackRate={0.6} 
@@ -937,8 +925,8 @@ const PhanGioiThieu: React.FC = () => {
                                     />
                                 </div>
 
-                                <div className="banner-pet-layer banner-pet-layer--cat">
-                                    <div className="mobile-speech-bubble mobile-speech-bubble--cat">{catBannerText}</div>
+                                <div className={`banner-pet-layer banner-pet-layer--cat${activePet === 'cat' ? '' : ' banner-hidden'}`} aria-hidden={activePet !== 'cat'}>
+                                    <div className={`mobile-speech-bubble mobile-speech-bubble--cat${activePet === 'cat' ? ' is-active' : ''}`}>{catBannerText}</div>
                                     <TransparentVideo 
                                         src="/img/video_meo_chao.webm" 
                                         playbackRate={0.6} 

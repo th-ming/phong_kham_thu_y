@@ -310,7 +310,7 @@ const PhanBacSi: React.FC = () => {
 
                         {/* cột bs nổi bật */}
                         <div className="doc-featured" style={{ flex: '0 0 auto', width: '38%', borderRadius: '32px', overflow: 'hidden', background: 'var(--surface)', border: '1px solid var(--gray-300)', boxShadow: 'var(--shadow-xl)', display: 'flex', flexDirection: 'column', cursor: 'default' }}>
-                            <div className="doc-featured-image" style={{ height: '400px', position: 'relative', overflow: 'hidden', background: isDark ? 'linear-gradient(180deg, #0f172a 0%, #1e293b 100%)' : 'linear-gradient(180deg, #f0fdfa 0%, #ccfbf1 100%)' }}>
+                            <div className="doc-featured-image" style={{ height: '400px', position: 'relative', overflow: 'hidden', background: isDark ? 'linear-gradient(180deg, #0f172a 0%, #1e293b 100%)' : 'linear-gradient(180deg, #fdf3e7 0%, #ffedd5 100%)' }}>
 
                                 <img src={MOCK_DOCTORS[0].hinh_anh} alt={MOCK_DOCTORS[0].ho_ten} className="doc-featured-img" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center' }} />
                                 {/* nhãn bs */}
@@ -337,7 +337,7 @@ const PhanBacSi: React.FC = () => {
                         <div className="doc-grid" style={{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '20px', alignContent: 'start' }}>
                             {MOCK_DOCTORS.slice(1).map((d, i) => (
                                 <div key={i} className="doc-card-small glass-card" style={{ borderRadius: '24px', overflow: 'hidden', background: 'var(--surface)', display: 'flex', flexDirection: 'column' }}>
-                                    <div className="doc-card-image" style={{ height: '200px', position: 'relative', overflow: 'hidden', background: isDark ? 'linear-gradient(180deg, #0f172a 0%, #1e293b 100%)' : 'linear-gradient(180deg, #f0fdfa 0%, #ccfbf1 100%)' }}>
+                                    <div className="doc-card-image" style={{ height: '200px', position: 'relative', overflow: 'hidden', background: isDark ? 'linear-gradient(180deg, #0f172a 0%, #1e293b 100%)' : 'linear-gradient(180deg, #fdf3e7 0%, #ffedd5 100%)' }}>
                                         <img src={d.hinh_anh} alt={d.ho_ten} className="doctor-img" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center' }} />
                                         <div style={{ position: 'absolute', inset: 0, background: isDark ? 'linear-gradient(to top, var(--surface) 0%, transparent 50%)' : 'linear-gradient(to top, rgba(255,255,255,0.8) 0%, transparent 50%)' }} />
                                     </div>

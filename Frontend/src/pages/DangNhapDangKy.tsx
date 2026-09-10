@@ -301,7 +301,7 @@ const DangNhapDangKy: React.FC = () => {
         }
 
         .auth-sidebar {
-          background: linear-gradient(135deg, #c05621 0%, #0f766e 50%, #10b981 100%) !important;
+          background: linear-gradient(135deg, #c05621 0%, #e07a3f 55%, #e8955c 100%) !important;
           padding: 48px;
           color: white !important;
           position: relative;

@@ -80,7 +80,7 @@ const shouldBlockEmployeeScheduleAction = (dateStr: string) => {
 
 
 const DOCTOR_COLORS = [
-    { bg: 'rgba(224, 122, 63, 0.15)', border: '#0f9d8a', text: '#0f9d8a' }, // Teal (Màu chuẩn Rexi)
+    { bg: 'rgba(224, 122, 63, 0.15)', border: '#c05621', text: '#c05621' }, // Terracotta (Màu chuẩn Rexi)
     { bg: 'rgba(59, 130, 246, 0.15)', border: '#3b82f6', text: '#2563eb' }, // Blue
     { bg: 'rgba(236, 72, 153, 0.15)', border: '#ec4899', text: '#db2777' }, // Pink
     { bg: 'rgba(139, 92, 246, 0.15)', border: '#e07a3f', text: '#115e59' }, // teal

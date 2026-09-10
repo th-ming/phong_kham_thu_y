@@ -8,8 +8,8 @@ const PhanQuyTrinh: React.FC = () => {
         <RevealSection>
             <section className="home-process-section" style={{ padding: "110px 0", background: "var(--background)", position: 'relative', overflow: 'hidden' }}>
                 {/* Decorative background elements */}
-                <div style={{ position: 'absolute', top: '-100px', right: '-100px', width: '500px', height: '500px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(15,157,138,0.05) 0%, transparent 70%)', pointerEvents: 'none' }} />
-                <div style={{ position: 'absolute', bottom: '-120px', left: '-80px', width: '400px', height: '400px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(45,212,191,0.04) 0%, transparent 70%)', pointerEvents: 'none' }} />
+                <div style={{ position: 'absolute', top: '-100px', right: '-100px', width: '500px', height: '500px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(224,122,63,0.05) 0%, transparent 70%)', pointerEvents: 'none' }} />
+                <div style={{ position: 'absolute', bottom: '-120px', left: '-80px', width: '400px', height: '400px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(232,149,92,0.05) 0%, transparent 70%)', pointerEvents: 'none' }} />
                 <div className="container home-process-container" style={{ textAlign: 'center' }}>
                     <div className="section-label" style={{ marginBottom: '20px' }}>— QUY TRÌNH ĐẶT LỊCH</div>
                     <div className="process-mobile-summary" aria-label="Tóm tắt quy trình đặt lịch">
@@ -64,7 +64,7 @@ const PhanQuyTrinh: React.FC = () => {
                                 background: var(--primary-light) !important; 
                                 color: var(--primary) !important; 
                                 border: 2px solid var(--primary-light) !important; 
-                                box-shadow: 0 0 0 8px rgba(15,157,138,0.05) !important; 
+                                box-shadow: 0 0 0 8px rgba(224,122,63,0.06) !important; 
                             }
                             [data-theme='dark'] .step-icon-wrap {
                                 background: rgba(224, 122, 63, 0.15) !important;
@@ -77,7 +77,7 @@ const PhanQuyTrinh: React.FC = () => {
                                 background: var(--primary-gradient) !important; 
                                 border-color: transparent !important; 
                                 transform: scale(1.1) rotate(5deg); 
-                                box-shadow: 0 0 20px rgba(15,157,138,0.2) !important; 
+                                box-shadow: 0 0 20px rgba(224,122,63,0.25) !important; 
                             }
                             .step-card:hover .step-icon-wrap span { color: white !important; }
                             .step-badge { transition: all 0.4s ease; animation: stepBadgePulse 2.8s ease-in-out infinite; }
@@ -250,7 +250,7 @@ const PhanQuyTrinh: React.FC = () => {
                                 }
                             }
                         `}</style>
-                        <div className="process-line" style={{ position: 'absolute', top: '40px', left: '12%', right: '12%', height: '2px', background: 'linear-gradient(90deg, #ccfbf1 0%, #e8955c 30%, #0f9d8a 50%, #99f6e4 70%, #ccfbf1 100%)', zIndex: 0, borderRadius: '2px' }}></div>
+                        <div className="process-line" style={{ position: 'absolute', top: '40px', left: '12%', right: '12%', height: '2px', background: 'linear-gradient(90deg, #ffedd5 0%, #e8955c 30%, #c05621 50%, #fed7aa 70%, #ffedd5 100%)', zIndex: 0, borderRadius: '2px' }}></div>
                         {[
                             { t: "Tạo tài khoản", d: "Đăng ký nhanh qua email hoặc Google", icon: "person_add" },
                             { t: "Chọn dịch vụ", d: "Chọn loại dịch vụ và bác sĩ phù hợp", icon: "stethoscope" },

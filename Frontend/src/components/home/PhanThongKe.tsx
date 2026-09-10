@@ -130,7 +130,7 @@ const PhanThongKe: React.FC = () => {
                         position: absolute;
                         right: 14px;
                         top: 6px;
-                        color: rgba(236,254,255,0.14);
+                        color: rgba(255,237,213,0.16);
                         font-family: 'Be Vietnam Pro', sans-serif;
                         font-size: 5.6rem;
                         line-height: 1;
@@ -157,7 +157,7 @@ const PhanThongKe: React.FC = () => {
                         color: white !important;
                     }
                     .stats-header h2 span {
-                        color: #ccfbf1 !important;
+                        color: #ffedd5 !important;
                     }
                     .stats-header p {
                         max-width: 260px;
@@ -189,7 +189,7 @@ const PhanThongKe: React.FC = () => {
                         height: 44px !important;
                         border-radius: 14px !important;
                         margin: 0 !important;
-                        background: rgba(236,254,255,0.96) !important;
+                        background: rgba(255,237,213,0.96) !important;
                         box-shadow: 0 10px 24px rgba(15, 23, 42, 0.14) !important;
                     }
                     .stat-icon-box span {
@@ -200,12 +200,12 @@ const PhanThongKe: React.FC = () => {
                         font-family: 'Be Vietnam Pro', sans-serif !important;
                         font-size: 1.62rem !important;
                         font-weight: 950 !important;
-                        color: #ccfbf1 !important;
+                        color: #ffedd5 !important;
                         margin-bottom: 0 !important;
                         white-space: nowrap;
                     }
                     .stat-number span {
-                        color: #ccfbf1 !important;
+                        color: #ffedd5 !important;
                     }
                     .stat-label {
                         display: none;
@@ -230,7 +230,7 @@ const PhanThongKe: React.FC = () => {
                 <div className="stats-header" style={{ textAlign: 'center', marginBottom: '56px' }}>
                     <div className="section-label" style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', color: 'white', marginBottom: '20px' }}>📊 Con số ấn tượng</div>
                     <h2 style={{ fontSize: 'clamp(1.8rem, 3.5vw, 2.8rem)', fontWeight: 950, color: 'white', letterSpacing: '-1px', marginBottom: '12px' }}>
-                        Hơn <span style={{ color: '#ccfbf1' }}>10 Năm</span> Đồng Hành
+                        Hơn <span style={{ color: '#ffedd5' }}>10 Năm</span> Đồng Hành
                     </h2>
                     <p style={{ color: 'rgba(255,255,255,0.8)', fontWeight: 500, fontSize: '1rem' }}>Những con số minh chứng cho cam kết của Rexi</p>
                 </div>
@@ -245,7 +245,7 @@ const PhanThongKe: React.FC = () => {
                             </div>
                             {/* Number */}
                             <div className="stat-number" style={{ fontSize: 'clamp(2.2rem, 3.5vw, 3rem)', fontWeight: 950, color: 'white', lineHeight: 1, marginBottom: '8px', fontFamily: "'Lora', serif" }}>
-                                {counts[i].toLocaleString()}<span style={{ color: '#ccfbf1' }}>{s.suffix}</span>
+                                {counts[i].toLocaleString()}<span style={{ color: '#ffedd5' }}>{s.suffix}</span>
                             </div>
                             {/* Label */}
                             <div className="stat-label" style={{ fontWeight: 900, color: 'white', fontSize: '1rem', marginBottom: '8px' }}>{s.label}</div>

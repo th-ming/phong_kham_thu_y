@@ -143,7 +143,7 @@ const CustomerBirthYearGate: React.FC = () => {
             height: "80px",
             borderRadius: "20px",
             margin: "0 auto 22px",
-            boxShadow: "0 12px 26px rgba(16, 185, 129, 0.35)",
+            boxShadow: "0 12px 26px rgba(224, 122, 63, 0.35)",
             objectFit: "cover"
           }}
         />

@@ -831,7 +831,7 @@ export const CustomCursor: React.FC = () => {
       position: 'fixed', top: pos.y, left: pos.x,
       width: isHover ? '50px' : '20px', height: isHover ? '50px' : '20px',
       background: isHover ? 'rgba(224, 122, 63, 0.1)' : 'rgba(224, 122, 63, 0.5)',
-      border: isHover ? '2px solid #0f9d8a' : 'none',
+      border: isHover ? '2px solid var(--primary)' : 'none',
       borderRadius: '50%', transform: 'translate(-50%, -50%)',
       pointerEvents: 'none', zIndex: 99999, transition: 'all 0.3s'
     }} />
@@ -898,9 +898,9 @@ export const Typewriter: React.FC<{ words: string[] }> = ({ words }) => {
   }, [text, isDeleting, index, words]);
   return (
     <span style={{
-      color: "#0f9d8a",
-      textShadow: "0 0 7px rgba(224, 122, 63, 0.46), 0 0 14px rgba(45, 212, 191, 0.24)",
-      borderRight: "3px solid #0f9d8a",
+      color: "var(--primary)",
+      textShadow: "0 0 7px rgba(224, 122, 63, 0.46), 0 0 14px rgba(232, 149, 92, 0.30)",
+      borderRight: "3px solid var(--primary)",
       paddingRight: "4px",
       filter: "drop-shadow(0 0 2px rgba(224, 122, 63, 0.28))"
     }}>{text}</span>

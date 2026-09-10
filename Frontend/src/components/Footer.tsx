@@ -276,7 +276,7 @@ const Footer: React.FC<{ isSimple?: boolean }> = ({ isSimple }) => {
                                     <img src="/img/avtpkty.png" alt="Rexi" style={{ width: '100%', height: '100%', objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
                                 </div>
                                 <div className="logo-container">
-                                    <span className="logo-rexi" style={{ color: '#0f9d8a', fontSize: '2.2rem', fontWeight: 950, letterSpacing: '-1px' }}>Rexi Vet</span>
+                                    <span className="logo-rexi" style={{ color: 'var(--primary)', fontSize: '2.2rem', fontWeight: 950, letterSpacing: '-1px' }}>Rexi Vet</span>
                                     <span className="logo-sub" style={{ color: 'white', fontSize: '0.9rem', fontWeight: 700, display: 'block', marginTop: '-5px', letterSpacing: '1px' }}>HỆ THỐNG THÚ Y CAO CẤP</span>
                                 </div>
                             </Link>
@@ -331,15 +331,15 @@ const Footer: React.FC<{ isSimple?: boolean }> = ({ isSimple }) => {
                             <h4 style={{ color: 'white', fontWeight: 800, marginBottom: '32px', letterSpacing: '1px', fontSize: '0.9rem' }}>LIÊN HỆ</h4>
                             <div className="footer-contact-list" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                                 <div style={{ display: 'flex', gap: '12px' }}>
-                                    <span className="material-symbols-outlined" style={{ color: '#0f9d8a', fontSize: '20px' }}>location_on</span>
+                                    <span className="material-symbols-outlined" style={{ color: 'var(--primary)', fontSize: '20px' }}>location_on</span>
                                     <span style={{ fontSize: '0.95rem' }}>Số 68, Ngõ 10, Ngô Xuân Quảng, Trâu Quỳ, Gia Lâm, Hà Nội</span>
                                 </div>
                                 <div style={{ display: 'flex', gap: '12px' }}>
-                                    <span className="material-symbols-outlined" style={{ color: '#0f9d8a', fontSize: '20px' }}>call</span>
+                                    <span className="material-symbols-outlined" style={{ color: 'var(--primary)', fontSize: '20px' }}>call</span>
                                     <span style={{ fontSize: '0.95rem', fontWeight: 700, color: 'white' }}>***REMOVED***-VIETQR_ACCOUNT_NO</span>
                                 </div>
                                 <div style={{ display: 'flex', gap: '12px' }}>
-                                    <span className="material-symbols-outlined" style={{ color: '#0f9d8a', fontSize: '20px' }}>mail</span>
+                                    <span className="material-symbols-outlined" style={{ color: 'var(--primary)', fontSize: '20px' }}>mail</span>
                                     <span style={{ fontSize: '0.95rem' }}>rexivetsys@gmail.com</span>
                                 </div>
                                 <div style={{ display: 'flex', gap: '16px', marginTop: '4px' }}>
@@ -377,9 +377,9 @@ const Footer: React.FC<{ isSimple?: boolean }> = ({ isSimple }) => {
             <style>{`
                 /* TỰ HỌC & TỐI ƯU: Thiết lập vùng chạm tối thiểu 44px chuẩn Fitts Law tránh bấm nhầm */
                 .footer-link { color: #94a3b8; text-decoration: none; padding: 12px 0; font-size: 0.95rem; transition: all 0.3s; display: inline-flex; align-items: center; min-height: 44px; }
-                .footer-link:hover { color: #0f9d8a; transform: translateX(5px); }
+                .footer-link:hover { color: var(--primary); transform: translateX(5px); }
                 .social-circle-dark { display: flex; align-items: center; justify-content: center; border-radius: 50%; background: rgba(255,255,255,0.05); color: white; width: 40px; height: 40px; transition: all 0.3s; text-decoration: none; border: 1px solid rgba(255,255,255,0.1); }
-                .social-circle-dark:hover { background: #0f9d8a; border-color: #0f9d8a; transform: translateY(-3px); }
+                .social-circle-dark:hover { background: var(--primary); border-color: var(--primary); transform: translateY(-3px); }
                 
                 .social-circle-fb { display: flex; align-items: center; justify-content: center; border-radius: 50%; background: rgba(24, 119, 242, 0.1); width: 44px; height: 44px; transition: all 0.3s; border: 1px solid rgba(24, 119, 242, 0.2); color: #1877F2; }
                 .social-circle-fb:hover { background: #1877F2; border-color: #1877F2; transform: translateY(-3px); box-shadow: 0 0 15px rgba(24, 119, 242, 0.5); color: white; }

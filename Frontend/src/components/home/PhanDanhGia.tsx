@@ -37,7 +37,7 @@ const PhanDanhGia: React.FC = () => {
     return (
         <RevealSection>
             <section ref={sectionRef} className="home-reviews-section" style={{ padding: "110px 0", background: "var(--background)", position: 'relative', overflow: 'hidden' }}>
-                <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 80% 20%, rgba(15,157,138,0.04) 0%, transparent 60%), radial-gradient(ellipse at 20% 80%, rgba(45,212,191,0.03) 0%, transparent 60%)', pointerEvents: 'none' }} />
+                <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 80% 20%, rgba(224,122,63,0.04) 0%, transparent 60%), radial-gradient(ellipse at 20% 80%, rgba(232,149,92,0.03) 0%, transparent 60%)', pointerEvents: 'none' }} />
                 
                 {/* Background Pattern */}
                 <div style={{ 

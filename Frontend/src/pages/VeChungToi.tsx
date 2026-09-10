@@ -41,8 +41,8 @@ const VeChungToi: React.FC = () => {
                 }
                 .mission-card:hover {
                     transform: translateY(-12px);
-                    border-color: #0f9d8a;
-                    box-shadow: 0 30px 60px -12px rgba(15,157,138,0.15);
+                    border-color: var(--primary);
+                    box-shadow: 0 30px 60px -12px rgba(224,122,63,0.18);
                 }
                 .facility-img {
                     width: 100%;
@@ -85,14 +85,14 @@ const VeChungToi: React.FC = () => {
                     <div style={{ display: 'flex', gap: '12px', alignItems: 'center', color: 'var(--gray-400)', fontSize: '0.85rem', marginBottom: '60px', fontWeight: 700, letterSpacing: '1px' }}>
                         <Link to="/" style={{ color: 'inherit', textDecoration: 'none' }}>TRANG CHỦ</Link>
                         <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>chevron_right</span>
-                        <span style={{ color: '#0f9d8a' }}>VỀ CHÚNG TÔI</span>
+                        <span style={{ color: 'var(--primary)' }}>VỀ CHÚNG TÔI</span>
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '80px', alignItems: 'center' }}>
                         <RevealSection>
                             <div>
-                                <p style={{ color: "#0f9d8a", fontWeight: 900, fontSize: "0.85rem", letterSpacing: "2px", textTransform: "uppercase" }}>— CÂU CHUYỆN CỦA REXI</p>
-                                <h2 style={{ fontSize: "3rem", fontWeight: 950, color: "var(--ink)", marginBottom: '32px', lineHeight: 1.1 }}>Hành Trình Kiến Tạo <br /> <span style={{ color: "#0f9d8a" }}>Niềm Tin</span></h2>
+                                <p style={{ color: "var(--primary)", fontWeight: 900, fontSize: "0.85rem", letterSpacing: "2px", textTransform: "uppercase" }}>— CÂU CHUYỆN CỦA REXI</p>
+                                <h2 style={{ fontSize: "3rem", fontWeight: 950, color: "var(--ink)", marginBottom: '32px', lineHeight: 1.1 }}>Hành Trình Kiến Tạo <br /> <span style={{ color: "var(--primary)" }}>Niềm Tin</span></h2>
                                 <p style={{ color: 'var(--gray-500)', fontSize: '1.1rem', lineHeight: 1.8, marginBottom: '24px', fontWeight: 500 }}>
                                     Khởi đầu từ một phòng khám nhỏ vào năm 2015, Rexi được thành lập bởi đội ngũ bác sĩ tâm huyết với mong muốn mang tiêu chuẩn y tế quốc tế về Việt Nam.
                                 </p>
@@ -101,7 +101,7 @@ const VeChungToi: React.FC = () => {
                                 </p>
                                 <div style={{ display: 'flex', gap: '40px' }}>
                                     <div>
-                                        <h3 style={{ fontSize: '2.5rem', fontWeight: 1000, color: '#0f9d8a', margin: 0 }}>10+</h3>
+                                        <h3 style={{ fontSize: '2.5rem', fontWeight: 1000, color: 'var(--primary)', margin: 0 }}>10+</h3>
                                         <p style={{ fontSize: '0.9rem', color: 'var(--gray-400)', fontWeight: 800 }}>NĂM KINH NGHIỆM</p>
                                     </div>
                                     <div>
@@ -125,8 +125,8 @@ const VeChungToi: React.FC = () => {
             <section style={{ padding: '100px 0', background: 'var(--gray-50)' }}>
                 <div className="container">
                     <div style={{ textAlign: 'center', marginBottom: '80px' }}>
-                        <p style={{ color: "#0f9d8a", fontWeight: 900, fontSize: "0.85rem", letterSpacing: "2px", textTransform: "uppercase" }}>— GIÁ TRỊ CỐT LÕI</p>
-                        <h2 style={{ fontSize: "3rem", fontWeight: 950, color: "var(--ink)" }}>Sứ Mệnh <span style={{ color: "#0f9d8a" }}>Của Chúng Tôi</span></h2>
+                        <p style={{ color: "var(--primary)", fontWeight: 900, fontSize: "0.85rem", letterSpacing: "2px", textTransform: "uppercase" }}>— GIÁ TRỊ CỐT LÕI</p>
+                        <h2 style={{ fontSize: "3rem", fontWeight: 950, color: "var(--ink)" }}>Sứ Mệnh <span style={{ color: "var(--primary)" }}>Của Chúng Tôi</span></h2>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '32px' }}>
                         {[
@@ -152,8 +152,8 @@ const VeChungToi: React.FC = () => {
             <section style={{ padding: '120px 0', background: 'var(--background)' }}>
                 <div className="container">
                     <div style={{ marginBottom: '60px' }}>
-                        <p style={{ color: "#0f9d8a", fontWeight: 900, fontSize: "0.85rem", letterSpacing: "2px", textTransform: "uppercase" }}>— CƠ SỞ VẬT CHẤT</p>
-                        <h2 style={{ fontSize: "3rem", fontWeight: 950, color: "var(--ink)" }}>Không Gian <span style={{ color: "#0f9d8a" }}>Tiêu Chuẩn 5★</span></h2>
+                        <p style={{ color: "var(--primary)", fontWeight: 900, fontSize: "0.85rem", letterSpacing: "2px", textTransform: "uppercase" }}>— CƠ SỞ VẬT CHẤT</p>
+                        <h2 style={{ fontSize: "3rem", fontWeight: 950, color: "var(--ink)" }}>Không Gian <span style={{ color: "var(--primary)" }}>Tiêu Chuẩn 5★</span></h2>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '24px' }}>
                         {[
@@ -178,12 +178,12 @@ const VeChungToi: React.FC = () => {
             </section>
 
             {/* PHẦN 5: CALL TO ACTION */}
-            <section style={{ padding: '80px 0', background: 'linear-gradient(135deg, #0f9d8a 0%, #e8955c 100%)', color: 'white', textAlign: 'center' }}>
+            <section style={{ padding: '80px 0', background: 'linear-gradient(135deg, #c05621 0%, #e07a3f 100%)', color: 'white', textAlign: 'center' }}>
                 <div className="container">
                     <RevealSection>
                         <h2 style={{ fontSize: '2.5rem', fontWeight: 950, marginBottom: '24px' }}>Bạn Đã Sẵn Sàng Trải Nghiệm Dịch Vụ?</h2>
                         <p style={{ fontSize: '1.1rem', marginBottom: '40px', opacity: 0.9, maxWidth: '600px', margin: '0 auto 40px', lineHeight: 1.6 }}>Hãy để đội ngũ y bác sĩ tại Rexi chăm sóc người bạn nhỏ của bạn một cách chuyên nghiệp và tận tâm nhất.</p>
-                        <a data-ai-id="link_about_booking" href="/khach-hang/dat-lich-hen" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'white', color: '#0f9d8a', padding: '16px 32px', borderRadius: '50px', textDecoration: 'none', fontWeight: 900, fontSize: '1rem', boxShadow: '0 10px 20px rgba(0,0,0,0.1)', transition: 'transform 0.2s' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>
+                        <a data-ai-id="link_about_booking" href="/khach-hang/dat-lich-hen" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'white', color: '#c05621', padding: '16px 32px', borderRadius: '50px', textDecoration: 'none', fontWeight: 900, fontSize: '1rem', boxShadow: '0 10px 20px rgba(0,0,0,0.1)', transition: 'transform 0.2s' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>
                             <span className="material-symbols-outlined">calendar_today</span> Đặt Lịch Hẹn Ngay
                         </a>
                     </RevealSection>

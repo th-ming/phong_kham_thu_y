@@ -119,7 +119,7 @@ const GoogleAccountLink: React.FC = () => {
           </div>
 
           <div style={{
-            display: "flex", alignItems: "center", gap: "14px", marginBottom: "32px", padding: "20px", background: "#e6f4ea", borderRadius: "20px", border: "1px solid #b2e8e2"
+            display: "flex", alignItems: "center", gap: "14px", marginBottom: "32px", padding: "20px", background: "#fdf1e7", borderRadius: "20px", border: "1px solid #f3d9bd"
           }}>
             <img src={googleUser.picture} alt={googleUser.name} style={{ width: 48, height: 48, borderRadius: "50%", objectFit: "cover" }} />
             <div style={{ flex: 1 }}>
@@ -150,7 +150,7 @@ const GoogleAccountLink: React.FC = () => {
                 opacity: isLoading || success ? 0.6 : 1,
                 transition: "all 0.2s",
               }}
-              onMouseEnter={(e) => !isLoading && !success && (e.currentTarget.style.background = "#0f766e")}
+              onMouseEnter={(e) => !isLoading && !success && (e.currentTarget.style.background = "#9a3412")}
               onMouseLeave={(e) => !isLoading && !success && (e.currentTarget.style.background = "#c05621")}
             >
               {isLoading && !showLinkForm ? "⏳ Đang xử lý..." : "+ Tạo tài khoản mới"}
@@ -173,7 +173,7 @@ const GoogleAccountLink: React.FC = () => {
                   opacity: isLoading || success ? 0.6 : 1,
                   transition: "all 0.2s",
                 }}
-                onMouseEnter={(e) => !isLoading && !success && (e.currentTarget.style.background = "#e6f4ea")}
+                onMouseEnter={(e) => !isLoading && !success && (e.currentTarget.style.background = "#fdf1e7")}
                 onMouseLeave={(e) => !isLoading && !success && (e.currentTarget.style.background = "transparent")}
               >
                 🔗 Liên kết với tài khoản đã có
@@ -237,7 +237,7 @@ const GoogleAccountLink: React.FC = () => {
                 disabled={isLoading}
                 style={{
                   width: "100%",
-                  background: "#0f766e",
+                  background: "#c05621",
                   color: "white",
                   border: "none",
                   borderRadius: "16px",
@@ -271,7 +271,7 @@ const GoogleAccountLink: React.FC = () => {
           )}
 
           {!showLinkForm && (
-            <div style={{ marginTop: "24px", padding: "16px", background: "#e6f4ea", borderRadius: "12px", fontSize: "0.85rem", color: "#64748b", borderLeft: "3px solid #c05621" }}>
+            <div style={{ marginTop: "24px", padding: "16px", background: "#fdf1e7", borderRadius: "12px", fontSize: "0.85rem", color: "#64748b", borderLeft: "3px solid #c05621" }}>
               <strong>💡 Ghi chú:</strong><br />
               Nếu bạn đã từng khám ở Rexi, hãy liên kết tài khoản để đồng bộ dữ liệu. Nếu chưa, hãy tạo tài khoản mới để bắt đầu.
             </div>

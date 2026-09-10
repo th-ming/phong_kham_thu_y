@@ -222,7 +222,7 @@ export const Preloader: React.FC = () => {
                         position: 'absolute',
                         height: '100%',
                         width: `${progress}%`,
-                        background: 'linear-gradient(90deg, #0f9d8a, #e8955c)',
+                        background: 'linear-gradient(90deg, #c05621, #e8955c)',
                         borderRadius: '20px',
                         transition: 'width 0.3s ease-out'
                     }} />

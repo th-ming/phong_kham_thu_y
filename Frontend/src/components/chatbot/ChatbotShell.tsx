@@ -40,7 +40,25 @@ export const ChatbotShell: React.FC<ChatbotShellProps> = (props) => {
         toggleListening, voiceLiveText, voiceMode, voiceStatus, waveBar1Ref, waveBar2Ref, waveBar3Ref, zoomedImage, isCustomerRoute, isAdminRoute
     } = props;
     const hasMobileBottomNav = isCustomerRoute || isAdminRoute;
-    const [pageAgentVisible, setPageAgentVisible] = React.useState(true);
+    // Panel demo page-agent của thư viện ngoài mặc định mở giữa màn hình, che CTA hero —
+    // mặc định thu gọn, user mở lại bằng nút Nut. Không xóa tính năng, chỉ đổi trạng thái đầu.
+    const [pageAgentVisible, setPageAgentVisible] = React.useState(false);
+    const agentUserOpenedRef = React.useRef(false);
+    React.useEffect(() => {
+        const hidePanel = () => {
+            if (agentUserOpenedRef.current) return true;
+            const panel = document.getElementById('page-agent-runtime_agent-panel');
+            if (panel) {
+                panel.classList.add('pageagent-hidden');
+                return true;
+            }
+            return false;
+        };
+        if (hidePanel()) return;
+        const obs = new MutationObserver(() => { if (hidePanel()) obs.disconnect(); });
+        obs.observe(document.body, { childList: true, subtree: true });
+        return () => obs.disconnect();
+    }, []);
     const [agentButtonDismissed, setAgentButtonDismissed] = React.useState(() => {
         try { return localStorage.getItem('pageagent-btn-dismissed') === 'true'; } catch { return false; }
     });
@@ -52,6 +70,8 @@ export const ChatbotShell: React.FC<ChatbotShellProps> = (props) => {
         }
     }, [isOpen]);
     const handleTogglePageAgent = React.useCallback(() => {
+        agentUserOpenedRef.current = true;
+        try { (window as any).__pageAgentUserOpened = true; } catch {}
         const panel = document.getElementById('page-agent-runtime_agent-panel');
         if (panel) {
             const isDisplayNone = panel.style.display === 'none';
@@ -119,7 +139,7 @@ export const ChatbotShell: React.FC<ChatbotShellProps> = (props) => {
                 <div className="glass-card animate-fade-in" style={{
                     position: 'fixed', bottom: '110px', right: '30px', padding: '20px',
                     borderRadius: '28px', fontSize: '0.88rem', fontWeight: 800, color: 'var(--ink)',
-                    boxShadow: '0 20px 50px rgba(16, 185, 129, 0.25), var(--shadow-lg)', zIndex: 1100,
+                    boxShadow: '0 20px 50px rgba(224, 122, 63, 0.25), var(--shadow-lg)', zIndex: 1100,
                     display: 'flex', flexDirection: 'column', gap: '12px', border: '2px solid var(--primary-light)',
                     background: 'var(--surface)', maxWidth: '340px',
                     paddingRight: '44px',
@@ -200,8 +220,8 @@ export const ChatbotShell: React.FC<ChatbotShellProps> = (props) => {
                             height: isMobile ? '65dvh' : '600px',
                             zIndex: 1101,
                             borderRadius: isMobile ? '16px' : '24px', overflow: 'hidden', display: 'flex', flexDirection: 'column',
-                            border: isMobile ? '1px solid rgba(255,255,255,0.12)' : (activeTab === 'agent' ? '2.5px solid rgba(244, 63, 94, 0.35)' : '2.5px solid rgba(16, 185, 129, 0.35)'),
-                            boxShadow: isMobile ? '0 20px 60px rgba(0,0,0,0.3)' : (activeTab === 'agent' ? '0 20px 50px rgba(244, 63, 94, 0.2)' : '0 20px 50px rgba(16, 185, 129, 0.2)'),
+                            border: isMobile ? '1px solid rgba(255,255,255,0.12)' : (activeTab === 'agent' ? '2.5px solid rgba(244, 63, 94, 0.35)' : '2.5px solid rgba(224, 122, 63, 0.35)'),
+                            boxShadow: isMobile ? '0 20px 60px rgba(0,0,0,0.3)' : (activeTab === 'agent' ? '0 20px 50px rgba(244, 63, 94, 0.2)' : '0 20px 50px rgba(224, 122, 63, 0.2)'),
                             transform: isMobile ? 'translate(-50%, -50%)' : 'none',
                             transition: 'all 0.4s ease',
                             minWidth: 0,
@@ -243,9 +263,9 @@ export const ChatbotShell: React.FC<ChatbotShellProps> = (props) => {
                                             <div
                                                 style={{
                                                     padding: '12px 16px', borderRadius: msg.type === "user" ? '20px 20px 4px 20px' : '20px 20px 20px 4px',
-                                                    background: msg.type === "user" ? (isDark ? 'rgba(16, 185, 129, 0.2)' : '#e6f4ea') : 'var(--surface)',
+                                                    background: msg.type === "user" ? (isDark ? 'rgba(224, 122, 63, 0.2)' : '#fdf1e7') : 'var(--surface)',
                                                     color: 'var(--ink)', boxShadow: 'var(--shadow-sm)',
-                                                    border: msg.type === "user" ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid var(--gray-200)',
+                                                    border: msg.type === "user" ? '1px solid rgba(224, 122, 63, 0.3)' : '1px solid var(--gray-200)',
                                                     minWidth: 0,
                                                     maxWidth: '100%',
                                                     overflowWrap: 'anywhere'
@@ -303,9 +323,9 @@ export const ChatbotShell: React.FC<ChatbotShellProps> = (props) => {
                                                             style={{
                                                                 marginTop: '12px',
                                                                 width: '100%',
-                                                                border: '1px solid rgba(16, 185, 129, 0.35)',
-                                                                background: isDark ? 'rgba(16,185,129,0.08)' : '#e6f4ea',
-                                                                color: isDark ? '#10b981' : '#059669',
+                                                                border: '1px solid rgba(224, 122, 63, 0.35)',
+                                                                background: isDark ? 'rgba(224,122,63,0.10)' : '#fdf1e7',
+                                                                color: isDark ? '#e8955c' : '#c05621',
                                                                 borderRadius: '14px',
                                                                 padding: '10px 12px',
                                                                 display: 'flex',

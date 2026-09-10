@@ -1183,7 +1183,7 @@ const DashboardKhachHang: React.FC = () => {
           {confettiActive && (
             <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 10 }}>
               {Array.from({ length: 45 }).map((_, idx) => {
-                const colors = ['#0f9d8a', '#e07a3f', '#f59e0b', '#3b82f6', '#e11d48', '#10b981'];
+                const colors = ['#c05621', '#e07a3f', '#f59e0b', '#3b82f6', '#e11d48', '#10b981'];
                 const left = Math.random() * 100;
                 const delay = Math.random() * 2;
                 const duration = Math.random() * 2 + 1.5;

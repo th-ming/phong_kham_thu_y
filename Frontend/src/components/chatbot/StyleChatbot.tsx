@@ -3,8 +3,8 @@ import React from "react";
 export const StyleChatbot: React.FC = () => (
     <style>{`
         @keyframes chatPulseGlow {
-            0%, 100% { box-shadow: 0 10px 30px rgba(16, 185, 129, 0.4); }
-            50% { box-shadow: 0 0 35px rgba(52, 211, 153, 0.7), 0 10px 40px rgba(16, 185, 129, 0.3); }
+            0%, 100% { box-shadow: 0 10px 30px rgba(224, 122, 63, 0.4); }
+            50% { box-shadow: 0 0 35px rgba(232, 149, 92, 0.7), 0 10px 40px rgba(224, 122, 63, 0.3); }
         }
         @keyframes chatIconWaggle {
             0%, 100% { transform: rotate(0deg); }
@@ -369,12 +369,12 @@ export const StyleChatbot: React.FC = () => (
             position: absolute;
             inset: -4px;
             border-radius: 50%;
-            border: 1px solid rgba(45, 212, 191, 0.16);
+            border: 1px solid rgba(224, 122, 63, 0.16);
             pointer-events: none;
             z-index: -1;
             box-shadow:
-                0 0 18px rgba(45, 212, 191, 0.16),
-                inset 0 0 14px rgba(125, 211, 252, 0.12);
+                0 0 18px rgba(224, 122, 63, 0.16),
+                inset 0 0 14px rgba(232, 149, 92, 0.12);
             animation: chatSoftWave 6s ease-out infinite;
             transform-origin: center;
         }
@@ -383,7 +383,7 @@ export const StyleChatbot: React.FC = () => (
             border-color: rgba(224, 122, 63, 0.18);
             box-shadow:
                 0 0 22px rgba(224, 122, 63, 0.12),
-                inset 0 0 18px rgba(103, 232, 249, 0.10);
+                inset 0 0 18px rgba(232, 149, 92, 0.10);
             animation-delay: 0.12s;
         }
         #chatBtn.is-open::before,

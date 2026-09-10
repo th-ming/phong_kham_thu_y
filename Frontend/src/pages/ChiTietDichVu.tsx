@@ -333,7 +333,7 @@ const ChiTietDichVu: React.FC = () => {
                 </div>
               </div>
 
-              <div className="service-detail-commitment" style={{ background: 'linear-gradient(135deg, rgba(224, 122, 63, 0.08) 0%, rgba(45, 212, 191, 0.03) 100%)', padding: '40px', borderRadius: '32px', marginTop: '56px', border: '1px solid rgba(224, 122, 63, 0.15)' }}>
+              <div className="service-detail-commitment" style={{ background: 'linear-gradient(135deg, rgba(224, 122, 63, 0.08) 0%, rgba(232, 149, 92, 0.05) 100%)', padding: '40px', borderRadius: '32px', marginTop: '56px', border: '1px solid rgba(224, 122, 63, 0.15)' }}>
                 <h3 style={{ fontSize: '1.6rem', fontWeight: 900, color: 'var(--ink)', marginBottom: '24px' }}>Cam kết từ Rexi</h3>
                 <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: '16px' }}>
                   {['Sử dụng 100% thuốc và thiết bị y tế nhập khẩu chính hãng.', 'Đội ngũ bác sĩ thú y giàu kinh nghiệm, tận tâm.', 'Minh bạch chi phí, không phát sinh ngoài phác đồ đã tư vấn.', 'Hỗ trợ tư vấn trực tuyến 24/7 sau khi sử dụng dịch vụ.'].map((item, i) => (

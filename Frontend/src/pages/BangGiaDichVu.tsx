@@ -167,7 +167,7 @@ const BangGiaDichVu: React.FC = () => {
                                             {cat.items.map((item) => (
                                                 <li key={item.id_dich_vu} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', color: 'var(--ink)' }}>
                                                     <span style={{ fontSize: '1.05rem', color: 'var(--gray-500)', fontWeight: 600, minWidth: 0 }}>{item.ten_dich_vu}</span>
-                                                    <span style={{ fontSize: '1.1rem', fontWeight: 900, color: '#0f9d8a', whiteSpace: 'nowrap' }}>{item.gia > 0 ? formatTienVND(item.gia) : "Liên hệ"}</span>
+                                                    <span style={{ fontSize: '1.1rem', fontWeight: 900, color: 'var(--primary)', whiteSpace: 'nowrap' }}>{item.gia > 0 ? formatTienVND(item.gia) : "Liên hệ"}</span>
                                                 </li>
                                             ))}
                                         </ul>
@@ -188,7 +188,7 @@ const BangGiaDichVu: React.FC = () => {
                                             {otherServices.map((item) => (
                                                 <li key={item.id_dich_vu} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', color: 'var(--ink)' }}>
                                                     <span style={{ fontSize: '1.05rem', color: 'var(--gray-500)', fontWeight: 600, minWidth: 0 }}>{item.ten_dich_vu}</span>
-                                                    <span style={{ fontSize: '1.1rem', fontWeight: 900, color: '#0f9d8a', whiteSpace: 'nowrap' }}>{item.gia > 0 ? formatTienVND(item.gia) : "Liên hệ"}</span>
+                                                    <span style={{ fontSize: '1.1rem', fontWeight: 900, color: 'var(--primary)', whiteSpace: 'nowrap' }}>{item.gia > 0 ? formatTienVND(item.gia) : "Liên hệ"}</span>
                                                 </li>
                                             ))}
                                         </ul>

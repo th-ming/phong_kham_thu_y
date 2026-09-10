@@ -13,7 +13,7 @@ const Loi404: React.FC = () => {
             minHeight: '100vh',
             background: isDark
                 ? 'radial-gradient(circle at 0% 0%, #0f172a 0%, #1e293b 100%)'
-                : 'radial-gradient(circle at 0% 0%, #f0fdfa 0%, #ffffff 50%, #f8fafc 100%)',
+                : 'radial-gradient(circle at 0% 0%, #fdf3e7 0%, #ffffff 50%, #faf7f2 100%)',
             position: 'relative',
             overflow: 'hidden',
             display: 'flex',

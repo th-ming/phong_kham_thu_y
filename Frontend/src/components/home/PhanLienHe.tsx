@@ -22,8 +22,8 @@ const PhanLienHe: React.FC = () => {
             icon: 'location_on',
             label: 'Địa chỉ phòng khám',
             value: 'Số 68, Ngõ 10, Đường Ngô Xuân Quảng, Trâu Quỳ, Gia Lâm, Hà Nội',
-            color: '#0f9d8a',
-            bg: '#f0fdfa'
+            color: 'var(--primary)',
+            bg: '#fdf1e7'
         },
         {
             icon: 'call',
@@ -75,10 +75,10 @@ const PhanLienHe: React.FC = () => {
                         58%, 100% { transform: translateX(170%) skewX(-18deg); }
                     }
                     .contact-card-main { transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.5s ease; position: relative; overflow: hidden; z-index: 1; }
-                    .contact-card-main:hover { transform: translateY(-5px); box-shadow: 0 50px 100px rgba(15,157,138,0.08) !important; }
+                    .contact-card-main:hover { transform: translateY(-5px); box-shadow: 0 50px 100px rgba(224,122,63,0.10) !important; }
                     .contact-card-main::before {
                         content: ''; position: absolute; top: var(--y, -200px); left: var(--x, -200px);
-                        width: 600px; height: 600px; background: radial-gradient(circle, rgba(45, 212, 191, 0.15) 0%, transparent 60%);
+                        width: 600px; height: 600px; background: radial-gradient(circle, rgba(224, 122, 63, 0.15) 0%, transparent 60%);
                         transform: translate(-50%, -50%); pointer-events: none; transition: opacity 0.3s ease; opacity: 0; z-index: -1;
                     }
                     .contact-card-main:hover::before { opacity: 1; }
@@ -238,7 +238,7 @@ const PhanLienHe: React.FC = () => {
                     {/* Header Section */}
                     <div className="contact-heading" style={{ marginBottom: "60px", textAlign: 'center' }}>
                         <div className="section-label" style={{ margin: '0 auto 20px' }}>📍 Liên hệ</div>
-                        <h2 style={{ fontSize: "clamp(2rem, 5vw, 3rem)", fontWeight: 950, color: "var(--ink)", margin: 0, letterSpacing: '-1.5px' }}>Kết Nối Với <span style={{ color: "#0f9d8a" }}>Rexi</span></h2>
+                        <h2 style={{ fontSize: "clamp(2rem, 5vw, 3rem)", fontWeight: 950, color: "var(--ink)", margin: 0, letterSpacing: '-1.5px' }}>Kết Nối Với <span style={{ color: "var(--primary)" }}>Rexi</span></h2>
                         <p style={{ color: "var(--gray-500)", marginTop: '16px', fontWeight: 500, fontSize: '1.05rem', maxWidth: '600px', margin: '16px auto 0' }}>Chúng tôi luôn sẵn sàng lắng nghe và đồng hành cùng hành trình sức khỏe của thú cưng của bạn.</p>
                     </div>
 
@@ -247,7 +247,7 @@ const PhanLienHe: React.FC = () => {
                         padding: "clamp(30px, 5vw, 60px)",
                         borderRadius: "48px",
                         boxShadow: "0 40px 100px rgba(0,0,0,0.05)",
-                        border: "1px solid rgba(15,157,138,0.08)"
+                        border: "1px solid rgba(224,122,63,0.10)"
                     }}>
                         <div className="contact-grid responsive-grid-split" style={{ gridTemplateColumns: "1fr 1.2fr" }}>
 
@@ -306,7 +306,7 @@ const PhanLienHe: React.FC = () => {
                                     boxShadow: "0 10px 30px rgba(0,0,0,0.02)"
                                 }}>
                                     <div className="mobile-hide">
-                                        <p style={{ margin: "0 0 4px 0", fontSize: "0.65rem", color: "#0f9d8a", fontWeight: 900, letterSpacing: "1.5px", textTransform: 'uppercase' }}>Cơ sở chính</p>
+                                        <p style={{ margin: "0 0 4px 0", fontSize: "0.65rem", color: "var(--primary)", fontWeight: 900, letterSpacing: "1.5px", textTransform: 'uppercase' }}>Cơ sở chính</p>
                                         <p style={{ margin: 0, fontSize: "1rem", color: "var(--ink)", fontWeight: 800 }}>Gia Lâm, Hà Nội</p>
                                     </div>
                         <a

@@ -118,12 +118,12 @@ html, body, header, footer, section, div, a, button, h1, h2, h3, h4, h5, h6, p, 
   --primary-shadow: rgba(224, 122, 63, 0.35);
 }
 
-/* Bảng màu chủ đạo (Chế độ Tối - Luxury Aura Midnight) */
+/* Bảng màu chủ đạo (Chế độ Tối - Warm Vet Editorial, cùng họ terracotta với light) */
 [data-theme='dark'] {
-  /* Than ngả lục ấm — "phòng khám ban đêm", không phải navy lạnh */
-  --primary: #22d3ee;
-  --primary-light: rgba(34, 211, 238, 0.15);
-  --primary-gradient: linear-gradient(135deg, #06b6d4 0%, #14b8a6 100%);
+  /* Hổ phách ấm trên nền than — "phòng khám ban đêm", không cyan lạnh */
+  --primary: #e8955c;
+  --primary-light: rgba(232, 149, 92, 0.15);
+  --primary-gradient: linear-gradient(135deg, #c05621 0%, #e8955c 100%);
   --secondary: #292524;
   --background: #12100e;
   --surface: rgba(28, 25, 23, 0.88);
@@ -136,7 +136,7 @@ html, body, header, footer, section, div, a, button, h1, h2, h3, h4, h5, h6, p, 
   --gray-200: #3f3a36;
   --gray-300: #57534e;
   color-scheme: dark;
-  --secondary-gradient: linear-gradient(135deg, #06b6d4 0%, #292524 100%);
+  --secondary-gradient: linear-gradient(135deg, #c05621 0%, #292524 100%);
   
   /* Cảnh báo dịch tễ hiện đại Dark Mode (Glassmorphism) */
   --alert-bg: rgba(239, 68, 68, 0.08); /* Đỏ ấm dịu, tinh tế và ít chói mắt hơn */
@@ -144,8 +144,8 @@ html, body, header, footer, section, div, a, button, h1, h2, h3, h4, h5, h6, p, 
   --alert-border: rgba(239, 68, 68, 0.18);
   --alert-link: #f87171;
   --alert-icon-color: #f87171;
-  --chat-gradient: linear-gradient(135deg, #06b6d4 0%, #0e7490 50%, #12100e 100%);
-  --tien-ich-gradient: linear-gradient(135deg, #06b6d4 0%, #292524 100%);
+  --chat-gradient: linear-gradient(135deg, #c05621 0%, #7c2d12 100%);
+  --tien-ich-gradient: linear-gradient(135deg, #9a3412 0%, #c05621 100%);
 }
 
 :root {

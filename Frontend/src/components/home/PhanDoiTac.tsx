@@ -2,7 +2,7 @@ import React from "react";
 import { RevealSection } from "@components/SpecialEffects";
 
 const partners = [
-    { name: "Rexi Veterinary", tagline: "Phòng khám tiêu chuẩn 5 sao", logo: "/img/doi-tac-rexi.png", color: "#0f9d8a" },
+    { name: "Rexi Veterinary", tagline: "Phòng khám tiêu chuẩn 5 sao", logo: "/img/doi-tac-rexi.png", color: "#c05621" },
     { name: "PetCare Express", tagline: "Giao hàng thuốc thú y nhanh", logo: "/img/doi-tac-petcare.png", color: "#e07a3f" },
     { name: "GreenVet Supply", tagline: "Chuỗi dụng cụ thú y chuyên nghiệp", logo: "/img/doi-tac-greenvet.png", color: "#22c55e" },
     { name: "CarePlus Pharmacy", tagline: "Thuốc và chăm sóc tại nhà", logo: "/img/doi-tac-careplus.png", color: "#0ea5e9" }

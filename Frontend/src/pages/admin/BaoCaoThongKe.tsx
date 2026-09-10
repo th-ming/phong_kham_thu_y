@@ -300,7 +300,7 @@ const BaoCaoThongKe: React.FC = () => {
         return gradient;
       },
       borderRadius: 12,
-      hoverBackgroundColor: '#0f9d8a',
+      hoverBackgroundColor: '#c05621',
       maxBarThickness: 45,
     }]
   };
@@ -805,7 +805,7 @@ const BaoCaoThongKe: React.FC = () => {
         </div>
         <div>
           <h2 style={{ fontSize: '1.8rem', fontWeight: 900, margin: 0 }}>Tổng doanh thu thực tế</h2>
-          <p style={{ margin: '8px 0 0 0', fontSize: '1.1rem', opacity: 0.8, fontWeight: 600 }}>Hệ thống đã xử lý <b style={{ color: '#0ea5e9' }}>{totalApps}</b> ca bệnh với tổng giá trị <b style={{ color: '#10b981' }}>{totalRevenue.toLocaleString('vi-VN')} đ</b></p>
+          <p style={{ margin: '8px 0 0 0', fontSize: '1.1rem', opacity: 0.8, fontWeight: 600 }}>Hệ thống đã xử lý <b style={{ color: '#c05621' }}>{totalApps}</b> ca bệnh với tổng giá trị <b style={{ color: '#10b981' }}>{totalRevenue.toLocaleString('vi-VN')} đ</b></p>
         </div>
       </div>
 

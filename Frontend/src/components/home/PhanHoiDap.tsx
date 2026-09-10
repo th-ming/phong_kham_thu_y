@@ -14,7 +14,7 @@ const PhanHoiDap: React.FC = () => {
     return (
         <RevealSection>
             <section className="home-faq-section" style={{ padding: "110px 0", background: "var(--background)", position: 'relative', overflow: 'hidden' }}>
-                <div style={{ position: 'absolute', top: '-80px', right: '-80px', width: '400px', height: '400px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(15,157,138,0.05) 0%, transparent 70%)', pointerEvents: 'none' }} />
+                <div style={{ position: 'absolute', top: '-80px', right: '-80px', width: '400px', height: '400px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(224,122,63,0.05) 0%, transparent 70%)', pointerEvents: 'none' }} />
 
                 <style>{`
                     .faq-item { transition: all 0.3s ease; }

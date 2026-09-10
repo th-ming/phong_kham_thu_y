@@ -77,13 +77,13 @@
     <style>
       [id="page-agent-runtime_agent-panel"] {
         font-family: 'Be Vietnam Pro', sans-serif !important;
-        --color-1: #0d9488 !important;
-        --color-2: #14b8a6 !important;
-        --color-3: #0d9488 !important;
-        --color-4: #14b8a6 !important;
+        --color-1: #c05621 !important;
+        --color-2: #e07a3f !important;
+        --color-3: #c05621 !important;
+        --color-4: #e07a3f !important;
       }
       [id="page-agent-runtime_agent-panel"] ._header_1tu05_99 {
-        background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%) !important;
+        background: linear-gradient(135deg, #c05621 0%, #e07a3f 100%) !important;
         backdrop-filter: none !important;
         -webkit-backdrop-filter: none !important;
         box-shadow: none !important;
@@ -92,14 +92,14 @@
         display: none !important;
       }
       [data-theme="dark"] [id="page-agent-runtime_agent-panel"] {
-        --color-1: #22d3ee !important;
-        --color-2: #14b8a6 !important;
-        --color-3: #22d3ee !important;
-        --color-4: #14b8a6 !important;
+        --color-1: #e8955c !important;
+        --color-2: #c05621 !important;
+        --color-3: #e8955c !important;
+        --color-4: #c05621 !important;
       }
       [data-theme="dark"] [id="page-agent-runtime_agent-panel"] ._header_1tu05_99 {
-        background: linear-gradient(135deg, #06b6d4 0%, #14b8a6 100%) !important;
-        box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.3), 0 0 20px rgba(34, 211, 238, 0.15) !important;
+        background: linear-gradient(135deg, #c05621 0%, #e8955c 100%) !important;
+        box-shadow: 0 0 0 2px rgba(232, 149, 92, 0.3), 0 0 20px rgba(232, 149, 92, 0.15) !important;
       }
       .pageagent-hidden {
         display: none !important;
@@ -253,8 +253,19 @@
         }
       }
 
+      // Panel demo page-agent mặc định mở giữa màn hình, che CTA/nút chính —
+      // tự thu gọn ngay khi xuất hiện, user mở lại bằng nút Agent. Không xóa tính năng.
+      function collapsePageAgentDefault() {
+        if (window.__pageAgentUserOpened) return;
+        var panel = document.getElementById('page-agent-runtime_agent-panel');
+        if (panel && !panel.classList.contains('pageagent-hidden') && panel.style.display !== 'none') {
+          panel.classList.add('pageagent-hidden');
+        }
+      }
+
       var observer = new MutationObserver(function() {
         translatePageAgent();
+        collapsePageAgentDefault();
       });
       observer.observe(document.body, {
         childList: true,
@@ -263,8 +274,9 @@
         attributeFilter: ['title']
       });
       translatePageAgent();
-      setTimeout(translatePageAgent, 1000);
-      setTimeout(translatePageAgent, 3000);
+      collapsePageAgentDefault();
+      setTimeout(function() { translatePageAgent(); collapsePageAgentDefault(); }, 1000);
+      setTimeout(function() { translatePageAgent(); collapsePageAgentDefault(); }, 3000);
     </script>
     <script type="module">
       import RefreshRuntime from "/@react-refresh"

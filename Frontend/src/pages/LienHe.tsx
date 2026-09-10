@@ -28,7 +28,7 @@ const LienHe: React.FC = () => {
                 }
                 .contact-card:hover {
                     transform: translateY(-5px) scale(1.01) !important;
-                    box-shadow: 0 12px 36px rgba(15,157,138,0.14) !important;
+                    box-shadow: 0 12px 36px rgba(224,122,63,0.16) !important;
                     border-color: var(--primary) !important;
                 }
                 .contact-card:hover .contact-icon {
@@ -68,7 +68,7 @@ const LienHe: React.FC = () => {
                     <div style={{ display: 'flex', gap: '12px', alignItems: 'center', color: 'var(--gray-400)', fontSize: '0.85rem', marginBottom: '60px', fontWeight: 700, letterSpacing: '1px' }}>
                         <Link to="/" style={{ color: 'inherit', textDecoration: 'none' }}>TRANG CHỦ</Link>
                         <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>chevron_right</span>
-                        <span style={{ color: '#0f9d8a' }}>LIÊN HỆ</span>
+                        <span style={{ color: 'var(--primary)' }}>LIÊN HỆ</span>
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '32px', marginBottom: '80px' }}>

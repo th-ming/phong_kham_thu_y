@@ -123,7 +123,7 @@ const QuenMatKhau: React.FC = () => {
         @keyframes shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-8px)} 40%{transform:translateX(8px)} 60%{transform:translateX(-6px)} 80%{transform:translateX(6px)} }
         .auth-card { animation: slideUpFade 0.5s cubic-bezier(.22,.68,0,1.2) 0.08s both; }
         .input-group { transition: border-color 0.2s ease, box-shadow 0.2s ease; }
-        .input-group:focus-within { border-color: var(--primary) !important; box-shadow: 0 0 0 3px rgba(15,157,138,0.12) !important; }
+        .input-group:focus-within { border-color: var(--primary) !important; box-shadow: 0 0 0 3px rgba(224,122,63,0.15) !important; }
         .tab-btn { flex: 1; padding: 12px; border-radius: 12px; border: none; font-weight: 800; cursor: pointer; transition: all 0.3s; }
         .auth-form-panel { padding: 60px; display: flex; flex-direction: column; justify-content: center; }
 

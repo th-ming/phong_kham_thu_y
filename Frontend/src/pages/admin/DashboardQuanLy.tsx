@@ -246,7 +246,7 @@ const DashboardQuanLy: React.FC = () => {
       `Hôm qua chưa có doanh thu, hôm nay phát sinh ${formatTienVND(kpiCompare.revenue.today)}`
     );
     if (['admin', 'quan_ly', 'tiep_tan'].includes(userRole)) {
-      allStats.push({ label: "Khách Hàng", value: customerCount, icon: "groups", color: "#0f9d8a", trend: customerChange, caption: `${kpiCompare.customers.today} mới hôm nay / ${kpiCompare.customers.yesterday} hôm qua` });
+      allStats.push({ label: "Khách Hàng", value: customerCount, icon: "groups", color: "#c05621", trend: customerChange, caption: `${kpiCompare.customers.today} mới hôm nay / ${kpiCompare.customers.yesterday} hôm qua` });
     }
     if (['admin', 'quan_ly', 'tiep_tan', 'bac_si', 'y_ta'].includes(userRole)) {
       allStats.push({ label: "Lịch Hẹn Nay", value: appointments.length, icon: "calendar_today", color: "#3b82f6", trend: appointmentChange, caption: `${kpiCompare.appointments.today} hôm nay / ${kpiCompare.appointments.yesterday} hôm qua` });
