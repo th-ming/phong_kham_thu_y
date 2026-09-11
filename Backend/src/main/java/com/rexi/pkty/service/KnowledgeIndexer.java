@@ -96,7 +96,7 @@ public class KnowledgeIndexer {
                     totalIndexed += chunks;
                     logger.info("[KnowledgeIndexer] Indexed " + entry.getKey() +
                             " -> " + chunks + " chunks");
-                } catch (IOException e) {
+                } catch (Exception e) {
                     logger.warning("[KnowledgeIndexer] Failed to read " + entry.getKey() +
                             ": " + e.getMessage());
                 }
