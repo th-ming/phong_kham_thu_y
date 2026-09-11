@@ -94,6 +94,7 @@ class ReActAgentServiceDeterministicTest {
         AiMemoryService memoryService = mock(AiMemoryService.class);
 
         when(groq.chat(anyList())).thenReturn("{\"final_answer\":\"Đã gửi email nhắc lịch cho khách Nguyễn A thành công.\"}");
+        when(groq.chat(anyList(), anyString())).thenReturn("{\"final_answer\":\"Đã gửi email nhắc lịch cho khách Nguyễn A thành công.\"}");
         when(memoryService.getGlobalContext(anyString())).thenReturn("");
         when(memoryService.getUserContext(anyString())).thenReturn("");
         when(toolService.getToolsSchemaForRole(anyString())).thenReturn("");
@@ -226,6 +227,7 @@ class ReActAgentServiceDeterministicTest {
         when(memoryService.getGlobalContext(anyString())).thenReturn("");
         when(memoryService.getUserContext(anyString())).thenReturn("");
         when(groqService.chat(anyList())).thenReturn("{\"final_answer\":\"ok\"}");
+        when(groqService.chat(anyList(), anyString())).thenReturn("{\"final_answer\":\"ok\"}");
         when(geminiService.chat(anyList())).thenReturn("{\"final_answer\":\"ok\"}");
         when(openRouterService.chat(anyList())).thenReturn("{\"final_answer\":\"ok\"}");
         when(toolService.executeTool(anyString(), anyMap(), anyString(), anyString())).thenAnswer(invocation -> {

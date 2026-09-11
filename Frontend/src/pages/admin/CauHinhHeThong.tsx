@@ -1279,7 +1279,7 @@ const CauHinhHeThong: React.FC = () => {
                                     </div>
                                     <div>
                                         <label style={{ display: 'block', marginBottom: '6px', fontWeight: 700, color: 'var(--gray-600)', fontSize: '0.85rem' }}>Model mặc định</label>
-                                        <input data-ai-id="input-cauhinhhethong-groq-model" type="text" className="form-input" value={configs.groq_model || ''} onChange={e => setConfigs({...configs, groq_model: e.target.value})} placeholder="llama-3.3-70b-specdec" />
+                                        <input data-ai-id="input-cauhinhhethong-groq-model" type="text" className="form-input" value={configs.groq_model || ''} onChange={e => setConfigs({...configs, groq_model: e.target.value})} placeholder="llama-3.1-8b-instant" />
                                     </div>
                                     <div style={{ borderTop: '1px solid var(--gray-100)', paddingTop: '10px' }}>
                                         <label style={{ display: 'block', marginBottom: '6px', fontWeight: 700, color: 'var(--gray-500)', fontSize: '0.8rem' }}>API Key dự phòng 2</label>
@@ -1303,7 +1303,7 @@ const CauHinhHeThong: React.FC = () => {
                                     </div>
                                     <div>
                                         <label style={{ display: 'block', marginBottom: '6px', fontWeight: 700, color: 'var(--gray-600)', fontSize: '0.85rem' }}>Model mặc định</label>
-                                        <input data-ai-id="input-cauhinhhethong-gemini-model" type="text" className="form-input" value={configs.gemini_model || ''} onChange={e => setConfigs({...configs, gemini_model: e.target.value})} placeholder="gemini-1.5-flash" />
+                                        <input data-ai-id="input-cauhinhhethong-gemini-model" type="text" className="form-input" value={configs.gemini_model || ''} onChange={e => setConfigs({...configs, gemini_model: e.target.value})} placeholder="gemini-2.5-flash" />
                                     </div>
                                     {renderAiTestPanel('gemini')}
                                 </div>
@@ -1319,7 +1319,7 @@ const CauHinhHeThong: React.FC = () => {
                                     </div>
                                     <div>
                                         <label style={{ display: 'block', marginBottom: '6px', fontWeight: 700, color: 'var(--gray-600)', fontSize: '0.85rem' }}>Model mặc định</label>
-                                        <input data-ai-id="input-cauhinhhethong-openrouter-model" type="text" className="form-input" value={configs.openrouter_model || ''} onChange={e => setConfigs({...configs, openrouter_model: e.target.value})} placeholder="google/gemini-2.0-flash-exp:free" />
+                                        <input data-ai-id="input-cauhinhhethong-openrouter-model" type="text" className="form-input" value={configs.openrouter_model || ''} onChange={e => setConfigs({...configs, openrouter_model: e.target.value})} placeholder="google/gemma-4-31b-it:free" />
                                     </div>
                                     {renderAiTestPanel('openrouter')}
                                 </div>

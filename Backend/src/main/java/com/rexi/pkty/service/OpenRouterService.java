@@ -110,16 +110,56 @@ public class OpenRouterService {
 
     private static final String OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
 
-    @Value("${openrouter.model:deepseek/deepseek-chat-v3-0324:free}")
+    @Value("${openrouter.model:google/gemma-4-31b-it:free}")
     private String modelName;
 
     @Value("${app.frontend-url:http://localhost:3005}")
     private String frontendUrl;
 
+    private static final String OPENROUTER_MODELS_URL = "https://openrouter.ai/api/v1/models";
+
     // Biến lưu Cache danh sách Model
-    private List<String> cachedFreeModels = new ArrayList<>();
-    private long lastModelFetchTime = 0;
+    private volatile List<FreeModelInfo> cachedFreeModelInfos = List.of();
+    private volatile Set<String> cachedKnownModelIds = Set.of();
+    private volatile long lastModelFetchTime = 0;
+    private volatile long lastFetchAttemptTime = 0;
     private static final long CACHE_DURATION_MS = 24 * 60 * 60 * 1000L; // 24 giờ
+    private static final long FAILED_FETCH_RETRY_MS = 5 * 60 * 1000L; // fetch fail thì 5 phút sau mới thử lại
+
+    /**
+     * Bản ghi rút gọn của 1 model free trên OpenRouter, đủ để lọc curated
+     * mà không cần giữ nguyên cả JSON snapshot trong RAM.
+     */
+    static record FreeModelInfo(
+            String id,
+            String name,
+            String description,
+            boolean reasoningMandatory,
+            boolean textOutput) {}
+
+    // Thứ tự ưu tiên model free general chat/instruct (đã đối chiếu live /models).
+    // Preferred list được allowlist: bỏ qua heuristic loại trừ bên dưới.
+    private static final List<String> GENERAL_PREFERRED_FREE = List.of(
+            "google/gemma-4-31b-it:free",
+            "thinkingmachines/inkling-small:free",
+            "nvidia/nemotron-3.5-lightning:free",
+            "google/gemma-4-26b-a4b-it:free",
+            "nex-agi/nex-n2.5-pro:free");
+
+    // Nhánh medical: ưu tiên model health/medicine + reasoning giữ lại cho ca khó.
+    private static final List<String> MEDICAL_PREFERRED_FREE = List.of(
+            "inclusionai/ling-3.0-flash-sante:free",
+            "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+            "google/gemma-4-31b-it:free",
+            "thinkingmachines/inkling-small:free",
+            "nvidia/nemotron-3.5-lightning:free");
+
+    // Cụm từ trong name/description cho thấy model KHÔNG hợp chat thường
+    // (code-only/agentic-coding, guardrail/moderation, chuyên ngành hẹp).
+    private static final List<String> CHAT_EXCLUDED_PHRASES = List.of(
+            "coding agent", "agentic coding", "code model",
+            "guardrail", "content safety", "content moderation",
+            "finance-focused", "finance focused");
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final AtomicInteger keyCursor = new AtomicInteger(0);
@@ -191,8 +231,15 @@ public class OpenRouterService {
         Set<String> models = new LinkedHashSet<>();
         String configuredModel = isMedical ? getMedicalModelName() : getModelName();
         if (configuredModel != null && !configuredModel.trim().isEmpty()) {
-            models.add(configuredModel.trim());
+            String trimmed = configuredModel.trim();
+            if (isModelAlive(trimmed)) {
+                models.add(trimmed);
+            } else {
+                logger.warning("OpenRouter configured model '" + trimmed
+                        + "' không còn tồn tại trên live /models, bỏ qua và dùng dynamic curated.");
+            }
         }
+        models.addAll(getCuratedDynamicModels(isMedical));
         models.addAll(getStaticFallbackModels(isMedical));
 
         // OpenRouter gioi han mang 'models' toi da 3 items.
@@ -204,24 +251,124 @@ public class OpenRouterService {
     }
 
     private List<String> getStaticFallbackModels(boolean isMedical) {
-        // Chon 3 model free tot nhat de toi uu ty le phan hoi
+        // Toàn bộ ID dưới đây đã đối chiếu còn sống trên live /models (snapshot 436 models).
+        if (isMedical) {
+            return List.of(
+                    "inclusionai/ling-3.0-flash-sante:free",
+                    "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+                    "google/gemma-4-31b-it:free");
+        }
         return List.of(
-                "google/gemini-2.0-pro-exp-02-05:free",
-                "google/gemini-2.0-flash-thinking-hs:free",
-                "deepseek/deepseek-r1:free"
-        );
+                "google/gemma-4-31b-it:free",
+                "thinkingmachines/inkling-small:free",
+                "nvidia/nemotron-3.5-lightning:free");
     }
 
-    private synchronized List<String> getDynamicFreeModels() {
-        long now = System.currentTimeMillis();
-        // Trả về cache nếu chưa hết hạn (chưa qua 24 giờ)
-        if (!cachedFreeModels.isEmpty() && (now - lastModelFetchTime < CACHE_DURATION_MS)) {
-            return cachedFreeModels;
+    /**
+     * Model curated từ snapshot live /models (cache 24h). Trả về rỗng nếu chưa
+     * từng quét thành công — caller sẽ rơi xuống static fallback.
+     */
+    private List<String> getCuratedDynamicModels(boolean isMedical) {
+        refreshModelSnapshotIfStale();
+        List<FreeModelInfo> snapshot = cachedFreeModelInfos;
+        if (snapshot.isEmpty()) {
+            return List.of();
         }
+        return curateFreeModels(snapshot, isMedical);
+    }
+
+    /**
+     * Kiểm tra model còn sống theo snapshot live /models gần nhất.
+     * Nếu chưa có snapshot (API /models fail) thì TRẢ VỀ TRUE để giữ
+     * configured model — không được drop model chỉ vì không verify được.
+     */
+    private boolean isModelAlive(String modelId) {
+        refreshModelSnapshotIfStale();
+        Set<String> known = cachedKnownModelIds;
+        if (known.isEmpty()) {
+            return true;
+        }
+        return known.contains(modelId);
+    }
+
+    /**
+     * Lọc curated (pure function — có unit test riêng):
+     * preferred∩alive trước, rồi fill thêm model free alive không bị loại,
+     * tối đa 5. Preferred được allowlist, bỏ qua heuristic loại trừ.
+     */
+    static List<String> curateFreeModels(List<FreeModelInfo> all, boolean isMedical) {
+        Set<String> aliveIds = new LinkedHashSet<>();
+        for (FreeModelInfo info : all) {
+            if (info == null || info.id() == null || info.id().isBlank()) {
+                continue;
+            }
+            aliveIds.add(info.id());
+        }
+
+        List<String> preferred = isMedical ? MEDICAL_PREFERRED_FREE : GENERAL_PREFERRED_FREE;
+        LinkedHashSet<String> curated = new LinkedHashSet<>();
+        for (String id : preferred) {
+            if (aliveIds.contains(id)) {
+                curated.add(id);
+            }
+        }
+        for (FreeModelInfo info : all) {
+            if (curated.size() >= 5) {
+                break;
+            }
+            if (info == null || info.id() == null || curated.contains(info.id())) {
+                continue;
+            }
+            if (!isExcludedFromChat(info, isMedical)) {
+                curated.add(info.id());
+            }
+        }
+        return new ArrayList<>(curated);
+    }
+
+    /**
+     * Loại khỏi chat thường: code-only/agentic-coding, guardrail/moderation,
+     * chuyên ngành hẹp (finance), output không phải text, và reasoning-only
+     * (reasoning mandatory — chỉ giữ lại cho nhánh medical).
+     */
+    static boolean isExcludedFromChat(FreeModelInfo info, boolean isMedical) {
+        if (info == null || info.id() == null) {
+            return true;
+        }
+        String idLower = info.id().toLowerCase();
+        if (idLower.contains("content-safety") || idLower.contains("guard")) {
+            return true;
+        }
+        if (!info.textOutput()) {
+            return true;
+        }
+        if (info.reasoningMandatory() && !isMedical) {
+            return true;
+        }
+        String haystack = ((info.name() == null ? "" : info.name()) + " "
+                + (info.description() == null ? "" : info.description())).toLowerCase();
+        for (String phrase : CHAT_EXCLUDED_PHRASES) {
+            if (haystack.contains(phrase)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private synchronized void refreshModelSnapshotIfStale() {
+        long now = System.currentTimeMillis();
+        if (!cachedFreeModelInfos.isEmpty() && (now - lastModelFetchTime < CACHE_DURATION_MS)) {
+            return;
+        }
+        // Vừa thử fetch gần đây (fail hoặc rỗng) thì không spam lại /models mỗi request chat.
+        if (now - lastFetchAttemptTime < FAILED_FETCH_RETRY_MS) {
+            return;
+        }
+        lastFetchAttemptTime = now;
 
         try {
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create("https://openrouter.ai/api/v1/models"))
+                    .uri(URI.create(OPENROUTER_MODELS_URL))
                     .GET()
                     .timeout(Duration.ofSeconds(10))
                     .build();
@@ -230,47 +377,77 @@ public class OpenRouterService {
             if (response.statusCode() == 200) {
                 JsonNode root = objectMapper.readTree(response.body());
                 JsonNode dataNode = root.path("data");
-                List<String> freeModels = new ArrayList<>();
-                
+                List<FreeModelInfo> freeModels = new ArrayList<>();
+                Set<String> knownIds = new LinkedHashSet<>();
+
                 if (dataNode.isArray()) {
                     for (JsonNode modelNode : dataNode) {
-                        String id = modelNode.path("id").asText();
-                        JsonNode pricing = modelNode.path("pricing");
-                        
-                        String promptPrice = pricing.path("prompt").asText();
-                        String completionPrice = pricing.path("completion").asText();
-                        
-                        // OpenRouter quy định model free có giá prompt & completion đều bằng "0"
-                        if (("0".equals(promptPrice) || "0.0".equals(promptPrice)) && 
-                            ("0".equals(completionPrice) || "0.0".equals(completionPrice))) {
-                            freeModels.add(id);
+                        String id = modelNode.path("id").asText(null);
+                        if (id == null || id.isBlank()) {
+                            continue;
+                        }
+                        knownIds.add(id);
+                        if (isFreePricing(modelNode.path("pricing"))) {
+                            freeModels.add(new FreeModelInfo(
+                                    id,
+                                    modelNode.path("name").asText(""),
+                                    modelNode.path("description").asText(""),
+                                    modelNode.path("reasoning").path("mandatory").asBoolean(false),
+                                    hasTextOutput(modelNode.path("architecture"))));
                         }
                     }
                 }
-                
+
                 if (!freeModels.isEmpty()) {
-                    // Giới hạn lấy tối đa 10 model free để ko làm mảng API quá dài gây nghẽn
-                    cachedFreeModels = freeModels.subList(0, Math.min(freeModels.size(), 10));
+                    cachedFreeModelInfos = List.copyOf(freeModels);
+                    cachedKnownModelIds = Set.copyOf(knownIds);
                     lastModelFetchTime = now;
-                    logger.info("Đã quét tự động và cập nhật " + cachedFreeModels.size() + " model Free từ OpenRouter.");
-                    return cachedFreeModels;
+                    logger.info("Đã quét tự động và cập nhật " + freeModels.size()
+                            + " model Free từ OpenRouter (biết tổng " + knownIds.size() + " IDs).");
+                    return;
+                }
+                // /models trả 200 nhưng không parse được free nào: vẫn lưu known IDs
+                // để isModelAlive() hoạt động, nhưng không reset timer về now hoàn toàn.
+                if (!knownIds.isEmpty()) {
+                    cachedKnownModelIds = Set.copyOf(knownIds);
                 }
             }
         } catch (Exception e) {
             logger.warning("Lỗi tự động quét model Free từ OpenRouter: " + e.getMessage());
         }
 
-        // Danh sách dự phòng cứng (Hardcode) nếu API /models bị sập
-        if (cachedFreeModels.isEmpty()) {
-            return List.of(
-                    "openrouter/free",
-                    "deepseek/deepseek-v4-flash:free",
-                    "openrouter/owl-alpha",
-                    "baidu/cobuddy:free",
-                    "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free"
-            );
+        // Danh sách dự phòng cứng (toàn ID :free đã đối chiếu còn sống) khi /models sập
+        // và chưa có cache nào. Không đụng tới known IDs ở đây.
+        if (cachedFreeModelInfos.isEmpty()) {
+            cachedFreeModelInfos = List.of(
+                    new FreeModelInfo("google/gemma-4-31b-it:free", "", "", false, true),
+                    new FreeModelInfo("thinkingmachines/inkling-small:free", "", "", false, true),
+                    new FreeModelInfo("nvidia/nemotron-3.5-lightning:free", "", "", false, true),
+                    new FreeModelInfo("inclusionai/ling-3.0-flash-sante:free", "", "", false, true),
+                    new FreeModelInfo("nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free", "", "", false, true));
+            logger.warning("Dùng backup cứng curated OpenRouter vì /models không khả dụng.");
         }
-        return cachedFreeModels;
+    }
+
+    private static boolean isFreePricing(JsonNode pricing) {
+        String promptPrice = pricing.path("prompt").asText("");
+        String completionPrice = pricing.path("completion").asText("");
+        return ("0".equals(promptPrice) || "0.0".equals(promptPrice))
+                && ("0".equals(completionPrice) || "0.0".equals(completionPrice));
+    }
+
+    private static boolean hasTextOutput(JsonNode architecture) {
+        JsonNode out = architecture.path("output_modalities");
+        if (!out.isArray() || out.isEmpty()) {
+            // Snapshot cũ không có trường này: mặc định coi là text để không drop oan.
+            return true;
+        }
+        for (JsonNode m : out) {
+            if ("text".equalsIgnoreCase(m.asText())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private HttpResponse<String> callOpenRouter(String currentApiKey, List<String> candidateModels,

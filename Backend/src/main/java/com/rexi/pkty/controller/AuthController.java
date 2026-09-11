@@ -530,7 +530,7 @@ public class AuthController {
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             logger.severe("Google login error: " + e.getMessage());
-            return ResponseEntity.status(500).body(Map.of("message", "Lỗi đăng nhập Google: " + e.getMessage()));
+            return ResponseEntity.status(500).body(Map.of("message", "Lỗi đăng nhập Google. Vui lòng thử lại sau."));
         }
     }
 
@@ -621,7 +621,7 @@ public class AuthController {
                             "Tạo tài khoản Google thành công!"));
         } catch (Exception e) {
             logger.severe("Google register error: " + e.getMessage());
-            return ResponseEntity.status(500).body(Map.of("message", "Lỗi tạo tài khoản Google: " + e.getMessage()));
+            return ResponseEntity.status(500).body(Map.of("message", "Lỗi tạo tài khoản Google. Vui lòng thử lại sau."));
         }
     }
 
@@ -710,7 +710,7 @@ public class AuthController {
                             "Liên kết Google thành công!"));
         } catch (Exception e) {
             logger.severe("Google link error: " + e.getMessage());
-            return ResponseEntity.status(500).body(Map.of("message", "Lỗi liên kết tài khoản: " + e.getMessage()));
+            return ResponseEntity.status(500).body(Map.of("message", "Lỗi liên kết tài khoản. Vui lòng thử lại sau."));
         }
     }
 

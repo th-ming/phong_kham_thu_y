@@ -22,7 +22,9 @@ public class WebConfig implements WebMvcConfigurer {
         String vnuaDocPath = vnuaDocDir.toFile().getAbsolutePath();
 
         registry.addResourceHandler("/uploads/**").addResourceLocations("file:" + uploadPath + "/");
-        registry.addResourceHandler("/vnua-docs/**").addResourceLocations("file:" + vnuaDocPath + "/");
+        // Fallback classpath để /vnua-docs/** vẫn hoạt động khi chạy từ jar/Docker
+        registry.addResourceHandler("/vnua-docs/**").addResourceLocations(
+                "file:" + vnuaDocPath + "/", "classpath:/knowledge/vnua_docs/");
     }
 
     @Override

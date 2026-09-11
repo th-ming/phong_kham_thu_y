@@ -15,6 +15,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.security.SecureRandom;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
@@ -484,7 +485,8 @@ public class SystemController {
 
             return ResponseEntity.ok(Map.of("success", true, "message", "Đăng ký nhận tin thành công"));
         } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of("message", "Lỗi đăng ký nhận tin: " + e.getMessage()));
+            logger.severe("Lỗi đăng ký nhận tin: " + e.getMessage());
+            return ResponseEntity.status(500).body(Map.of("message", "Lỗi hệ thống khi đăng ký nhận tin. Vui lòng thử lại sau."));
         }
     }
 
@@ -688,7 +690,126 @@ public class SystemController {
         }
     }
 
+    // Model mặc định dùng khi DB chưa có row (đồng bộ với application.properties).
+    private static final Map<String, String> AI_HEALTH_DEFAULT_MODELS = Map.of(
+            "groq", "llama-3.1-8b-instant",
+            "gemini", "gemini-2.5-flash",
+            "openrouter", "google/gemma-4-31b-it:free");
+
+    /**
+     * Health-check nhanh 3 AI provider (ADMIN only — mỗi lần gọi đốt quota thật).
+     * 1 request tối thiểu/provider, timeout 10s, KHÔNG trả key thô (chỉ mask).
+     */
+    @GetMapping("/ai-health")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> aiHealth() {
+        Map<String, Object> providers = new LinkedHashMap<>();
+        providers.put("groq", probeAiProvider("groq", effectiveHealthModel("groq")));
+        providers.put("gemini", probeAiProvider("gemini", effectiveHealthModel("gemini")));
+        Map<String, Object> openrouter = probeAiProvider("openrouter", effectiveHealthModel("openrouter"));
+        openrouter.put("medicalModel", firstNonBlank(readConfig("openrouter_medical_model"), ""));
+        providers.put("openrouter", openrouter);
+        return ResponseEntity.ok(Map.of(
+                "checkedAt", Instant.now().toString(),
+                "providers", providers));
+    }
+
+    private String effectiveHealthModel(String provider) {
+        String dbModel = readConfig(provider + "_model");
+        if (dbModel != null && !dbModel.isBlank()) {
+            return dbModel.trim();
+        }
+        return AI_HEALTH_DEFAULT_MODELS.getOrDefault(provider, "");
+    }
+
+    private Map<String, Object> probeAiProvider(String provider, String model) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        String apiKey = readConfig(provider + "_api_key");
+        result.put("provider", provider);
+        result.put("providerLabel", providerLabel(provider));
+        result.put("model", model == null ? "" : model);
+        result.put("keyPresent", apiKey != null && !apiKey.isBlank());
+        result.put("keyMasked", maskApiKey(apiKey));
+        if (apiKey == null || apiKey.isBlank()) {
+            result.put("alive", false);
+            result.put("errorCode", "missing_api_key");
+            result.put("latencyMs", -1);
+            result.put("quota", Map.of());
+            return result;
+        }
+        if (model == null || model.isBlank()) {
+            result.put("alive", false);
+            result.put("errorCode", "missing_model");
+            result.put("latencyMs", -1);
+            result.put("quota", Map.of());
+            return result;
+        }
+
+        long startNs = System.nanoTime();
+        try {
+            HttpRequest request = buildAiProviderRequest(provider, apiKey, model, Duration.ofSeconds(10));
+            HttpResponse<String> response =
+                    aiTestClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            long latencyMs = (System.nanoTime() - startNs) / 1_000_000;
+            boolean ok = response.statusCode() >= 200 && response.statusCode() < 300;
+            result.put("alive", ok);
+            result.put("statusCode", response.statusCode());
+            result.put("latencyMs", latencyMs);
+            result.put("errorCode", ok ? "ok" : classifyAiProviderError(response.statusCode(), response.body()));
+            result.put("quota", extractQuotaHeaders(response));
+        } catch (java.net.http.HttpTimeoutException e) {
+            result.put("alive", false);
+            result.put("errorCode", "timeout");
+            result.put("latencyMs", (System.nanoTime() - startNs) / 1_000_000);
+            result.put("quota", Map.of());
+        } catch (Exception e) {
+            result.put("alive", false);
+            result.put("errorCode", classifyAiException(e));
+            result.put("latencyMs", (System.nanoTime() - startNs) / 1_000_000);
+            result.put("quota", Map.of());
+        }
+        return result;
+    }
+
+    /** Chỉ giữ response header liên quan quota/rate-limit; không bao giờ chứa secret. */
+    private Map<String, String> extractQuotaHeaders(HttpResponse<String> response) {
+        Map<String, String> quota = new LinkedHashMap<>();
+        try {
+            for (Map.Entry<String, List<String>> entry : response.headers().map().entrySet()) {
+                String name = entry.getKey() == null ? "" : entry.getKey().toLowerCase(Locale.ROOT);
+                if (name.contains("ratelimit") || name.contains("rate-limit")
+                        || name.contains("quota") || name.contains("retry-after")
+                        || name.contains("remaining")) {
+                    quota.put(entry.getKey(), String.join(",", entry.getValue()));
+                }
+            }
+        } catch (Exception ignored) {
+        }
+        return quota;
+    }
+
+    /** Mask key kiểu gsk_...abcd; key list nhiều phần tử thì mask phần tử đầu + đếm số key. */
+    private String maskApiKey(String apiKey) {
+        if (apiKey == null || apiKey.isBlank()) {
+            return "";
+        }
+        String[] parts = apiKey.split(",");
+        String first = parts[0].trim();
+        String masked;
+        if (first.length() <= 8) {
+            masked = "***";
+        } else {
+            masked = first.substring(0, 4) + "..." + first.substring(first.length() - 4);
+        }
+        long extra = java.util.Arrays.stream(parts).map(String::trim).filter(s -> !s.isEmpty()).count() - 1;
+        return extra > 0 ? masked + " (+" + extra + " keys)" : masked;
+    }
+
     private HttpRequest buildAiProviderRequest(String provider, String apiKey, String model) throws Exception {
+        return buildAiProviderRequest(provider, apiKey, model, Duration.ofSeconds(20));
+    }
+
+    private HttpRequest buildAiProviderRequest(String provider, String apiKey, String model, Duration timeout) throws Exception {
         if ("gemini".equals(provider)) {
             String key = apiKey.split(",")[0].trim();
             String url = "https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent?key=" + key;
@@ -700,7 +821,7 @@ public class SystemController {
                     .uri(URI.create(url))
                     .header("Content-Type", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
-                    .timeout(Duration.ofSeconds(20))
+                    .timeout(timeout)
                     .build();
         }
 
@@ -716,7 +837,7 @@ public class SystemController {
                 .header("Content-Type", "application/json")
                 .header("Authorization", "Bearer " + apiKey.trim())
                 .POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
-                .timeout(Duration.ofSeconds(20));
+                .timeout(timeout);
         if ("openrouter".equals(provider)) {
             builder.header("HTTP-Referer", frontendUrl)
                     .header("X-Title", "Rexi Vet Clinic");

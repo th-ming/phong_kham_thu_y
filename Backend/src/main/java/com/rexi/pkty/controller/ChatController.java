@@ -161,7 +161,7 @@ public class ChatController {
             return Map.of("text", text);
         } catch (Exception e) {
             logger.severe("Lỗi dịch giọng nói Whisper: " + e.getMessage());
-            return Map.of("error", e.getMessage());
+            return Map.of("error", "Không thể dịch giọng nói. Vui lòng thử lại sau.");
         }
     }
 
@@ -610,11 +610,12 @@ ChatMessage systemMsg = new ChatMessage();
                 }
             } else if (isMedicalQuery) {
                 // Gemini phản hồi y tế ngắn ổn định hơn; OpenRouter giữ vai trò dự phòng chuyên sâu.
+                // Groq leg cuối giữ 70B suy luận cho ca y tế khó (RAG grounding + persona dài).
                 logger.info("[AI ROUTER] Định tuyến câu hỏi Tư vấn Y tế sang: Gemini");
                 providerResult = tryProviderChain(
                         new ProviderAttempt("Gemini", () -> geminiService.chat(providerHistory)),
                         new ProviderAttempt("OpenRouter", () -> openRouterService.chat(providerHistory, true)),
-                        new ProviderAttempt("Groq", () -> groqService.chat(providerHistory))
+                        new ProviderAttempt("Groq", () -> groqService.chat(providerHistory, groqService.getReasoningModelName()))
                 );
                 reply = providerResult.reply();
                 providerUsed = providerResult.provider();

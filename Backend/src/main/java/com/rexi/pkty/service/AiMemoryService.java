@@ -3,11 +3,16 @@ package com.rexi.pkty.service;
 import com.rexi.pkty.entity.TaiKhoan;
 import com.rexi.pkty.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.StandardCopyOption;
 import java.text.Normalizer;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -152,8 +157,7 @@ public class AiMemoryService {
         }
 
         try {
-            Path path = Paths.get("src/main/resources/knowledge");
-            File folder = path.toFile();
+            File folder = resolveKnowledgeFolder();
             if (!folder.exists() || folder.listFiles() == null) return "";
 
             List<KnowledgeSnippet> matches = new ArrayList<>();
@@ -196,6 +200,50 @@ public class AiMemoryService {
         } catch (Exception e) {
             return "";
         }
+    }
+
+    /**
+     * Resolve thư mục knowledge: ưu tiên filesystem (dev), nếu không có (jar/Docker)
+     * thì extract các file .md từ classpath ra temp dir một lần rồi dùng lại.
+     */
+    private volatile File knowledgeFolderCache;
+
+    private File resolveKnowledgeFolder() {
+        File cached = knowledgeFolderCache;
+        if (cached != null) return cached;
+
+        Path path = Paths.get("src/main/resources/knowledge");
+        File folder = path.toFile();
+        if (folder.exists() && folder.isDirectory() && folder.listFiles() != null) {
+            knowledgeFolderCache = folder;
+            return folder;
+        }
+
+        try {
+            File fallback = new File(System.getProperty("java.io.tmpdir"), "pkty-knowledge");
+            Resource[] resources = new PathMatchingResourcePatternResolver()
+                    .getResources("classpath*:knowledge/*.md");
+            boolean hasAny = false;
+            for (Resource resource : resources) {
+                String name = resource.getFilename();
+                if (name == null || !name.endsWith(".md")) continue;
+                File out = new File(fallback, name);
+                if (!out.exists()) {
+                    fallback.mkdirs();
+                    try (InputStream in = resource.getInputStream()) {
+                        Files.copy(in, out.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                    }
+                }
+                hasAny = true;
+            }
+            if (hasAny && fallback.isDirectory() && fallback.listFiles() != null) {
+                knowledgeFolderCache = fallback;
+                return fallback;
+            }
+        } catch (IOException ignored) {
+            // fall through
+        }
+        return folder;
     }
 
     private boolean isPersonalKnowledgeFile(String fileName) {

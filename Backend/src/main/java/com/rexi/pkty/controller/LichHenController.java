@@ -429,8 +429,8 @@ public class LichHenController {
             broadcastLichHenChanged("quick-created", saved);
             return ResponseEntity.ok(saved);
         } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(500).body(Map.of("message", "Lỗi đặt lịch nhanh: " + e.getMessage()));
+            logger.severe("Lỗi đặt lịch nhanh: " + e.getMessage());
+            return ResponseEntity.status(500).body(Map.of("message", "Lỗi hệ thống khi đặt lịch nhanh. Vui lòng thử lại sau."));
         }
     }
 

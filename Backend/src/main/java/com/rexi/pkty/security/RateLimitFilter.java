@@ -10,13 +10,20 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
-/** BỘ LỌC CHỐNG SPAM & RATE LIMITING TOÀN CỤC */
+/** BỘ LỌC CHỐNG SPAM & RATE LIMITING TOÀN CỤC
+ *  - Mỗi client (IP thật qua proxy) một bucket riêng → không lockout chéo.
+ *  - Endpoint AI (chat/agent/tts) có ngưỡng riêng thấp hơn để chặn đốt quota.
+ */
 @Component
 public class RateLimitFilter extends OncePerRequestFilter {
 
-    @org.springframework.beans.factory.annotation.Autowired
-    private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
+    private static final int MAX_REQUESTS_PER_MINUTE = 200;
+    private static final int MAX_AI_REQUESTS_PER_MINUTE = 20;
+    private static final long WINDOW_MS = 60_000L;
+    private static final long CLEANUP_INTERVAL_MS = 30_000L;
 
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private SecurityAlertService securityAlertService;
@@ -38,8 +45,6 @@ public class RateLimitFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         String ip = getClientIP(request);
-        String interactionSource = getInteractionSource(request);
-        String rateKey = ip + "|" + interactionSource;
         boolean localhost = "127.0.0.1".equals(ip) || "0:0:0:0:0:0:0:1".equals(ip);
         long currentTime = System.currentTimeMillis();
 
@@ -73,7 +78,6 @@ public class RateLimitFilter extends OncePerRequestFilter {
         }
 
         if (localhost) {
-            // Localhost trong blacklist vẫn chặn, nhưng skip rate limit để tiện dev
             filterChain.doFilter(request, response);
             return;
         }
@@ -107,26 +111,17 @@ public class RateLimitFilter extends OncePerRequestFilter {
             }
         }
 
-        requestTimestamps.compute(rateKey, (key, timestamp) -> {
-            if (timestamp == null || (currentTime - timestamp) > 60000) {
-                requestCounts.put(rateKey, new java.util.concurrent.atomic.AtomicInteger(1));
-                return currentTime;
-            } else {
-                // AtomicInteger được compute an toàn trong ConcurrentHashMap
-                requestCounts.compute(rateKey, (k, existing) -> {
-                    if (existing == null) {
-                        return new java.util.concurrent.atomic.AtomicInteger(1);
-                    }
-                    existing.incrementAndGet();
-                    return existing;
-                });
-                return timestamp;
+        String rateKey = ip + "|" + getInteractionSource(request) + "|" + (isAiPath(request) ? "ai" : "std");
+        Window window = buckets.compute(rateKey, (key, existing) -> {
+            if (existing == null || (currentTime - existing.windowStart.get()) > WINDOW_MS) {
+                return new Window();
             }
+            existing.count.incrementAndGet();
+            return existing;
         });
 
-        java.util.concurrent.atomic.AtomicInteger countObj = requestCounts.get(rateKey);
-        int requests = (countObj != null) ? countObj.get() : 1;
-        if (requests > MAX_REQUESTS_PER_MINUTE) {
+        int maxRequests = isAiPath(request) ? MAX_AI_REQUESTS_PER_MINUTE : MAX_REQUESTS_PER_MINUTE;
+        if (window.count.get() > maxRequests) {
             response.setStatus(429);
             response.setContentType("application/json;charset=UTF-8");
             response.getWriter().write("{\"message\": \"Bạn thao tác quá nhanh. Vui lòng đợi một lát rồi thử lại.\"}");
@@ -157,7 +152,6 @@ public class RateLimitFilter extends OncePerRequestFilter {
         if (securityAlertService != null) {
             return securityAlertService.extractRealIp(request);
         }
-        // Fallback nếu service chưa sẵn sàng
         String xfHeader = request.getHeader("X-Forwarded-For");
         if (xfHeader == null || xfHeader.isEmpty() || "unknown".equalsIgnoreCase(xfHeader)) {
             return request.getRemoteAddr();
@@ -214,66 +208,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
         return "unknown";
     }
 
-    private void persistBlockedIp(String ip) {
-        try {
-            String ips = jdbcTemplate.queryForObject(
-                    "SELECT gia_tri FROM CauHinhHeThong WHERE ten_cau_hinh = 'blocked_ips'", String.class);
-            java.util.Set<String> next = new java.util.LinkedHashSet<>();
-            if (ips != null && !ips.isBlank()) {
-                next.addAll(java.util.Arrays.asList(ips.replace(" ", "").split(",")));
-            }
-            next.add(ip);
-            String value = String.join(",", next);
-            int updated = jdbcTemplate.update("UPDATE CauHinhHeThong SET gia_tri = ? WHERE ten_cau_hinh = 'blocked_ips'", value);
-            if (updated == 0) {
-                jdbcTemplate.update("INSERT INTO CauHinhHeThong (ten_cau_hinh, gia_tri) VALUES ('blocked_ips', ?)", value);
-            }
-            blockedIps.clear();
-            blockedIps.addAll(next);
-            lastCheckTime = 0;
-        } catch (Exception e) {
-            logger.warn("Không thể persist blocked IP " + ip + ": " + e.getMessage());
-        }
-    }
-
-    private String getLocationHint(HttpServletRequest request) {
-        String country = safe(request.getHeader("CF-IPCountry"));
-        String region = safe(request.getHeader("X-Region"));
-        String city = safe(request.getHeader("X-City"));
-        String forwarded = safe(request.getHeader("X-Forwarded-For"));
-        StringBuilder hint = new StringBuilder();
-        if (!city.isBlank()) hint.append(city);
-        if (!region.isBlank()) hint.append(hint.length() > 0 ? ", " : "").append(region);
-        if (!country.isBlank()) hint.append(hint.length() > 0 ? ", " : "").append(country);
-        if (!forwarded.isBlank()) hint.append(hint.length() > 0 ? " | " : "").append("Forwarded: ").append(forwarded);
-        return hint.toString();
-    }
-
-    private void writeBlockedResponse(HttpServletResponse response, String message) throws IOException {
-        response.setStatus(403);
-        response.setContentType("application/json;charset=UTF-8");
-        response.getWriter().write("{\"message\": \"" + message.replace("\"", "'") + "\"}");
-    }
-
     private String safe(String value) {
         return value == null ? "" : value;
     }
-
-    private String truncate(String value) {
-        if (value == null) return "";
-        return value.length() > 500 ? value.substring(0, 500) : value;
-    }
-
-    private static class AttackSignal {
-        private final String attackType;
-        private final String evidence;
-
-        private AttackSignal(String attackType, String evidence) {
-            this.attackType = attackType;
-            this.evidence = evidence;
-        }
-    }
 }
-
-
-

@@ -53,6 +53,23 @@ public class GroqService {
         return "llama-3.1-8b-instant";
     }
 
+    public static final String REASONING_MODEL_DEFAULT = "llama-3.3-70b-versatile";
+
+    /**
+     * Model suy luận cho ReAct agent đa bước + nhánh y tế chuyên sâu (Groq leg cuối).
+     * Giữ 70B vì: agent Reason-Act-Observe nhiều vòng + system prompt dài (persona,
+     * tools schema, luật y khoa) đòi instruction-following mạnh; 8B gọi tool bừa
+     * (always-call) và tốn nhiều vòng lặp hơn. DB key `groq_reasoning_model`
+     * override được như các model key khác; thiếu row thì dùng 70B.
+     */
+    public String getReasoningModelName() {
+        String dbModel = getCachedConfig("groq_reasoning_model", "");
+        if (dbModel != null && !dbModel.isBlank()) {
+            return dbModel;
+        }
+        return REASONING_MODEL_DEFAULT;
+    }
+
     public String getAudioModelName() {
         return getCachedConfig("groq_audio_model", "whisper-large-v3-turbo");
     }
@@ -87,7 +104,7 @@ public class GroqService {
     private static final String GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
     private static final String GROQ_AUDIO_URL = "https://api.groq.com/openai/v1/audio/transcriptions";
 
-    @Value("${groq.model:llama-3.3-70b-versatile}")
+    @Value("${groq.model:llama-3.1-8b-instant}")
     private String modelName;
 
     // Model để phân tích hình ảnh
@@ -193,8 +210,10 @@ public class GroqService {
         if (selectedModel != null && !selectedModel.isBlank()) {
             models.add(selectedModel.trim());
         }
-        // 8B instant is the low-cost/high-throughput safety net for production traffic.
+        // Cascade: model chính trước, 8B rẻ/quota cao làm lưới an toàn cho traffic lớn,
+        // 70B giữ lại trong chain cho ca khó (suy luận, tool-result phức tạp, tiếng Việt y khoa).
         models.add("llama-3.1-8b-instant");
+        models.add("llama-3.3-70b-versatile");
         return List.copyOf(models);
     }
 
@@ -213,7 +232,7 @@ public class GroqService {
 
         try {
             String requestBody = objectMapper.writeValueAsString(Map.of(
-                    "model", modelName,
+                    "model", getModelName(),
                     "messages", List.of(
                             Map.of("role", "system", "content", "Warm up Rexi assistant."),
                             Map.of("role", "user", "content", "ping")

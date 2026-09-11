@@ -138,8 +138,7 @@ public class TtsController {
 
         } catch (Exception e) {
             logger.severe("Kira TTS exception: " + e.getMessage());
-            String errorMsg = e.getMessage().replace("\"", "'");
-            byte[] errorBytes = ("{\"error\":\"Backend proxy error: " + errorMsg + "\"}").getBytes();
+            byte[] errorBytes = ("{\"error\":\"Lỗi hệ thống TTS. Vui lòng thử lại sau.\"}").getBytes();
             return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
                     .header(HttpHeaders.CONTENT_TYPE, "application/json")
                     .body(errorBytes);

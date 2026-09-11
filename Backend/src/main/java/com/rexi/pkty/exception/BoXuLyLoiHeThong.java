@@ -2,6 +2,7 @@ package com.rexi.pkty.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
@@ -44,29 +45,19 @@ public class BoXuLyLoiHeThong {
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     public ResponseEntity<?> handleMethodNotSupported(HttpRequestMethodNotSupportedException ex) {
         return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(Map.of("message", "Phuong thuc khong duoc ho tro."));
-    }        // Fallback: log full stack trace debug, sanitize message before returning
+    }
+
+    // Body JSON bị hỏng/không đọc được — log chi tiết, trả thông báo chung, KHÔNG echo Jackson ra client
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<?> handleUnreadableBody(HttpMessageNotReadableException ex) {
+        logger.log(Level.WARNING, "[BoXuLyLoiHeThong] Body JSON không đọc được: " + ex.getMessage());
+        return ResponseEntity.badRequest().body(Map.of("message", "Dữ liệu gửi lên không hợp lệ"));
+    }
+
+    // Fallback: log full stack trace debug, trả message chung — không lộ chi tiết exception
     @ExceptionHandler(Exception.class)
     public ResponseEntity<?> handleGlobalException(Exception ex) {
         logger.log(Level.SEVERE, "[BoXuLyLoiHeThong] Lỗi hệ thống chưa xử lý: " + ex.getMessage(), ex);
-        return ResponseEntity.status(500).body(Map.of("message", "Lỗi hệ thống: " + sanitizeError(ex) + ". Vui lòng thử lại sau."));
-    }
-
-    /** Loại bỏ thông tin nhạy cảm (SQL, path, stack trace) khỏi message trước khi trả client */
-    private static String sanitizeError(Exception ex) {
-        String msg = ex.getMessage();
-        if (msg == null || msg.isBlank()) return "Không rõ nguyên nhân";
-        // Nếu chứa từ khóa SQL/DB → thay bằng thông báo chung
-        String lower = msg.toLowerCase();
-        if (lower.contains("select ") || lower.contains("insert ") || lower.contains("update ")
-            || lower.contains("from ") || lower.contains("where ") || lower.contains("column")
-            || lower.contains("table") || lower.contains("constraint") || lower.contains("foreign key")) {
-            return "Lỗi cơ sở dữ liệu nội bộ";
-        }
-        // Loại bỏ đường dẫn file
-        msg = msg.replaceAll("[A-Z]:\\\\[^\\s\"']*", "[path]");
-        msg = msg.replaceAll("/home/[^\\s\"']*", "[path]");
-        // Cắt ngắn
-        if (msg.length() > 200) msg = msg.substring(0, 200) + "...";
-        return msg;
+        return ResponseEntity.status(500).body(Map.of("message", "Lỗi hệ thống. Vui lòng thử lại sau."));
     }
 }

@@ -2034,7 +2034,8 @@ public class ReActAgentService {
         for (String provider : providers) {
             try {
                 String response = switch (provider) {
-                    case "Groq" -> groqService.chat(history);
+                    // Agent đa bước giữ 70B suy luận; chain trong GroqService tự fallback 8B.
+                    case "Groq" -> groqService.chat(history, groqService.getReasoningModelName());
                     case "Gemini" -> geminiService.chat(history);
                     case "OpenRouter" -> openRouterService.chat(history);
                     default -> throw new IllegalStateException("Unknown provider");

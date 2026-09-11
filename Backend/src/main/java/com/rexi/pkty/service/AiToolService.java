@@ -44,7 +44,8 @@ public class AiToolService {
     // ─────────────────────────────────────────────
 
     public String getToolsSchemaForRole(String userRole) {
-        if (RoleAccessPolicy.isCustomerRole(userRole)) {
+        // Deny-by-default: ẩn danh/role lạ chỉ nhận schema tool khách hàng.
+        if (!RoleAccessPolicy.isInternalStaffRole(userRole)) {
             return getCustomerToolsSchema();
         }
         return getStaffToolsSchemaForRole(userRole);
@@ -720,7 +721,9 @@ public class AiToolService {
         String idLichHen = Objects.toString(p.getOrDefault("id_lich_hen", ""), "").trim();
         String tuKhoaKhach = Objects.toString(p.getOrDefault("tu_khoa_khach", ""), "").trim();
         String thoiGian = normalizeVietnamese(Objects.toString(p.getOrDefault("thoi_gian", ""), "").toLowerCase().trim());
-        boolean isCustomer = RoleAccessPolicy.isCustomerRole(userRole);
+        // Deny-by-default: chỉ role nội bộ mới được tra cứu theo tên/SĐT toàn hệ thống.
+        // Role rỗng/khó hiểu (ẩn danh) → coi như khách hàng → phải hủy lịch của chính mình.
+        boolean isCustomer = !RoleAccessPolicy.isInternalStaffRole(userRole);
 
         try {
             String customerId = null;
@@ -1496,7 +1499,8 @@ public class AiToolService {
 
         String role = RoleAccessPolicy.normalizeRole(userRole);
         String customerId = Objects.toString(p.get("id_khach_hang"), "").trim();
-        if (RoleAccessPolicy.isCustomerRole(role) || role.isBlank()) {
+        // Deny-by-default: chỉ nội bộ được chỉ định id_khach_hang tùy ý; ẩn danh/khách → chỉ thêm vào tài khoản của chính mình.
+        if (!RoleAccessPolicy.isInternalStaffRole(role)) {
             customerId = resolveCustomerId(null, username);
             if (customerId == null || customerId.isBlank()) {
                 return "Lỗi: Không xác định được tài khoản khách hàng đang đăng nhập.";

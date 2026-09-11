@@ -3,10 +3,14 @@ package com.rexi.pkty.service;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -58,26 +62,19 @@ public class KnowledgeIndexer {
         }
 
         try {
-            Path knowledgePath = Paths.get(KNOWLEDGE_DIR);
-            File dir = knowledgePath.toFile();
-            if (!dir.exists() || !dir.isDirectory()) {
-                logger.info("[KnowledgeIndexer] Knowledge directory not found: " + KNOWLEDGE_DIR);
+            Map<String, String> documents = loadKnowledgeDocuments();
+            if (documents.isEmpty()) {
+                logger.info("[KnowledgeIndexer] No knowledge documents found (filesystem or classpath)");
                 indexingComplete = true;
                 return;
             }
 
             Set<String> alreadyIndexed = vectorKnowledgeService.getIndexedFiles();
-            List<File> filesToIndex = new ArrayList<>();
 
-            File[] files = dir.listFiles((f, name) -> name.endsWith(".md"));
-            if (files == null) {
-                indexingComplete = true;
-                return;
-            }
-
-            for (File file : files) {
-                if (!alreadyIndexed.contains(file.getName())) {
-                    filesToIndex.add(file);
+            Map<String, String> filesToIndex = new LinkedHashMap<>();
+            for (Map.Entry<String, String> entry : documents.entrySet()) {
+                if (!alreadyIndexed.contains(entry.getKey())) {
+                    filesToIndex.put(entry.getKey(), entry.getValue());
                 }
             }
 
@@ -93,15 +90,14 @@ public class KnowledgeIndexer {
                     " new knowledge files...");
 
             int totalIndexed = 0;
-            for (File file : filesToIndex) {
+            for (Map.Entry<String, String> entry : filesToIndex.entrySet()) {
                 try {
-                    String content = Files.readString(file.toPath());
-                    int chunks = vectorKnowledgeService.indexDocument(file.getName(), content);
+                    int chunks = vectorKnowledgeService.indexDocument(entry.getKey(), entry.getValue());
                     totalIndexed += chunks;
-                    logger.info("[KnowledgeIndexer] Indexed " + file.getName() +
+                    logger.info("[KnowledgeIndexer] Indexed " + entry.getKey() +
                             " -> " + chunks + " chunks");
                 } catch (IOException e) {
-                    logger.warning("[KnowledgeIndexer] Failed to read " + file.getName() +
+                    logger.warning("[KnowledgeIndexer] Failed to read " + entry.getKey() +
                             ": " + e.getMessage());
                 }
             }
@@ -126,6 +122,45 @@ public class KnowledgeIndexer {
     }
 
     /**
+     * Load knowledge .md documents với tên file làm key.
+     * Ưu tiên classpath (hoạt động cả khi chạy từ jar/Docker), fallback filesystem (dev).
+     */
+    private Map<String, String> loadKnowledgeDocuments() {
+        Map<String, String> documents = new LinkedHashMap<>();
+        try {
+            Resource[] resources = new PathMatchingResourcePatternResolver()
+                    .getResources("classpath*:knowledge/*.md");
+            for (Resource resource : resources) {
+                String name = resource.getFilename();
+                if (name == null || !name.endsWith(".md")) continue;
+                try (InputStream in = resource.getInputStream()) {
+                    documents.put(name, new String(in.readAllBytes(), StandardCharsets.UTF_8));
+                }
+            }
+        } catch (IOException e) {
+            logger.warning("[KnowledgeIndexer] Cannot read knowledge from classpath: " + e.getMessage());
+        }
+        if (!documents.isEmpty()) return documents;
+
+        Path knowledgePath = Paths.get(KNOWLEDGE_DIR);
+        File dir = knowledgePath.toFile();
+        if (dir.exists() && dir.isDirectory()) {
+            File[] files = dir.listFiles((f, name) -> name.endsWith(".md"));
+            if (files != null) {
+                for (File file : files) {
+                    try {
+                        documents.put(file.getName(), Files.readString(file.toPath()));
+                    } catch (IOException e) {
+                        logger.warning("[KnowledgeIndexer] Failed to read " + file.getName() +
+                                ": " + e.getMessage());
+                    }
+                }
+            }
+        }
+        return documents;
+    }
+
+    /**
      * Trigger a manual reindex of all files.
      */
     public int reindexAll() {
@@ -135,23 +170,10 @@ public class KnowledgeIndexer {
         }
 
         try {
-            Path knowledgePath = Paths.get(KNOWLEDGE_DIR);
-            File dir = knowledgePath.toFile();
-            if (!dir.exists() || !dir.isDirectory()) {
+            Map<String, String> documents = loadKnowledgeDocuments();
+            if (documents.isEmpty()) {
                 logger.warning("[KnowledgeIndexer] Knowledge directory not found");
                 return 0;
-            }
-
-            Map<String, String> documents = new LinkedHashMap<>();
-            File[] files = dir.listFiles((f, name) -> name.endsWith(".md"));
-            if (files != null) {
-                for (File file : files) {
-                    try {
-                        documents.put(file.getName(), Files.readString(file.toPath()));
-                    } catch (IOException e) {
-                        logger.warning("[KnowledgeIndexer] Failed to read " + file.getName());
-                    }
-                }
             }
 
             vectorKnowledgeService.reindexAll(documents);

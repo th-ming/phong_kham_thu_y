@@ -60,7 +60,7 @@ public class CookieUtil {
         cookie.setMaxAge(maxAge);   // 0 = xóa cookie ngay lập tức
 
         // Thêm SameSite=Lax thủ công qua header (Java Cookie API chưa hỗ trợ trực tiếp)
-        String sameSiteValue = secureCookie ? "None" : "Lax";
+        String sameSiteValue = "Lax";
         String headerValue = String.format(
             "%s=%s; Max-Age=%d; Path=/; HttpOnly; SameSite=%s%s",
             name, value, maxAge, sameSiteValue,

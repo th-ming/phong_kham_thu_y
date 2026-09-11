@@ -70,7 +70,7 @@ public class GeminiService {
     @Value("${gemini.api.key}")
     private String apiKey;
 
-    @Value("${gemini.model:gemini-2.0-flash}")
+    @Value("${gemini.model:gemini-2.5-flash}")
     private String modelName;
 
     private String getApiKey() {
@@ -352,8 +352,128 @@ public class GeminiService {
         if (configured != null && !configured.trim().isEmpty()) {
             models.add(configured.trim());
         }
+        models.addAll(getDiscoveredModels());
+        // Hardcode giữ con đang chạy được + bản lite rẻ; discovery nằm giữa để ưu tiên model live mới hơn.
         models.add("gemini-2.0-flash");
+        models.add("gemini-2.5-flash-lite");
         models.add("gemini-flash-lite-latest");
         return new ArrayList<>(models);
+    }
+
+    private static final String GEMINI_LIST_MODELS_URL =
+            "https://generativelanguage.googleapis.com/v1beta/models";
+    private static final long MODEL_DISCOVERY_CACHE_MS = 24 * 60 * 60 * 1000L; // 24 giờ
+    private static final long DISCOVERY_RETRY_MS = 5 * 60 * 1000L; // fail thì 5 phút sau thử lại
+    private volatile List<String> cachedDiscoveredModels = List.of();
+    private volatile long lastDiscoveryTime = 0;
+    private volatile long lastDiscoveryAttemptTime = 0;
+
+    /**
+     * Discovery model qua ListModels của Gemini (cache 24h, filter
+     * supportedGenerationMethods chứa generateContent, stable trước).
+     * Key rỗng hoặc API fail → trả rỗng im lặng + log, caller rơi về hardcode.
+     */
+    private synchronized List<String> getDiscoveredModels() {
+        long now = System.currentTimeMillis();
+        if (!cachedDiscoveredModels.isEmpty() && (now - lastDiscoveryTime < MODEL_DISCOVERY_CACHE_MS)) {
+            return cachedDiscoveredModels;
+        }
+        if (now - lastDiscoveryAttemptTime < DISCOVERY_RETRY_MS) {
+            return cachedDiscoveredModels;
+        }
+        lastDiscoveryAttemptTime = now;
+
+        List<String> apiKeys = getApiKeys();
+        if (apiKeys.isEmpty()) {
+            return cachedDiscoveredModels;
+        }
+        String key = apiKeys.get(0).trim();
+        if (key.isEmpty()) {
+            return cachedDiscoveredModels;
+        }
+
+        try {
+            List<String> discovered = new ArrayList<>();
+            String pageToken = null;
+            // ListModels phân trang (mặc định 50/page): theo tối đa 3 pages là đủ.
+            for (int page = 0; page < 3; page++) {
+                String url = GEMINI_LIST_MODELS_URL + "?key=" + key + "&pageSize=100"
+                        + (pageToken == null ? "" : "&pageToken=" + pageToken);
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(URI.create(url))
+                        .header("Content-Type", "application/json")
+                        .GET()
+                        .timeout(Duration.ofSeconds(10))
+                        .build();
+                HttpResponse<String> response =
+                        client.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+                if (response.statusCode() != 200) {
+                    logger.warning("Gemini ListModels trả lỗi " + response.statusCode()
+                            + ", giữ chain hardcode.");
+                    return cachedDiscoveredModels;
+                }
+                JsonNode root = objectMapper.readTree(response.body());
+                discovered.addAll(extractGenerateContentModels(root));
+                JsonNode tokenNode = root.path("nextPageToken");
+                if (tokenNode.isMissingNode() || tokenNode.asText().isBlank()) {
+                    break;
+                }
+                pageToken = tokenNode.asText();
+            }
+            if (!discovered.isEmpty()) {
+                // Stable trước (không chứa preview/exp/beta/alpha), tối đa 2 con để chain gọn.
+                List<String> stable = new ArrayList<>();
+                List<String> rest = new ArrayList<>();
+                for (String id : discovered) {
+                    String lower = id.toLowerCase();
+                    if (lower.contains("preview") || lower.contains("-exp")
+                            || lower.contains("beta") || lower.contains("alpha")) {
+                        rest.add(id);
+                    } else {
+                        stable.add(id);
+                    }
+                }
+                stable.addAll(rest);
+                cachedDiscoveredModels = List.copyOf(stable.subList(0, Math.min(2, stable.size())));
+                lastDiscoveryTime = now;
+                logger.info("Gemini discovery cập nhật " + cachedDiscoveredModels.size()
+                        + " model hỗ trợ generateContent.");
+            }
+        } catch (Exception e) {
+            logger.warning("Gemini ListModels fail, giữ chain hardcode: " + e.getMessage());
+        }
+        return cachedDiscoveredModels;
+    }
+
+    /**
+     * Lọc model hỗ trợ generateContent từ JSON ListModels (pure function — có unit test).
+     * Trả về base model id (bỏ prefix "models/").
+     */
+    static List<String> extractGenerateContentModels(JsonNode root) {
+        List<String> result = new ArrayList<>();
+        JsonNode models = root == null ? null : root.path("models");
+        if (models == null || !models.isArray()) {
+            return result;
+        }
+        for (JsonNode m : models) {
+            String name = m.path("name").asText("");
+            if (name.isBlank()) {
+                continue;
+            }
+            JsonNode methods = m.path("supportedGenerationMethods");
+            if (!methods.isArray()) {
+                continue;
+            }
+            for (JsonNode method : methods) {
+                if ("generateContent".equals(method.asText())) {
+                    String id = name.startsWith("models/") ? name.substring("models/".length()) : name;
+                    if (!result.contains(id)) {
+                        result.add(id);
+                    }
+                    break;
+                }
+            }
+        }
+        return result;
     }
 }
