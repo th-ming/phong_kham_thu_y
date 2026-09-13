@@ -1,6 +1,7 @@
-﻿import React from "react";
+﻿import React, { useEffect, useState } from "react";
 import { useTheme } from "../../contexts/ThemeContextV2";
 import { RevealSection } from "@components/SpecialEffects";
+import axiosInstance from "@services/axios";
 
 
 const testimonials = [
@@ -16,27 +17,60 @@ const testimonials = [
 
 
 
+interface ReviewVM {
+    name: string;
+    pet: string;
+    text: string;
+    star: number;
+    avatar?: string;
+    petAvatar?: string;
+}
+
+const INITIAL_VISIBLE_REVIEWS = 4;
+
 const PhanDanhGia: React.FC = () => {
     const { theme } = useTheme();
     const isDark = theme === 'dark';
+    // Đánh giá thật từ /api/danh-gia-dich-vu/moi-nhat; lỗi hoặc trống thì giữ mẫu fallback
+    const [reviews, setReviews] = useState<ReviewVM[]>(testimonials);
+    const [avgText, setAvgText] = useState("4.9");
+    const [totalText, setTotalText] = useState("1.200+ đánh giá");
+    const [expanded, setExpanded] = useState(false);
+    const listRef = React.useRef<HTMLDivElement>(null);
 
-    // Double the list for infinite marquee effect
-    const marqueeItems = [...testimonials, ...testimonials];
-    const [isInView, setIsInView] = React.useState(false);
-    const sectionRef = React.useRef<HTMLDivElement>(null);
-
-    React.useEffect(() => {
-        const observer = new IntersectionObserver(
-            ([entry]) => setIsInView(entry.isIntersecting),
-            { threshold: 0.05 }
-        );
-        if (sectionRef.current) observer.observe(sectionRef.current);
-        return () => observer.disconnect();
+    useEffect(() => {
+        let alive = true;
+        axiosInstance.get("/api/danh-gia-dich-vu/moi-nhat", { params: { size: 12 } }).then(res => {
+            const items = Array.isArray(res.data?.items) ? res.data.items : [];
+            if (!alive || items.length === 0) return;
+            setReviews(items.map((r: any) => ({
+                name: r.ten_khach_hang || "Khách hàng Rexi",
+                pet: r.ten_dich_vu ? `Đã dùng: ${r.ten_dich_vu}` : "Khách hàng Rexi",
+                text: r.noi_dung || "",
+                star: Math.min(5, Math.max(1, Number(r.so_sao) || 5))
+            })));
+            if (typeof res.data?.avgSao === 'number' && res.data.avgSao > 0) {
+                setAvgText(String(res.data.avgSao));
+            }
+            if (typeof res.data?.tongSo === 'number' && res.data.tongSo > 0) {
+                setTotalText(`${res.data.tongSo} đánh giá`);
+            }
+        }).catch(() => { /* giữ mẫu fallback */ });
+        return () => { alive = false; };
     }, []);
+
+    const visibleReviews = expanded ? reviews : reviews.slice(0, INITIAL_VISIBLE_REVIEWS);
+
+    const handleToggleReviews = () => {
+        setExpanded(v => {
+            if (!v) requestAnimationFrame(() => listRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }));
+            return !v;
+        });
+    };
 
     return (
         <RevealSection>
-            <section ref={sectionRef} className="home-reviews-section" style={{ padding: "110px 0", background: "var(--background)", position: 'relative', overflow: 'hidden' }}>
+            <section className="home-reviews-section" style={{ padding: "110px 0", background: "var(--background)", position: 'relative', overflow: 'hidden' }}>
                 <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 80% 20%, rgba(224,122,63,0.04) 0%, transparent 60%), radial-gradient(ellipse at 20% 80%, rgba(232,149,92,0.03) 0%, transparent 60%)', pointerEvents: 'none' }} />
                 
                 {/* Background Pattern */}
@@ -50,19 +84,18 @@ const PhanDanhGia: React.FC = () => {
                 }} />
 
                 <style>{`
-                    @keyframes marqueeReview {
-                        0% { transform: translateX(0); }
-                        100% { transform: translateX(-50%); }
-                    }
-                    .review-marquee-track {
-                        display: flex;
-                        width: max-content;
-                        animation: marqueeReview 35s linear infinite;
-                        animation-play-state: ${isInView ? 'running' : 'paused'};
+                    .reviews-grid {
+                        display: grid;
+                        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
                         gap: 24px;
-                        will-change: transform;
+                        align-items: stretch;
                     }
-                    .review-marquee-track:hover { animation-play-state: paused; }
+                    .reviews-grid-wrap-expanded {
+                        max-height: 660px;
+                        overflow-y: auto;
+                        overflow-x: hidden;
+                        padding-right: 8px;
+                    }
                      .review-card {
                         flex: 0 0 340px;
                         background: var(--surface) !important;
@@ -113,9 +146,11 @@ const PhanDanhGia: React.FC = () => {
                             font-size: 2rem !important;
                         }
                         .review-marquee-track {
-                            gap: 14px;
-                            animation-duration: 46s;
-                            align-items: flex-start;
+                            display: none !important;
+                        }
+                        .reviews-grid {
+                            grid-template-columns: 1fr !important;
+                            gap: 14px !important;
                         }
                         .review-card {
                             flex: 0 0 274px;
@@ -184,7 +219,7 @@ const PhanDanhGia: React.FC = () => {
                         <div className="reviews-rating-badge" style={{ display: 'flex', alignItems: 'center', gap: '20px', background: 'var(--primary-light)', padding: '20px 28px', borderRadius: '24px', border: '1px solid var(--primary-light)', flexShrink: 0, position: 'relative', overflow: 'hidden' }}>
                             <img src="/img/phong-kham-sach-se.png" alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.07, pointerEvents: 'none' }} />
                             <div style={{ textAlign: 'center', position: 'relative', zIndex: 1 }}>
-                                <div style={{ fontSize: '2.8rem', fontWeight: 950, color: 'var(--primary)', lineHeight: 1 }}>4.9</div>
+                                <div style={{ fontSize: '2.8rem', fontWeight: 950, color: 'var(--primary)', lineHeight: 1 }}>{avgText}</div>
                                 <div style={{ fontSize: '0.65rem', color: 'var(--gray-500)', fontWeight: 700, marginTop: '4px', letterSpacing: '0.5px' }}>/ 5.0 STARS</div>
                             </div>
                             <div style={{ width: '1px', height: '50px', background: 'var(--primary-light)', filter: 'brightness(0.9)' }} />
@@ -192,17 +227,17 @@ const PhanDanhGia: React.FC = () => {
                                 <div style={{ display: 'flex', gap: '3px', color: '#f59e0b', marginBottom: '6px' }}>
                                     {[...Array(5)].map((_, i) => <span key={i} className="material-symbols-outlined" style={{ fontSize: '18px' }}>star</span>)}
                                 </div>
-                                <div style={{ fontSize: '0.8rem', color: 'var(--ink)', fontWeight: 700 }}>1.200+ đánh giá</div>
+                                <div style={{ fontSize: '0.8rem', color: 'var(--ink)', fontWeight: 700 }}>{totalText}</div>
                                 <div style={{ fontSize: '0.75rem', color: 'var(--gray-500)', fontWeight: 500, marginTop: '2px' }}>từ khách hàng thực tế</div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Marquee - full width, outside container */}
-                <div style={{ overflow: 'hidden', WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%)', maskImage: 'linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%)', paddingBottom: '8px' }}>
-                    <div className="review-marquee-track">
-                        {marqueeItems.map((t, i) => (
+                {/* Grid đánh giá + xem thêm/thu gọn */}
+                <div className="container">
+                    <div ref={listRef} className={`reviews-grid${expanded ? ' reviews-grid-wrap-expanded' : ''}`}>
+                        {visibleReviews.map((t, i) => (
                             <div key={i} className="review-card">
                                 {/* Quote decoration */}
                                 <div style={{ position: 'absolute', top: '-10px', right: '-10px', fontSize: '120px', color: 'var(--primary-light)', opacity: isDark ? 0.05 : 0.4, fontFamily: 'serif', fontWeight: 900, lineHeight: 1, zIndex: 0, pointerEvents: 'none' }}>"</div>
@@ -241,6 +276,21 @@ const PhanDanhGia: React.FC = () => {
                             </div>
                         ))}
                     </div>
+
+                    {/* nút xem thêm / thu gọn */}
+                    {reviews.length > INITIAL_VISIBLE_REVIEWS && (
+                        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '28px' }}>
+                            <button
+                                type="button"
+                                data-ai-id="btn_reviews_toggle"
+                                onClick={handleToggleReviews}
+                                style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'transparent', color: 'var(--primary)', border: '2px solid var(--primary)', padding: '12px 28px', borderRadius: '50px', fontWeight: 800, fontSize: '0.9rem', cursor: 'pointer' }}
+                            >
+                                {expanded ? 'Thu gọn' : `Xem thêm ${reviews.length - INITIAL_VISIBLE_REVIEWS} đánh giá`}
+                                <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>{expanded ? 'expand_less' : 'expand_more'}</span>
+                            </button>
+                        </div>
+                    )}
                 </div>
             </section>
         </RevealSection>

@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { RevealSection } from "@components/SpecialEffects";
+import axiosInstance from "@services/axios";
 
 import { useTheme } from "../../contexts/ThemeContextV2";
 
@@ -11,9 +12,60 @@ const MOCK_DOCTORS = [
     { ho_ten: "BS. Thu Thủy", chuyen_mon: "Dinh dưỡng & Nội tiết", hinh_anh: "/img/bac_si_thu_thuy.png", exp: "4 năm kinh nghiệm" }
 ];
 
+interface DoctorVM {
+    ho_ten: string;
+    chuyen_mon: string;
+    hinh_anh: string;
+    mo_ta?: string;
+    exp: string;
+}
+
+const INITIAL_VISIBLE = 3;
+const FALLBACK_IMG = MOCK_DOCTORS[0].hinh_anh;
+
+const calculateExp = (dateStr?: string) => {
+    if (!dateStr) return "Chuyên gia giàu kinh nghiệm";
+    const start = new Date(dateStr);
+    const now = new Date();
+    const years = now.getFullYear() - start.getFullYear();
+    if (isNaN(years)) return "Chuyên gia giàu kinh nghiệm";
+    return `${years > 0 ? years : 1} năm kinh nghiệm`;
+};
+
 const PhanBacSi: React.FC = () => {
     const { theme } = useTheme();
     const isDark = theme === 'dark';
+    const [doctors, setDoctors] = useState<DoctorVM[]>(() => MOCK_DOCTORS.map(d => ({ ...d })));
+    const [expanded, setExpanded] = useState(false);
+    const gridRef = useRef<HTMLDivElement>(null);
+
+    // Dữ liệu thật từ /api/bac-si (public); lỗi hoặc rỗng thì giữ mẫu fallback để section không trống
+    useEffect(() => {
+        let alive = true;
+        axiosInstance.get("/api/bac-si").then(res => {
+            const arr = Array.isArray(res.data) ? res.data : [];
+            if (!alive || arr.length === 0) return;
+            setDoctors(arr.map((d: any, i: number) => ({
+                ho_ten: d.ho_ten || "Bác sĩ Rexi",
+                chuyen_mon: d.chuyen_mon || "Thú y tổng quát",
+                hinh_anh: d.hinh_anh || MOCK_DOCTORS[i % MOCK_DOCTORS.length].hinh_anh,
+                mo_ta: d.gioi_thieu || "",
+                exp: calculateExp(d.ngay_vao_lam)
+            })));
+        }).catch(() => { /* giữ mẫu fallback */ });
+        return () => { alive = false; };
+    }, []);
+
+    const featured = doctors[0];
+    const rest = doctors.slice(1);
+    const visibleDocs = expanded ? rest : rest.slice(0, INITIAL_VISIBLE);
+
+    const handleToggle = () => {
+        setExpanded(v => {
+            if (!v) requestAnimationFrame(() => gridRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }));
+            return !v;
+        });
+    };
 
     return (
         <RevealSection>
@@ -108,6 +160,15 @@ const PhanBacSi: React.FC = () => {
                     }
                     .doctor-all-link:hover span {
                         transform: translateX(4px);
+                    }
+                    .doc-grid.doc-grid-expanded {
+                        display: grid !important;
+                        grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)) !important;
+                        max-height: 640px;
+                        overflow-y: auto !important;
+                        overflow-x: hidden !important;
+                        padding-right: 6px;
+                        align-content: start;
                     }
                     [data-theme='dark'] .doctor-all-card {
                         background: linear-gradient(135deg, rgba(245, 158, 11, 0.13), rgba(234, 88, 12, 0.08)) !important;
@@ -312,7 +373,7 @@ const PhanBacSi: React.FC = () => {
                         <div className="doc-featured" style={{ flex: '0 0 auto', width: '38%', borderRadius: '32px', overflow: 'hidden', background: 'var(--surface)', border: '1px solid var(--gray-300)', boxShadow: 'var(--shadow-xl)', display: 'flex', flexDirection: 'column', cursor: 'default' }}>
                             <div className="doc-featured-image" style={{ height: '400px', position: 'relative', overflow: 'hidden', background: isDark ? 'linear-gradient(180deg, #0f172a 0%, #1e293b 100%)' : 'linear-gradient(180deg, #fdf3e7 0%, #ffedd5 100%)' }}>
 
-                                <img src={MOCK_DOCTORS[0].hinh_anh} alt={MOCK_DOCTORS[0].ho_ten} className="doc-featured-img" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center' }} />
+                                <img src={featured.hinh_anh} alt={featured.ho_ten} className="doc-featured-img" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center' }} onError={(e) => { const t = e.currentTarget; if (!t.src.includes('bac_si_minh_anh.png')) t.src = FALLBACK_IMG; }} />
                                 {/* nhãn bs */}
                                 <div style={{ position: 'absolute', top: '20px', left: '20px', background: 'var(--surface)', padding: '8px 16px', borderRadius: '50px', fontSize: '0.7rem', fontWeight: 900, color: 'var(--primary)', border: '1px solid var(--gray-200)', display: 'flex', alignItems: 'center', gap: '6px', backdropFilter: 'blur(8px)' }}>
                                     <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>verified</span>
@@ -323,22 +384,24 @@ const PhanBacSi: React.FC = () => {
                             </div>
 
                             <div className="doc-featured-body" style={{ padding: '28px 32px 32px' }}>
-                                <h3 style={{ fontSize: '1.6rem', fontWeight: 950, color: 'var(--ink)', marginBottom: '6px' }}>{MOCK_DOCTORS[0].ho_ten}</h3>
-                                <p style={{ color: 'var(--primary)', fontWeight: 800, fontSize: '0.9rem', marginBottom: '16px' }}>{MOCK_DOCTORS[0].chuyen_mon}</p>
-                                <p style={{ color: 'var(--gray-500)', fontSize: '0.9rem', lineHeight: 1.7, fontWeight: 500, marginBottom: '20px' }}>{MOCK_DOCTORS[0].mo_ta}</p>
+                                <h3 style={{ fontSize: '1.6rem', fontWeight: 950, color: 'var(--ink)', marginBottom: '6px' }}>{featured.ho_ten}</h3>
+                                <p style={{ color: 'var(--primary)', fontWeight: 800, fontSize: '0.9rem', marginBottom: '16px' }}>{featured.chuyen_mon}</p>
+                                {featured.mo_ta ? (
+                                    <p style={{ color: 'var(--gray-500)', fontSize: '0.9rem', lineHeight: 1.7, fontWeight: 500, marginBottom: '20px' }}>{featured.mo_ta}</p>
+                                ) : null}
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--gray-400)', fontSize: '0.8rem', fontWeight: 700, paddingTop: '16px', borderTop: '1px dashed var(--gray-200)' }}>
                                     <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>history</span>
-                                    {MOCK_DOCTORS[0].exp}
+                                    {featured.exp}
                                 </div>
                             </div>
                         </div>
 
                         {/* cột danh sách bs */}
-                        <div className="doc-grid" style={{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '20px', alignContent: 'start' }}>
-                            {MOCK_DOCTORS.slice(1).map((d, i) => (
+                        <div ref={gridRef} className={`doc-grid${expanded ? ' doc-grid-expanded' : ''}`} style={{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '20px', alignContent: 'start' }}>
+                            {visibleDocs.map((d, i) => (
                                 <div key={i} className="doc-card-small glass-card" style={{ borderRadius: '24px', overflow: 'hidden', background: 'var(--surface)', display: 'flex', flexDirection: 'column' }}>
                                     <div className="doc-card-image" style={{ height: '200px', position: 'relative', overflow: 'hidden', background: isDark ? 'linear-gradient(180deg, #0f172a 0%, #1e293b 100%)' : 'linear-gradient(180deg, #fdf3e7 0%, #ffedd5 100%)' }}>
-                                        <img src={d.hinh_anh} alt={d.ho_ten} className="doctor-img" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center' }} />
+                                        <img src={d.hinh_anh} alt={d.ho_ten} className="doctor-img" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center' }} onError={(e) => { const t = e.currentTarget; if (!t.src.includes('bac_si_minh_anh.png')) t.src = FALLBACK_IMG; }} />
                                         <div style={{ position: 'absolute', inset: 0, background: isDark ? 'linear-gradient(to top, var(--surface) 0%, transparent 50%)' : 'linear-gradient(to top, rgba(255,255,255,0.8) 0%, transparent 50%)' }} />
                                     </div>
                                     <div className="doc-card-body" style={{ padding: '16px 18px' }}>
@@ -367,6 +430,21 @@ const PhanBacSi: React.FC = () => {
                             </div>
                         </div>
                     </div>
+
+                    {/* nút xem thêm / thu gọn danh sách bs */}
+                    {rest.length > INITIAL_VISIBLE && (
+                        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '28px' }}>
+                            <button
+                                type="button"
+                                data-ai-id="btn_doctors_toggle"
+                                onClick={handleToggle}
+                                style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'transparent', color: 'var(--primary)', border: '2px solid var(--primary)', padding: '12px 28px', borderRadius: '50px', fontWeight: 800, fontSize: '0.9rem', cursor: 'pointer' }}
+                            >
+                                {expanded ? 'Thu gọn' : `Xem thêm ${rest.length - INITIAL_VISIBLE} bác sĩ`}
+                                <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>{expanded ? 'expand_less' : 'expand_more'}</span>
+                            </button>
+                        </div>
+                    )}
                 </div>
             </section>
         </RevealSection>
