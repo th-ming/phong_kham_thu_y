@@ -130,7 +130,7 @@ export const ChatbotShell: React.FC<ChatbotShellProps> = (props) => {
                         padding: 0
                     }}
                 >
-                    <span className="material-symbols-outlined" style={{ fontSize: '15px', lineHeight: 1 }}>close</span>
+                    <span className="material-symbols-outlined" style={{ fontSize: '12px', lineHeight: 1, fontVariationSettings: "'wght' 300" }}>close</span>
                 </button>
             </div>
 
@@ -168,7 +168,7 @@ export const ChatbotShell: React.FC<ChatbotShellProps> = (props) => {
                             padding: 0
                         }}
                     >
-                        <span className="material-symbols-outlined" style={{ fontSize: '16px', lineHeight: 1 }}>close</span>
+                        <span className="material-symbols-outlined" style={{ fontSize: '13px', lineHeight: 1, fontVariationSettings: "'wght' 300" }}>close</span>
                     </button>
                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
                         <span className="material-symbols-outlined" style={{ color: 'var(--primary)', fontSize: '24px', animation: 'chatIconWaggle 3s infinite ease-in-out' }}>pets</span>
