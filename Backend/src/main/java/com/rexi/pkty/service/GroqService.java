@@ -103,6 +103,7 @@ public class GroqService {
 
     private static final String GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
     private static final String GROQ_AUDIO_URL = "https://api.groq.com/openai/v1/audio/transcriptions";
+    private static final String GROQ_MODELS_URL = "https://api.groq.com/openai/v1/models";
 
     @Value("${groq.model:llama-3.1-8b-instant}")
     private String modelName;
@@ -155,6 +156,14 @@ public class GroqService {
     private volatile long lastPrewarmAtMs = 0L;
     private final ConcurrentHashMap<String, Long> keyCooldownUntilMs = new ConcurrentHashMap<>();
 
+    // Cache danh sách model text quét tự động từ Groq /models (24h)
+    private volatile List<String> cachedGroqTextModels = List.of();
+    private volatile Set<String> cachedGroqKnownIds = Set.of();
+    private volatile long lastGroqModelFetchTime = 0L;
+    private volatile long lastGroqModelFetchAttemptTime = 0L;
+    private static final long GROQ_MODEL_CACHE_DURATION_MS = 24 * 60 * 60 * 1000L; // 24 giờ
+    private static final long GROQ_MODEL_FETCH_RETRY_MS = 5 * 60 * 1000L; // fail thì 5 phút sau thử lại
+
     // HTTP/2 cho phép multiplexing: nhiều request dùng chung 1 TCP connection → giảm ~100-200ms overhead
     private final HttpClient client = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(20))
@@ -205,15 +214,148 @@ public class GroqService {
         return key.substring(0, 6) + "..." + key.substring(key.length() - 4);
     }
 
+    /**
+     * Lọc model chat text từ 1 phần tử model trong JSON /models của Groq.
+     * Dùng field chuẩn của API (không match theo tên — tránh để lọt TTS):
+     *  - active == true (mặc định true nếu API không trả field)
+     *  - input_modalities chứa "text" (chat có thể nhận text; qwen có thêm image vẫn giữ)
+     *  - output_modalities chứa "text" (loại speech/transcription: orpheus, whisper)
+     *  - loại guard/moderation theo id (prompt-guard, safeguard)
+     */
+    static boolean isGroqChatModel(JsonNode modelNode) {
+        if (modelNode == null || modelNode.isMissingNode()) {
+            return false;
+        }
+        if (!modelNode.path("active").asBoolean(true)) {
+            return false;
+        }
+        String id = modelNode.path("id").asText("").toLowerCase();
+        if (id.contains("guard")) {
+            return false;
+        }
+        return modalitiesContain(modelNode.path("input_modalities"), "text")
+                && modalitiesContain(modelNode.path("output_modalities"), "text");
+    }
+
+    private static boolean modalitiesContain(JsonNode arr, String value) {
+        if (arr == null || !arr.isArray()) {
+            return false;
+        }
+        for (JsonNode node : arr) {
+            if (value.equals(node.asText())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Trích id các model chat text từ JSON ListModels của Groq (pure function — có unit test).
+     */
+    static List<String> extractGroqChatModels(JsonNode root) {
+        List<String> result = new ArrayList<>();
+        if (root == null) {
+            return result;
+        }
+        JsonNode dataNode = root.path("data");
+        if (!dataNode.isArray()) {
+            return result;
+        }
+        for (JsonNode modelNode : dataNode) {
+            if (isGroqChatModel(modelNode)) {
+                String id = modelNode.path("id").asText("");
+                if (!id.isBlank() && !result.contains(id)) {
+                    result.add(id);
+                }
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Tự động quét model chat text từ Groq /models (cache 24h). API fail hoặc
+     * rỗng → fallback cascade static. Cùng cơ chế với OpenRouter và Gemini.
+     */
+    private synchronized void refreshGroqModelSnapshotIfStale() {
+        long now = System.currentTimeMillis();
+        if (!cachedGroqTextModels.isEmpty() && (now - lastGroqModelFetchTime < GROQ_MODEL_CACHE_DURATION_MS)) {
+            return;
+        }
+        if (now - lastGroqModelFetchAttemptTime < GROQ_MODEL_FETCH_RETRY_MS) {
+            return;
+        }
+        lastGroqModelFetchAttemptTime = now;
+
+        List<String> keys = getApiKeys();
+        if (keys.isEmpty()) {
+            return;
+        }
+
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(GROQ_MODELS_URL))
+                    .header("Authorization", "Bearer " + keys.get(0))
+                    .GET()
+                    .timeout(Duration.ofSeconds(10))
+                    .build();
+            HttpResponse<String> response =
+                    client.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            if (response.statusCode() == 200) {
+                JsonNode root = objectMapper.readTree(response.body());
+                JsonNode dataNode = root.path("data");
+                Set<String> knownIds = new LinkedHashSet<>();
+                if (dataNode.isArray()) {
+                    for (JsonNode modelNode : dataNode) {
+                        String id = modelNode.path("id").asText(null);
+                        if (id != null && !id.isBlank()) {
+                            knownIds.add(id);
+                        }
+                    }
+                }
+                List<String> textModels = extractGroqChatModels(root);
+                if (!textModels.isEmpty()) {
+                    cachedGroqTextModels = List.copyOf(textModels);
+                    cachedGroqKnownIds = Set.copyOf(knownIds);
+                    lastGroqModelFetchTime = now;
+                    logger.info("Đã quét tự động " + textModels.size() + " model chat text từ Groq (biết tổng "
+                            + knownIds.size() + " IDs).");
+                    return;
+                }
+                if (!knownIds.isEmpty()) {
+                    cachedGroqKnownIds = Set.copyOf(knownIds);
+                }
+            }
+        } catch (Exception e) {
+            logger.warning("Lỗi tự động quét model Groq: " + e.getMessage());
+        }
+
+        if (cachedGroqTextModels.isEmpty()) {
+            cachedGroqTextModels = List.of("openai/gpt-oss-20b", "llama-3.3-70b-versatile");
+            logger.warning("Dùng fallback static Groq models vì /models không khả dụng.");
+        }
+    }
+
     private List<String> getTextModelCandidates(String selectedModel) {
+        refreshGroqModelSnapshotIfStale();
+
         LinkedHashSet<String> models = new LinkedHashSet<>();
         if (selectedModel != null && !selectedModel.isBlank()) {
-            models.add(selectedModel.trim());
+            String trimmed = selectedModel.trim();
+            // Giữ model DB nếu còn sống theo snapshot /models; chưa có snapshot thì giữ.
+            if (cachedGroqKnownIds.isEmpty() || cachedGroqKnownIds.contains(trimmed)) {
+                models.add(trimmed);
+            } else {
+                logger.warning("Groq configured model '" + trimmed
+                        + "' không còn trên live /models, bỏ qua và dùng dynamic.");
+            }
         }
-        // Cascade: model chính trước, 8B rẻ/quota cao làm lưới an toàn cho traffic lớn,
-        // 70B giữ lại trong chain cho ca khó (suy luận, tool-result phức tạp, tiếng Việt y khoa).
-        models.add("llama-3.1-8b-instant");
-        models.add("llama-3.3-70b-versatile");
+        // Model chat text quét tự động từ /models (đã lọc theo modalities).
+        models.addAll(cachedGroqTextModels);
+        // Dự phòng cuối khi chưa quét được gì (API fail + chưa có DB model).
+        if (models.isEmpty()) {
+            models.add("openai/gpt-oss-20b");
+            models.add("llama-3.3-70b-versatile");
+        }
         return List.copyOf(models);
     }
 
