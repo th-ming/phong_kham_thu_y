@@ -15,7 +15,8 @@ public final class RoleAccessPolicy {
         "getslotusage",
         "tim_kiem_web",
         "kiem_tra_phan_he",
-        "tra_cuu_tai_lieu_y_khoa"
+        "tra_cuu_tai_lieu_y_khoa",
+        "tra_cuu_dich_vu"
     );
 
     private static final Set<String> CUSTOMER_ROLE_CODES = Set.of(
@@ -40,6 +41,7 @@ public final class RoleAccessPolicy {
     /** Vai trò nội bộ được phép theo từng tool */
     private static final Map<String, Set<String>> TOOL_ROLES = Map.ofEntries(
         Map.entry("tim_lich_hen_hom_nay", Set.of("admin", "quan_ly", "staff", "bac_si", "tiep_tan", "y_ta")),
+        Map.entry("tra_cuu_dich_vu", Set.of("admin", "quan_ly", "staff", "bac_si", "ke_toan", "tiep_tan", "y_ta")),
         // staff được tìm khách hàng (read-only) để xác minh khi hủy lịch
         Map.entry("tim_khach_hang", Set.of("admin", "quan_ly", "tiep_tan", "bac_si", "y_ta", "staff")),
         Map.entry("tim_thu_cung", Set.of("admin", "quan_ly", "tiep_tan", "bac_si", "y_ta")),

@@ -8,7 +8,7 @@ import java.util.logging.Logger;
 
 /**
  * Quét chủ động danh sách model live của 3 provider AI (Groq, Gemini,
- * OpenRouter) để snapshot luôn mới ngay cả khi không có request nào.
+ * Kilo) để snapshot luôn mới ngay cả khi không có request nào.
  * Runtime chat vốn đã tự heal qua dynamic candidates (lazy refresh 24h);
  * scheduler này đảm bảo snapshot được làm mới định kỳ + log rõ ràng.
  */
@@ -19,13 +19,13 @@ public class AiModelScanService {
 
     private final GroqService groqService;
     private final GeminiService geminiService;
-    private final OpenRouterService openRouterService;
+    private final KiloService kiloService;
 
     public AiModelScanService(GroqService groqService, GeminiService geminiService,
-                              OpenRouterService openRouterService) {
+                              KiloService kiloService) {
         this.groqService = groqService;
         this.geminiService = geminiService;
-        this.openRouterService = openRouterService;
+        this.kiloService = kiloService;
     }
 
     /**
@@ -37,9 +37,9 @@ public class AiModelScanService {
         logger.info("[AI-SCAN] Bắt đầu quét model tự động 3 provider...");
         boolean groqOk = safeScan("Groq", groqService::forceModelScan);
         boolean geminiOk = safeScan("Gemini", geminiService::forceModelScan);
-        boolean openRouterOk = safeScan("OpenRouter", openRouterService::forceModelScan);
+        boolean kiloOk = safeScan("Kilo", kiloService::forceModelScan);
         logger.info("[AI-SCAN] Kết quả: groq=" + groqOk + " gemini=" + geminiOk
-                + " openrouter=" + openRouterOk);
+                + " kilo=" + kiloOk);
     }
 
     private boolean safeScan(String provider, Supplier<Boolean> scan) {

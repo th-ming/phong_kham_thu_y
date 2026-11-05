@@ -57,7 +57,7 @@ public class ReActAgentService {
     private static final java.util.regex.Pattern TRAILING_SPACE_NEWLINE =
             java.util.regex.Pattern.compile("[ \\t]++\\n");
 
-    @Autowired private OpenRouterService openRouterService;
+    @Autowired private KiloService kiloService;
     @Autowired private GeminiService geminiService;
     @Autowired private GroqService groqService;
     @Autowired private AiToolService toolService;
@@ -287,6 +287,7 @@ public class ReActAgentService {
                         }
 
                         if (!isToolRelevantForQuery(normalizedQuery, toolName)) {
+                            logger.info("[ReAct] Chặn tool '" + toolName + "' vì không đúng ngữ cảnh câu hỏi.");
                             String observation = "Tool '" + toolName + "' không phù hợp với yêu cầu hiện tại. Hãy trả final_answer ngắn, hỏi thêm nếu thiếu dữ liệu.";
                             steps.add(new ReActStep("TOOL_BLOCKED", "Chặn tool không đúng ngữ cảnh", toolName, params, observation));
 
@@ -300,6 +301,7 @@ public class ReActAgentService {
 
                         // Kiểm tra phân quyền tool của vai trò
                         if (!canUseTool(userRole, toolName)) {
+                            logger.info("[ReAct] Chặn tool '" + toolName + "' do vai trò " + userRole + " không đủ quyền.");
                             String observation = "LỖI BẢO MẬT: Quyền hạn hiện tại của bạn không được phép sử dụng công cụ '" + toolName + "'.";
                             steps.add(new ReActStep("TOOL_UNAUTHORIZED", "Gọi tool thất bại do thiếu quyền", toolName, params, observation));
                             
@@ -341,6 +343,22 @@ public class ReActAgentService {
                 }
             }
 
+            // Model không emit JSON hợp lệ (hoặc tool-call bị chặn): router deterministic 1 cơ hội, rồi nudge format.
+            if (i <= 1 && steps.stream().noneMatch(s -> "TOOL".equals(s.type()))) {
+                ReActResult routed = deterministicToolFallback(normalizedQuery, originalUserIntent, userRole, username, steps);
+                if (routed != null) {
+                    return routed;
+                }
+                ChatMessage nudgeMsg = new ChatMessage();
+                nudgeMsg.setRole("user");
+                nudgeMsg.setContent("[HỆ THỐNG] Câu trả lời trước của bạn KHÔNG phải JSON hợp lệ. Chỉ trả về MỘT object JSON duy nhất, không thêm chữ nào khác: "
+                        + "{\"tool\": \"<tên tool>\", \"parameters\": {...}} để gọi tool, hoặc {\"final_answer\": \"...\"} để trả lời xong.");
+                history.add(nudgeMsg);
+                trimHistoryForModel(history);
+                logger.info("[ReAct] Model trả prose thay JSON — đã nudge format, thử lại vòng sau.");
+                continue;
+            }
+
             // Nếu ko phải JSON hợp lệ -> coi đây là câu trả lời cuối
             cleaned = sanitizeFinalAnswer(cleaned, normalizedQuery);
             cleaned = enforceNoUnsupportedModelFinalAnswer(cleaned, normalizedQuery, steps);
@@ -350,6 +368,98 @@ public class ReActAgentService {
 
         String fallback = "Rexi cần thêm thông tin. Bạn có thể bổ sung không?";
         return new ReActResult(fallback, steps);
+    }
+
+    /**
+     * Router deterministic khi model không chịu emit JSON tool-call: nhận diện
+     * intent hỏi dữ liệu chắc chắn (giá dịch vụ, lịch trống, kho thuốc) và chạy
+     * tool trực tiếp rồi compose từ observation — agent vẫn "làm được việc".
+     */
+    private ReActResult deterministicToolFallback(String normalizedQuery, String originalQuery,
+            String userRole, String username, List<ReActStep> steps) {
+        if (normalizedQuery == null || normalizedQuery.isBlank()) {
+            return null;
+        }
+        if (isPetMedicalSymptomQuery(normalizedQuery)) {
+            return null;
+        }
+
+        String tool = null;
+        Map<String, Object> params = new HashMap<>();
+
+        boolean asksPrice = containsAny(normalizedQuery, "gia", "bang gia", "muc phi", "phi kham",
+                "phi dich vu", "bao nhieu tien", "chi phi");
+        boolean mentionsService = containsAny(normalizedQuery, "dich vu", "kham", "spa", "tiem",
+                "phau thuat", "sua long", "tam long", "xet nghiem", "vacxin", "vaccine");
+        if (asksPrice && mentionsService) {
+            tool = "tra_cuu_dich_vu";
+            params.put("tu_khoa", extractServiceKeyword(originalQuery));
+        } else if (containsAny(normalizedQuery, "lich trong", "khung gio", "con cho", "con trong", "slot",
+                "lich hen con")) {
+            tool = "tim_lich_trong";
+            String ngay = extractDateToken(normalizedQuery);
+            if (ngay != null) {
+                params.put("ngay", ngay);
+            }
+        } else if (containsAny(normalizedQuery, "kho thuoc", "ton kho", "con thuoc khong", "thuoc con")) {
+            tool = "xem_kho_thuoc";
+        }
+
+        if (tool == null) {
+            return null;
+        }
+        if (!RoleAccessPolicy.canUseAgentTool(userRole, tool)) {
+            return finalResult(steps, RoleAccessPolicy.permissionDeniedMessage(tool, userRole));
+        }
+
+        logger.info("[ReAct] Deterministic fallback router: chạy tool '" + tool + "' thay vì chờ model emit JSON.");
+        String observation;
+        try {
+            observation = toolService.executeTool(tool, params, userRole, username);
+        } catch (Exception e) {
+            observation = "Lỗi hệ thống khi chạy tool: " + e.getMessage();
+        }
+        steps.add(new ReActStep("TOOL", "Tra cứu trực tiếp từ dữ liệu phòng khám.", tool, params, observation));
+        String answer = sanitizeFinalAnswer(observation, normalizedQuery);
+        steps.add(new ReActStep("FINAL", answer, null, null, null));
+        return new ReActResult(answer, steps, "DeterministicFallback");
+    }
+
+    /** Lọc từ hỏi thừa, giữ phần có khả năng là tên dịch vụ (có thể rỗng -> tra top danh sách). */
+    private String extractServiceKeyword(String originalQuery) {
+        if (originalQuery == null) {
+            return "";
+        }
+        String q = normalizeVietnamese(originalQuery.toLowerCase()).replaceAll("[^a-z0-9\\s]", " ")
+                .replaceAll("\\s+", " ").trim();
+        String[] stopPhrases = {"bao nhieu tien", "bao nhieu", "the nao", "nhu the nao", "la gi",
+                "cho minh", "cho toi", "xin ", "cho xem", "xem ", "bang gia", "gia", "muc phi",
+                "phi kham", "phi dich vu", "chi phi", "tien", "cua", "phong kham", "vien",
+                "duoc khong", "voi", "va", "di", "nha"};
+        for (String phrase : stopPhrases) {
+            q = q.replace(phrase, " ");
+        }
+        return q.replaceAll("\\s+", " ").trim();
+    }
+
+    /** Trả ISO date nếu query nhắc hôm nay/ngày mai/hôm qua/ngày cụ thể, null nếu không. */
+    private String extractDateToken(String normalizedQuery) {
+        java.util.regex.Matcher iso = java.util.regex.Pattern
+                .compile("\\b(\\d{4}-\\d{2}-\\d{2})\\b").matcher(normalizedQuery);
+        if (iso.find()) {
+            return iso.group(1);
+        }
+        java.time.LocalDate today = java.time.LocalDate.now(VN_ZONE);
+        if (containsAny(normalizedQuery, "ngay mai", "mai", "tomorrow")) {
+            return today.plusDays(1).toString();
+        }
+        if (containsAny(normalizedQuery, "hom qua")) {
+            return today.minusDays(1).toString();
+        }
+        if (containsAny(normalizedQuery, "hom nay", "today", "bay gio", "luc nay")) {
+            return today.toString();
+        }
+        return null;
     }
 
     private ReActResult handlePreviewUiIntent(String originalQuery, String q, String userRole, List<ReActStep> steps) {
@@ -2037,7 +2147,7 @@ public class ReActAgentService {
 
     private ModelResponse callBestAvailableModel(List<ChatMessage> history) throws Exception {
         trimHistoryForModel(history);
-        List<String> providers = List.of("Groq", "Gemini", "OpenRouter");
+        List<String> providers = List.of("Groq", "Gemini", "Kilo");
         Exception lastError = null;
 
         for (String provider : providers) {
@@ -2045,7 +2155,7 @@ public class ReActAgentService {
                 String response = switch (provider) {
                     case "Groq" -> groqService.chat(history);
                     case "Gemini" -> geminiService.chat(history);
-                    case "OpenRouter" -> openRouterService.chat(history);
+                    case "Kilo" -> kiloService.chat(history);
                     default -> throw new IllegalStateException("Unknown provider");
                 };
                 if (response != null && !response.isBlank()) {

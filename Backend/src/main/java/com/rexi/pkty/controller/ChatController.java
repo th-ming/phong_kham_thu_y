@@ -7,7 +7,7 @@ import com.rexi.pkty.entity.LichSuTuVan;
 import com.rexi.pkty.repository.LichSuTuVanRepository;
 import com.rexi.pkty.service.GroqService;
 import com.rexi.pkty.service.GeminiService;
-import com.rexi.pkty.service.OpenRouterService;
+import com.rexi.pkty.service.KiloService;
 import com.rexi.pkty.service.AiMemoryService;
 import com.rexi.pkty.service.AuditLogService;
 import com.rexi.pkty.service.ReActAgentService;
@@ -49,7 +49,7 @@ public class ChatController {
     private GeminiService geminiService;
 
     @Autowired
-    private OpenRouterService openRouterService;
+    private KiloService kiloService;
 
     @Autowired
     private AiMemoryService aiMemoryService;
@@ -603,7 +603,7 @@ ChatMessage systemMsg = new ChatMessage();
                     providerResult = tryProviderChain(
                             new ProviderAttempt("Gemini", () -> geminiService.chat(providerHistory)),
                             new ProviderAttempt("Groq Vision", () -> groqService.chat(providerHistory)),
-                            new ProviderAttempt("OpenRouter", () -> openRouterService.chat(providerHistory, false))
+                            new ProviderAttempt("Kilo", () -> kiloService.chat(providerHistory, false))
                     );
                     reply = providerResult.reply();
                     providerUsed = providerResult.provider();
@@ -614,7 +614,7 @@ ChatMessage systemMsg = new ChatMessage();
                 logger.info("[AI ROUTER] Định tuyến câu hỏi Tư vấn Y tế sang: Gemini");
                 providerResult = tryProviderChain(
                         new ProviderAttempt("Gemini", () -> geminiService.chat(providerHistory)),
-                        new ProviderAttempt("OpenRouter", () -> openRouterService.chat(providerHistory, true)),
+                        new ProviderAttempt("Kilo", () -> kiloService.chat(providerHistory, true)),
                         new ProviderAttempt("Groq", () -> groqService.chat(providerHistory, groqService.getReasoningModelName()))
                 );
                 reply = providerResult.reply();
@@ -625,7 +625,7 @@ ChatMessage systemMsg = new ChatMessage();
                 providerResult = tryProviderChain(
                         new ProviderAttempt("Groq", () -> groqService.chat(providerHistory)),
                         new ProviderAttempt("Gemini", () -> geminiService.chat(providerHistory)),
-                        new ProviderAttempt("OpenRouter", () -> openRouterService.chat(providerHistory, false))
+                        new ProviderAttempt("Kilo", () -> kiloService.chat(providerHistory, false))
                 );
                 reply = providerResult.reply();
                 providerUsed = providerResult.provider();

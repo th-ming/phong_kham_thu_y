@@ -68,6 +68,8 @@ public class AiToolService {
             "Xem lịch sử bệnh án thú cưng.", "{\"id_thu_cung\": \"...\"}");
         appendToolIfAllowed(sb, userRole, "tim_lich_trong",
             "Tìm khung giờ trống theo ngày.", "{\"ngay\": \"YYYY-MM-DD\"}");
+        appendToolIfAllowed(sb, userRole, "tra_cuu_dich_vu",
+            "Tra cứu dịch vụ và bảng giá phòng khám theo từ khóa; để trống 'tu_khoa' để lấy danh sách dịch vụ phổ biến.", "{\"tu_khoa\": \"kham tong quat\"}");
         appendToolIfAllowed(sb, userRole, "dat_lich_hen",
             "Tạo lịch hẹn mới (phải hỏi xác nhận trước).",
             "{\"id_khach_hang\":\"...\",\"id_thu_cung\":\"...\",\"id_bac_si\":\"...\",\"id_dich_vu\":\"...\",\"ngay_kham\":\"YYYY-MM-DD\",\"gio_kham\":\"HH:mm\",\"ghi_chu\":\"...\"}");
@@ -214,6 +216,7 @@ public class AiToolService {
                 case "tim_thu_cung"          -> toolTimThuCung((String) params.getOrDefault("tu_khoa", ""));
                 case "xem_benh_an"           -> toolXemBenhAn((String) params.getOrDefault("id_thu_cung", ""));
                 case "tim_lich_trong"        -> toolTimLichTrong((String) params.getOrDefault("ngay", LocalDate.now(VN_ZONE).toString()));
+        case "tra_cuu_dich_vu"       -> toolTraCuuDichVu((String) params.getOrDefault("tu_khoa", ""));
                 // Gọi qua proxy self để @Transactional hoạt động (Spring AOP proxy pattern)
                 case "dat_lich_hen"          -> self.toolDatLichHen(params);
                 case "huy_lich_hen"          -> toolHuyLichHen(params, userRole, username);
@@ -601,6 +604,62 @@ public class AiToolService {
               .append(" | BS: ").append(r.get("ten_bac_si")).append("\n");
         }
         return sb.toString();
+    }
+
+    private String toolTraCuuDichVu(String tuKhoa) {
+        try {
+            String kw = tuKhoa == null ? "" : normalizeVietnamese(tuKhoa.trim().toLowerCase(java.util.Locale.ROOT))
+                    .replaceAll("[^a-z0-9\\s]", " ").replaceAll("\\s+", " ").trim();
+            String sql = "SELECT ten_dich_vu, gia, thoi_luong_phut FROM DichVu "
+                    + "WHERE (da_xoa IS NULL OR LOWER(CAST(da_xoa AS varchar)) IN ('0', 'false')) "
+                    + "AND (trang_thai IS NULL OR LOWER(CAST(trang_thai AS varchar)) IN ('1', 'true')) "
+                    + "ORDER BY ten_dich_vu OFFSET 0 ROWS FETCH NEXT 80 ROWS ONLY";
+            List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql);
+            List<String> lines = new ArrayList<>();
+            for (Map<String, Object> row : rows) {
+                String ten = String.valueOf(row.getOrDefault("ten_dich_vu", ""));
+                String tenNorm = normalizeVietnamese(ten.toLowerCase(java.util.Locale.ROOT));
+                if (!kw.isBlank()) {
+                    boolean match = false;
+                    for (String term : kw.split(" ")) {
+                        if (term.length() >= 2 && tenNorm.contains(term)) {
+                            match = true;
+                            break;
+                        }
+                    }
+                    if (!match) {
+                        continue;
+                    }
+                }
+                Object gia = row.get("gia");
+                Object thoiLuong = row.get("thoi_luong_phut");
+                lines.add("- " + ten + ": " + formatVnd(gia)
+                        + (thoiLuong != null ? " (~" + thoiLuong + " phút)" : ""));
+                if (lines.size() >= 10) {
+                    break;
+                }
+            }
+            if (lines.isEmpty()) {
+                return kw.isBlank()
+                        ? "Chưa lấy được danh sách dịch vụ từ hệ thống."
+                        : "Không tìm thấy dịch vụ nào khớp '" + tuKhoa + "'. Bạn thử từ khóa khác (ví dụ: kham, tiem, spa, phau thuat).";
+            }
+            return (kw.isBlank() ? "Bảng giá dịch vụ phòng khám (tối đa 10 mục):\n"
+                    : "Kết quả tra cứu dịch vụ '" + tuKhoa + "':\n")
+                    + String.join("\n", lines);
+        } catch (Exception e) {
+            logger.warning("toolTraCuuDichVu lỗi: " + e.getMessage());
+            return "Lỗi tra cứu dịch vụ: " + e.getMessage();
+        }
+    }
+
+    private String formatVnd(Object gia) {
+        try {
+            long v = new java.math.BigDecimal(String.valueOf(gia)).longValueExact();
+            return String.format(java.util.Locale.ROOT, "%,d", v).replace(",", ".") + " VND";
+        } catch (Exception e) {
+            return String.valueOf(gia);
+        }
     }
 
     private String toolTimLichTrong(String ngay) {
