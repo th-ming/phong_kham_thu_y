@@ -1648,6 +1648,7 @@ public class ReActAgentService {
         if (hasExecutedTool) return answer;
 
         String normalizedAnswer = normalizeVietnamese(answer.toLowerCase(Locale.ROOT));
+        boolean hasPriceClaim = normalizedAnswer.matches("(?s).*(\\b\\d{1,3}([.,]\\d{3})+\\b|\\b\\d+\\s*(vnd|dong|nghin|trieu|k)\\b).*");
         boolean claimedSystemLookup = containsAny(normalizedAnswer,
                 "rexi kiem tra du lieu he thong",
                 "toi da kiem tra du lieu he thong",
@@ -1668,6 +1669,9 @@ public class ReActAgentService {
         if (claimedCompletedAction && !hasActionTag) {
             return "Tôi chưa thực hiện thao tác nào trên hệ thống trong lượt này. Nếu muốn thao tác thật, hãy ra lệnh rõ và cung cấp đủ định danh để Rexi Agent gọi đúng tool/DOM sau khi kiểm quyền.";
         }
+        if (hasPriceClaim) {
+            return "Tôi chưa chạy tool/DB trong lượt này nên không được nêu số tiền/mệnh giá cụ thể. Hãy yêu cầu tra cứu giá/bảng giá để Rexi Agent đọc dữ liệu thật từ hệ thống.";
+        }
         if (isEvidenceDemandingQuery(normalizedQuery) && !isSafeNonFactualAnswer(normalizedAnswer)) {
             return "Tôi chưa có bằng chứng từ tool/DB/RAG/nguồn đáng tin cậy trong lượt này nên sẽ không trả lời theo kiểu suy đoán. Hãy yêu cầu tra cứu cụ thể hoặc cung cấp tên màn hình, route, API, data-ai-id, mã hồ sơ hoặc dữ liệu nguồn cần kiểm chứng.";
         }
@@ -1683,7 +1687,12 @@ public class ReActAgentService {
                 "bao nhieu", "so luong", "thong ke", "doanh thu", "xu huong", "ti le", "ty le",
                 "kiem tra du lieu", "du lieu he thong", "trong db", "database", "sql",
                 "hoa don", "lich hen", "benh an", "khach hang", "thu cung", "kho thuoc", "ton kho",
-                "da bam", "da sua", "da cap nhat", "da xoa", "da huy", "da gui", "trang thai");
+                "da bam", "da sua", "da cap nhat", "da xoa", "da huy", "da gui", "trang thai",
+                "gia", "muc phi", "phi kham", "phi dich vu", "tien", "gia tien", "gia kham",
+                "gia dich vu", "bang gia", "price", "cost", "mo cua", "gio lam viec",
+                "gio hoat dong", "dia chi", "so dien thoai", "sdt", "email", "hotline",
+                "bac si nao", "dich vu nao", "danh sach", "liet ke", "khung gio", "slot",
+                "con cho", "con trong", "giu cho");
     }
 
     private boolean isSafeNonFactualAnswer(String normalizedAnswer) {
@@ -2034,8 +2043,7 @@ public class ReActAgentService {
         for (String provider : providers) {
             try {
                 String response = switch (provider) {
-                    // Agent đa bước giữ 70B suy luận; chain trong GroqService tự fallback 8B.
-                    case "Groq" -> groqService.chat(history, groqService.getReasoningModelName());
+                    case "Groq" -> groqService.chat(history);
                     case "Gemini" -> geminiService.chat(history);
                     case "OpenRouter" -> openRouterService.chat(history);
                     default -> throw new IllegalStateException("Unknown provider");
