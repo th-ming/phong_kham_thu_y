@@ -97,7 +97,7 @@ public class KiloService {
         return getCachedConfig("kilo_medical_model", medicalModelName);
     }
 
-    private String getModelName() {
+    public String getModelName() {
         return getCachedConfig("kilo_model", modelName);
     }
 

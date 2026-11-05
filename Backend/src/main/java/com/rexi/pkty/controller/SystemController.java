@@ -610,6 +610,9 @@ public class SystemController {
 
         String apiKey = firstNonBlank(payload.get("apiKey"), readConfig(provider + "_api_key"));
         String model = firstNonBlank(payload.get("model"), readConfig(provider + "_model"));
+        if ("kilo".equals(provider) && (model == null || model.isBlank())) {
+            model = kiloService.getModelName();
+        }
         if ((apiKey == null || apiKey.isBlank()) && !"kilo".equals(provider)) {
             return ResponseEntity.ok(buildAiTestResult(false, provider, model, null, "missing_api_key",
                     "Chưa cấu hình API key cho " + providerLabel(provider) + ".",
