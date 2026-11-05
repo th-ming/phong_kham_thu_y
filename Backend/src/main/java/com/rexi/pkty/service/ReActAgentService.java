@@ -245,6 +245,15 @@ public class ReActAgentService {
 
                     // —— FINAL ANSWER ——
                     if (node.has("final_answer")) {
+                        // Router deterministic CẢ trên nhánh final_answer: model tự trả lời cho câu hỏi cần DỮ LIỆU
+                        // (giá dịch vụ, lịch trống, kho) mà CHƯA chạy tool nào -> cưỡng chế chạy tool thật để có bằng chứng,
+                        // tránh bị guard chặn thành câu từ chối oan.
+                        if (i <= 1 && steps.stream().noneMatch(s -> "TOOL".equals(s.type()))) {
+                            ReActResult routed = deterministicToolFallback(normalizedQuery, originalUserIntent, userRole, username, steps);
+                            if (routed != null) {
+                                return routed;
+                            }
+                        }
                         String answer = sanitizeFinalAnswer(node.get("final_answer").asText(null), normalizedQuery);
                         answer = enforceNoUnsupportedModelFinalAnswer(answer, normalizedQuery, steps);
                         steps.add(new ReActStep("FINAL", answer, null, null, null));
