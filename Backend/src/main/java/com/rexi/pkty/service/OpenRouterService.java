@@ -355,6 +355,20 @@ public class OpenRouterService {
         return false;
     }
 
+    /** Quét chủ động (scheduler 24h gọi): reset cache-time rồi refresh snapshot /models. */
+    public boolean forceModelScan() {
+        lastModelFetchTime = 0L;
+        lastFetchAttemptTime = 0L;
+        refreshModelSnapshotIfStale();
+        return !cachedFreeModelInfos.isEmpty();
+    }
+
+    /** Gợi ý tối đa 5 model free còn sống theo snapshot gần nhất (cho /api/system/ai-provider/test). */
+    public List<String> getLiveTextModelSuggestions() {
+        refreshModelSnapshotIfStale();
+        return cachedFreeModelInfos.stream().map(FreeModelInfo::id).limit(5).toList();
+    }
+
     private synchronized void refreshModelSnapshotIfStale() {
         long now = System.currentTimeMillis();
         if (!cachedFreeModelInfos.isEmpty() && (now - lastModelFetchTime < CACHE_DURATION_MS)) {

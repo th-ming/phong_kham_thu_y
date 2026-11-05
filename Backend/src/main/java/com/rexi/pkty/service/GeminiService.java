@@ -373,6 +373,19 @@ public class GeminiService {
      * supportedGenerationMethods chứa generateContent, stable trước).
      * Key rỗng hoặc API fail → trả rỗng im lặng + log, caller rơi về hardcode.
      */
+    /** Quét chủ động (scheduler 24h gọi): reset cache-time rồi discovery ListModels. */
+    public boolean forceModelScan() {
+        lastDiscoveryTime = 0L;
+        lastDiscoveryAttemptTime = 0L;
+        getDiscoveredModels();
+        return !cachedDiscoveredModels.isEmpty();
+    }
+
+    /** Gợi ý tối đa 5 model generateContent còn sống (cho /api/system/ai-provider/test). */
+    public List<String> getLiveTextModelSuggestions() {
+        return getDiscoveredModels().stream().limit(5).toList();
+    }
+
     private synchronized List<String> getDiscoveredModels() {
         long now = System.currentTimeMillis();
         if (!cachedDiscoveredModels.isEmpty() && (now - lastDiscoveryTime < MODEL_DISCOVERY_CACHE_MS)) {

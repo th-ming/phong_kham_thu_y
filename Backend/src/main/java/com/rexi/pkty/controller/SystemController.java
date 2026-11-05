@@ -4,6 +4,9 @@ import com.rexi.pkty.service.EmailService;
 import com.rexi.pkty.service.DatabaseBackupService;
 import com.rexi.pkty.service.AuditLogService;
 import com.rexi.pkty.service.SecurityAlertService;
+import com.rexi.pkty.service.GroqService;
+import com.rexi.pkty.service.GeminiService;
+import com.rexi.pkty.service.OpenRouterService;
 import com.rexi.pkty.util.DatabaseDialect;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -49,6 +52,15 @@ public class SystemController {
 
     @Autowired(required = false)
     private SecurityAlertService securityAlertService;
+
+    @Autowired
+    private GroqService groqService;
+
+    @Autowired
+    private GeminiService geminiService;
+
+    @Autowired
+    private OpenRouterService openRouterService;
 
     // Bien dung chung cho AuthController
     public static final Map<String, Long> verifiedEmails = new ConcurrentHashMap<>();
@@ -676,8 +688,17 @@ public class SystemController {
             String technicalMessage = ok
                     ? "Provider phản hồi thành công."
                     : "Provider trả lỗi " + response.statusCode() + ": " + abbreviate(response.body(), 500);
-            return ResponseEntity.ok(buildAiTestResult(ok, provider, model, response.statusCode(), errorCode,
+            Map<String, Object> result = new HashMap<>(buildAiTestResult(ok, provider, model, response.statusCode(), errorCode,
                     technicalMessage, roleAwareAiConfigMessage(errorCode, provider, model)));
+            if (!ok && ("model_not_found".equals(errorCode) || "model_not_supported".equals(errorCode))) {
+                List<String> suggestions = liveModelSuggestions(provider);
+                if (!suggestions.isEmpty()) {
+                    result.put("suggestions", suggestions);
+                    result.put("message", result.get("message")
+                            + " Model con song tren provider nay (quet /models gan nhat): " + String.join(", ", suggestions) + ".");
+                }
+            }
+            return ResponseEntity.ok(result);
         } catch (java.net.http.HttpTimeoutException e) {
             return ResponseEntity.ok(buildAiTestResult(false, provider, model, null, "timeout",
                     "Timeout khi kiểm tra provider: " + e.getMessage(),
@@ -803,6 +824,19 @@ public class SystemController {
         }
         long extra = java.util.Arrays.stream(parts).map(String::trim).filter(s -> !s.isEmpty()).count() - 1;
         return extra > 0 ? masked + " (+" + extra + " keys)" : masked;
+    }
+
+    private List<String> liveModelSuggestions(String provider) {
+        try {
+            return switch (provider) {
+                case "groq" -> groqService.getLiveTextModelSuggestions();
+                case "gemini" -> geminiService.getLiveTextModelSuggestions();
+                case "openrouter" -> openRouterService.getLiveTextModelSuggestions();
+                default -> List.of();
+            };
+        } catch (Exception e) {
+            return List.of();
+        }
     }
 
     private HttpRequest buildAiProviderRequest(String provider, String apiKey, String model) throws Exception {

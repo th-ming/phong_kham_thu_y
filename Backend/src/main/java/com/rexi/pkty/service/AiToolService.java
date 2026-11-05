@@ -44,8 +44,7 @@ public class AiToolService {
     // ─────────────────────────────────────────────
 
     public String getToolsSchemaForRole(String userRole) {
-        // Deny-by-default: ẩn danh/role lạ chỉ nhận schema tool khách hàng.
-        if (!RoleAccessPolicy.isInternalStaffRole(userRole)) {
+        if (RoleAccessPolicy.isCustomerRole(userRole)) {
             return getCustomerToolsSchema();
         }
         return getStaffToolsSchemaForRole(userRole);
@@ -606,16 +605,31 @@ public class AiToolService {
 
     private String toolTimLichTrong(String ngay) {
         // Tìm tất cả giờ đã đặt trong ngày đó
+        java.time.LocalDate parsedNgay;
+        try {
+            parsedNgay = java.time.LocalDate.parse(ngay == null ? "" : ngay.trim());
+        } catch (Exception e) {
+            return "Lỗi: ngày không hợp lệ. Dùng định dạng YYYY-MM-DD (ví dụ 2026-11-06).";
+        }
         String sql = "SELECT gio_kham FROM LichHen WHERE ngay_kham = ? AND trang_thai != 'DA_HUY'";
-        var bookedSlots = jdbcTemplate.queryForList(sql, String.class, ngay);
+        var bookedSlots = jdbcTemplate.queryForList(sql, String.class, java.sql.Date.valueOf(parsedNgay));
         List<String> allSlots = List.of("08:00","08:30","09:00","09:30","10:00","10:30","11:00","14:00","14:30","15:00","15:30","16:00","16:30","17:00");
         List<String> available = new ArrayList<>();
         for (String slot : allSlots) {
             boolean taken = bookedSlots.stream().anyMatch(b -> b != null && b.startsWith(slot));
             if (!taken) available.add(slot);
         }
-        if (available.isEmpty()) return "Ngày " + ngay + " đã kín lịch. Hãy chọn ngày khác.";
-        return "Ngày " + ngay + " còn " + available.size() + " khung giờ trống: " + String.join(", ", available);
+        if (available.isEmpty()) {
+            return "Ngày " + parsedNgay + " đã kín lịch. Hãy chọn ngày khác.";
+        }
+        return "Ngày " + parsedNgay + " còn " + available.size() + " khung giờ trống: " + String.join(", ", available);
+    }
+
+    private String parseToolTime(String value) {
+        if (value == null || value.isBlank()) return null;
+        String v = value.trim();
+        if (v.matches("\\d{1,2}:\\d{2}")) v = v + ":00";
+        try { java.sql.Time.valueOf(v); return v; } catch (Exception e) { return null; }
     }
 
     @Transactional
@@ -721,9 +735,7 @@ public class AiToolService {
         String idLichHen = Objects.toString(p.getOrDefault("id_lich_hen", ""), "").trim();
         String tuKhoaKhach = Objects.toString(p.getOrDefault("tu_khoa_khach", ""), "").trim();
         String thoiGian = normalizeVietnamese(Objects.toString(p.getOrDefault("thoi_gian", ""), "").toLowerCase().trim());
-        // Deny-by-default: chỉ role nội bộ mới được tra cứu theo tên/SĐT toàn hệ thống.
-        // Role rỗng/khó hiểu (ẩn danh) → coi như khách hàng → phải hủy lịch của chính mình.
-        boolean isCustomer = !RoleAccessPolicy.isInternalStaffRole(userRole);
+        boolean isCustomer = RoleAccessPolicy.isCustomerRole(userRole);
 
         try {
             String customerId = null;
@@ -1499,8 +1511,7 @@ public class AiToolService {
 
         String role = RoleAccessPolicy.normalizeRole(userRole);
         String customerId = Objects.toString(p.get("id_khach_hang"), "").trim();
-        // Deny-by-default: chỉ nội bộ được chỉ định id_khach_hang tùy ý; ẩn danh/khách → chỉ thêm vào tài khoản của chính mình.
-        if (!RoleAccessPolicy.isInternalStaffRole(role)) {
+        if (RoleAccessPolicy.isCustomerRole(role) || role.isBlank()) {
             customerId = resolveCustomerId(null, username);
             if (customerId == null || customerId.isBlank()) {
                 return "Lỗi: Không xác định được tài khoản khách hàng đang đăng nhập.";
@@ -1737,7 +1748,7 @@ public class AiToolService {
             List<Object> qp = new ArrayList<>();
             StringBuilder sql = new StringBuilder("SELECT nv.ho_ten, l.gio_bat_dau, l.gio_ket_thuc FROM LichLamViecNhanVien l JOIN NhanVien nv ON l.id_nhan_vien = nv.id_nhan_vien WHERE CAST(l.ngay_lam AS DATE) = ? ");
             qp.add(java.sql.Date.valueOf(date));
-            if (!timeStr.isBlank()) { sql.append("AND l.gio_bat_dau <= ? AND l.gio_ket_thuc >= ? "); qp.add(timeStr); qp.add(timeStr); }
+            if (!timeStr.isBlank()) { String toolTime = parseToolTime(timeStr); if (toolTime != null) { sql.append("AND l.gio_bat_dau <= CAST(? AS time) AND l.gio_ket_thuc >= CAST(? AS time) "); qp.add(toolTime); qp.add(toolTime); } }
             sql.append("ORDER BY l.gio_bat_dau OFFSET 0 ROWS FETCH NEXT 20 ROWS ONLY");
             var rows = jdbcTemplate.queryForList(sql.toString(), qp.toArray());
             if (rows.isEmpty()) return "Chưa có nhân sự nào đăng ký ca" + (timeStr.isBlank() ? "" : " " + timeStr) + " ngày " + date + ".";
@@ -1745,7 +1756,10 @@ public class AiToolService {
             for (var r : rows) sb.append("- ").append(r.get("ho_ten")).append(" (").append(r.get("gio_bat_dau")).append("-").append(r.get("gio_ket_thuc")).append(")\n");
             if (rows.size() >= 3) sb.append("⚠️ Slot đã đủ 3 nhân sự. Cần quyền quản lý/admin để override.");
             return sb.toString().trim();
-        } catch (Exception e) { return "Không thể kiểm tra slot do sự cố hệ thống. Vui lòng thử lại sau."; }
+        } catch (Exception e) {
+            logger.warning("toolGetSlotUsage lỗi: " + e.getClass().getSimpleName() + ": " + e.getMessage());
+            return "Không thể kiểm tra slot do sự cố hệ thống. Vui lòng thử lại sau.";
+        }
     }
 
     private String toolCheckConflict(Map<String, Object> p) {
@@ -1759,7 +1773,7 @@ public class AiToolService {
             StringBuilder sql = new StringBuilder("SELECT nv.ho_ten, l.ngay_lam, l.gio_bat_dau, l.gio_ket_thuc FROM LichLamViecNhanVien l JOIN NhanVien nv ON l.id_nhan_vien = nv.id_nhan_vien WHERE CAST(l.ngay_lam AS DATE) = ? ");
             qp.add(java.sql.Date.valueOf(date));
             if (!staff.isBlank()) { sql.append("AND LOWER(nv.ho_ten) LIKE LOWER(?) "); qp.add("%" + staff + "%"); }
-            if (!timeStr.isBlank()) { sql.append("AND l.gio_bat_dau <= ? AND l.gio_ket_thuc >= ? "); qp.add(timeStr); qp.add(timeStr); }
+            if (!timeStr.isBlank()) { String toolTime = parseToolTime(timeStr); if (toolTime != null) { sql.append("AND l.gio_bat_dau <= CAST(? AS time) AND l.gio_ket_thuc >= CAST(? AS time) "); qp.add(toolTime); qp.add(toolTime); } }
             sql.append("ORDER BY l.gio_bat_dau OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY");
             var rows = jdbcTemplate.queryForList(sql.toString(), qp.toArray());
             if (rows.isEmpty()) return "Không phát hiện xung đột lịch" + (staff.isBlank() ? "" : " cho " + staff) + " ngày " + date + ".";
@@ -1790,10 +1804,10 @@ public class AiToolService {
         LocalDate date = "tomorrow".equals(dateStr) ? LocalDate.now(VN_ZONE).plusDays(1) : LocalDate.now(VN_ZONE);
         if (dateStr.matches("\\d{4}-\\d{2}-\\d{2}")) { try { date = LocalDate.parse(dateStr); } catch (Exception ignored) {} }
         try {
-            var rows = jdbcTemplate.queryForList("SELECT nv.ho_ten, nv.chuc_vu FROM NhanVien nv WHERE nv.id_nhan_vien NOT IN (SELECT l.id_nhan_vien FROM LichLamViecNhanVien l WHERE CAST(l.ngay_lam AS DATE) = ?) ORDER BY nv.ho_ten", java.sql.Date.valueOf(date));
+            var rows = jdbcTemplate.queryForList("SELECT nv.ho_ten, nv.chuyen_mon AS chuc_vu FROM NhanVien nv WHERE nv.id_nhan_vien NOT IN (SELECT l.id_nhan_vien FROM LichLamViecNhanVien l WHERE CAST(l.ngay_lam AS DATE) = ?) ORDER BY nv.ho_ten", java.sql.Date.valueOf(date));
             if (rows.isEmpty()) return "Tất cả nhân sự đều có lịch ngày " + date + ". Không ai rảnh.";
             StringBuilder sb = new StringBuilder("Nhân sự rảnh ngày " + date + " (" + rows.size() + " người):\n");
-            for (var r : rows) sb.append("- ").append(r.get("ho_ten")).append(" (").append(r.get("chuc_vu")).append(")\n");
+            for (var r : rows) sb.append("- ").append(Objects.toString(r.get("ho_ten"), "")).append(" (").append(Objects.toString(r.get("chuc_vu"), "—")).append(")\n");
             return sb.toString().trim();
         } catch (Exception e) { return "Không thể tìm nhân sự rảnh do sự cố hệ thống. Vui lòng thử lại sau."; }
     }
@@ -1826,7 +1840,7 @@ public class AiToolService {
         if (!"this".equals(week)) ws = ws.plusWeeks(1);
         LocalDate we = ws.plusDays(6);
         try {
-            var staff = jdbcTemplate.queryForList("SELECT nv.id_nhan_vien, nv.ho_ten, nv.chuc_vu FROM NhanVien nv ORDER BY nv.ho_ten");
+            var staff = jdbcTemplate.queryForList("SELECT nv.id_nhan_vien, nv.ho_ten, nv.chuyen_mon AS chuc_vu FROM NhanVien nv ORDER BY nv.ho_ten");
             var existing = jdbcTemplate.queryForList("SELECT l.id_nhan_vien, CAST(l.ngay_lam AS DATE) AS d FROM LichLamViecNhanVien l WHERE l.ngay_lam >= ? AND l.ngay_lam <= ?", java.sql.Date.valueOf(ws), java.sql.Date.valueOf(we));
             Map<String, Set<String>> busyMap = new HashMap<>();
             for (var r : existing) { String sid = Objects.toString(r.get("id_nhan_vien"), ""); busyMap.computeIfAbsent(sid, k -> new HashSet<>()).add(Objects.toString(r.get("d"), "")); }
@@ -1834,7 +1848,7 @@ public class AiToolService {
             for (var s : staff) {
                 String sid = Objects.toString(s.get("id_nhan_vien"), "");
                 Set<String> busy = busyMap.getOrDefault(sid, new HashSet<>());
-                sb.append("\n🔹 ").append(s.get("ho_ten")).append(" (").append(s.get("chuc_vu")).append("):\n");
+                sb.append("\n🔹 ").append(Objects.toString(s.get("ho_ten"), "")).append(" (").append(Objects.toString(s.get("chuc_vu"), "—")).append("):\n");
                 for (LocalDate d = ws; !d.isAfter(we); d = d.plusDays(1)) {
                     if (d.getDayOfWeek() == java.time.DayOfWeek.SUNDAY) continue;
                     sb.append("  ").append(busy.contains(d.toString()) ? "✅" : "⬜").append(" ").append(d).append("\n");

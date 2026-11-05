@@ -158,6 +158,7 @@ public class GroqService {
 
     // Cache danh sách model text quét tự động từ Groq /models (24h)
     private volatile List<String> cachedGroqTextModels = List.of();
+    private volatile List<String> cachedGroqVisionModels = List.of();
     private volatile Set<String> cachedGroqKnownIds = Set.of();
     private volatile long lastGroqModelFetchTime = 0L;
     private volatile long lastGroqModelFetchAttemptTime = 0L;
@@ -273,6 +274,33 @@ public class GroqService {
     }
 
     /**
+     * Trích id các model vision (input_modalities chứa image) từ JSON ListModels
+     * của Groq — dùng cho chat có ảnh để tự heal khi model vision bị gỡ.
+     */
+    static List<String> extractGroqVisionModels(JsonNode root) {
+        List<String> result = new ArrayList<>();
+        if (root == null) {
+            return result;
+        }
+        JsonNode dataNode = root.path("data");
+        if (!dataNode.isArray()) {
+            return result;
+        }
+        for (JsonNode modelNode : dataNode) {
+            String id = modelNode.path("id").asText("");
+            if (id.isBlank() || id.contains("guard")) {
+                continue;
+            }
+            if (modalitiesContain(modelNode.path("input_modalities"), "image")
+                    && modalitiesContain(modelNode.path("output_modalities"), "text")
+                    && !result.contains(id)) {
+                result.add(id);
+            }
+        }
+        return result;
+    }
+
+    /**
      * Tự động quét model chat text từ Groq /models (cache 24h). API fail hoặc
      * rỗng → fallback cascade static. Cùng cơ chế với OpenRouter và Gemini.
      */
@@ -313,8 +341,12 @@ public class GroqService {
                     }
                 }
                 List<String> textModels = extractGroqChatModels(root);
+                List<String> visionModels = extractGroqVisionModels(root);
                 if (!textModels.isEmpty()) {
                     cachedGroqTextModels = List.copyOf(textModels);
+                    if (!visionModels.isEmpty()) {
+                        cachedGroqVisionModels = List.copyOf(visionModels);
+                    }
                     cachedGroqKnownIds = Set.copyOf(knownIds);
                     lastGroqModelFetchTime = now;
                     logger.info("Đã quét tự động " + textModels.size() + " model chat text từ Groq (biết tổng "
@@ -332,6 +364,9 @@ public class GroqService {
         if (cachedGroqTextModels.isEmpty()) {
             cachedGroqTextModels = List.of("openai/gpt-oss-20b", "llama-3.3-70b-versatile");
             logger.warning("Dùng fallback static Groq models vì /models không khả dụng.");
+        }
+        if (cachedGroqVisionModels.isEmpty()) {
+            cachedGroqVisionModels = List.of("meta-llama/llama-4-scout-17b-16e-instruct");
         }
     }
 
@@ -357,6 +392,43 @@ public class GroqService {
             models.add("llama-3.3-70b-versatile");
         }
         return List.copyOf(models);
+    }
+
+    /**
+     * Danh sách model vision cho chat có ảnh: model DB (nếu còn sống theo
+     * snapshot /models) + model vision quét tự động (input_modalities chứa
+     * image). Tự heal giống getTextModelCandidates khi model bị provider gỡ.
+     */
+    private List<String> getVisionModelCandidates(String selectedModel) {
+        refreshGroqModelSnapshotIfStale();
+        LinkedHashSet<String> models = new LinkedHashSet<>();
+        if (selectedModel != null && !selectedModel.isBlank()) {
+            String trimmed = selectedModel.trim();
+            if (cachedGroqKnownIds.isEmpty() || cachedGroqKnownIds.contains(trimmed)) {
+                models.add(trimmed);
+            } else {
+                logger.warning("Groq vision model '" + trimmed
+                        + "' không còn trên live /models, bỏ qua và dùng dynamic.");
+            }
+        }
+        models.addAll(cachedGroqVisionModels);
+        if (models.isEmpty()) {
+            models.add("meta-llama/llama-4-scout-17b-16e-instruct");
+        }
+        return List.copyOf(models);
+    }
+
+    /** Quét chủ động (scheduler 24h gọi): reset cache-time rồi refresh snapshot /models. */
+    public boolean forceModelScan() {
+        lastGroqModelFetchTime = 0L;
+        refreshGroqModelSnapshotIfStale();
+        return !cachedGroqTextModels.isEmpty();
+    }
+
+    /** Gợi ý tối đa 5 model text còn sống theo snapshot gần nhất (cho /api/system/ai-provider/test). */
+    public List<String> getLiveTextModelSuggestions() {
+        refreshGroqModelSnapshotIfStale();
+        return cachedGroqTextModels.stream().limit(5).toList();
     }
 
     public void prewarm() {
@@ -465,7 +537,7 @@ public class GroqService {
         }
 
         Exception lastException = null;
-        List<String> modelCandidates = hasImage ? List.of(selectedModel) : getTextModelCandidates(selectedModel);
+        List<String> modelCandidates = hasImage ? getVisionModelCandidates(selectedModel) : getTextModelCandidates(selectedModel);
         for (String candidateModel : modelCandidates) {
             Map<String, Object> requestBodyMap = Map.of(
                     "model", candidateModel,
