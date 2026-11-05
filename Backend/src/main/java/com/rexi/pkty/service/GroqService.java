@@ -50,10 +50,10 @@ public class GroqService {
         if (dbModel != null && !dbModel.isBlank()) {
             return dbModel;
         }
-        return "llama-3.1-8b-instant";
+        return "openai/gpt-oss-20b";
     }
 
-    public static final String REASONING_MODEL_DEFAULT = "llama-3.3-70b-versatile";
+    public static final String REASONING_MODEL_DEFAULT = "openai/gpt-oss-120b";
 
     /**
      * Model suy luận cho ReAct agent đa bước + nhánh y tế chuyên sâu (Groq leg cuối).
@@ -105,11 +105,11 @@ public class GroqService {
     private static final String GROQ_AUDIO_URL = "https://api.groq.com/openai/v1/audio/transcriptions";
     private static final String GROQ_MODELS_URL = "https://api.groq.com/openai/v1/models";
 
-    @Value("${groq.model:llama-3.1-8b-instant}")
+    @Value("${groq.model:openai/gpt-oss-20b}")
     private String modelName;
 
     // Model để phân tích hình ảnh
-    @Value("${groq.vision.model:meta-llama/llama-4-scout-17b-16e-instruct}")
+    @Value("${groq.vision.model:qwen/qwen3.8-27b}")
     private String visionModelName;
 
     private String getApiKey() {
@@ -362,11 +362,11 @@ public class GroqService {
         }
 
         if (cachedGroqTextModels.isEmpty()) {
-            cachedGroqTextModels = List.of("openai/gpt-oss-20b", "llama-3.3-70b-versatile");
+            cachedGroqTextModels = List.of("openai/gpt-oss-20b", "openai/gpt-oss-120b");
             logger.warning("Dùng fallback static Groq models vì /models không khả dụng.");
         }
         if (cachedGroqVisionModels.isEmpty()) {
-            cachedGroqVisionModels = List.of("meta-llama/llama-4-scout-17b-16e-instruct");
+            cachedGroqVisionModels = List.of("qwen/qwen3.8-27b");
         }
     }
 
@@ -389,7 +389,7 @@ public class GroqService {
         // Dự phòng cuối khi chưa quét được gì (API fail + chưa có DB model).
         if (models.isEmpty()) {
             models.add("openai/gpt-oss-20b");
-            models.add("llama-3.3-70b-versatile");
+            models.add("openai/gpt-oss-120b");
         }
         return List.copyOf(models);
     }
@@ -413,7 +413,7 @@ public class GroqService {
         }
         models.addAll(cachedGroqVisionModels);
         if (models.isEmpty()) {
-            models.add("meta-llama/llama-4-scout-17b-16e-instruct");
+            models.add("qwen/qwen3.8-27b");
         }
         return List.copyOf(models);
     }

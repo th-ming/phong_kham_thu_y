@@ -48,6 +48,7 @@ public class KiloService {
             "nvidia/nemotron-3.5-lightning:free");
 
     private static final List<String> STATIC_FALLBACK_GENERAL = List.of(
+            "kilo-auto/free",
             "nvidia/nemotron-3.5-lightning:free",
             "nvidia/nemotron-3-ultra-550b-a55b:free",
             "dots-studio/dots-3-note-preview:free");
@@ -67,7 +68,7 @@ public class KiloService {
     @Value("${kilo.api.key:}")
     private String apiKey;
 
-    @Value("${kilo.model:nvidia/nemotron-3.5-lightning:free}")
+    @Value("${kilo.model:kilo-auto/free}")
     private String modelName;
 
     @Value("${kilo.medical.model:nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free}")
