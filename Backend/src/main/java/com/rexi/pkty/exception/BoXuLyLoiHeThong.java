@@ -8,6 +8,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -35,6 +36,11 @@ public class BoXuLyLoiHeThong {
         // Get first validation error message
         String firstError = errors.values().stream().findFirst().orElse("Dữ liệu không hợp lệ");
         return ResponseEntity.badRequest().body(Map.of("message", firstError));
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<?> handleMissingParam(MissingServletRequestParameterException ex) {
+        return ResponseEntity.badRequest().body(Map.of("message", "Thiếu tham số bắt buộc."));
     }
 
     @ExceptionHandler(NoResourceFoundException.class)
