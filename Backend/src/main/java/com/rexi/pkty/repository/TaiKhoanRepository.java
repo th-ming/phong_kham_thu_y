@@ -27,7 +27,7 @@ public interface TaiKhoanRepository extends JpaRepository<TaiKhoan, String> {
     List<TaiKhoan> findByEmail(@Param("email") String email);
 
     // Tìm user theo SĐT (của cả Khách hàng và Nhân viên) - Sử dụng Native Query để join đa bảng
-    @Query(value = "SELECT t.* FROM TaiKhoan t LEFT JOIN KhachHang k ON t.id_khach_hang = k.id_khach_hang LEFT JOIN NhanVien n ON t.id_nhan_vien = n.id_nhan_vien WHERE k.so_dien_thoai = :phone OR n.so_dien_thoai = :phone", nativeQuery = true)
+    @Query(value = "SELECT t.* FROM TaiKhoan t LEFT JOIN KhachHang k ON t.id_khach_hang = k.id_khach_hang LEFT JOIN NhanVien n ON t.id_nhan_vien = n.id_nhan_vien WHERE k.sdt = :phone OR n.so_dien_thoai = :phone", nativeQuery = true)
     List<TaiKhoan> findBySdt(@Param("phone") String phone);
 
     @org.springframework.data.jpa.repository.Modifying

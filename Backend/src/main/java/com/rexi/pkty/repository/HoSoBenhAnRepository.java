@@ -44,9 +44,10 @@ public interface HoSoBenhAnRepository extends JpaRepository<HoSoBenhAn, String> 
     List<Map<String, Object>> getAllXetNghiem();
 
     // Get all don thuoc (ADMIN)
-    @Query(value = "SELECT dt.*, t.ten_thuoc, tc.ten_thu_cung FROM DonThuoc_ChiTiet dt " +
+    @Query(value = "SELECT dt.*, t.ten_thuoc, tc.ten_thu_cung FROM DonThuocChiTiet dt " +
                    "JOIN Thuoc t ON dt.id_thuoc = t.id_thuoc " +
-                   "JOIN HoSoBenhAn hs ON dt.id_ho_so_benh_an = hs.id_ho_so " +
+                   "JOIN DonThuoc d ON dt.id_don_thuoc = d.id_don_thuoc " +
+                   "JOIN HoSoBenhAn hs ON d.id_ho_so_benh_an = hs.id_ho_so_benh_an " +
                    "JOIN LichHen lh ON hs.id_lich_hen = lh.id_lich_hen " +
                    "JOIN ThuCung tc ON lh.id_thu_cung = tc.id_thu_cung " +
                    "ORDER BY dt.id_don_thuoc DESC", nativeQuery = true)

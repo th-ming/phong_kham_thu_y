@@ -217,7 +217,7 @@ public class AuthController {
                 String idNv = tk.getId_nhan_vien();
                 userData.put("id_nhan_vien", idNv);
                 try {
-                    List<Map<String, Object>> list = jdbcTemplate.queryForList("SELECT ho_ten, hinh_anh, email FROM NhanVien WHERE id_nhan_vien = ?", idNv);
+                    List<Map<String, Object>> list = jdbcTemplate.queryForList("SELECT ho_ten, hinh_anh, email, so_dien_thoai FROM NhanVien WHERE id_nhan_vien = ?", idNv);
                     if (!list.isEmpty()) {
                         Map<String, Object> info = list.get(0);
                         if (info.get("ho_ten") != null) {
